@@ -36,7 +36,7 @@ def main():
         check(f"hash atual {key[1]}", functions[key]["definition_md5"] == md5, functions[key]["definition_md5"])
     check("captura declara origem auditor, não leitura hosted", capture["source"]["read_performed_by_agent"] is False and capture["source"]["hosted_read_performed"] is False)
     strict = (H / "dependency.candidate.sql").read_text()
-    for token in ("b2b_fiscal_service_permits", "FISCAL_TRANSMISSION_NOT_CONFIRMED", "FISCAL_PROTOCOL_NOT_AUTHORIZED", "FISCAL_XML_SIGNATURE_REQUIRED", "B2B_FISCAL_ACCOUNTING_OR_TENANT_UNPROVEN", "B2B_FISCAL_ECONOMIC_TOTAL_MISMATCH", "B2B_FISCAL_HOMOLOGATION_ONLY"):
+    for token in ("b2b_fiscal_service_permits", "B2B_FISCAL_CONFIRMATION_UNPROVEN", "B2B_FISCAL_DOCUMENT_NOT_PROVEN", "B2B_FISCAL_SNAPSHOT_NOT_PROVEN", "B2B_FISCAL_ACCOUNTING_OR_TENANT_UNPROVEN", "B2B_FISCAL_SNAPSHOT_DIVERGENCE", "environment='HOMOLOGATION'", "protocol_c_stat='100'", "signed_xml_available"):
         check(f"dependência estrita contém {token}", token in strict)
     check("dependência não contém SELECT $$", "SELECT$$" not in strict.replace(" ", ""))
     check("rollback restaura negação, não liberação", "B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN" in (H / "04-rollback-deny.sql.review").read_text())
