@@ -30,6 +30,20 @@ describe("filtro de status /comercial/pedidos-b2b", () => {
     expect(use().result.current[0]).toBe("all");
   });
 
+  it("reload real preserva o filtro na URL, mesmo sem memória volátil", () => {
+    const h = use("/comercial/pedidos-b2b?aba=carteira");
+    act(() => h.result.current[1]("all"));
+    expect(observedSearch).toBe("?aba=carteira&status=all");
+    h.unmount();
+    clearAllPauseStates(); // um reload perde todo o Map volátil
+    expect(use(`/comercial/pedidos-b2b${observedSearch}`).result.current[0]).toBe("all");
+  });
+
+  it("status explícito no endereço prevalece sobre a retenção da pausa", () => {
+    writePauseState(`${pauseStateKey({ userId: "uA", organizationId: "orgA", roles: ["comercial"], epoch: 0 })}:pedidos-b2b:status`, "all");
+    expect(use("/comercial/pedidos-b2b?status=aprovado").result.current[0]).toBe("aprovado");
+  });
+
   it("ready -> revalidando (nova época) -> ready não reseta", () => {
     const h = use();
     act(() => h.result.current[1]("all"));
