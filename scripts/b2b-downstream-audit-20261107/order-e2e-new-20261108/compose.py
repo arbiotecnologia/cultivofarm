@@ -428,8 +428,10 @@ def main():
   R.assert_current(B,OUT,'real-baselines-post-logistics-rollback.json',ROOT)
   checks.append(dict(test='ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback',status='PASS'))
 
-  def measured_final_delivery_state():
-   state=C.state()
+  def measured_final_delivery_state(state_expression):
+   # A projeção estrutural precisa ser a do próprio estágio: S.STATE inclui
+   # delivery_send_permits_v1; C.G.STATE não pode fingir esse recorte.
+   state=json.loads(B.last(state_expression+'::text;'))
    # O estado agregado histórico não inclui esses dois schemas. Medir seus corpos
    # atuais evita fallback de hash antigo tanto nos pins quanto nas triggers.
    extra=json.loads(B.last("""SELECT coalesce(jsonb_agg(jsonb_build_array(n.nspname,p.proname,pg_get_function_identity_arguments(p.oid),md5(pg_get_functiondef(p.oid)),coalesce(p.proacl::text,''),pg_get_userbyid(p.proowner),p.proconfig,p.prosecdef)),'[]'::jsonb) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ('private','cf_user_guards_v1');"""))
