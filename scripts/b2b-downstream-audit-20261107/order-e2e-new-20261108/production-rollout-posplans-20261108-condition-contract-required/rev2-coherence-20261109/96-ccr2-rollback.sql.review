@@ -1,0 +1,21 @@
+-- REVIEW ONLY. Removes exactly the rev2 objects after pinning their bodies; returns to the installed B3 baseline
+-- (B3 INSERT guard b2b_payment_condition_required stays). No data, snapshot, grant, activation or B3 object touched.
+BEGIN;
+SET LOCAL lock_timeout = '5s'; SET LOCAL statement_timeout = '60s';
+DO $pre$ BEGIN
+  IF md5(pg_get_functiondef('platform_private.b2b_condition_order_coherence_check(uuid,boolean)'::regprocedure)) <> '__MD5_CHECK__'
+     OR md5(pg_get_functiondef('platform_private.b2b_condition_order_coherence_trg()'::regprocedure)) <> '__MD5_OTRG__'
+     OR md5(pg_get_functiondef('platform_private.b2b_condition_snapshot_coherence_trg()'::regprocedure)) <> '__MD5_STRG__'
+  THEN RAISE EXCEPTION 'CCR2_RB_PIN_DRIFT'; END IF;
+END $pre$;
+DROP TRIGGER b2b_condition_zz_coherence_quote ON platform_private.b2b_order_condition_quote_snapshots;
+DROP TRIGGER b2b_condition_zz_coherence_snap ON platform_private.b2b_order_condition_snapshots;
+DROP TRIGGER b2b_condition_zz_coherence_upd ON public.partner_orders;
+DROP FUNCTION platform_private.b2b_condition_snapshot_coherence_trg();
+DROP FUNCTION platform_private.b2b_condition_order_coherence_trg();
+DROP FUNCTION platform_private.b2b_condition_order_coherence_check(uuid, boolean);
+DO $post$ BEGIN
+  IF md5(pg_get_functiondef('platform_private.b2b_condition_required_check()'::regprocedure)) <> '236b821b0ca568c81a9667512dae5def'
+  THEN RAISE EXCEPTION 'CCR2_RB_B3_DRIFT'; END IF;
+END $post$;
+COMMIT;
