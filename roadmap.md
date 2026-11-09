@@ -1,6 +1,6 @@
 ## 09/11 03:32 — Integridade separada das FKs owner de catálogo
 - [ ] Preservar o diagnóstico da execução interrompida: `/tmp/owner-fk-work-path`, processos, stdout/stderr, evidência e exit code não existem nesta sessão; repositório estava limpo e nenhum timeout foi tratado como PASS.
-- [ ] Reconciliar o PostgreSQL descartável com a captura real: ausência de `product_packagings_owner_organization_id_fkey` e `product_sale_units_owner_organization_id_fkey`, sem remover ou afrouxar os guards de PRE30/INSTALL31.
+- [ ] Reconciliar o PostgreSQL descartável com a captura real: ausência das duas FKs, `numeric(12,3)` e `forma_fisica` gerada STORED; tentativa 05 reprovou a hipótese de DEFAULT antes do PRE25. Não remover nem afrouxar os guards de PRE30/INSTALL31.
 - [ ] Gerar correção separada PRE25/INSTALL26/POST27: zero órfãos antes e depois dos locks, constraints validadas, ACL/owner preservados, sem cleanup, grants ou efeitos comerciais; órfãos e divergências falham fechado.
 - [ ] Executar artefatos finais e PRE30/31 no PostgreSQL 17 descartável com saída incremental, promover manifest/evidência somente após PASS; produção segue só com `11/21` fechados e sem `31+`, sem SQL hospedado/publicação/ativação.
 - [x] Complemento independente recebido às 03:57 UTC: cada tabela tem `total=1`, `owner_null=0`, `orphan_owner=0`, `owner_product_mismatch=0`; nove regressões ACL READ ONLY relatadas como PASS. Preservado como relato do auditor com hash, sem apresentá-lo como medição hospedada do agente nem como autorização de instalação.

@@ -159,10 +159,12 @@ def main():
                               if row["relation"] == "product_sale_units" and row["name"] == "forma_fisica")
         assert shape_before["default"] is None and shape_expected["default"], shape_before
         B.sql("ALTER TABLE ONLY public.product_packagings ALTER COLUMN peso_liquido_kg TYPE numeric(12,3) USING peso_liquido_kg::numeric(12,3);")
-        B.sql(f"ALTER TABLE ONLY public.product_sale_units ALTER COLUMN forma_fisica SET DEFAULT {shape_expected['default']};")
+        B.sql(f"""ALTER TABLE ONLY public.product_sale_units
+          DROP COLUMN forma_fisica,
+          ADD COLUMN forma_fisica text GENERATED ALWAYS AS ({shape_expected['default']}) STORED;""")
         report["fixture_column_reconciliation"] = [
             {"relation": "product_packagings", "column": "peso_liquido_kg", "before": weight_before["type"], "after": "numeric(12,3)"},
-            {"relation": "product_sale_units", "column": "forma_fisica", "before": None, "after": shape_expected["default"]},
+            {"relation": "product_sale_units", "column": "forma_fisica", "before": "regular column without expression", "after": "GENERATED ALWAYS AS captured expression STORED"},
         ]
         for table, name in TARGETS:
             assert B.last(f"""SELECT count(*) FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid
@@ -352,7 +354,7 @@ END$$;"""
             "synthetic_seams": [
                 "Auth/claims e papéis SQL somente no PostgreSQL descartável",
                 "product_packagings.peso_liquido_kg ajustado de numeric para numeric(12,3) somente no descartável",
-                "product_sale_units.forma_fisica recebe o default derivado capturado somente no descartável; produtos.oculto permanece fora do escopo do PRE",
+                "product_sale_units.forma_fisica é recriada como coluna gerada STORED com a expressão capturada somente no descartável; produtos.oculto permanece fora do escopo do PRE",
                 "duas FKs removidas somente no descartável para reproduzir a captura real",
                 "órfãos temporários com triggers desabilitados somente na fixture e restaurados; writers finais com triggers habilitados",
                 "artefatos 00/11/12/20/21/22/32/93 executados apenas como composição local",
