@@ -11,7 +11,6 @@
   },
   "still_mirror_bodies_without_live_md5": [
     "platform_private.c2_internal_order_target_reason(uuid,uuid)",
-    "platform_private.b2b_internal_commercial_actor()",
     "platform_private.c2p1_settings_allowed(uuid,boolean)",
     "platform_private.h15_actor_organization()",
     "platform_private.b2b_internal_origin_valid(jsonb)",
