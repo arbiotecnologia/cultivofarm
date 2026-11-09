@@ -19,3 +19,12 @@ Não houve perda do meio. Para esse parceiro o servidor declara modo `legacy`. P
 
 ## Para o piloto com meio persistido (não executado)
 Exige incluir 5c4f35f8… no piloto pela UI admin, via `b2b_payment_condition_activation_set` com CAS `expected_version=1`. Os parceiros existentes devem ser preservados e o modo nunca deve ser `enforced`. Isso depende de autorização do proprietário. O PB-001038 não deve ser editado nem migrado; continua como referência legada imutável.
+
+## Observação do controle real do vendedor (relato do proprietário, 09/11/2026 15:23Z)
+- Resultado PASS: 2 embalagens de 25 kg a 9 cada, total 18. Após recarregar, o comprador continua vendo 1 pedido.
+- Defeito de apresentação: a tela do vendedor mostrava "1º vencimento 09/12/2026" como data definitiva, embora a NF não tenha sido emitida e a regra seja NF + 30 dias.
+- Origem: `partner_order_payment_terms.first_due_date` (2026-12-09) vem do writer legado e equivale à data do pedido (2026-11-09) + 30 dias. É um snapshot do pedido, não um vencimento real.
+- Correção de UI (`PaymentTermsSection`): o campo passou a se chamar sempre "1º vencimento estimado" e mostra "(estimativa)". Sem data, mostra "A definir após confirmação fiscal". A nota sobre a NF como data-base aparece também no modo legado. O snapshot, os dias, o servidor e as decisões ficaram intactos.
+- Teste: `paymentTermsRead.test.tsx` passou 37/37, com um caso novo para o modo legado sem NF.
+- Cobertura existente de NF + 30, datas mensais e dias úteis: são geradores e testes em PG descartável (`b2b-payment-condition-v1-rebase-20261106/test-local-pg.py`, `financial-installments-initial-20261024/price-schedule.py`, `b4/generate-b4.py`). Não foram reexecutados nesta etapa.
+- Aprovação e decisões financeiras continuaram desabilitadas. O botão de liberar após a contabilidade não foi acionado. O fiscal continua pendente e nenhuma data real foi gerada.

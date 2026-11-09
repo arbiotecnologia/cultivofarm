@@ -143,6 +143,14 @@ it.each(decisionCases)("sem pendência e autorizado: %s preserva chamada canôni
   await waitFor(() => expect(s.rpc).toHaveBeenCalledWith(endpoint, expect.objectContaining({ p_partner_order_id: ORDER })));
   expect(s.rpc.mock.calls.filter(c => c[0] === endpoint)).toHaveLength(1);
 });
+it("legado sem NF: 1º vencimento do snapshot aparece só como estimativa com base NF", async () => {
+  s.rpc.mockImplementation(() => reply(terms()));
+  mount();
+  expect(await screen.findByText("1º vencimento estimado")).toBeInTheDocument();
+  expect(screen.getByText(/06\/12\/2026 \(estimativa\)/)).toBeInTheDocument();
+  expect(screen.queryByText(/^1º vencimento$/)).toBeNull();
+  expect(screen.getByTestId("due-date-estimate-note")).toHaveTextContent(/emissão da NF/);
+});
 it("legado autorizado preserva aprovação sem inventar snapshot V1", async () => {
   s.rpc.mockImplementation((name) => name === "get_partner_order_payment_terms_secure" ? reply(terms()) : ok(null));
   mount(true); const button = await screen.findByRole("button", { name: "Aprovar" });
