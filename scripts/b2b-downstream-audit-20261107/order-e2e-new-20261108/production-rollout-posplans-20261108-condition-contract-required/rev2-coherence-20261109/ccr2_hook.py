@@ -332,6 +332,11 @@ def run(ns):
                         UADM, "tenant do admin trocado para F durante o lock da cotação", ("scope_denied", "C2_", "42501", "forbidden"))
             during_lock(CK, f"UPDATE public.profiles SET organization_id='{F}' WHERE user_id='{UGC}';", f"UPDATE public.profiles SET organization_id='{A}' WHERE user_id='{UGC}';",
                         UGC, "tenant do gestor trocado durante o lock de crédito (3ª revalidação)", ("payment_condition_stale", "scope_denied", "C2_", "42501"))
+            # isola a 3ª revalidação: vínculo externo ativo a OUTRO parceiro (P) surge durante o lock de crédito; origem/guards de item seguem válidos,
+            # mas o caminho do dono (b2b_owner_internal_partner_readable) deixa de valer e o pedido de PN não é visível -> payment_condition_stale
+            during_lock(CK, f"INSERT INTO public.partner_users(user_id,partner_id,tenant_id) SELECT '{UGC}','{P}',commercial_owner_organization_id FROM public.partner_accounts WHERE id='{P}';",
+                        f"DELETE FROM public.partner_users WHERE user_id='{UGC}' AND partner_id='{P}';",
+                        UGC, "vínculo externo a outro parceiro criado durante o lock de crédito (3ª revalidação isolada)", ("payment_condition_stale",))
             jg, eg = respond(UGC, jq["id"], [{"item_id": qi, "unit_price": 1000}])
             res["seller_respond"]["gestor_owner"] = eg or jg
             check("CCR2 RESPOND FIX: gestor comercial da empresa dona responde a cotação", jg is not None and receipts() == "1", eg or jg)
