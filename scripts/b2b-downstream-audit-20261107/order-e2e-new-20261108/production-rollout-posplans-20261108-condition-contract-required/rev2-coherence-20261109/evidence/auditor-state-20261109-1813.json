@@ -1,0 +1,55 @@
+{
+  "reported_at_utc": "2026-11-09T18:13:00Z",
+  "source": "OWNER_AUDITOR_REPORT_IN_CONVERSATION",
+  "provenance": "EXTERNALLY_REPORTED_NOT_AGENT_HOSTED_VERIFICATION",
+  "project_ref_reported": "swzpzcwiasxmjutrmvkm",
+  "guard81": {
+    "status": "INSTALLED_REPORTED_BY_AUDITOR_DO_NOT_REAPPLY",
+    "independent_review": "APPROVED_WITH_DECLARED_SYNTHETIC_LIMITS",
+    "reviewed_attempt": 33,
+    "harness_passed": 352,
+    "harness_total": 352,
+    "ccr2_passed": 143,
+    "ccr2_total": 143,
+    "used_md5_total": 101,
+    "live_equal_before_install": 98,
+    "expected_absent_new_guard_functions_before_install": 3,
+    "pre80": "PASS_REPORTED",
+    "migration": "b2b_condition_coherence_reviewed_20261109",
+    "install": "SUCCESS_REPORTED",
+    "post82": "PASS_REPORTED"
+  },
+  "seller91": {
+    "status": "NOT_INSTALLED_REPORTED",
+    "pre90_acl_ref": "PASS_REPORTED",
+    "respond_live_md5": "4926a99c3fa3086b34ff25bb4b4038bb",
+    "blocker": "AUDITOR_HUMAN_CONNECTOR_APPROVAL_PENDING_AFTER_TECHNICAL_APPROVAL_EXPIRED"
+  },
+  "capture_request29b": {
+    "status": "SATISFIED_BY_PRIOR_AUDITOR_REPORTS_AND_MIRROR_RECONCILIATION",
+    "verified_existing_attempt": 36,
+    "mirror_body_owner_sorted_acl_matches": 11,
+    "mirror_body_owner_sorted_acl_total": 11,
+    "new_capture_requested": false,
+    "entitlements": "DECLARED_SCHEMA_SEAM_NOT_PENDING_CAPTURE"
+  },
+  "containment_reported": {
+    "gates": "OFF",
+    "pb001038": "UNIQUE_WITHOUT_RECEIVABLE"
+  },
+  "agent_actions_this_update": {
+    "local_documentation_only": true,
+    "hosted_sql": false,
+    "reinstall": false,
+    "frontend_publish": false,
+    "activation": false,
+    "external_effects": false,
+    "new_test_run": false
+  },
+  "remaining_evidence_limits": [
+    "SYNTHETIC_AUTH_NOT_HOSTED_JWT_PROOF",
+    "ENTITLEMENTS_DECLARED_SCHEMA_SEAM",
+    "REDUCED_EMPTY_TABLES",
+    "NOT_FULL_FINANCIAL_FISCAL_E2E_CERTIFICATION"
+  ]
+}

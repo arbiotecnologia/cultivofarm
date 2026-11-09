@@ -1,6 +1,15 @@
-# 81 rev2 — coerência do snapshot de condição (REVIEW_ONLY_INACTIVE_NOT_APPROVED)
+# 81 rev2 — coerência do snapshot de condição (INSTALAÇÃO RELATADA PELO AUDITOR — NÃO REAPLICAR)
 
-Substitui o rev1 `32cfcc905`, reprovado na revisão independente. Nada foi aplicado no banco hospedado nem publicado.
+## Estado vigente — relato do auditor em 09/11/2026 18:13 UTC
+- Tentativa 33 revisada independentemente: harness 352/352, CCR2 143/143; 101 corpos usados, 98 iguais a LIVE e 3 ausências esperadas das novas funções 81 antes da instalação.
+- PRE80 PASS; migration `b2b_condition_coherence_reviewed_20261109` instalada com SUCESSO pelo auditor exclusivamente em `swzpzcwiasxmjutrmvkm`; POST82 PASS. **Não reaplicar 81 nem executar PRE80 como se ainda fosse pré-instalação.**
+- Seller91 **NÃO INSTALADO**: PRE90 passou ACL/ref; respond LIVE permanece MD5 `4926a99c3fa3086b34ff25bb4b4038bb`. Aguarda aprovação humana do conector após expiração da aprovação técnica; não executar pelo agente.
+- Gates OFF, PB-001038 único e sem recebível, conforme relato. Frontend não publicado. Nenhum SQL hospedado ou operação de produção executado pelo agente nesta atualização.
+- Aprovação independente limitada ao pacote e às evidências de componente: Auth sintética, entitlements declarados e tabelas reduzidas não provam JWT/RLS/Storage/E2E real nem autorizam logística/fiscal/cobranças/envios.
+- Capturas de `attempt-29/capture-request-20261109b.json` atendidas pelos relatos de 09/11 e reconciliadas na tentativa 36 (11/11 corpo/owner/ACL). Entitlements permanece limitação declarada de schema do espelho, não captura pendente.
+- Registro aditivo: `evidence/auditor-state-20261109-1813.md` e `.json`. Vereditos e SQL históricos preservados; suas referências a “não aprovada” descrevem o estado anterior a este relato.
+
+Substitui o rev1 `32cfcc905`, reprovado na revisão independente. As seções de ensaio abaixo são históricas; não autorizam reinstalação ou publicação.
 
 ## Regra efetiva
 - **Alcance:** só parceiros que a ativação B3 já instalada marca como `required` (piloto ou `enforced`). Usa `platform_private.b2b_condition_mode` sem alteração. Hoje isso significa somente ARBio com piloto v2 `[5c4f35f8…, 7e52de9a…]`. Tenants sem ativação, como a FSF, mantêm o contrato atual. Ter plano aprovado, por si só, não bloqueia nada.
