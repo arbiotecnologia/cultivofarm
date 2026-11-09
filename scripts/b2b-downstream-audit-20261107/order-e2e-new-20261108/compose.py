@@ -435,6 +435,10 @@ def main():
    extra=json.loads(B.last("""SELECT coalesce(jsonb_agg(jsonb_build_array(n.nspname,p.proname,pg_get_function_identity_arguments(p.oid),md5(pg_get_functiondef(p.oid)),coalesce(p.proacl::text,''),pg_get_userbyid(p.proowner),p.proconfig,p.prosecdef)),'[]'::jsonb) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ('private','cf_user_guards_v1');"""))
    keys={(r[0],r[1],r[2]) for r in extra}
    state['functions']=[r for r in state['functions'] if (r[0],r[1],r[2]) not in keys]+extra
+   # C.state() traz somente o recorte histórico de relações. Os rollback finais
+   # também pinam permissões privadas novas e relações B3/catálogo: medir todos
+   # os objetos endereçáveis agora, sem descartar silenciosamente um pin ausente.
+   state['relations']=json.loads(B.last("""SELECT coalesce(jsonb_agg(jsonb_build_array(n.nspname||'.'||c.relname,coalesce(c.relacl::text,''),c.relrowsecurity,c.relforcerowsecurity,pg_get_userbyid(c.relowner))),'[]'::jsonb) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('public','platform_private','private','cf_user_guards_v1') AND c.relkind IN ('r','p','v','m','f');"""))
    return state
 
   def run_final_delivery_rollback(branch):
