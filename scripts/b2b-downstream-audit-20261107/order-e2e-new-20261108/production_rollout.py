@@ -99,7 +99,15 @@ def main():
     pilot_checks = json.loads((pilot / 'checks.json').read_text())
     assert len(partial) == 13 and all(row['status'] == 'PASS' for row in partial)
     assert len(endpoint) == 15 and all(row['status'] == 'PASS' for row in endpoint)
-    assert len(pilot_checks['checks']) == 33 and all(row['status'] == 'PASS' for row in pilot_checks['checks'])
+    assert len(pilot_checks['checks']) == 35 and all(row['status'] == 'PASS' for row in pilot_checks['checks'])
+    pilot_names = {row['test'] for row in pilot_checks['checks']}
+    assert {
+        'transaction begun before expiry and unlocked after expiry is denied at final authorization',
+        'concurrent revoke confirmed before final authorization denies writer without effects',
+        'revoke waits on the same allowlist row after final authorization and confirms after writer commit',
+        'gate OFF confirmed while writer waits on grant lock denies final authorization without effects',
+        'gate OFF waits for an already authorized writer and confirms only after its commit',
+    } <= pilot_names
     pilot_manifest = json.loads((pilot / 'manifest.json').read_text())
     assert pilot_manifest['hosted'] is False and pilot_manifest['default_enabled'] is False
     assert pilot_manifest['candidate_sha256'] == sha(pilot / 'candidate.sql.review')

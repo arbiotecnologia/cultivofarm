@@ -213,7 +213,11 @@ def run(B, Review, Q, A, choice, out):
     gate_off_before = os_effects(gate_off["id"])
     holder = B.T.session(f"BEGIN;SELECT 1 FROM platform_private.resale_pilot_allowlist_v1 WHERE id='{gate_off_grant}' FOR UPDATE;")
     time.sleep(0.1)
-    worker = B.T.session("BEGIN;" + R.os_create_sql(gate_off["id"], gate_off_item["id"], gate_off["accepted"]["updated_at"], f"pilot-gate-off-before-{run_id}"))
+    private_create = (
+        f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims='{{\"sub\":\"{Q.UADM}\",\"role\":\"authenticated\",\"iat\":1,\"exp\":4102444800}}';"
+        f"SELECT platform_private.b2b_resale_os_create_v1('{gate_off['id']}','{gate_off_item['id']}','{gate_off['accepted']['updated_at']}'::timestamptz,'pilot-gate-off-before-{run_id}');"
+    )
+    worker = B.T.session("BEGIN;" + private_create)
     B.T.wait()
     B.sql("UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false WHERE singleton;")
     assert B.last("SELECT enabled FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton;") == "f"
