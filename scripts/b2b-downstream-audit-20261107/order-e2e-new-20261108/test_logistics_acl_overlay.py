@@ -157,8 +157,12 @@ def main():
         assert B.last(f"SELECT md5(pg_get_functiondef(to_regprocedure('{SIG}')));") == "9cad2aaa995277b913f8b40816fea504"
 
         def reset_real():
-            B.sql(f"REVOKE ALL ON FUNCTION {SIG} FROM PUBLIC,anon,authenticated,service_role;"
-                  f"GRANT EXECUTE ON FUNCTION {SIG} TO service_role;")
+            B.sql(f"""DO $x$DECLARE r text;BEGIN
+              FOR r IN SELECT rolname FROM pg_roles WHERE rolname IN ('logacl_client','logacl_grantor') LOOP
+                EXECUTE format('REVOKE ALL ON FUNCTION {SIG} FROM %I CASCADE',r);
+              END LOOP;END$x$;
+              REVOKE ALL ON FUNCTION {SIG} FROM PUBLIC,anon,authenticated,service_role CASCADE;
+              GRANT EXECUTE ON FUNCTION {SIG} TO service_role;""")
             assert acl() == REAL_ACL, acl()
 
         reset_real()
