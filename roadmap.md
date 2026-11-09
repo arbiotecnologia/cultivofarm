@@ -1,8 +1,10 @@
 ## 09/11 00:29 — Auditoria 1acbd542: pacote regenerado não estava no repositório
 - [x] Confirmado: `production-rollout-posplans-20261108/manifest.json` e `00-production-pre-posplans.sql.readonly` ainda são os artefatos antigos, com PRE SHA256 `5401300b1293e0e0bc55a6e388e30cf79e1ddd10f01103a2557e7d0ef62f9bdd`; não promover esse pacote.
 - [x] A cópia nomeada `attempt-91` contém `exit=1` e logs da tentativa 28; a execução raiz posterior tem 39/39 e `exit=0`, mas ainda usa a captura anterior à correção `ORIGEM_INVALIDA`. Nenhuma delas é pacote final da captura corrigida.
-- [ ] Isolar uma nova execução descartável com a captura corrigida, gerar PRE/POST/rollbacks escopados e contenção ARBio no pacote real do repositório, com README e mapa de origem; revalidar todos os hashes e a correspondência byte a byte antes de declarar o pacote revisável.
-- [ ] Manter o pacote antigo preservado como evidência superada. Sem SQL hospedado, instalação, ativação, publicação, efeitos fiscais/financeiros ou comunicação.
+- [x] Attempt 92 preservou falha da premissa histórica `ORIGEM_INVALIDO`; attempt 93, após corrigir somente a baseline de transcrição, terminou `exit=0`: 39/39 checkpoints, 13/13 parciais, 15/15 endpoint, 30/30 contenção, UI 21/21 + 13/13 + 73/73 e typecheck 0.
+- [x] Pacote real regenerado em `production-rollout-posplans-20261108/`: 35 arquivos, README/mapa de origem/contenção, PRE SHA256 `1e71c12c3253e3c83874606c23771443d9b756048ea792cc8fc674859a6c681b`, manifesto `8b6ffefb96f7b70608dd0927b7307d43072b20ff9da7d2d478e5ad356fa588a3`; verificador independente confirmou todos os hashes/origens e 20/20 MD5.
+- [x] Pacote antigo preservado byte a byte em `evidence/superseded-production-rollout-posplans-20261108-before-attempt-93/`, com PRE `5401300b…` e manifesto `0b7bf460…`; não promovido. Sem SQL hospedado, instalação, ativação, publicação, efeitos fiscais/financeiros ou comunicação.
+- [ ] Revisão independente e etapa autenticada real permanecem NOT_RUN; pacote continua REVIEW_ONLY_INACTIVE_NOT_APPROVED.
 
 ## 09/11 00:27 — Correção factual da transcrição LIVE
 - [x] `COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDO` era somente erro de transcrição local; corrigido para `COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA` na PARTE 2 e na captura concatenada. Produção e captura original do auditor não foram tratadas como inconsistentes nem alteradas.
@@ -11,13 +13,13 @@
 
 ## 09/11 00:05 — Contenção fail-closed do piloto autenticado ARBio
 - [x] Singletons globais deixaram de ser autoridade suficiente: overlay obrigatório server-side por ator/organização/operação e referências sintéticas exatas, com validade e revogação; leituras/manutenção existentes preservadas.
-- [x] Tentativa descartável 91 `exit=0`: 39 checkpoints da composição + 30 testes de contenção. Outra organização feature ON/papel válido e ARBio fora da allowlist negados; piloto, replays, expiração, revogação e concorrência real verificados. Nenhuma autoridade em GUC/claims de cliente.
+- [x] Registro corrigido em 00:29: a cópia `attempt-91` tinha `exit=1`; a execução raiz posterior tinha 39/39, mas ainda usava a captura anterior à correção de transcrição. A evidência atual é attempt 93 `exit=0`: 39 checkpoints + 30 testes de contenção, com captura corrigida. Outra organização feature ON/papel válido e ARBio fora da allowlist negados; replays, expiração, revogação e concorrência real verificados.
 - [x] Reconciliação e rollback deny-only concluídos; histórico/recibos preservados e writers/gates fechados. README incluído; rollouts anteriores não podem ser ativados sem esta etapa. Nenhuma escrita hospedada/publicação.
 - [ ] Revisão independente e piloto autenticado real permanecem NOT_RUN; PASS descartável não certifica JWT/RLS/Storage real nem aprova ativação.
 
 ## 08/11 23:07 — Captura LIVE integral a7b973949 em duas partes
 - [x] PARTES 1 e 2 concatenadas: captura integral com 20 funções, 120 triggers e 17 relações; ref relatado `swzpzcwiasxmjutrmvkm`, candidatos ainda ausentes.
-- [x] Ensaio 91 e rollback concluídos com PRE escopado pela captura/diff independente, preservando seis guards, ACLs e planos; artefatos REVIEW_ONLY com gates OFF e README gerados. Nenhuma migração ampla, escrita hospedada ou publicação.
+- [x] SUPERADO pela attempt 93: ensaio e rollback concluídos com PRE escopado pela captura corrigida/diff independente, preservando seis guards, ACLs e planos; artefatos REVIEW_ONLY com gates OFF e README gerados. Nenhuma migração ampla, escrita hospedada ou publicação.
 
 ## 08/11 22:25 — Reconciliação semântica pós-catálogo/unidades/Price/planos
 - [x] Incorporar o PRE LIVE `CONFIRM_PRE_DRIFT`: pacote antigo preservado; nenhum grant/guard antigo restaurado. Typecheck exit 0, UI 21/21, candidata 13/13, compatibilidade OS 73/73 e build OK.
