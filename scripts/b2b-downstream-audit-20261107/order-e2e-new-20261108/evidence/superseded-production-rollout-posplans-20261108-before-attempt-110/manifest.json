@@ -1,0 +1,250 @@
+{
+  "status": "REVIEW_ONLY_INACTIVE_NOT_APPROVED",
+  "production_ref": "swzpzcwiasxmjutrmvkm",
+  "hosted_io": false,
+  "default_enabled": false,
+  "evidence_directory": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-103",
+  "baseline": "POSPLANOS + captura LIVE corrigida + 18 pins RLS/FORCE RLS/owner/ACL + diff independente; escopo estrito, sem migra\u00e7\u00e3o ampla nem reinstala\u00e7\u00e3o de planos",
+  "scope_metadata": {
+    "capture_sha256": "8a53b1443ed789c76115b9ef16807ae835e1e0bda888d50e6f1606197792a6ac",
+    "relation_security_sha256": "20a514091f0ab4301cd11f67d530e1a17b94c4a7e1fea17196f100dca51f712d",
+    "relation_security_pins": 18,
+    "independent_diff_sha256": "8af0e9df54e8802a6e6ebd2e9072a84799cbe72d2956b4bd2992a4526571ce6a",
+    "diff_baseline_sha256": "ef892c73f2640189e8f08c92351dd0f4db86a06869b34a175d968f6870f9bff8",
+    "live_reconstructed_function_count": 1415,
+    "guarded_existing_functions": 23,
+    "new_candidate_functions": [
+      "platform_private.delivery_confirm_actor_v1()",
+      "platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb)",
+      "platform_private.delivery_confirm_exact_guard_v1()",
+      "platform_private.delivery_confirm_proof_v1(entregas)",
+      "platform_private.delivery_confirm_recheck_v1(uuid,uuid)",
+      "public.rpc_entrega_confirmacao_capability_v1(uuid)",
+      "public.rpc_entrega_confirmar_manual_v1(uuid,timestamp with time zone,text,jsonb)"
+    ],
+    "changed_candidate_dependencies": [
+      "platform_private.delivery_mutation_guard_20261030()",
+      "platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb)",
+      "public.fn_validate_entrega_confirmacao()"
+    ],
+    "guarded_relations": 18,
+    "pre_triggers": 120,
+    "post_triggers": 122,
+    "outside_scope": "all other LIVE functions/relations remain untouched and are not pinned by this scoped guard",
+    "transcription_correction": "owner confirmed COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA; captured MD5 a4d47ccf5d116141ed46e9de9ea7eeaa is authoritative"
+  },
+  "current_catalog_evidence": {
+    "pre": "4fefeb522b67de9b7d6953f94942b2a130978f3fa70c6d0d786855777cbbbb00",
+    "post_plans": "35ed9044ffaf74f8f1c9d26e155a868465feb634cf48e0275b65310e40be2277",
+    "tenant_guards": 6,
+    "live_guard_capture_sha256": "8e7c2859843d6f4eb39e09e37d49be19c16a8a0c8c530b61ab6cbf26ebe4addb",
+    "live_guard_function_md5": {
+      "platform_private.entregas_catalog_tenant_guard()": "86711a2f96fee0a3d0f9c02b55c55bcd",
+      "platform_private.estoque_produto_catalog_tenant_guard()": "874c9ca8b5b4e307cf995a0197f98efc",
+      "platform_private.lotes_catalog_tenant_guard()": "0fc1d2741a73a92ade8e558e3dd58c20",
+      "platform_private.ordens_servico_catalog_tenant_guard()": "8abd58791e7e27336b07e648cdef35e7",
+      "platform_private.produto_etiquetas_catalog_tenant_guard()": "d53f9827e3b5504e632fffe9949fa8c4",
+      "platform_private.programacao_producao_catalog_tenant_guard()": "2e25fe68cf66a79fbc1d2eecee8b20e9"
+    }
+  },
+  "pilot_containment": {
+    "required_before_activation": true,
+    "candidate_sha256": "e4b1ceeee68fe1a2fe44702b8dc4e466ee2f045957a10f07b0bd911b694d6e3d",
+    "checks": 30,
+    "master_switch_is_not_authority": true
+  },
+  "previous_package": {
+    "manifest_sha256": "bd09de0106bc47ea60a888883a8d9f4c1bb5ed1eca4a3d520e8e686154248693",
+    "pre_sha256": "f07b1fdacdff5d5e2adcf43795308c23bc0b66a9b3ffc0f5963343aeb0fc14fd",
+    "promoted": false,
+    "archive": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/superseded-production-rollout-posplans-20261108-before-attempt-103"
+  },
+  "order": [
+    "00 production PRE",
+    "11/12 confirmation closed",
+    "20/21/22 send closed",
+    "30/31/32 physical OFF",
+    "40/41/42 logistics OFF",
+    "50/51/52 endpoint OFF",
+    "60/61/62 ARBio containment OFF"
+  ],
+  "rollback_order": [
+    "89 pilot containment",
+    "90 endpoint+reader",
+    "94 logistics",
+    "93 physical",
+    "92 composed send measured after physical",
+    "91 composed confirmation measured after send"
+  ],
+  "final_artifact_execution": {
+    "status": "PASS",
+    "artifacts": 24,
+    "evidence_sha256": "2161da4fc96e09bbf7a181f2655e30f1024e7bfa4d106eebbcdb3c86192c70ef"
+  },
+  "excluded": [
+    "commercial plan reinstall/rollback",
+    "B4",
+    "fiscal bridge",
+    "NF/NFS-e",
+    "receivables",
+    "payments",
+    "communication",
+    "frontend publication",
+    "automatic gate activation"
+  ],
+  "authenticated_real_proof": "NOT_RUN",
+  "files": {
+    "00-production-pre-posplans.sql.readonly": {
+      "sha256": "00f726d4dbc254aaa59bce376ab7b53f2985d1a1b80c1160df0e1cc830501616",
+      "bytes": 248384
+    },
+    "11-confirmation-install.sql.review": {
+      "sha256": "809223b1b6b02041241f9d4bd5ad7c33635aab7bcad18f420a4ac944072163ae",
+      "bytes": 525554
+    },
+    "12-confirmation-post.sql.readonly": {
+      "sha256": "e45c25b5bec99c6cb6d57b717ab82e9c97b2306966e984c9513adce42e01cd16",
+      "bytes": 243304
+    },
+    "20-send-pre.sql.readonly": {
+      "sha256": "79a95847c6e3e824e6f205e4a643c597c2fd4882c661e389e7260d383400afd7",
+      "bytes": 241722
+    },
+    "21-send-install.sql.review": {
+      "sha256": "394fcbf719ba56c3a1c663c376d1fbc6e6cc33ecd8b037d9f711c12a369dd9ef",
+      "bytes": 502057
+    },
+    "22-send-post.sql.readonly": {
+      "sha256": "12bb897db3595f88177db3e4712dd7b7bb8232cd4c444e684a74e3ac413dff5f",
+      "bytes": 244439
+    },
+    "30-physical-pre-after-confirmation-send.sql.readonly": {
+      "sha256": "607ff4ed23f662be2aec66a29c14019213899acc64dbabf414ff72069d18efbb",
+      "bytes": 39396
+    },
+    "31-physical-install.sql.review": {
+      "sha256": "c6d42ee3cc84b6d1ed7506e5643820086479d0f10c457091ceb7c8612d031632",
+      "bytes": 113301
+    },
+    "32-physical-post.sql.readonly": {
+      "sha256": "68baf979ce5690f76fec433d6a24b4a3abf2cf1fd8e5e3fe3a4e0a08098db11e",
+      "bytes": 22088
+    },
+    "40-logistics-pre-after-physical.sql.readonly": {
+      "sha256": "a5ecac743777804ee2fbb65a29ec04c43e77df74cd7a23e46a682dc41399c97a",
+      "bytes": 12233
+    },
+    "41-logistics-install.sql.review": {
+      "sha256": "56631263e6ebfe51e9f02822f72c98f895a728f762d3c0ef62c575e44ee7ec09",
+      "bytes": 126058
+    },
+    "42-logistics-post.sql.readonly": {
+      "sha256": "e893bc9fe098029b0a1d4f997cfe8ed4e48074b89dddc3d1efaf1df6e98dc0ad",
+      "bytes": 17090
+    },
+    "50-endpoint-reader-pre.sql.readonly": {
+      "sha256": "07329a906191d729e4c62c1c77655c197c605b6a26d7a02ca6cdbe915b4421cf",
+      "bytes": 2226
+    },
+    "51-endpoint-reader-install.sql.review": {
+      "sha256": "617ee5279d9bcf3226c923b29767620707cb28a6c581cf01309db771960d00cb",
+      "bytes": 9848
+    },
+    "52-endpoint-reader-post.sql.readonly": {
+      "sha256": "bff4207adda764c9a4d7df61f8239137eee983d6a00852c72c30986770fcef88",
+      "bytes": 1309
+    },
+    "60-pilot-containment-pre.sql.readonly": {
+      "sha256": "a359efa338df4841a241b8f3535edbc2422f68f63cd155359433ca93f1f3a459",
+      "bytes": 10364
+    },
+    "61-pilot-containment-install.sql.review": {
+      "sha256": "f15069c4fad6b8a9210a1825d01e7a231f828c901a03e17462a72eb45c26aa99",
+      "bytes": 136847
+    },
+    "62-pilot-containment-post.sql.readonly": {
+      "sha256": "172569d55d02da82340044e0703b505f1aa740dcb722a7cdccec774ecfb5dacb",
+      "bytes": 11749
+    },
+    "89-pilot-containment-rollback-deny.sql.review": {
+      "sha256": "36d48a9f26ca524d4de6b5d588ae06825f989340ba7f0f3361cf0afa0d0e7c7f",
+      "bytes": 884
+    },
+    "90-endpoint-reader-rollback-deny.sql.review": {
+      "sha256": "2c70397082169b35840bf276d9da40e0a471d55d2374f11eeec6b22daa69ec40",
+      "bytes": 349
+    },
+    "91-confirmation-rollback-deny.sql.review": {
+      "sha256": "46f407613558bccf48726e6cf9eeca9bfa39e60c7d24b214b2753d657f7451fc",
+      "bytes": 246562
+    },
+    "92-send-rollback-deny.sql.review": {
+      "sha256": "fee528f4ee46f38db524a848d162484d2029c14759816a1724a340859d4ba190",
+      "bytes": 246863
+    },
+    "93-physical-rollback-deny.sql.review": {
+      "sha256": "a02aa055b561fad022bea6c257a517aeac67ae2ae4a98b897ca7d97c20b1d72e",
+      "bytes": 491
+    },
+    "94-logistics-rollback-deny.sql.review": {
+      "sha256": "bc03a15aeb273605cec9f550d15aa8f452203ed2ff56dbc9b24eeec2a2d7974a",
+      "bytes": 760
+    },
+    "README.md": {
+      "sha256": "d736a40388890ea34afaa5a58ca6aff342188c8b8ddb0d1fe8dde29164291f67",
+      "bytes": 5187
+    },
+    "artifact-sources.json": {
+      "sha256": "550cc7e20169e958decfaeda13cb564e95784ad101d46cf9a753d09948066a02",
+      "bytes": 16294
+    },
+    "evidence-checks.json": {
+      "sha256": "1545d9fd8bb0965bad8818017837723a31d7a1522501435b33d7af67f2f5f245",
+      "bytes": 10842
+    },
+    "evidence-final-artifact-execution.json": {
+      "sha256": "2161da4fc96e09bbf7a181f2655e30f1024e7bfa4d106eebbcdb3c86192c70ef",
+      "bytes": 5636
+    },
+    "evidence-live-catalog-guards.json": {
+      "sha256": "3f10a51d264d0c40afe745467a6e20a49bf0c748fb06f0ff3edf220dbf1b9bab",
+      "bytes": 1161
+    },
+    "evidence-live-catalog-guards.sql.capture": {
+      "sha256": "8e7c2859843d6f4eb39e09e37d49be19c16a8a0c8c530b61ab6cbf26ebe4addb",
+      "bytes": 7140
+    },
+    "evidence-live-relation-security.json": {
+      "sha256": "20a514091f0ab4301cd11f67d530e1a17b94c4a7e1fea17196f100dca51f712d",
+      "bytes": 3643
+    },
+    "evidence-pilot-checks.json": {
+      "sha256": "dc9d4b1313423559d7e39a6e0927d0f5a105f5e67b8470950405ea106c26e2c2",
+      "bytes": 4477
+    },
+    "evidence-run.exitcode": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "evidence-run.stderr.txt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "evidence-run.stdout.txt": {
+      "sha256": "c691f99c21a610df80211f0609cd8be4b0c8cecc08b2ed1ace27aafc0dacfd77",
+      "bytes": 8844
+    },
+    "evidence-scope-metadata.json": {
+      "sha256": "7e073da436afe022154166c49e4c91c822d8d63be43fa3f22511a2b7dc9aa5c8",
+      "bytes": 1566
+    },
+    "evidence-source-manifest.json": {
+      "sha256": "92cae3e4d3146685c5d07942a0a159143d765a6c08ca24c02c8cf8fc0ed2f904",
+      "bytes": 573483
+    },
+    "evidence-summary.json": {
+      "sha256": "1e13201b89895cc686c7be7941760a44e92993d0bd8f8731201e383f60f5fcba",
+      "bytes": 5328
+    }
+  }
+}

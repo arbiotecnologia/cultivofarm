@@ -2,7 +2,7 @@
   "status": "PASS",
   "scope": "exact final artifacts on fresh disposable PostgreSQL 17; synthetic schema/Auth only",
   "hosted": false,
-  "package": "/tmp/new-order-e2e-tpgc3fco/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108",
+  "package": "/tmp/new-order-e2e-0gomvjwd/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108",
   "runner_sha256": "3998af2101b23b79340388afefe726245b2346932830727adad4ff6f03df2a98",
   "artifacts": [
     {
@@ -82,22 +82,22 @@
     },
     {
       "file": "60-pilot-containment-pre.sql.readonly",
-      "sha256": "a359efa338df4841a241b8f3535edbc2422f68f63cd155359433ca93f1f3a459",
+      "sha256": "439009f4ae8d87a24ced0584ca3bf24b132da1603de54fd6479c5b61e301eea0",
       "returncode": 0
     },
     {
       "file": "61-pilot-containment-install.sql.review",
-      "sha256": "f15069c4fad6b8a9210a1825d01e7a231f828c901a03e17462a72eb45c26aa99",
+      "sha256": "a9650b271a4d5d759f1976dfcde87082d9dc672e56ed00a28b6496bb9cb83b9a",
       "returncode": 0
     },
     {
       "file": "62-pilot-containment-post.sql.readonly",
-      "sha256": "172569d55d02da82340044e0703b505f1aa740dcb722a7cdccec774ecfb5dacb",
+      "sha256": "040d6bae338fd29c831663b7a1e8dc1f507399362d121bc0e61c472d62ea2d84",
       "returncode": 0
     },
     {
       "file": "89-pilot-containment-rollback-deny.sql.review",
-      "sha256": "36d48a9f26ca524d4de6b5d588ae06825f989340ba7f0f3361cf0afa0d0e7c7f",
+      "sha256": "a04eaf2da211f17fdbf19cba6e613a1bfce55e6a5593617adf8e0b2e0583bd15",
       "returncode": 0
     },
     {
@@ -117,12 +117,12 @@
     },
     {
       "file": "92-send-rollback-deny.sql.review",
-      "sha256": "fee528f4ee46f38db524a848d162484d2029c14759816a1724a340859d4ba190",
+      "sha256": "23a7364afd6a87c219da234aebeaac281ed3bc1c2c18601b6ddeb27055473974",
       "returncode": 0
     },
     {
       "file": "91-confirmation-rollback-deny.sql.review",
-      "sha256": "46f407613558bccf48726e6cf9eeca9bfa39e60c7d24b214b2753d657f7451fc",
+      "sha256": "41d5a93b4e6a15bf5c4349a52afde807b26de65d01ffdb37e1619286f8375a85",
       "returncode": 0
     }
   ],
@@ -170,8 +170,8 @@
     "movements": 0,
     "deliveries": 0
   },
-  "plans_before_md5": "49074c8869add5d990396719ebc6d75c",
-  "plans_after_md5": "49074c8869add5d990396719ebc6d75c",
+  "plans_before_md5": "7f140ef706366c8434c0280a54d7eef5",
+  "plans_after_md5": "7f140ef706366c8434c0280a54d7eef5",
   "gates_activated": false,
   "authenticated_real_proof": "NOT_RUN"
 }

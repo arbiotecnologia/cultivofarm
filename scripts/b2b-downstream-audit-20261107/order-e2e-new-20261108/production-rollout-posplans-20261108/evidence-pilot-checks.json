@@ -165,6 +165,18 @@
       "status": "PASS"
     },
     {
+      "test": "transaction begun before expiry and unlocked after expiry is denied at final authorization",
+      "status": "PASS"
+    },
+    {
+      "test": "concurrent revoke confirmed before final authorization denies writer without effects",
+      "status": "PASS"
+    },
+    {
+      "test": "revoke waits on the same allowlist row after final authorization and confirms after writer commit",
+      "status": "PASS"
+    },
+    {
       "test": "master switch OFF remains fail closed even with valid grants",
       "status": "PASS",
       "expected": [

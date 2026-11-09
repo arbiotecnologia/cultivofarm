@@ -46,7 +46,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "fafa0029-6fb0-48d6-bca7-385a4f203736"
+    "order_id": "c6c62cb1-7813-4735-8af8-a581e5b9d4c9"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -67,7 +67,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "96092c57-8663-4f13-9e0e-6836caddf789"
+    "os_id": "84031b43-05db-4ca4-a87b-fdf8dc604d06"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -76,12 +76,12 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "30ad011e-ee1e-4d60-8a04-454ed542694a"
+    "delivery_id": "d7b0a508-4bf6-43e0-8e52-d015d64d7226"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "101fd333-7a09-4f37-b004-d249c7f82875"
+    "delivery_id": "2348ccc1-762d-479d-b066-3b86a754540f"
   },
   {
     "test": "review70 two_items_only_one_os_and_delivery",
@@ -279,12 +279,12 @@
   {
     "test": "manual agronomic physical flow still passes after resale candidate",
     "status": "PASS",
-    "delivery_id": "28f79b06-e43b-4049-b832-2b927bd2cd6b"
+    "delivery_id": "19d5c96f-df07-43c0-9579-cbb493007971"
   },
   {
     "test": "mandatory ARBio actor org exact synthetic references scoped pilot with cross tenant denial expiry revocation replay and real concurrency",
     "status": "PASS",
-    "checks": 30,
+    "checks": 33,
     "hosted": false
   },
   {
