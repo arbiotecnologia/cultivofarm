@@ -1,0 +1,36 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-dqVAtPYD/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 17, in main
+    B=load('new_finished',physical/'test_after.py').B
+      ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-dqVAtPYD/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 13, in load
+    s=importlib.util.spec_from_file_location(name,p);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
+                                                                                          ~~~~~~~~~~~~~~~~~~~~^^^
+  File "<frozen importlib._bootstrap_external>", line 1023, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/tmp/new-order-e2e-dqVAtPYD/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py", line 10, in <module>
+    spec.loader.exec_module(B)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "<frozen importlib._bootstrap_external>", line 1023, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/tmp/new-order-e2e-dqVAtPYD/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 27, in <module>
+    import restore
+  File "/tmp/new-order-e2e-dqVAtPYD/project/scripts/delivery-atomic-hardening-20261030/restore.py", line 8, in <module>
+    import restore_stack
+ModuleNotFoundError: No module named 'restore_stack'
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-dqVAtPYD/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 813, in <module>
+    if __name__=='__main__':sys.exit(main())
+                                     ~~~~^^
+  File "/tmp/new-order-e2e-dqVAtPYD/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 811, in main
+    (OUT/'checks.json').write_text(json.dumps(checks,indent=2)+'\n')
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/pathlib/_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/pathlib/_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/pathlib/_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/new-order-e2e-dqVAtPYD/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/current/checks.json'
