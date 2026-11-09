@@ -189,9 +189,6 @@ def main():
           GRANT USAGE ON SCHEMA platform_private TO logacl_grantor;
           REVOKE EXECUTE ON FUNCTION {SIG} FROM service_role;
           GRANT EXECUTE ON FUNCTION {SIG} TO logacl_grantor WITH GRANT OPTION;
-          SET ROLE logacl_grantor; GRANT EXECUTE ON FUNCTION {SIG} TO service_role; RESET ROLE;
-          REVOKE EXECUTE ON FUNCTION {SIG} FROM logacl_grantor CASCADE;
-          GRANT EXECUTE ON FUNCTION {SIG} TO logacl_grantor WITH GRANT OPTION;
           SET ROLE logacl_grantor; GRANT EXECUTE ON FUNCTION {SIG} TO service_role; RESET ROLE;""")
         assert "service_role=X/logacl_grantor" in acl(), acl()
         expect_error("negado: grantor diferente", guard, msg)
