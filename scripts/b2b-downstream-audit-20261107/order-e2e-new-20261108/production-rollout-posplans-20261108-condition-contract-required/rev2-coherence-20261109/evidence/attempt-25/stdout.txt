@@ -1,0 +1,38 @@
+FAIL CCR2 LIVE: partner_users.valid_from timestamptz NOT NULL DEFAULT now() 
+FAIL CCR2 LIVE23: md5(pg_get_functiondef) dos 23 no espelho = captura produção 09/11 {'platform_private.platform_actor_access_ready(uuid)': {'mirror_before': '9069d50e6a6ac54cf0b2efe1ea1a9129', 'live': '048249c0c2106c3761e26eacb8d0de84', 'mirror_after': '9069d50e6a6ac54cf0b2efe1ea1a9129', 'acl_live': '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}', 'acl_after': '', 'rc': 3, 'err': 'ERROR:  function auth.jwt() does not exist\nLINE 8: ... AND auth.uid()=p_us
+FAIL CCR2 LIVE23: ACL (aclitems ordenados) dos 23 no espelho = ACL produção 09/11 {'platform_private.platform_actor_access_ready(uuid)': ('', '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}'), 'platform_private.entitlements_for_user(uuid)': ('', '{postgres=X/postgres,service_role=X/postgres}'), 'platform_private.has_role(uuid,app_role)': (None, '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'), 'public.has_role(uuid,app_role)': ('
+FAIL CCR2 LIVE7 attempt_authz: comprador no próprio parceiro autorizado ERROR:  function platform_private.assert_b2b_partner_scope(uuid, uuid) does not exist
+LINE 1: SELECT platform_private.assert_b2b_partner_scope(_uid,_partn...
+               ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+QUERY:  SELECT platf | stdout:00000000-0000-0000-0000-000000000011
+FAIL CCR2 CONTROLE POSITIVO: simulação com escolha válida devolve cart_hash (sem payment_choice_required) ERROR:  function platform_private.assert_b2b_partner_scope(uuid, uuid) does not exist
+LINE 1: SELECT platform_private.assert_b2b_partner_scope(_uid,_partn...
+               ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+QUERY:  SELECT platform_private.assert_b2b_partner_scope(_uid,_partner)
+CONTEXT:  PL/pgSQL function platform_private.c2_
+FAIL CCR2 CONTROLE NEGATIVO: mesma simulação sem escolha -> payment_choice_required (erro é da escolha, não da guarda 81) ERROR:  function platform_private.assert_b2b_partner_scope(uuid, uuid) does not exist
+LINE 1: SELECT platform_private.assert_b2b_partner_scope(_uid,_partn...
+               ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+QUERY:  SELECT platform_private.assert_b2b_partner_scope(_uid,_partner)
+CONTEXT:  PL/pgSQL function platform_private.c2_
+FAIL CCR2 positivo: writer REAL de condição (parceiro P do piloto) cria pedido com snapshot coerente ERROR:  function platform_private.assert_b2b_partner_scope(uuid, uuid) does not exist
+LINE 1: SELECT platform_private.assert_b2b_partner_scope(_uid,_partn...
+               ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+QUERY:  SELECT platform_private.assert_b2b_partner_scope(_uid,_partner)
+CONTEXT:  PL/pgSQL function platform_private.c2_
+FAIL CCR2 positivo: novo parceiro PN (piloto ampliado) cria pedido com snapshot coerente ERROR:  function platform_private.assert_b2b_partner_scope(uuid, uuid) does not exist
+LINE 1: SELECT platform_private.assert_b2b_partner_scope(_uid,_partn...
+               ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+QUERY:  SELECT platform_private.assert_b2b_partner_scope(_uid,_partner)
+CONTEXT:  PL/pgSQL function platform_private.c2_
+FAIL CCR2 alcance: tenant F sem ativação segue contrato atual (sem bloqueio global) ERROR:  function platform_private.assert_b2b_partner_scope(uuid, uuid) does not exist
+LINE 1: SELECT platform_private.assert_b2b_partner_scope(_uid,_partn...
+               ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+QUERY:  SELECT platform_private.assert_b2b_partner_scope(_uid,_partner)
+CONTEXT:  PL/pgSQL function platform_private.c2_
