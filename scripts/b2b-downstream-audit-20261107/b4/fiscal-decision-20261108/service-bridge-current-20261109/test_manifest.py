@@ -40,14 +40,18 @@ def main():
         check(f"dependência estrita contém {token}", token in strict)
     check("dependência não contém SELECT $$", "SELECT$$" not in strict.replace(" ", ""))
     check("rollback restaura negação, não liberação", "B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN" in (H / "04-rollback-deny.sql.review").read_text())
-    check("PRE exige writer legado negado", "c49cc7ccedbcb28cba9b816b7e47c521" in (H / "01-pre.sql.readonly").read_text() and "B2B_AUTHORIZED_FISCAL_DOCUMENT_REQUIRED" in (H / "01-pre.sql.readonly").read_text())
-    frozen_manifest = json.loads((H.parent / "service-bridge/manifest.json").read_text())
-    base = H.parents[2]
+    pre = (H / "01-pre.sql.readonly").read_text()
+    check("PRE exige writer legado negado", "c49cc7ccedbcb28cba9b816b7e47c521" in pre and "3a4ca7fcd75f9fd3a183b6917fe05cd2" in pre and "B2B_AUTHORIZED_FISCAL_DOCUMENT_REQUIRED" in (H / "dependency.before-deny.sql").read_text())
+    frozen_dir = H.parent / "service-bridge"
+    frozen_manifest = json.loads((frozen_dir / "manifest.json").read_text())
     drift = []
-    for rel, expected_sha in frozen_manifest["source_sha256"].items():
-        path = base / rel
+    for name, expected_sha in frozen_manifest["outputs"].items():
+        path = frozen_dir / name
         if not path.is_file() or sha(path) != expected_sha:
-            drift.append(rel)
+            drift.append(name)
+    b4_file = H.parents[1] / "02-install.sql.review"
+    if not b4_file.is_file() or sha(b4_file) != frozen_manifest["b4_sha256"]:
+        drift.append("b4/02-install.sql.review")
     check("B4 e ponte anteriores permanecem byte a byte", not drift, drift)
     evidence = H / "evidence/strict-09/evidence-b4-shared-impact.json"
     result = json.loads(evidence.read_text())
