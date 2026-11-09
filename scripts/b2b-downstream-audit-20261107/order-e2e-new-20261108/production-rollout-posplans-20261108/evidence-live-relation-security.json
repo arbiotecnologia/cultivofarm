@@ -1,0 +1,25 @@
+{
+  "expected_ref": "swzpzcwiasxmjutrmvkm",
+  "source": "independent_readonly_live_capture_reported_by_owner_20261109T0037Z",
+  "hosted_io_by_agent": false,
+  "relations": [
+    {"schema":"platform_private","name":"envase_insert_permits_v1","rls":false,"force_rls":false,"owner":"postgres","acl":"{postgres=arwdDxtm/postgres}"},
+    {"schema":"public","name":"catalogo_volumes","rls":true,"force_rls":false,"owner":"postgres","acl":"{postgres=arwdDxtm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}"},
+    {"schema":"public","name":"clientes","rls":true,"force_rls":false,"owner":"postgres","acl":"{postgres=arwdDxtm/postgres,anon=arwdm/postgres,authenticated=arwdm/postgres,service_role=arwdDxtm/postgres}"},
+    {"schema":"public","name":"entrega_comprovantes","rls":true,"force_rls":false,"owner":"postgres","acl":"{postgres=arwdDxtm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}"},
+    {"schema":"public","name":"entregas","rls":true,"force_rls":false,"owner":"postgres","acl":"{postgres=arwdDxtm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}"},
+    {"schema":"public","name":"estoque_movimentacoes","rls":true,"force_rls":false,"owner":"postgres","acl":"{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=r/postgres}"},
+    {"schema":"public","name":"estoque_produto","rls":true,"force_rls":false,"owner":"postgres","acl":"{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=r/postgres}"},
+    {"schema":"public","name":"lotes","rls":true,"force_rls":false,"owner":"postgres","acl":"{postgres=arwdDxtm/postgres,anon=arwd/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres}"},
+    {"schema":"public","name":"microrganismos","rls":true,"force_rls":false,"owner":"postgres","acl":"{postgres=arwdDxtm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}"},
+    {"schema":"public","name":"ordens_servico","rls":true,"force_rls":false,"owner":"postgres","acl":"{postgres=arwdDxtm/postgres,anon=arwdm/postgres,authenticated=arwdm/postgres,service_role=arwdDxtm/postgres}"},
+    {"schema":"public","name":"organizations","rls":true,"force_rls":false,"owner":"postgres","acl":"{postgres=arwdDxtm/postgres,anon=m/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}"},
+    {"schema":"public","name":"partner_order_items","rls":true,"force_rls":false,"owner":"postgres","acl":"{postgres=arwdDxtm/postgres,anon=arwdm/postgres,authenticated=arwdm/postgres,service_role=arwdDxtm/postgres}"},
+    {"schema":"public","name":"product_packagings","rls":true,"force_rls":false,"owner":"postgres","acl":"{postgres=arwdDxtm/postgres}"},
+    {"schema":"public","name":"product_sale_units","rls":true,"force_rls":false,"owner":"postgres","acl":"{postgres=arwdDxtm/postgres}"},
+    {"schema":"public","name":"produto_etiquetas","rls":true,"force_rls":false,"owner":"postgres","acl":"{postgres=arwdDxtm/postgres,anon=arwdm/postgres,authenticated=arwdm/postgres,service_role=arwdDxtm/postgres}"},
+    {"schema":"public","name":"produtos","rls":true,"force_rls":false,"owner":"postgres","acl":"{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=r/postgres}"},
+    {"schema":"public","name":"profiles","rls":true,"force_rls":false,"owner":"postgres","acl":"{postgres=arwdDxtm/postgres,anon=arwdm/postgres,authenticated=arwdm/postgres,service_role=arwdDxtm/postgres}"},
+    {"schema":"public","name":"programacao_producao","rls":true,"force_rls":false,"owner":"postgres","acl":"{postgres=arwdDxtm/postgres,anon=arwdm/postgres,authenticated=arwdm/postgres,service_role=arwdDxtm/postgres}"}
+  ]
+}

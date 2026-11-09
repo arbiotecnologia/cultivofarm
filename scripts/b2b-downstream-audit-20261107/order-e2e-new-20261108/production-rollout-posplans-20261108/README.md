@@ -5,6 +5,7 @@
 - Nenhuma operação hospedada, instalação, ativação, publicação, emissão fiscal, cobrança ou comunicação foi executada.
 - Este pacote substitui o rollout POSPLANOS anterior, cujo PRE agregado antigo não corresponde à captura LIVE reconciliada.
 - O PRE atual é escopado pela captura LIVE integral, pelo diff independente e pelas dependências efetivamente alteradas. Funções e relações fora do recorte não são redefinidas nem pinadas em versões antigas.
+- O complemento LIVE independente fixa RLS, FORCE RLS, owner e ACL de 18 relações no PRE e no POST. `platform_private.envase_insert_permits_v1` permanece com RLS e FORCE RLS desligados e ACL somente do proprietário; as 17 relações públicas permanecem com RLS ligado, FORCE RLS desligado e exatamente as ACLs capturadas. Nenhum grant é acrescentado.
 - A captura corrigida contém `COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA`; o MD5 `a4d47ccf5d116141ed46e9de9ea7eeaa` da sobrecarga curta foi conferido com as demais 19 definições.
 - PASS em PostgreSQL descartável e testes locais não comprova JWT, RLS, Storage, navegador, sessão real nem autoridade hospedada.
 
@@ -25,7 +26,7 @@
 6. `50`/`51`/`52`: leitor e endpoint de OS com gate OFF.
 7. `60`/`61`/`62`: contenção obrigatória do piloto ARBio, ainda com ambos os gates OFF.
 
-Não existe script de ativação. `finished_product_gate_v1` e `b2b_resale_logistics_gate_v1` são somente chaves-mestras: a operação exige também concessões server-side exatas por ator, organização, operação e referências sintéticas, com validade e revogação. Outra organização e ator ARBio fora da allowlist permanecem negados.
+Não existe script de ativação. `finished_product_gate_v1` e `b2b_resale_logistics_gate_v1` são somente chaves-mestras: a operação exige também concessões server-side exatas por ator, organização, operação e referências sintéticas, com validade e revogação. A allowlist é privada, sem privilégios para PUBLIC/anon/authenticated/service_role; GUC ou claims do cliente não substituem sua autoridade. Outra organização com feature ON/papel válido e ator ARBio fora da allowlist permanecem negados. Procedimento manual ou documentação, isoladamente, não autoriza abrir qualquer gate global.
 
 ## Rollback deny-only
 
@@ -37,6 +38,7 @@ Não usar o antigo rollback isolado de envio: seus guards globais foram superado
 
 - `evidence-summary.json`: contagens e limites da execução.
 - `evidence-source-manifest.json`: hashes das fontes presentes no espelho do ensaio.
+- `evidence-live-relation-security.json`: complemento independente com os 18 pins de RLS/FORCE RLS/owner/ACL.
 - `artifact-sources.json`: origem e hash de cada artefato copiado ou insumo de cada arquivo gerado.
 - `manifest.json`: SHA256 e tamanho de todos os arquivos do pacote.
 - `verify_production_rollout.py`, na pasta pai, confere novamente arquivos, origens, captura e resultados sem conexão hospedada.

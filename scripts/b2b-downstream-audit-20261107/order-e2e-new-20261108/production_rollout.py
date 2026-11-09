@@ -76,6 +76,8 @@ def main():
         assert required.is_dir(), f'missing fresh artifact directory: {required}'
     scope_metadata = json.loads((delivery / 'scope-metadata.json').read_text())
     assert scope_metadata['capture_sha256'] == sha(current_scope.CAPTURE_PATH)
+    assert scope_metadata['relation_security_sha256'] == sha(current_scope.RELATION_SECURITY_PATH)
+    assert scope_metadata['relation_security_pins'] == 18
     assert scope_metadata['independent_diff_sha256'] == sha(current_scope.DIFF_PATH)
     assert scope_metadata['guarded_existing_functions'] >= 20
     assert scope_metadata['pre_triggers'] == 120
@@ -156,13 +158,14 @@ def main():
         }
 
     generated('00-production-pre-posplans.sql.readonly', initial, [
-        current_scope.CAPTURE_PATH, current_scope.DIFF_PATH,
+        current_scope.CAPTURE_PATH, current_scope.RELATION_SECURITY_PATH, current_scope.DIFF_PATH,
         delivery / 'scope-pre.json', delivery / 'state.sql.review',
         plan_post_path, H / 'current_scope.py',
     ])
     artifacts = {
         'evidence-live-catalog-guards.sql.capture': reconciliation / 'live-catalog-guards-20261108.sql.capture',
         'evidence-live-catalog-guards.json': reconciliation / 'live-catalog-guards-20261108.json',
+        'evidence-live-relation-security.json': current_scope.RELATION_SECURITY_PATH,
         'evidence-source-manifest.json': source_manifest_path,
         'evidence-run.stdout.txt': E / 'run.stdout.txt',
         'evidence-run.stderr.txt': E / 'run.stderr.txt',
@@ -211,6 +214,8 @@ def main():
         'capture_functions_md5_verified': 20,
         'capture_triggers': len(capture['triggers']),
         'capture_relations': len(capture['relations']),
+        'relation_security_pins': len(current_scope.SECURITY_RELATIONS),
+        'relation_security_sha256': sha(current_scope.RELATION_SECURITY_PATH),
         'transcription_correction': 'COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA; MD5 a4d47ccf5d116141ed46e9de9ea7eeaa',
         'composition_checks': len(checks),
         'partial_regressions': len(partial),
@@ -244,7 +249,7 @@ def main():
         'hosted_io': False,
         'default_enabled': False,
         'evidence_directory': rel(E),
-        'baseline': 'POSPLANOS + captura LIVE corrigida + diff independente; escopo estrito, sem migração ampla nem reinstalação de planos',
+        'baseline': 'POSPLANOS + captura LIVE corrigida + 18 pins RLS/FORCE RLS/owner/ACL + diff independente; escopo estrito, sem migração ampla nem reinstalação de planos',
         'scope_metadata': scope_metadata,
         'current_catalog_evidence': {
             'pre': sha(E / 'current-catalog-baseline.json'),

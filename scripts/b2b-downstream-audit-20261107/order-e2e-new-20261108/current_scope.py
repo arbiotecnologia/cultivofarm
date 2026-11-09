@@ -15,9 +15,11 @@ from pathlib import Path
 H = Path(__file__).resolve().parent
 RECONCILIATION = H / "reconciliation-posplans-20261108"
 CAPTURE_PATH = RECONCILIATION / "live-current-metadata-a7b973949.json"
+RELATION_SECURITY_PATH = RECONCILIATION / "live-current-relation-security-20261109.json"
 DIFF_PATH = RECONCILIATION / "live-pre-drift-411cbbc.json"
 DIFF_BASELINE_PATH = H / "evidence/posplans-reconciliation-20261108-attempt10/delivery-confirmation/pre-state.json"
 CAPTURE = json.loads(CAPTURE_PATH.read_text())
+RELATION_SECURITY = json.loads(RELATION_SECURITY_PATH.read_text())
 DIFF = json.loads(DIFF_PATH.read_text())
 DIFF_BASELINE = json.loads(DIFF_BASELINE_PATH.read_text())
 REF = "swzpzcwiasxmjutrmvkm"
@@ -29,6 +31,22 @@ assert len(DIFF["functions"]["removed"]) == 126
 assert len(DIFF["functions"]["added"]) == 232
 assert len(DIFF["relations"]["removed"]) == 9
 assert len(DIFF["relations"]["added"]) == 9
+assert RELATION_SECURITY["expected_ref"] == REF
+assert RELATION_SECURITY["hosted_io_by_agent"] is False
+assert len(RELATION_SECURITY["relations"]) == 18
+SECURITY_RELATIONS = {
+    f"{row['schema']}.{row['name']}": row
+    for row in RELATION_SECURITY["relations"]
+}
+assert len(SECURITY_RELATIONS) == 18
+assert {f"public.{row['table']}" for row in CAPTURE["relations"]} < set(SECURITY_RELATIONS)
+for row in CAPTURE["relations"]:
+    security = SECURITY_RELATIONS[f"public.{row['table']}"]
+    assert security["acl"] == row["acl"] and security["owner"] == row["owner"]
+    assert security["rls"] is True and security["force_rls"] is False
+private_security = SECURITY_RELATIONS["platform_private.envase_insert_permits_v1"]
+assert private_security["rls"] is False and private_security["force_rls"] is False
+assert private_security["acl"] == "{postgres=arwdDxtm/postgres}"
 
 
 def sha(path: Path) -> str:
@@ -260,7 +278,7 @@ def _pair(pre_state: dict, post_state: dict, initial: bool = True) -> tuple[dict
 
     pre_relations, post_relations = _relation_rows(pre_state), _relation_rows(post_state)
     live_relations = _live_relations()
-    capture_relations = {f"public.{row['table']}": row for row in CAPTURE["relations"]}
+    capture_relations = SECURITY_RELATIONS
     private_pre = {key for key in pre_relations if key.startswith("platform_private.")}
     required_relations = set(capture_relations) | private_pre
     changed_relations = {key for key in pre_relations.keys() & post_relations.keys() if pre_relations[key] != post_relations[key]}
@@ -273,19 +291,17 @@ def _pair(pre_state: dict, post_state: dict, initial: bool = True) -> tuple[dict
         live = live_relations.get(name) if initial else pre_relations.get(name)
         if name in capture_relations:
             captured = capture_relations[name]
-            if live is None:
-                # The integral capture proves owner/ACL but did not request RLS
-                # flags for these newer relations. NULL means not captured.
-                live = [name, captured["acl"], None, None, captured["owner"]]
-            else:
-                live = list(live)
-                live[1], live[4] = captured["acl"], captured["owner"]
+            # The independent LIVE supplement proves every security field.
+            # Never infer RLS/FORCE RLS from the older aggregate or local fixture.
+            live = [name, captured["acl"], captured["rls"], captured["force_rls"], captured["owner"]]
         assert live is not None, f"LIVE_SCOPED_RELATION_UNRESOLVED:{name}"
         current_relations[name] = live
     pre_doc_relations = sorted((_relation_doc(current_relations[key], key) for key in required_relations), key=lambda row: row[0])
     for name in capture_relations:
         post = post_relations.get(name, current_relations[name])
-        assert _acl(post[1]) == _acl(capture_relations[name]["acl"]) and post[4] == capture_relations[name]["owner"], f"CANDIDATE_PUBLIC_ACL_DRIFT:{name}"
+        captured = capture_relations[name]
+        assert _acl(post[1]) == _acl(captured["acl"]) and post[4] == captured["owner"], f"CANDIDATE_RELATION_ACL_DRIFT:{name}"
+        assert post[2] is captured["rls"] and post[3] is captured["force_rls"], f"CANDIDATE_RELATION_RLS_DRIFT:{name}"
     post_doc_relations = sorted(
         (_relation_doc(post_relations[key] if key in post_relations else current_relations[key], key) for key in required_relations | added_relations),
         key=lambda row: row[0],
@@ -309,6 +325,8 @@ def _pair(pre_state: dict, post_state: dict, initial: bool = True) -> tuple[dict
     }
     metadata = {
         "capture_sha256": sha(CAPTURE_PATH),
+        "relation_security_sha256": sha(RELATION_SECURITY_PATH),
+        "relation_security_pins": len(SECURITY_RELATIONS),
         "independent_diff_sha256": sha(DIFF_PATH),
         "diff_baseline_sha256": sha(DIFF_BASELINE_PATH),
         "live_reconstructed_function_count": len(live_functions),
@@ -432,7 +450,8 @@ def initial_production_pre(evidence: Path, state_expression: str, plan_post: str
         "resale_os_public_overloads": 0,
         "manual_confirmation_overloads": 0,
     }
-    return f"""-- PRE POSPLANOS escopado: captura LIVE integral + diff independente 411cbbc.
+    return f"""-- PRE POSPLANOS escopado: captura LIVE integral + complemento de 18 relações + diff independente 411cbbc.
+-- RLS/FORCE RLS/owner/ACL dos 18 pins vêm do complemento LIVE, nunca de inferência local.
 -- Funções/relações fora do recorte não são redefinidas nem exigidas em versão antiga.
 BEGIN READ ONLY;
 SET LOCAL commercial_plans.review_project_ref='{REF}';

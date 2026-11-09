@@ -1,3 +1,10 @@
+## 09/11 00:37 — Complemento LIVE de RLS/FORCE RLS/owner/ACL
+- [x] Captura original preservada; complemento independente `live-current-relation-security-20261109.json` contém 18 relações, SHA256 `20a514091f0ab4301cd11f67d530e1a17b94c4a7e1fea17196f100dca51f712d`. PRE/POST exigem RLS, FORCE RLS, owner e ACL exatos: 17 públicas com RLS ON, privada `envase_insert_permits_v1` com RLS OFF, todas FORCE RLS OFF e nenhuma ACL ampliada.
+- [x] Attempt 94 preservou falha do rollback isolado de envio fora do recorte logístico; attempt 95 no recorte REVIEW_ONLY terminou `exit=0`: 39/39 checkpoints, 13/13 parciais, 15/15 endpoint, 30/30 contenção, UI 21/21 + 13/13 + 73/73 e typecheck 0. Rollback composto deny-only fechou gates/writers e preservou histórico.
+- [x] Pacote regenerado somente da attempt 95: 36 arquivos, PRE SHA256 `f07b1fdacdff5d5e2adcf43795308c23bc0b66a9b3ffc0f5963343aeb0fc14fd`, manifesto `bd09de0106bc47ea60a888883a8d9f4c1bb5ed1eca4a3d520e8e686154248693`; verificação offline confirmou 36/36 hashes/origens, 20/20 MD5 e 18/18 pins. Pacote anterior arquivado antes da attempt 95, não promovido.
+- [x] Contenção server-side por ator/org/operação/referências/validade/revogação repetida; outra org feature ON/papel válido e ARBio fora da allowlist negados. Documentação isolada não abre gate global. Sem SQL hospedado, ativação ou publicação.
+- [ ] Revisão independente e prova autenticada JWT/RLS/Storage/browser permanecem NOT_RUN; pacote continua REVIEW_ONLY_INACTIVE_NOT_APPROVED.
+
 ## 09/11 00:29 — Auditoria 1acbd542: pacote regenerado não estava no repositório
 - [x] Confirmado: `production-rollout-posplans-20261108/manifest.json` e `00-production-pre-posplans.sql.readonly` ainda são os artefatos antigos, com PRE SHA256 `5401300b1293e0e0bc55a6e388e30cf79e1ddd10f01103a2557e7d0ef62f9bdd`; não promover esse pacote.
 - [x] A cópia nomeada `attempt-91` contém `exit=1` e logs da tentativa 28; a execução raiz posterior tem 39/39 e `exit=0`, mas ainda usa a captura anterior à correção `ORIGEM_INVALIDA`. Nenhuma delas é pacote final da captura corrigida.
@@ -13,7 +20,7 @@
 
 ## 09/11 00:05 — Contenção fail-closed do piloto autenticado ARBio
 - [x] Singletons globais deixaram de ser autoridade suficiente: overlay obrigatório server-side por ator/organização/operação e referências sintéticas exatas, com validade e revogação; leituras/manutenção existentes preservadas.
-- [x] Registro corrigido em 00:29: a cópia `attempt-91` tinha `exit=1`; a execução raiz posterior tinha 39/39, mas ainda usava a captura anterior à correção de transcrição. A evidência atual é attempt 93 `exit=0`: 39 checkpoints + 30 testes de contenção, com captura corrigida. Outra organização feature ON/papel válido e ARBio fora da allowlist negados; replays, expiração, revogação e concorrência real verificados.
+- [x] Registro corrigido em 00:29: a cópia `attempt-91` tinha `exit=1`; a execução raiz posterior tinha 39/39, mas ainda usava a captura anterior à correção de transcrição. A evidência atual é attempt 95 `exit=0`: 39 checkpoints + 30 testes de contenção, com captura corrigida e 18 pins de segurança das relações. Outra organização feature ON/papel válido e ARBio fora da allowlist negados; replays, expiração, revogação e concorrência real verificados.
 - [x] Reconciliação e rollback deny-only concluídos; histórico/recibos preservados e writers/gates fechados. README incluído; rollouts anteriores não podem ser ativados sem esta etapa. Nenhuma escrita hospedada/publicação.
 - [ ] Revisão independente e piloto autenticado real permanecem NOT_RUN; PASS descartável não certifica JWT/RLS/Storage real nem aprova ativação.
 
