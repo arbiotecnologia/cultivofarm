@@ -34,10 +34,19 @@ def main():
     candidate_approve = approve.replace(ANCHOR, REPLACEMENT)
     new_approve_md5 = md5(candidate_approve)
 
+    scope_old = "IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN"
+    scope_new = "IF NOT (public.b2b_phase1_order_visible(p_partner_order_id) OR EXISTS (SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN"
+    credit_approval = current["approve_b2b_credit"]["definition"]
+    assert credit_approval.count(scope_old) == 2
+    candidate_credit_approval = credit_approval.replace(scope_old, scope_new)
+    new_credit_approval_md5 = md5(candidate_credit_approval)
+
     terms = current["approve_b2b_payment_terms_secure"]["definition"]
+    assert terms.count(scope_old) == 1
+    scoped_terms = terms.replace(scope_old, scope_new)
     terms_anchor = "  RETURN jsonb_build_object('success', true, 'status', 'approved');"
-    assert terms.count(terms_anchor) == 1
-    candidate_terms = terms.replace(terms_anchor, "  PERFORM platform_private.b2b_financial_forecast_after_approval_v1(p_partner_order_id,\n    public.fn_b2b_credit_exposure((SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_partner_order_id),0,NULL));\n" + terms_anchor)
+    assert scoped_terms.count(terms_anchor) == 1
+    candidate_terms = scoped_terms.replace(terms_anchor, "  PERFORM platform_private.b2b_financial_forecast_after_approval_v1(p_partner_order_id,\n    public.fn_b2b_credit_exposure((SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_partner_order_id),0,NULL));\n" + terms_anchor)
     new_terms_md5 = md5(candidate_terms)
 
     credit = current["fn_b2b_credit_exposure"]["definition"]
