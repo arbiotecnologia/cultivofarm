@@ -112,7 +112,11 @@ def run(ns):
         for name, fn_ in neg:
             j, e = fn_()
             xt[name] = e or j
-            check("CCR2 CROSS-TENANT negado: " + name, j is None and bool(e), e or j)
+            if name.startswith("comprador") and "lista" in name:
+                # LIVE listing contract denies by exposing NO option (commercial_plan_partner_visible false), not by raising.
+                check("CCR2 CROSS-TENANT negado (nenhuma opção exposta): " + name, (j is None and bool(e)) or (j is not None and j.get("options") == []), e or j)
+            else:
+                check("CCR2 CROSS-TENANT negado: " + name, j is None and bool(e), e or j)
         res["cross_tenant"] = xt
         check("CCR2 CROSS-TENANT: zero delta em pedidos/snapshots/idempotência/versões/atribuições/planos", counts3() == before, (before, counts3()))
         c2, d2 = opt(UB2, PF, PLDF)
@@ -387,12 +391,14 @@ def run(ns):
         rows = json.loads(psql("SELECT json_object_agg(p.oid::regprocedure::text, md5(pg_get_functiondef(p.oid))) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace "
                                "WHERE n.nspname IN ('public','platform_private') AND p.prokind='f'").stdout.strip())
         def norm(k): return k if "." in k.split("(")[0] else "public." + k
-        posplans = {norm(k): {"mirror": rows.get(norm(k)), "live_post_pin": v, "equal": rows.get(norm(k)) == v} for k, v in man.items()}
+        def key(k): return k[len("public."):] if k.startswith("public.") else k  # regprocedure::text omits public. (search_path)
+        posplans = {norm(k): {"mirror": rows.get(key(norm(k))), "live_post_pin": v, "equal": rows.get(key(norm(k))) == v} for k, v in man.items()}
         res["posplans_vs_post_pins"] = posplans
         check("CCR2 LIVE: os 25 corpos POSPLANOS no espelho = pins do POST cc1f6cc (POST PASS relatado pelo auditor)", all(x["equal"] for x in posplans.values()),
               {k: v for k, v in posplans.items() if not v["equal"]})
         used = [k for k in rows if any(t in k for t in ("b2b_", "partner_order", "commercial_plan", "c2p1_", "_cpp_", "b2b_condition", "c2_external"))]
-        res["used_without_live_pin"] = sorted(k for k in used if k not in posplans and k not in live_bodies.LIVE)
+        pinned = {key(k) for k in posplans} | {key(k) for k in live_bodies.LIVE}
+        res["used_without_live_pin"] = sorted(k for k in used if k not in pinned)
         res["used_md5_mirror"] = {k: rows[k] for k in sorted(used)}
         pathlib.Path(os.environ.get("CCR2_EVIDENCE", str(work)), "live-hash-request.json").write_text(json.dumps(
             {"note": "Assinaturas exercitadas no espelho SEM md5 LIVE confirmado; auditor deve ler md5(pg_get_functiondef) no ref canônico. Nunca repinar no harness.",
