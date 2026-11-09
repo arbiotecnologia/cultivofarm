@@ -168,6 +168,45 @@ def main():
                 "  assert B.last(f\"SELECT count(*) FROM platform_private.fiscal_close_pending WHERE transmission_id='{transmission_id}';\")=='0'")
     s = edit(s, "  checks.append(dict(test='composed reverse deny-only rollback closes bridge B4 and plans without stale B4 POST; preserves plans fiscal evidence deterministic idempotency close pending and all original ten receivable triggers',status='PASS'))",
                 "  checks.append(dict(test='strict then composed deny-only rollback closes writers; preserves confirmed NF snapshot title idempotency and all original ten receivable triggers',status='PASS'))")
+    # Captura 22:27: caso econômico exato 2×10 com 10% e juros zero = 18.
+    s = edit(s, "  data,error=Q.sim(Q.UB,Q.P3,[Q.S(2)],choice);assert data is not None,error",
+                """  published,publish_error=Q.publish(Q.UFIN,Q.PLD,'boleto',Q.M_BOL,30,1,'0',0);assert published is not None,publish_error
+  assigned,assign_error=Q.assign(Q.UADM,Q.P,Q.PLD,'boleto',1);assert assigned is not None,assign_error
+  B.sql(f"UPDATE public.commercial_payment_plans SET requires_financial_approval=true WHERE id='{Q.PLD}';BEGIN;UPDATE public.catalogo_precos_embalagem SET valid_until=current_date-1 WHERE id='{Q.SP.PR25}';INSERT INTO public.catalogo_precos_embalagem(id,produto_id,owner_organization_id,packaging_id,preco_brl,valid_from) SELECT '{Q.u(970)}',produto_id,owner_organization_id,packaging_id,10,current_date FROM public.catalogo_precos_embalagem WHERE id='{Q.SP.PR25}';COMMIT;")
+  data,error=Q.sim(Q.UB,Q.PLD,[Q.S(2)],choice);assert data is not None,error""")
+    s = edit(s, "  data,error=Q.create(Q.UB,Q.P3,[Q.S(2)],data['cart_hash'],journal['key'],choice);assert data is not None,error",
+                "  data,error=Q.create(Q.UB,Q.PLD,[Q.S(2)],data['cart_hash'],journal['key'],choice);assert data is not None,error")
+    s = edit(s, "  replay,replay_error=Q.create(Q.UB,Q.P3,[Q.S(2)],data['cart_hash'],journal['key'],choice)",
+                "  replay,replay_error=Q.create(Q.UB,Q.PLD,[Q.S(2)],data['cart_hash'],journal['key'],choice)")
+    s = edit(s, "  forecast_post=B.sql(\"SET b2b_forecast.review_project_ref='swzpzcwiasxmjutrmvkm';\"+(forecast_dir/'03-post.sql.readonly').read_text())",
+                "  forecast_post=B.sql(\"SET b2b_forecast.review_project_ref='swzpzcwiasxmjutrmvkm';\"+(forecast_dir/'03-post.sql.readonly').read_text())\n  forecast_extra=load('forecast_residual_scenario',forecast_dir.parent/'forecast_residual_scenario.py')")
+    s = edit(s, "  assert accepted['status']=='aprovado' and accepted['internal_economic_snapshot'] is not None,accepted\n  assert accepted['ready_for_production'] is False,'external resale must not open biological production'",
+                """  assert accepted['status']=='aprovado' and accepted['internal_economic_snapshot'] is not None,accepted
+  assert accepted['ready_for_production'] is False,'external resale must not open biological production'
+  assert float(accepted['final_amount_with_interest'])==18.0 and accepted['credit_approved_at'] is None,accepted
+  assert accepted['financial_approval_status']=='pending',accepted
+  assert B.last(f"SELECT count(*) FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}';")=='0'
+  terms_approved=Q.as_user(Q.UADM,f"SELECT public.approve_b2b_payment_terms_secure('{order_id}','LOCAL TERMS APPROVAL');")
+  assert terms_approved.returncode==0,terms_approved.stderr
+  accepted=json.loads(Q.psql(f"SELECT to_jsonb(o)::text FROM public.partner_orders o WHERE id='{order_id}'").stdout.strip())
+  assert accepted['financial_approval_status']=='approved' and accepted['payment_condition_status']=='approved',accepted""")
+    s = edit(s, "  checks.append(dict(test='synthetic accounting CAS promotion and canonical seller acceptance; biological production stays closed',status='PASS'))",
+                """  checks.append(dict(test='synthetic accounting CAS promotion and canonical seller acceptance; biological production stays closed',status='PASS'))
+  override=forecast_extra.run_override(B,Q,OUT)
+  checks.append(dict(test='credit OK without override creates 18 only after commercial and payment terms; separate manual override and cross tenant scope use real canonical approvals',status='PASS',override_order=override['order_id'],seller_scope=override['seller_scope']))""")
+    s = edit(s, "  company_settings_id=accepted['internal_economic_snapshot']['origin']['company_settings_id']",
+                "  company_settings_id=accepted['internal_economic_snapshot']['origin']['company_settings_id']\n  partial_amount=round(float(accepted['final_amount_with_interest'])/2,2)\n  assert partial_amount==9.0,partial_amount")
+    s = edit(s, "'{Q.P}','2027-02-01','{accepted['total']}','{Q.UADM}'", "'{Q.P}','2027-02-01','{partial_amount}','{Q.UADM}'")
+    s = edit(s, "'{item['quantidade']}','UN','{float(item['quantidade'])*float(item['packaging_peso_liquido_kg_snapshot'])}','KG','{accepted['total']}')",
+                "1,'UN',25,'KG','{partial_amount}')")
+    s = edit(s, "  assert forecast_after['state']=='faturado_total' and float(forecast_after['residual_amount'])==0 and forecast_after['version']==9,forecast_after",
+                "  assert forecast_after['state']=='faturado_parcial' and float(forecast_after['residual_amount'])==9 and forecast_after['version']==9,forecast_after")
+    s = edit(s, "  checks.append(dict(test='real H13 envelope 104 protocol 100 generates one receivable and replay preserves one document allocation snapshot and title without close pending',status='PASS',receivable_id=receivable_id))",
+                """  checks.append(dict(test='real H13 envelope 104 protocol 100 generates one receivable and replay preserves one document allocation snapshot and title without close pending',status='PASS',receivable_id=receivable_id))
+  partial_completion=forecast_extra.run_partial_completion(B,Q,OUT,order_id,accepted,item,invoice_id,receivable_id,credit)
+  checks.append(dict(test='two authorized NF 9 plus residual 9 preserve exposure 18; replay race H7 and payment 4 leave exposure 14 without reopening residual',status='PASS',second_receivable=partial_completion['second_receivable']))""")
+    s = edit(s, "  assert B.last(\"SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots;\")=='1'",
+                "  assert B.last(\"SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots;\")=='2'")
     OUT.write_text(s)
     runner_source = SOURCE.with_name("rebuild.py").read_text()
     assert runner_source.count("order-e2e-new-20261108/compose.py'") == 1
