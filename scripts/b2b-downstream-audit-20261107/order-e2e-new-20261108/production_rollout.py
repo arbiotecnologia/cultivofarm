@@ -133,6 +133,25 @@ def main():
         assert 'CREATE OR REPLACE' not in rollback_text and 'GRANT ' not in rollback_text
     b4_scope = json.loads((E / 'integrated-b4-fiscal-bridge.json').read_text())
     assert b4_scope['status'] == 'NOT_RUN_OUT_OF_SCOPE' and b4_scope['hosted'] is False
+    pending_final = os.environ.get('ROLLOUT_DEFER_FINAL_EXECUTION') == '1'
+    final_execution_path = E / 'final-artifact-execution.json'
+    final_execution = None
+    if pending_final:
+        # Only a temporary staging package may await exact-artifact execution.
+        assert OUT.is_relative_to(Path('/tmp')), 'PENDING_FINAL_EXECUTION_NOT_TEMPORARY'
+    else:
+        assert final_execution_path.is_file(), 'FINAL_ARTIFACT_EXECUTION_REQUIRED'
+        final_execution = json.loads(final_execution_path.read_text())
+        assert final_execution['status'] == 'PASS' and final_execution['hosted'] is False
+        assert final_execution['postgresql_version'].startswith('17.'), final_execution['postgresql_version']
+        assert final_execution['artifact_count'] == len(final_execution['artifacts'])
+        assert final_execution['relation_security_preserved'] is True
+        assert final_execution['history_before'] == final_execution['history_after']
+        assert final_execution['plans_before_md5'] == final_execution['plans_after_md5']
+        assert final_execution['gates_activated'] is False
+        assert all(value is False for value in final_execution['closed'].values())
+        assert all(row['permission_denied'] is True and row['returncode'] != 0
+                   for row in final_execution['authenticated_negative'].values())
 
     plan_post_path = ROOT / 'scripts/commercial-plans-tenant-20261108/03-post.sql.readonly'
     assert sha(plan_post_path) == '033312331dd757c72c625f027d24176efa33931c8881ab002122a4e56867e894'
