@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-cl3sqtnr/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 417, in main
+    pilot_out=Pilot.install(B,OUT)
+  File "/tmp/new-order-e2e-cl3sqtnr/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/pilot_containment.py", line 349, in install
+    defs = build_bodies(raw)
+  File "/tmp/new-order-e2e-cl3sqtnr/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/pilot_containment.py", line 299, in build_bodies
+    body = one(body, scope, check, "group authorization after OS lock")
+  File "/tmp/new-order-e2e-cl3sqtnr/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/pilot_containment.py", line 40, in one
+    assert body.count(old) == count, f"PILOT_ANCHOR_DRIFT:{label}:{body.count(old)}!={count}"
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PILOT_ANCHOR_DRIFT:group authorization after OS lock:2!=1
