@@ -2,10 +2,14 @@
 BEGIN;
 SET LOCAL lock_timeout='3s';
 DO $$ BEGIN
- IF md5(pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure)) IS DISTINCT FROM '97802381794915f3d257f1b1a3ed0411' THEN RAISE EXCEPTION 'BRIDGE_AUDIT_ROLLBACK_PRE_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure)) IS DISTINCT FROM '9a6d2c8d686d2c2f83fca9917881c02b' THEN RAISE EXCEPTION 'BRIDGE_AUDIT_ROLLBACK_PRE_DRIFT'; END IF;
 END $$;
 CREATE OR REPLACE FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1(p_invoice uuid)
-RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
 DECLARE inv public.fiscal_invoices; po public.partner_orders; tx public.fiscal_sefaz_transmissions;
  org uuid; items jsonb; snapshot_items jsonb; canonical_snapshot jsonb; digest_snapshot jsonb; digest text; result jsonb;
  existing platform_private.b2b_authorized_documents; saved platform_private.b2b_fiscal_invoice_snapshots;
@@ -101,8 +105,9 @@ BEGIN
    jsonb_build_object('receivable_id',result->>'receivable_id','document_id',inv.id,'replayed',result->>'replayed','source_digest',digest),NULL);
  DELETE FROM platform_private.b2b_fiscal_service_permits WHERE transaction_id=txid_current() AND invoice_id=inv.id;
  RETURN result||jsonb_build_object('invoice_id',inv.id,'skipped',false,'source_digest',digest);
-END $$;;
+END $function$
+;
 DO $$ BEGIN
- IF md5(pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure)) IS DISTINCT FROM '34d90cf3fe03403a23d758cfd44e6d70' THEN RAISE EXCEPTION 'BRIDGE_AUDIT_ROLLBACK_POST_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure)) IS DISTINCT FROM '8905212e276f6bb43be32423ee48abc8' THEN RAISE EXCEPTION 'BRIDGE_AUDIT_ROLLBACK_POST_DRIFT'; END IF;
 END $$;
 COMMIT;

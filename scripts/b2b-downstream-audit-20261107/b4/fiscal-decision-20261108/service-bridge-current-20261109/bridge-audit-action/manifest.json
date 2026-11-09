@@ -2,19 +2,19 @@
   "project_ref": "swzpzcwiasxmjutrmvkm",
   "status": "REVIEW_ONLY_INACTIVE_NOT_APPROVED",
   "phase": "AFTER_B4_AND_SERVICE_BRIDGE_BEFORE_H7_LINK",
-  "source": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/02-install.sql.review",
-  "source_sha256": "5db2c160fd3a99bb847fe20a1d9764cbfed82d5cd80915be0eceb94eadfb9964",
+  "source": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-136/bridge-before-audit-body.sql",
+  "source_sha256": "4551647ee1e6edf922823a249501376c0d2b511af890a612e21d2cee94cc77d3",
   "canonical_ref_evidence": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-125/real-baselines.json",
-  "before_bridge_md5": "34d90cf3fe03403a23d758cfd44e6d70",
-  "after_bridge_md5": "97802381794915f3d257f1b1a3ed0411",
+  "before_bridge_md5": "8905212e276f6bb43be32423ee48abc8",
+  "after_bridge_md5": "9a6d2c8d686d2c2f83fca9917881c02b",
   "constraint_changed": false,
   "action": "UPDATE",
   "operation_payload": "B2B_RECEIVABLE_RECONCILED",
   "files": {
-    "01-pre.sql.readonly": "d425f0fc73068726aa3969d5235779bcff28e8e2b33064dd07e1cccf38a54e26",
-    "02-install.sql.review": "393a24b66486dc1ecaf59702ced7462f8095b5df5f608d4994804b16ee40d48e",
-    "03-post.sql.readonly": "f08ca15e29df80a76fd8684e9106e63c513ca0f7356ec2957296c15f7238f718",
-    "04-rollback-deny.sql.review": "c2b95cd7232893fc7dec20feb5dc7fd9ae17d83b374232c826db67f63b6aa1b3"
+    "01-pre.sql.readonly": "20e62965cd2c8ebe9d32406feadba5204680393032c2dc5878ae9b3daa8de8f9",
+    "02-install.sql.review": "07dde14be992e2486804f3a9cf8cdf59d195e587f6c8ffc049e4e7a81c2985d4",
+    "03-post.sql.readonly": "7e04a24f3b3c845877fe7040001b29b1f7b500ec0cf0c9949f4e2a1ac46d50ec",
+    "04-rollback-deny.sql.review": "2f09a613b763dc194979fb9df12002ea7cd15bcb100f9eb1727f72ce97136077"
   },
   "hosted": false
 }

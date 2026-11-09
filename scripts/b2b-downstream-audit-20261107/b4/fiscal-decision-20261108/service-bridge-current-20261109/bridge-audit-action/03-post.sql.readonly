@@ -1,7 +1,7 @@
 -- REVIEW ONLY READ ONLY; CHECK fiscal_audit_log inalterado.
 BEGIN READ ONLY;
 DO $$ BEGIN
- IF md5(pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure)) IS DISTINCT FROM '97802381794915f3d257f1b1a3ed0411' THEN RAISE EXCEPTION 'BRIDGE_AUDIT_POST_MD5_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure)) IS DISTINCT FROM '9a6d2c8d686d2c2f83fca9917881c02b' THEN RAISE EXCEPTION 'BRIDGE_AUDIT_POST_MD5_DRIFT'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.fiscal_audit_log'::regclass AND conname='fiscal_audit_log_action_check' AND convalidated) THEN RAISE EXCEPTION 'FISCAL_AUDIT_ACTION_CHECK_MISSING'; END IF;
 END $$;
 ROLLBACK;
