@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 
 
-def run(B, Review, A, out):
+def run(B, Review, Q, A, choice, out):
     out = Path(out)
     checks = []
 
@@ -15,8 +15,8 @@ def run(B, Review, A, out):
         print("PILOT_PASS", name, flush=True)
 
     def deny(name, sql, codes=("RESALE_PILOT_SCOPE_DENIED",)):
-        error = B.sql(sql, False)
-        assert any(code in error for code in codes), name + ":" + error
+        result = B.run_raw(sql)
+        assert result.returncode != 0 and any(code in result.stderr for code in codes), name + ":" + result.stdout[-1000:] + result.stderr[-2500:]
         checks.append({"test": name, "status": "PASS", "expected": list(codes)})
         print("PILOT_PASS", name, flush=True)
 
@@ -32,112 +32,127 @@ def run(B, Review, A, out):
     def update_grant(grant_id, assignment):
         B.sql(f"UPDATE platform_private.resale_pilot_allowlist_v1 SET {assignment} WHERE id='{grant_id}';")
 
-    # This local role/claim transport is not hosted JWT/RLS/Storage evidence.
-    R = Review(B, A, {})
-    fixture = R.make_order("pilot-contained")
-    order, item, product = fixture["order"], fixture["item"], fixture["product"]
-    key = fixture["key"]
-    create = B.resale_call(order, item, key)
-    read = B.resale(order)
-    purchase = A.purchase(product, "pilot-contained-purchase")
+    def reader(order, actor=Q.UADM):
+        return B.T.actor(actor) + f"SELECT public.rpc_b2b_resale_os_availability_v1('{order}');"
+
+    # SQL roles/claims are synthetic transport only: never hosted JWT/RLS/Storage proof.
+    R = Review(B, Q, A, choice, {})
+    fixture = R.make_order([Q.S(3)], "pilot-contained")
+    order, item = fixture["id"], fixture["items"][0]
+    item_id, product = item["id"], item["product_id"]
+    os_key = "pilot-os-create-0001"
+    create = R.os_create_sql(order, item_id, fixture["accepted"]["updated_at"], os_key)
+    purchase_key = "pilot-purchase-0001"
+    purchase = A.purchase({"product": product, "packaging": item["packaging_id_snapshot"]}, 3, purchase_key, actor=Q.UADM)
+    before = B.last("SELECT jsonb_build_array((SELECT count(*) FROM public.accounts_receivable),(SELECT count(*) FROM public.fiscal_invoices),(SELECT count(*) FROM public.comunicacao_outbox))::text;")
     B.sql("UPDATE platform_private.finished_product_gate_v1 SET enabled=true WHERE singleton;UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=true WHERE singleton;")
 
-    deny("ARBio real actor with valid role but outside allowlist cannot read", B.actor(A.admin) + read)
-    deny("ARBio real actor outside allowlist cannot create OS", B.actor(A.admin) + create)
-    deny("ARBio real actor outside allowlist cannot purchase finished product", B.actor(A.admin) + purchase)
-    deny("other organization feature ON and valid role remains denied", B.actor(A.fsf) + read,
-         ("RESALE_PILOT_SCOPE_DENIED", "B2B_RESALE_ORDER_DENIED", "B2B_INTERNAL_ACTOR_DENIED"))
-    deny("other organization cannot purchase using ARBio product", B.actor(A.fsf) + purchase)
-    deny("authenticated cannot write server allowlist", B.actor(A.admin) + f"INSERT INTO platform_private.resale_pilot_allowlist_v1(gate,operation,actor_id,organization_id,product_id,valid_until) VALUES('finished_product','purchase','{A.admin}','{A.org}','{product}',now()+interval '1 hour');", ("permission denied",))
-    deny("client GUC cannot substitute allowlist authority", B.actor(A.admin) + "SET app.pilot_allowed='true';" + create)
+    deny("ARBio real actor valid role outside allowlist cannot read", reader(order))
+    deny("ARBio real actor outside allowlist cannot create OS", create)
+    deny("ARBio real actor outside allowlist cannot purchase finished product", purchase)
+    deny("other organization feature ON role valid remains denied", reader(order, Q.UADMF),
+         ("RESALE_PILOT_SCOPE_DENIED", "B2B_RESALE_ORDER_SCOPE_DENIED", "B2B_RESALE_ACTOR_DENIED"))
+    deny("other organization cannot purchase using ARBio product", A.purchase({"product": product, "packaging": item["packaging_id_snapshot"]}, 3, "pilot-other-org-purchase", actor=Q.UADMF))
+    deny("authenticated cannot write server allowlist", B.T.actor(Q.UADM) + f"INSERT INTO platform_private.resale_pilot_allowlist_v1(gate,operation,actor_id,organization_id,product_id,valid_until) VALUES('finished_product','purchase','{Q.UADM}','{Q.A}','{product}',now()+interval '1 hour');", ("permission denied",))
+    deny("client GUC cannot substitute allowlist authority", B.T.actor(Q.UADM) + "SET app.pilot_allowed='true';" + create)
 
-    read_grant = grant("b2b_resale", "read", A.admin, A.org, fixture["partner"], order)
-    assert json.loads(B.last(B.actor(A.admin) + read))["available"] is True
+    read_grant = grant("b2b_resale", "read", Q.UADM, Q.A, Q.P, order)
+    assert json.loads(B.last(reader(order)))["available"] is True
     ok("allowlisted ARBio synthetic order can be read")
-    deny("read grant alone cannot create OS", B.actor(A.admin) + create)
+    deny("read grant alone cannot create OS", create)
 
-    os_grant = grant("b2b_resale", "os_create", A.admin, A.org, fixture["partner"], order, item, product)
-    os_id = R.create_os(order, item, key)
-    replay = json.loads(B.last(B.actor(A.admin) + B.resale_call(order, item, key)))
+    os_grant = grant("b2b_resale", "os_create", Q.UADM, Q.A, Q.P, order, item_id, product)
+    created = json.loads(B.last(create))
+    assert created["ok"] is True and created["replay"] is False
+    os_id = created["os_id"]
+    replay = json.loads(B.last(create))
     assert replay["replay"] is True and replay["os_id"] == os_id
     ok("allowlisted OS create and exact replay succeed without duplicate")
 
-    purchase_grant = grant("finished_product", "purchase", A.admin, A.org, product=product)
-    purchase_result = json.loads(B.last(B.actor(A.admin) + purchase))
-    assert purchase_result["success"] is True
-    stock = purchase_result["estoque_produto_id"]
+    purchase_grant = grant("finished_product", "purchase", Q.UADM, Q.A, product=product)
+    purchased = json.loads(B.last(purchase))
+    assert purchased["ok"] is True and purchased["replay"] is False
+    stock = purchased["estoque_produto_id"]
     ok("allowlisted physical purchase uses existing receipt and real stock motor")
 
-    reserve_grant = grant("b2b_resale", "reserve", A.admin, A.org, fixture["partner"], order, item, product, stock)
-    reserved = B.reserve(os_id, stock, 3, A.admin)
-    assert reserved["success"] is True
-    stock = reserved["estoque_produto_id"]
-    # The canonical reserve may return a split UUID: replace the exact stock scope, never widen it.
+    reserve_grant = grant("b2b_resale", "reserve", Q.UADM, Q.A, Q.P, order, item_id, product, stock)
+    stock = R.reserve(fixture, os_id, stock, 3, "pilot-reserve")
     update_grant(reserve_grant, f"stock_id='{stock}'")
-    update_grant(purchase_grant, "valid_until=now()+interval '2 hours'")
-    ok("reserve accepts only exact allowlisted order item product and returned stock")
+    ok("reserve uses exact allowlisted references and canonical returned split stock")
 
-    deny("delivery create requires its own operation grant", B.actor(A.admin) + B.group(os_id, "b2b", stock, 3, "pilot-delivery-before-grant"))
-    delivery_grant = grant("b2b_resale", "delivery_create", A.admin, A.org, fixture["partner"], order, item, product, stock)
-    grouped = R.group(os_id, stock, "pilot-delivery")
-    delivery = R.delivery_of(os_id)
-    assert grouped["success"] is True and delivery
+    group_key = "pilot-delivery-before-grant"
+    observed_os = B.last(f"SELECT updated_at FROM public.ordens_servico WHERE id='{os_id}';")
+    observed_stock = B.last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{stock}';")
+    items = json.dumps([{"item_id": stock, "quantidade": 3, "observed_updated_at": observed_stock}])
+    group_sql = B.T.actor(Q.UADM) + f"SELECT public.rpc_cockpit_criar_entrega_v1('{os_id}','b2b','{items}'::jsonb,'{group_key}','{{}}'::jsonb,'{observed_os}'::timestamptz);"
+    deny("delivery create requires its own operation grant", group_sql)
+    delivery_grant = grant("b2b_resale", "delivery_create", Q.UADM, Q.A, Q.P, order, item_id, product, stock)
+    delivery = R.group(os_id, stock, 3, "pilot-delivery")
     ok("allowlisted delivery create succeeds")
 
-    deny("proof before proof grant is denied", B.actor(A.admin) + f"SELECT public.rpc_entrega_formulario_gerar_v1('{delivery}','pilot-proof-before');")
-    deny("send before send grant is denied", B.actor(A.admin) + B.send(delivery, "pilot-send-before"))
-
-    send_grant = grant("b2b_resale", "send", A.admin, A.org, fixture["partner"], order, item, product, stock, delivery)
-    assert R.send(delivery, "pilot-send")["success"] is True
+    deny("proof before proof grant is denied", B.T.actor(Q.UADM) + f"SELECT public.rpc_entrega_formulario_gerar_v1('{delivery}','pilot-proof-before');")
+    send_observed = B.last(f"SELECT updated_at FROM public.entregas WHERE id='{delivery}';")
+    send_sql = B.T.actor(Q.UADM) + f"SELECT public.rpc_entrega_enviar_manual_v1('{delivery}','{send_observed}','pilot-send-0001');"
+    deny("send before send grant is denied", send_sql)
+    send_grant = grant("b2b_resale", "send", Q.UADM, Q.A, Q.P, order, item_id, product, stock, delivery)
+    sent = json.loads(B.last(send_sql))
+    assert sent["success"] is True and sent["status"] == "em_rota"
     ok("exact delivery send grant succeeds")
-    deny("send replay is reauthorized and fails after revocation", B.actor(A.admin) + B.send(delivery, "pilot-send"), ()) if False else None
     update_grant(send_grant, "revoked_at=now(),revoked_by=actor_id,revoke_reason='local revocation test'")
-    deny("revoked send grant blocks exact replay", B.actor(A.admin) + B.send(delivery, "pilot-send"))
+    deny("revoked send grant blocks exact replay", send_sql)
 
-    proof_grant = grant("b2b_resale", "proof", A.admin, A.org, fixture["partner"], order, item, product, stock, delivery)
-    proof = R.prove(delivery, "pilot-proof")
-    assert proof["success"] is True
+    proof_grant = grant("b2b_resale", "proof", Q.UADM, Q.A, Q.P, order, item_id, product, stock, delivery)
+    R.proof(delivery, "pilot-proof")
+    comprovante = B.last(f"SELECT comprovante_id FROM public.entregas WHERE id='{delivery}';")
+    assert comprovante and comprovante != "None"
     ok("proof grant is distinct and succeeds after explicit provisioning")
 
-    deny("confirm before confirm grant is denied", B.actor(A.admin) + B.confirm(delivery, "pilot-confirm-before", proof["comprovante_id"]))
-    confirm_grant = grant("b2b_resale", "confirm", A.admin, A.org, fixture["partner"], order, item, product, stock, delivery)
-    confirmed = R.confirm(delivery, "pilot-confirm", proof["comprovante_id"])
-    assert confirmed["success"] is True
+    confirm_observed = B.last(f"SELECT updated_at FROM public.entregas WHERE id='{delivery}';")
+    confirm_sql = B.T.actor(Q.UADM) + f"SELECT public.rpc_entrega_confirmar_manual_v1('{delivery}','{confirm_observed}','pilot-confirm-0001','{{\"nome\":\"LOCAL PILOTO\"}}'::jsonb);"
+    deny("confirm before confirm grant is denied", confirm_sql)
+    confirm_grant = grant("b2b_resale", "confirm", Q.UADM, Q.A, Q.P, order, item_id, product, stock, delivery)
+    confirmed = json.loads(B.last(confirm_sql))
+    assert confirmed["success"] is True and confirmed["status"] == "entregue"
     ok("full scoped synthetic ARBio flow confirms physically")
 
     update_grant(os_grant, "valid_until=now()-interval '1 second'")
-    deny("expired OS grant blocks exact replay", B.actor(A.admin) + B.resale_call(order, item, key))
+    deny("expired OS grant blocks exact replay", create)
     update_grant(os_grant, "valid_until=now()+interval '2 hours',revoked_at=now(),revoked_by=actor_id,revoke_reason='local replay revocation'")
-    deny("revoked OS grant blocks exact replay after expiry restored", B.actor(A.admin) + B.resale_call(order, item, key))
-    replacement_os_grant = grant("b2b_resale", "os_create", A.admin, A.org, fixture["partner"], order, item, product)
-    replay = json.loads(B.last(B.actor(A.admin) + B.resale_call(order, item, key)))
+    deny("revoked OS grant blocks exact replay after expiry restored", create)
+    grant("b2b_resale", "os_create", Q.UADM, Q.A, Q.P, order, item_id, product)
+    replay = json.loads(B.last(create))
     assert replay["replay"] is True
     ok("new explicit valid grant restores replay without changing history")
-
     update_grant(confirm_grant, "revoked_at=now(),revoked_by=actor_id,revoke_reason='local terminal replay revocation'")
-    deny("revoked confirm grant blocks terminal exact replay", B.actor(A.admin) + B.confirm(delivery, "pilot-confirm", proof["comprovante_id"]))
+    deny("revoked confirm grant blocks terminal exact replay", confirm_sql)
     update_grant(read_grant, "valid_until=now()-interval '1 second'")
-    deny("expired read grant denies reader", B.actor(A.admin) + read)
+    deny("expired read grant denies reader", reader(order))
 
     # Two real PostgreSQL connections, same request: one create and one exact replay.
-    concurrent = R.make_order("pilot-concurrent")
-    grant("b2b_resale", "read", A.admin, A.org, concurrent["partner"], concurrent["order"])
-    grant("b2b_resale", "os_create", A.admin, A.org, concurrent["partner"], concurrent["order"], concurrent["item"], concurrent["product"])
-    statement = B.actor(A.admin) + B.resale_call(concurrent["order"], concurrent["item"], concurrent["key"])
-    first = B.session(statement)
+    concurrent = R.make_order([Q.S(3)], "pilot-concurrent")
+    c_item = concurrent["items"][0]
+    grant("b2b_resale", "read", Q.UADM, Q.A, Q.P, concurrent["id"])
+    grant("b2b_resale", "os_create", Q.UADM, Q.A, Q.P, concurrent["id"], c_item["id"], c_item["product_id"])
+    statement = R.os_create_sql(concurrent["id"], c_item["id"], concurrent["accepted"]["updated_at"], "pilot-concurrent-os-0001")
+    holder = B.T.session(f"BEGIN;SELECT 1 FROM public.partner_orders WHERE id='{concurrent['id']}' FOR UPDATE;")
     time.sleep(0.1)
-    second = B.session(statement)
-    B.wait()
-    stdout1, stderr1 = B.finish(first, "COMMIT;")
-    stdout2, stderr2 = B.finish(second)
-    assert not stderr1 and not stderr2, stderr1 + stderr2
-    assert B.last(f"SELECT count(*) FROM public.ordens_servico WHERE partner_order_id='{concurrent['order']}';") == "1"
-    assert B.last(f"SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1 WHERE order_id='{concurrent['order']}';") == "1"
+    workers = [B.T.session(statement), B.T.session(statement)]
+    B.T.wait()
+    B.T.finish(holder, "COMMIT;")
+    acknowledgments = []
+    for worker in workers:
+        stdout, stderr = B.T.finish(worker)
+        assert not stderr, stdout + stderr
+        acknowledgments.append(json.loads(stdout.strip().splitlines()[-1]))
+    assert acknowledgments[0]["os_id"] == acknowledgments[1]["os_id"]
+    assert sorted(row["replay"] for row in acknowledgments) == [False, True]
+    assert B.last(f"SELECT count(*) FROM public.ordens_servico WHERE partner_order_id='{concurrent['id']}';") == "1"
     ok("two concurrent connections produce one OS and one idempotent receipt")
 
     B.sql("UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false WHERE singleton;")
-    deny("master switch OFF remains fail closed even with valid grants", B.actor(A.admin) + B.resale_call(order, item, key))
+    deny("master switch OFF remains fail closed even with valid grants", create)
     ok("allowlist and receipts retained after gates OFF", B.last("SELECT count(*)>=10 FROM platform_private.resale_pilot_allowlist_v1;") == "t")
-    ok("no financial fiscal or communication downstream effects", B.last("SELECT (SELECT count(*) FROM public.accounts_receivable)=0 AND (SELECT count(*) FROM public.fiscal_invoices)=0 AND (SELECT count(*) FROM public.comunicacao_outbox)=0;") == "t")
-    (out / "checks.json").write_text(json.dumps(checks, indent=2, ensure_ascii=False) + "\n")
+    after = B.last("SELECT jsonb_build_array((SELECT count(*) FROM public.accounts_receivable),(SELECT count(*) FROM public.fiscal_invoices),(SELECT count(*) FROM public.comunicacao_outbox))::text;")
+    ok("no financial fiscal or communication downstream effects", before == after)
+    (out / "checks.json").write_text(json.dumps({"hosted": False, "synthetic_auth": True, "checks": checks}, indent=2, ensure_ascii=False) + "\n")
     return checks
