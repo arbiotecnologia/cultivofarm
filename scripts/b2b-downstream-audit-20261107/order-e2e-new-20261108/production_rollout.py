@@ -117,8 +117,20 @@ def main():
 
     rollback = json.loads((E / 'full-logistics-rollback.json').read_text())
     assert rollback['current_catalog_preserved'] is True
+    assert rollback['real_baselines_preserved'] is True
+    assert rollback['deny_only_no_body_restoration'] is True
+    assert rollback['composed_generators'] == ['SEND_COMPOSED_ROLLBACK', 'CONFIRM_COMPOSED_ROLLBACK']
     assert all(value is False for value in rollback['closed'].values())
     assert rollback['history_before'] == rollback['history_after']
+    assert rollback['plans_before'] == rollback['plans_after']
+    assert all(row['returncode'] != 0 and row['permission_denied'] is True for row in rollback['authenticated_negative'].values())
+    for stage, label, signature in (
+        (delivery, 'CONFIRM_COMPOSED_ROLLBACK', 'public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb)'),
+        (send, 'SEND_COMPOSED_ROLLBACK', 'public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text)'),
+    ):
+        rollback_text = (stage / 'rollback-composed.sql.review').read_text()
+        assert label in rollback_text and f'REVOKE EXECUTE ON FUNCTION {signature} FROM PUBLIC,anon,authenticated,service_role;' in rollback_text
+        assert 'CREATE OR REPLACE' not in rollback_text and 'GRANT ' not in rollback_text
     b4_scope = json.loads((E / 'integrated-b4-fiscal-bridge.json').read_text())
     assert b4_scope['status'] == 'NOT_RUN_OUT_OF_SCOPE' and b4_scope['hosted'] is False
 
@@ -175,10 +187,11 @@ def main():
         'evidence-pilot-checks.json': pilot / 'checks.json',
         '11-confirmation-install.sql.review': delivery / 'install.sql.review',
         '12-confirmation-post.sql.readonly': delivery / 'postflight.sql.review',
-        '91-confirmation-send-rollback-deny.sql.review': delivery / 'rollback-composed.sql.review',
+        '91-confirmation-rollback-deny.sql.review': delivery / 'rollback-composed.sql.review',
         '20-send-pre.sql.readonly': send / 'preflight.sql.review',
         '21-send-install.sql.review': send / 'install.sql.review',
         '22-send-post.sql.readonly': send / 'postflight.sql.review',
+        '92-send-rollback-deny.sql.review': send / 'rollback-composed.sql.review',
         '31-physical-install.sql.review': physical / 'install.sql.review',
         '32-physical-post.sql.readonly': physical / 'postflight.sql.review',
         '93-physical-rollback-deny.sql.review': physical / 'rollback.sql.review',
@@ -266,7 +279,7 @@ def main():
         },
         'previous_package': previous,
         'order': ['00 production PRE', '11/12 confirmation closed', '20/21/22 send closed', '30/31/32 physical OFF', '40/41/42 logistics OFF', '50/51/52 endpoint OFF', '60/61/62 ARBio containment OFF'],
-        'rollback_order': ['89 pilot containment', '90 endpoint+reader', '94 logistics', '93 physical', '91 composed send+confirmation'],
+        'rollback_order': ['89 pilot containment', '90 endpoint+reader', '94 logistics', '93 physical', '92 composed send measured after physical', '91 composed confirmation measured after send'],
         'excluded': ['commercial plan reinstall/rollback', 'B4', 'fiscal bridge', 'NF/NFS-e', 'receivables', 'payments', 'communication', 'frontend publication', 'automatic gate activation'],
         'authenticated_real_proof': 'NOT_RUN',
         'files': files,

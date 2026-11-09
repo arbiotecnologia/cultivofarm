@@ -428,23 +428,34 @@ def main():
   R.assert_current(B,OUT,'real-baselines-post-logistics-rollback.json',ROOT)
   checks.append(dict(test='ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback',status='PASS'))
 
-  # O rollout de cinco instaladores exclui B4/fiscal. As tentativas 7/8 preservam
-  # o drift histórico de rpc_register_receivable_payment; ele não é contornado.
-  if os.environ.get('NEW_E2E_LOGISTICS_ONLY')=='1':
-   (OUT/'integrated-b4-fiscal-bridge.json').write_text(json.dumps(dict(status='NOT_RUN_OUT_OF_SCOPE',reason='B4_PRE_SHARED_BODY histórico preservado nas tentativas 7/8; nenhum PRE foi enfraquecido',positive_fiscal_receivable='NOT_RUN_BLOCKED',hosted=False),indent=2)+'\n')
+  def measured_final_delivery_state(state_expression):
+   # A projeção estrutural precisa ser a do próprio estágio: S.STATE inclui
+   # delivery_send_permits_v1; C.G.STATE não pode fingir esse recorte.
+   state=json.loads(B.last(state_expression+'::text;'))
+   # O estado agregado histórico não inclui esses dois schemas. Medir seus corpos
+   # atuais evita fallback de hash antigo tanto nos pins quanto nas triggers.
+   extra=json.loads(B.last("""SELECT coalesce(jsonb_agg(jsonb_build_array(n.nspname,p.proname,pg_get_function_identity_arguments(p.oid),md5(pg_get_functiondef(p.oid)),coalesce(p.proacl::text,''),pg_get_userbyid(p.proowner),p.proconfig,p.prosecdef)),'[]'::jsonb) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ('private','cf_user_guards_v1');"""))
+   keys={(r[0],r[1],r[2]) for r in extra}
+   state['functions']=[r for r in state['functions'] if (r[0],r[1],r[2]) not in keys]+extra
+   # C.state() traz somente o recorte histórico de relações. Os rollback finais
+   # também pinam permissões privadas novas e relações B3/catálogo: medir todos
+   # os objetos endereçáveis agora, sem descartar silenciosamente um pin ausente.
+   state['relations']=json.loads(B.last("""SELECT coalesce(jsonb_agg(jsonb_build_array(n.nspname||'.'||c.relname,coalesce(c.relacl::text,''),c.relrowsecurity,c.relforcerowsecurity,pg_get_userbyid(c.relowner))),'[]'::jsonb) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('public','platform_private','private','cf_user_guards_v1') AND c.relkind IN ('r','p','v','m','f');"""))
+   return state
+
+  def run_final_delivery_rollback(branch):
+   # Mesma inversão para logistics-only e integrada: cada guard é gerado do
+   # estado medido DEPOIS das reversões anteriores, nunca do POST intermediário.
    history_before=json.loads(B.last("SELECT jsonb_build_object('deliveries',(SELECT count(*) FROM public.entregas),'movements',(SELECT count(*) FROM public.estoque_movimentacoes),'os',(SELECT count(*) FROM public.ordens_servico),'resale_receipts',(SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1));"))
+   plans_before=json.loads(B.last("SELECT jsonb_build_object('count',count(*),'md5',md5(coalesce(jsonb_agg(to_jsonb(p) ORDER BY id)::text,'[]'))) FROM public.commercial_payment_plans p;"))
    B.sql((pilot_out/'04-rollback-deny.sql.review').read_text())
    B.sql((OUT/'logistics/rollback.sql.review').read_text())
    B.sql((physical_out/'rollback.sql.review').read_text())
-   # Não executar o guard SEND antigo: a contenção substituiu seus corpos. O
-   # rollback composto abaixo mede o estado escopado atual e revoga send+confirm.
-   confirmation_rollback_state=C.state()
-   # O estado agregado histórico não inclui esses dois schemas. Medir seus corpos
-   # atuais evita fallback de hash antigo tanto nos pins quanto nas triggers.
-   extra_functions=json.loads(B.last("""SELECT coalesce(jsonb_agg(jsonb_build_array(n.nspname,p.proname,pg_get_function_identity_arguments(p.oid),md5(pg_get_functiondef(p.oid)),coalesce(p.proacl::text,''),pg_get_userbyid(p.proowner),p.proconfig,p.prosecdef)),'[]'::jsonb) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ('private','cf_user_guards_v1');"""))
-   function_keys={(r[0],r[1],r[2]) for r in extra_functions}
-   confirmation_rollback_state['functions']=[r for r in confirmation_rollback_state['functions'] if (r[0],r[1],r[2]) not in function_keys]+extra_functions
-   current_scope.write_final_confirmation_rollback(confirmation_out,send_out,confirmation_rollback_state,C.G.STATE)
+   send_state=measured_final_delivery_state(S.STATE)
+   current_scope.write_final_send_rollback(send_out,send_state,S.STATE)
+   B.sql((send_out/'rollback-composed.sql.review').read_text())
+   confirmation_state=measured_final_delivery_state(C.G.STATE)
+   current_scope.write_final_confirmation_rollback(confirmation_out,confirmation_state,C.G.STATE)
    B.sql((confirmation_out/'rollback-composed.sql.review').read_text())
    closed=json.loads(B.last("""SELECT jsonb_build_object(
     'logistics_gate',(SELECT enabled FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton),
@@ -454,11 +465,54 @@ def main():
     'send_writer',has_function_privilege('authenticated','public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text)','EXECUTE'),
     'confirm_writer',has_function_privilege('authenticated','public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb)','EXECUTE'));"""))
    assert closed=={'logistics_gate':False,'physical_gate':False,'os_writer':False,'purchase_writer':False,'send_writer':False,'confirm_writer':False},closed
+   send_denied=B.run_raw(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_enviar_manual_v1('{delivery}','{observed}'::timestamptz,'post-rollback-send-{branch}');")
+   confirm_denied=B.run_raw(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_confirmar_manual_v1('{delivery}','{observed}'::timestamptz,'post-rollback-confirm-{branch}','{{}}'::jsonb);")
+   assert send_denied.returncode!=0 and 'permission denied for function rpc_entrega_enviar_manual_v1' in send_denied.stderr,send_denied.stderr
+   assert confirm_denied.returncode!=0 and 'permission denied for function rpc_entrega_confirmar_manual_v1' in confirm_denied.stderr,confirm_denied.stderr
    history_after=json.loads(B.last("SELECT jsonb_build_object('deliveries',(SELECT count(*) FROM public.entregas),'movements',(SELECT count(*) FROM public.estoque_movimentacoes),'os',(SELECT count(*) FROM public.ordens_servico),'resale_receipts',(SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1));"))
+   plans_after=json.loads(B.last("SELECT jsonb_build_object('count',count(*),'md5',md5(coalesce(jsonb_agg(to_jsonb(p) ORDER BY id)::text,'[]'))) FROM public.commercial_payment_plans p;"))
    assert history_after==history_before,(history_before,history_after)
+   assert plans_after==plans_before,(plans_before,plans_after)
+   if branch=='logistics-only':
+    R.assert_current(B,OUT,f'real-baselines-post-full-rollback-{branch}.json',ROOT)
+   else:
+    # B4 deny-only mantém seus triggers adicionais. O oráculo integrado exige
+    # os dez originais byte a byte, não a ausência dos objetos B4 preservados.
+    current=R.snapshot(B);current_triggers={x['name']:x for x in current['receivable']['triggers']}
+    expected=json.loads((OUT/'real-baselines.json').read_text())['expected']
+    assert current['receivable']['acl_md5']==expected['acl_md5']
+    assert current['downstream_guard']['md5']==expected['guard_md5']
+    assert current['registration']['default_md5']==expected['registration_md5']
+    assert current['registration']['fence_md5']==expected['settings_fence_md5']
+    for trigger in original: assert current_triggers.get(trigger['name'])==trigger,trigger['name']
+    retained=sorted(set(current_triggers)-{x['name'] for x in original})
+    (OUT/f'real-baselines-post-full-rollback-{branch}.json').write_text(json.dumps({'status':'PASS','snapshot':current,'original_ten_triggers_preserved':True,'b4_additional_triggers_retained':retained,'hosted':False},indent=2)+'\n')
    B.current_catalog.assert_current(B.last,CURRENT_CANDIDATE_TRIGGER_DELTAS,CURRENT_CANDIDATE_FUNCTION_DELTAS)
-   (OUT/'full-logistics-rollback.json').write_text(json.dumps({'closed':closed,'history_before':history_before,'history_after':history_after,'current_catalog_preserved':True,'allowed_candidate_trigger_function_deltas':sorted(list(x) for x in CURRENT_CANDIDATE_TRIGGER_DELTAS),'allowed_candidate_function_deltas':sorted(CURRENT_CANDIDATE_FUNCTION_DELTAS),'b4_fiscal':'NOT_RUN_OUT_OF_SCOPE'},indent=2)+'\n')
-   checks.append(dict(test='reverse deny-only rollback closes logistics physical send confirmation and preserves history twenty LIVE bodies 120 triggers 18 relation security pins; B4 fiscal NOT_RUN out of scope',status='PASS'))
+   result={
+    'branch':branch,
+    'closed':closed,
+    'history_before':history_before,'history_after':history_after,
+    'plans_before':plans_before,'plans_after':plans_after,
+    'current_catalog_preserved':True,'real_baselines_preserved':True,
+    'composed_generators':['SEND_COMPOSED_ROLLBACK','CONFIRM_COMPOSED_ROLLBACK'],
+    'authenticated_negative':{
+     'send':{'returncode':send_denied.returncode,'permission_denied':True},
+     'confirmation':{'returncode':confirm_denied.returncode,'permission_denied':True},
+    },
+    'deny_only_no_body_restoration':True,
+    'allowed_candidate_trigger_function_deltas':sorted(list(x) for x in CURRENT_CANDIDATE_TRIGGER_DELTAS),
+    'allowed_candidate_function_deltas':sorted(CURRENT_CANDIDATE_FUNCTION_DELTAS),
+    'b4_fiscal':'NOT_RUN_OUT_OF_SCOPE' if branch=='logistics-only' else 'COMPOSED_BUT_POSITIVE_RECEIVABLE_BLOCKED',
+   }
+   (OUT/'full-logistics-rollback.json').write_text(json.dumps(result,indent=2)+'\n')
+   checks.append(dict(test=f'{branch} reverse measured composed SEND then CONFIRM rollback after prior reversals; deny-only preserves history ACLs catalog plans and baselines',status='PASS'))
+   checks.append(dict(test=f'{branch} authenticated send and confirmation calls after rollback both fail with permission denied without history effects',status='PASS'))
+
+  # O rollout de cinco instaladores exclui B4/fiscal. As tentativas 7/8 preservam
+  # o drift histórico de rpc_register_receivable_payment; ele não é contornado.
+  if os.environ.get('NEW_E2E_LOGISTICS_ONLY')=='1':
+   (OUT/'integrated-b4-fiscal-bridge.json').write_text(json.dumps(dict(status='NOT_RUN_OUT_OF_SCOPE',reason='B4_PRE_SHARED_BODY histórico preservado nas tentativas 7/8; nenhum PRE foi enfraquecido',positive_fiscal_receivable='NOT_RUN_BLOCKED',hosted=False),indent=2)+'\n')
+   run_final_delivery_rollback('logistics-only')
    return 0
 
   # feb815603: B4 reconciliado com TODAS as cinco dependências pós-planos.
@@ -643,29 +697,9 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   assert B.last(f"SELECT count(*) FROM public.fiscal_sefaz_transmissions WHERE id='{transmission_id}' AND idempotency_key='{transmission_idem}' AND request_fingerprint='{transmission_fingerprint}';")=='1'
   assert B.last(f"SELECT count(*) FROM platform_private.fiscal_close_pending WHERE transmission_id='{transmission_id}' AND error_code='FISCAL_AUTHORIZATION_CLOSE_PENDING' AND attempts=2;")=='1'
   checks.append(dict(test='composed reverse deny-only rollback closes bridge B4 and plans without stale B4 POST; preserves plans fiscal evidence deterministic idempotency close pending and all original ten receivable triggers',status='PASS'))
-  # Cadeia logística reversa completa: endpoint já foi fechado acima; agora
-  # logística/físico/envio/confirmação sem apagar histórico ou reabrir grants.
-  history_before=json.loads(B.last("SELECT jsonb_build_object('deliveries',(SELECT count(*) FROM public.entregas),'movements',(SELECT count(*) FROM public.estoque_movimentacoes),'os',(SELECT count(*) FROM public.ordens_servico),'resale_receipts',(SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1));"))
-  B.sql((OUT/'logistics/rollback.sql.review').read_text())
-  B.sql((physical_out/'rollback.sql.review').read_text())
-  B.sql((send_out/'rollback.sql.review').read_text())
-  confirmation_rollback_state=C.state()
-  composed_confirmation_rollback='BEGIN;\n'+C.G.guard(confirmation_rollback_state,'CONFIRM_COMPOSED_ROLLBACK_DRIFT')+f'REVOKE EXECUTE ON FUNCTION {C.G.RPC} FROM PUBLIC,anon,authenticated,service_role;\nCOMMIT;\n'
-  (confirmation_out/'rollback-composed.sql.review').write_text(composed_confirmation_rollback)
-  B.sql(composed_confirmation_rollback)
-  closed=json.loads(B.last("""SELECT jsonb_build_object(
-   'logistics_gate',(SELECT enabled FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton),
-   'physical_gate',(SELECT enabled FROM platform_private.finished_product_gate_v1 WHERE singleton),
-   'os_writer',has_function_privilege('authenticated','public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)','EXECUTE'),
-   'purchase_writer',has_function_privilege('authenticated','public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)','EXECUTE'),
-   'send_writer',has_function_privilege('authenticated','public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text)','EXECUTE'),
-   'confirm_writer',has_function_privilege('authenticated','public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb)','EXECUTE'));"""))
-  assert closed=={'logistics_gate':False,'physical_gate':False,'os_writer':False,'purchase_writer':False,'send_writer':False,'confirm_writer':False},closed
-  history_after=json.loads(B.last("SELECT jsonb_build_object('deliveries',(SELECT count(*) FROM public.entregas),'movements',(SELECT count(*) FROM public.estoque_movimentacoes),'os',(SELECT count(*) FROM public.ordens_servico),'resale_receipts',(SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1));"))
-  assert history_after==history_before,(history_before,history_after)
-  B.current_catalog.assert_current(B.last,CURRENT_CANDIDATE_TRIGGER_DELTAS,CURRENT_CANDIDATE_FUNCTION_DELTAS)
-  (OUT/'full-logistics-rollback.json').write_text(json.dumps({'closed':closed,'history_before':history_before,'history_after':history_after,'current_catalog_preserved':True},indent=2)+'\n')
-  checks.append(dict(test='reverse deny-only rollback closes logistics physical send confirmation and preserves history six guards eight ACLs',status='PASS'))
+  # Cadeia reversa completa: inclusive contenção e os dois geradores compostos,
+  # exatamente como no ramo logistics-only; nenhum POST intermediário é reutilizado.
+  run_final_delivery_rollback('integrated')
  except Exception:
   traceback.print_exc();checks.append(dict(test='new composition',status='FAIL'))
  finally:

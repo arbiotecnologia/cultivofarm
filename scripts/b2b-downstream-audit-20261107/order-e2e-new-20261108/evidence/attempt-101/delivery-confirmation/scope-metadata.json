@@ -1,0 +1,28 @@
+{
+  "capture_sha256": "8a53b1443ed789c76115b9ef16807ae835e1e0bda888d50e6f1606197792a6ac",
+  "relation_security_sha256": "20a514091f0ab4301cd11f67d530e1a17b94c4a7e1fea17196f100dca51f712d",
+  "relation_security_pins": 18,
+  "independent_diff_sha256": "8af0e9df54e8802a6e6ebd2e9072a84799cbe72d2956b4bd2992a4526571ce6a",
+  "diff_baseline_sha256": "ef892c73f2640189e8f08c92351dd0f4db86a06869b34a175d968f6870f9bff8",
+  "live_reconstructed_function_count": 1415,
+  "guarded_existing_functions": 23,
+  "new_candidate_functions": [
+    "platform_private.delivery_confirm_actor_v1()",
+    "platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb)",
+    "platform_private.delivery_confirm_exact_guard_v1()",
+    "platform_private.delivery_confirm_proof_v1(entregas)",
+    "platform_private.delivery_confirm_recheck_v1(uuid,uuid)",
+    "public.rpc_entrega_confirmacao_capability_v1(uuid)",
+    "public.rpc_entrega_confirmar_manual_v1(uuid,timestamp with time zone,text,jsonb)"
+  ],
+  "changed_candidate_dependencies": [
+    "platform_private.delivery_mutation_guard_20261030()",
+    "platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb)",
+    "public.fn_validate_entrega_confirmacao()"
+  ],
+  "guarded_relations": 18,
+  "pre_triggers": 120,
+  "post_triggers": 122,
+  "outside_scope": "all other LIVE functions/relations remain untouched and are not pinned by this scoped guard",
+  "transcription_correction": "owner confirmed COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA; captured MD5 a4d47ccf5d116141ed46e9de9ea7eeaa is authoritative"
+}

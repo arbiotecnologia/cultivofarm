@@ -30,9 +30,11 @@ Não existe script de ativação. `finished_product_gate_v1` e `b2b_resale_logis
 
 ## Rollback deny-only
 
-Ordem: `89` contenção → `90` endpoint/leitor → `94` logística → `93` físico → `91` envio+confirmação compostos.
+Ordem: `89` contenção → `90` endpoint/leitor → `94` logística → `93` físico → `92` ENVIO composto → `91` confirmação composta.
 
-Não usar o antigo rollback isolado de envio: seus guards globais foram superados. O rollback composto mede o estado escopado atual, incluindo `private` e `cf_user_guards_v1`, revoga writers e não apaga allowlist, histórico ou recibos.
+Não usar o antigo rollback isolado de envio: seu POST intermediário é anterior às reversões de logística/físico e não representa o estado final. Os geradores `92` e `91` medem separadamente o estado escopado vigente após todas as reversões anteriores, incluindo `private` e `cf_user_guards_v1`. Cada guard exige os pins exatos medidos e qualquer divergência aborta; a única mutação é revogar o writer daquela etapa. Nenhum corpo antigo é restaurado e nenhuma allowlist, histórico ou recibo é apagado.
+
+A inversão local completa também chama ENVIO e confirmação como papel `authenticated` depois das revogações e exige `permission denied`, além de conferir histórico, ACLs, catálogo e planos antes/depois.
 
 ## Evidência e integridade
 
