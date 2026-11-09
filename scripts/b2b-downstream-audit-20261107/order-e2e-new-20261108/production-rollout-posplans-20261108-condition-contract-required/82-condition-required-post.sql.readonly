@@ -1,0 +1,14 @@
+-- READ ONLY postflight.
+DO $p$ DECLARE v_acl text; BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger t WHERE t.tgrelid='public.partner_orders'::regclass AND t.tgname='trg_zz_b2b_condition_contract_required'
+                  AND t.tgenabled='O' AND t.tgdeferrable AND t.tginitdeferred
+                  AND t.tgfoid='platform_private.b2b_condition_contract_required_guard()'::regprocedure)
+  THEN RAISE EXCEPTION 'CCR_POST_TRIGGER'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger t WHERE t.tgrelid='public.partner_orders'::regclass AND t.tgname='trg_zz_b2b_condition_contract_required_upd'
+                  AND t.tgenabled='O' AND t.tgdeferrable AND t.tginitdeferred) THEN RAISE EXCEPTION 'CCR_POST_TRIGGER_UPD'; END IF;
+  SELECT array_to_string(ARRAY(SELECT x::text FROM unnest(p.proacl) x ORDER BY 1), ',') INTO v_acl
+    FROM pg_proc p WHERE p.oid='platform_private.b2b_condition_contract_required_guard()'::regprocedure;
+  IF v_acl IS DISTINCT FROM 'postgres=X/postgres' THEN RAISE EXCEPTION 'CCR_POST_ACL %', v_acl; END IF;
+  IF NOT (SELECT prosecdef FROM pg_proc WHERE oid='platform_private.b2b_condition_contract_required_guard()'::regprocedure)
+  THEN RAISE EXCEPTION 'CCR_POST_DEFINER'; END IF;
+END $p$;

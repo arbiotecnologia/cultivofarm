@@ -35,3 +35,8 @@ Exige incluir 5c4f35f8… no piloto pela UI admin, via `b2b_payment_condition_ac
 - Causa da omissão: `b2b_condition_mode(5c4f35f8…)` retorna `legacy` porque a ativação ARBio v1 é `pilot` com `[7e52de9a…]` apenas. A UI então oculta o seletor, envia `payment_method=null` e usa `create_partner_order_secure`. Esse comportamento é o projetado e não é perda. "Pagamento único"/10% é o plano TESTE-FLUXO-…-V2, e não a escolha de boleto.
 - Proibido: atribuir boleto ao PB-001038 retroativamente ou editar o pedido. O pedido fica como referência legada imutável.
 - Adequação antes de um novo pedido ou promoção: (1) o proprietário inclui 5c4f35f8… no piloto pela UI admin (CAS v1, preservando 7e52de9a…, nunca `enforced`); (2) uma leitura confirma que o modo retorna `required` para o parceiro e que o boleto aparece no leitor de opções; (3) o novo pedido sai pelo writer `create_partner_order_condition_secure` com ACK exato; (4) a leitura pós-pedido confirma a linha em `b2b_order_condition_snapshots`, com a data estimada e base NF.
+
+## Conclusão independente do proprietário (15:24Z), que substitui a suspeita de perda de coluna
+- PB-001038 passou pelo caminho legado: não tem snapshot privado nem recibo V1.
+- Causa da elegibilidade: a versão boleto v1 está aprovada para o plano `a129001e…`, mas não há atribuição para `5c4f35f8…` e o piloto só inclui `7e52de9a…`. O modo `legacy` deixou o writer legado aceitar o plano configurado. PB-001036 (`d2e37af8…`, teste4) também não tem snapshot e foi preservado.
+- Correção preparada: `production-rollout-posplans-20261108-condition-contract-required/` (81/82/96), 15/15 PASS em PG17 descartável sintético. Não foi aplicada e não há backfill.
