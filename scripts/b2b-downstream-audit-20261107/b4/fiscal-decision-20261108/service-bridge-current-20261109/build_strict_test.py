@@ -62,7 +62,21 @@ def main():
 '''
     s = replace(s, anchor, addition)
     s = replace(s, '        legacy_after_bridge = B3.u(398)',
-                '''        unlinked_customer = B3.u(376)
+                '''        invoice_revoked, tx_revoked = B3.u(462), B3.u(463)
+        seed_invoice(invoice_revoked, "AUTHORIZED", order=callback_order, with_item=True, item=callback_item)
+        B3.psql(f"UPDATE public.fiscal_invoices SET authorized_at=now(),access_key='35261111111111111111111111111111111111111111' WHERE id='{invoice_revoked}'")
+        seed_proof(invoice_revoked, tx_revoked, protocol="REVOKE-DURING-LOCK")
+        def revoke_accounting_during_order_lock():
+            return server_run("", f"BEGIN;SELECT 1 FROM public.partner_orders WHERE id='{callback_order}' FOR UPDATE;SELECT pg_sleep(1.5);UPDATE public.company_fiscal_settings SET is_active=false WHERE id='{company_a}';COMMIT;")
+        with concurrent.futures.ThreadPoolExecutor(2) as pool:
+            revocation = pool.submit(revoke_accounting_during_order_lock)
+            time.sleep(0.3)
+            revoked_bridge = service_sql(f"SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_revoked}');")
+            revocation_result = revocation.result()
+        B3.psql(f"UPDATE public.company_fiscal_settings SET is_active=true WHERE id='{company_a}'")
+        check("revogação contábil durante lock é revalidada pela dependência estrita", revocation_result.returncode == 0 and revoked_bridge.returncode != 0 and "B2B_FISCAL_ACCOUNTING_OR_TENANT_UNPROVEN" in revoked_bridge.stderr, [revocation_result.stderr, revoked_bridge.stderr])
+        check("revogação durante lock não deixa documento, snapshot, permit ou título", B3.psql(f"SELECT (SELECT count(*) FROM platform_private.b2b_authorized_documents WHERE id='{invoice_revoked}')||'|'||(SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id='{invoice_revoked}')||'|'||(SELECT count(*) FROM platform_private.b2b_fiscal_service_permits WHERE invoice_id='{invoice_revoked}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_revoked}')").stdout.strip() == "0|0|0|0")
+        unlinked_customer = B3.u(376)
         B3.psql(f"INSERT INTO public.clientes(id,organization_id) VALUES('{unlinked_customer}','{B3.A}') ON CONFLICT(id) DO NOTHING")
         legacy_after_bridge = B3.u(398)''')
     s = replace(s, '        B3.psql(real_dependencies + ";")\n        bridge_rollback = bridge_file("04-rollback-deny.sql.review")',
