@@ -111,8 +111,37 @@ def main():
     for text in (send_rollback, confirm_rollback):
         assert 'CREATE OR REPLACE' not in text and 'GRANT ' not in text
 
+    final_sql = {
+        path.name for path in package.iterdir()
+        if path.name.endswith('.sql.review') or path.name.endswith('.sql.readonly')
+    }
+    final_execution = manifest['final_artifact_execution']
+    if pending_final:
+        assert final_execution['status'] == 'NOT_RUN_PENDING_TEMPORARY_STAGING'
+        assert 'evidence-final-artifact-execution.json' not in manifest['files']
+        final_count = 0
+    else:
+        assert final_execution['status'] == 'PASS'
+        execution_path = package / 'evidence-final-artifact-execution.json'
+        execution = json.loads(execution_path.read_text())
+        assert execution['status'] == 'PASS' and execution['hosted'] is False
+        assert execution['postgresql_version'].startswith('17.')
+        assert execution['relation_security_preserved'] is True
+        assert execution['history_before'] == execution['history_after']
+        assert execution['plans_before_md5'] == execution['plans_after_md5']
+        assert execution['gates_activated'] is False
+        assert sha(execution_path) == final_execution['evidence_sha256']
+        executed = {row['file']: row for row in execution['artifacts']}
+        assert set(executed) == final_sql
+        for name, row in executed.items():
+            assert row['returncode'] == 0 and row['sha256'] == sha(package / name), name
+        assert all(row['permission_denied'] is True and row['returncode'] != 0
+                   for row in execution['authenticated_negative'].values())
+        final_count = len(executed)
+        assert final_count == final_execution['artifacts'] == 24
+
     print(json.dumps({
-        'status': 'VERIFIED_OFFLINE_REVIEW_ONLY_INACTIVE_NOT_APPROVED',
+        'status': 'VERIFIED_OFFLINE_PENDING_FINAL_EXECUTION' if pending_final else 'VERIFIED_OFFLINE_REVIEW_ONLY_INACTIVE_NOT_APPROVED',
         'package': str(package),
         'files_verified': len(manifest['files']),
         'manifest_sha256': sha(package / 'manifest.json'),
@@ -122,6 +151,7 @@ def main():
         'relation_security_pins': 18,
         'composition_checks': len(checks),
         'pilot_checks': len(pilot),
+        'final_artifacts_executed': final_count,
         'hosted_io': False,
         'authenticated_real_proof': 'NOT_RUN',
     }, indent=2))
