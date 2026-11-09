@@ -110,6 +110,10 @@ def main():
   checks.append(dict(test='new physical control purchase reserve send proof confirm without manufacture',status='PASS'))
   commercial=load('new_commercial_merge',H/'commercial.py')
   Q=commercial.apply(B,load,ROOT,OUT)
+  customer_id=Q.u(301)
+  B.sql(f"SET session_replication_role=replica;INSERT INTO public.clientes(id,organization_id,nome,codigo_cliente) VALUES('{customer_id}','{Q.A}','CLIENTE FISCAL SINTETICO LOCAL','LOCAL-FISCAL-301') ON CONFLICT(id) DO NOTHING;UPDATE public.partner_accounts SET client_id='{customer_id}' WHERE id='{Q.P}' AND commercial_owner_organization_id='{Q.A}';SET session_replication_role=origin;")
+  assert B.last(f"SELECT client_id FROM public.partner_accounts WHERE id='{Q.P}' AND commercial_owner_organization_id='{Q.A}';")==customer_id
+  (OUT/'financial-customer-fixture.json').write_text(json.dumps(dict(customer_id=customer_id,partner_id=Q.P,organization_id=Q.A,synthetic=True,hosted=False,reason='B4 requires partner_accounts.client_id; same fixture seam as strict battery'),indent=2)+'\n')
   checks.append(dict(test='new B3 captured economic composition merged without dropped physical guards',status='PASS'))
   # f32c4f3: o candidato de planos é instalado no MESMO banco da B3/logística.
   # PRE/POST permanecem integrais; divergência de pin aborta sem stub ou bypass.
@@ -671,9 +675,10 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   callback=authorized_callback()
   assert callback.returncode==0,(callback.stdout,callback.stderr)
   callback_data=json.loads(callback.stdout.strip().splitlines()[-1])
-  close_debug=json.loads(B.last("SELECT coalesce(json_agg(json_build_object('error_code',error_code,'error_detail',error_detail)),'[]'::json) FROM (SELECT error_code,error_detail FROM platform_private.fiscal_close_pending ORDER BY created_at DESC LIMIT 3) q;"))
-  (OUT/'integrated-close-debug.json').write_text(json.dumps(dict(callback=callback_data,close_pending=close_debug),indent=2)+'\n')
-  assert callback_data['outcome']=='AUTHORIZED' and callback_data['cStat']=='104' and callback_data['protocolCStat']=='100' and callback_data['reconciliationPending'] is False and callback_data['reconciliationCode'] is None,(callback_data,close_debug)
+  close_debug=json.loads(B.last("SELECT coalesce(json_agg(row_to_json(q)),'[]'::json) FROM (SELECT * FROM platform_private.fiscal_close_pending LIMIT 3) q;"))
+  direct_close=B.run_raw(f"SET ROLE service_role;SELECT public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_id}','{access_key}','LOCAL-INTEGRATED-PROTOCOL',now(),'100','LOTE PROCESSADO; PROTOCOLO AUTORIZADO','{transmission_id}');")
+  (OUT/'integrated-close-debug.json').write_text(json.dumps(dict(callback=callback_data,close_pending=close_debug,direct_close_stdout=direct_close.stdout,direct_close_stderr=direct_close.stderr,direct_close_returncode=direct_close.returncode),indent=2)+'\n')
+  assert callback_data['outcome']=='AUTHORIZED' and callback_data['cStat']=='104' and callback_data['protocolCStat']=='100' and callback_data['reconciliationPending'] is False and callback_data['reconciliationCode'] is None,(callback_data,close_debug,direct_close.stdout,direct_close.stderr)
   replay_callback=authorized_callback()
   assert replay_callback.returncode==0,(replay_callback.stdout,replay_callback.stderr)
   replay_data=json.loads(replay_callback.stdout.strip().splitlines()[-1])

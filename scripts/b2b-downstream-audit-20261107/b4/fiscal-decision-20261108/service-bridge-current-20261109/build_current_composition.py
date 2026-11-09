@@ -18,6 +18,12 @@ def edit(s, old, new, count=1):
 def main():
     s = SOURCE.read_text()
     s = edit(s, "checks=[]\n", "checks=[]\nSTRICT_FISCAL=True\n")
+    s = edit(s, "  Q=commercial.apply(B,load,ROOT,OUT)",
+                """  Q=commercial.apply(B,load,ROOT,OUT)
+  customer_id=Q.u(301)
+  B.sql(f"SET session_replication_role=replica;INSERT INTO public.clientes(id,organization_id,nome,codigo_cliente) VALUES('{customer_id}','{Q.A}','CLIENTE FISCAL SINTETICO LOCAL','LOCAL-FISCAL-301') ON CONFLICT(id) DO NOTHING;UPDATE public.partner_accounts SET client_id='{customer_id}' WHERE id='{Q.P}' AND commercial_owner_organization_id='{Q.A}';SET session_replication_role=origin;")
+  assert B.last(f"SELECT client_id FROM public.partner_accounts WHERE id='{Q.P}' AND commercial_owner_organization_id='{Q.A}';")==customer_id
+  (OUT/'financial-customer-fixture.json').write_text(json.dumps(dict(customer_id=customer_id,partner_id=Q.P,organization_id=Q.A,synthetic=True,hosted=False,reason='B4 requires partner_accounts.client_id; same fixture seam as strict battery'),indent=2)+'\\n')""")
     s = edit(s, "  checks.append(dict(test='plan tenant candidate PRE POST in same DB; seller positive FSF read write negative and cross tenant same code',status='PASS'))",
                 """  checks.append(dict(test='plan tenant candidate PRE POST in same DB; seller positive FSF read write negative and cross tenant same code',status='PASS'))
   strict_dir=ROOT/'scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109'
@@ -57,9 +63,10 @@ def main():
     s = edit(s, "  assert replay_data['reconciliationPending'] is True,replay_data",
                 "  assert replay_data['reconciliationPending'] is False,replay_data")
     s = edit(s, "  assert callback_data['outcome']=='AUTHORIZED' and callback_data['cStat']=='104' and callback_data['protocolCStat']=='100' and callback_data['reconciliationPending'] is False and callback_data['reconciliationCode'] is None,callback_data",
-                """  close_debug=json.loads(B.last("SELECT coalesce(json_agg(json_build_object('error_code',error_code,'error_detail',error_detail)),'[]'::json) FROM (SELECT error_code,error_detail FROM platform_private.fiscal_close_pending ORDER BY created_at DESC LIMIT 3) q;"))
-  (OUT/'integrated-close-debug.json').write_text(json.dumps(dict(callback=callback_data,close_pending=close_debug),indent=2)+'\\n')
-  assert callback_data['outcome']=='AUTHORIZED' and callback_data['cStat']=='104' and callback_data['protocolCStat']=='100' and callback_data['reconciliationPending'] is False and callback_data['reconciliationCode'] is None,(callback_data,close_debug)""")
+                """  close_debug=json.loads(B.last("SELECT coalesce(json_agg(row_to_json(q)),'[]'::json) FROM (SELECT * FROM platform_private.fiscal_close_pending LIMIT 3) q;"))
+  direct_close=B.run_raw(f"SET ROLE service_role;SELECT public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_id}','{access_key}','LOCAL-INTEGRATED-PROTOCOL',now(),'100','LOTE PROCESSADO; PROTOCOLO AUTORIZADO','{transmission_id}');")
+  (OUT/'integrated-close-debug.json').write_text(json.dumps(dict(callback=callback_data,close_pending=close_debug,direct_close_stdout=direct_close.stdout,direct_close_stderr=direct_close.stderr,direct_close_returncode=direct_close.returncode),indent=2)+'\\n')
+  assert callback_data['outcome']=='AUTHORIZED' and callback_data['cStat']=='104' and callback_data['protocolCStat']=='100' and callback_data['reconciliationPending'] is False and callback_data['reconciliationCode'] is None,(callback_data,close_debug,direct_close.stdout,direct_close.stderr)""")
     old_expected = "  assert blocked=={'invoice_status':invoice_initial['normalized_status'],'invoice_receivable':None,'transmission_outcome':'AUTHORIZED','transmission_c_stat':'104','transmission_protocol_c_stat':'100','transmission_error':None,'close_pending':'FISCAL_AUTHORIZATION_CLOSE_PENDING','close_pending_attempts':2,'transmissions':1,'invoices':1,'xml_runs':1,'transmission_idempotency':transmission_idem,'transmission_fingerprint':transmission_fingerprint,'documents':0,'allocations':0,'snapshots':0,'receivables':0},blocked"
     new_expected = """  assert blocked['transmission_outcome']=='AUTHORIZED' and blocked['transmission_c_stat']=='104' and blocked['transmission_protocol_c_stat']=='100',blocked
   assert blocked['invoice_status']=='AUTHORIZED' and blocked['invoice_receivable'] and blocked['transmission_error'] is None,blocked
@@ -102,7 +109,10 @@ def main():
     OUT.write_text(s)
     runner_source = SOURCE.with_name("rebuild.py").read_text()
     assert runner_source.count("order-e2e-new-20261108/compose.py'") == 1
-    SOURCE.with_name("rebuild_current.py").write_text(runner_source.replace("order-e2e-new-20261108/compose.py'", "order-e2e-new-20261108/compose_current.py'"))
+    runner_source = runner_source.replace("order-e2e-new-20261108/compose.py'", "order-e2e-new-20261108/compose_current.py'")
+    runner_source = edit(runner_source, "    attempt = next_attempt()\n    attempt.mkdir()",
+                        "    attempt = Path(os.environ['NEW_E2E_RUN_OUT']) if os.environ.get('NEW_E2E_RUN_OUT') else next_attempt()\n    attempt.mkdir(exist_ok=False)")
+    SOURCE.with_name("rebuild_current.py").write_text(runner_source)
     print(f"generated {OUT} ({len(s.splitlines())} lines) and rebuild_current.py")
 
 

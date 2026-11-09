@@ -1,0 +1,13 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/pedidos/pedidosB2BStatusFilter.test.tsx (11 tests) 76ms
+ ✓ src/test/pedidos/accountingPending.test.tsx (5 tests) 56ms
+ ✓ src/test/pedidos/financeiroB2BCreditLink.test.tsx (1 test) 225ms
+ ✓ src/test/pedidos/partnerOrdersAdminScope.test.tsx (13 tests) 1158ms
+
+ Test Files  4 passed (4)
+      Tests  30 passed (30)
+   Start at  20:41:52
+   Duration  6.77s (transform 831ms, setup 1.55s, collect 4.36s, tests 1.52s, environment 7.81s, prepare 4.47s)
+

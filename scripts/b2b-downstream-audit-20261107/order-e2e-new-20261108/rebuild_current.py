@@ -29,8 +29,8 @@ def next_attempt() -> Path:
 def main():
     # Each run writes only to a new directory. Previous root files, attempts,
     # stdout/stderr and exit codes are never moved or reused as current proof.
-    attempt = next_attempt()
-    attempt.mkdir()
+    attempt = Path(os.environ['NEW_E2E_RUN_OUT']) if os.environ.get('NEW_E2E_RUN_OUT') else next_attempt()
+    attempt.mkdir(exist_ok=False)
     work = Path(tempfile.mkdtemp(prefix='new-order-e2e-', dir='/tmp'))
     mirror = work / 'project'
     mirror.mkdir()

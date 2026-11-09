@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-j5t6bzg1/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 114, in main
+    B.sql(f"SET session_replication_role=replica;INSERT INTO public.clientes(id,organization_id,nome) VALUES('{customer_id}','{Q.A}','CLIENTE FISCAL SINTETICO LOCAL') ON CONFLICT(id) DO NOTHING;UPDATE public.partner_accounts SET client_id='{customer_id}' WHERE id='{Q.P}' AND commercial_owner_organization_id='{Q.A}';SET session_replication_role=origin;")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-j5t6bzg1/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 56, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-j5t6bzg1/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  null value in column "codigo_cliente" of relation "clientes" violates not-null constraint
+DETAIL:  Failing row contains (00000000-0000-0000-0000-000000000301, CLIENTE FISCAL SINTETICO LOCAL, null, null, null, null, 2026-11-09 20:43:10.686808+00, 2026-11-09 20:43:10.686808+00, juridica, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, t, null, null, null, null, null, null, null, null, null, null, ativo, {}, null, null, null, null, null, null, null, null, {}, null, null, null, null, 00000000-0000-0000-0000-000000000001).
+

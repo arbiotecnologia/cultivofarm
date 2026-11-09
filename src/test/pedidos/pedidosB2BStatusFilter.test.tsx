@@ -45,11 +45,33 @@ describe("filtro de status /comercial/pedidos-b2b", () => {
     expect(observedSearch).toBe("?aba=carteira");
   });
 
-  it("status no endereço não substitui a retenção volátil nem vira preferência", () => {
+  it("query válida é intenção única, vale na entrada e não persiste status na URL", () => {
     writePauseState(`${pauseStateKey({ userId: "uA", organizationId: "orgA", roles: ["comercial"], epoch: 0 })}:pedidos-b2b:status`, "aguardando_aprovacao_credito");
-    expect(use("/comercial/pedidos-b2b?status=aprovado").result.current[0]).toBe("aguardando_aprovacao_credito");
+    const h = use("/comercial/pedidos-b2b?status=aprovado&aba=carteira");
+    expect(h.result.current[0]).toBe("aprovado");
+    expect(observedSearch).toBe("?aba=carteira");
+    h.unmount();
+    expect(use(`/comercial/pedidos-b2b${observedSearch}`).result.current[0]).toBe("aprovado");
+  });
+
+  it("query inválida cai em Todos, é removida e não recupera escolha anterior", () => {
+    writePauseState(`${pauseStateKey({ userId: "uA", organizationId: "orgA", roles: ["comercial"], epoch: 0 })}:pedidos-b2b:status`, "aguardando_aprovacao_credito");
+    const h = use("/comercial/pedidos-b2b?status=hack&aba=carteira");
+    expect(h.result.current[0]).toBe("all");
+    expect(observedSearch).toBe("?aba=carteira");
+    h.unmount();
+    expect(use(`/comercial/pedidos-b2b${observedSearch}`).result.current[0]).toBe("all");
+  });
+
+  it("reload após consumir query válida perde a intenção e volta a Todos", () => {
+    const h = use("/comercial/pedidos-b2b?status=aguardando_aprovacao_credito&aba=carteira");
+    expect(h.result.current[0]).toBe("aguardando_aprovacao_credito");
+    expect(observedSearch).toBe("?aba=carteira");
+    h.unmount();
     clearAllPauseStates();
-    expect(use("/comercial/pedidos-b2b?status=aprovado").result.current[0]).toBe("all");
+    const after = use(`/comercial/pedidos-b2b${observedSearch}`);
+    expect(after.result.current[0]).toBe("all");
+    expect(observedSearch).toBe("?aba=carteira");
   });
 
   it("ready -> revalidando (nova época) -> ready não reseta", () => {
