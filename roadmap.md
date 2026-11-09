@@ -1,3 +1,8 @@
+## 09/11 01:34 — Revisão de concorrência da contenção do piloto
+- [ ] Reproduzir e corrigir no gerador o uso de `now()` na autorização final e a ausência de lock compartilhado entre concessão/revogação e writers, preservando leituras e demais mecanismos.
+- [ ] Executar em PostgreSQL 17 descartável transação iniciada antes do vencimento e bloqueada até depois dele, revogação confirmada antes da autorização final e revogação concorrente após autorização; exigir negação/serialização sem efeitos parciais.
+- [ ] Regenerar o pacote REVIEW_ONLY, executar os arquivos finais exatos com rollback, conferir hashes/manifesto e manter produção, publicação, ativação e prova JWT/RLS/Storage/browser fora do escopo.
+
 ## 09/11 01:13 — Bloqueio SQLSTATE 42601 no PRE final e execução dos artefatos promovidos
 - [x] Gerador corrigido com regressão 4/4: remove somente o terminador externo da consulta `SELECT` antes de embuti-la na subtração JSONB e rejeita qualquer outro ponto-e-vírgula. Todos os PRE/INSTALL/POST/ROLLBACK afetados foram regenerados sem alterar pins de segurança ou reabrir writers.
 - [x] Attempt 102 preservou uma falha real adicional: 23 arquivos passaram e `92-send-rollback-deny.sql.review` falhou fechado porque o pin continha grants temporários do ensaio. O gerador foi corrigido para medir o estado fechado produzido por PRE → INSTALL/POST e rejeitar EXECUTE de cliente nos pins finais.
