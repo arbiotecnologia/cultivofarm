@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-kJ9VqAnz/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 59, in main
+    current_scope.rewrite_confirmation(confirmation_out,C.G.STATE)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-kJ9VqAnz/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/current_scope.py", line 399, in rewrite_confirmation
+    pre, post, metadata = _pair(pre_state, post_state)
+                          ~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-kJ9VqAnz/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/current_scope.py", line 303, in _pair
+    assert _acl(post[1]) == _acl(captured["acl"]) and post[4] == captured["owner"], f"CANDIDATE_RELATION_ACL_DRIFT:{name}"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: CANDIDATE_RELATION_ACL_DRIFT:platform_private.envase_insert_permits_v1
