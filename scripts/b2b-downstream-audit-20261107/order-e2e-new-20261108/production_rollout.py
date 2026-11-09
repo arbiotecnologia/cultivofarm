@@ -237,6 +237,18 @@ def main():
     generated('40-logistics-pre-after-physical.sql.readonly',
               'BEGIN READ ONLY;\n' + pre_from_install(E / 'logistics/install.sql.review', E / 'logistics/candidate.sql.review') + 'ROLLBACK;\n',
               [E / 'logistics/install.sql.review', E / 'logistics/candidate.sql.review'])
+    final_sql = {
+        path.name for path in staging.iterdir()
+        if path.name.endswith('.sql.review') or path.name.endswith('.sql.readonly')
+    }
+    if not pending_final:
+        executed = {row['file']: row for row in final_execution['artifacts']}
+        assert set(executed) == final_sql, {
+            'not_executed': sorted(final_sql - set(executed)),
+            'missing': sorted(set(executed) - final_sql),
+        }
+        for name, row in executed.items():
+            assert row['returncode'] == 0 and row['sha256'] == sha(staging / name), name
 
     evidence_summary = {
         'evidence_directory': rel(E),

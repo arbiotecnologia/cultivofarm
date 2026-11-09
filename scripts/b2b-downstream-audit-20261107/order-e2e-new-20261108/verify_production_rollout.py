@@ -18,6 +18,9 @@ def sha(path):
 
 def main():
     package = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else H / 'production-rollout-posplans-20261108'
+    pending_final = os.environ.get('ROLLOUT_DEFER_FINAL_EXECUTION') == '1'
+    if pending_final:
+        assert package.is_relative_to(Path('/tmp')), 'PENDING_FINAL_EXECUTION_NOT_TEMPORARY'
     manifest = json.loads((package / 'manifest.json').read_text())
     assert manifest['status'] == 'REVIEW_ONLY_INACTIVE_NOT_APPROVED'
     assert manifest['production_ref'] == 'swzpzcwiasxmjutrmvkm'
