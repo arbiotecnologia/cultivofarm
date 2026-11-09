@@ -187,9 +187,9 @@ def build_bodies(raw):
     body = defs[sig]["body"]
     body = one(body,
         "EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)",
-        "platform_private.resale_pilot_delivery_allowed_v1('b2b_resale',NULL,auth.uid(),e.organization_id,e.id)",
+        "platform_private.resale_pilot_delivery_scope_v1('b2b_resale',NULL,auth.uid(),e.organization_id,e.id)",
         "delivery lineage scoped")
-    defs[sig]["new"] = body
+    defs[sig]["new"] = one(body, " STABLE SECURITY DEFINER", " VOLATILE SECURITY DEFINER", "delivery lineage volatility")
 
     sig = "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)"
     body = defs[sig]["body"]
