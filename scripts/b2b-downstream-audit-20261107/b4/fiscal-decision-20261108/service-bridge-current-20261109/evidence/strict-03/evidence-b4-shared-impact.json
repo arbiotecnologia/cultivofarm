@@ -1,0 +1,395 @@
+{
+  "kind": "DISPOSABLE_STRICT_FISCAL_PERMIT_TO_RECEIVABLE_REVIEW_ONLY_NOT_HOSTED",
+  "review": "458b6012+4097d4e2+manual-null-1813+fiscal-units-grams-1f4073+final-credit-terms-1833+ab904bf",
+  "review_ab904bf_mode": "AFTER_CANDIDATE",
+  "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
+  "historical_63_not_added": "review-458b6012/historical-63/evidence-b4-b3.json",
+  "object_manifest": "b4-object-manifest.json",
+  "live_facts": [
+    "USER_REPORTED_READONLY_4097D4E2",
+    "USER_REPORTED_READONLY_MANUAL_NULL_1813; cinco títulos não lidos nem alterados pelo agente"
+  ],
+  "installation": "DISPOSABLE_PRE_INSTALL_POST_ROLLBACK_PASS; positive only after strict permit validator; no always-allow stub",
+  "credit_limit_zero_review": {
+    "zero": "VALID_LIMIT_ZERO_POSITIVE_EXPOSURE_LIMIT_EXCEEDED",
+    "null_negative_nan": "CREDIT_SETTINGS_INCOMPLETE",
+    "live_settings_changed": false
+  },
+  "shared_impact_scope": [
+    "credit_limit zero/NULL/negativo/NaN em parceiro isolado sem exposição",
+    "cinco MANUAL partner_id NULL + cliente único, 4 OPEN/1 OVERDUE",
+    "múltiplos parceiros no mesmo cliente",
+    "conflito partner_id/customer_id/owner",
+    "MANUAL não B2B sem parceiro: parcela e baixa legadas",
+    "MANUAL não B2B com parceiro: exposição e baixa MONEY_ORIGIN_UNPROVEN",
+    "pedidos atuais inalterados e nova simulação do parceiro bloqueada",
+    "origem monetária legada desconhecida",
+    "pedido interno sintético",
+    "writer integral antigo"
+  ],
+  "passed": 79,
+  "total": 85,
+  "checks": [
+    {
+      "name": "boot B2/B3 com gatilhos reais",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: platform_private.h15_actor_organization()",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)",
+      "ok": true
+    },
+    {
+      "name": "B3 01-pre.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "B3 02-install.sql.review",
+      "ok": true
+    },
+    {
+      "name": "B3 03-post.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "publicação B3 usada pelo B4",
+      "ok": true
+    },
+    {
+      "name": "publicação B3 usada pelo B4",
+      "ok": true
+    },
+    {
+      "name": "piloto B3 restrito ao parceiro fictício",
+      "ok": true
+    },
+    {
+      "name": "cotação B3 criada sem título",
+      "ok": true
+    },
+    {
+      "name": "resposta de cotação B3 com centavos",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture independente de recuperação criada sem título",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture independente do callback fiscal criada sem título",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture independente para ordenação de locks criada sem título",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture contábil pendente separada",
+      "ok": true
+    },
+    {
+      "name": "guard downstream real tem MD5 exato",
+      "ok": true
+    },
+    {
+      "name": "trigger compartilhado candidato ainda ausente antes dos históricos",
+      "ok": true
+    },
+    {
+      "name": "cinco históricos locais 4 OPEN/1 OVERDUE nascem com partner_id NULL",
+      "ok": true
+    },
+    {
+      "name": "históricos de ambiguidade/conflito são preservados sem correção retroativa",
+      "ok": true
+    },
+    {
+      "name": "PRE confirma writers/índice e ausência de todos os overloads da projeção",
+      "ok": true
+    },
+    {
+      "name": "instalação descartável cria projeção nova e passa PRE+POST íntegros",
+      "ok": true
+    },
+    {
+      "name": "POST confirma exatamente um overload owner-only e metadata completa",
+      "ok": true
+    },
+    {
+      "name": "instalação não habilita a dependência fiscal/contábil",
+      "ok": true
+    },
+    {
+      "name": "rerun falha fechado ao encontrar overload/objetos já criados",
+      "ok": true
+    },
+    {
+      "name": "instalação não substitui dependência operacional por stub",
+      "ok": true
+    },
+    {
+      "name": "32 gatilhos reais carregados pelo harness B3 continuam habilitados",
+      "ok": true
+    },
+    {
+      "name": "B3 create/simulate antigos não foram restaurados nem alterados",
+      "ok": true
+    },
+    {
+      "name": "autorização fiscal continua service-only e sem integração de recebível",
+      "ok": true
+    },
+    {
+      "name": "gate fiscal/contábil não comprovado permanece fechado",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado sem evento fiscal alocado permanece previsão, sem dívida",
+      "ok": true
+    },
+    {
+      "name": "cliente não invoca alocador privado",
+      "ok": true
+    },
+    {
+      "name": "componente econômico direto fora desta bateria estrita",
+      "ok": true
+    },
+    {
+      "name": "rollback B4 deny-only antes da ponte preserva histórico",
+      "ok": true
+    },
+    {
+      "name": "nenhum título fiscal existe antes da confirmação",
+      "ok": true
+    },
+    {
+      "name": "ponte PRE confirma pins B4 e autorização capturada",
+      "ok": true
+    },
+    {
+      "name": "ponte service-only instala com POST e ACL fechada",
+      "ok": true
+    },
+    {
+      "name": "ponte POST íntegro",
+      "ok": true
+    },
+    {
+      "name": "ponte não recebe EXECUTE de usuário autenticado",
+      "ok": true
+    },
+    {
+      "name": "ponte mantém dependência fiscal/contábil real fechada antes da costura local",
+      "ok": true
+    },
+    {
+      "name": "dependência negada não deixa documento/título",
+      "ok": true
+    },
+    {
+      "name": "etapa estrita PRE confirma B4, ponte, legado e dez gatilhos originais",
+      "ok": false,
+      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/01-pre.sql.readonly:18: ERROR:  B2B_FISCAL_REF_NOT_VERIFIED\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\n"
+    },
+    {
+      "name": "etapa estrita instala validação por permit fiscal real, sem stub",
+      "ok": false,
+      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/02-install.sql.review:16: ERROR:  B2B_FISCAL_REF_NOT_VERIFIED\nCONTEXT:  PL/pgSQL function inline_code_block line 1 at RAISE\n"
+    },
+    {
+      "name": "etapa estrita POST preserva ACL, metadata e legado negado",
+      "ok": false,
+      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/03-post.sql.readonly:16: ERROR:  B2B_STRICT_POST_DRIFT:platform_private.b2b_integration_dependencies()\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\n"
+    },
+    {
+      "name": "nenhum stub always-allow foi instalado",
+      "ok": true
+    },
+    {
+      "name": "evento pendente é ignorado sem título",
+      "ok": true
+    },
+    {
+      "name": "evento rejeitado é ignorado sem título",
+      "ok": true
+    },
+    {
+      "name": "pendente/rejeitado não criam documento ou recebível",
+      "ok": true
+    },
+    {
+      "name": "callback H13 pendente não chama autorização nem cria título",
+      "ok": true
+    },
+    {
+      "name": "callback H13 rejeitado não promove NF nem cria título",
+      "ok": true
+    },
+    {
+      "name": "callbacks reais pendente/rejeitado preservam zero documentos fiscais B4",
+      "ok": true
+    },
+    {
+      "name": "DEPOIS: retorno não-B2B é classificado e autorizado sem título B2B",
+      "ok": true
+    },
+    {
+      "name": "DEPOIS: classificação não-B2B não cria documento/título B4",
+      "ok": true
+    },
+    {
+      "name": "retorno externo não-B2B permanece durável na transmissão",
+      "ok": true
+    },
+    {
+      "name": "DEPOIS: parser preserva lote 104 e protocolo 100 em campos separados",
+      "ok": true
+    },
+    {
+      "name": "DEPOIS: H12 consome protocolo 100 e fecha não-B2B sem título",
+      "ok": true
+    },
+    {
+      "name": "DEPOIS: coluna protocol_c_stat conserva evidência efetiva 100",
+      "ok": true
+    },
+    {
+      "name": "replay do mesmo envelope 104/100 não duplica transmissão nem efeito fiscal",
+      "ok": true
+    },
+    {
+      "name": "replay 104/100 recuperado permanece sem pendência e sem rebaixar evidência",
+      "ok": true
+    },
+    {
+      "name": "vínculo B2B parcial não escapa como não-B2B",
+      "ok": true
+    },
+    {
+      "name": "DEPOIS: _c_stat divergente não autoriza nem cria título",
+      "ok": true
+    },
+    {
+      "name": "DEPOIS: ausência de transmissão falha fechado",
+      "ok": true
+    },
+    {
+      "name": "DEPOIS: NFS-e permanece fail-closed até callback específico",
+      "ok": true
+    },
+    {
+      "name": "autorização com falha pós-título aborta sem perder capacidade de retry",
+      "ok": false,
+      "detail": "ERROR:  B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN\nCONTEXT:  PL/pgSQL function platform_private.b2b_integration_dependencies() line 2 at RAISE\nSQL statement \"SELECT platform_private.b2b_integration_dependencies()\"\nPL/pgSQL function platform_private.b2b_allocate_document(uuid) line 10 at PERFORM\nPL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 90 at assignment\nPL/pgSQL function rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid) line 76 at assignment\n"
+    },
+    {
+      "name": "falha da autorização não deixa NF autorizada, documento ou título parcial",
+      "ok": true
+    },
+    {
+      "name": "retentativa autorizada gera um recebível B4 pela NF",
+      "ok": false,
+      "detail": "ERROR:  B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN\nCONTEXT:  PL/pgSQL function platform_private.b2b_integration_dependencies() line 2 at RAISE\nSQL statement \"SELECT platform_private.b2b_integration_dependencies()\"\nPL/pgSQL function platform_private.b2b_allocate_document(uuid) line 10 at PERFORM\nPL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 90 at assignment\nPL/pgSQL function rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid) line 76 at assignment"
+    },
+    {
+      "name": "execução sem exceção de harness",
+      "ok": false,
+      "detail": "RuntimeError('ERROR:  invalid input syntax for type uuid: \"None\"\\nLINE 1: ...by::text FROM public.accounts_receivable WHERE id=\\'None\\'),\\'<...\\n                                                             ^\\n')"
+    }
+  ],
+  "hosted": "NOT_RUN",
+  "jwt_rls_storage": "NOT_RUN",
+  "synthetic_seams": [
+    "Auth por GUC/roles locais",
+    "adaptador servidor local sem SET ROLE para funções privadas; negação cliente testada separadamente",
+    "schema financeiro capturado com FK/RLS externos omitidos",
+    "títulos históricos criados antes do trigger candidato com dez gatilhos atuais ativos; nenhum backfill",
+    "company_fiscal_settings fictícia VALIDATED",
+    "autorização/cancelamento fiscal privado fictício sem rede",
+    "nenhuma substituição permissiva; validador exige permit txid + NF + protocolo + tenant + contabilidade VALIDATED sintética",
+    "c2_order_partner_recipients sintética sem destinatários, somente para concluir aprovação",
+    "entregas mínima para o fence"
+  ],
+  "b3_overloads_restored": false,
+  "historical_301bf597": "não liberado; componentes B4 extraídos e adaptados, não prova de equivalência"
+}

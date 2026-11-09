@@ -436,10 +436,10 @@ ALTER TABLE public.fiscal_sefaz_transmissions ADD COLUMN IF NOT EXISTS xml_run_i
 CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),table_name text,record_id uuid,action text,old_values jsonb,new_values jsonb,changed_by uuid);""")
         captured_tx_guard = next(x["body"] for x in json.loads(CAPTURE.read_text())["functions"] if x["name"] == "fn_fiscal_sefaz_tx_guard")
         B3.psql(captured_tx_guard + ";DROP TRIGGER IF EXISTS trg_fiscal_sefaz_tx_guard ON public.fiscal_sefaz_transmissions;CREATE TRIGGER trg_fiscal_sefaz_tx_guard BEFORE DELETE OR UPDATE ON public.fiscal_sefaz_transmissions FOR EACH ROW EXECUTE FUNCTION public.fn_fiscal_sefaz_tx_guard();")
-        B3.psql(f"""INSERT INTO public.company_fiscal_settings(organization_id,is_active,configuration_status,legal_name,cnpj,configuration_version)
+        B3.psql(f"""INSERT INTO public.company_fiscal_settings(organization_id,is_active,configuration_status,accounting_validated_at,legal_name,cnpj,configuration_version)
  SELECT '{B3.A}',true,'VALIDATED',now(),'AR BIO FIXTURE LOCAL','00000000000191',7 WHERE NOT EXISTS(SELECT 1 FROM public.company_fiscal_settings WHERE organization_id='{B3.A}' AND is_active);""")
         company_a = B3.psql(f"SELECT id FROM public.company_fiscal_settings WHERE organization_id='{B3.A}' AND is_active").stdout.strip()
-        B3.psql(f"""INSERT INTO public.company_fiscal_settings(organization_id,is_active,configuration_status,legal_name,cnpj,configuration_version)
+        B3.psql(f"""INSERT INTO public.company_fiscal_settings(organization_id,is_active,configuration_status,accounting_validated_at,legal_name,cnpj,configuration_version)
  SELECT '{B3.F}',true,'VALIDATED',now(),'FSF FIXTURE LOCAL','00000000000191',1 WHERE NOT EXISTS(SELECT 1 FROM public.company_fiscal_settings WHERE organization_id='{B3.F}' AND is_active);""")
         company_f = B3.psql(f"SELECT id FROM public.company_fiscal_settings WHERE organization_id='{B3.F}' AND is_active").stdout.strip()
         invoice_main, invoice_pending, invoice_denied, invoice_foreign = [B3.u(390+i) for i in range(4)]
