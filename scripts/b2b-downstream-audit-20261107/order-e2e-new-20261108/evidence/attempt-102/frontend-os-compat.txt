@@ -1,0 +1,12 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/ordens-servico/validacao.test.ts (36 tests) 40ms
+ ✓ src/test/ordens-servico/approval.test.tsx (10 tests) 508ms
+ ✓ src/test/ordens-servico/programming.test.tsx (27 tests) 1031ms
+
+ Test Files  3 passed (3)
+      Tests  73 passed (73)
+   Start at  01:20:48
+   Duration  4.17s (transform 421ms, setup 420ms, collect 1.98s, tests 1.58s, environment 2.81s, prepare 366ms)
+
