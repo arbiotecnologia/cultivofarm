@@ -23,3 +23,9 @@ Não reinstalar `11/21/26/31/41/51/61`. Se aprovado: `70` → `71` → `72`.
 ## Limites
 
 PostgreSQL 17 descartável com Auth/papéis sintéticos; não prova JWT/RLS/Storage hospedados. Sem SQL hospedado, ativação, publicação, fiscal, envios ou cobrança.
+
+## Instalação relatada pelo auditor (09/11/2026 15:31Z)
+- Revisão independente de c416: delta exato de uma linha (`SELECT po.*`), 19 testes, runner e hashes dos 8 arquivos.
+- PRE70 real PASS. `b2b_resale_reader_rowtype_reviewed_20261109` SUCCESS. POST72 PASS.
+- Não reinstalar 71 nem 11/21/26/31/41/51/61. O pin do leitor do POST62 foi substituído pelo do POST72.
+- Este é um relato do auditor; o agente não executou SQL hospedado.
