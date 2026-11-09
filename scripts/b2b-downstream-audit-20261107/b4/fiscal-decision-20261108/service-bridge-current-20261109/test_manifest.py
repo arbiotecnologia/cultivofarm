@@ -25,12 +25,12 @@ def main():
     check("respond executado é Seller91 97bc", functions[("public", "respond_b2b_order_quote_secure", "uuid,jsonb,date,integer,text")]["definition_md5"] == "97bcdb9884b54adb3bd4aae4915e32d0")
     check("respond 97bc está nos pins de metadata", pins["public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)"]["definition_md5"] == "97bcdb9884b54adb3bd4aae4915e32d0")
     expected = {
-        ("public", "generate_b2b_receivable_secure", "p_partner_order_id uuid"): "c49cc7ccedbcb28cba9b816b7e47c521",
-        ("public", "generate_b2b_receivable_secure_impl", "p_partner_order_id uuid"): "1bdac7fae6d702fb42d3a30539e9c9c3",
+        ("public", "generate_b2b_receivable_secure", "uuid"): "c49cc7ccedbcb28cba9b816b7e47c521",
+        ("public", "generate_b2b_receivable_secure_impl", "uuid"): "1bdac7fae6d702fb42d3a30539e9c9c3",
         ("public", "tg_auto_b2b_receivable", ""): "0f679538fe394924b140e54938a3bb9e",
         ("public", "tg_b2b_block_receivable_before_approval", ""): "9d559f2f04613704467cb488de0d842f",
-        ("platform_private", "b2b_resale_delivery_order_valid_v1", "e entregas"): "bd76345c3bceaa5e6203013920427df4",
-        ("platform_private", "b2b_resale_delivery_status_transition_valid_v1", "o partner_orders, n partner_orders"): "72d5d18157ffd837b89245bad19fc17e",
+        ("platform_private", "b2b_resale_delivery_order_valid_v1", "entregas"): "bd76345c3bceaa5e6203013920427df4",
+        ("platform_private", "b2b_resale_delivery_status_transition_valid_v1", "partner_orders,partner_orders"): "72d5d18157ffd837b89245bad19fc17e",
     }
     for key, md5 in expected.items():
         check(f"hash atual {key[1]}", functions[key]["definition_md5"] == md5, functions[key]["definition_md5"])

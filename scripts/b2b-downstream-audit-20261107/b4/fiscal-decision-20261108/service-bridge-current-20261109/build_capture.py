@@ -74,7 +74,8 @@ def main():
         "kind": "AUDITOR_CAPTURE_RECONCILED_FROM_EXACT_LOCAL_SOURCES_NOT_A_NEW_HOSTED_READ",
         "captured_at_reported": "2026-11-09T19:52:00Z",
         "project_ref": REF,
-        "source_note": "Sete corpos byte-identicos as fontes canonicas e MD5 confirmados pelo auditor; 101 pins da attempt37 com Seller91 substituido pelo corpo instalado. Nenhuma consulta hosted nesta geracao.",
+        "source": {"read_performed_by_agent": False, "hosted_read_performed": False, "basis": "capturas locais canônicas e relato/captura fornecidos pelo auditor"},
+        "source_note": "Oito corpos byte-identicos as fontes canonicas e MD5 confirmados pelo auditor; 101 pins da attempt37 com Seller91 substituido pelo corpo instalado. Nenhuma consulta hosted nesta geracao.",
         "functions": functions,
         "pins": [{"sig": ("public." + k if "." not in k.split("(", 1)[0] else k), "definition_md5": v}
                  for k, v in sorted(pins.items())],
