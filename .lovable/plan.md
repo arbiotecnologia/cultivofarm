@@ -1,131 +1,109 @@
-# Plano revisável — registro financeiro provisório antes da NF
+# Plano revisado — previsão separada e recebível definitivo por NF
 
-**Status:** proposta para revisão, não aprovada para implementação. A decisão de release da ponte fiscal pós-confirmação fica suspensa até reconciliar este desenho. Nenhuma NF de produção está preparada ou autorizada.
+**Regra aprovada para implementação e testes exclusivamente locais:** previsão financeira separada após aprovação comercial **E** crédito válido; recebíveis definitivos somente após NF autorizada, um por documento fiscal, sem duplicação por replay. Não haverá migração para recebível único agregado por pedido. Nenhuma produção antes de revisão PASS.
 
-## Fatores preservados
+## Limites e caracterização preservados
 
-- A tentativa 125 caracterizou `FISCAL_DOCUMENT_LOCKED`: a ponte tentou gravar `receivable_id` depois de a NF se tornar imutável.
-- A tentativa 126 avançou e caracterizou o CHECK de `fiscal_audit_log_action_check`; ambas permanecem como diagnóstico, não como aprovação da ponte.
-- A tentativa 127 foi interrompida pela mudança de direção e marcada `INTERRUPTED_NOT_RUN_TO_COMPLETION`; não há positivo fiscal integrado promovido.
-- `strict-01` e demais limitações históricas permanecem preservados. ACL, dez gatilhos de recebíveis, `a00_delivery_no_downstream`, snapshots, RLS, gates e contenções não serão enfraquecidos.
-- Escopo exclusivamente local/documental nesta etapa: sem SQL hospedado, publicação, emissão, cobrança, baixa, contabilização de receita, envio ou ativação.
+- Tentativas 125/126 permanecem como diagnóstico de H7/CHECK de auditoria; attempt-127 está incompleta e nenhuma ponte foi aprovada.
+- ACL, RLS, dez gatilhos de recebíveis, `a00_delivery_no_downstream`, snapshots, CAS, gates e histórico permanecem preservados.
+- Fiscal pendente, envios bloqueados e zero cobrança/baixa/contabilização de receita/carteira vencida antes da NF.
+- Sem SQL hospedado, publicação, emissão, cobrança ou envio. Testes sintéticos não certificam JWT/RLS/Storage hosted.
 
-## Modelo proposto
+## Modelo aprovado
 
-Criar **um agregado financeiro canônico por pedido/cronograma contratado** após aprovação comercial, crédito e condições válidas. Antes da autorização fiscal ele é somente um registro provisório `aguardando_fiscal`, não um título exigível.
+1. **Previsão separada:** criada por idempotência somente quando aprovação comercial e aprovação de crédito/condições válidas estiverem confirmadas. Espelha o cronograma econômico contratado e possui vencimentos explicitamente estimados.
+2. **Sem título antes da NF:** a previsão não é `accounts_receivable`, não é exigível e não abre cobrança, baixa, pagamento ou contabilidade.
+3. **Definitivo por NF:** cada NF autorizada gera/confirma seu próprio recebível definitivo. NFs parciais podem gerar títulos próprios, limitados às alocações e ao total econômico.
+4. **Previsão residual:** após cada NF, a previsão é reconciliada com o residual ainda não faturado; não se soma ao título definitivo nem ao pedido no crédito.
+5. **Histórico:** falhas, rejeições, timeouts, cancelamentos e reconciliações são append-only, sem delete ou reescrita de snapshots.
 
-A autorização de uma NF confirma uma parcela faturada **do mesmo agregado**, sem criar outra duplicata. Uma entidade de alocação fiscal separa, de forma auditável, valor residual, quantidade/valor faturado e NF correspondente. Isso substitui, para o novo contrato, a hipótese de criar um novo recebível independente a cada NF.
-
-## Máquina de estados proposta
+## Máquina de estados
 
 ```text
-SEM_REGISTRO
-  | aprovação comercial + crédito + condição válidos, atomicamente
+SEM_PREVISAO
+  | aprovação comercial E crédito/condição válidos
   v
-AGUARDANDO_FISCAL  <-----------------------------+
-  | início idempotente de emissão                |
-  v                                              |
-EMISSAO_EM_ANDAMENTO                             |
-  | falha/rejeição fiscal explícita               |
-  +----------------------------------------------+
-  | timeout/resultado ambíguo
+PREVISTO_AGUARDANDO_FISCAL
+  | intenção idempotente de emissão
   v
-CONSULTA_FISCAL_OBRIGATORIA
-  | consulta confirma autorização           | consulta prova não autorização
-  v                                         v
-FATURADO_PARCIAL ou FATURADO          AGUARDANDO_FISCAL
-  | NF parcial residual > 0                    | novo retry com mesma intenção
-  +---------------------------------------------+
+EMISSAO_EM_ANDAMENTO
+  | falha/rejeição explícita                  | timeout ambíguo
+  v                                           v
+PREVISTO_AGUARDANDO_FISCAL             CONSULTA_FISCAL_OBRIGATORIA
+                                               | consulta autoritativa
+                                      +--------+----------------+
+                                      | autorizada              | não autorizada
+                                      v                         v
+                           PREVISTO_FATURADO_PARCIAL/TOTAL  PREVISTO_AGUARDANDO_FISCAL
 
-AGUARDANDO_FISCAL --cancelamento sem NF autorizada--> CANCELADO_ANTES_DA_NF
-FATURADO_PARCIAL  --cancelamento somente residual--> CANCELADO_RESIDUAL
-FATURADO          --evento fiscal próprio----------> CANCELAMENTO_FISCAL_PENDENTE
-                                                     -> CANCELADO_FISCAL
+NF autorizada -> cria/confirma UM recebível definitivo daquela NF
+NF parcial    -> reconcilia previsão residual + título da NF
+cancelamento  -> cancela previsão/residual com histórico; título de NF exige contrato fiscal próprio
 ```
 
-Regras:
+Todo retry mantém a mesma intenção de emissão e a mesma previsão. Timeout exige consulta antes de reemitir. Cada recebível definitivo usa `issue_date` da NF + prazo contratado; a previsão conserva datas estimadas.
 
-- Todo retry usa a mesma intenção e chave de idempotência; não cria novo agregado, cronograma ou título.
-- Timeout ambíguo obriga consulta de estado antes de qualquer reemissão. A consulta deve considerar chave de acesso, protocolo, ambiente, tenant e identificador da intenção.
-- Antes da autorização não existem cobrança, baixa, receita contabilizada, carteira vencida ou ação de pagamento.
-- Datas anteriores à NF são marcadamente estimadas. Cada parcela faturada usa `issue_date` da NF + prazo contratado para seu vencimento definitivo.
-- Cancelamentos são eventos append-only; nenhum delete nem reescrita de histórico. Cancelamento fiscal não estorna automaticamente receita ou recebível sem contrato próprio homologado.
+## Fase 1 — Previsão separada após aprovação comercial e crédito
 
-## Fase 1 — Provisório anterior à NF
+1. **Contrato privado e migração candidata inativa**
+   - Criar candidato local para previsão server-owned, com pedido, tenant, parceiro, versão da condição, snapshot econômico, itens, cronograma estimado, residual, estado, CAS e idempotência.
+   - Sem acesso direto do cliente à tabela privada; leitura por RPC escopada e escritas somente pelo fluxo canônico autorizado.
+   - PRE por fase, POST, hashes LIVE separados dos hashes pós-candidato e rollback deny-only.
 
-1. **Inventário de consumidores e contenção**
-   - Mapear toda leitura/escrita de `accounts_receivable`, parcelas, crédito, cobrança, relatórios, contabilidade e UI.
-   - Definir predicados que excluam provisórios de cobrança, baixa, receita, vencidos e relatórios exigíveis antes de qualquer escrita candidata.
-   - Manter writers legados e ponte pós-confirmação fechados durante a revisão.
+2. **Integração com aprovação**
+   - Projetar/integrar a criação na mesma fronteira transacional que comprova aprovação comercial E crédito, sem writer paralelo e sem aprovação baseada só em cache/UI.
+   - Replay da aprovação retorna a mesma previsão; revogação antes da gravação nega atomicamente.
+   - Pedido ainda não aprovado nos dois eixos não cria previsão.
 
-2. **Modelo e migração candidata, ainda inativos**
-   - Definir no agregado canônico estágio financeiro, versão/CAS, origem, condição econômica imutável, indicação de vencimento estimado e timestamps de confirmação.
-   - Projetar alocações fiscais por agregado/parcela/NF, com valor, quantidade, residual, estado, chave de idempotência e auditoria append-only.
-   - Decidir fisicamente entre evoluir o agregado atual ou criar raiz de cronograma canônica; não criar fluxo financeiro paralelo nem escolher antes do inventário.
-   - Preparar PRE/POST/rollback deny-only e avaliação de impacto, sem aplicar.
+3. **Crédito e leitura**
+   - Crédito usa pedido residual não faturado + definitivos em aberto; a previsão é somente projeção desse residual e nunca parcela adicional.
+   - Na transição para NF, reduzir residual e incluir o definitivo uma única vez, sem somar pedido integral + previsão + título.
 
-3. **RPCs e fronteiras**
-   - Conceber uma única transação de aprovação comercial/crédito que valida condição e cria o provisório por idempotência, sem writer paralelo.
-   - Manter emissão, consulta e reconciliação fiscal service-only; cliente não grava protocolo, status fiscal ou confirmação.
-   - Fazer crédito ler buckets mutuamente exclusivos: residual ainda não provisionado + provisório ativo + definitivo em aberto. A transição move valor entre buckets e nunca soma pedido integral + provisório + definitivo.
+4. **UI e testes locais**
+   - Exibir previsão separada, estimativa e estado fiscal, sem ações de cobrança/baixa.
+   - Testar criação única, dupla aprovação obrigatória, replay, concorrência, revogação, cancelamento e leitura por tenant/papel.
 
-4. **UI**
-   - Exibir “previsão aguardando fiscal”, valores e vencimentos estimados antes da NF.
-   - Não montar cobrança, baixa, pagamento, contabilidade ou ações de título enquanto o estado não for faturado.
-   - Mostrar residual e parcelas faturadas por NF sem apagar histórico de falhas/consultas.
+## Fase 2 — NF autorizada e recebível definitivo por documento
 
-5. **Gate da fase**
-   - Testes descartáveis de criação única, replay, concorrência, condição/crédito revogados, falha após aprovação e rollback.
-   - Provar ausência de efeitos externos e de contagem dupla de crédito em todas as transições.
-   - Nenhuma ativação sem revisão independente e autorização específica.
+1. **Reconciliação fiscal estrita**
+   - Exigir NFE, `HOMOLOGATION`, retorno `2`, envelope `104` + protocolo `100/150`, XML assinado, tenant, pedido, itens, valores e contabilidade vigente.
+   - Corrigir a ordem/imutabilidade H7 e auditoria com deltas mínimos revisáveis; `CLOSE_PENDING` nunca será aceito como positivo.
 
-## Fase 2 — Confirmação fiscal do mesmo registro
+2. **Um definitivo por NF**
+   - Reutilizar a cardinalidade B4: um recebível por documento fiscal confirmado, com replay/concorrência preservando o mesmo título.
+   - NFs parciais distintas têm títulos próprios e atualizam a previsão residual; nunca cobrar além das alocações ou do total econômico.
+   - Vencimentos definitivos por emissão da NF + prazo contratado; previsões anteriores permanecem identificadas como estimativas.
 
-1. **Reconciliação autorizada**
-   - Validar NF NFE, ambiente `HOMOLOGATION`, retorno `2`, envelope `104` + protocolo `100/150`, XML assinado, tenant, pedido, itens, valores e contabilidade vigente.
-   - Confirmar a parcela no agregado existente, atualizar residual e gravar vínculo/auditoria na mesma transação; nenhum novo recebível por replay ou NF parcial.
+3. **Falha, rejeição e timeout**
+   - Falha/rejeição conserva previsão e permite retry sem nova previsão ou título.
+   - Timeout ambíguo consulta estado antes de reemitir; somente resposta autoritativa de não autorização permite nova tentativa.
 
-2. **Retry e timeout**
-   - Falha/rejeição conserva o provisório e permite retry idempotente.
-   - Timeout consulta primeiro; reemissão somente após resposta autoritativa de não autorização, com correlação e trilha completas.
+4. **Cancelamento e compatibilidade**
+   - Antes da NF: cancela previsão/residual com histórico.
+   - Após NF parcial: cancela somente residual; títulos autorizados permanecem preservados.
+   - Cancelamento de NF/título exige contrato fiscal/financeiro próprio homologado, sem estorno automático inventado.
+   - Títulos históricos permanecem imutáveis; eventual geração de previsões para pedidos antigos exige migração separada, sem backfill automático ou dupla contagem.
 
-3. **Faturamento parcial**
-   - Alocar cada NF à mesma raiz, separando parte faturada e residual.
-   - Duas NFs parciais devem produzir duas alocações fiscais e zero novas raízes/duplicatas; a soma nunca excede itens/alocações nem o total econômico.
-   - Cada parte faturada tem vencimento próprio por data de emissão; o residual permanece estimado.
+5. **Validação local e gate**
+   - PostgreSQL descartável com código real reconciliado e dependency candidate estrita, sem stub permissivo.
+   - Provar positivo `104/100` → um título por NF, duas ou mais NFs parciais, replay/retransmissão, concorrência, divergências, revogação durante lock, timeout, rejeição, cancelamentos e rollback.
+   - Nova evidência por tentativa com stdout/stderr/exit e SQLSTATE/mensagem real antes/depois, sem tokens.
+   - Pacote final `REVIEW_ONLY_INACTIVE_NOT_APPROVED` até revisão independente PASS; nenhuma produção/NF real está autorizada.
 
-4. **Cancelamento**
-   - Sem NF: cancela todo o provisório com motivo/histórico.
-   - Parcial: cancela apenas residual, preservando parcelas autorizadas.
-   - Após NF: depende de evento fiscal homologado; não há reversão financeira automática inventada.
+## Impacto técnico
 
-5. **Compatibilidade e migração**
-   - Manter títulos históricos imutáveis e identificar explicitamente o contrato legado “um título por documento fiscal”.
-   - Não fazer backfill automático: primeiro mapear quais títulos antigos representam raiz, parcela ou alocação e provar ausência de duplicidade/exposição.
-   - Se houver coexistência temporária, usar versão de contrato e leitores reconciliados; nunca somar os dois modelos no crédito nem na carteira.
-   - Rollback fecha writers novos e preserva registros, vínculos, snapshots e histórico.
+- **Esquema:** previsão privada separada, eventos/auditoria e reconciliação residual; `accounts_receivable` continua exclusivamente definitivo.
+- **RPCs:** aprovação comercial+crédito, leitura escopada da previsão, intenção/consulta fiscal e reconciliação service-only; nenhum grant amplo.
+- **Crédito:** previsão não adiciona exposição; residual e definitivos são buckets mutuamente exclusivos.
+- **UI:** previsão/estimativa separada do recebível definitivo e ações fiscais coerentes com o estado.
+- **Testes:** valores concretos, permissões, CAS, idempotência, concorrência, parciais, cancelamentos, migração e rollback.
 
-6. **Gate da fase**
-   - Ensaios em PostgreSQL descartável: positivo único, duas/mais NFs parciais, replay, retransmissão estável, concorrência, divergência, revogação durante lock, timeout, rejeição, cancelamentos e rollback.
-   - Homologação posterior, separada e autorizada, com provedor sem efeitos reais de cobrança; NF de produção permanece fora do plano.
+## Decisões ainda necessárias
 
-## Impacto técnico a revisar
-
-- **Esquema:** estágio/CAS/origem no agregado, alocações NF↔parcela, idempotência e auditoria; RLS/grants restritos em qualquer tabela nova.
-- **RPCs:** aprovação+provisão atômica, intenção de emissão, consulta obrigatória, reconciliação service-only e cancelamento residual; legado permanece fechado até migração aprovada.
-- **Consultas:** crédito, carteira, vencidos, relatórios e contabilidade precisam distinguir provisório de exigível.
-- **UI:** estados, estimativas, residual, falhas e retries sem ações financeiras antecipadas.
-- **Testes:** regras de estado e valores concretos, permissões reais de papel, concorrência, imutabilidade e migração; testes sintéticos não certificam JWT/RLS/Storage hosted.
-
-## Decisões necessárias antes de implementar
-
-1. Estrutura física do agregado único e estratégia para todos os consumidores existentes.
-2. Momento transacional exato da provisão e tratamento de aprovação já existente sem registro.
-3. Forma de dividir parcelas contratadas quando várias NFs têm datas e valores distintos.
-4. Política contábil para provisório, faturado parcial, cancelamento e eventos fiscais posteriores.
-5. Migração/coexistência dos títulos legados por documento, sem backfill ou dupla contagem.
-6. Assinaturas e evidências reais dos provedores para consulta de timeout e classificação de rejeição.
+- Assinaturas exatas dos pontos canônicos de aprovação comercial/crédito e das consultas de timeout de cada provedor.
+- Tratamento de pedidos já aprovados antes do novo contrato, sem backfill automático.
+- Contrato posterior de cancelamento fiscal e seus efeitos financeiros/contábeis, fora desta implementação.
 
 ## UI independente
 
-O atalho “Aprovações de crédito” não faz parte desta regra financeira. A correção local cobre também query recebida com a página já montada: **31/31 testes**, typecheck exit 0 e build mais recente **OK**. A prévia externa continua sem reteste autenticado pelo agente; nenhuma publicação foi realizada.
+O atalho “Aprovações de crédito” permanece independente: correção local com 31/31 testes, typecheck 0 e build mais recente OK. A prévia externa ainda requer reteste autenticado do auditor; nenhuma publicação foi realizada.
