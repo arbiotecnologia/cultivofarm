@@ -39,7 +39,8 @@ vi.mock("@/components/portal/PortalTopBar", () => ({ PortalTopBar: () => null })
 vi.mock("@/components/ui/sidebar", () => ({ SidebarProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>, SidebarTrigger: () => null }));
 vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
-  rpc: (...args: unknown[]) => state.rpc(...args),
+  // Pré-instalação do status somente leitura (Opção A): PGRST202 exato mantém o comportamento anterior.
+  rpc: (...args: unknown[]) => args[0]==='partner_order_attempt_status_v1' ? Promise.resolve({data:null,error:{code:'PGRST202',message:'Could not find the function public.partner_order_attempt_status_v1'}}) : state.rpc(...args),
   from: (...args: unknown[]) => state.table(...args),
   channel: () => {
     const channel = { on: () => channel, subscribe: () => channel };
