@@ -284,13 +284,25 @@ DO $$ BEGIN
 END$$;
 COMMIT;
 """
-    rollback = f"""-- REVIEW ONLY deny-only; preserva previsões/eventos e restaura aprovação LIVE.
+    credit_rollback = """CREATE OR REPLACE FUNCTION public.fn_b2b_credit_exposure(p_partner_id uuid, p_new_order_amount numeric DEFAULT 0, p_exclude_order_id uuid DEFAULT NULL::uuid)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $$BEGIN RAISE EXCEPTION 'B2B_CREDIT_RECONCILIATION_ROLLED_BACK' USING ERRCODE='42501';END$$"""
+    credit_rollback_md5 = md5(credit_rollback)
+    rollback = f"""-- REVIEW ONLY deny-only; preserva previsões/eventos e não reabre crédito legado subestimado.
 BEGIN;
 SET LOCAL lock_timeout='3s';
 {approve};
+{terms};
+{credit_rollback};
+REVOKE ALL ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.get_b2b_financial_forecast_secure(uuid) FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb),platform_private.b2b_financial_forecast_transition_v1(uuid,integer,text,text,jsonb),platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text) FROM PUBLIC,anon,authenticated,service_role;
-DO $$ BEGIN IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{OLD_APPROVE_MD5}' THEN RAISE EXCEPTION 'B2B_FORECAST_ROLLBACK_POST_DRIFT';END IF;END$$;
+DO $$ BEGIN
+ IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{OLD_APPROVE_MD5}' THEN RAISE EXCEPTION 'B2B_FORECAST_ROLLBACK_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '{current["approve_b2b_payment_terms_secure"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_ROLLBACK_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '{credit_rollback_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_ROLLBACK_POST_DRIFT';END IF;
+END$$;
 COMMIT;
 """
     reconcile_pre = f"""-- REVIEW ONLY READ ONLY; fase 2 exige B4 e previsão já instalados.
