@@ -34,6 +34,8 @@ def main():
   (OUT/'current-b4-install.sql.review').write_text(b4_install_text)
   b4_pre=B.sql(b4_pre_text)
   B.sql(b4_install_text)""")
+    s = edit(s, "  composed_post=B.sql(\"SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';\"+(composed_dir/'03-post.sql.readonly').read_text())",
+                "  composed_post=B.sql(\"SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';\"+(composed_dir/'03-post.sql.readonly').read_text().replace('4926a99c3fa3086b34ff25bb4b4038bb','97bcdb9884b54adb3bd4aae4915e32d0'))")
     s = edit(s, "  (OUT/'canonical-composition-manifest.json').write_text(json.dumps(composed_manifest,indent=2)+'\\n')",
                 """  composed_manifest['current_seller91_reconciliation']={'old_md5':'4926a99c3fa3086b34ff25bb4b4038bb','executed_md5':'97bcdb9884b54adb3bd4aae4915e32d0','frozen_sources_modified':False,'stage_pin_reconciled_in_output_only':True}
   (OUT/'canonical-composition-manifest.json').write_text(json.dumps(composed_manifest,indent=2)+'\\n')""")
