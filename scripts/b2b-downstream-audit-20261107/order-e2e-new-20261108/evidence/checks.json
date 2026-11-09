@@ -46,7 +46,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "aec4b7bd-8ff2-40e1-b39a-d85e6b1d26d0"
+    "order_id": "8958eb30-6f0c-4750-8749-18fac32ad2ab"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -67,7 +67,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "61218b1c-259c-4cf5-b9da-c18ae853edc2"
+    "os_id": "11eac20e-051c-4732-88d9-4672b669a852"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -76,12 +76,12 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "17916e91-3f5c-4f93-a337-dfd2dd1ec205"
+    "delivery_id": "a30cfdd4-c069-44c7-9d31-b4ad4b7ac56b"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "d0bfc29e-2f19-4253-ac2f-16fd7c3dce52"
+    "delivery_id": "cd70abaf-229a-4966-b733-b50591177c47"
   },
   {
     "test": "review70 two_items_only_one_os_and_delivery",
@@ -279,7 +279,7 @@
   {
     "test": "manual agronomic physical flow still passes after resale candidate",
     "status": "PASS",
-    "delivery_id": "4a13b07c-5576-4909-a37a-e29f3527c9b3"
+    "delivery_id": "c2b5470a-f38b-4d2e-91e2-5aadd3e58408"
   },
   {
     "test": "mandatory ARBio actor org exact synthetic references scoped pilot with cross tenant denial expiry revocation replay and real concurrency",
@@ -297,7 +297,7 @@
     "status": "PASS"
   },
   {
-    "test": "new composition",
-    "status": "FAIL"
+    "test": "reverse deny-only rollback closes logistics physical send confirmation and preserves history twenty LIVE bodies 120 triggers 17 ACLs; B4 fiscal NOT_RUN out of scope",
+    "status": "PASS"
   }
 ]
