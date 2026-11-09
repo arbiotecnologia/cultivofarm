@@ -1,8 +1,8 @@
 ## 09/11 21:39 — Decisão final aprovada: previsão separada + recebível por NF
-- [ ] Implementar/testar somente localmente previsão não exigível após aprovação comercial E crédito/condição/preço válidos, idempotente por pedido/revisão; nenhum título pré-NF e nenhuma previsão em simulação/cotação.
-- [ ] Fechar autorização NF 104/100 → um recebível por NF/alocação, replay/concorrência, parciais/residual, falha/rejeição/timeout, cancelamento/estorno/tenant/roles, crédito sem dupla contagem e datas definitivas emissão+prazo; preservar dez triggers, ACL, snapshots e histórico.
-- [ ] Corrigir FISCAL_DOCUMENT_LOCKED por relacionamento transacional estreito, sem exceção genérica de imutabilidade; reconciliar corpo current/LIVE por MD5 e manter HOMOLOGATION/ambiente 2 explícito, sem validar empresa real.
-- [ ] Atualizar UI Previsão aguardando NF vs Recebível confirmado; concluir atalho de crédito/build de prévia sem publicar. Entregar pacote REVIEW_ONLY versionado, PRE/POST, rollback deny-only, diffs e evidências. Sem SQL hospedado, emissão, cobrança ou envio.
+- [x] Implementar/testar somente localmente previsão não exigível após aprovação comercial E crédito/condição/preço válidos; nenhum título pré-NF e nenhuma previsão em simulação/cotação. Tentativa 149: 50/50 PASS.
+- [ ] NF total 104/100 → um título, replay sem duplicação e crédito sem dupla contagem PASS; reexecutar parciais/residual, concorrência específica do reconciliador e cancelamento/estorno pós-autorização contra esta nova costura. Dez triggers, ACL, snapshots e histórico preservados.
+- [x] FISCAL_DOCUMENT_LOCKED resolvido por relacionamento transacional estreito, sem exceção genérica; corpo current/LIVE reconciliado por MD5 e HOMOLOGATION/ambiente 2 explícito. Rollback deny-only PASS.
+- [ ] Pacote REVIEW_ONLY, PRE/POST/rollback e atalho de crédito entregues; build OK/typecheck 0/16 testes focados. UI Previsão aguardando NF vs Recebível confirmado ainda não implementada. Sem SQL hospedado, publicação, emissão, cobrança ou envio.
 
 ## 09/11 21:01 — Mudança de direção: provisório antes da NF
 - [x] Suspender release da ponte pós-confirmação e interromper attempt-127; attempts 125/126 preservados como caracterização H7/CHECK de auditoria, não aprovação. Nenhum positivo integrado promovido.
