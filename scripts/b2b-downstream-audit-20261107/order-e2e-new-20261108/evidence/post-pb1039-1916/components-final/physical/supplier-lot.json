@@ -1,0 +1,32 @@
+{
+  "status": "FAIL",
+  "exit_code": 1,
+  "checks": [
+    {
+      "name": "checkpoint descartável da composição capturada restaurado",
+      "status": "PASS",
+      "detail": "42d547a914f64fa09de24d3aef20e8ddad148cc38e09c40dad28536222968fa0"
+    },
+    {
+      "name": "baseline LIVE integral: 20 corpos, 120 triggers, 17 ACLs e 4 dependências medidas",
+      "status": "PASS",
+      "detail": "8a53b1443ed789c76115b9ef16807ae835e1e0bda888d50e6f1606197792a6ac"
+    },
+    {
+      "name": "writers de confirmação/envio ativados somente no PostgreSQL descartável",
+      "status": "PASS"
+    },
+    {
+      "name": "regressão lote fornecedor",
+      "status": "FAIL",
+      "detail": "Traceback (most recent call last):\n  File \"/tmp/post-pb1039-components-BvBXHT/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_supplier_lot.py\", line 21, in main\n    B.sql((HERE / \"install.sql.review\").read_text())\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/post-pb1039-components-BvBXHT/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 56, in sql\n    return pg.sql(statement)\n           ~~~~~~^^^^^^^^^^^\n  File \"/tmp/post-pb1039-components-BvBXHT/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  FINISHED_PRE_RELATION_DRIFT platform_private.authz_tickets\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\n\n"
+    }
+  ],
+  "raw": [],
+  "hosted": false,
+  "synthetic_seams": [
+    "Auth/claims e fixtures ARBio/FSF locais, não identidades reais",
+    "catálogo/apresentação upstream com replica; compra executa todos os triggers habilitados",
+    "PostgreSQL descartável, não JWT/RLS/Storage hosted nem E2E de pedido B2B"
+  ]
+}

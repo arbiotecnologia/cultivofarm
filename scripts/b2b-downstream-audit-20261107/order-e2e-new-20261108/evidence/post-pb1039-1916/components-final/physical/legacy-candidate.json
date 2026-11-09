@@ -1,0 +1,26 @@
+{
+  "status": "FAIL",
+  "checks": [
+    {
+      "name": "checkpoint descartável da composição capturada restaurado",
+      "status": "PASS",
+      "detail": "42d547a914f64fa09de24d3aef20e8ddad148cc38e09c40dad28536222968fa0"
+    },
+    {
+      "name": "baseline LIVE integral: 20 corpos, 120 triggers, 17 ACLs e 4 dependências medidas",
+      "status": "PASS",
+      "detail": "8a53b1443ed789c76115b9ef16807ae835e1e0bda888d50e6f1606197792a6ac"
+    },
+    {
+      "name": "writers de confirmação/envio ativados somente no PostgreSQL descartável",
+      "status": "PASS"
+    },
+    {
+      "name": "FAIL ERROR:  P0001: FINISHED_PRE_RELATION_DRIFT platform_private.authz_tickets\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "status": "PASS"
+    }
+  ],
+  "candidate_installed": true,
+  "gate_enabled": false,
+  "hosted": false
+}

@@ -1,0 +1,32 @@
+{
+  "status": "FAIL",
+  "checks": [
+    {
+      "name": "checkpoint descartável da composição capturada restaurado",
+      "status": "PASS",
+      "detail": "42d547a914f64fa09de24d3aef20e8ddad148cc38e09c40dad28536222968fa0"
+    },
+    {
+      "name": "baseline LIVE integral: 20 corpos, 120 triggers, 17 ACLs e 4 dependências medidas",
+      "status": "PASS",
+      "detail": "8a53b1443ed789c76115b9ef16807ae835e1e0bda888d50e6f1606197792a6ac"
+    },
+    {
+      "name": "writers de confirmação/envio ativados somente no PostgreSQL descartável",
+      "status": "PASS"
+    },
+    {
+      "name": "FAIL candidate PRE/install failed\nERROR:  P0001: FINISHED_PRE_RELATION_DRIFT platform_private.authz_tickets\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n\nTraceback (most recent call last):\n  File \"/tmp/post-pb1039-components-BvBXHT/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py\", line 92, in main\n    raise AssertionError(\"candidate PRE/install failed\\n\" + loaded.stdout[-3000:] + loaded.stderr[-8000:])\nAssertionError: candidate PRE/install failed\nERROR:  P0001: FINISHED_PRE_RELATION_DRIFT platform_private.authz_tickets\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n\n",
+      "status": "PASS"
+    }
+  ],
+  "hosted": false,
+  "real_nf_or_receivable": false,
+  "purchase_origin": "compra_produto_acabado_revenda",
+  "synthetic_seams": [
+    "Auth/claims e chamada interna privilegiada somente no PG descartável",
+    "schema de catálogo atual reconciliado na captura antiga; sem writers Owned ou preços",
+    "guard de tenant capturado e pinado; sonda isolada só para a função de entrada, além da composição real dos triggers",
+    "produtos/demanda/comprovantes fictícios; entrada e downstream com triggers reais"
+  ]
+}
