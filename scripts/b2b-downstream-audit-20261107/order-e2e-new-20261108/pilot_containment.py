@@ -70,10 +70,10 @@ CREATE TABLE platform_private.resale_pilot_allowlist_v1(
 ALTER TABLE platform_private.resale_pilot_allowlist_v1 ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON platform_private.resale_pilot_allowlist_v1 FROM PUBLIC,anon,authenticated,service_role;
 
-CREATE FUNCTION platform_private.resale_pilot_allowed_v1(
+CREATE FUNCTION platform_private.resale_pilot_scope_v1(
  p_gate text,p_operation text,p_actor uuid,p_org uuid,p_partner uuid,p_order uuid,
  p_item uuid,p_product uuid,p_stock uuid,p_delivery uuid)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+RETURNS boolean LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path='' AS $$
  SELECT (
   (CASE p_gate
     WHEN 'finished_product' THEN EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled IS TRUE)
@@ -84,7 +84,7 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
    SELECT 1 FROM platform_private.resale_pilot_allowlist_v1 a
    WHERE a.gate=p_gate AND (p_operation IS NULL OR a.operation=p_operation)
     AND a.actor_id=p_actor AND a.organization_id=p_org AND a.synthetic IS TRUE
-    AND a.valid_from<=now() AND a.valid_until>now() AND a.revoked_at IS NULL
+    AND a.valid_from<=pg_catalog.clock_timestamp() AND a.valid_until>pg_catalog.clock_timestamp() AND a.revoked_at IS NULL
     AND a.partner_id IS NOT DISTINCT FROM p_partner
     AND a.order_id IS NOT DISTINCT FROM p_order
     AND a.order_item_id IS NOT DISTINCT FROM p_item
@@ -93,11 +93,61 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
     AND a.delivery_id IS NOT DISTINCT FROM p_delivery
   )) IS TRUE;
 $$;
+REVOKE ALL ON FUNCTION platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.resale_pilot_allowed_v1(
+ p_gate text,p_operation text,p_actor uuid,p_org uuid,p_partner uuid,p_order uuid,
+ p_item uuid,p_product uuid,p_stock uuid,p_delivery uuid)
+RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_grant record;
+BEGIN
+ IF NOT (CASE p_gate
+   WHEN 'finished_product' THEN EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled IS TRUE)
+   WHEN 'b2b_resale' THEN EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)
+   ELSE false END) OR p_actor IS NULL OR p_org IS NULL THEN RETURN false; END IF;
+ -- A autorização final serializa com UPDATE/revogação na MESMA linha. O tempo é
+ -- medido somente DEPOIS da espera do lock: now() não pode manter grant expirado.
+ FOR v_grant IN
+  SELECT a.* FROM platform_private.resale_pilot_allowlist_v1 a
+  WHERE a.gate=p_gate AND (p_operation IS NULL OR a.operation=p_operation)
+   AND a.actor_id=p_actor AND a.organization_id=p_org
+   AND a.partner_id IS NOT DISTINCT FROM p_partner
+   AND a.order_id IS NOT DISTINCT FROM p_order
+   AND a.order_item_id IS NOT DISTINCT FROM p_item
+   AND a.product_id IS NOT DISTINCT FROM p_product
+   AND a.stock_id IS NOT DISTINCT FROM p_stock
+   AND a.delivery_id IS NOT DISTINCT FROM p_delivery
+  ORDER BY a.id FOR UPDATE
+ LOOP
+  IF v_grant.synthetic IS TRUE AND v_grant.revoked_at IS NULL
+   AND v_grant.valid_from<=pg_catalog.clock_timestamp()
+   AND v_grant.valid_until>pg_catalog.clock_timestamp() THEN RETURN true; END IF;
+ END LOOP;
+ RETURN false;
+END;
+$$;
 REVOKE ALL ON FUNCTION platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.resale_pilot_delivery_scope_v1(
+ p_gate text,p_operation text,p_actor uuid,p_org uuid,p_delivery uuid)
+RETURNS boolean LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+ SELECT EXISTS(
+  SELECT 1 FROM public.entregas e
+  JOIN public.estoque_produto s ON s.id=e.estoque_produto_id
+  LEFT JOIN public.ordens_servico os ON os.id=e.ordem_servico_id
+  LEFT JOIN public.partner_orders po ON po.id=e.partner_order_id
+  WHERE e.id=p_delivery AND e.organization_id=p_org
+   AND ((p_gate='finished_product' AND e.partner_order_id IS NULL)
+     OR (p_gate='b2b_resale' AND e.partner_order_id IS NOT NULL))
+   AND platform_private.resale_pilot_scope_v1(p_gate,p_operation,p_actor,p_org,
+    po.partner_id,e.partner_order_id,os.partner_order_item_id,e.produto_id,s.id,e.id) IS TRUE
+ );
+$$;
+REVOKE ALL ON FUNCTION platform_private.resale_pilot_delivery_scope_v1(text,text,uuid,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
 
 CREATE FUNCTION platform_private.resale_pilot_delivery_allowed_v1(
  p_gate text,p_operation text,p_actor uuid,p_org uuid,p_delivery uuid)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+RETURNS boolean LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path='' AS $$
  SELECT EXISTS(
   SELECT 1 FROM public.entregas e
   JOIN public.estoque_produto s ON s.id=e.estoque_produto_id
