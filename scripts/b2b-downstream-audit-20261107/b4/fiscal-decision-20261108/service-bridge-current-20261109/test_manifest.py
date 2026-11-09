@@ -36,12 +36,12 @@ def main():
         check(f"hash atual {key[1]}", functions[key]["definition_md5"] == md5, functions[key]["definition_md5"])
     check("captura declara origem auditor, não leitura hosted", capture["source"]["read_performed_by_agent"] is False and capture["source"]["hosted_read_performed"] is False)
     strict = (H / "dependency.candidate.sql").read_text()
-    for token in ("b2b_fiscal_service_permits", "B2B_FISCAL_CONFIRMATION_UNPROVEN", "B2B_FISCAL_DOCUMENT_NOT_PROVEN", "B2B_FISCAL_SNAPSHOT_NOT_PROVEN", "B2B_FISCAL_ACCOUNTING_OR_TENANT_UNPROVEN", "B2B_FISCAL_SNAPSHOT_DIVERGENCE", "environment='HOMOLOGATION'", "protocol_c_stat='100'", "signed_xml_available"):
+    for token in ("b2b_fiscal_service_permits", "B2B_FISCAL_CONFIRMATION_UNPROVEN", "B2B_FISCAL_DOCUMENT_NOT_PROVEN", "B2B_FISCAL_SNAPSHOT_NOT_PROVEN", "B2B_FISCAL_ACCOUNTING_OR_TENANT_UNPROVEN", "B2B_FISCAL_SNAPSHOT_DIVERGENCE", "environment='HOMOLOGATION'", "coalesce(x.protocol_c_stat,x.c_stat) IN ('100','150')", "r.signed_path IS NOT NULL"):
         check(f"dependência estrita contém {token}", token in strict)
     check("dependência não contém SELECT $$", "SELECT$$" not in strict.replace(" ", ""))
     check("rollback restaura negação, não liberação", "B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN" in (H / "04-rollback-deny.sql.review").read_text())
     pre = (H / "01-pre.sql.readonly").read_text()
-    check("PRE exige writer legado negado", "c49cc7ccedbcb28cba9b816b7e47c521" in pre and "3a4ca7fcd75f9fd3a183b6917fe05cd2" in pre and "B2B_AUTHORIZED_FISCAL_DOCUMENT_REQUIRED" in (H / "dependency.before-deny.sql").read_text())
+    check("PRE exige writer legado negado", "c49cc7ccedbcb28cba9b816b7e47c521" in pre and "3a4ca7fcd75f9fd3a183b6917fe05cd2" in pre and "B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN" in (H / "dependency.before-deny.sql").read_text())
     frozen_dir = H.parent / "service-bridge"
     frozen_manifest = json.loads((frozen_dir / "manifest.json").read_text())
     drift = []
