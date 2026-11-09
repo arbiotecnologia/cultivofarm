@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/tmp/posplans-scope-attempt21-c5V5JU/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 58, in main
+    current_scope.rewrite_confirmation(confirmation_out,C.STATE)
+                                                        ^^^^^^^
+AttributeError: module 'finished_confirmation' has no attribute 'STATE'

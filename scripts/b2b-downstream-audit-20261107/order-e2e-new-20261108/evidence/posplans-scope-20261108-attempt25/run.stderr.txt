@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/tmp/posplans-scope-attempt25-2bCK6g/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 59, in main
+    B.sql((confirmation_out/'install.sql.review').read_text())
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/posplans-scope-attempt25-2bCK6g/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 56, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/posplans-scope-attempt25-2bCK6g/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  CONFIRM_PRE_SCOPED_TRIGGERS actual_missing=[["ordens_servico", "trg_sync_planning_from_os", "O", "public._sync_planning_from_os()", "0e79d2c5c352a41f147a62bb1ae5afe4", "CREATE TRIGGER trg_sync_planning_from_os AFTER INSERT OR UPDATE OF status ON public.ordens_servico FOR EACH ROW WHEN (new.partner_order_id IS NOT NULL) EXECUTE FUNCTION _sync_planning_from_os()"], ["ordens_servico", "trg_os_sync_partner_order", "O", "public.trg_os_sync_partner_order_fn()", "d219a4922c0c6d2a464175dc61bdf5a3", "CREATE TRIGGER trg_os_sync_partner_order AFTER UPDATE OF status ON public.ordens_servico FOR EACH ROW WHEN (new.origem = 'b2b'::text) EXECUTE FUNCTION trg_os_sync_partner_order_fn()"]] expected_missing=[["ordens_servico", "trg_os_sync_partner_order", "O", "public.trg_os_sync_partner_order_fn()", "d219a4922c0c6d2a464175dc61bdf5a3", "CREATE TRIGGER trg_os_sync_partner_order AFTER UPDATE OF status ON public.ordens_servico FOR EACH ROW WHEN ((new.origem = 'b2b'::text)) EXECUTE FUNCTION trg_os_sync_partner_order_fn()"], ["ordens_servico", "trg_comunicacao_os_pronto_retirada", "O", "public._comunicacao_trg_os_pronto_retirada()", "b0340dbc6fa5c5f880f0881ad845cb52", "CREATE TRIGGER trg_comunicacao_os_pronto_retirada AFTER UPDATE OF status ON public.ordens_servico FOR EACH ROW WHEN ((new.status IS DISTINCT FROM old.status)) EXECUTE FUNCTION _comunicacao_trg_os_pronto_retirada()"]]
+CONTEXT:  PL/pgSQL function inline_code_block line 10 at RAISE
+
