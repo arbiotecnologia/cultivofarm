@@ -1,0 +1,58 @@
+{
+  "pins": {
+    "__MD5_CHECK__": "d5096452e22262d617384df0fdeffd17",
+    "__MD5_OTRG__": "7f793a95047846b63cb514e5a8b1af11",
+    "__MD5_STRG__": "eb9e9179be9addb20ce09681956c6eda"
+  },
+  "legacy_pn_denial": [
+    "ERROR:  forbidden_partner"
+  ],
+  "mutation_revocation": {
+    "create_rc": 0,
+    "second_rc": 3,
+    "persisted": false,
+    "idem": "1",
+    "coherent": "1",
+    "create_err": "",
+    "second_err": "ERROR:  payment_condition_config_stale\nCONTEXT:  PL/pgSQL function public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean) line 14 at RAISE\n"
+  },
+  "race_revocation": {
+    "create_rc": 0,
+    "second_rc": 0,
+    "persisted": true,
+    "idem": "1",
+    "coherent": "1",
+    "create_err": "",
+    "second_err": ""
+  },
+  "mutation_retirement": {
+    "create_rc": 0,
+    "second_rc": 3,
+    "persisted": false,
+    "idem": "1",
+    "coherent": "1",
+    "create_err": "",
+    "second_err": "ERROR:  payment_condition_config_stale\nCONTEXT:  PL/pgSQL function public.b2b_payment_condition_retire(uuid,text,integer) line 9 at RAISE\n"
+  },
+  "race_retirement": {
+    "create_rc": 0,
+    "second_rc": 0,
+    "persisted": true,
+    "idem": "1",
+    "coherent": "1",
+    "create_err": "",
+    "second_err": ""
+  },
+  "writer_pins": {
+    "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": {
+      "harness": "c34e740473afb7a365d362db854069cb",
+      "live_reported": "fe82f5381d426136f2627803f3b0005d",
+      "equal": false
+    },
+    "public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)": {
+      "harness": "e86385fefb25c68d9dd4d0fef6619f27",
+      "live_reported": "e86385fefb25c68d9dd4d0fef6619f27",
+      "equal": true
+    }
+  }
+}

@@ -1,0 +1,11 @@
+--- scripts/commercial-plans-tenant-20261108/capture/functions/create_partner_order_secure.sql	2026-11-09 15:40:52.304037185 +0000
++++ scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/writer-live-diff/create_partner_order_secure.live-candidate.sql	2026-11-09 16:18:34.092824400 +0000
+@@ -120,7 +120,7 @@
+   END IF;
+ 
+   SELECT * INTO v_plan FROM public.commercial_payment_plans WHERE id = p_payment_plan_id;
+-  IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF;
++  IF NOT FOUND OR NOT platform_private.commercial_plan_partner_visible(p_payment_plan_id,p_partner_id) THEN RAISE EXCEPTION 'plan_not_found'; END IF;
+   IF NOT public.fn_b2b_plan_selectable(v_plan.id) THEN RAISE EXCEPTION 'plan_not_selectable'; END IF;
+   IF v_plan.active = false THEN RAISE EXCEPTION 'plan_inactive'; END IF;
+   IF v_plan.monthly_interest_percent < 0 THEN RAISE EXCEPTION 'invalid_interest_rate'; END IF;
