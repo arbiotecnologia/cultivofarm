@@ -1,0 +1,64 @@
+-- C2_ORDER_ATTEMPT_STATUS_V1 — read-only status on page mount (Option A). REVIEW ONLY.
+-- Never inserts journal rows, never closes, never advances, never infers absence of dispatch.
+-- Reservation stays exclusively in recover_partner_order_attempt_v1 (called by prepareDurableOrder).
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '60s';
+DO $guard$ BEGIN
+ IF to_regprocedure('public.partner_order_attempt_status_v1(uuid)') IS NOT NULL
+  OR md5((SELECT prosrc FROM pg_proc WHERE oid = to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'))) IS DISTINCT FROM '191fc04882f27eaa95df242c030a966c'
+  OR md5((SELECT prosrc FROM pg_proc WHERE oid = to_regprocedure('platform_private.c2_attempt_scope_lock(uuid,uuid)'))) IS DISTINCT FROM '8e6d6191d2821ec6e8d0ba07f4d8190c'
+ THEN RAISE EXCEPTION 'C2AS_INSTALL_PRECONDITION'; END IF;
+END $guard$;
+
+CREATE FUNCTION platform_private.c2_order_attempt_status_core(p_partner uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='5s' AS $function$
+DECLARE uid uuid := auth.uid(); org uuid; j platform_private.partner_order_attempt_journal;
+  result jsonb; fresh uuid; predecessors jsonb;
+BEGIN
+ -- Same scope lock/authorization as recover: serialises with prepare/advance of the same slot.
+ org := platform_private.c2_attempt_scope_lock(uid, p_partner);
+ SELECT * INTO j FROM platform_private.partner_order_attempt_journal
+  WHERE actor_id = uid AND organization_id = org AND partner_id = p_partner ORDER BY generation DESC LIMIT 1;
+ IF j.idempotency_key IS NULL THEN
+  -- Lost legacy memory still needs explicit reconciliation, exactly like recover.
+  IF EXISTS (SELECT 1 FROM public.partner_order_idempotency i WHERE i.created_by = uid AND i.partner_id = p_partner) THEN
+   RAISE EXCEPTION 'C2DJ_LEGACY_RECONCILIATION_REQUIRED' USING ERRCODE = '42501'; END IF;
+  RETURN jsonb_build_object('contract', 'C2_ORDER_ATTEMPT_STATUS_V1', 'state', 'none',
+   'actor_id', uid, 'organization_id', org, 'partner_id', p_partner);
+ END IF;
+ SELECT coalesce(jsonb_agg(jsonb_build_object('key', h.idempotency_key, 'generation', h.generation,
+   'state', CASE WHEN i.order_id IS NOT NULL THEN 'committed' WHEN c.idempotency_key IS NOT NULL THEN 'closed' ELSE 'unknown' END)
+   || CASE WHEN i.order_id IS NOT NULL THEN jsonb_build_object('order_id', i.order_id, 'numero', o.numero) ELSE '{}'::jsonb END
+   ORDER BY h.generation), '[]'::jsonb) INTO predecessors
+ FROM platform_private.partner_order_attempt_journal h
+ LEFT JOIN public.partner_order_idempotency i ON i.partner_id = h.partner_id AND i.idempotency_key = h.idempotency_key AND i.created_by = uid
+ LEFT JOIN public.partner_orders o ON o.id = i.order_id
+ LEFT JOIN platform_private.partner_order_idempotency_closures c ON c.partner_id = h.partner_id AND c.idempotency_key = h.idempotency_key
+ WHERE h.actor_id = uid AND h.organization_id = org AND h.partner_id = p_partner AND h.generation < j.generation;
+ -- Wait for any in-flight create/close of this key (same advisory key as writers), then re-authorise.
+ PERFORM pg_advisory_xact_lock(hashtextextended('b2b_idem:' || p_partner::text || ':' || j.idempotency_key, 0));
+ PERFORM platform_private.c2_partner_order_attempt_authz(uid, p_partner);
+ SELECT organization_id INTO fresh FROM public.profiles WHERE user_id = uid AND ativo;
+ IF fresh IS DISTINCT FROM org THEN RAISE EXCEPTION 'C2DJ_SCOPE_CHANGED' USING ERRCODE = '42501'; END IF;
+ SELECT jsonb_build_object('state', 'committed', 'order_id', i.order_id, 'numero', o.numero) INTO result
+  FROM public.partner_order_idempotency i JOIN public.partner_orders o ON o.id = i.order_id
+  WHERE i.partner_id = p_partner AND i.idempotency_key = j.idempotency_key AND i.created_by = uid;
+ IF result IS NULL THEN
+  -- A registered key without receipt/closure is genuinely uncertain: it was reserved right before a dispatch.
+  result := jsonb_build_object('state', CASE WHEN EXISTS (SELECT 1 FROM platform_private.partner_order_idempotency_closures
+   WHERE partner_id = p_partner AND idempotency_key = j.idempotency_key) THEN 'closed' ELSE 'uncertain' END);
+ END IF;
+ RETURN result || jsonb_build_object('contract', 'C2_ORDER_JOURNAL_V1', 'key', j.idempotency_key, 'generation', j.generation, 'predecessors', predecessors);
+END $function$;
+
+CREATE FUNCTION public.partner_order_attempt_status_v1(p_partner uuid)
+RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $function$
+ SELECT platform_private.c2_order_attempt_status_core(p_partner);
+$function$;
+
+REVOKE ALL ON FUNCTION platform_private.c2_order_attempt_status_core(uuid) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.partner_order_attempt_status_v1(uuid) FROM PUBLIC, anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION platform_private.c2_order_attempt_status_core(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.partner_order_attempt_status_v1(uuid) TO authenticated;
+COMMIT;
