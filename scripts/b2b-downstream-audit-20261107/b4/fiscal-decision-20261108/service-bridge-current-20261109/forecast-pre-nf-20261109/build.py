@@ -7,6 +7,7 @@ import json
 H = Path(__file__).resolve().parent
 ROOT = H.parents[5]
 CAPTURE = ROOT / "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-125/current-pre-physical.json"
+CAPTURE5 = H / "capture-5-functions-20261109.json"
 BASELINE = CAPTURE.with_name("real-baselines.json")
 REF = "swzpzcwiasxmjutrmvkm"
 OLD_APPROVE_MD5 = "664f63441c92a6716f0117362255ec9e"
