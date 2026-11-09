@@ -28,3 +28,10 @@ Exige incluir 5c4f35f8… no piloto pela UI admin, via `b2b_payment_condition_ac
 - Teste: `paymentTermsRead.test.tsx` passou 37/37, com um caso novo para o modo legado sem NF.
 - Cobertura existente de NF + 30, datas mensais e dias úteis: são geradores e testes em PG descartável (`b2b-payment-condition-v1-rebase-20261106/test-local-pg.py`, `financial-installments-initial-20261024/price-schedule.py`, `b4/generate-b4.py`). Não foram reexecutados nesta etapa.
 - Aprovação e decisões financeiras continuaram desabilitadas. O botão de liberar após a contabilidade não foi acionado. O fiscal continua pendente e nenhuma data real foi gerada.
+
+## Leitura independente do proprietário (15:24Z) e causa do fluxo legado
+- A leitura do proprietário confirma: termos sem meio, recibo sem contrato/meio, `partner_orders.payment_method=NULL`.
+- O meio do contrato V1 não fica em `public`. Fica em `platform_private.b2b_order_condition_snapshots` (choice, condition_method, condition_version, due_basis, estimated…), fora do information_schema público consultado pelo proprietário. Para PB-001038 existem 0 linhas.
+- Causa da omissão: `b2b_condition_mode(5c4f35f8…)` retorna `legacy` porque a ativação ARBio v1 é `pilot` com `[7e52de9a…]` apenas. A UI então oculta o seletor, envia `payment_method=null` e usa `create_partner_order_secure`. Esse comportamento é o projetado e não é perda. "Pagamento único"/10% é o plano TESTE-FLUXO-…-V2, e não a escolha de boleto.
+- Proibido: atribuir boleto ao PB-001038 retroativamente ou editar o pedido. O pedido fica como referência legada imutável.
+- Adequação antes de um novo pedido ou promoção: (1) o proprietário inclui 5c4f35f8… no piloto pela UI admin (CAS v1, preservando 7e52de9a…, nunca `enforced`); (2) uma leitura confirma que o modo retorna `required` para o parceiro e que o boleto aparece no leitor de opções; (3) o novo pedido sai pelo writer `create_partner_order_condition_secure` com ACK exato; (4) a leitura pós-pedido confirma a linha em `b2b_order_condition_snapshots`, com a data estimada e base NF.
