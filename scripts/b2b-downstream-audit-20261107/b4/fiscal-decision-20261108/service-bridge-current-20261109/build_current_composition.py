@@ -210,7 +210,7 @@ def main():
     s = edit(s, "  checks.append(dict(test='real H13 envelope 104 protocol 100 generates one receivable and replay preserves one document allocation snapshot and title without close pending',status='PASS',receivable_id=receivable_id))",
                 """  checks.append(dict(test='real H13 envelope 104 protocol 100 generates one receivable and replay preserves one document allocation snapshot and title without close pending',status='PASS',receivable_id=receivable_id))
   partial_completion=forecast_extra.run_partial_completion(B,Q,OUT,order_id,accepted,item,invoice_id,receivable_id,credit)
-  checks.append(dict(test='two authorized NF 9 plus residual 9 preserve exposure 18; replay race H7 and payment 4 leave exposure 14 without reopening residual',status='PASS',second_receivable=partial_completion['second_receivable']))""")
+  checks.append(dict(test='two authorized NF 9 plus residual 9 preserve exposure 18; replay race H7 and payment 9 leave exposure 9 without reopening residual',status='PASS',second_receivable=partial_completion['second_receivable']))""")
     s = edit(s, "  assert B.last(\"SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots;\")=='1'",
                 "  assert B.last(\"SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots;\")=='2'")
     OUT.write_text(s)
