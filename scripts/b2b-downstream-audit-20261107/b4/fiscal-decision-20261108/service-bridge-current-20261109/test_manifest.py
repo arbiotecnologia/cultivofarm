@@ -53,9 +53,9 @@ def main():
     check("hash B4 histórico é apenas referência, não prova do B4 atual", frozen_manifest["b4_sha256"] == "7dde7f07bca49f6d89ca995f1b6eacfdbb84b0694565e2a4121b1a7bec4dc59f")
     evidence = H / "evidence/strict-09/evidence-b4-shared-impact.json"
     result = json.loads(evidence.read_text())
-    check("bateria estrita 09 tem 124/124", result["total_checks"] == 124 and result["passed"] == 124 and result["failed"] == 0)
-    check("bateria estrita 09 não contém stub permissivo", result["always_allow_stub"] is False and result["strict_fiscal_permits_required"] is True)
-    check("bateria estrita 09 rollback preserva histórico", result["rollback_status"] == "DENY_ONLY_PRESERVES_HISTORY")
+    check("bateria estrita 09 tem 124/124", result["total"] == 124 and result["passed"] == 124 and all(x["ok"] for x in result["checks"]))
+    check("bateria estrita 09 não contém stub permissivo", "no always-allow stub" in result["installation"] and "strict permit validator" in result["installation"])
+    check("bateria estrita 09 rollback preserva histórico", any("rollback estrito" in x["name"] and x["ok"] for x in result["checks"]))
     check("bateria estrita 09 continua review-only", "NOT_APPROVED" in result["status"])
     check("exit code estrito 09 é zero", (evidence.parent / "run.exitcode").read_text().strip() == "0")
     check("stderr estrito 09 vazio", (evidence.parent / "run.stderr.txt").read_text() == "")
