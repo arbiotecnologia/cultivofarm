@@ -1,3 +1,9 @@
+## 09/11 03:02 — Normalização estrita de ACL no PRE30/installer31
+- [ ] Registrar como relato do auditor: produção canônica recebeu somente `11` confirmação fechada e `21` envio fechado, com `12/22` PASS; PRE30 parou em `FINISHED_PRE_RELATION_DRIFT public.estoque_movimentacoes` apenas por ordem textual de ACL. Não reinstalar `11/21`, não reordenar grants e não executar SQL hospedado/publicar/ativar.
+- [ ] Corrigir o gerador dos dez guards para comparar itens `aclitem` ordenados, preservando grantee, privilégios, grant option e grantor; ordem diferente passa, entradas ausentes/extras/ampliadas ou grantor distinto falham fechado.
+- [ ] Adicionar reprodução e regressões em PostgreSQL descartável, gerar overlay separado de `30/31` com origem e hashes do pacote congelado `ad87`, sem alterar corpos DDL ou o pacote original.
+- [ ] Verificar que somente os dez guards mudaram, executar os artefatos finais do overlay em PostgreSQL 17 descartável e documentar evidências/limites; produção continua sem `31+` e prova real JWT/RLS/Storage/browser permanece NOT_RUN.
+
 ## 09/11 02:40 — Serialização do master gate na autorização final
 - [x] Attempt 111 preservou a reprovação do candidato anterior: gate OFF confirmou enquanto o writer já autorizado ainda escrevia; a primeira versão do cenário também identificou e removeu a máscara da segunda checagem do wrapper público.
 - [x] Gerador corrigido com ordem única concessão → gate, revalidação de `enabled` e `clock_timestamp()` depois de todas as esperas e locks retidos até o fim da transação; leituras de escopo continuam sem locks. Nenhuma autoridade deriva de GUC/claims do cliente.
