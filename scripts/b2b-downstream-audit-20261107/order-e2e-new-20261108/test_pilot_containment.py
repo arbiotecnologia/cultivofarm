@@ -158,6 +158,85 @@ def run(B, Review, Q, A, choice, out):
     assert B.last(f"SELECT count(*) FROM public.ordens_servico WHERE partner_order_id='{concurrent['id']}';") == "1"
     ok("two concurrent connections produce one OS and one idempotent receipt")
 
+    def os_effects(order_id):
+        return json.loads(B.last(f"""SELECT jsonb_build_object(
+          'os',(SELECT count(*) FROM public.ordens_servico WHERE partner_order_id='{order_id}'),
+          'tickets',(SELECT count(*) FROM platform_private.authz_tickets WHERE scope='b2b_resale_os_create_v1'),
+          'receipts',(SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1 WHERE order_id='{order_id}')
+        )::text;"""))
+
+    # Real transaction, started before expiry and held on the canonical order lock
+    # until after expiry. This is not a fresh call with an already-expired row.
+    expiring = R.make_order([Q.S(1)], "pilot-expiry-during-lock")
+    expiring_item = expiring["items"][0]
+    expiring_grant = grant("b2b_resale", "os_create", Q.UADM, Q.A, Q.P, expiring["id"], expiring_item["id"], expiring_item["product_id"], until="clock_timestamp()+interval '2 seconds'")
+    expiring_before = os_effects(expiring["id"])
+    holder = B.T.session(f"BEGIN;SELECT 1 FROM public.partner_orders WHERE id='{expiring['id']}' FOR UPDATE;")
+    time.sleep(0.1)
+    expiring_sql = "BEGIN;SELECT now()<(SELECT valid_until FROM platform_private.resale_pilot_allowlist_v1 WHERE id='" + expiring_grant + "') AS started_before_expiry;" + R.os_create_sql(expiring["id"], expiring_item["id"], expiring["accepted"]["updated_at"], f"pilot-expiry-lock-{run_id}")
+    worker = B.T.session(expiring_sql)
+    B.T.wait()
+    deadline = time.monotonic() + 5
+    while B.last(f"SELECT clock_timestamp()>valid_until FROM platform_private.resale_pilot_allowlist_v1 WHERE id='{expiring_grant}';") != "t":
+        assert time.monotonic() < deadline, "expiry did not arrive while writer was locked"
+        time.sleep(0.05)
+    B.T.finish(holder, "COMMIT;")
+    worker_out, worker_err = B.T.finish(worker)
+    assert worker_out.strip().splitlines()[0] == "t" and "RESALE_PILOT_SCOPE_DENIED" in worker_err, (worker_out, worker_err)
+    assert os_effects(expiring["id"]) == expiring_before
+    ok("transaction begun before expiry and unlocked after expiry is denied at final authorization")
+
+    # The revoke commits while the same writer is still waiting for the order.
+    # Its later authorization must observe the committed revocation, not cached scope.
+    revoked = R.make_order([Q.S(1)], "pilot-revoke-before-final")
+    revoked_item = revoked["items"][0]
+    revoked_grant = grant("b2b_resale", "os_create", Q.UADM, Q.A, Q.P, revoked["id"], revoked_item["id"], revoked_item["product_id"])
+    revoked_before = os_effects(revoked["id"])
+    holder = B.T.session(f"BEGIN;SELECT 1 FROM public.partner_orders WHERE id='{revoked['id']}' FOR UPDATE;")
+    time.sleep(0.1)
+    worker = B.T.session("BEGIN;" + R.os_create_sql(revoked["id"], revoked_item["id"], revoked["accepted"]["updated_at"], f"pilot-revoke-before-{run_id}"))
+    B.T.wait()
+    B.sql(f"UPDATE platform_private.resale_pilot_allowlist_v1 SET revoked_at=clock_timestamp(),revoked_by=actor_id,revoke_reason='confirmed before final authorization' WHERE id='{revoked_grant}';")
+    assert B.last(f"SELECT revoked_at IS NOT NULL FROM platform_private.resale_pilot_allowlist_v1 WHERE id='{revoked_grant}';") == "t"
+    B.T.finish(holder, "COMMIT;")
+    worker_out, worker_err = B.T.finish(worker)
+    assert "RESALE_PILOT_SCOPE_DENIED" in worker_err, (worker_out, worker_err)
+    assert os_effects(revoked["id"]) == revoked_before
+    ok("concurrent revoke confirmed before final authorization denies writer without effects")
+
+    # Synchronization-only trigger: it never changes authority or the row. It holds
+    # the real writer immediately AFTER its final authorization, proving that a
+    # concurrent revoke cannot confirm until that writer transaction finishes.
+    after_final = R.make_order([Q.S(1)], "pilot-revoke-after-final")
+    after_item = after_final["items"][0]
+    after_grant = grant("b2b_resale", "os_create", Q.UADM, Q.A, Q.P, after_final["id"], after_item["id"], after_item["product_id"])
+    barrier_key = f"pilot-after-final-{run_id}"
+    B.sql(f"""CREATE FUNCTION platform_private.local_pilot_after_auth_barrier_v1() RETURNS trigger LANGUAGE plpgsql SET search_path='' AS $barrier$
+      BEGIN IF NEW.scope='b2b_resale_os_create_v1' THEN PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('{barrier_key}',0)); END IF; RETURN NEW; END;
+      $barrier$;
+      CREATE TRIGGER zz_local_pilot_after_auth BEFORE INSERT ON platform_private.authz_tickets FOR EACH ROW EXECUTE FUNCTION platform_private.local_pilot_after_auth_barrier_v1();""")
+    holder = B.T.session(f"BEGIN;SELECT pg_advisory_xact_lock(hashtextextended('{barrier_key}',0));")
+    time.sleep(0.1)
+    worker = B.T.session(R.os_create_sql(after_final["id"], after_item["id"], after_final["accepted"]["updated_at"], f"pilot-after-final-{run_id}"))
+    B.T.wait()
+    revoker = B.T.session(f"UPDATE platform_private.resale_pilot_allowlist_v1 SET revoked_at=clock_timestamp(),revoked_by=actor_id,revoke_reason='must wait for authorized writer' WHERE id='{after_grant}';")
+    lock_deadline = time.monotonic() + 1
+    revoke_waited = False
+    while time.monotonic() < lock_deadline:
+        revoke_waited = B.last("SELECT count(*)>0 FROM pg_stat_activity WHERE wait_event_type='Lock' AND query LIKE '%UPDATE platform_private.resale_pilot_allowlist_v1%';") == "t"
+        if revoke_waited:
+            break
+        time.sleep(0.05)
+    B.T.finish(holder, "COMMIT;")
+    writer_out, writer_err = B.T.finish(worker)
+    revoke_out, revoke_err = B.T.finish(revoker)
+    B.sql("DROP TRIGGER zz_local_pilot_after_auth ON platform_private.authz_tickets;DROP FUNCTION platform_private.local_pilot_after_auth_barrier_v1();")
+    assert revoke_waited, (writer_out, writer_err, revoke_out, revoke_err)
+    assert not writer_err and json.loads(writer_out.strip().splitlines()[-1])["ok"] is True, (writer_out, writer_err)
+    assert not revoke_err, (revoke_out, revoke_err)
+    assert B.last(f"SELECT revoked_at IS NOT NULL FROM platform_private.resale_pilot_allowlist_v1 WHERE id='{after_grant}';") == "t"
+    ok("revoke waits on the same allowlist row after final authorization and confirms after writer commit")
+
     B.sql("UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false WHERE singleton;")
     deny("master switch OFF remains fail closed even with valid grants", create)
     ok("allowlist and receipts retained after gates OFF", B.last("SELECT count(*)>=10 FROM platform_private.resale_pilot_allowlist_v1;") == "t")

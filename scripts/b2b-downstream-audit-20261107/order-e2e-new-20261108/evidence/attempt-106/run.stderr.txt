@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-46hbdxo9/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 419, in main
+    pilot_results=PilotTests.run(B,Review70.Review,Q,A,choice,pilot_out)
+  File "/tmp/new-order-e2e-46hbdxo9/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_pilot_containment.py", line 185, in run
+    assert "started_before_expiry" in out and "RESALE_PILOT_SCOPE_DENIED" in err, (out, err)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('t\n', 'ERROR:  RESALE_PILOT_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 26 at RAISE\n')
