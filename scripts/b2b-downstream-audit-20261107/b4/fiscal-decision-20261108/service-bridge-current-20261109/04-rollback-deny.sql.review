@@ -14,5 +14,7 @@ REVOKE ALL ON FUNCTION platform_private.b2b_integration_dependencies() FROM PUBL
 REVOKE ALL ON FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid),public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;
 REVOKE EXECUTE ON FUNCTION public.generate_b2b_receivable_secure(uuid) FROM PUBLIC,anon,authenticated;
+DO $p$ BEGIN
  IF md5(pg_get_functiondef('platform_private.b2b_integration_dependencies()'::regprocedure)) IS DISTINCT FROM '605e722506de23bfd69c890c4123d4b6' THEN RAISE EXCEPTION 'B2B_STRICT_ROLLBACK_NOT_CLOSED:platform_private.b2b_integration_dependencies()'; END IF;
+END $p$;
 COMMIT;

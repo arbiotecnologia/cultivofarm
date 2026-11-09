@@ -1,0 +1,122 @@
+PASS boot B2/B3 com gatilhos reais
+PASS B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)
+PASS B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)
+PASS B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)
+PASS B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)
+PASS B3 corpo atual pinado: platform_private.h15_actor_organization()
+PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+PASS B3 01-pre.sql.readonly
+PASS B3 02-install.sql.review
+PASS B3 03-post.sql.readonly
+PASS publicação B3 usada pelo B4
+PASS publicação B3 usada pelo B4
+PASS piloto B3 restrito ao parceiro fictício
+PASS cotação B3 criada sem título
+PASS resposta de cotação B3 com centavos
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture independente de recuperação criada sem título
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture independente do callback fiscal criada sem título
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture independente para ordenação de locks criada sem título
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture contábil pendente separada
+PASS guard downstream real tem MD5 exato
+PASS trigger compartilhado candidato ainda ausente antes dos históricos
+PASS cinco históricos locais 4 OPEN/1 OVERDUE nascem com partner_id NULL
+PASS históricos de ambiguidade/conflito são preservados sem correção retroativa
+PASS PRE confirma writers/índice e ausência de todos os overloads da projeção
+PASS instalação descartável cria projeção nova e passa PRE+POST íntegros
+PASS POST confirma exatamente um overload owner-only e metadata completa
+PASS instalação não habilita a dependência fiscal/contábil
+PASS rerun falha fechado ao encontrar overload/objetos já criados
+PASS instalação não substitui dependência operacional por stub
+PASS 32 gatilhos reais carregados pelo harness B3 continuam habilitados
+PASS B3 create/simulate antigos não foram restaurados nem alterados
+PASS autorização fiscal continua service-only e sem integração de recebível
+PASS gate fiscal/contábil não comprovado permanece fechado
+PASS pedido aprovado sem evento fiscal alocado permanece previsão, sem dívida
+PASS cliente não invoca alocador privado
+PASS componente econômico direto fora desta bateria estrita
+PASS rollback B4 deny-only antes da ponte preserva histórico
+PASS nenhum título fiscal existe antes da confirmação
+PASS ponte PRE confirma pins B4 e autorização capturada
+PASS ponte service-only instala com POST e ACL fechada
+PASS ponte POST íntegro
+PASS ponte não recebe EXECUTE de usuário autenticado
+PASS ponte mantém dependência fiscal/contábil real fechada antes da costura local
+PASS dependência negada não deixa documento/título
+PASS etapa estrita PRE confirma B4, ponte, legado e dez gatilhos originais
+PASS etapa estrita instala validação por permit fiscal real, sem stub
+PASS etapa estrita POST preserva ACL, metadata e legado negado
+PASS nenhum stub always-allow foi instalado
+PASS evento pendente é ignorado sem título
+PASS evento rejeitado é ignorado sem título
+PASS pendente/rejeitado não criam documento ou recebível
+PASS callback H13 pendente não chama autorização nem cria título
+PASS callback H13 rejeitado não promove NF nem cria título
+PASS callbacks reais pendente/rejeitado preservam zero documentos fiscais B4
+PASS DEPOIS: retorno não-B2B é classificado e autorizado sem título B2B
+PASS DEPOIS: classificação não-B2B não cria documento/título B4
+PASS retorno externo não-B2B permanece durável na transmissão
+PASS DEPOIS: parser preserva lote 104 e protocolo 100 em campos separados
+PASS DEPOIS: H12 consome protocolo 100 e fecha não-B2B sem título
+PASS DEPOIS: coluna protocol_c_stat conserva evidência efetiva 100
+PASS replay do mesmo envelope 104/100 não duplica transmissão nem efeito fiscal
+PASS replay 104/100 recuperado permanece sem pendência e sem rebaixar evidência
+PASS vínculo B2B parcial não escapa como não-B2B
+PASS DEPOIS: _c_stat divergente não autoriza nem cria título
+PASS DEPOIS: ausência de transmissão falha fechado
+PASS DEPOIS: NFS-e permanece fail-closed até callback específico
+PASS autorização com falha pós-título aborta sem perder capacidade de retry
+PASS falha da autorização não deixa NF autorizada, documento ou título parcial
+PASS retentativa autorizada gera um recebível B4 pela NF
+PASS título service-only não inventa ator humano e conserva vínculo NF
+PASS primeira NF parcial deixa residual econômico sem cobrar o saldo
+PASS retentativa da NF autorizada é replay sem duplicação
+PASS duas chamadas service-only concorrentes preservam um único título
+PASS segunda NF parcial confirmada tem título próprio
+PASS duas NFs parciais não cobram além das alocações e do total econômico
+PASS DEPOIS: replay com valor alterado diverge e preserva snapshot
+PASS ensaio monetário não altera a NF durável
+PASS DEPOIS: referência divergente é conflito de replay
+PASS DEPOIS: protocolo divergente é negado antes do replay
+PASS snapshot fiscal privado conserva digest, valor e protocolo
+PASS cancelamento continua sem reversão automática não homologada
+PASS H13 preserva retorno autorizado quando título falha
+PASS guarda terminal preserva transmissão/erro estranho e pendência privada sem NF/título parcial
+PASS retry H13 recupera título sem reenviar emissão
+PASS DEPOIS: retry H13 limpa somente a pendência privada e preserva erro estranho
+PASS DEPOIS: confirmação repetida da mesma chave/protocolo é replay sem conflito artificial
+PASS DEPOIS: replay estável preserva transmissão original no snapshot e um único título
+PASS confirmação com protocolo divergente continua fechada sem duplicar título
+PASS divergência de protocolo não substitui referência fiscal original
+PASS DEPOIS: retorno atrasado não rebaixa autorização nem apaga erro de outra origem
+PASS replay autorizado não limpa error_code estranho ao fechamento
+PASS guarda real continua negando UPDATE terminal após os replays
+PASS H13 concorrente fora de ordem termina autorizado, com protocolo estável e erro estranho preservado
+PASS concorrência H13 não duplica NF, snapshot ou título
+PASS DEPOIS: H13 e H12 na mesma NF/transmissão seguem nota→transmissão sem deadlock
+PASS corrida H13/H12 é recuperável sem apagar retorno externo
+PASS corrida não-B2B não cria documento/título
+PASS DEPOIS: H13 e ponte direta que trava a nota não invertem locks nem fazem deadlock
+PASS ponte direta concorrente preserva evidência e fecha sem duplicar documento/título
+PASS NF com tenant divergente do pedido é negada
+PASS NF estrangeira não gera documento/título
+PASS inserção não-B2B com ator preserva recorrência/importação legada
+PASS UPDATE de título legado não exige permit fiscal B2B
+PASS origem manual sem ator continua fechada sem afrouxar NOT NULL legado
+PASS rollback estrito restaura somente negação e preserva títulos/alocações
+PASS rollback deny-only da ponte fecha callback e preserva histórico
+PASS rollback da ponte não reabre alocador nem exceção manual
