@@ -45,6 +45,7 @@ def main():
         "status": "FAIL",
         "kind": "DISPOSABLE_OWNER_FK_INTEGRITY_NOT_HOSTED",
         "hosted": False,
+        "verification_runner_sha256": sha(Path(__file__).resolve()),
         "checks": checks,
         "raw": raw,
         "final_artifacts": final_artifacts,

@@ -253,6 +253,7 @@ def main():
     if evidence_path is not None:
         evidence = json.loads(evidence_path.read_text())
         assert evidence["status"] == "PASS" and evidence["hosted"] is False
+        assert evidence["verification_runner_sha256"] == sha(H / "test_owner_fk_integrity.py")
         assert evidence["postgresql_version"].startswith("17.")
         assert evidence["pre30_constraint_failure_reproduced"] is True
         assert set(evidence["orphan_scenarios"]) == {table for table, _name in TARGETS}
