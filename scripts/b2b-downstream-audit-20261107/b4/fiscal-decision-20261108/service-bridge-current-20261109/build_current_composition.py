@@ -102,7 +102,10 @@ def main():
     OUT.write_text(s)
     runner_source = SOURCE.with_name("rebuild.py").read_text()
     assert runner_source.count("order-e2e-new-20261108/compose.py'") == 1
-    SOURCE.with_name("rebuild_current.py").write_text(runner_source.replace("order-e2e-new-20261108/compose.py'", "order-e2e-new-20261108/compose_current.py'"))
+    runner_source = runner_source.replace("order-e2e-new-20261108/compose.py'", "order-e2e-new-20261108/compose_current.py'")
+    runner_source = edit(runner_source, "    attempt = next_attempt()\n    attempt.mkdir()",
+                        "    attempt = Path(os.environ['NEW_E2E_RUN_OUT']) if os.environ.get('NEW_E2E_RUN_OUT') else next_attempt()\n    attempt.mkdir(exist_ok=False)")
+    SOURCE.with_name("rebuild_current.py").write_text(runner_source)
     print(f"generated {OUT} ({len(s.splitlines())} lines) and rebuild_current.py")
 
 
