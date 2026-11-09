@@ -1,0 +1,10 @@
+BEGIN READ ONLY;
+DO $$DECLARE p oid:=to_regprocedure('public.rpc_b2b_resale_os_availability_v1(uuid)');BEGIN
+ IF p IS NULL THEN RAISE EXCEPTION 'READER_ROWTYPE_POST_MISSING public.rpc_b2b_resale_os_availability_v1(uuid)';END IF;
+ IF md5(pg_get_functiondef(p)) IS DISTINCT FROM 'e9767fcbcbfb831b92ee7f1523b1262e' THEN RAISE EXCEPTION 'READER_ROWTYPE_POST_BODY_DRIFT public.rpc_b2b_resale_os_availability_v1(uuid)';END IF;
+ IF (SELECT pg_get_userbyid(f.proowner) FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'READER_ROWTYPE_POST_OWNER_DRIFT public.rpc_b2b_resale_os_availability_v1(uuid)';END IF;
+ IF (SELECT (SELECT coalesce(jsonb_agg(item::text ORDER BY item::text COLLATE "C"),'[]'::jsonb) FROM unnest(f.proacl) AS acl_items(item)) FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM (SELECT coalesce(jsonb_agg(item::text ORDER BY item::text COLLATE "C"),'[]'::jsonb) FROM unnest('{postgres=X/postgres,authenticated=X/postgres}'::aclitem[]) AS acl_items(item)) THEN RAISE EXCEPTION 'READER_ROWTYPE_POST_ACL_DRIFT public.rpc_b2b_resale_os_availability_v1(uuid)';END IF;
+ IF (SELECT f.prosecdef AND f.provolatile='v' AND f.prorettype='jsonb'::regtype AND f.proconfig=ARRAY['search_path=""','lock_timeout=3s'] FROM pg_proc f WHERE f.oid=p) IS NOT TRUE THEN RAISE EXCEPTION 'READER_ROWTYPE_POST_HEADER_DRIFT public.rpc_b2b_resale_os_availability_v1(uuid)';END IF;
+END$$;
+DO $$BEGIN IF EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE enabled IS TRUE) OR EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE enabled IS TRUE) THEN RAISE EXCEPTION 'READER_ROWTYPE_GATE_NOT_OFF';END IF;END$$;
+ROLLBACK;

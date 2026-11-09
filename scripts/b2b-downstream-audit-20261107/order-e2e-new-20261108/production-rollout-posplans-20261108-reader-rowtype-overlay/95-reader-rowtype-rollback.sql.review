@@ -1,0 +1,75 @@
+BEGIN;SET LOCAL lock_timeout='3s';
+DO $$DECLARE p oid:=to_regprocedure('public.rpc_b2b_resale_os_availability_v1(uuid)');BEGIN
+ IF p IS NULL THEN RAISE EXCEPTION 'READER_ROWTYPE_ROLLBACK_PRE_MISSING public.rpc_b2b_resale_os_availability_v1(uuid)';END IF;
+ IF md5(pg_get_functiondef(p)) IS DISTINCT FROM 'e9767fcbcbfb831b92ee7f1523b1262e' THEN RAISE EXCEPTION 'READER_ROWTYPE_ROLLBACK_PRE_BODY_DRIFT public.rpc_b2b_resale_os_availability_v1(uuid)';END IF;
+ IF (SELECT pg_get_userbyid(f.proowner) FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'READER_ROWTYPE_ROLLBACK_PRE_OWNER_DRIFT public.rpc_b2b_resale_os_availability_v1(uuid)';END IF;
+ IF (SELECT (SELECT coalesce(jsonb_agg(item::text ORDER BY item::text COLLATE "C"),'[]'::jsonb) FROM unnest(f.proacl) AS acl_items(item)) FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM (SELECT coalesce(jsonb_agg(item::text ORDER BY item::text COLLATE "C"),'[]'::jsonb) FROM unnest('{postgres=X/postgres,authenticated=X/postgres}'::aclitem[]) AS acl_items(item)) THEN RAISE EXCEPTION 'READER_ROWTYPE_ROLLBACK_PRE_ACL_DRIFT public.rpc_b2b_resale_os_availability_v1(uuid)';END IF;
+ IF (SELECT f.prosecdef AND f.provolatile='v' AND f.prorettype='jsonb'::regtype AND f.proconfig=ARRAY['search_path=""','lock_timeout=3s'] FROM pg_proc f WHERE f.oid=p) IS NOT TRUE THEN RAISE EXCEPTION 'READER_ROWTYPE_ROLLBACK_PRE_HEADER_DRIFT public.rpc_b2b_resale_os_availability_v1(uuid)';END IF;
+END$$;
+CREATE OR REPLACE FUNCTION public.rpc_b2b_resale_os_availability_v1(p_order_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ VOLATILE SECURITY DEFINER
+ SET search_path TO ''
+ SET lock_timeout TO '3s'
+AS $function$
+DECLARE actor uuid:=auth.uid(); org uuid; result jsonb; gate_open boolean;
+ v_order public.partner_orders%ROWTYPE; duplicate_os integer;
+BEGIN
+ IF actor IS NULL OR platform_private.b2b_internal_commercial_actor() IS NOT TRUE
+ THEN RAISE EXCEPTION 'B2B_RESALE_ACTOR_DENIED' USING ERRCODE='42501'; END IF;
+ org:=platform_private.stock_motor_actor('reserva');
+ IF p_order_id IS NULL THEN RAISE EXCEPTION 'B2B_RESALE_REQUEST_INVALID' USING ERRCODE='22023'; END IF;
+ SELECT * INTO v_order FROM public.partner_orders po
+  JOIN public.partner_accounts pa ON pa.id=po.partner_id
+  WHERE po.id=p_order_id AND pa.commercial_owner_organization_id=org
+   AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+   AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
+   AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
+   AND po.ready_for_production IS FALSE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'B2B_RESALE_ORDER_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ SELECT platform_private.resale_pilot_scope_v1('b2b_resale','read',actor,org,v_order.partner_id,p_order_id,NULL,NULL,NULL,NULL) INTO gate_open;
+ IF EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE) AND gate_open IS NOT TRUE THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ SELECT count(*) INTO duplicate_os FROM (
+   SELECT i.id FROM public.partner_order_items i
+   WHERE i.order_id=p_order_id
+    AND (SELECT count(*) FROM public.ordens_servico os
+      WHERE os.partner_order_id=p_order_id AND os.partner_order_item_id=i.id AND os.origem='b2b')>1
+ ) d;
+ IF duplicate_os<>0 THEN RAISE EXCEPTION 'B2B_RESALE_OS_CARDINALITY_CONFLICT' USING ERRCODE='PT409'; END IF;
+ SELECT jsonb_build_object(
+  'contract','B2B_RESALE_OS_AVAILABILITY_V1','order_id',p_order_id,
+  'actor_id',actor,'organization_id',org,'observed_updated_at',v_order.updated_at,
+  'available',gate_open,'items',coalesce(jsonb_agg(jsonb_build_object(
+    'order_item_id',i.id,'os_id',os.id,
+    'create_available',gate_open AND os.id IS NULL AND v_order.status::text='aprovado'
+     AND v_order.receivable_generated IS FALSE AND v_order.payment_condition_status='defined'
+     AND v_order.financial_approval_status NOT IN ('pending','rejected')
+     AND i.product_id IS NOT NULL AND i.microrganismo_id IS NULL
+     AND i.quantidade>0 AND i.quantidade=trunc(i.quantidade) AND i.unidade_medida='unidade'
+     AND i.packaging_id_snapshot IS NOT NULL AND i.packaging_version_snapshot>0
+     AND i.packaging_unidade_conteudo_snapshot IN ('kg','g','l','ml')
+     AND p.id IS NOT NULL
+   ) ORDER BY i.created_at,i.id),'[]'::jsonb)
+ ) INTO result
+ FROM public.partner_order_items i
+ LEFT JOIN public.produtos p ON p.id=i.product_id AND p.owner_organization_id=org
+  AND p.ativo IS TRUE AND p.familia_catalogo IN ('quimico','fertilizante_adubo')
+ LEFT JOIN public.ordens_servico os ON os.partner_order_id=p_order_id
+  AND os.partner_order_item_id=i.id AND os.origem='b2b'
+ WHERE i.order_id=p_order_id;
+ IF platform_private.resale_pilot_scope_v1('b2b_resale','read',actor,org,v_order.partner_id,p_order_id,NULL,NULL,NULL,NULL) IS DISTINCT FROM gate_open THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ IF auth.uid() IS DISTINCT FROM actor OR platform_private.b2b_internal_commercial_actor() IS NOT TRUE
+ OR platform_private.stock_motor_actor('reserva') IS DISTINCT FROM org
+ THEN RAISE EXCEPTION 'B2B_RESALE_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ RETURN result;
+END;$function$;
+
+DO $$DECLARE p oid:=to_regprocedure('public.rpc_b2b_resale_os_availability_v1(uuid)');BEGIN
+ IF p IS NULL THEN RAISE EXCEPTION 'READER_ROWTYPE_ROLLBACK_POST_MISSING public.rpc_b2b_resale_os_availability_v1(uuid)';END IF;
+ IF md5(pg_get_functiondef(p)) IS DISTINCT FROM 'd426e0758d03a143f8014cbb6590fb49' THEN RAISE EXCEPTION 'READER_ROWTYPE_ROLLBACK_POST_BODY_DRIFT public.rpc_b2b_resale_os_availability_v1(uuid)';END IF;
+ IF (SELECT pg_get_userbyid(f.proowner) FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'READER_ROWTYPE_ROLLBACK_POST_OWNER_DRIFT public.rpc_b2b_resale_os_availability_v1(uuid)';END IF;
+ IF (SELECT (SELECT coalesce(jsonb_agg(item::text ORDER BY item::text COLLATE "C"),'[]'::jsonb) FROM unnest(f.proacl) AS acl_items(item)) FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM (SELECT coalesce(jsonb_agg(item::text ORDER BY item::text COLLATE "C"),'[]'::jsonb) FROM unnest('{postgres=X/postgres,authenticated=X/postgres}'::aclitem[]) AS acl_items(item)) THEN RAISE EXCEPTION 'READER_ROWTYPE_ROLLBACK_POST_ACL_DRIFT public.rpc_b2b_resale_os_availability_v1(uuid)';END IF;
+ IF (SELECT f.prosecdef AND f.provolatile='v' AND f.prorettype='jsonb'::regtype AND f.proconfig=ARRAY['search_path=""','lock_timeout=3s'] FROM pg_proc f WHERE f.oid=p) IS NOT TRUE THEN RAISE EXCEPTION 'READER_ROWTYPE_ROLLBACK_POST_HEADER_DRIFT public.rpc_b2b_resale_os_availability_v1(uuid)';END IF;
+END$$;
+COMMIT;
