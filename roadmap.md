@@ -1,3 +1,8 @@
+## 09/11 21:01 — Mudança de direção: provisório antes da NF
+- [x] Suspender release da ponte pós-confirmação e interromper attempt-127; attempts 125/126 preservados como caracterização H7/CHECK de auditoria, não aprovação. Nenhum positivo integrado promovido.
+- [x] Preparar plano revisável em duas fases para registro provisório `aguardando_fiscal` antes da NF e confirmação posterior do mesmo agregado, com máquina de estados, parciais, crédito sem dupla contagem, cancelamentos, migração e decisões pendentes; proposta NÃO aprovada para implementação.
+- [x] UI independente: cobrir query com página já montada; 31/31 testes, typecheck 0 e build mais recente OK. Preview externo ainda requer reteste autenticado do auditor; sem publicação, SQL hospedado, emissão, cobrança ou envio.
+
 ## 09/11 20:47 — Revisão 8c8cf83: diagnóstico e fechamento fiscal estrito
 - [ ] Preservar strict-01 e cada tentativa com diretório próprio, stdout/stderr/exit e SQLSTATE/mensagem real; CLOSE_PENDING nunca é positivo.
 - [ ] Corrigir a ordem/imutabilidade do vínculo NF→recebível sem stub permissivo, sem enfraquecer ACL/gates/dez triggers e separando MD5 LIVE de hashes pós-B4 por fase.

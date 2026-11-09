@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { MemoryRouter, useLocation } from "react-router-dom";
+import { MemoryRouter, useLocation, useNavigate, type NavigateFunction } from "react-router-dom";
 import { clearAllPauseStates, pauseStateKey, writePauseState } from "@/lib/authz/pauseRetainedState";
 
 let auth: any;
@@ -14,7 +14,8 @@ const actor = (uid: string, org: string, epoch = 0, authzReady = true) => ({
   roles: ["comercial"], authzEpoch: epoch, authzReady, loading: false,
 });
 let observedSearch = "";
-const LocationProbe = () => { observedSearch = useLocation().search; return null; };
+let navigate: NavigateFunction;
+const LocationProbe = () => { observedSearch = useLocation().search; navigate = useNavigate(); return null; };
 const use = (initial = "/comercial/pedidos-b2b") => renderHook(
   () => usePedidosB2BStatusFilter(OPTS, DEF),
   { wrapper: ({ children }) => <MemoryRouter initialEntries={[initial]}><LocationProbe />{children}</MemoryRouter> },
@@ -52,6 +53,14 @@ describe("filtro de status /comercial/pedidos-b2b", () => {
     expect(observedSearch).toBe("?aba=carteira");
     h.unmount();
     expect(use(`/comercial/pedidos-b2b${observedSearch}`).result.current[0]).toBe("aprovado");
+  });
+
+  it("query recebida com a página já montada aplica crédito e limpa somente status", () => {
+    const h = use("/comercial/pedidos-b2b?aba=carteira");
+    expect(h.result.current[0]).toBe("all");
+    act(() => navigate("/comercial/pedidos-b2b?aba=carteira&status=aguardando_aprovacao_credito"));
+    expect(h.result.current[0]).toBe("aguardando_aprovacao_credito");
+    expect(observedSearch).toBe("?aba=carteira");
   });
 
   it("query inválida cai em Todos, é removida e não recupera escolha anterior", () => {
