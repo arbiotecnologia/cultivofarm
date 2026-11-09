@@ -7,6 +7,7 @@ from pathlib import Path
 
 def run(B, Review, Q, A, choice, out):
     out = Path(out)
+    out.mkdir(parents=True, exist_ok=True)
     checks = []
 
     def ok(name, condition=True):
