@@ -233,7 +233,7 @@ def build_bodies(raw):
     body = defs[sig]["body"]
     body = one(body,
         "SELECT coalesce(bool_and(g.enabled),false) INTO gate_open\n  FROM platform_private.b2b_resale_logistics_gate_v1 g WHERE g.singleton;",
-        "SELECT platform_private.resale_pilot_allowed_v1('b2b_resale','read',actor,org,v_order.partner_id,p_order_id,NULL,NULL,NULL,NULL) INTO gate_open;",
+        "SELECT platform_private.resale_pilot_scope_v1('b2b_resale','read',actor,org,v_order.partner_id,p_order_id,NULL,NULL,NULL,NULL) INTO gate_open;",
         "reader scoped")
     body = one(body,
         " SELECT count(*) INTO duplicate_os FROM (",
