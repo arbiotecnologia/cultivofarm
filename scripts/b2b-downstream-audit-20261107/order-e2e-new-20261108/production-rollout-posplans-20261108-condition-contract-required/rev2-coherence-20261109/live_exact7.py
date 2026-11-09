@@ -73,9 +73,12 @@ def run(psql0, check, md5_of, call_sql, res, out_dir, ids):
         pre[s] = r.stdout.rstrip("\n")
         (d / (s.split("(")[0] + ".mirror-before.sql")).write_text(pre[s] + "\n")
     deps_pre = {n: psql(f"SELECT count(*) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname='{n}'").stdout.strip() for n in DEPS}
-    sql = ["BEGIN;", LOGISTICS_SEAM]
+    # Declared FIXTURE seam: LIVE is_valid_b2b_partner_user requires pu.valid_from<=now(); the mirror backfill left it NULL on the
+    # synthetic links. Set it to a past instant (no link added/removed, revoked_at untouched).
+    FIX = "UPDATE public.partner_users SET valid_from=now()-interval '1 day' WHERE valid_from IS NULL;"
+    sql = ["BEGIN;", LOGISTICS_SEAM, FIX]
     res["live_exact7_seams"] = ["REDUCED logistics schema seam (empty ordens_servico/entregas if absent) + delivery_context_20261030 DDL from real_triggers.py",
-                                "Auth: request.jwt.claims set by harness (not hosted JWT)"]
+                                "Auth: request.jwt.claims set by harness (not hosted JWT)", "FIXTURE: partner_users.valid_from NULL -> now()-1d (synthetic rows only)"]
     if psql(f"SELECT to_regclass('{GATE}') IS NULL").stdout.strip() == "t":
         sql.append(gate_sql())
     res["live_exact7_cap06_installed"] = []
@@ -152,7 +155,8 @@ def run(psql0, check, md5_of, call_sql, res, out_dir, ids):
     check("CCR2 LIVE7 attempt_authz: vínculo revogado negado", "ERROR" in e, e)
     r = psql("SELECT count(*) FILTER (WHERE platform_private.b2b_resale_delivery_status_transition_valid_v1(o, (jsonb_populate_record(o, jsonb_build_object('status','entregue'))))) FROM public.partner_orders o")
     check("CCR2 LIVE7 transição de entrega de revenda falsa com gate OFF para todos os pedidos", r.returncode == 0 and r.stdout.strip() == "0", (r.stdout, r.stderr[-200:]))
-    r = psql("BEGIN; UPDATE public.partner_orders SET status='em_producao' WHERE id=(SELECT id FROM public.partner_orders WHERE c2_external_origin_snapshot IS NOT NULL OR internal_origin_snapshot IS NOT NULL LIMIT 1); ROLLBACK;")
+    r = psql("BEGIN; UPDATE public.partner_orders SET status='em_producao' WHERE id=(SELECT id FROM public.partner_orders WHERE platform_private.c2_external_origin_contract_valid(c2_external_origin_snapshot) IS TRUE AND status::text NOT IN ('cancelado','reprovado') LIMIT 1); ROLLBACK;")
     res["live_exact7_behaviour"]["guard_operational_update"] = (r.stderr or "").strip()[-300:]
+    res["live_exact7_behaviour"]["guard_operational_target_found"] = psql("SELECT count(*) FROM public.partner_orders WHERE platform_private.c2_external_origin_contract_valid(c2_external_origin_snapshot) IS TRUE AND status::text NOT IN ('cancelado','reprovado')").stdout.strip()
     check("CCR2 LIVE7 guarda LIVE bloqueia avanço operacional com gate OFF", "B2B_INTERNAL_DOWNSTREAM_UNVERIFIED" in r.stderr or "B2B_INTERNAL_UNSEALED_OPERATION" in r.stderr, r.stderr[-300:])
     return True
