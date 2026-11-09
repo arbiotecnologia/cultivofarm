@@ -266,7 +266,6 @@ def run(ns):
     for t in ("b2b_order_condition_snapshots", "b2b_order_condition_quote_snapshots", "b2b_condition_assignment_revocations", "b2b_condition_retirements"):
         n = psql(f"SELECT count(*) FROM platform_private.{t}").stdout.strip()
         e = psql(f"BEGIN; UPDATE platform_private.{t} SET created_at=created_at WHERE true; ROLLBACK;" if t.endswith("snapshots") else f"BEGIN; DELETE FROM platform_private.{t}; ROLLBACK;", check=False)
-        n = psql(f"SELECT count(*) FROM platform_private.{t}").stdout.strip()
         n2 = psql(f"SELECT count(*) FROM platform_private.{t}").stdout.strip()
         res.setdefault("immutability", {})[t] = {"rows": n, "error": (e.stderr or "").strip().splitlines()[:1]}
         check(f"CCR2 {t}: há linhas e UPDATE/DELETE é negado pelo gatilho imutável (mesmo postgres), contagem preservada",
