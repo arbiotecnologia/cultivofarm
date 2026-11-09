@@ -1,0 +1,70 @@
+{
+  "id": "85e02c0e-8d00-42c6-8831-219fc1f68ee4",
+  "total": 373.04,
+  "numero": "PB-001001",
+  "status": "em_analise_comercial",
+  "schedule": [
+    {
+      "amount": 124.35,
+      "due_date": "2026-12-09",
+      "estimated": true,
+      "interest_amount": 6.48,
+      "nominal_due_date": "2026-12-09",
+      "principal_amount": 117.87,
+      "installment_number": 1,
+      "business_day_adjusted": false
+    },
+    {
+      "amount": 124.35,
+      "due_date": "2027-01-09",
+      "estimated": true,
+      "interest_amount": 4.36,
+      "nominal_due_date": "2027-01-09",
+      "principal_amount": 119.99,
+      "installment_number": 2,
+      "business_day_adjusted": false
+    },
+    {
+      "amount": 124.34,
+      "due_date": "2027-02-09",
+      "estimated": true,
+      "interest_amount": 2.2,
+      "nominal_due_date": "2027-02-09",
+      "principal_amount": 122.14,
+      "installment_number": 3,
+      "business_day_adjusted": false
+    }
+  ],
+  "subtotal": 360.0,
+  "cart_hash": "9bf49f0d4b022c38b818179d5faecfffb001f4055789211187d2853de040f95e",
+  "final_amount": 373.04,
+  "pricing_mode": "discount_from_base",
+  "table_amount": 360.0,
+  "desconto_total": 0.0,
+  "first_due_date": "2026-12-09",
+  "payment_choice": {
+    "payment_method": "boleto",
+    "payment_deadline_days": 30,
+    "payment_condition_version": 1
+  },
+  "quote_required": false,
+  "discount_amount": 0.0,
+  "idempotency_key": "4ec40dc3-4506-489d-b836-e7c980ac46b0",
+  "payment_terms_id": "05d30769-b655-4da5-9b02-d7c9d2a248bd",
+  "installment_count": 3,
+  "payment_condition": {
+    "due_basis": "nf_issue",
+    "estimated": true,
+    "monthly_rate": 1.8,
+    "deadline_days": 30,
+    "installment_count": 3,
+    "payment_method_name": "Boleto TESTE"
+  },
+  "credit_reason_code": "OK",
+  "credit_block_reason": null,
+  "financial_approval_status": "not_required",
+  "financial_interest_amount": 13.04,
+  "net_amount_after_discount": 360.0,
+  "payment_condition_contract": "B2B_PAYMENT_CONDITION_V1",
+  "requires_financial_approval": false
+}
