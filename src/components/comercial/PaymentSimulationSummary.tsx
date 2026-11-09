@@ -75,18 +75,17 @@ export function PaymentSimulationSummary({ simulation, cashReferenceAmount, resp
       <Accordion type="single" collapsible>
         <AccordionItem value="schedule">
           <AccordionTrigger className="text-xs py-2">
-            {estimated ? `Parcelas estimadas · ${estimated.methodLabel} (${schedule.length})` : `Parcelas (${schedule.length})`}
+            {estimated ? `Parcelas estimadas · ${estimated.methodLabel} (${schedule.length})` : `Parcelas estimadas (${schedule.length})`}
           </AccordionTrigger>
           <AccordionContent>
-            {estimated && (
-              <p className="text-[11px] text-muted-foreground mb-1" data-testid="b2b-estimated-dates-note">
-                Datas estimadas. O vencimento definitivo é contado a partir da emissão da nota fiscal.
-              </p>
-            )}
+            {/* Antes da NF nenhuma data é definitiva, inclusive no contrato legado. */}
+            <p className="text-[11px] text-muted-foreground mb-1" data-testid="b2b-estimated-dates-note">
+              Datas estimadas. O vencimento definitivo é contado a partir da emissão da nota fiscal.
+            </p>
             <div className="space-y-1">
               {schedule.map((s) => (
                 <div key={s.installment_number} className="flex justify-between text-xs border-b py-1 last:border-0">
-                  <span>Parcela {s.installment_number} · {estimated ? "previsão " : ""}{fmtDate(s.due_date)}</span>
+                  <span>Parcela {s.installment_number} · previsão {fmtDate(s.due_date)}</span>
                   <span className="font-medium">{brl(s.amount)}</span>
                 </div>
               ))}
