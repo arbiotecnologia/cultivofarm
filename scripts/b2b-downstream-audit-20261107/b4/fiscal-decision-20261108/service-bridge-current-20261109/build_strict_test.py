@@ -62,7 +62,7 @@ def main():
 '''
     s = replace(s, anchor, addition)
     s = replace(s, '        B3.psql(real_dependencies + ";")\n        bridge_rollback = bridge_file("04-rollback-deny.sql.review")',
-                '''        strict_rollback = runfile(STRICT / "04-rollback-deny.sql.review")
+                '''        strict_rollback = strict_file("04-rollback-deny.sql.review")
         check("rollback estrito restaura somente negação e preserva títulos/alocações", strict_rollback.returncode == 0 and B3.psql("SELECT pg_get_functiondef('platform_private.b2b_integration_dependencies()'::regprocedure) LIKE '%B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN%'").stdout.strip() == "t", strict_rollback.stderr[-1200:])
         bridge_rollback = bridge_file("04-rollback-deny.sql.review")''')
     s = replace(s, '"kind": "DISPOSABLE_B4_FINAL_CREDIT_TERMS_1833_PRE_INSTALL_POST_ROLLBACK_NOT_HOSTED_E2E"',
