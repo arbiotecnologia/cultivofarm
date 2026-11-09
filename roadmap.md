@@ -1582,3 +1582,7 @@
 - [ ] Compor logística de revenda sem bioreator com pedido comprador canônico, autoridade local explicitamente sintética e candidato logístico revisável; executar positivos/negativos e preservar cada falha.
 - [ ] Registrar resultados novos, limites JWT/RLS/Storage e gates; sem alterar piloto/Auth/títulos hospedados, sem publicação ou efeitos externos.
 - [x] Registrar resultados parciais e todas as falhas em order-e2e-new-20261108: último exit 1 por assert_b2b_partner_scope/42501 forbidden_partner na simulação comprador da composição integral; próximo trabalho é fixture local de vínculo completo, não stub permissivo. Nenhuma dependência humana por arquivos ausentes; tarefa técnica permanece incompleta.
+
+## 09/11 13:31 — relato auditor produção (owner FK)
+- [x] Registrar relato: PRE25 real PASS, 26 instalada SUCCESS (não reaplicar), POST27 PASS, PRE30 overlay 2db87 real PASS; pacotes congelados intactos.
+- [ ] 31 finished_product_closed_reviewed_20261109 NÃO instalada (confirmação técnica expirada; gate/writer ausentes, migration_count 0) — aguarda aprovação humana do auditor.

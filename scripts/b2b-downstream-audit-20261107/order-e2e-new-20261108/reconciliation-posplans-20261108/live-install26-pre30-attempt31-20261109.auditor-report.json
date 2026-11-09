@@ -1,0 +1,16 @@
+{
+  "source": "auditor_report_relayed_by_owner",
+  "reported_at_utc": "2026-11-09T13:31:00Z",
+  "verified_by_agent_hosted": false,
+  "reviewed_commit": "d8dd3ae5",
+  "pre25": "PASS_REAL_zero_orphans_zero_mismatch",
+  "install26": {"migration": "catalog_owner_fk_integrity_reviewed_20261109", "result": "SUCCESS", "reapply": "FORBIDDEN"},
+  "post27": "PASS",
+  "pre30_overlay_2db87": "PASS_REAL",
+  "install31": {"migration": "finished_product_closed_reviewed_20261109", "result": "NOT_INSTALLED", "reason": "technical_confirmation_expired", "auditor_checks": {"gate": "absent", "writer": "absent", "migration_count": 0}, "next": "awaiting_human_approval"},
+  "installed_closed_do_not_reapply": ["11", "21", "26"],
+  "not_installed": ["31+"],
+  "frozen_packages_changed": false,
+  "jwt_rls_storage_browser": "NOT_RUN",
+  "deliveries_fiscal_billing": "BLOCKED"
+}
