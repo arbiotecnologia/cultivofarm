@@ -38,11 +38,13 @@ def main():
                 'monetary = B3.psql(f"SELECT round(financed_total/2,2) FROM platform_private.b4_order_condition_snapshots WHERE order_id=\'{recovery_order}\'").stdout.strip()')
     s = replace(s, '        B3.psql("CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies() RETURNS void LANGUAGE sql AS $$SELECT$$;")\n        pending_result, pending_error = service_json',
                 '''        STRICT = H / "fiscal-decision-20261108/service-bridge-current-20261109"
-        strict_pre = runfile(STRICT / "01-pre.sql.readonly")
+        def strict_file(name):
+            return service_sql("RESET ROLE;SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';" + (STRICT / name).read_text())
+        strict_pre = strict_file("01-pre.sql.readonly")
         check("etapa estrita PRE confirma B4, ponte, legado e dez gatilhos originais", strict_pre.returncode == 0, strict_pre.stderr[-1400:])
-        strict_install = runfile(STRICT / "02-install.sql.review")
+        strict_install = strict_file("02-install.sql.review")
         check("etapa estrita instala validação por permit fiscal real, sem stub", strict_install.returncode == 0, strict_install.stderr[-1400:])
-        strict_post = runfile(STRICT / "03-post.sql.readonly")
+        strict_post = strict_file("03-post.sql.readonly")
         check("etapa estrita POST preserva ACL, metadata e legado negado", strict_post.returncode == 0, strict_post.stderr[-1200:])
         check("nenhum stub always-allow foi instalado", "LANGUAGE sql AS $$SELECT$$" not in B3.psql("SELECT pg_get_functiondef('platform_private.b2b_integration_dependencies()'::regprocedure)").stdout)
         pending_result, pending_error = service_json''')
