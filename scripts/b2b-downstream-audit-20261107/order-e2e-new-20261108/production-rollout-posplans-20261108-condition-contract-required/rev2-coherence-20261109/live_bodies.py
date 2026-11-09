@@ -30,7 +30,7 @@ SEAMS = [
   " ALTER TABLE public.partner_users ADD COLUMN IF NOT EXISTS revoked_at timestamptz;"),
  ("platform_private.c2p1_assignment_allowed/c2p1_item_allowed real bodies (owner-orders p1-isolation/core)",
   fn("scripts/owner-orders-20261023/p1-isolation/core.sql.review", "platform_private.c2p1_assignment_allowed") + "\n" +
-  fn("scripts/owner-orders-20261023/p1-isolation/core.sql.review", "platform_private.c2p1_item_allowed")),
+  fn("scripts/owner-orders-20261023/p1-isolation/channels-core.sql.review", "platform_private.c2p1_item_allowed")),
  ("clientes.status_cliente", "ALTER TABLE public.clientes ADD COLUMN IF NOT EXISTS status_cliente text NOT NULL DEFAULT 'ativo';"),
  ("partner_users.tenant_id/valid_from (backfill = owner org of partner)",
   "ALTER TABLE public.partner_users ADD COLUMN IF NOT EXISTS tenant_id uuid, ADD COLUMN IF NOT EXISTS valid_from timestamptz;"

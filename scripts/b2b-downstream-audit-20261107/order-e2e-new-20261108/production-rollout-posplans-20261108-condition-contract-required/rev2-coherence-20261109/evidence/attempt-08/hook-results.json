@@ -1,0 +1,25 @@
+{
+  "live_bodies": {
+    "install_rc": 9,
+    "install_err": "psql:/tmp/b2bcond-q89wlesg/ccr2-live-bodies.sql:17: ERROR:  column c.status_cliente does not exist\npsql:/tmp/b2bcond-q89wlesg/ccr2-live-bodies.sql:25: ERROR:  function platform_private.c2p1_assignment_allowed(text, uuid, uuid) does not exist\npsql:/tmp/b2bcond-q89wlesg/ccr2-live-bodies.sql:190: ERROR:  function platform_private.c2p1_assignment_allowed(text, uuid, uuid) does not exist\npsql:/tmp/b2bcond-q89wlesg/ccr2-live-bodies.sql:249: ERROR:  function platform_private.commercial_plan_scope_allowed(uuid, text, uuid, uuid) does not exist\npsql:/tmp/b2bcond-q89wlesg/ccr2-live-bodies.sql:250: ERROR:  function platform_private.commercial_plan_scope_allowed(uuid, text, uuid, uuid) does not exist\npsql:/tmp/b2bcond-q89wlesg/ccr2-live-bodies.sql:260: ERROR:  function platform_private.commercial_plan_scope_allowed(uuid, text, uuid, uuid) does not exist\npsql:/tmp/b2bcond-q89wlesg/ccr2-live-bodies.sql:262: ERROR:  function platform_private.commercial_plan_scope_allowed(uuid, text, uuid, uuid) does not exist\npsql:/tmp/b2bcond-q89wlesg/ccr2-live-bodies.sql:592: ERROR:  function platform_private.commercial_plan_scope_allowed(uuid, text, uuid, uuid) does not exist\npsql:/tmp/b2bcond-q89wlesg/ccr2-live-bodies.sql:605: ERROR:  function platform_private.commercial_plan_scope_allowed(uuid, text, uuid, uuid) does not exist",
+    "md5": {
+      "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": {
+        "mirror": "fe82f5381d426136f2627803f3b0005d",
+        "live": "fe82f5381d426136f2627803f3b0005d"
+      },
+      "public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)": {
+        "mirror": "e86385fefb25c68d9dd4d0fef6619f27",
+        "live": "e86385fefb25c68d9dd4d0fef6619f27"
+      }
+    },
+    "seams": [
+      "commercial_payment_plans.created_by/is_default/sort_order + code_key/uq_cpp_single_default (LIVE pre-cc1f6cc shape)",
+      "commercial_payment_plans.root_plan_id/superseded_by_id; assignments.id; partner_users.revoked_at",
+      "platform_private.c2p1_assignment_allowed/c2p1_item_allowed real bodies (owner-orders p1-isolation/core)",
+      "clientes.status_cliente",
+      "partner_users.tenant_id/valid_from (backfill = owner org of partner)",
+      "platform_private.c2p1_snapshot_allowed real body (owner-orders p1-isolation/channels-core)",
+      "public._cpp_validate_payload/_cpp_audit real bodies (migration 20260730014752)"
+    ]
+  }
+}
