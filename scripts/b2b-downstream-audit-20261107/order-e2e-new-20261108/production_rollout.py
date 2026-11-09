@@ -117,8 +117,20 @@ def main():
 
     rollback = json.loads((E / 'full-logistics-rollback.json').read_text())
     assert rollback['current_catalog_preserved'] is True
+    assert rollback['real_baselines_preserved'] is True
+    assert rollback['deny_only_no_body_restoration'] is True
+    assert rollback['composed_generators'] == ['SEND_COMPOSED_ROLLBACK', 'CONFIRM_COMPOSED_ROLLBACK']
     assert all(value is False for value in rollback['closed'].values())
     assert rollback['history_before'] == rollback['history_after']
+    assert rollback['plans_before'] == rollback['plans_after']
+    assert all(row['returncode'] != 0 and row['permission_denied'] is True for row in rollback['authenticated_negative'].values())
+    for stage, label, signature in (
+        (delivery, 'CONFIRM_COMPOSED_ROLLBACK', 'public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb)'),
+        (send, 'SEND_COMPOSED_ROLLBACK', 'public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text)'),
+    ):
+        rollback_text = (stage / 'rollback-composed.sql.review').read_text()
+        assert label in rollback_text and f'REVOKE EXECUTE ON FUNCTION {signature} FROM PUBLIC,anon,authenticated,service_role;' in rollback_text
+        assert 'CREATE OR REPLACE' not in rollback_text and 'GRANT ' not in rollback_text
     b4_scope = json.loads((E / 'integrated-b4-fiscal-bridge.json').read_text())
     assert b4_scope['status'] == 'NOT_RUN_OUT_OF_SCOPE' and b4_scope['hosted'] is False
 

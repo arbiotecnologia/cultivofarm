@@ -79,7 +79,7 @@ def main():
     assert 'Traceback' not in (package / 'evidence-run.stderr.txt').read_text()
     checks = json.loads((package / 'evidence-checks.json').read_text())
     pilot = json.loads((package / 'evidence-pilot-checks.json').read_text())['checks']
-    assert len(checks) == 39 and all(row['status'] == 'PASS' for row in checks)
+    assert len(checks) == 41 and all(row['status'] == 'PASS' for row in checks)
     assert len(pilot) == 30 and all(row['status'] == 'PASS' for row in pilot)
     summary = json.loads((package / 'evidence-summary.json').read_text())
     assert summary['capture_functions_md5_verified'] == 20
@@ -87,8 +87,23 @@ def main():
     assert summary['relation_security_sha256'] == sha(relation_security_path)
     assert summary['pilot_containment_checks'] == 30
     assert summary['positive_fiscal_receivable'] == 'NOT_RUN_OUT_OF_SCOPE'
-    assert all(value is False for value in summary['full_reverse_rollback']['closed'].values())
-    assert summary['full_reverse_rollback']['history_before'] == summary['full_reverse_rollback']['history_after']
+    reverse = summary['full_reverse_rollback']
+    assert all(value is False for value in reverse['closed'].values())
+    assert reverse['history_before'] == reverse['history_after']
+    assert reverse['plans_before'] == reverse['plans_after']
+    assert reverse['real_baselines_preserved'] is True and reverse['current_catalog_preserved'] is True
+    assert reverse['deny_only_no_body_restoration'] is True
+    assert reverse['composed_generators'] == ['SEND_COMPOSED_ROLLBACK', 'CONFIRM_COMPOSED_ROLLBACK']
+    assert all(row['returncode'] != 0 and row['permission_denied'] is True for row in reverse['authenticated_negative'].values())
+    send_rollback = (package / '92-send-rollback-deny.sql.review').read_text()
+    confirm_rollback = (package / '91-confirmation-rollback-deny.sql.review').read_text()
+    assert 'SEND_COMPOSED_ROLLBACK' in send_rollback and 'CONFIRM_COMPOSED_ROLLBACK' not in send_rollback
+    assert 'CONFIRM_COMPOSED_ROLLBACK' in confirm_rollback and 'SEND_COMPOSED_ROLLBACK' not in confirm_rollback
+    assert 'public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text)' in send_rollback
+    assert 'public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb)' not in send_rollback
+    assert 'public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb)' in confirm_rollback
+    for text in (send_rollback, confirm_rollback):
+        assert 'CREATE OR REPLACE' not in text and 'GRANT ' not in text
 
     print(json.dumps({
         'status': 'VERIFIED_OFFLINE_REVIEW_ONLY_INACTIVE_NOT_APPROVED',

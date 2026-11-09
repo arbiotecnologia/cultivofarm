@@ -678,29 +678,9 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   assert B.last(f"SELECT count(*) FROM public.fiscal_sefaz_transmissions WHERE id='{transmission_id}' AND idempotency_key='{transmission_idem}' AND request_fingerprint='{transmission_fingerprint}';")=='1'
   assert B.last(f"SELECT count(*) FROM platform_private.fiscal_close_pending WHERE transmission_id='{transmission_id}' AND error_code='FISCAL_AUTHORIZATION_CLOSE_PENDING' AND attempts=2;")=='1'
   checks.append(dict(test='composed reverse deny-only rollback closes bridge B4 and plans without stale B4 POST; preserves plans fiscal evidence deterministic idempotency close pending and all original ten receivable triggers',status='PASS'))
-  # Cadeia logística reversa completa: endpoint já foi fechado acima; agora
-  # logística/físico/envio/confirmação sem apagar histórico ou reabrir grants.
-  history_before=json.loads(B.last("SELECT jsonb_build_object('deliveries',(SELECT count(*) FROM public.entregas),'movements',(SELECT count(*) FROM public.estoque_movimentacoes),'os',(SELECT count(*) FROM public.ordens_servico),'resale_receipts',(SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1));"))
-  B.sql((OUT/'logistics/rollback.sql.review').read_text())
-  B.sql((physical_out/'rollback.sql.review').read_text())
-  B.sql((send_out/'rollback.sql.review').read_text())
-  confirmation_rollback_state=C.state()
-  composed_confirmation_rollback='BEGIN;\n'+C.G.guard(confirmation_rollback_state,'CONFIRM_COMPOSED_ROLLBACK_DRIFT')+f'REVOKE EXECUTE ON FUNCTION {C.G.RPC} FROM PUBLIC,anon,authenticated,service_role;\nCOMMIT;\n'
-  (confirmation_out/'rollback-composed.sql.review').write_text(composed_confirmation_rollback)
-  B.sql(composed_confirmation_rollback)
-  closed=json.loads(B.last("""SELECT jsonb_build_object(
-   'logistics_gate',(SELECT enabled FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton),
-   'physical_gate',(SELECT enabled FROM platform_private.finished_product_gate_v1 WHERE singleton),
-   'os_writer',has_function_privilege('authenticated','public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)','EXECUTE'),
-   'purchase_writer',has_function_privilege('authenticated','public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)','EXECUTE'),
-   'send_writer',has_function_privilege('authenticated','public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text)','EXECUTE'),
-   'confirm_writer',has_function_privilege('authenticated','public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb)','EXECUTE'));"""))
-  assert closed=={'logistics_gate':False,'physical_gate':False,'os_writer':False,'purchase_writer':False,'send_writer':False,'confirm_writer':False},closed
-  history_after=json.loads(B.last("SELECT jsonb_build_object('deliveries',(SELECT count(*) FROM public.entregas),'movements',(SELECT count(*) FROM public.estoque_movimentacoes),'os',(SELECT count(*) FROM public.ordens_servico),'resale_receipts',(SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1));"))
-  assert history_after==history_before,(history_before,history_after)
-  B.current_catalog.assert_current(B.last,CURRENT_CANDIDATE_TRIGGER_DELTAS,CURRENT_CANDIDATE_FUNCTION_DELTAS)
-  (OUT/'full-logistics-rollback.json').write_text(json.dumps({'closed':closed,'history_before':history_before,'history_after':history_after,'current_catalog_preserved':True},indent=2)+'\n')
-  checks.append(dict(test='reverse deny-only rollback closes logistics physical send confirmation and preserves history six guards eight ACLs',status='PASS'))
+  # Cadeia reversa completa: inclusive contenção e os dois geradores compostos,
+  # exatamente como no ramo logistics-only; nenhum POST intermediário é reutilizado.
+  run_final_delivery_rollback('integrated')
  except Exception:
   traceback.print_exc();checks.append(dict(test='new composition',status='FAIL'))
  finally:
