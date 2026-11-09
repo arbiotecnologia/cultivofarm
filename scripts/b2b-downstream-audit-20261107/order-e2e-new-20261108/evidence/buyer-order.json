@@ -1,35 +1,35 @@
 {
-  "id": "f847891e-b4db-4fb0-996a-a325c707e54e",
+  "id": "8958eb30-6f0c-4750-8749-18fac32ad2ab",
   "total": 373.04,
   "numero": "PB-001001",
   "status": "em_analise_comercial",
   "schedule": [
     {
       "amount": 124.35,
-      "due_date": "2026-12-08",
+      "due_date": "2026-12-09",
       "estimated": true,
       "interest_amount": 6.48,
-      "nominal_due_date": "2026-12-08",
+      "nominal_due_date": "2026-12-09",
       "principal_amount": 117.87,
       "installment_number": 1,
       "business_day_adjusted": false
     },
     {
       "amount": 124.35,
-      "due_date": "2027-01-08",
+      "due_date": "2027-01-09",
       "estimated": true,
       "interest_amount": 4.36,
-      "nominal_due_date": "2027-01-08",
+      "nominal_due_date": "2027-01-09",
       "principal_amount": 119.99,
       "installment_number": 2,
       "business_day_adjusted": false
     },
     {
       "amount": 124.34,
-      "due_date": "2027-02-08",
+      "due_date": "2027-02-09",
       "estimated": true,
       "interest_amount": 2.2,
-      "nominal_due_date": "2027-02-08",
+      "nominal_due_date": "2027-02-09",
       "principal_amount": 122.14,
       "installment_number": 3,
       "business_day_adjusted": false
@@ -41,7 +41,7 @@
   "pricing_mode": "discount_from_base",
   "table_amount": 360.0,
   "desconto_total": 0.0,
-  "first_due_date": "2026-12-08",
+  "first_due_date": "2026-12-09",
   "payment_choice": {
     "payment_method": "boleto",
     "payment_deadline_days": 30,
@@ -49,8 +49,8 @@
   },
   "quote_required": false,
   "discount_amount": 0.0,
-  "idempotency_key": "9e3d0d83-dbd7-418e-a6e6-3aa3525c6ef8",
-  "payment_terms_id": "9bd59ad6-5c5d-46fb-a16d-666d85e79d72",
+  "idempotency_key": "c41709e1-8dc9-4cf4-b133-94ec955e3341",
+  "payment_terms_id": "f1a01b8c-fd22-4a73-8597-34bf9e59a675",
   "installment_count": 3,
   "payment_condition": {
     "due_basis": "nf_issue",

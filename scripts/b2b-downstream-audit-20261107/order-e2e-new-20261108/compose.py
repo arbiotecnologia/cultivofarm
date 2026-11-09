@@ -7,7 +7,7 @@ assert ROOT.is_relative_to(Path('/tmp')), 'TEMP_MIRROR_REQUIRED'
 OUT=Path(os.environ['NEW_E2E_OUT'])
 checks=[]
 CURRENT_CANDIDATE_TRIGGER_DELTAS={('entregas','trg_validate_entrega_confirmacao'),('entregas','zz_delivery_mutation_closed'),('estoque_produto','a01_stock_final_permit'),('estoque_produto','a01_stock_insert_permit'),('estoque_produto','trg_validate_estoque_entrada'),('lotes','aa_manual_lot_write_fence_v1'),('lotes','trg_lab_lot_biological_only'),('ordens_servico','trg_sync_os_classica_downstream'),('entregas','trg_entrega_sync_partner_order'),('estoque_produto','a00_stock_p1_tenant_guard'),('ordens_servico','aa_guard_separate_approval'),('ordens_servico','zz_audit_separate_approval'),('ordens_servico','trg_lab_os_biological_only')}
-CURRENT_CANDIDATE_FUNCTION_DELTAS={'platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)','platform_private.envase_insert_final_v1()','platform_private.envase_insert_guard_v1()','platform_private.guard_manual_lot_write_v1()','platform_private.trg_lab_lot_biological_only()','public.fn_sync_os_classica_downstream()','public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)','public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)','public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)','public.validate_estoque_entrada()'}
+CURRENT_CANDIDATE_FUNCTION_DELTAS={'platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)','platform_private.envase_insert_final_v1()','platform_private.envase_insert_guard_v1()','platform_private.guard_manual_lot_write_v1()','platform_private.trg_lab_lot_biological_only()','platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)','platform_private.resale_pilot_delivery_allowed_v1(text,text,uuid,uuid,uuid)','public.fn_sync_os_classica_downstream()','public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)','public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)','public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)','public.validate_estoque_entrada()'}
 def load(name,p):
  s=importlib.util.spec_from_file_location(name,p);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
 def main():
@@ -410,6 +410,14 @@ def main():
   checks.append(dict(test='manual agronomic physical flow still passes after resale candidate',status='PASS',delivery_id=manual_delivery))
   manifest=L.finish(B,OUT)
   assert manifest['default_enabled'] is False and manifest['new_client_grants']==[]
+  # Mandatory pilot overlay: installed while both global switches are OFF. The
+  # singleton is only a master switch after this stage, never sufficient authority.
+  Pilot=load('pilot_containment',H/'pilot_containment.py')
+  B.sql("UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false WHERE singleton;")
+  pilot_out=Pilot.install(B,OUT)
+  PilotTests=load('pilot_containment_tests',H/'test_pilot_containment.py')
+  pilot_results=PilotTests.run(B,Review70.Review,Q,A,choice,pilot_out)
+  checks.append(dict(test='mandatory ARBio actor org exact synthetic references scoped pilot with cross tenant denial expiry revocation replay and real concurrency',status='PASS',checks=len(pilot_results),hosted=False))
   B.sql((endpoint_out/'04-rollback-deny.sql.review').read_text())
   after_rollback=B.run_raw(resale_call(Q.UADM,'resale-after-rollback-0001'))
   assert after_rollback.returncode!=0 and 'permission denied for function rpc_b2b_resale_os_create_v1' in after_rollback.stderr,after_rollback.stderr
@@ -425,10 +433,17 @@ def main():
   if os.environ.get('NEW_E2E_LOGISTICS_ONLY')=='1':
    (OUT/'integrated-b4-fiscal-bridge.json').write_text(json.dumps(dict(status='NOT_RUN_OUT_OF_SCOPE',reason='B4_PRE_SHARED_BODY histórico preservado nas tentativas 7/8; nenhum PRE foi enfraquecido',positive_fiscal_receivable='NOT_RUN_BLOCKED',hosted=False),indent=2)+'\n')
    history_before=json.loads(B.last("SELECT jsonb_build_object('deliveries',(SELECT count(*) FROM public.entregas),'movements',(SELECT count(*) FROM public.estoque_movimentacoes),'os',(SELECT count(*) FROM public.ordens_servico),'resale_receipts',(SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1));"))
+   B.sql((pilot_out/'04-rollback-deny.sql.review').read_text())
    B.sql((OUT/'logistics/rollback.sql.review').read_text())
    B.sql((physical_out/'rollback.sql.review').read_text())
-   B.sql((send_out/'rollback.sql.review').read_text())
+   # Não executar o guard SEND antigo: a contenção substituiu seus corpos. O
+   # rollback composto abaixo mede o estado escopado atual e revoga send+confirm.
    confirmation_rollback_state=C.state()
+   # O estado agregado histórico não inclui esses dois schemas. Medir seus corpos
+   # atuais evita fallback de hash antigo tanto nos pins quanto nas triggers.
+   extra_functions=json.loads(B.last("""SELECT coalesce(jsonb_agg(jsonb_build_array(n.nspname,p.proname,pg_get_function_identity_arguments(p.oid),md5(pg_get_functiondef(p.oid)),coalesce(p.proacl::text,''),pg_get_userbyid(p.proowner),p.proconfig,p.prosecdef)),'[]'::jsonb) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ('private','cf_user_guards_v1');"""))
+   function_keys={(r[0],r[1],r[2]) for r in extra_functions}
+   confirmation_rollback_state['functions']=[r for r in confirmation_rollback_state['functions'] if (r[0],r[1],r[2]) not in function_keys]+extra_functions
    current_scope.write_final_confirmation_rollback(confirmation_out,send_out,confirmation_rollback_state,C.G.STATE)
    B.sql((confirmation_out/'rollback-composed.sql.review').read_text())
    closed=json.loads(B.last("""SELECT jsonb_build_object(

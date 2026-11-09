@@ -2108,11 +2108,15 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/commercial.py",
-      "sha256": "78e4cf2afdc6cdaf9a3ccc9a0e17b0293c0f2d423216f0aa1e7994e63f80b63d"
+      "sha256": "a1a51733bc8e40b93bda68acdf1fac309b518a57e91d408b48b2076d4c8de5c6"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py",
-      "sha256": "2a979c83349cbf2e6092611898019ae41cf8e172dc6d144f89c06f5c8af0573b"
+      "sha256": "35b2e421b903a06cfa60f0414f692aae8e166fbf00a835303384b74f301f6e7b"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/current_scope.py",
+      "sha256": "b8c74e7550155b0963dd60eff588952943a25f5a15cbac4f5ddec4585d667f72"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/os_endpoint.py",
@@ -2123,16 +2127,220 @@
       "sha256": "a51d822c51e6be0db73b6e96112e1b79607168069a3ba280b41d0a3708f5577b"
     },
     {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/pilot_containment.py",
+      "sha256": "d99783375f47e4b8bf4e7d2b2dd1cd73888d26d6c71ee2edeb3532e0caccbac7"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/00-production-pre-posplans.sql.readonly",
+      "sha256": "cbbe17e98d642c69ad3bbc36b13351af8eeda777df0896b9464c7cec6110236e"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/11-confirmation-install.sql.review",
+      "sha256": "b86b0895270436b561550fabccd119c2e65cbaae9abd7d9d2f2df187484a5201"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/12-confirmation-post.sql.readonly",
+      "sha256": "e2c6bbfa4a22d31fcb597f967accc3afa52a2b08f18aca7ce61fc05d64a07fc5"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/20-send-pre.sql.readonly",
+      "sha256": "c3a910d16fcdd630dc5dcb39cd2929433f38f3587c149a9d9bfb83011b6a8d51"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/21-send-install.sql.review",
+      "sha256": "d38ad1e914cebce6fdddc3dcdd7317090a32cdf34e6c951ffe6b191843867f95"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/22-send-post.sql.readonly",
+      "sha256": "87741c8b65a4f931c14e3b6617abec2951b61c5c8e00c69720b4c1a62b4dcedc"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/30-physical-pre-after-confirmation-send.sql.readonly",
+      "sha256": "d5867350b662cfec28f6a44f92eae316de35718a468924a108389f650ab4eb0d"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/31-physical-install.sql.review",
+      "sha256": "7fbd198c5356bf32dc9806143c78d4ae28baed5906f29c56ec8f6c893c836a18"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/32-physical-post.sql.readonly",
+      "sha256": "5da0f3120953dff11f720b550c5b5b0e0e0b81efdf9a3ba858b8f0af6d89aa87"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/40-logistics-pre-after-physical.sql.readonly",
+      "sha256": "a5ecac743777804ee2fbb65a29ec04c43e77df74cd7a23e46a682dc41399c97a"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/41-logistics-install.sql.review",
+      "sha256": "56631263e6ebfe51e9f02822f72c98f895a728f762d3c0ef62c575e44ee7ec09"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/42-logistics-post.sql.readonly",
+      "sha256": "e893bc9fe098029b0a1d4f997cfe8ed4e48074b89dddc3d1efaf1df6e98dc0ad"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/50-endpoint-reader-pre.sql.readonly",
+      "sha256": "07329a906191d729e4c62c1c77655c197c605b6a26d7a02ca6cdbe915b4421cf"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/51-endpoint-reader-install.sql.review",
+      "sha256": "617ee5279d9bcf3226c923b29767620707cb28a6c581cf01309db771960d00cb"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/52-endpoint-reader-post.sql.readonly",
+      "sha256": "bff4207adda764c9a4d7df61f8239137eee983d6a00852c72c30986770fcef88"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/90-endpoint-reader-rollback-deny.sql.review",
+      "sha256": "2c70397082169b35840bf276d9da40e0a471d55d2374f11eeec6b22daa69ec40"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/91-confirmation-rollback-deny.sql.review",
+      "sha256": "c46c6b72168d52f5bc7d8be3eb31296c5da5d87cc949c5d2addfb238e89db7a8"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/92-send-rollback-deny.sql.review",
+      "sha256": "59ab8f351faa098a692fb838cfc954857afde77f31ea5b94cb43379a0f167e40"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/93-physical-rollback-deny.sql.review",
+      "sha256": "d81b5b423e69a55672c5e7d7d4c7cb14ef6f556ce11360a51db04232780edc0d"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/94-logistics-rollback-deny.sql.review",
+      "sha256": "bc03a15aeb273605cec9f550d15aa8f452203ed2ff56dbc9b24eeec2a2d7974a"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/manifest.json",
+      "sha256": "0292eece7606283e1efcca3db48480d677038058cf07758086a1289786927998"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/00-production-pre-posplans.sql.readonly",
+      "sha256": "5401300b1293e0e0bc55a6e388e30cf79e1ddd10f01103a2557e7d0ef62f9bdd"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/11-confirmation-install.sql.review",
+      "sha256": "b0e3c12e3695b327a91e6aea7013bd3c9396c73cef2d9deee2b202a1855d74ae"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/12-confirmation-post.sql.readonly",
+      "sha256": "c715006ff5c477a1b1b34a23d1662f0441dd59d95c47d8ebdf7c1272931fdf6f"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/20-send-pre.sql.readonly",
+      "sha256": "a0d41c3c51329613aa3c5803375fdd77950af5f1491634362c0135a1a2f61f82"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/21-send-install.sql.review",
+      "sha256": "ae4c4729ab3df97fe439bae404cb8266246ca969f3c8e6a598768a6f74df34ba"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/22-send-post.sql.readonly",
+      "sha256": "7cd23dd0827247f74032e3d17d4d1cd7f1dfcb16b7c80c78a135c7a51b169f4c"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/30-physical-pre-after-confirmation-send.sql.readonly",
+      "sha256": "8b8bd44f61cd1b5a8a78d77ee94db1945d7b5c2c524d0884420578d5b4990df6"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/31-physical-install.sql.review",
+      "sha256": "0daa7b7ea3c3a8e466d2d004d6391dd7f485621b119e39dc8c11807b61e8a65d"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/32-physical-post.sql.readonly",
+      "sha256": "68baf979ce5690f76fec433d6a24b4a3abf2cf1fd8e5e3fe3a4e0a08098db11e"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/40-logistics-pre-after-physical.sql.readonly",
+      "sha256": "a5ecac743777804ee2fbb65a29ec04c43e77df74cd7a23e46a682dc41399c97a"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/41-logistics-install.sql.review",
+      "sha256": "56631263e6ebfe51e9f02822f72c98f895a728f762d3c0ef62c575e44ee7ec09"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/42-logistics-post.sql.readonly",
+      "sha256": "e893bc9fe098029b0a1d4f997cfe8ed4e48074b89dddc3d1efaf1df6e98dc0ad"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/50-endpoint-reader-pre.sql.readonly",
+      "sha256": "07329a906191d729e4c62c1c77655c197c605b6a26d7a02ca6cdbe915b4421cf"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/51-endpoint-reader-install.sql.review",
+      "sha256": "617ee5279d9bcf3226c923b29767620707cb28a6c581cf01309db771960d00cb"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/52-endpoint-reader-post.sql.readonly",
+      "sha256": "bff4207adda764c9a4d7df61f8239137eee983d6a00852c72c30986770fcef88"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/90-endpoint-reader-rollback-deny.sql.review",
+      "sha256": "2c70397082169b35840bf276d9da40e0a471d55d2374f11eeec6b22daa69ec40"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/91-confirmation-rollback-deny.sql.review",
+      "sha256": "314721212b9cff583f20aa30605ecc7de191dbf99a97d558321aba0ce4e7d15e"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/92-send-rollback-deny.sql.review",
+      "sha256": "59ab8f351faa098a692fb838cfc954857afde77f31ea5b94cb43379a0f167e40"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/93-physical-rollback-deny.sql.review",
+      "sha256": "d81b5b423e69a55672c5e7d7d4c7cb14ef6f556ce11360a51db04232780edc0d"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/94-logistics-rollback-deny.sql.review",
+      "sha256": "bc03a15aeb273605cec9f550d15aa8f452203ed2ff56dbc9b24eeec2a2d7974a"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/evidence-live-catalog-guards.json",
+      "sha256": "3f10a51d264d0c40afe745467a6e20a49bf0c748fb06f0ff3edf220dbf1b9bab"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/evidence-summary.json",
+      "sha256": "eac127bc91ac51d843a6aea6bc8d67c977603e375787c9e621d873dcf89970ae"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/manifest.json",
+      "sha256": "0b7bf46015288e7bbdaa71422d24f4029b8acbe78ca334500c65bbed54c838f7"
+    },
+    {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production_rollout.py",
-      "sha256": "137419a6bd619761d287da36d507d0d622ed29ebbe1adf9133e8c884e61984b7"
+      "sha256": "07297debc229a814394370c6f3e480885504218aa03fd82e52909736675d5151"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/real_baselines.py",
-      "sha256": "37541d3af56a7a1f31e9d5df3d2f4daaf61adf37f4f7b0d1c14723f3d6986456"
+      "sha256": "09be9076aa56bcf78ba5375e4ad4e4bffddf4fbd1d9abb2f4aa8f0f383fd0e25"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/rebuild.py",
       "sha256": "9a4184a0344b50f29b9bc7c781b90804fdb37d9f90601f7189aa9c3fd36528e1"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/reconciliation-posplans-20261108/00-current-live-capture.sql.readonly",
+      "sha256": "b61a34025b62e3c0c2cad865fbe089caf1d23e829112d6931fd09bb6b529a0ed"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/reconciliation-posplans-20261108/live-catalog-guards-20261108.json",
+      "sha256": "3f10a51d264d0c40afe745467a6e20a49bf0c748fb06f0ff3edf220dbf1b9bab"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/reconciliation-posplans-20261108/live-current-metadata-a7b973949.json",
+      "sha256": "52537967cfc724c90728646ac0165def3560ffc56802962becbeea2e8fee19ea"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/reconciliation-posplans-20261108/live-current-metadata-part1-a7b973949.json",
+      "sha256": "08a1af25f58956d70f0210daa6b6380181cca7676a2430c898dbc796b92108fc"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/reconciliation-posplans-20261108/live-current-metadata-part2-a7b973949.json",
+      "sha256": "401eb4cc09ea6e50fcea93bc16a0f3b98c9a36889772f3a902f543ca632ebff4"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/reconciliation-posplans-20261108/live-pre-drift-411cbbc.json",
+      "sha256": "8af0e9df54e8802a6e6ebd2e9072a84799cbe72d2956b4bd2992a4526571ce6a"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/resale_logistics.py",
@@ -2140,11 +2348,15 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py",
-      "sha256": "8895586e9339d5206aa7cccdc28a4542a15b6d595888ec0126adb96a4051e787"
+      "sha256": "88d0e91900ffa2305121a52a300e0d0febf15e08d90618631b30970bf6fec2fd"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_os_endpoint.py",
-      "sha256": "c70aab6a690e894ca486f957c950cba7a599a1a1550010f09e1773a03fc5b4ba"
+      "sha256": "b7866c7678f0adc72b66de6c452c04b503bb49c95650f62fae41d0ef9c8245e3"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_pilot_containment.py",
+      "sha256": "e2a5eb58c81fa5449de4a0066c8a7400cd791193efed240a24735ded0c42999c"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/physical/composition-fixes.json",
@@ -2156,7 +2368,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/physical/finished-product/assemble.py",
-      "sha256": "36c642a45c93da8499791537eb7fd047d258a31e63123a2eef3f87ab38a1d711"
+      "sha256": "e0670b7b1bec0d87a08c346a952ec8ce6c2ca2ab1cded1e4cb97493173276efb"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/physical/finished-product/baseline.json",
@@ -2176,11 +2388,15 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/physical/finished-product/capture_baseline.py",
-      "sha256": "3e9a0eba621360e5e618d0a580e56a25232b77092876243348aacbae1f112598"
+      "sha256": "98e982d81fe6140e96b123da8a82270765cfeb21bbda8394433feb1309504cb0"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/physical/finished-product/catalog_foundation.py",
       "sha256": "d3b101711ae72b6024d8095e85c4480518f8f545e280bbe9b66c08f7a84fee6d"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/physical/finished-product/current_catalog.py",
+      "sha256": "7427dbb286564d0f1292440a4b1027530f9fda1c8c0eff0b73bc3d6bd1522b77"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/physical/finished-product/evidence/after.json",
@@ -2504,7 +2720,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py",
-      "sha256": "d94fcc30d4e167b73553adf07ff6a0c1f78a2196f21cf133e0b932c5cf711027"
+      "sha256": "37f234f41b346ba221e3a55909025f0a37e1d81786010411687f4d92cdc38e50"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/physical/finished-product/test_layers.py",
@@ -2520,7 +2736,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py",
-      "sha256": "e735759278616dbbbdd13f5fb6a2b52afc2059b708d9d9ea803caaf2d950a8cb"
+      "sha256": "18b18cd83c8e650af26a9be108314e2b711f1fcfc51af4fbe221ab1721c3b813"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/physical/finished-product/test_supplier_lot.py",
@@ -4372,7 +4588,7 @@
     },
     {
       "file": "scripts/delivery-atomic-hardening-20261030/confirmation/assemble.py",
-      "sha256": "f139e7ed5a379628b67ff9523bac3e8587d2820f259a0756374df9c2954e5b2b"
+      "sha256": "d5d62fcdafa1369c952d675c0ddd0103ef0bddc9d8fd2d7dd677b74a16e9a841"
     },
     {
       "file": "scripts/delivery-atomic-hardening-20261030/confirmation/candidate.sql.review",
@@ -4432,7 +4648,7 @@
     },
     {
       "file": "scripts/delivery-atomic-hardening-20261030/confirmation/send/assemble.py",
-      "sha256": "94b9d12af363a8a80ce752922fcbc8e29951654bcca61bf3b7f536ad1032483d"
+      "sha256": "dacc1e347786aed3b05646cb2b8f70d8475a5c078d3f73827c79d49200715f1e"
     },
     {
       "file": "scripts/delivery-atomic-hardening-20261030/confirmation/send/candidate.sql.review",
@@ -4552,7 +4768,7 @@
     },
     {
       "file": "scripts/delivery-atomic-hardening-20261030/test_pg.py",
-      "sha256": "d7466874da64a3c08038529082055b3cb488e0caf921a48a1fc3a85589073def"
+      "sha256": "01caff8be106f99824889456cab2db35850514b5c18de460f5217a41e083e2a2"
     },
     {
       "file": "scripts/delivery-atomic-hardening-20261030/test_review.py",

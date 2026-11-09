@@ -1,7 +1,12 @@
+## 09/11 00:05 — Contenção fail-closed do piloto autenticado ARBio
+- [x] Singletons globais deixaram de ser autoridade suficiente: overlay obrigatório server-side por ator/organização/operação e referências sintéticas exatas, com validade e revogação; leituras/manutenção existentes preservadas.
+- [x] Tentativa descartável 91 `exit=0`: 39 checkpoints da composição + 30 testes de contenção. Outra organização feature ON/papel válido e ARBio fora da allowlist negados; piloto, replays, expiração, revogação e concorrência real verificados. Nenhuma autoridade em GUC/claims de cliente.
+- [x] Reconciliação e rollback deny-only concluídos; histórico/recibos preservados e writers/gates fechados. README incluído; rollouts anteriores não podem ser ativados sem esta etapa. Nenhuma escrita hospedada/publicação.
+- [ ] Revisão independente e piloto autenticado real permanecem NOT_RUN; PASS descartável não certifica JWT/RLS/Storage real nem aprova ativação.
+
 ## 08/11 23:07 — Captura LIVE integral a7b973949 em duas partes
-- [x] PARTE 1 gravada sem alterar o pacote anterior: `live-current-metadata-part1-a7b973949.json`, com 120 triggers, 17 relações e as primeiras 10 funções; ref relatado `swzpzcwiasxmjutrmvkm`, candidatos ainda ausentes.
-- [ ] Aguardar PARTE 2 e concatenar somente o array `functions`, sem sobrescrever a PARTE 1; validar 20 funções/120 triggers/17 relações e hashes antes de reconciliar.
-- [ ] Após a captura integral, repetir ensaio e rollback, preservando seis guards, ACLs e planos; gerar pacote REVIEW_ONLY com gates OFF somente se todas as barreiras passarem. Nenhuma migração ampla, escrita hospedada ou publicação.
+- [x] PARTES 1 e 2 concatenadas: captura integral com 20 funções, 120 triggers e 17 relações; ref relatado `swzpzcwiasxmjutrmvkm`, candidatos ainda ausentes.
+- [x] Ensaio 91 e rollback concluídos com PRE escopado pela captura/diff independente, preservando seis guards, ACLs e planos; artefatos REVIEW_ONLY com gates OFF e README gerados. Nenhuma migração ampla, escrita hospedada ou publicação.
 
 ## 08/11 22:25 — Reconciliação semântica pós-catálogo/unidades/Price/planos
 - [x] Incorporar o PRE LIVE `CONFIRM_PRE_DRIFT`: pacote antigo preservado; nenhum grant/guard antigo restaurado. Typecheck exit 0, UI 21/21, candidata 13/13, compatibilidade OS 73/73 e build OK.

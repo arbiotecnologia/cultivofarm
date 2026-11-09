@@ -40,11 +40,11 @@
       "status": "PASS",
       "ack": {
         "ok": true,
-        "os_id": "dba7ccec-5e59-4936-837d-10ffd7cc0789",
+        "os_id": "e5d551f9-f434-4666-96ac-53a4685a91c0",
         "replay": false,
         "contract": "B2B_RESALE_OS_V1",
-        "order_id": "26ebf78a-53ba-4698-97fe-dd5fce1d8c58",
-        "order_item_id": "c8005892-1251-4910-98e5-096203b1663e"
+        "order_id": "a95395bc-8d95-4fe9-bfc1-dd29cf4dff7a",
+        "order_item_id": "88f30f92-4b2d-4165-b422-4c82649e570f"
       },
       "fixture_rollback": true,
       "zero_delta": true
@@ -106,26 +106,26 @@
       "acks": [
         {
           "ok": true,
-          "os_id": "68055d6d-5667-4eee-ae6e-423a8a90180a",
-          "replay": true,
+          "os_id": "59ec03bd-03b8-4fe3-9283-0e7b13beb89d",
+          "replay": false,
           "contract": "B2B_RESALE_OS_V1",
-          "order_id": "26ebf78a-53ba-4698-97fe-dd5fce1d8c58",
-          "order_item_id": "c8005892-1251-4910-98e5-096203b1663e"
+          "order_id": "a95395bc-8d95-4fe9-bfc1-dd29cf4dff7a",
+          "order_item_id": "88f30f92-4b2d-4165-b422-4c82649e570f"
         },
         {
           "ok": true,
-          "os_id": "68055d6d-5667-4eee-ae6e-423a8a90180a",
-          "replay": false,
+          "os_id": "59ec03bd-03b8-4fe3-9283-0e7b13beb89d",
+          "replay": true,
           "contract": "B2B_RESALE_OS_V1",
-          "order_id": "26ebf78a-53ba-4698-97fe-dd5fce1d8c58",
-          "order_item_id": "c8005892-1251-4910-98e5-096203b1663e"
+          "order_id": "a95395bc-8d95-4fe9-bfc1-dd29cf4dff7a",
+          "order_item_id": "88f30f92-4b2d-4165-b422-4c82649e570f"
         }
       ]
     },
     {
       "name": "reader_recovers_existing_os_without_resend",
       "status": "PASS",
-      "os_id": "68055d6d-5667-4eee-ae6e-423a8a90180a",
+      "os_id": "59ec03bd-03b8-4fe3-9283-0e7b13beb89d",
       "create_available": false
     },
     {
