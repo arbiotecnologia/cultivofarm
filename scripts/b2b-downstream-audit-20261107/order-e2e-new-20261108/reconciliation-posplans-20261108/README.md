@@ -7,7 +7,7 @@ O PRE agregado anterior `5401300b…` não foi promovido. O pacote antigo foi pr
 ## Evidência LIVE e transcrição
 
 - `live-current-metadata-a7b973949.json`: 20 funções, 120 triggers e 17 relações; SHA256 `8a53b1443ed789c76115b9ef16807ae835e1e0bda888d50e6f1606197792a6ac`.
-- `live-current-relation-security-20261109.json`: complemento READONLY LIVE independente com schema/nome/RLS/FORCE RLS/owner/ACL de 18 relações. A captura original permanece intacta; os 17 registros públicos coincidem em owner/ACL e o complemento adiciona `platform_private.envase_insert_permits_v1`. Todos os 18 pins são obrigatórios no PRE/POST, sem novos grants.
+- `live-current-relation-security-20261109.json`: complemento READONLY LIVE independente com schema/nome/RLS/FORCE RLS/owner/ACL de 18 relações; SHA256 `20a514091f0ab4301cd11f67d530e1a17b94c4a7e1fea17196f100dca51f712d`. A captura original permanece intacta; os 17 registros públicos coincidem em owner/ACL e o complemento adiciona `platform_private.envase_insert_permits_v1`. Todos os 18 pins são obrigatórios no PRE/POST, sem novos grants.
 - `live-pre-drift-411cbbc.json`: diff independente com 126 funções removidas, 232 adicionadas e 9 relações substituídas; SHA256 `8af0e9df54e8802a6e6ebd2e9072a84799cbe72d2956b4bd2992a4526571ce6a`.
 - Os 20 MD5 foram recalculados das definições locais e coincidem. A sobrecarga `public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)` contém `COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA` e MD5 `a4d47ccf5d116141ed46e9de9ea7eeaa`.
 - `ORIGEM_INVALIDO` foi somente erro de transcrição local, não divergência de produção. O pacote novo não contém essa grafia.
