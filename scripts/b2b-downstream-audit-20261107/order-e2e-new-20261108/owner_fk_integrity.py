@@ -288,6 +288,7 @@ def main():
         reported = evidence["auditor_reported_readonly_evidence"]
         assert reported["sha256"] == sha(AUDITOR_REPORT)
         assert reported["owner_fk_counts"] == auditor_report["owner_fk_counts"]
+        assert reported["reported_column_shape"] == reported_shape
         assert reported["acl_normalization_regressions"] == acl_report
         assert evidence["acl_local_additional_cases"] == ["duplicate", "empty", "null"]
         assert evidence["acl_local_coverage"]["categories"] == 9
