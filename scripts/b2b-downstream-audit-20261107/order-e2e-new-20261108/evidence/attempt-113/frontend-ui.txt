@@ -1,0 +1,13 @@
+$ vitest run src/test/pedidos/resaleOsRequest.test.ts src/test/pedidos/resaleOsAvailabilityPanel.test.tsx src/test/pedidos/resaleOsAttemptStore.test.ts
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/pedidos/resaleOsAttemptStore.test.ts (6 tests) 12ms
+ ✓ src/test/pedidos/resaleOsRequest.test.ts (10 tests) 18ms
+ ✓ src/test/pedidos/resaleOsAvailabilityPanel.test.tsx (5 tests) 274ms
+
+ Test Files  3 passed (3)
+      Tests  21 passed (21)
+   Start at  02:37:03
+   Duration  3.62s (transform 228ms, setup 563ms, collect 698ms, tests 304ms, environment 3.17s, prepare 428ms)
+
