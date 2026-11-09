@@ -2,6 +2,7 @@
 """Offline integrity verification for the scoped review-only rollout."""
 import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 

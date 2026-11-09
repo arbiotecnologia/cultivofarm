@@ -227,6 +227,8 @@ def main():
         '89-pilot-containment-rollback-deny.sql.review': pilot / '04-rollback-deny.sql.review',
         'README.md': H / 'production-rollout.README.md',
     }
+    if not pending_final:
+        artifacts['evidence-final-artifact-execution.json'] = final_execution_path
     for target, source in artifacts.items():
         copy(source, target)
     generated('30-physical-pre-after-confirmation-send.sql.readonly',
