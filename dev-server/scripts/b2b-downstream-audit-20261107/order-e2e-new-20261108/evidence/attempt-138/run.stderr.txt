@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-TUqMHgUi/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 7, in <module>
+    OUT=Path(os.environ['NEW_E2E_OUT'])
+             ~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "<frozen os>", line 717, in __getitem__
+KeyError: 'NEW_E2E_OUT'
