@@ -1,0 +1,54 @@
+{
+  "status": "REVIEW_ONLY_INACTIVE_NOT_APPROVED",
+  "overlay_of": "production-rollout-posplans-20261108 (40/41/42 only)",
+  "base_manifest_sha256": "3efa7271a9f844be97f4883ff10d13f20998e80e9d167e1dcf247cd7cf44ac5e",
+  "contains_only_changed_rollout_artifacts": [
+    "40-logistics-pre-after-physical.sql.readonly",
+    "41-logistics-install.sql.review",
+    "42-logistics-post.sql.readonly"
+  ],
+  "use_frozen_unchanged": [
+    "50-52",
+    "60-62",
+    "89-94"
+  ],
+  "excludes_reinstall": [
+    "11",
+    "21",
+    "26",
+    "31"
+  ],
+  "guards_changed": 3,
+  "ddl_changed": false,
+  "local_verification": "PASS_DISPOSABLE_PG17_NOT_HOSTED",
+  "hosted_io": false,
+  "activation": false,
+  "publication": false,
+  "authenticated_real_proof": "NOT_RUN",
+  "files": {
+    "40-logistics-pre-after-physical.sql.readonly": {
+      "sha256": "604dd970604821ab2f28c01185f9405e6a7281359dacf62a0eb2c42b2c58ff41",
+      "bytes": 12483
+    },
+    "41-logistics-install.sql.review": {
+      "sha256": "565c3a91aca8322d4f806aef95033706502890b489b068b5c5197f5dce6d5c9e",
+      "bytes": 126308
+    },
+    "42-logistics-post.sql.readonly": {
+      "sha256": "f53eee19a4796ae696105b5df08d400c76483942f1601ef1c57472aa47df5799",
+      "bytes": 17340
+    },
+    "README.md": {
+      "sha256": "62d7afb017418e01471009fdbc62f03d410f29425d13b116bc4bc3f90aa1016a",
+      "bytes": 2369
+    },
+    "origin.json": {
+      "sha256": "7c7ac30eca426d5e934327e5d71107da8ad47032162de1038ff50f6f1f4cd5aa",
+      "bytes": 3266
+    },
+    "evidence-logistics-acl-overlay.json": {
+      "sha256": "c4523860fb82bc3adaae005ad92cef83b94184adcaecd93dad638a1abf29670b",
+      "bytes": 14007
+    }
+  }
+}

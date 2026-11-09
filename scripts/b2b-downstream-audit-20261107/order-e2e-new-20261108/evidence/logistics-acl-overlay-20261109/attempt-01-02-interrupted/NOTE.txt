@@ -1,0 +1,1 @@
+Tentativas 01/02 encerradas pelo término da sessão de execução da ferramenta, sem exit code nem evidência; não contam como PASS.

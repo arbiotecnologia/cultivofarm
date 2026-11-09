@@ -1,0 +1,79 @@
+{
+  "kind": "SEPARATE_LOGISTICS_FUNCTION_ACL_OVERLAY",
+  "frozen_package_unmodified": true,
+  "frozen_package": {
+    "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108",
+    "manifest_sha256": "3efa7271a9f844be97f4883ff10d13f20998e80e9d167e1dcf247cd7cf44ac5e",
+    "40-logistics-pre-after-physical.sql.readonly": "a5ecac743777804ee2fbb65a29ec04c43e77df74cd7a23e46a682dc41399c97a",
+    "41-logistics-install.sql.review": "56631263e6ebfe51e9f02822f72c98f895a728f762d3c0ef62c575e44ee7ec09",
+    "42-logistics-post.sql.readonly": "e893bc9fe098029b0a1d4f997cfe8ed4e48074b89dddc3d1efaf1df6e98dc0ad",
+    "94-logistics-rollback-deny.sql.review": "bc03a15aeb273605cec9f550d15aa8f452203ed2ff56dbc9b24eeec2a2d7974a"
+  },
+  "function": "platform_private.b2b_internal_order_snapshot_guard()",
+  "body_md5_real_and_pinned": "9cad2aaa995277b913f8b40816fea504",
+  "owner": "postgres",
+  "frozen_expected_acl": "{postgres=X/postgres}",
+  "real_acl_expected": "{postgres=X/postgres,service_role=X/postgres}",
+  "grant_origin": {
+    "path": "supabase/migrations/20261008192025_4c4bd075-7352-4dbc-9429-47a75e9500e4.sql",
+    "sha256": "1cee511d69006bcacc24d09d8669f4df4d07f844ad14c3e2a2e2ec66f819008f",
+    "statements": [
+      "REVOKE ALL ON FUNCTION platform_private.b2b_internal_order_snapshot_guard() FROM PUBLIC,anon,authenticated;",
+      "GRANT EXECUTE ON FUNCTION platform_private.b2b_internal_order_snapshot_guard() TO service_role;"
+    ],
+    "note": "Permissão service_role criada junto com a função; CREATE OR REPLACE posterior (41) preserva a ACL. A fixture descartável antiga não reproduzia esse GRANT."
+  },
+  "comparison": "jsonb_agg(aclitem::text ORDER BY aclitem::text COLLATE C)",
+  "preserves": [
+    "grantee",
+    "privileges",
+    "grant_option",
+    "grantor"
+  ],
+  "lines_changed": {
+    "40-logistics-pre-after-physical.sql.readonly": 1,
+    "41-logistics-install.sql.review": 1,
+    "42-logistics-post.sql.readonly": 1
+  },
+  "unchanged": [
+    "14 other function pins",
+    "DDL candidate",
+    "94-logistics-rollback-deny.sql.review",
+    "50-62",
+    "89-93"
+  ],
+  "generator": {
+    "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/logistics_acl_overlay.py",
+    "sha256": "4dae714f608aeca324f3fa9bff5a6527195576e40885e920bac388c40e415b75"
+  },
+  "verification_runner": {
+    "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_logistics_acl_overlay.py",
+    "sha256": "8489f9c1d9f91826279bec1dea70e9099e6338ab7cfd15acadcf96e543576fee"
+  },
+  "auditor_reported_production": {
+    "ref": "swzpzcwiasxmjutrmvkm",
+    "installed_do_not_reinstall": [
+      "11",
+      "21",
+      "26",
+      "31"
+    ],
+    "post_pass": [
+      "12",
+      "22",
+      "27",
+      "32"
+    ],
+    "pre40_stop": "B2B_RESALE_PRE_ACL_DRIFT platform_private.b2b_internal_order_snapshot_guard()",
+    "pins_checked": {
+      "body_md5": "15/15",
+      "owner": "15/15",
+      "acl": "14/15"
+    },
+    "actual_acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "received_41_or_later": false,
+    "stock_gate": "OFF",
+    "source": "Relato independente do auditor em 09/11/2026 13:34 UTC; nenhuma operação hospedada pelo gerador"
+  },
+  "hosted_io": false
+}
