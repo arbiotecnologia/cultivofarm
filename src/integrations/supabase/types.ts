@@ -6003,12 +6003,15 @@ export type Database = {
           confirmada_em: string | null
           confirmada_por: string | null
           confirmado_por: string | null
+          conteudo_por_unidade: number | null
           created_at: string
           data_chegada_prevista: string | null
           data_saida: string | null
           destinatario_nome: string | null
           destinatario_telefone: string | null
           destinatario_whatsapp: string | null
+          embalagem_id: string | null
+          embalagem_versao: number | null
           endereco_bairro: string | null
           endereco_cep: string | null
           endereco_cidade: string | null
@@ -6037,9 +6040,11 @@ export type Database = {
           ordem_servico_id: string | null
           ordem_servico_onfarm_id: string | null
           organization_id: string | null
+          origem_estoque: string | null
           os_faturamento_base_id: string | null
           partner_order_id: string | null
           produto_id: string | null
+          quantidade_conteudo: number | null
           quantidade_entregue: number | null
           recebedor_cargo: string | null
           recebedor_documento: string | null
@@ -6057,6 +6062,8 @@ export type Database = {
           separacao_status: string
           status: Database["public"]["Enums"]["status_entrega"]
           tipo_entrega: string
+          unidade_comercial: string | null
+          unidade_conteudo: string | null
           updated_at: string
           validation_hash: string | null
           validation_token: string | null
@@ -6083,12 +6090,15 @@ export type Database = {
           confirmada_em?: string | null
           confirmada_por?: string | null
           confirmado_por?: string | null
+          conteudo_por_unidade?: number | null
           created_at?: string
           data_chegada_prevista?: string | null
           data_saida?: string | null
           destinatario_nome?: string | null
           destinatario_telefone?: string | null
           destinatario_whatsapp?: string | null
+          embalagem_id?: string | null
+          embalagem_versao?: number | null
           endereco_bairro?: string | null
           endereco_cep?: string | null
           endereco_cidade?: string | null
@@ -6117,9 +6127,11 @@ export type Database = {
           ordem_servico_id?: string | null
           ordem_servico_onfarm_id?: string | null
           organization_id?: string | null
+          origem_estoque?: string | null
           os_faturamento_base_id?: string | null
           partner_order_id?: string | null
           produto_id?: string | null
+          quantidade_conteudo?: number | null
           quantidade_entregue?: number | null
           recebedor_cargo?: string | null
           recebedor_documento?: string | null
@@ -6137,6 +6149,8 @@ export type Database = {
           separacao_status?: string
           status?: Database["public"]["Enums"]["status_entrega"]
           tipo_entrega?: string
+          unidade_comercial?: string | null
+          unidade_conteudo?: string | null
           updated_at?: string
           validation_hash?: string | null
           validation_token?: string | null
@@ -6163,12 +6177,15 @@ export type Database = {
           confirmada_em?: string | null
           confirmada_por?: string | null
           confirmado_por?: string | null
+          conteudo_por_unidade?: number | null
           created_at?: string
           data_chegada_prevista?: string | null
           data_saida?: string | null
           destinatario_nome?: string | null
           destinatario_telefone?: string | null
           destinatario_whatsapp?: string | null
+          embalagem_id?: string | null
+          embalagem_versao?: number | null
           endereco_bairro?: string | null
           endereco_cep?: string | null
           endereco_cidade?: string | null
@@ -6197,9 +6214,11 @@ export type Database = {
           ordem_servico_id?: string | null
           ordem_servico_onfarm_id?: string | null
           organization_id?: string | null
+          origem_estoque?: string | null
           os_faturamento_base_id?: string | null
           partner_order_id?: string | null
           produto_id?: string | null
+          quantidade_conteudo?: number | null
           quantidade_entregue?: number | null
           recebedor_cargo?: string | null
           recebedor_documento?: string | null
@@ -6217,6 +6236,8 @@ export type Database = {
           separacao_status?: string
           status?: Database["public"]["Enums"]["status_entrega"]
           tipo_entrega?: string
+          unidade_comercial?: string | null
+          unidade_conteudo?: string | null
           updated_at?: string
           validation_hash?: string | null
           validation_token?: string | null
@@ -7025,7 +7046,10 @@ export type Database = {
       }
       estoque_produto: {
         Row: {
+          conteudo_por_unidade: number | null
           created_at: string
+          embalagem_id: string | null
+          embalagem_versao: number | null
           envase_id: string | null
           expedido_em: string | null
           expedido_por: string | null
@@ -7033,8 +7057,10 @@ export type Database = {
           lote_id: string
           microrganismo_id: string | null
           observacao_reserva: string | null
+          origem_estoque: string | null
           produto_id: string | null
           quantidade: number | null
+          quantidade_conteudo: number | null
           quantidade_reservada: number | null
           reservado_em: string | null
           reservado_para_cliente_id: string | null
@@ -7044,12 +7070,17 @@ export type Database = {
           reservado_para_partner_order_id: string | null
           reservado_por: string | null
           status: Database["public"]["Enums"]["status_estoque"]
+          unidade_comercial: string | null
+          unidade_conteudo: string | null
           updated_at: string
           validade: string | null
           volume_total: number | null
         }
         Insert: {
+          conteudo_por_unidade?: number | null
           created_at?: string
+          embalagem_id?: string | null
+          embalagem_versao?: number | null
           envase_id?: string | null
           expedido_em?: string | null
           expedido_por?: string | null
@@ -7057,8 +7088,10 @@ export type Database = {
           lote_id: string
           microrganismo_id?: string | null
           observacao_reserva?: string | null
+          origem_estoque?: string | null
           produto_id?: string | null
           quantidade?: number | null
+          quantidade_conteudo?: number | null
           quantidade_reservada?: number | null
           reservado_em?: string | null
           reservado_para_cliente_id?: string | null
@@ -7068,12 +7101,17 @@ export type Database = {
           reservado_para_partner_order_id?: string | null
           reservado_por?: string | null
           status?: Database["public"]["Enums"]["status_estoque"]
+          unidade_comercial?: string | null
+          unidade_conteudo?: string | null
           updated_at?: string
           validade?: string | null
           volume_total?: number | null
         }
         Update: {
+          conteudo_por_unidade?: number | null
           created_at?: string
+          embalagem_id?: string | null
+          embalagem_versao?: number | null
           envase_id?: string | null
           expedido_em?: string | null
           expedido_por?: string | null
@@ -7081,8 +7119,10 @@ export type Database = {
           lote_id?: string
           microrganismo_id?: string | null
           observacao_reserva?: string | null
+          origem_estoque?: string | null
           produto_id?: string | null
           quantidade?: number | null
+          quantidade_conteudo?: number | null
           quantidade_reservada?: number | null
           reservado_em?: string | null
           reservado_para_cliente_id?: string | null
@@ -7092,6 +7132,8 @@ export type Database = {
           reservado_para_partner_order_id?: string | null
           reservado_por?: string | null
           status?: Database["public"]["Enums"]["status_estoque"]
+          unidade_comercial?: string | null
+          unidade_conteudo?: string | null
           updated_at?: string
           validade?: string | null
           volume_total?: number | null
@@ -25356,6 +25398,23 @@ export type Database = {
       rpc_financial_document_soft_delete: {
         Args: { p_document_id: string; p_reason: string }
         Returns: string
+      }
+      rpc_finished_product_purchase_capability_v1: {
+        Args: never
+        Returns: Json
+      }
+      rpc_finished_product_purchase_entry_v1: {
+        Args: {
+          p_compra_referencia: string
+          p_embalagem_id: string
+          p_fornecedor_nome: string
+          p_idempotency_key: string
+          p_lote_fornecedor: string
+          p_produto_id: string
+          p_quantidade: number
+          p_validade?: string
+        }
+        Returns: Json
       }
       rpc_fiscal_calculate_invoice_v1: {
         Args: { p_idempotency_key: string; p_invoice_id: string }
