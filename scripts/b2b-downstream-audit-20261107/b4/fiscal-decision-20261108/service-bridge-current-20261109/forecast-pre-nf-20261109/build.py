@@ -23,12 +23,45 @@ def main():
     baseline = json.loads(BASELINE.read_text())
     assert baseline["canonical_ref"] == REF and baseline["hosted"] is False
     capture = json.loads(CAPTURE.read_text())
-    rows = [f for f in capture["functions"] if f.get("name") == "approve_partner_order"]
-    assert len(rows) == 1
-    approve = rows[0]["body"]
+    capture5 = json.loads(CAPTURE5.read_text())
+    assert capture5["canonical_ref"] == REF and capture5["hosted"] is False
+    current = {r["proname"]: r for r in capture5["functions"]}
+    assert set(current) == {"approve_b2b_credit", "approve_b2b_payment_terms_secure", "approve_partner_order", "fn_b2b_credit_exposure", "tg_h7_fiscal_invoice_immutable_v1"}
+    for name, row in current.items():
+        assert md5(row["definition"]) == row["md5"], name
+    approve = current["approve_partner_order"]["definition"]
     assert md5(approve) == OLD_APPROVE_MD5 and approve.count(ANCHOR) == 1
     candidate_approve = approve.replace(ANCHOR, REPLACEMENT)
     new_approve_md5 = md5(candidate_approve)
+
+    terms = current["approve_b2b_payment_terms_secure"]["definition"]
+    terms_anchor = "  RETURN jsonb_build_object('success', true, 'status', 'approved');"
+    assert terms.count(terms_anchor) == 1
+    candidate_terms = terms.replace(terms_anchor, "  PERFORM platform_private.b2b_financial_forecast_after_approval_v1(p_partner_order_id,\n    public.fn_b2b_credit_exposure((SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_partner_order_id),0,NULL));\n" + terms_anchor)
+    new_terms_md5 = md5(candidate_terms)
+
+    credit = current["fn_b2b_credit_exposure"]["definition"]
+    committed_start = credit.index("  -- (b) pedidos com compromisso financeiro real")
+    committed_end = credit.index("  -- (c) H4-001:", committed_start)
+    committed_residual = """  -- (b) compromisso aprovado: com previsão B4, somente o residual ainda sem NF.
+  -- O título em aberto já entra em (a); sem previsão, preserva o legado e seus links.
+  SELECT COALESCE(SUM(ROUND(CASE
+    WHEN f.order_id IS NOT NULL THEN f.residual_amount
+    ELSE COALESCE(po.final_amount_with_interest, po.total, 0) END,2)),0)
+    INTO v_committed
+  FROM public.partner_orders po
+  LEFT JOIN platform_private.b2b_financial_forecasts f ON f.order_id=po.id
+  WHERE po.partner_id = p_partner_id
+    AND po.status IN ('aprovado','em_producao','produzido','aguardando_entrega',
+                      'confirmado','em_separacao','enviado','entregue')
+    AND (f.order_id IS NOT NULL OR (COALESCE(po.receivable_generated,false) = false
+      AND NOT EXISTS (SELECT 1 FROM public.partner_order_financial_links pofl
+                      WHERE pofl.partner_order_id = po.id)))
+    AND (p_exclude_order_id IS NULL OR po.id <> p_exclude_order_id);
+
+"""
+    candidate_credit = credit[:committed_start] + committed_residual + credit[committed_end:]
+    new_credit_md5 = md5(candidate_credit)
     schema = r"""
 CREATE TABLE platform_private.b2b_financial_forecasts(
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),order_id uuid NOT NULL UNIQUE REFERENCES public.partner_orders(id),
