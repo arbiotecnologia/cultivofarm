@@ -1,9 +1,9 @@
 import 'fake-indexeddb/auto';
 import { IDBFactory } from 'fake-indexeddb';
 import { webcrypto } from 'node:crypto';
-import { readAttemptStatus } from '@/lib/authz/orderJournal';
+import { readAttemptStatus, persistJournal, parseOrderJournal } from '@/lib/authz/orderJournal';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { withPaymentMethod, pickTestPix, TEST_PIX, TEST_PIX_OPTION, TEST_CONTRACT, condEnvelope } from "@/test/helpers/b2bPaymentMethodMock";
+import { withPaymentMethod, TEST_CONTRACT } from "@/test/helpers/b2bPaymentMethodMock";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -16,7 +16,7 @@ const state = vi.hoisted(() => ({
   actor: "11111111-1111-4111-8111-111111111111",
   tenant: "22222222-2222-4222-8222-222222222222",
   partner: "33333333-3333-4333-8333-333333333333",
-  epoch: 0,
+  epoch: 0, revoked:false,
   draft: null as null | { partnerId: string; addItemId: string | null; requestedDeliveryDate: string | null; items: Array<{ itemId: string; volumeId: string; quantity: number }> },
   rpc: vi.fn(), table: vi.fn(), writes: vi.fn(),
   options: null as null | ((args: Record<string, unknown>) => unknown), ack: null as null | Record<string, unknown>,
@@ -24,7 +24,7 @@ const state = vi.hoisted(() => ({
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({
   user: { id: state.actor }, profile: { user_id: state.actor, organization_id: state.tenant, ativo: true, senha_provisoria: false },
   role: "parceiro_b2b", roles: ["parceiro_b2b"], loading: false, authzReady: true, authzEpoch: state.epoch,
-  checkAuthzAccess: () => true, signOut: vi.fn(),
+  checkAuthzAccess: () => !state.revoked, signOut: vi.fn(),
   setSafePartnerOrderDraft: vi.fn(), takeSafePartnerOrderDraft: () => state.draft,
 }) }));
 vi.mock("@/hooks/useEntitlements", () => ({ useEntitlements: () => ({
@@ -65,7 +65,7 @@ function response(data: unknown) {
   return Object.assign(promise, { abortSignal: () => promise });
 }
 beforeEach(() => {
-  Object.assign(state, { tenant: "22222222-2222-4222-8222-222222222222", partner: "33333333-3333-4333-8333-333333333333", epoch: 0, draft: null });
+  Object.assign(state, { tenant: "22222222-2222-4222-8222-222222222222", partner: "33333333-3333-4333-8333-333333333333", epoch: 0, revoked:false, draft: null });
   vi.clearAllMocks();
   vi.stubGlobal("indexedDB",new IDBFactory());vi.stubGlobal("crypto",webcrypto);
   sessionStorage.clear();
@@ -127,12 +127,6 @@ function mount() {
 }
 
 
-const wrapped = () => state.rpc.getMockImplementation()!;
-function overrideOptions(fn: (args: Record<string, unknown>) => unknown) {
-  const base = wrapped();
-  state.rpc.mockImplementation((n: string, a?: Record<string, unknown>) => n === "b2b_list_payment_condition_options_secure" ? fn(a ?? {}) : base(n, a));
-}
-const abortable = (p: Promise<unknown>) => Object.assign(p, { abortSignal: () => p });
 async function toPayment(mounted = mount()) {
   await screen.findByText("Produto local");
   fireEvent.click(screen.getByRole("button", { name: "Adicionar ao pedido" }));
@@ -166,6 +160,13 @@ beforeEach(()=>{
   if(n==='partner_order_journal_capability_v1')return response({contract:CT,enabled:true,actor_id:state.actor,organization_id:state.tenant,partner_id:state.partner});
   if(n==='partner_order_attempt_status_v1')return (holdStatus??Promise.resolve()).then(()=>failure?{data:null,error:{code:'42501',message:'forbidden_partner'}}:
    {data:terminal==='none'?{contract:'C2_ORDER_ATTEMPT_STATUS_V1',state:'none',actor_id:state.actor,organization_id:state.tenant,partner_id:state.partner}:journal(),error:null});
+  if(n==='b2b_list_payment_condition_options_secure')return response({contract:TEST_CONTRACT,partner_id:state.partner,payment_plan_id:a.p_payment_plan_id,mode:'required',due_basis:'nf_issue',options:[{payment_method:'boleto',payment_condition_version:1,payment_deadline_days:30,available:true,payment_method_name:'Boleto',installment_count:1,monthly_rate:0}]});
+  if(n==='simulate_b2b_payment_condition_secure')return response({partner_id:state.partner,pricing_mode:'discount_from_base',quote_required:false,cart_hash:'hash-boleto-18',
+   payment_plan:{...PLAN,pricing_mode:'discount_from_base'},
+   amounts:{table_amount:18,discount_amount:0,net_amount_after_discount:18,financial_interest_amount:0,final_amount:18},
+   final_amount:18,installment_count:1,schedule_estimated:true,due_basis:'nf_issue',payment_condition_contract:TEST_CONTRACT,payment_choice:a.p_payment_choice,
+   payment_condition:{payment_method_name:'Boleto',installment_count:1,monthly_rate:0,deadline_days:30,due_basis:'nf_issue',estimated:true},
+   schedule:[{installment_number:1,due_date:minDeliveryDateISO(),amount:18,principal_amount:18,interest_amount:0}],warnings:[],credit:{credit_limit:1000,exposicao_projetada:18,credit_checked:true}});
   if(n==='recover_partner_order_attempt_v1'){
    if(a.p_advance && (a.p_expected_key!==K1 || a.p_expected_generation!==generation ||
     !['closed','committed'].includes(terminal) || a.p_ack_order!==(terminal==='committed'?ID:null)))return Promise.resolve({data:null,error:{code:'PT409',message:'C2DJ_CAS_CONFLICT'}});
@@ -183,7 +184,7 @@ beforeEach(()=>{
 });
 const reserves=()=>calls('recover_partner_order_attempt_v1');
 async function simulate(view=mount()){
- await toPayment(view);await pickTestPix();
+ await toPayment(view);fireEvent.click(await screen.findByRole('radio',{name:/Boleto · 1x · 0%/}));
  await waitFor(()=>expect(calls('simulate_b2b_payment_condition_secure')).toHaveLength(1));
  return view;
 }
@@ -193,6 +194,7 @@ it('closed → iniciar → simular → habilitado; uma reserva CAS somente no di
  await waitFor(()=>expect(screen.queryByRole('button',{name:'Iniciar nova tentativa'})).toBeNull());
  expect(reserves()).toHaveLength(0);
  await simulate(view);const send=await submitBtn();await waitFor(()=>expect(send).toBeEnabled());
+ expect(screen.getAllByText(/R\$ 18,00/).length).toBeGreaterThan(0);
  expect(reserves()).toHaveLength(0);
  let release:()=>void=()=>{};holdReserve=new Promise(r=>{release=r;});
  fireEvent.click(send);fireEvent.click(send);
@@ -224,18 +226,21 @@ it('committed exige ACK explícito do pedido exato antes da intenção, sem rese
 it('reload perde intenção closed e não reserva; precisa de novo clique explícito',async()=>{
  terminal='closed';const view=mount();fireEvent.click(await screen.findByRole('button',{name:'Iniciar nova tentativa'}));
  await waitFor(()=>expect(screen.queryByRole('button',{name:'Iniciar nova tentativa'})).toBeNull());
- view.view.unmount();await simulate();
- expect(await submitBtn()).toBeDisabled();expect(reserves()).toHaveLength(0);
+ view.view.unmount();mount();
+ expect(await screen.findByRole('button',{name:'Iniciar nova tentativa'})).toBeEnabled();
+ expect(reserves()).toHaveLength(0);expect(calls('create_partner_order_condition_secure')).toHaveLength(0);
 });
 it('outra aba publica uncertain e invalida intenção com diálogo aberto; handler não envia nova geração',async()=>{
  const view=await simulate();const send=await submitBtn();await waitFor(()=>expect(send).toBeEnabled());
  terminal='uncertain';
  await act(async()=>{await readAttemptStatus(SLOT,state.partner,()=>true);});
- // An uncertain attempt can only replay the same payload through its journal, never next.
+ await act(async()=>{await persistJournal(SLOT,parseOrderJournal(journal()),()=>true,undefined,'another-tab-payload');});
+ // Uncertain can only replay its exact original payload; changed payload must never dispatch.
  fireEvent.click(send);
  await waitFor(()=>expect(reserves()).toHaveLength(1));
  expect(reserves()[0]).toMatchObject({p_advance:false,p_expected_key:null});
- expect(calls('create_partner_order_condition_secure')[0]?.p_idempotency_key).not.toBe(K2);
+ await waitFor(()=>expect(send).toBeEnabled());
+ expect(calls('create_partner_order_condition_secure')).toHaveLength(0);
 });
 it('status falho bloqueia botão e não reserva nem despacha',async()=>{
  failure=true;await simulate();expect(await submitBtn()).toBeDisabled();
@@ -249,10 +254,24 @@ it('checking/pending conserva bloqueio mesmo com simulação pronta',async()=>{
 it('scope revogado entre clique e reserva impede dispatch e mantém nenhuma criação',async()=>{
  await simulate();const send=await submitBtn();await waitFor(()=>expect(send).toBeEnabled());
  let release:()=>void=()=>{};holdReserve=new Promise(r=>{release=r;});fireEvent.click(send);
- await waitFor(()=>expect(reserves()).toHaveLength(1));state.epoch++;
- // Auth scope updates invalidate the captured current_payload before the reserve resolves.
- await act(async()=>{window.dispatchEvent(new Event('focus'));});
- // Unmount retires the page fence even without a rerender of the external Auth provider.
- cleanup();await act(async()=>{release();});
+ await waitFor(()=>expect(reserves()).toHaveLength(1));state.revoked=true;
+ await act(async()=>{release();});
  expect(calls('create_partner_order_condition_secure')).toHaveLength(0);
+});
+it('outra aba conclui geração e fecha diálogo; clique no controle antigo não contorna terminal',async()=>{
+ await simulate();const send=await submitBtn();await waitFor(()=>expect(send).toBeEnabled());
+ terminal='closed';await act(async()=>{await readAttemptStatus(SLOT,state.partner,()=>true);});
+ await waitFor(()=>expect(screen.queryByRole('dialog')).toBeNull());fireEvent.click(send);
+ expect(reserves()).toHaveLength(0);expect(calls('create_partner_order_condition_secure')).toHaveLength(0);
+});
+it('falha na releitura depois de intenção valida bloqueia handler e aposenta next',async()=>{
+ terminal='closed';const view=mount();fireEvent.click(await screen.findByRole('button',{name:'Iniciar nova tentativa'}));
+ await waitFor(()=>expect(screen.queryByRole('button',{name:'Iniciar nova tentativa'})).toBeNull());
+ await simulate(view);const send=await submitBtn();await waitFor(()=>expect(send).toBeEnabled());
+ // A new terminal observation retires the intent; status failure must never restore it.
+ terminal='committed';await act(async()=>{await readAttemptStatus(SLOT,state.partner,()=>true);});
+ failure=true;fireEvent.click(await screen.findByRole('button',{name:'Confirmar pedido existente e iniciar novo'}));
+ fireEvent.click(await screen.findByRole('button',{name:'Confirmar e iniciar novo'}));
+ await screen.findByText('Não foi possível verificar a continuidade do pedido. Nada foi liberado.');
+ fireEvent.click(send);expect(reserves()).toHaveLength(0);expect(calls('create_partner_order_condition_secure')).toHaveLength(0);
 });
