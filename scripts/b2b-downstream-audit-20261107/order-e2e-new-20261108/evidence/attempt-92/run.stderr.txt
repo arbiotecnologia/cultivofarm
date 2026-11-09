@@ -1,0 +1,23 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-kx85cykk/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 16, in main
+    B=load('new_finished',physical/'test_after.py').B
+      ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-kx85cykk/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 12, in load
+    s=importlib.util.spec_from_file_location(name,p);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
+                                                                                          ~~~~~~~~~~~~~~~~~~~~^^^
+  File "<frozen importlib._bootstrap_external>", line 1023, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/tmp/new-order-e2e-kx85cykk/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py", line 10, in <module>
+    spec.loader.exec_module(B)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "<frozen importlib._bootstrap_external>", line 1023, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/tmp/new-order-e2e-kx85cykk/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 32, in <module>
+    catalog_spec.loader.exec_module(current_catalog)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 1023, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/tmp/new-order-e2e-kx85cykk/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/current_catalog.py", line 100, in <module>
+    assert _short_prior["body"] != _short_capture["definition"]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

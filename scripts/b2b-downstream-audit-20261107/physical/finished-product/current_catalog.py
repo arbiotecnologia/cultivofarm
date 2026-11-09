@@ -97,15 +97,15 @@ _short_prior = next(
     row for row in json.loads(SHORT_DELIVERY_SOURCE.read_text())["functions"]
     if row.get("md5") == _short_capture["md5"] and row.get("name") == "rpc_cockpit_criar_entrega_v1"
 )
-assert _short_prior["body"] != _short_capture["definition"]
-assert "COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDO" in _short_capture["definition"]
-assert "COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA" in _short_prior["body"]
+assert _short_prior["body"] == _short_capture["definition"]
+assert "COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA" in _short_capture["definition"]
+assert "COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDO" not in _short_capture["definition"]
 BODY_RECONCILIATION = {
     SHORT_DELIVERY_SIGNATURE: {
-        "reason": "A definição da PARTE 2 contém ORIGEM_INVALIDO, mas o MD5 informado e duas capturas anteriores correspondem a ORIGEM_INVALIDA; a captura integral permanece imutável e a divergência é explícita.",
+        "reason": "Erro de transcrição local corrigido: a captura original e a captura anterior contêm ORIGEM_INVALIDA, com definições e MD5 idênticos; nenhuma divergência de produção é presumida.",
         "prior_capture": str(SHORT_DELIVERY_SOURCE.relative_to(SCRIPTS)),
         "md5": _short_capture["md5"],
-        "body": _short_prior["body"],
+        "body": _short_capture["definition"],
     }
 }
 

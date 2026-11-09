@@ -1,0 +1,26 @@
+BEGIN READ ONLY;
+DO $$BEGIN
+ IF to_regprocedure('public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)') IS NOT NULL OR to_regprocedure('public.rpc_b2b_resale_os_availability_v1(uuid)') IS NOT NULL
+ THEN RAISE EXCEPTION 'RESALE_ENDPOINT_ALREADY_EXISTS'; END IF;
+END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_internal_commercial_actor()'); BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '6555396c4f8fe914177d2ccfc3891279'
+ OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p) IS DISTINCT FROM 'postgres'
+ OR (SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid=p) IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}'
+ THEN RAISE EXCEPTION 'RESALE_ENDPOINT_DEPENDENCY_DRIFT'; END IF; END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)'); BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '0cd104409e779858b64316da91ccd518'
+ OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p) IS DISTINCT FROM 'postgres'
+ OR (SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid=p) IS DISTINCT FROM '{postgres=X/postgres}'
+ THEN RAISE EXCEPTION 'RESALE_ENDPOINT_DEPENDENCY_DRIFT'; END IF; END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.c2_external_origin_contract_valid(jsonb)'); BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '369fd07cd9c659b87941b9a3bf972868'
+ OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p) IS DISTINCT FROM 'postgres'
+ OR (SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid=p) IS DISTINCT FROM '{postgres=X/postgres}'
+ THEN RAISE EXCEPTION 'RESALE_ENDPOINT_DEPENDENCY_DRIFT'; END IF; END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.stock_motor_actor(text)'); BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '6dfbaa7283b963cb78f19ccdf13ecd9f'
+ OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p) IS DISTINCT FROM 'postgres'
+ OR (SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid=p) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}'
+ THEN RAISE EXCEPTION 'RESALE_ENDPOINT_DEPENDENCY_DRIFT'; END IF; END$$;
+ROLLBACK;

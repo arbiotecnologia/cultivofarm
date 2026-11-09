@@ -5,7 +5,7 @@
 - Nenhuma operação hospedada, publicação, ativação, emissão fiscal, cobrança ou envio externo.
 - `finished_product_gate_v1` e `b2b_resale_logistics_gate_v1` continuam desligados por padrão e são somente chaves-mestras; nenhum deles, isoladamente, autoriza operação.
 - Todo pacote de rollout anterior a esta contenção está inadequado para ativação do piloto. Não usar o rollout antigo como aprovação.
-- A tentativa descartável 91 terminou com `exit=0`: 39 checkpoints da composição e 30 testes específicos da contenção. Rollback deny-only concluído; histórico e recibos preservados.
+- A tentativa exata fica registrada no manifesto do pacote. Somente `run.exitcode=0`, todos os checkpoints PASS e a captura corrigida atual são evidência válida; a referência atual é attempt 93, com 39 checkpoints da composição e 30 testes específicos da contenção. Rollback deny-only concluído; histórico e recibos preservados.
 - Testes usam PostgreSQL descartável, identidades/claims sintéticos e fixtures locais. Não são prova de JWT, RLS, Storage, navegador ou sessão real hospedada.
 
 ## Autoridade
