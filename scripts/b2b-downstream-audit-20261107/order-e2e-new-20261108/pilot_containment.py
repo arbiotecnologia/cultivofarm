@@ -289,7 +289,7 @@ def install(B, out):
     pre = ["DO $$BEGIN IF to_regclass('platform_private.resale_pilot_allowlist_v1') IS NOT NULL OR to_regprocedure('platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'PILOT_CONTAINMENT_ALREADY_EXISTS'; END IF;END$$;"]
     for row in raw:
         lit = lambda s: "'" + str(s).replace("'", "''") + "'"
-        pre.append(f"DO $$DECLARE p oid:=to_regprocedure({lit(row['signature'])});BEGIN IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM {lit(row['md5'])} OR pg_get_userbyid(p.proowner) IS DISTINCT FROM {lit(row['owner'])} OR coalesce(p.proacl::text,'') IS DISTINCT FROM {lit(row['acl'])} THEN RAISE EXCEPTION 'PILOT_PRE_DRIFT {row['signature']}';END IF;END$$;")
+        pre.append(f"DO $$DECLARE p oid:=to_regprocedure({lit(row['signature'])});BEGIN IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM {lit(row['md5'])} OR (SELECT pg_get_userbyid(pr.proowner) FROM pg_proc pr WHERE pr.oid=p) IS DISTINCT FROM {lit(row['owner'])} OR coalesce((SELECT pr.proacl::text FROM pg_proc pr WHERE pr.oid=p),'') IS DISTINCT FROM {lit(row['acl'])} THEN RAISE EXCEPTION 'PILOT_PRE_DRIFT {row['signature']}';END IF;END$$;")
     candidate = foundation() + "\n" + "\n\n".join(defs[s]["new"].rstrip().rstrip(";") + ";" for s in CHANGED) + "\n"
     sql = "BEGIN;SET LOCAL lock_timeout='3s';\n" + "\n".join(pre) + "\n" + candidate + "\nCOMMIT;\n"
     (out / "01-pre.sql.readonly").write_text("BEGIN READ ONLY;\n" + "\n".join(pre) + "\nROLLBACK;\n")
