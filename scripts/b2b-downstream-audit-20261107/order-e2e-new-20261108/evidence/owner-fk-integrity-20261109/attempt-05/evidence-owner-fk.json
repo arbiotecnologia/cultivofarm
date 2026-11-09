@@ -1,0 +1,51 @@
+{
+  "status": "FAIL",
+  "kind": "DISPOSABLE_OWNER_FK_INTEGRITY_NOT_HOSTED",
+  "hosted": false,
+  "checks": [
+    {
+      "name": "baseline POSPLANOS descartável restaurada sem destino hospedado",
+      "status": "PASS"
+    },
+    {
+      "name": "pré-requisitos locais 00/11/12/20/21/22; nenhuma operação hospedada",
+      "status": "PASS"
+    }
+  ],
+  "raw": [],
+  "final_artifacts": [],
+  "supporting_artifacts": [
+    {
+      "file": "00-production-pre-posplans.sql.readonly",
+      "sha256": "00f726d4dbc254aaa59bce376ab7b53f2985d1a1b80c1160df0e1cc830501616",
+      "returncode": 0
+    },
+    {
+      "file": "11-confirmation-install.sql.review",
+      "sha256": "809223b1b6b02041241f9d4bd5ad7c33635aab7bcad18f420a4ac944072163ae",
+      "returncode": 0
+    },
+    {
+      "file": "12-confirmation-post.sql.readonly",
+      "sha256": "e45c25b5bec99c6cb6d57b717ab82e9c97b2306966e984c9513adce42e01cd16",
+      "returncode": 0
+    },
+    {
+      "file": "20-send-pre.sql.readonly",
+      "sha256": "79a95847c6e3e824e6f205e4a643c597c2fd4882c661e389e7260d383400afd7",
+      "returncode": 0
+    },
+    {
+      "file": "21-send-install.sql.review",
+      "sha256": "394fcbf719ba56c3a1c663c376d1fbc6e6cc33ecd8b037d9f711c12a369dd9ef",
+      "returncode": 0
+    },
+    {
+      "file": "22-send-post.sql.readonly",
+      "sha256": "12bb897db3595f88177db3e4712dd7b7bb8232cd4c444e684a74e3ac413dff5f",
+      "returncode": 0
+    }
+  ],
+  "authenticated_real_proof": "NOT_RUN",
+  "error": "Traceback (most recent call last):\n  File \"/tmp/owner-fk-work-KZrPXg/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_owner_fk_integrity.py\", line 161, in main\n    B.sql(f\"ALTER TABLE ONLY public.product_sale_units ALTER COLUMN forma_fisica SET DEFAULT {shape_expected['default']};\")\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/owner-fk-work-KZrPXg/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 56, in sql\n    return pg.sql(statement)\n           ~~~~~~^^^^^^^^^^^\n  File \"/tmp/owner-fk-work-KZrPXg/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  cannot use column reference in DEFAULT expression\n\n"
+}
