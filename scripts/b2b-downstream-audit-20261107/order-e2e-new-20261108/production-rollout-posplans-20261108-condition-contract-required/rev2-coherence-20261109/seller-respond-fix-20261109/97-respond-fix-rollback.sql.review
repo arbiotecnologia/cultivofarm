@@ -1,5 +1,6 @@
 BEGIN;
 SET LOCAL lock_timeout='5s';
+DO $r$BEGIN IF current_setting('app.reviewed_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'RESPOND_FIX_REF_NOT_ASSERTED';END IF;END$r$;
 DO $c$DECLARE p oid:=to_regprocedure('public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)');BEGIN IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '97bcdb9884b54adb3bd4aae4915e32d0' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p) IS DISTINCT FROM 'postgres' OR (SELECT array(SELECT x::text FROM unnest(proacl) x ORDER BY 1) FROM pg_proc WHERE oid=p) IS DISTINCT FROM (SELECT array(SELECT x FROM unnest('{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}'::text[]) x ORDER BY 1)) THEN RAISE EXCEPTION 'RESPOND_FIX_ROLLBACK_DRIFT public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)';END IF;END$c$;
 CREATE OR REPLACE FUNCTION public.respond_b2b_order_quote_secure(p_order_id uuid, p_lines jsonb, p_first_due_date date DEFAULT NULL::date, p_installment_count integer DEFAULT NULL::integer, p_motivo text DEFAULT NULL::text)
  RETURNS jsonb
