@@ -170,10 +170,11 @@ def main():
                 "  checks.append(dict(test='strict then composed deny-only rollback closes writers; preserves confirmed NF snapshot title idempotency and all original ten receivable triggers',status='PASS'))")
     # Captura 22:27: caso econômico exato 2×10 com 10% e juros zero = 18.
     s = edit(s, "  data,error=Q.sim(Q.UB,Q.P3,[Q.S(2)],choice);assert data is not None,error",
-                """  published,publish_error=Q.publish(Q.UFIN,Q.PLD,'boleto',Q.M_BOL,30,1,'0',0);assert published is not None,publish_error
-  assigned,assign_error=Q.assign(Q.UADM,Q.P,Q.PLD,'boleto',1);assert assigned is not None,assign_error
-  B.sql(f"UPDATE public.commercial_payment_plans SET requires_financial_approval=true WHERE id='{Q.PLD}';BEGIN;UPDATE public.catalogo_precos_embalagem SET valid_until=current_date-1 WHERE id='{Q.SP.PR25}';INSERT INTO public.catalogo_precos_embalagem(id,produto_id,owner_organization_id,packaging_id,preco_brl,valid_from) SELECT '{Q.u(970)}',produto_id,owner_organization_id,packaging_id,10,current_date FROM public.catalogo_precos_embalagem WHERE id='{Q.SP.PR25}';COMMIT;")
-  data,error=Q.sim(Q.UB,Q.PLD,[Q.S(2)],choice);assert data is not None,error""")
+                """  published,publish_error=Q.publish(Q.UFIN,Q.P3,'boleto',Q.M_BOL,30,1,'0',0);assert published is not None,publish_error
+  assigned,assign_error=Q.assign(Q.UADM,Q.P,Q.P3,'boleto',2);assert assigned is not None,assign_error
+  B.sql(f"UPDATE public.commercial_payment_plans SET discount_percent=10,requires_financial_approval=true WHERE id='{Q.P3}';BEGIN;UPDATE public.catalogo_precos_embalagem SET valid_until=current_date-1 WHERE id='{Q.SP.PR25}';INSERT INTO public.catalogo_precos_embalagem(id,produto_id,owner_organization_id,packaging_id,preco_brl,valid_from) SELECT '{Q.u(970)}',produto_id,owner_organization_id,packaging_id,10,current_date FROM public.catalogo_precos_embalagem WHERE id='{Q.SP.PR25}';COMMIT;")
+  choice=Q.ch('boleto',2,30)
+  data,error=Q.sim(Q.UB,Q.P3,[Q.S(2)],choice);assert data is not None,error""")
     s = edit(s, "  data,error=Q.create(Q.UB,Q.P3,[Q.S(2)],data['cart_hash'],journal['key'],choice);assert data is not None,error",
                 "  data,error=Q.create(Q.UB,Q.PLD,[Q.S(2)],data['cart_hash'],journal['key'],choice);assert data is not None,error")
     s = edit(s, "  replay,replay_error=Q.create(Q.UB,Q.P3,[Q.S(2)],data['cart_hash'],journal['key'],choice)",
