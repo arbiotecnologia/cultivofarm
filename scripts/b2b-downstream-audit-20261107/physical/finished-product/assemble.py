@@ -467,8 +467,7 @@ GRANT EXECUTE ON FUNCTION public.rpc_finished_product_purchase_entry_v1(uuid,uui
         for entry in BASE.get("dependency_triggers", []):
             blocks.append(trigger_pin(entry))
         for rel in BASE["relations"]:
-            schema = rel.get("schema", "public")
-            blocks.append(f"DO $$BEGIN IF (SELECT r.rolname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname={lit(schema)} AND c.relname={lit(rel['name'])}) IS DISTINCT FROM {lit(rel['owner'])} OR (SELECT coalesce(c.relacl::text,'') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname={lit(schema)} AND c.relname={lit(rel['name'])}) IS DISTINCT FROM {lit(rel['acl'])} THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT {schema}.{rel['name']}';END IF;END$$;")
+            blocks.append(relation_pin(rel))
         for col in BASE.get("catalog_columns", []):
             blocks.append(f"DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name={lit(col['table'])} AND column_name={lit(col['column'])} AND data_type={lit(col['type'])} AND is_nullable={lit(col['nullable'])}) THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT {col['table']}.{col['column']}';END IF;END$$;")
         for con in BASE.get("catalog_constraints", []):
