@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-16l9iz9f/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 674, in main
+    assert callback_data['outcome']=='AUTHORIZED' and callback_data['cStat']=='104' and callback_data['protocolCStat']=='100' and callback_data['reconciliationPending'] is False and callback_data['reconciliationCode'] is None,callback_data
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'nRec': None, 'cStat': '104', 'chNFe': '35261111111111111111111111111111111111111111', 'nProt': 'LOCAL-INTEGRATED-PROTOCOL', 'state': 'SUCCEEDED', 'outcome': 'AUTHORIZED', 'xMotivo': 'LOTE PROCESSADO; PROTOCOLO AUTORIZADO', 'protocolCStat': '100', 'transmissionId': '00000000-0000-0000-0000-000000000901', 'reconciliationCode': 'FISCAL_AUTHORIZATION_CLOSE_PENDING', 'reconciliationPending': True}
