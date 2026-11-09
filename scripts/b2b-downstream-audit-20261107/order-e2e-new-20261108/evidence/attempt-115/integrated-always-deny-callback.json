@@ -1,0 +1,49 @@
+{
+  "callback": {
+    "nRec": null,
+    "cStat": "104",
+    "chNFe": "35261111111111111111111111111111111111111111",
+    "nProt": "LOCAL-INTEGRATED-PROTOCOL",
+    "state": "SUCCEEDED",
+    "outcome": "AUTHORIZED",
+    "xMotivo": "LOTE PROCESSADO; PROTOCOLO AUTORIZADO",
+    "protocolCStat": "100",
+    "transmissionId": "00000000-0000-0000-0000-000000000901",
+    "reconciliationCode": "FISCAL_AUTHORIZATION_CLOSE_PENDING",
+    "reconciliationPending": true
+  },
+  "replay": {
+    "nRec": null,
+    "cStat": "104",
+    "chNFe": "35261111111111111111111111111111111111111111",
+    "nProt": "LOCAL-INTEGRATED-PROTOCOL",
+    "state": "SUCCEEDED",
+    "outcome": "AUTHORIZED",
+    "xMotivo": "LOTE PROCESSADO; PROTOCOLO AUTORIZADO",
+    "protocolCStat": "100",
+    "transmissionId": "00000000-0000-0000-0000-000000000901",
+    "reconciliationCode": "FISCAL_AUTHORIZATION_CLOSE_PENDING",
+    "reconciliationPending": true
+  },
+  "blocked": {
+    "invoices": 1,
+    "xml_runs": 1,
+    "documents": 0,
+    "snapshots": 0,
+    "allocations": 0,
+    "receivables": 0,
+    "close_pending": "FISCAL_AUTHORIZATION_CLOSE_PENDING",
+    "transmissions": 1,
+    "invoice_status": "DRAFT",
+    "invoice_receivable": null,
+    "transmission_error": null,
+    "transmission_c_stat": "104",
+    "transmission_outcome": "AUTHORIZED",
+    "close_pending_attempts": 2,
+    "transmission_fingerprint": "8688af46f6a9511ffed83d08fbf35192bf590dc0e64ed39b4dced0bb8504591e",
+    "transmission_idempotency": "integrated-sefaz-authorize:00000000-0000-0000-0000-000000000900:v1",
+    "transmission_protocol_c_stat": "100"
+  },
+  "schema_and_fiscal_events_synthetic": true,
+  "dependency_substituted": false
+}
