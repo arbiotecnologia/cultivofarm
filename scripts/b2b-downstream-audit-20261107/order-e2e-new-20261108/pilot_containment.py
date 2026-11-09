@@ -10,7 +10,9 @@ import json
 from pathlib import Path
 
 GATE = "platform_private.resale_pilot_allowlist_v1"
+SCOPE = "platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)"
 ALLOW = "platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)"
+DELIVERY_SCOPE = "platform_private.resale_pilot_delivery_scope_v1(text,text,uuid,uuid,uuid)"
 DELIVERY = "platform_private.resale_pilot_delivery_allowed_v1(text,text,uuid,uuid,uuid)"
 CHANGED = [
     "platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)",
