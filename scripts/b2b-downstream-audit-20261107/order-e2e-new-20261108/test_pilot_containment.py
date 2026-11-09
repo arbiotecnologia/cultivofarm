@@ -50,6 +50,11 @@ def run(B, Review, Q, A, choice, out):
     deny("ARBio real actor valid role outside allowlist cannot read", reader(order))
     deny("ARBio real actor outside allowlist cannot create OS", create)
     deny("ARBio real actor outside allowlist cannot purchase finished product", purchase)
+    # Synthetic FSF entitlement copied from the already published ARBio fixture;
+    # role stays valid, no allowlist row is created for this other organization.
+    B.sql("SET session_replication_role=replica;" + f"""INSERT INTO public.organization_subscriptions(id,organization_id,plan_id,plan_version_id,status,started_at)
+      SELECT gen_random_uuid(),'{Q.F}',plan_id,plan_version_id,'ACTIVE',now()-interval '1 hour'
+      FROM public.organization_subscriptions WHERE id='{Q.u(807)}';SET session_replication_role=origin;""")
     deny("other organization feature ON role valid remains denied", reader(order, Q.UADMF),
          ("RESALE_PILOT_SCOPE_DENIED", "B2B_RESALE_ORDER_SCOPE_DENIED", "B2B_RESALE_ACTOR_DENIED"))
     deny("other organization cannot purchase using ARBio product", A.purchase({"product": product, "packaging": item["packaging_id_snapshot"]}, 3, "pilot-other-org-purchase", actor=Q.UADMF))
