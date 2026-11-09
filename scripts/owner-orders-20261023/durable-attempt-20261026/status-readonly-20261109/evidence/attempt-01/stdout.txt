@@ -63,3 +63,23 @@ PASS dispatch guard preserves canonical invalid-input classification
 PASS dispatch guard preserves canonical invalid-input classification
 PASS old/downgraded arbitrary key refused, no order
 ==== C2_ORDER_ATTEMPT_STATUS_V1 ====
+PASS 00 PRE_OK on installed durable journal (candidate pins)
+PASS 01 install
+PASS installed bodies = frozen pins (if frozen)
+FAIL 02 POST_OK
+PASS PRE after install refuses (already present)
+PASS re-install refused
+PASS anon without EXECUTE on status
+PASS service_role without EXECUTE on status
+PASS PUBLIC without EXECUTE on status
+PASS no grant option on status functions
+PASS existing registered key without receipt reads uncertain; repeated status writes nothing
+PASS status = recover view for existing key (same key/generation/state family)
+PASS old uncertain is never auto-closed by status
+probe GB ERROR:  forbidden_partner
+CONTEXT:  PL/pgSQL function platform_private.assert_b2b_partner_scope(uuid,uuid) line 18 at RAISE
+SQL statement "SELECT platform_priva
+PASS fresh authorised actor available in fixture
+PASS first access: status none, NO reservation
+PASS reload without dispatch: still none, still no journal row (fixes false uncertain)
+PASS status none echoes server actor/org/partner scope
