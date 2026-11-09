@@ -95,8 +95,8 @@ def main():
                 "  checks.append(dict(test='strict then composed deny-only rollback closes writers; preserves confirmed NF snapshot title idempotency and all original ten receivable triggers',status='PASS'))")
     OUT.write_text(s)
     runner_source = SOURCE.with_name("rebuild.py").read_text()
-    assert runner_source.count("/ 'compose.py'") == 1
-    SOURCE.with_name("rebuild_current.py").write_text(runner_source.replace("/ 'compose.py'", "/ 'compose_current.py'"))
+    assert runner_source.count("order-e2e-new-20261108/compose.py'") == 1
+    SOURCE.with_name("rebuild_current.py").write_text(runner_source.replace("order-e2e-new-20261108/compose.py'", "order-e2e-new-20261108/compose_current.py'"))
     print(f"generated {OUT} ({len(s.splitlines())} lines) and rebuild_current.py")
 
 
