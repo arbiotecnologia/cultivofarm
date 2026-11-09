@@ -58,5 +58,103 @@
       "platform_private.c2p1_snapshot_allowed real body (owner-orders p1-isolation/channels-core)",
       "public._cpp_validate_payload/_cpp_audit real bodies (migration 20260730014752)"
     ]
+  },
+  "pins": {
+    "__MD5_CHECK__": "d5096452e22262d617384df0fdeffd17",
+    "__MD5_OTRG__": "7f793a95047846b63cb514e5a8b1af11",
+    "__MD5_STRG__": "eb9e9179be9addb20ce09681956c6eda"
+  },
+  "legacy_pn_denial": [
+    "ERROR:  forbidden_partner"
+  ],
+  "mutation_revocation": {
+    "create_rc": 0,
+    "second_rc": 3,
+    "persisted": false,
+    "idem": "1",
+    "coherent": "1",
+    "create_err": "",
+    "second_err": "ERROR:  payment_condition_config_stale\nCONTEXT:  PL/pgSQL function public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean) line 16 at RAISE\n"
+  },
+  "race_revocation": {
+    "create_rc": 0,
+    "second_rc": 0,
+    "persisted": true,
+    "idem": "1",
+    "coherent": "1",
+    "create_err": "",
+    "second_err": ""
+  },
+  "after_revocation_replay": {
+    "rc": 3,
+    "error": "ERROR:  payment_condition_unavailable",
+    "expected": "payment_condition_unavailable",
+    "before": "{\"orders\" : 23, \"snap\" : 15, \"idem\" : 22}",
+    "after": "{\"orders\" : 23, \"snap\" : 15, \"idem\" : 22}",
+    "pre_hash": "6c895d56df6d4ed5bf107964e19900e303d1c12689132db2136ab615a0be60c2"
+  },
+  "mutation_retirement": {
+    "create_rc": 0,
+    "second_rc": 3,
+    "persisted": false,
+    "idem": "1",
+    "coherent": "1",
+    "create_err": "",
+    "second_err": "ERROR:  payment_condition_config_stale\nCONTEXT:  PL/pgSQL function public.b2b_payment_condition_retire(uuid,text,integer) line 11 at RAISE\n"
+  },
+  "race_retirement": {
+    "create_rc": 0,
+    "second_rc": 0,
+    "persisted": true,
+    "idem": "1",
+    "coherent": "1",
+    "create_err": "",
+    "second_err": ""
+  },
+  "after_retirement_replay": {
+    "rc": 3,
+    "error": "ERROR:  payment_condition_unavailable",
+    "expected": "payment_condition_unavailable",
+    "before": "{\"orders\" : 25, \"snap\" : 17, \"idem\" : 24}",
+    "after": "{\"orders\" : 25, \"snap\" : 17, \"idem\" : 24}",
+    "pre_hash": "624427d59b29d3f7cf9a6a83a6b63282bfdce8c78dac11942c5b05edd51ace16"
+  },
+  "immutability": {
+    "b2b_order_condition_snapshots": {
+      "rows": "17",
+      "error": [
+        "ERROR:  B2B_CONDITION_RECORD_IMMUTABLE"
+      ]
+    },
+    "b2b_order_condition_quote_snapshots": {
+      "rows": "4",
+      "error": [
+        "ERROR:  B2B_CONDITION_RECORD_IMMUTABLE"
+      ]
+    },
+    "b2b_condition_assignment_revocations": {
+      "rows": "2",
+      "error": [
+        "ERROR:  B2B_CONDITION_RECORD_IMMUTABLE"
+      ]
+    },
+    "b2b_condition_retirements": {
+      "rows": "5",
+      "error": [
+        "ERROR:  B2B_CONDITION_RECORD_IMMUTABLE"
+      ]
+    }
+  },
+  "writer_pins": {
+    "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": {
+      "harness": "fe82f5381d426136f2627803f3b0005d",
+      "live_reported": "fe82f5381d426136f2627803f3b0005d",
+      "equal": true
+    },
+    "public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)": {
+      "harness": "e86385fefb25c68d9dd4d0fef6619f27",
+      "live_reported": "e86385fefb25c68d9dd4d0fef6619f27",
+      "equal": true
+    }
   }
 }
