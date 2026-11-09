@@ -13,7 +13,12 @@ const actor = (uid: string, org: string, epoch = 0, authzReady = true) => ({
   user: { id: uid }, profile: { user_id: uid, organization_id: org, ativo: true },
   roles: ["comercial"], authzEpoch: epoch, authzReady, loading: false,
 });
-const use = () => renderHook(() => usePedidosB2BStatusFilter(OPTS, DEF));
+let observedSearch = "";
+const LocationProbe = () => { observedSearch = useLocation().search; return null; };
+const use = (initial = "/comercial/pedidos-b2b") => renderHook(
+  () => usePedidosB2BStatusFilter(OPTS, DEF),
+  { wrapper: ({ children }) => <MemoryRouter initialEntries={[initial]}><LocationProbe />{children}</MemoryRouter> },
+);
 
 describe("filtro de status /comercial/pedidos-b2b", () => {
   beforeEach(() => { clearAllPauseStates(); auth = actor("uA", "orgA"); });
