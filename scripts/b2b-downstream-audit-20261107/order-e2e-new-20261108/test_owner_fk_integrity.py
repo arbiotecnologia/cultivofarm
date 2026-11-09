@@ -126,7 +126,7 @@ def main():
               WHERE n.nspname='public' AND c.relname IN ('produtos','catalogo_volumes','product_packagings','product_sale_units')
               AND a.attnum>0 AND NOT a.attisdropped;"""))
             constraints = json.loads(B.last("""SELECT coalesce(jsonb_agg(jsonb_build_object(
-              'relation',c.relname,'name',x.conname,'definition',pg_get_constraintdef(x.oid,true),
+              'relation',c.relname,'name',x.conname,'definition',pg_get_constraintdef(x.oid),
               'validated',x.convalidated) ORDER BY c.relname,x.conname),'[]'::jsonb)
               FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
               WHERE n.nspname='public' AND c.relname IN ('produtos','catalogo_volumes','product_packagings','product_sale_units');"""))
@@ -167,6 +167,12 @@ def main():
             {"relation": "product_packagings", "column": "peso_liquido_kg", "before": weight_before["type"], "after": "numeric(12,3)"},
             {"relation": "product_sale_units", "column": "forma_fisica", "before": "regular column without expression", "after": "GENERATED ALWAYS AS captured expression STORED"},
         ]
+        measure_constraint = next(row for row in capture["constraints"]
+                                  if row["relation"] == "catalogo_volumes" and row["name"] == "catalogo_volumes_medida_shape")
+        assert not any(row["relation"] == "catalogo_volumes" and row["name"] == "catalogo_volumes_medida_shape"
+                       for row in before_reconcile["constraints"])
+        B.sql(f"ALTER TABLE ONLY public.catalogo_volumes ADD CONSTRAINT catalogo_volumes_medida_shape {measure_constraint['definition']};")
+        report["fixture_constraint_reconciliation"] = [measure_constraint]
         for table, name in TARGETS:
             assert B.last(f"""SELECT count(*) FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid
               JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public'
@@ -192,7 +198,7 @@ def main():
                                      for field in ("definition", "validated")):
                 constraint_drift.append({"key": key, "actual": actual, "expected": expected})
         assert not constraint_drift and not target_keys.intersection(actual_constraints), constraint_drift
-        ok("ambiente descartável reconciliado com numeric(12,3), 57 colunas, 24 constraints e duas FKs ausentes")
+        ok("ambiente descartável reconciliado com numeric(12,3), coluna gerada, constraint de medida, 57 colunas, 24 constraints e duas FKs ausentes")
         expect_error("PRE30 reprova a ausência real sem afrouxar o guard", OVERLAY / PRE30,
                      "FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_packagings.product_packagings_owner_organization_id_fkey")
         report["pre30_constraint_failure_reproduced"] = True
@@ -357,6 +363,7 @@ END$$;"""
                 "Auth/claims e papéis SQL somente no PostgreSQL descartável",
                 "product_packagings.peso_liquido_kg ajustado de numeric para numeric(12,3) somente no descartável",
                 "product_sale_units.forma_fisica é recriada como coluna gerada STORED com a expressão capturada somente no descartável; produtos.oculto permanece fora do escopo do PRE",
+                "catalogo_volumes_medida_shape adicionada com a definição capturada somente no descartável; leitura de constraints usa pg_get_constraintdef(oid), como o PRE",
                 "duas FKs removidas somente no descartável para reproduzir a captura real",
                 "órfãos temporários com session_replication_role=replica somente na fixture e restaurados",
                 "sonda de enforcement usa DISABLE TRIGGER USER dentro de transação abortada no descartável; gatilhos internos da FK permanecem ativos e writers finais usam triggers habilitados",
