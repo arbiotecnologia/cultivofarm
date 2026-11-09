@@ -145,8 +145,8 @@ def run(psql0, check, md5_of, call_sql, res, out_dir, ids):
         check(f"CCR2 LIVE7 b2b_actor_scope negado ({name}): user_partner não resolve", j is not None and j.get("user_partner") is None, j or e)
 
     def authz(uid, partner, prefix=""):
-        r = psql(f"BEGIN;{prefix}SELECT set_config('request.jwt.claims', json_build_object('sub','{uid}','role','authenticated')::text, true) \\g /dev/null\nSELECT platform_private.c2_partner_order_attempt_authz('{uid}','{partner}')::text;ROLLBACK;")
-        return r.returncode, (r.stderr or "").strip()[-300:]
+        r = psql(f"BEGIN;{prefix}SELECT set_config('request.jwt.claims', json_build_object('sub','{uid}','role','authenticated')::text, true), set_config('request.jwt.claim.sub','{uid}',true) \\g /dev/null\nSELECT public.get_user_partner_id()::text AS gup;\nSELECT platform_private.c2_partner_order_attempt_authz('{uid}','{partner}')::text;ROLLBACK;")
+        return r.returncode, ((r.stderr or "").strip()[:300] + " | stdout:" + r.stdout.strip()[-120:])
     rc, e = authz(UB, P); res["live_exact7_behaviour"]["attempt_authz_own"] = [rc, e]
     check("CCR2 LIVE7 attempt_authz: comprador no próprio parceiro autorizado", rc == 0 and "ERROR" not in e, e)
     rc, e = authz(UB, PF); res["live_exact7_behaviour"]["attempt_authz_cross_tenant"] = [rc, e]
@@ -156,7 +156,7 @@ def run(psql0, check, md5_of, call_sql, res, out_dir, ids):
     r = psql("SELECT count(*) FILTER (WHERE platform_private.b2b_resale_delivery_status_transition_valid_v1(o, (jsonb_populate_record(o, jsonb_build_object('status','entregue'))))) FROM public.partner_orders o")
     check("CCR2 LIVE7 transição de entrega de revenda falsa com gate OFF para todos os pedidos", r.returncode == 0 and r.stdout.strip() == "0", (r.stdout, r.stderr[-200:]))
     r = psql("BEGIN; UPDATE public.partner_orders SET status='em_producao' WHERE id=(SELECT id FROM public.partner_orders WHERE platform_private.c2_external_origin_contract_valid(c2_external_origin_snapshot) IS TRUE AND status::text NOT IN ('cancelado','reprovado') LIMIT 1); ROLLBACK;")
-    res["live_exact7_behaviour"]["guard_operational_update"] = (r.stderr or "").strip()[-300:]
+    res["live_exact7_behaviour"]["guard_operational_update"] = (r.stderr or "").strip()[:600]
     res["live_exact7_behaviour"]["guard_operational_target_found"] = psql("SELECT count(*) FROM public.partner_orders WHERE platform_private.c2_external_origin_contract_valid(c2_external_origin_snapshot) IS TRUE AND status::text NOT IN ('cancelado','reprovado')").stdout.strip()
     check("CCR2 LIVE7 guarda LIVE bloqueia avanço operacional com gate OFF", "B2B_INTERNAL_DOWNSTREAM_UNVERIFIED" in r.stderr or "B2B_INTERNAL_UNSEALED_OPERATION" in r.stderr, r.stderr[-300:])
     return True

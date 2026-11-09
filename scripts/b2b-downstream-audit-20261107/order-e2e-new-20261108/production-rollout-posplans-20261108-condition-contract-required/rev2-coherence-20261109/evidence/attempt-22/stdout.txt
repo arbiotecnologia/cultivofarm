@@ -1,0 +1,8 @@
+317/320
+FAIL CCR2 LIVE7 attempt_authz: vínculo revogado negado  | stdout:00000000-0000-0000-0000-000000000011
+FAIL CCR2 LIVE7 guarda LIVE bloqueia avanço operacional com gate OFF tion platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 4 at RAISE
+SQL statement "SELECT platform_private.c2_external_origin_assert(OLD.c2_external_origin_snapshot,OLD.partner_id,OLD.cliente_id)"
+PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 29 at PERFORM
+
+FAIL CCR2 resposta do vendedor REAL: snapshot econômico coerente aceito pelo guard ERROR:  b2b_phase1_scope_denied
+CONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 29 at RAISE
