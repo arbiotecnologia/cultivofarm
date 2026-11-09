@@ -32,34 +32,31 @@ export function usePedidosB2BStatusFilter(allowed: readonly string[], fallback: 
   };
   const [state, setState] = useState<FilterState>(() => {
     const params = new URLSearchParams(location.search);
-    if (!params.has("status")) return { key, value: read(key), consume: false };
+    if (!params.has("status")) return { key, value: read(key) };
     const requested = params.get("status");
-    return {
-      key,
-      value: requested !== null && allowed.includes(requested) ? requested : fallback,
-      consume: true,
-    };
+    return { key, value: requested !== null && allowed.includes(requested) ? requested : fallback };
   });
-  // Troca de identidade/empresa/papéis com a página montada: sem herança e
-  // sem reinterpretar uma intenção de navegação capturada para o ator anterior.
-  const current = state.key === key ? state : { key, value: read(key), consume: false };
+  // Troca de identidade/empresa/papéis com a página montada: sem herança.
+  const current = state.key === key ? state : { key, value: read(key) };
   if (current !== state) setState(current);
 
+  // A intenção é derivada da localização ATUAL, não apenas da montagem. Assim,
+  // um Link para a mesma rota também aplica a query uma única vez e a remove.
   useEffect(() => {
-    if (!current.consume || current.key !== key) return;
     const params = new URLSearchParams(location.search);
-    if (key) writePauseState(key, current.value);
+    if (!params.has("status")) return;
+    const requested = params.get("status");
+    const value = requested !== null && allowed.includes(requested) ? requested : fallback;
+    setState({ key, value });
+    if (key) writePauseState(key, value);
     params.delete("status");
-    setState({ key, value: current.value, consume: false });
-    if (params.has("status") || location.search.includes("status=")) {
-      const search = params.toString();
-      navigate({ pathname: location.pathname, search: search ? `?${search}` : "", hash: location.hash }, { replace: true });
-    }
-  }, [current.consume, current.key, current.value, key, location.hash, location.pathname, location.search, navigate]);
+    const search = params.toString();
+    navigate({ pathname: location.pathname, search: search ? `?${search}` : "", hash: location.hash }, { replace: true });
+  }, [allowed, fallback, key, location.hash, location.pathname, location.search, navigate]);
 
   const setValue = useCallback((next: string) => {
     const v = allowed.includes(next) ? next : fallback;
-    setState({ key, value: v, consume: false });
+    setState({ key, value: v });
     if (key) writePauseState(key, v);
   }, [key, allowed, fallback]);
   return [current.value, setValue] as const;
