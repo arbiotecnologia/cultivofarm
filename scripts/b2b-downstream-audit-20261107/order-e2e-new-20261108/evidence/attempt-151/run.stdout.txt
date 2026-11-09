@@ -1,0 +1,135 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=1.9s
+CHECKPOINT sql_calls=100 elapsed=3.7s
+CHECKPOINT sql_calls=200 elapsed=6.0s
+CHECKPOINT sql_calls=300 elapsed=8.7s
+CHECKPOINT sql_calls=400 elapsed=11.5s
+CHECKPOINT sql_calls=500 elapsed=14.3s
+CHECKPOINT sql_calls=600 elapsed=17.0s
+CHECKPOINT sql_calls=700 elapsed=19.8s
+CHECKPOINT sql_calls=800 elapsed=23.0s
+CHECKPOINT sql_calls=900 elapsed=26.0s
+CHECKPOINT sql_calls=1000 elapsed=29.0s
+CHECKPOINT sql_calls=1100 elapsed=31.9s
+CHECKPOINT sql_calls=1200 elapsed=34.6s
+CHECKPOINT sql_calls=1300 elapsed=37.3s
+CHECKPOINT sql_calls=1400 elapsed=40.3s
+CHECKPOINT sql_calls=1500 elapsed=43.3s
+CHECKPOINT sql_calls=1600 elapsed=46.1s
+CHECKPOINT sql_calls=1700 elapsed=49.1s
+CHECKPOINT sql_calls=1800 elapsed=52.1s
+CHECKPOINT sql_calls=1900 elapsed=54.8s
+CHECKPOINT sql_calls=2000 elapsed=57.7s
+CHECKPOINT sql_calls=2100 elapsed=60.3s
+CHECKPOINT sql_calls=2200 elapsed=62.8s
+CHECKPOINT sql_calls=2300 elapsed=65.2s
+CHECKPOINT sql_calls=2400 elapsed=67.6s
+CHECKPOINT sql_calls=2500 elapsed=70.3s
+CHECKPOINT sql_calls=2600 elapsed=72.9s
+CHECKPOINT sql_calls=2700 elapsed=75.5s
+CHECKPOINT sql_calls=2800 elapsed=78.1s
+CHECKPOINT sql_calls=2900 elapsed=80.7s
+CHECKPOINT sql_calls=3000 elapsed=83.2s
+CHECKPOINT sql_calls=3100 elapsed=85.7s
+CHECKPOINT sql_calls=3200 elapsed=88.1s
+CHECKPOINT sql_calls=3300 elapsed=90.8s
+CHECKPOINT sql_calls=3400 elapsed=93.3s
+CHECKPOINT sql_calls=3500 elapsed=95.8s
+CHECKPOINT sql_calls=3600 elapsed=98.4s
+CHECKPOINT sql_calls=3700 elapsed=101.1s
+CHECKPOINT sql_calls=3800 elapsed=103.8s
+CHECKPOINT sql_calls=3900 elapsed=106.8s
+CHECKPOINT sql_calls=4000 elapsed=109.5s
+CHECKPOINT sql_calls=4100 elapsed=112.3s
+CHECKPOINT sql_calls=4200 elapsed=115.0s
+CHECKPOINT sql_calls=4300 elapsed=117.6s
+CHECKPOINT sql_calls=4400 elapsed=120.1s
+CHECKPOINT sql_calls=4500 elapsed=122.8s
+CHECKPOINT sql_calls=4600 elapsed=125.5s
+CHECKPOINT sql_calls=4700 elapsed=128.1s
+CHECKPOINT sql_calls=4800 elapsed=131.0s
+CHECKPOINT sql_calls=4900 elapsed=133.8s
+CHECKPOINT sql_calls=5000 elapsed=136.6s
+CHECKPOINT sql_calls=5100 elapsed=139.3s
+CHECKPOINT sql_calls=5200 elapsed=142.3s
+CHECKPOINT sql_calls=5300 elapsed=145.1s
+CHECKPOINT sql_calls=5400 elapsed=147.6s
+CHECKPOINT sql_calls=5500 elapsed=150.2s
+CHECKPOINT sql_calls=5600 elapsed=153.1s
+CHECKPOINT sql_calls=5700 elapsed=156.0s
+CHECKPOINT sql_calls=5800 elapsed=158.8s
+CHECKPOINT sql_calls=5900 elapsed=161.4s
+CHECKPOINT sql_calls=6000 elapsed=164.2s
+CHECKPOINT sql_calls=6100 elapsed=167.1s
+CHECKPOINT sql_calls=6200 elapsed=169.7s
+CHECKPOINT sql_calls=6300 elapsed=172.2s
+CHECKPOINT sql_calls=6400 elapsed=174.8s
+CHECKPOINT sql_calls=6500 elapsed=177.5s
+CHECKPOINT sql_calls=6600 elapsed=180.3s
+CHECKPOINT sql_calls=6700 elapsed=183.4s
+CHECKPOINT sql_calls=6800 elapsed=186.5s
+CHECKPOINT sql_calls=6900 elapsed=189.6s
+CHECKPOINT sql_calls=7000 elapsed=192.6s
+CHECKPOINT sql_calls=7100 elapsed=195.2s
+CHECKPOINT sql_calls=7200 elapsed=198.0s
+CHECKPOINT sql_calls=7300 elapsed=200.8s
+CHECKPOINT sql_calls=7400 elapsed=203.8s
+CHECKPOINT sql_calls=7500 elapsed=206.3s
+CHECKPOINT sql_calls=7600 elapsed=209.1s
+CHECKPOINT sql_calls=7700 elapsed=211.8s
+CHECKPOINT sql_calls=7800 elapsed=214.0s
+CHECKPOINT sql_calls=7900 elapsed=216.1s
+CHECKPOINT sql_calls=8000 elapsed=218.4s
+CHECKPOINT sql_calls=8100 elapsed=221.1s
+CHECKPOINT sql_calls=8200 elapsed=224.2s
+CHECKPOINT sql_calls=8300 elapsed=226.9s
+CHECKPOINT sql_calls=8400 elapsed=229.4s
+CHECKPOINT sql_calls=8500 elapsed=232.1s
+CHECKPOINT sql_calls=8600 elapsed=235.0s
+CHECKPOINT sql_calls=8700 elapsed=237.7s
+CHECKPOINT sql_calls=8800 elapsed=240.5s
+CHECKPOINT sql_calls=8900 elapsed=243.2s
+CHECKPOINT sql_calls=9000 elapsed=245.9s
+CHECKPOINT sql_calls=9100 elapsed=248.6s
+CHECKPOINT sql_calls=9200 elapsed=250.9s
+CHECKPOINT sql_calls=9300 elapsed=253.6s
+CHECKPOINT sql_calls=9400 elapsed=256.3s
+CHECKPOINT sql_calls=9500 elapsed=259.1s
+CHECKPOINT sql_calls=9600 elapsed=261.6s
+CHECKPOINT sql_calls=9700 elapsed=264.3s
+CHECKPOINT sql_calls=9800 elapsed=267.1s
+CHECKPOINT sql_calls=9900 elapsed=269.8s
+CHECKPOINT sql_calls=10000 elapsed=272.3s
+CHECKPOINT sql_calls=10100 elapsed=274.8s
+CHECKPOINT sql_calls=10200 elapsed=277.1s
+CHECKPOINT sql_calls=10300 elapsed=279.1s
+CHECKPOINT sql_calls=10400 elapsed=281.6s
+CHECKPOINT sql_calls=10500 elapsed=283.9s
+CHECKPOINT sql_calls=10600 elapsed=286.0s
+PASS reported applied composition including isolated install closure release restored without regeneration
+PASS all ten real downstream tables have EXISTING nonempty sentinels before envase
+PASS existing full-row downstream sentinels seeded in disposable fixture only
+NEW_PHYSICAL_BOOT_OK
+PASS baseline LIVE integral: 20 corpos, 120 triggers, 17 ACLs e 4 dependências medidas
+CHECKPOINT sql_calls=10700 elapsed=293.0s
+{"candidate_sha256": "93aa96092d2e7210bfc8ae7e6741db41bd439c1ac737fc8301248ce1ff9dabbf", "functions": 11, "enabled_by_default": false}
+{"candidate_sha256": "93aa96092d2e7210bfc8ae7e6741db41bd439c1ac737fc8301248ce1ff9dabbf", "functions": 11, "enabled_by_default": false}
+PASS quimico kg: compra/entrada canônica cria lote e 3 UN sem bioreator, CQ ou envase
+PASS B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)
+PASS B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)
+PASS B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)
+PASS B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)
+PASS B3 corpo atual pinado: platform_private.h15_actor_organization()
+PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+PASS B3 01-pre.sql.readonly
+PASS B3 02-install.sql.review
+PASS B3 03-post.sql.readonly
+CHECKPOINT sql_calls=10800 elapsed=303.1s
+CHECKPOINT sql_calls=10900 elapsed=307.2s
+CHECKPOINT sql_calls=11000 elapsed=311.2s
+CHECKPOINT sql_calls=11100 elapsed=314.8s
+CHECKPOINT sql_calls=11200 elapsed=317.8s
+CHECKPOINT sql_calls=11300 elapsed=320.5s
+CHECKPOINT sql_calls=11400 elapsed=323.7s
+CHECKPOINT sql_calls=11500 elapsed=326.0s
+CHECKPOINT sql_calls=11600 elapsed=327.9s
