@@ -54,7 +54,7 @@ def main():
     addition = anchor + '''        invoice_second, tx_second = B3.u(460), B3.u(461)
         seed_invoice(invoice_second, with_item=True)
         seed_proof(invoice_second, tx_second, protocol="LOCAL-SECOND-PARTIAL")
-        second, second_error = service_json(f"public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_second}','{access_key}','LOCAL-SECOND-PARTIAL',now(),'100','LOCAL','{tx_second}');")
+        second, second_error = service_json(f"public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_second}','{access_key}','LOCAL-SECOND-PARTIAL',now(),'100','LOCAL','{tx_second}')")
         check("segunda NF parcial confirmada tem título próprio", second and second.get("receivableId") and second["receivableId"] != service_title, second_error or second)
         totals = B3.psql(f"SELECT (SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{recovery_order}' AND b2b_document_id IS NOT NULL)||'|'||(SELECT sum(total_amount) FROM public.accounts_receivable WHERE origin_id='{recovery_order}' AND b2b_document_id IS NOT NULL)||'|'||(SELECT financed_total FROM platform_private.b4_order_condition_snapshots WHERE order_id='{recovery_order}')").stdout.strip()
         count_text, allocated_text, economic_text = totals.split("|")
