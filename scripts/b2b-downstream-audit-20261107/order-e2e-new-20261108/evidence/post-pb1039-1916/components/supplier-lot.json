@@ -1,0 +1,18 @@
+{
+  "status": "FAIL",
+  "exit_code": 1,
+  "checks": [
+    {
+      "name": "regressão lote fornecedor",
+      "status": "FAIL",
+      "detail": "Traceback (most recent call last):\n  File \"/tmp/post-pb1039-components-BvBXHT/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_supplier_lot.py\", line 19, in main\n    B.restore_checkpoint()\n    ~~~~~~~~~~~~~~~~~~~~^^\n  File \"/tmp/post-pb1039-components-BvBXHT/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 83, in restore_checkpoint\n    assert cached.is_file() and cached.is_relative_to(Path(\"/tmp\"))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+    }
+  ],
+  "raw": [],
+  "hosted": false,
+  "synthetic_seams": [
+    "Auth/claims e fixtures ARBio/FSF locais, não identidades reais",
+    "catálogo/apresentação upstream com replica; compra executa todos os triggers habilitados",
+    "PostgreSQL descartável, não JWT/RLS/Storage hosted nem E2E de pedido B2B"
+  ]
+}

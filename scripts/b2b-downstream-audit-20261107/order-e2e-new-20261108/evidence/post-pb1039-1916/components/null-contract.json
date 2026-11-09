@@ -1,0 +1,22 @@
+{
+  "kind": "DISPOSABLE_FINISHED_PRODUCT_NULL_CONTRACT_NOT_HOSTED",
+  "status": "FAIL",
+  "exit_code": 1,
+  "passed": 0,
+  "total": 1,
+  "checks": [
+    {
+      "name": "execução da matriz de nulidade terminou no ponto concreto",
+      "status": "FAIL",
+      "detail": "Traceback (most recent call last):\n  File \"/tmp/post-pb1039-components-BvBXHT/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_null_contract.py\", line 22, in main\n    B.restore_checkpoint()\n    ~~~~~~~~~~~~~~~~~~~~^^\n  File \"/tmp/post-pb1039-components-BvBXHT/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 83, in restore_checkpoint\n    assert cached.is_file() and cached.is_relative_to(Path(\"/tmp\"))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+    }
+  ],
+  "probes": [],
+  "hosted": false,
+  "synthetic_seams": [
+    "Auth/claims e catálogo fictícios somente no PostgreSQL descartável",
+    "sondas de CHECK usam session_replication_role=replica apenas para isolar a constraint; nenhum writer positivo é certificado por essa costura",
+    "helpers recebem linhas compostas sintéticas sem alterar dados canônicos",
+    "nenhum JWT/RLS/Storage/PostgREST/browser ou efeito fiscal/financeiro/comunicação"
+  ]
+}
