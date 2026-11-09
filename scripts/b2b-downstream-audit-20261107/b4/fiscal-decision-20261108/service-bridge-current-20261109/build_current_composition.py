@@ -18,6 +18,12 @@ def edit(s, old, new, count=1):
 def main():
     s = SOURCE.read_text()
     s = edit(s, "checks=[]\n", "checks=[]\nSTRICT_FISCAL=True\n")
+    s = edit(s, "  Q=commercial.apply(B,load,ROOT,OUT)",
+                """  Q=commercial.apply(B,load,ROOT,OUT)
+  customer_id=Q.u(301)
+  B.sql(f"SET session_replication_role=replica;INSERT INTO public.clientes(id,organization_id,nome) VALUES('{customer_id}','{Q.A}','CLIENTE FISCAL SINTETICO LOCAL') ON CONFLICT(id) DO NOTHING;UPDATE public.partner_accounts SET client_id='{customer_id}' WHERE id='{Q.P}' AND commercial_owner_organization_id='{Q.A}';SET session_replication_role=origin;")
+  assert B.last(f"SELECT client_id FROM public.partner_accounts WHERE id='{Q.P}' AND commercial_owner_organization_id='{Q.A}';")==customer_id
+  (OUT/'financial-customer-fixture.json').write_text(json.dumps(dict(customer_id=customer_id,partner_id=Q.P,organization_id=Q.A,synthetic=True,hosted=False,reason='B4 requires partner_accounts.client_id; same fixture seam as strict battery'),indent=2)+'\\n')""")
     s = edit(s, "  checks.append(dict(test='plan tenant candidate PRE POST in same DB; seller positive FSF read write negative and cross tenant same code',status='PASS'))",
                 """  checks.append(dict(test='plan tenant candidate PRE POST in same DB; seller positive FSF read write negative and cross tenant same code',status='PASS'))
   strict_dir=ROOT/'scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109'
