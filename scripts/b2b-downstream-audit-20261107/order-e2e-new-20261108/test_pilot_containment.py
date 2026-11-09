@@ -181,7 +181,7 @@ def run(B, Review, Q, A, choice, out):
         assert time.monotonic() < deadline, "expiry did not arrive while writer was locked"
         time.sleep(0.05)
     B.T.finish(holder, "COMMIT;")
-    out, err = B.T.finish(worker)
+    worker_out, worker_err = B.T.finish(worker)
     assert out.strip().splitlines()[0] == "t" and "RESALE_PILOT_SCOPE_DENIED" in err, (out, err)
     assert os_effects(expiring["id"]) == expiring_before
     ok("transaction begun before expiry and unlocked after expiry is denied at final authorization")
@@ -199,7 +199,7 @@ def run(B, Review, Q, A, choice, out):
     B.sql(f"UPDATE platform_private.resale_pilot_allowlist_v1 SET revoked_at=clock_timestamp(),revoked_by=actor_id,revoke_reason='confirmed before final authorization' WHERE id='{revoked_grant}';")
     assert B.last(f"SELECT revoked_at IS NOT NULL FROM platform_private.resale_pilot_allowlist_v1 WHERE id='{revoked_grant}';") == "t"
     B.T.finish(holder, "COMMIT;")
-    out, err = B.T.finish(worker)
+    worker_out, worker_err = B.T.finish(worker)
     assert "RESALE_PILOT_SCOPE_DENIED" in err, (out, err)
     assert os_effects(revoked["id"]) == revoked_before
     ok("concurrent revoke confirmed before final authorization denies writer without effects")
