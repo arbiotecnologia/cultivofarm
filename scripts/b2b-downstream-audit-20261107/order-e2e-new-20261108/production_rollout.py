@@ -270,6 +270,12 @@ def main():
         'pilot_candidate_sha256': pilot_manifest['candidate_sha256'],
         'frontend': frontend,
         'full_reverse_rollback': rollback,
+        'final_artifact_execution': {
+            'status': 'NOT_RUN_PENDING_TEMPORARY_STAGING' if pending_final else 'PASS',
+            'artifacts': 0 if pending_final else final_execution['artifact_count'],
+            'evidence_sha256': None if pending_final else sha(final_execution_path),
+            'postgresql_version': None if pending_final else final_execution['postgresql_version'],
+        },
         'b4_fiscal_scope': b4_scope,
         'positive_fiscal_receivable': 'NOT_RUN_OUT_OF_SCOPE',
     }
