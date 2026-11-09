@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-gejn1w47/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 417, in main
+    pilot_out=Pilot.install(B,OUT)
+  File "/tmp/new-order-e2e-gejn1w47/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/pilot_containment.py", line 348, in install
+    defs = build_bodies(raw)
+  File "/tmp/new-order-e2e-gejn1w47/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/pilot_containment.py", line 297, in build_bodies
+    body = one(body, scope, check.replace("resale_pilot_allowed_v1", "resale_pilot_scope_v1"), "group early scope before locks")
+  File "/tmp/new-order-e2e-gejn1w47/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/pilot_containment.py", line 40, in one
+    assert body.count(old) == count, f"PILOT_ANCHOR_DRIFT:{label}:{body.count(old)}!={count}"
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PILOT_ANCHOR_DRIFT:group early scope before locks:2!=1
