@@ -14,6 +14,8 @@ def replace(text, old, new, count=1):
 
 def main():
     s = SOURCE.read_text()
+    s = replace(s, 'H = pathlib.Path(__file__).resolve().parent\nROOT = H.parents[2]',
+                'H = pathlib.Path(__file__).resolve().parent.parents[1]\nROOT = H.parents[2]')
     s = replace(s, 'OUT = pathlib.Path(os.environ.get("B4_EVIDENCE_OUT", str(H / "review-458b6012/manual-null-1813")))',
                 'OUT = pathlib.Path(os.environ.get("B4_EVIDENCE_OUT", str(H / "fiscal-decision-20261108/service-bridge-current-20261109/evidence/strict-01")))')
     start = "        # Costura SOMENTE do harness: adaptador fictício sem rede, após provar a negação real.\n"
