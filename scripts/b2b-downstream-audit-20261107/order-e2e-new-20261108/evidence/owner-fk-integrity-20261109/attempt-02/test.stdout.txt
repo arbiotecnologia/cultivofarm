@@ -104,3 +104,21 @@ CHECKPOINT sql_calls=10100 elapsed=250.8s
 CHECKPOINT sql_calls=10200 elapsed=253.0s
 CHECKPOINT sql_calls=10300 elapsed=255.4s
 CHECKPOINT sql_calls=10400 elapsed=257.3s
+CHECKPOINT sql_calls=10500 elapsed=259.3s
+CHECKPOINT sql_calls=10600 elapsed=261.8s
+PASS reported applied composition including isolated install closure release restored without regeneration
+PASS all ten real downstream tables have EXISTING nonempty sentinels before envase
+PASS existing full-row downstream sentinels seeded in disposable fixture only
+PASS baseline LIVE integral: 20 corpos, 120 triggers, 17 ACLs e 4 dependências medidas
+PASS B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)
+PASS B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)
+PASS B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)
+PASS B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)
+PASS B3 corpo atual pinado: platform_private.h15_actor_organization()
+PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+PASS B3 01-pre.sql.readonly
+PASS B3 02-install.sql.review
+PASS B3 03-post.sql.readonly
+CHECKPOINT sql_calls=10700 elapsed=274.2s
+CHECKPOINT sql_calls=10800 elapsed=277.7s
+CHECKPOINT sql_calls=10900 elapsed=281.5s
