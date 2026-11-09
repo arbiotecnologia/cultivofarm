@@ -262,6 +262,11 @@ def main():
         assert reported["sha256"] == sha(AUDITOR_REPORT)
         assert reported["owner_fk_counts"] == auditor_report["owner_fk_counts"]
         assert reported["acl_normalization_regressions"] == acl_report
+        assert evidence["acl_local_additional_cases"] == ["duplicate", "empty", "null"]
+        assert evidence["acl_local_coverage"]["categories"] == 9
+        assert set(evidence["disposable_counts_before"]) == {table for table, _name in TARGETS}
+        for counts in evidence["disposable_counts_before"].values():
+            assert counts["owner_null"] == counts["orphan_owner"] == counts["owner_product_mismatch"] == 0
         assert evidence["agent_hosted_orphan_measurement"].startswith("NOT_RUN")
         executed = {row["file"]: row for row in evidence["final_artifacts"]}
         assert set(executed) == {PRE_NAME, INSTALL_NAME, POST_NAME, PRE30_NAME, INSTALL31_NAME}

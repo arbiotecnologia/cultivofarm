@@ -194,7 +194,21 @@ def main():
                      "FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_packagings.product_packagings_owner_organization_id_fkey")
         report["pre30_constraint_failure_reproduced"] = True
         execute(PACKAGE / PRE, final_artifacts)
-        ok("PRE25 final aceita estrutura reconciliada e zero órfãos")
+        disposable_counts = {}
+        for table, _name in TARGETS:
+            counts = json.loads(B.last(f"""SELECT jsonb_build_object(
+              'total',(SELECT count(*) FROM public.{table}),
+              'owner_null',(SELECT count(*) FROM public.{table} WHERE owner_organization_id IS NULL),
+              'orphan_owner',(SELECT count(*) FROM public.{table} child
+                LEFT JOIN public.organizations parent ON parent.id=child.owner_organization_id
+                WHERE child.owner_organization_id IS NOT NULL AND parent.id IS NULL),
+              'owner_product_mismatch',(SELECT count(*) FROM public.{table} child
+                JOIN public.produtos product ON product.id=child.product_id
+                WHERE product.owner_organization_id IS DISTINCT FROM child.owner_organization_id));"""))
+            assert counts["owner_null"] == counts["orphan_owner"] == counts["owner_product_mismatch"] == 0, counts
+            disposable_counts[table] = counts
+        report["disposable_counts_before"] = disposable_counts
+        ok("PRE25 final aceita estrutura reconciliada e mede os quatro contadores com zero divergências")
 
         orphan_scenarios = []
         for table, name in TARGETS:
@@ -251,6 +265,35 @@ def main():
           GRANT ALL ON public.estoque_movimentacoes TO service_role;
           GRANT SELECT ON public.estoque_movimentacoes TO authenticated;""")
         execute(OVERLAY / PRE30, final_artifacts)
+
+        # Complementa as cinco negações da suíte ACL: duplicata, vazio e NULL.
+        # A expressão é exatamente a mesma usada pelos dez guards gerados.
+        acl_generator = load("owner_fk_acl_generator", physical / "assemble.py")
+        overlay_origin = json.loads((OVERLAY / "origin.json").read_text())
+        expected_acl = next(row["expected_acl"] for row in overlay_origin["relations"]
+                            if row["relation"] == "public.estoque_movimentacoes")
+        expected_expression = f"{acl_generator.lit(expected_acl)}::aclitem[]"
+        acl_entries = expected_acl.strip("{}").split(",")
+        acl_cases = {
+            "duplicate": "ARRAY[" + ",".join(acl_generator.lit(item) + "::aclitem" for item in acl_entries + [acl_entries[0]]) + "]::aclitem[]",
+            "empty": "'{}'::aclitem[]",
+            "null": "NULL::aclitem[]",
+        }
+        for case, actual_expression in acl_cases.items():
+            statement = f"""DO $$DECLARE actual jsonb;expected jsonb;BEGIN
+ SELECT {acl_generator.acl_items_sql(actual_expression)},{acl_generator.acl_items_sql(expected_expression)} INTO actual,expected;
+ IF actual IS NOT DISTINCT FROM expected THEN RAISE EXCEPTION 'ACL_CASE_WAS_ACCEPTED {case}';END IF;
+ RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT public.estoque_movimentacoes';
+END$$;"""
+            expect_error(f"ACL {case} rejeitada pela normalização exata", statement,
+                         "FINISHED_PRE_RELATION_DRIFT public.estoque_movimentacoes")
+        report["acl_local_additional_cases"] = sorted(acl_cases)
+        report["acl_local_coverage"] = {
+            "previous_overlay_suite": "12/12: ordem + privilégio/grant option/role ausente/role extra/grantor",
+            "this_suite": "3/3: duplicata/vazio/NULL",
+            "categories": 9,
+        }
+
         execute(OVERLAY / INSTALL31, final_artifacts)
         execute(FROZEN / "32-physical-post.sql.readonly", supporting_artifacts)
         execute(FROZEN / "93-physical-rollback-deny.sql.review", supporting_artifacts)
