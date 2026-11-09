@@ -8,7 +8,7 @@ Relato do auditor: produção recebeu somente `11` de confirmação fechada e `2
 
 ## Artefatos e ordem
 
-1. `25-owner-fk-pre.sql.readonly`: transação READ ONLY/ROLLBACK; mede linhas e órfãos, confere 57 colunas, 24 constraints existentes, owner/ACL das cinco relações e ausência das duas FKs de destino. Qualquer órfão aborta com `OWNER_FK_ORPHANS_PRESENT` e SQLSTATE `23503`.
+1. `25-owner-fk-pre.sql.readonly`: transação READ ONLY/ROLLBACK; mede linhas e órfãos, confere 57 colunas, 24 constraints existentes, owner/ACL das quatro relações de catálogo e ausência das duas FKs de destino. Qualquer órfão aborta com `OWNER_FK_ORPHANS_PRESENT` e SQLSTATE `23503`.
 2. `26-owner-fk-install.sql.review`: transação única, `lock_timeout` e `statement_timeout`; bloqueia `organizations`, `product_packagings` e `product_sale_units` em ordem fixa, repete todas as checagens depois das esperas e adiciona somente as duas FKs validadas. Não limpa nem reatribui dados.
 3. `27-owner-fk-post.sql.readonly`: exige as duas definições exatas, `convalidated=true`, zero órfãos e mesma estrutura/ACL.
 4. Somente após POST27, o auditor pode repetir o PRE30 do overlay ACL e avaliar INSTALL31. Este pacote não instala nem ativa `31`.
