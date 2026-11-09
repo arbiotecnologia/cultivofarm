@@ -195,9 +195,9 @@ def build_bodies(raw):
     body = defs[sig]["body"]
     body = one(body,
         "SELECT (EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)",
-        "SELECT (EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)\n  AND (e.status::text='separado' OR platform_private.resale_pilot_delivery_allowed_v1('b2b_resale',NULL,auth.uid(),e.organization_id,e.id) IS TRUE)",
+        "SELECT (EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)\n  AND (e.status::text='separado' OR platform_private.resale_pilot_delivery_scope_v1('b2b_resale',NULL,auth.uid(),e.organization_id,e.id) IS TRUE)",
         "delivery order scoped")
-    defs[sig]["new"] = body
+    defs[sig]["new"] = one(body, " STABLE SECURITY DEFINER", " VOLATILE SECURITY DEFINER", "delivery order volatility")
 
     sig = "platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)"
     body = defs[sig]["body"]
