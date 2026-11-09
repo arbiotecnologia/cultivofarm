@@ -7,6 +7,7 @@ Declared seams of that harness stay (auth.uid by GUC, minimal roles/entitlements
 import json, os, pathlib, re, subprocess
 
 PKG = pathlib.Path(__file__).resolve().parent
+import sys as _sys; _sys.path.insert(0, str(PKG)); import live_bodies
 
 
 def run(ns):
@@ -16,6 +17,8 @@ def run(ns):
     SP = ns["SP"]; P, PN, PF, PO, A, F = ns["P"], ns["PN"], ns["PF"], ns["PO"], ns["A"], ns["F"]
     UB, UN, UB2, UADM, UADMF = ns["UB"], ns["UN"], ns["UB2"], ns["UADM"], ns["UADMF"]
     P3, PLD, PLQ, S, L = ns["P3"], ns["PLD"], ns["PLQ"], ns["S"], ns["L"]
+    LIVE_MODE = os.environ.get("CCR2_LIVE_BODIES") == "1"
+    PLDF, PLQF = (ns["PLDF"], ns["PLQF"]) if LIVE_MODE else (PLD, PLQ)  # tenant-exclusive F plans only in the LIVE mirror
     work = pathlib.Path(SP.SOCK[0])
     res = {}
 
@@ -55,6 +58,73 @@ def run(ns):
     def fails(name, r, token):
         check(name, r.returncode != 0 and token in (r.stderr or ""), (r.stderr or r.stdout)[-300:])
 
+
+    def counts3():
+        return psql("SELECT json_build_object('o',(SELECT count(*) FROM public.partner_orders),'s',(SELECT count(*) FROM platform_private.b2b_order_condition_snapshots),"
+                    "'i',(SELECT count(*) FROM public.partner_order_idempotency),'v',(SELECT count(*) FROM platform_private.b2b_condition_versions),"
+                    "'a',(SELECT count(*) FROM public.commercial_payment_plan_assignments),'p',(SELECT count(*) FROM public.commercial_payment_plans))::text").stdout.strip()
+
+    def live_tenant_checks():
+        # Tenant-exclusive fixture under the CURRENT rule: every plan family resolves to exactly one tenant, none is shared.
+        fam = json.loads(psql("SELECT json_agg(json_build_object('id',p.id,'code',p.code,'org',p.organization_id,'orgs',(SELECT count(DISTINCT pa.commercial_owner_organization_id) "
+                              "FROM public.commercial_payment_plan_assignments a JOIN public.partner_accounts pa ON pa.id=a.partner_id WHERE a.plan_id=p.id)) ORDER BY p.code) FROM public.commercial_payment_plans p").stdout.strip())
+        res["plan_tenants"] = fam
+        check("CCR2 TENANT fixture: nenhum plano atribuído a parceiros de mais de um tenant", all(x["orgs"] <= 1 for x in fam), fam)
+        check("CCR2 TENANT fixture: todo plano com atribuição tem organization_id resolvido (nenhum NULL/ambíguo)", all(x["org"] for x in fam if x["orgs"] == 1), fam)
+        org = {x["id"]: x["org"] for x in fam}
+        check("CCR2 TENANT fixture: PLD/PLQ/P3 -> A e PLDF/PLQF -> F", [org.get(k) for k in (PLD, PLQ, P3, PLDF, PLQF)] == [A, A, A, F, F], [org.get(k) for k in (PLD, PLQ, P3, PLDF, PLQF)])
+        # payment_choice_required diagnosis: the attempt-10 reproduction (shared family -> organization NULL) inside a rolled-back tx
+        probe = ("BEGIN;\nUPDATE public.commercial_payment_plans SET organization_id=NULL WHERE id='%s';\n" % PLD
+                 + session(UB, f"SELECT public.b2b_list_payment_condition_options_secure('{P}','{PLD}')::text;") + "\nROLLBACK;")
+        r0 = psql(probe, check=False)
+        res["diagnosis_shared_plan_null_org"] = {"rc": r0.returncode, "out": r0.stdout.strip()[-400:], "err": r0.stderr.strip()[-300:]}
+        try:
+            av0 = [o for o in json.loads(r0.stdout.strip().splitlines()[-1]).get("options", []) if o.get("available")]
+        except Exception:
+            av0 = None
+        # Direct reproduction is impossible after install: organization_id is immutable. Cause is demonstrated by attempt-10 (shared family ->
+        # ambiguous backfill NULL -> no option -> choice None -> payment_choice_required) plus the positive/negative controls below.
+        check("CCR2 DIAG: organization_id do plano é imutável pós-instalação (forçar NULL negado por COMMERCIAL_PLAN_TENANT_IMMUTABLE)",
+              r0.returncode != 0 and "COMMERCIAL_PLAN_TENANT_IMMUTABLE" in r0.stderr, res["diagnosis_shared_plan_null_org"])
+        c, dbg = opt(UB, P, PLD)
+        res["positive_control_P_PLD"] = {"choice": c, "options": dbg}
+        check("CCR2 CONTROLE POSITIVO: comprador P vê opção disponível em PLD exclusivo de A (fixture corrigida)", c is not None, dbg)
+        if c:
+            sm, se = sim(UB, PLD, [L(1)], c, partner=P)
+            check("CCR2 CONTROLE POSITIVO: simulação com escolha válida devolve cart_hash (sem payment_choice_required)", sm is not None and bool(sm.get("cart_hash")), se)
+            sn, sne = sim(UB, PLD, [L(1)], None, partner=P)
+            check("CCR2 CONTROLE NEGATIVO: mesma simulação sem escolha -> payment_choice_required (erro é da escolha, não da guarda 81)",
+                  sn is None and "payment_choice_required" in (sne or ""), sne)
+        # cross-tenant real (mirror) - each must fail and leave counts unchanged
+        before = counts3()
+        neg = [
+         ("comprador F (UB2) lista opções do plano de A para PF", lambda: call(UB2, f"public.b2b_list_payment_condition_options_secure('{PF}','{PLD}')")),
+         ("comprador A (UB) lista opções do plano de F para P", lambda: call(UB, f"public.b2b_list_payment_condition_options_secure('{P}','{PLDF}')")),
+         ("comprador F simula com plano de A", lambda: call(UB2, f"public.simulate_b2b_payment_plan_secure('{PF}','{PLD}','{js([ns['SF'](1)])}'::jsonb)")),
+         ("comprador A simula com plano de F", lambda: call(UB, f"public.simulate_b2b_payment_plan_secure('{P}','{PLDF}','{js([L(1)])}'::jsonb)")),
+         ("comprador F cria (legado) com plano de A", lambda: out(legacy(UB2, PLD, [ns['SF'](1)], "CCR2-X-F-PLD", partner=PF))),
+         ("comprador A cria (condição) com plano de F", lambda: out(psql(session(UB, f"SELECT ({create_sql(P, PLDF, [L(1)], 'x'*64, 'CCR2-X-A-PLDF', {'payment_method':'pix','payment_condition_version':1,'payment_deadline_days':2})})::text;"), check=False))),
+         ("admin A publica condição no plano de F", lambda: call(UADM, f"public.b2b_payment_condition_publish('{PLDF}','boleto','{ns['M_BOL']}','{ns['CAT']}',30,1,0::numeric,0)")),
+         ("admin F publica condição no plano de A", lambda: call(UADMF, f"public.b2b_payment_condition_publish('{PLD}','boleto','{ns['M_BOL']}','{ns['CAT']}',30,1,0::numeric,0)")),
+         ("admin A atribui plano de F ao parceiro P", lambda: call(UADM, f"public.b2b_payment_condition_assign('{P}','{PLDF}','pix',1,true)")),
+         ("admin F atribui plano de A ao parceiro PF", lambda: call(UADMF, f"public.b2b_payment_condition_assign('{PF}','{PLD}','pix',1,true)")),
+         ("admin F aposenta condição do plano de A", lambda: call(UADMF, f"public.b2b_payment_condition_retire('{PLD}','pix',1)")),
+        ]
+        xt = {}
+        for name, fn_ in neg:
+            j, e = fn_()
+            xt[name] = e or j
+            if name.startswith("comprador") and "lista" in name:
+                # LIVE listing contract denies by exposing NO option (commercial_plan_partner_visible false), not by raising.
+                check("CCR2 CROSS-TENANT negado (nenhuma opção exposta): " + name, (j is None and bool(e)) or (j is not None and j.get("options") == []), e or j)
+            else:
+                check("CCR2 CROSS-TENANT negado: " + name, j is None and bool(e), e or j)
+        res["cross_tenant"] = xt
+        check("CCR2 CROSS-TENANT: zero delta em pedidos/snapshots/idempotência/versões/atribuições/planos", counts3() == before, (before, counts3()))
+        c2, d2 = opt(UB2, PF, PLDF)
+        res["positive_control_PF_PLDF"] = d2
+        check("CCR2 CONTROLE POSITIVO F: comprador F vê a própria opção pix em PLDF", c2 is not None, d2)
+
     def counts():
         return psql("SELECT json_build_object('o',(SELECT count(*) FROM public.partner_orders),'s',(SELECT count(*) FROM platform_private.b2b_order_condition_snapshots),"
                     "'q',(SELECT count(*) FROM platform_private.b2b_order_condition_quote_snapshots),'i',(SELECT count(*) FROM public.partner_order_idempotency))").stdout.strip()
@@ -81,6 +151,7 @@ def run(ns):
         pathlib.Path(os.environ.get("CCR2_EVIDENCE", str(work)), "hook-results.json").write_text(json.dumps(res, indent=2, ensure_ascii=False) + "\n")
         if os.environ.get("CCR2_PROBE") == "1" or r.returncode != 0:
             raise SystemExit("CCR2_LIVE_BODIES_STOP rc=%s" % r.returncode)
+        live_tenant_checks()
     r = runsql("80-ccr2-pre.sql.readonly"); check("CCR2 80 PRE_OK no B3 instalado", r.returncode == 0 and "CCR2_PRE_OK" in r.stderr, r.stderr[-400:])
     before = counts()
     r = runsql("81-ccr2-install.sql.review"); check("CCR2 81 install", r.returncode == 0, r.stderr[-600:])
@@ -157,10 +228,10 @@ def run(ns):
     res["legacy_pn_denial"] = (r.stderr or "").strip().splitlines()[:1]
 
     # ---------- scope: outside pilot / other tenant unaffected ----------
-    r = legacy(UB2, PLD, [ns["SF"](1)], "CCR2-LEG-F", partner=PF); jf, ef = out(r)
+    r = legacy(UB2, PLDF, [ns["SF"](1)], "CCR2-LEG-F", partner=PF); jf, ef = out(r)
     check("CCR2 alcance: tenant F sem ativação segue contrato atual (sem bloqueio global)", jf is not None, ef)
     if jf:
-        r = tx(f"UPDATE public.partner_orders SET payment_plan_id='{PLQ}' WHERE id='{jf['id']}';")
+        r = tx(f"UPDATE public.partner_orders SET payment_plan_id='{PLQF}' WHERE id='{jf['id']}';")
         check("CCR2 alcance: troca de plano em pedido legado de F sem ativação não é afetada pelo guard novo", r.returncode == 0, r.stderr[-200:])
     # historical legacy order (PB-001038 shape: legacy order, no snapshot, partner now 'required')
     HI = f"INSERT INTO public.partner_orders(id,partner_id,payment_plan_id,status) VALUES ('00000000-0000-0000-0000-00000000cc41','{PN}','{P3}','em_analise_comercial');"
@@ -316,7 +387,29 @@ def run(ns):
           psql("SELECT count(*) FROM platform_private.b2b_order_condition_snapshots s JOIN public.partner_orders o ON o.id=s.order_id JOIN public.partner_accounts a ON a.id=o.partner_id "
                "WHERE s.partner_id<>o.partner_id OR s.plan_id<>o.payment_plan_id OR s.organization_id<>a.commercial_owner_organization_id").stdout.strip() == "0")
 
+    # ---------- LIVE hash comparison (never repinned) ----------
+    if LIVE_MODE:
+        man = json.loads((PKG.parents[4] / "scripts/commercial-plans-tenant-20261108/manifest.json").read_text())["candidate_functions"]
+        rows = json.loads(psql("SELECT json_object_agg(p.oid::regprocedure::text, md5(pg_get_functiondef(p.oid))) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace "
+                               "WHERE n.nspname IN ('public','platform_private') AND p.prokind='f'").stdout.strip())
+        def norm(k): return k if "." in k.split("(")[0] else "public." + k
+        def key(k): return k[len("public."):] if k.startswith("public.") else k  # regprocedure::text omits public. (search_path)
+        posplans = {norm(k): {"mirror": rows.get(key(norm(k))), "live_post_pin": v, "equal": rows.get(key(norm(k))) == v} for k, v in man.items()}
+        res["posplans_vs_post_pins"] = posplans
+        check("CCR2 LIVE: os 25 corpos POSPLANOS no espelho = pins do POST cc1f6cc (POST PASS relatado pelo auditor)", all(x["equal"] for x in posplans.values()),
+              {k: v for k, v in posplans.items() if not v["equal"]})
+        used = [k for k in rows if any(t in k for t in ("b2b_", "partner_order", "commercial_plan", "c2p1_", "_cpp_", "b2b_condition", "c2_external"))]
+        pinned = {key(k) for k in posplans} | {key(k) for k in live_bodies.LIVE}
+        res["used_without_live_pin"] = sorted(k for k in used if k not in pinned)
+        res["used_md5_mirror"] = {k: rows[k] for k in sorted(used)}
+        pathlib.Path(os.environ.get("CCR2_EVIDENCE", str(work)), "live-hash-request.json").write_text(json.dumps(
+            {"note": "Assinaturas exercitadas no espelho SEM md5 LIVE confirmado; auditor deve ler md5(pg_get_functiondef) no ref canônico. Nunca repinar no harness.",
+             "signatures": {k: rows[k] for k in res["used_without_live_pin"]}}, indent=2, ensure_ascii=False) + "\n")
+        posmd5 = lambda: {k: md5_of(k) for k in posplans}
+    else:
+        posmd5 = lambda: {}
     # ---------- rollback 96 + reinstall ----------
+    pm0 = posmd5(); d0 = counts3()
     bad = (PKG / "96-ccr2-rollback.sql.review").read_text().replace(pins["__MD5_CHECK__"], "0" * 32, 1)
     f = work / "ccr2-bad-rb.sql"; f.write_text(bad.replace("__MD5_OTRG__", pins["__MD5_OTRG__"]).replace("__MD5_STRG__", pins["__MD5_STRG__"])); f.chmod(0o644)
     r = subprocess.run(SP.su() + ["psql", "-X", "-q", "-h", SP.SOCK[0], "-p", SP.PORT, "-U", "postgres", "-d", "t", "-v", "ON_ERROR_STOP=1", "-f", str(f)], capture_output=True, text=True)
@@ -331,7 +424,12 @@ def run(ns):
     r = runsql("80-ccr2-pre.sql.readonly"); check("CCR2 PRE volta a passar após rollback", r.returncode == 0 and "CCR2_PRE_OK" in r.stderr, r.stderr[-200:])
     r = runsql("81-ccr2-install.sql.review"); check("CCR2 reinstall após rollback", r.returncode == 0, r.stderr[-300:])
     r = runsql("82-ccr2-post.sql.readonly"); check("CCR2 POST após reinstall", r.returncode == 0 and "CCR2_POST_OK" in r.stderr, r.stderr[-300:])
+    check("CCR2 rollback/reinstall 81 preserva todos os writers POSPLANOS (md5 idênticos)", posmd5() == pm0, pm0)
+    check("CCR2 rollback/reinstall 81 preserva dados (pedidos/snapshots/idempotência/versões/atribuições/planos)", counts3() == d0, (d0, counts3()))
     r = runsql("96-ccr2-rollback.sql.review"); check("CCR2 rollback final antes do rollback B3 do harness", r.returncode == 0, r.stderr[-300:])
+    check("CCR2 rollback final preserva POSPLANOS e dados", posmd5() == pm0 and counts3() == d0, (counts3(),))
+    if LIVE_MODE:
+        res["b3_rollback_04"] = "NOT_RUN: pinned to pre-cc1f6cc publish body; needs its own reviewed package (never repinned here)"
     pathlib.Path(os.environ.get("CCR2_EVIDENCE", str(work)), "hook-results.json").write_text(json.dumps(res, indent=2, ensure_ascii=False) + "\n")
     if not (PKG / "pins.json").exists():
         (PKG / "pins.json").write_text(json.dumps(pins, indent=2) + "\n")
