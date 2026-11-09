@@ -61,7 +61,7 @@ def main():
     check("stderr estrito 09 vazio", (evidence.parent / "run.stderr.txt").read_text() == "")
     composition = ROOT / "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py"
     text = composition.read_text()
-    check("composição instala Seller91 antes do pedido", text.index("strict_dir/'respond.seller91.sql'") < text.index("create_partner_order_secure", text.index("STRICT_FISCAL=True")))
+    check("composição instala Seller91 antes do pedido", text.index("strict_dir/'respond.seller91.sql'") < text.index("(OUT/'buyer-attempt.json')"))
     check("composição exige ponte estrita e callback positivo", "strict_dir/'02-install.sql.review'" in text and "STRICT_FISCAL_CONFIRMED_TO_ONE_RECEIVABLE_REVIEW_ONLY" in text)
     check("composição não usa dependência always-allow", "SELECT$$" not in text.replace(" ", ""))
     out = H / "evidence/manifest-validation.json"
