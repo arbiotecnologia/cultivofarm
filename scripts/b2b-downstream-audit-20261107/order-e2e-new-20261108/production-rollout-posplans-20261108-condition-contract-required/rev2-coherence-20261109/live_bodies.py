@@ -20,6 +20,7 @@ def fn(path, name):
 # Reduced-harness schema seams: columns/objects that exist in LIVE (see cc1f6cc captures) but not in the B3 mirror.
 # Columns only add structure; no grant, no data beyond deterministic backfill of the mirror's own synthetic rows.
 SEAMS = [
+ ("clientes.status_cliente", "ALTER TABLE public.clientes ADD COLUMN IF NOT EXISTS status_cliente text NOT NULL DEFAULT 'ativo';"),
  ("commercial_payment_plans.created_by/is_default/sort_order + code_key/uq_cpp_single_default (LIVE pre-cc1f6cc shape)",
   "ALTER TABLE public.commercial_payment_plans ADD COLUMN IF NOT EXISTS created_by uuid, ADD COLUMN IF NOT EXISTS is_default boolean NOT NULL DEFAULT false, ADD COLUMN IF NOT EXISTS sort_order integer NOT NULL DEFAULT 0;"
   " ALTER TABLE public.commercial_payment_plans ADD CONSTRAINT commercial_payment_plans_code_key UNIQUE(code);"
@@ -31,7 +32,6 @@ SEAMS = [
  ("platform_private.c2p1_assignment_allowed/c2p1_item_allowed real bodies (owner-orders p1-isolation/core)",
   fn("scripts/owner-orders-20261023/p1-isolation/core.sql.review", "platform_private.c2p1_assignment_allowed") + "\n" +
   fn("scripts/owner-orders-20261023/p1-isolation/channels-core.sql.review", "platform_private.c2p1_item_allowed")),
- ("clientes.status_cliente", "ALTER TABLE public.clientes ADD COLUMN IF NOT EXISTS status_cliente text NOT NULL DEFAULT 'ativo';"),
  ("partner_users.tenant_id/valid_from (backfill = owner org of partner)",
   "ALTER TABLE public.partner_users ADD COLUMN IF NOT EXISTS tenant_id uuid, ADD COLUMN IF NOT EXISTS valid_from timestamptz;"
   " UPDATE public.partner_users pu SET tenant_id=pa.commercial_owner_organization_id FROM public.partner_accounts pa WHERE pa.id=pu.partner_id AND pu.tenant_id IS NULL;"),
