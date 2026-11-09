@@ -76,3 +76,5 @@ Todas as mudanças são predicados de negação adicionais, sem novos INSERT/UPD
 | 31–32 | 0 | 142/142 | 351/351 | superadmin sem papel de preço; erro completo registrado |
 | 33 | 0 | 143/143 | 352/352 | 3ª revalidação isolada (`payment_condition_stale`); veredito `evidence/attempt-33/VERDICT.md` |
 | 34 | 0 | 143/143 | 352/352 | +3 corpos LIVE 09/11 (assert/target_reason/h15); stub de target_reason eliminado |
+| 35 | 1 | 143/144 | 352/353 | 11 md5 LIVE iguais; 5 ACLs do espelho divergentes |
+| 36 | 0 | 144/144 | 353/353 | ACLs alinhadas no espelho; 11/11 md5/owner/ACL |

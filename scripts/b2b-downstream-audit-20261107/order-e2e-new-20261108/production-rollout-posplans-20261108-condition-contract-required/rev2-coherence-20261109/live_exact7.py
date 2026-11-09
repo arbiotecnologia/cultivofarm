@@ -186,6 +186,24 @@ def install23(psql, check, res, out_dir):
     dsc = psql("SELECT md5(pg_get_functiondef('platform_private.resale_pilot_delivery_scope_v1(text,text,uuid,uuid,uuid)'::regprocedure))").stdout.strip()
     res["live23_s61_delivery_scope_md5"] = dsc
     check("CCR2 LIVE23: resale_pilot_delivery_scope_v1 do repo (etapa 61) = pin POST62", dsc == S61_DELIVERY_SCOPE_POST, dsc)
+    # Leitura LIVE 09/11 (hash/owner/ACL, sem corpo) das dependências restantes: comparação somente, nada é reinstalado.
+    pins = json.loads((PKG / "live-exact-7" / "live-pins-11-20261109.json").read_text()); cmp = {}
+    # Espelho apenas: alinhar a ACL ao conjunto LIVE lido (sem tocar corpo); o ensaio roda com permissões de produção.
+    acl_fix = {}
+    for x in pins:
+        cur = psql(f"SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid=to_regprocedure('{x['signature']}')").stdout.strip()
+        if norm(cur) != norm(x["acl"]):
+            q = [f"BEGIN; REVOKE ALL ON FUNCTION {x['signature']} FROM PUBLIC, anon, authenticated, service_role;"]
+            q += [f"GRANT EXECUTE ON FUNCTION {x['signature']} TO {g};" for g, pr in re.findall(r"([a-z_]+)=([A-Za-z*]+)/", x["acl"]) if g != "postgres" and "X" in pr]
+            r = psql("\n".join(q) + "\nCOMMIT;"); acl_fix[x["signature"]] = {"before": cur or "NULL(default PUBLIC)", "rc": r.returncode}
+    res["live_pins_11_acl_aligned_in_mirror"] = acl_fix
+    for x in pins:
+        r = psql(f"SELECT md5(pg_get_functiondef(oid)), pg_get_userbyid(proowner), coalesce(proacl::text,'') FROM pg_proc WHERE oid=to_regprocedure('{x['signature']}')").stdout.strip().split("|")
+        cmp[x["signature"]] = {"live": [x["md5"], x["owner"], x["acl"]], "mirror": r,
+                               "match": len(r) == 3 and r[0] == x["md5"] and r[1] == x["owner"] and norm(r[2]) == norm(x["acl"])}
+    res["live_pins_11"] = cmp
+    nm = {k: v for k, v in cmp.items() if not v["match"]}
+    check("CCR2 LIVE11: md5/owner/ACL (ordenada) das 11 dependências lidas em 09/11 = espelho", not nm, nm)
     return not bad
 
 

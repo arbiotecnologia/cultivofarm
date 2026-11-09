@@ -1,0 +1,2 @@
+352/353
+FAIL CCR2 LIVE11: md5/owner/ACL (ordenada) das 11 dependências lidas em 09/11 = espelho {'platform_private.b2b_commercial_context()': {'live': ['2f1063f00281c4ca78dcebaab81a9446', 'postgres', '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'], 'mirror': ['2f1063f00281c4ca78dcebaab81a9446', 'postgres', '{postgres=X/postgres}'], 'match': False}, 'platform_private.c2_producer_links(uuid,uuid)': {'live': ['881cdf48a5b20df4d93e42ef1edf1bee', 'postgres', '{postgres=X
