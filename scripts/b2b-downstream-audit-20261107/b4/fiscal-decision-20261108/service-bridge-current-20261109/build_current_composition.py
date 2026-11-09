@@ -56,6 +56,10 @@ def main():
                 "  assert callback_data['outcome']=='AUTHORIZED' and callback_data['cStat']=='104' and callback_data['protocolCStat']=='100' and callback_data['reconciliationPending'] is False and callback_data['reconciliationCode'] is None,callback_data")
     s = edit(s, "  assert replay_data['reconciliationPending'] is True,replay_data",
                 "  assert replay_data['reconciliationPending'] is False,replay_data")
+    s = edit(s, "  assert callback_data['outcome']=='AUTHORIZED' and callback_data['cStat']=='104' and callback_data['protocolCStat']=='100' and callback_data['reconciliationPending'] is False and callback_data['reconciliationCode'] is None,callback_data",
+                """  close_debug=B.rows("SELECT error_code,error_detail FROM platform_private.fiscal_close_pending ORDER BY created_at DESC LIMIT 3;")
+  (OUT/'integrated-close-debug.json').write_text(json.dumps(dict(callback=callback_data,close_pending=close_debug),indent=2)+'\\n')
+  assert callback_data['outcome']=='AUTHORIZED' and callback_data['cStat']=='104' and callback_data['protocolCStat']=='100' and callback_data['reconciliationPending'] is False and callback_data['reconciliationCode'] is None,(callback_data,close_debug)""")
     old_expected = "  assert blocked=={'invoice_status':invoice_initial['normalized_status'],'invoice_receivable':None,'transmission_outcome':'AUTHORIZED','transmission_c_stat':'104','transmission_protocol_c_stat':'100','transmission_error':None,'close_pending':'FISCAL_AUTHORIZATION_CLOSE_PENDING','close_pending_attempts':2,'transmissions':1,'invoices':1,'xml_runs':1,'transmission_idempotency':transmission_idem,'transmission_fingerprint':transmission_fingerprint,'documents':0,'allocations':0,'snapshots':0,'receivables':0},blocked"
     new_expected = """  assert blocked['transmission_outcome']=='AUTHORIZED' and blocked['transmission_c_stat']=='104' and blocked['transmission_protocol_c_stat']=='100',blocked
   assert blocked['invoice_status']=='AUTHORIZED' and blocked['invoice_receivable'] and blocked['transmission_error'] is None,blocked
