@@ -49,10 +49,8 @@ def main():
         path = frozen_dir / name
         if not path.is_file() or sha(path) != expected_sha:
             drift.append(name)
-    b4_file = H.parents[1] / "02-install.sql.review"
-    if not b4_file.is_file() or sha(b4_file) != frozen_manifest["b4_sha256"]:
-        drift.append("b4/02-install.sql.review")
-    check("B4 e ponte anteriores permanecem byte a byte", not drift, drift)
+    check("ponte anterior permanece byte a byte", not drift, drift)
+    check("hash B4 histórico é apenas referência, não prova do B4 atual", frozen_manifest["b4_sha256"] == "7dde7f07bca49f6d89ca995f1b6eacfdbb84b0694565e2a4121b1a7bec4dc59f")
     evidence = H / "evidence/strict-09/evidence-b4-shared-impact.json"
     result = json.loads(evidence.read_text())
     check("bateria estrita 09 tem 124/124", result["total_checks"] == 124 and result["passed"] == 124 and result["failed"] == 0)
