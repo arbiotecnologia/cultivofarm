@@ -1,0 +1,166 @@
+{
+  "status": "PASS",
+  "kind": "DISPOSABLE_ACL_ORDER_OVERLAY_NOT_HOSTED",
+  "hosted": false,
+  "package_label": "ad87",
+  "frozen_manifest_sha256": "3efa7271a9f844be97f4883ff10d13f20998e80e9d167e1dcf247cd7cf44ac5e",
+  "checks": [
+    {
+      "name": "baseline POSPLANOS descartável restaurada sem destino hospedado",
+      "status": "PASS"
+    },
+    {
+      "name": "pré-requisitos locais 00/11/12/20/21/22 preservados; nenhuma reinstalação hospedada",
+      "status": "PASS"
+    },
+    {
+      "name": "REPRODUZIDO: PRE30 antigo rejeitou somente a ordem textual da ACL",
+      "status": "PASS",
+      "detail": "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=r/postgres}"
+    },
+    {
+      "name": "PRE30 corrigido aceita o mesmo conjunto em ordem diferente",
+      "status": "PASS"
+    },
+    {
+      "name": "ACL ausente continua negada",
+      "status": "PASS"
+    },
+    {
+      "name": "ACL extra continua negada",
+      "status": "PASS"
+    },
+    {
+      "name": "privilégio ampliado continua negado",
+      "status": "PASS"
+    },
+    {
+      "name": "grant option ampliada continua negada",
+      "status": "PASS"
+    },
+    {
+      "name": "grantor diferente continua negado",
+      "status": "PASS"
+    },
+    {
+      "name": "30/31 finais, POST32 e rollback93 executados byte a byte no PostgreSQL descartável",
+      "status": "PASS"
+    },
+    {
+      "name": "writer de compra e gate permanecem fechados após rollback",
+      "status": "PASS"
+    },
+    {
+      "name": "18 pins de segurança, histórico e planos preservados",
+      "status": "PASS"
+    }
+  ],
+  "raw": [
+    {
+      "case": "legacy_order_false_positive",
+      "returncode": 3,
+      "stderr_tail": "ERROR:  P0001: FINISHED_PRE_RELATION_DRIFT public.estoque_movimentacoes\nCONTEXT:  PL/pgSQL function inline_code_block line 1 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "ACL ausente continua negada",
+      "returncode": 3,
+      "stderr_tail": "ERROR:  P0001: FINISHED_PRE_RELATION_DRIFT public.estoque_movimentacoes\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "ACL extra continua negada",
+      "returncode": 3,
+      "stderr_tail": "ERROR:  P0001: FINISHED_PRE_RELATION_DRIFT public.estoque_movimentacoes\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "privilégio ampliado continua negado",
+      "returncode": 3,
+      "stderr_tail": "ERROR:  P0001: FINISHED_PRE_RELATION_DRIFT public.estoque_movimentacoes\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "grant option ampliada continua negada",
+      "returncode": 3,
+      "stderr_tail": "ERROR:  P0001: FINISHED_PRE_RELATION_DRIFT public.estoque_movimentacoes\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "grantor diferente continua negado",
+      "returncode": 3,
+      "stderr_tail": "ERROR:  P0001: FINISHED_PRE_RELATION_DRIFT public.acl_grantor_probe\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  ],
+  "final_artifacts": [
+    {
+      "file": "30-physical-pre-after-confirmation-send.sql.readonly",
+      "sha256": "bfc9718efe58008d6d6891d7e3464f5e032cd3d9628416daf5e0ef46828d0e48",
+      "returncode": 0
+    },
+    {
+      "file": "31-physical-install.sql.review",
+      "sha256": "3af1e8dd9fb80c1d1c37679ca926cdf64758f94755f260fcf9b2b5165b15aebb",
+      "returncode": 0
+    }
+  ],
+  "supporting_artifacts": [
+    {
+      "file": "00-production-pre-posplans.sql.readonly",
+      "sha256": "00f726d4dbc254aaa59bce376ab7b53f2985d1a1b80c1160df0e1cc830501616",
+      "returncode": 0
+    },
+    {
+      "file": "11-confirmation-install.sql.review",
+      "sha256": "809223b1b6b02041241f9d4bd5ad7c33635aab7bcad18f420a4ac944072163ae",
+      "returncode": 0
+    },
+    {
+      "file": "12-confirmation-post.sql.readonly",
+      "sha256": "e45c25b5bec99c6cb6d57b717ab82e9c97b2306966e984c9513adce42e01cd16",
+      "returncode": 0
+    },
+    {
+      "file": "20-send-pre.sql.readonly",
+      "sha256": "79a95847c6e3e824e6f205e4a643c597c2fd4882c661e389e7260d383400afd7",
+      "returncode": 0
+    },
+    {
+      "file": "21-send-install.sql.review",
+      "sha256": "394fcbf719ba56c3a1c663c376d1fbc6e6cc33ecd8b037d9f711c12a369dd9ef",
+      "returncode": 0
+    },
+    {
+      "file": "22-send-post.sql.readonly",
+      "sha256": "12bb897db3595f88177db3e4712dd7b7bb8232cd4c444e684a74e3ac413dff5f",
+      "returncode": 0
+    },
+    {
+      "file": "32-physical-post.sql.readonly",
+      "sha256": "68baf979ce5690f76fec433d6a24b4a3abf2cf1fd8e5e3fe3a4e0a08098db11e",
+      "returncode": 0
+    },
+    {
+      "file": "93-physical-rollback-deny.sql.review",
+      "sha256": "a02aa055b561fad022bea6c257a517aeac67ae2ae4a98b897ca7d97c20b1d72e",
+      "returncode": 0
+    }
+  ],
+  "authenticated_real_proof": "NOT_RUN",
+  "postgresql_version": "17.11",
+  "guards_changed": 10,
+  "ddl_candidate_byte_identical": true,
+  "ddl_candidate_sha256": "93aa96092d2e7210bfc8ae7e6741db41bd439c1ac737fc8301248ce1ff9dabbf",
+  "observed_reordered_acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=r/postgres}",
+  "expected_acl": "{postgres=arwdDxtm/postgres,authenticated=r/postgres,service_role=arwdDxtm/postgres}",
+  "relation_security_pins": 18,
+  "relation_security_preserved": true,
+  "history_before": {
+    "os": 8,
+    "movements": 0,
+    "deliveries": 0
+  },
+  "history_after": {
+    "os": 8,
+    "movements": 0,
+    "deliveries": 0
+  },
+  "plans_before_md5": "cd968df309363215a2fc1777c7a86aa8",
+  "plans_after_md5": "cd968df309363215a2fc1777c7a86aa8",
+  "gates_activated": false
+}

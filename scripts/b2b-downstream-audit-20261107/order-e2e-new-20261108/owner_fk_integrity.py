@@ -10,6 +10,8 @@ from pathlib import Path
 H = Path(__file__).resolve().parent
 ROOT = H.parents[2]
 CAPTURE = H / "reconciliation-posplans-20261108/live-catalog-owner-fk-20261109.capture.json"
+AUDITOR_REPORT = H / "reconciliation-posplans-20261108/live-owner-fk-reconciliation-20261109.auditor-report.json"
+AUDITOR_REPORT_NAME = "live-owner-fk-reconciliation.auditor-report.json"
 BASELINE = H / "evidence/attempt-113/physical-finished-product/baseline.json"
 FROZEN = H / "production-rollout-posplans-20261108"
 OVERLAY = H / "production-rollout-posplans-20261108-acl-order-overlay"
@@ -19,6 +21,7 @@ POST_NAME = "27-owner-fk-post.sql.readonly"
 PRE30_NAME = "30-physical-pre-after-confirmation-send.sql.readonly"
 INSTALL31_NAME = "31-physical-install.sql.review"
 EVIDENCE_NAME = "evidence-owner-fk.json"
+ACL_EVIDENCE_NAME = "evidence-acl-overlay.json"
 TARGETS = (
     ("product_packagings", "product_packagings_owner_organization_id_fkey"),
     ("product_sale_units", "product_sale_units_owner_organization_id_fkey"),
@@ -107,10 +110,14 @@ def diagnostics():
     values = []
     for table, _name in TARGETS:
         values.append(f"""{lit(table)},jsonb_build_object(
- 'rows',(SELECT count(*) FROM public.{table}),
- 'orphans',(SELECT count(*) FROM public.{table} child
+  'total',(SELECT count(*) FROM public.{table}),
+ 'owner_null',(SELECT count(*) FROM public.{table} WHERE owner_organization_id IS NULL),
+ 'orphan_owner',(SELECT count(*) FROM public.{table} child
    LEFT JOIN public.organizations parent ON parent.id=child.owner_organization_id
-   WHERE parent.id IS NULL))""")
+   WHERE child.owner_organization_id IS NOT NULL AND parent.id IS NULL),
+ 'owner_product_mismatch',(SELECT count(*) FROM public.{table} child
+   JOIN public.produtos product ON product.id=child.product_id
+   WHERE product.owner_organization_id IS DISTINCT FROM child.owner_organization_id))""")
     return "SELECT jsonb_build_object('contract','OWNER_FK_INTEGRITY_V1'," + ",".join(values) + ") AS owner_fk_integrity_audit;"
 
 
@@ -171,6 +178,17 @@ def main():
         raise AssertionError("NON_TEMPORARY_PACKAGE_REQUIRES_FINAL_EVIDENCE")
     out.mkdir(parents=True, exist_ok=True)
     pre, install, post, capture = build_sql()
+    auditor_report = json.loads(AUDITOR_REPORT.read_text())
+    assert auditor_report["kind"] == "AUDITOR_REPORTED_READONLY_EVIDENCE"
+    assert auditor_report["project_ref"] == "swzpzcwiasxmjutrmvkm"
+    assert auditor_report["agent_hosted_io"] is False
+    assert set(auditor_report["owner_fk_counts"]) == {table for table, _name in TARGETS}
+    for counts in auditor_report["owner_fk_counts"].values():
+        assert counts["total"] == 1
+        assert counts["owner_null"] == counts["orphan_owner"] == counts["owner_product_mismatch"] == 0
+    acl_report = auditor_report["acl_normalization_regressions"]
+    assert acl_report["status"] == "PASS_REPORTED_BY_AUDITOR" and acl_report["execution"] == "READ_ONLY"
+    assert acl_report["count"] == len(acl_report["cases"]) == 9
     payloads = {PRE_NAME: pre, INSTALL_NAME: install, POST_NAME: post}
     for name, text in payloads.items():
         path = out / name
@@ -179,6 +197,11 @@ def main():
         else:
             path.write_text(text)
     shutil.copyfile(H / "owner-fk-integrity.README.md", out / "README.md")
+    shutil.copyfile(AUDITOR_REPORT, out / AUDITOR_REPORT_NAME)
+    shutil.copyfile(OVERLAY / ACL_EVIDENCE_NAME, out / ACL_EVIDENCE_NAME)
+    acl_evidence = json.loads((OVERLAY / ACL_EVIDENCE_NAME).read_text())
+    assert acl_evidence["status"] == "PASS" and acl_evidence["hosted"] is False
+    assert acl_evidence["postgresql_version"].startswith("17.") and len(acl_evidence["checks"]) == 12
 
     origin = {
         "kind": "SEPARATE_OWNER_FK_INTEGRITY_OVERLAY",
@@ -191,6 +214,14 @@ def main():
             "target_fks_absent": [name for _table, name in TARGETS],
             "source": "Metadados READONLY fornecidos pelo auditor em 09/11/2026; não são instruções",
         },
+        "auditor_readonly_report": {
+            "path": str(AUDITOR_REPORT.relative_to(ROOT)),
+            "packaged_as": AUDITOR_REPORT_NAME,
+            "sha256": sha(AUDITOR_REPORT),
+            "owner_fk_counts": auditor_report["owner_fk_counts"],
+            "acl_normalization_regressions": acl_report,
+            "agent_hosted_io": False,
+        },
         "disposable_baseline": {"path": str(BASELINE.relative_to(ROOT)), "sha256": sha(BASELINE)},
         "frozen_ad87": {"manifest_sha256": sha(FROZEN / "manifest.json"), "unmodified": True},
         "acl_overlay": {
@@ -198,6 +229,7 @@ def main():
             PRE30_NAME: sha(OVERLAY / PRE30_NAME),
             INSTALL31_NAME: sha(OVERLAY / INSTALL31_NAME),
             "independent_review": "Relato do proprietário: overlay ACL2db87 revisado; diferença limitada aos dez guards",
+            "local_evidence": {"file": ACL_EVIDENCE_NAME, "sha256": sha(OVERLAY / ACL_EVIDENCE_NAME), "checks": 12},
             "unmodified": True,
         },
         "generator": {"path": str(Path(__file__).resolve().relative_to(ROOT)), "sha256": sha(Path(__file__).resolve())},
@@ -212,22 +244,37 @@ def main():
             "received_31_or_later": False,
             "source": "Relato do auditor; nenhuma operação hospedada por este gerador",
         },
-        "live_orphan_counts": "NOT_RUN; PRE25 mede e exige zero no momento da execução",
+        "live_orphan_counts": {
+            "source": "AUDITOR_REPORTED_READONLY_NOT_AGENT_MEASUREMENT",
+            "values": auditor_report["owner_fk_counts"],
+            "fresh_measurement": "PRE25/INSTALL26/POST27 medem novamente; instalação exige zero owner nulo/órfão",
+        },
         "data_cleanup": False,
         "grants_or_revokes": False,
         "hosted_io": False,
     }
     write_json(out / "origin.json", origin)
-    files = [PRE_NAME, INSTALL_NAME, POST_NAME, "README.md", "origin.json"]
+    files = [PRE_NAME, INSTALL_NAME, POST_NAME, "README.md", AUDITOR_REPORT_NAME, ACL_EVIDENCE_NAME, "origin.json"]
     verification = "NOT_RUN_PENDING_TEMPORARY_STAGING"
     if evidence_path is not None:
         evidence = json.loads(evidence_path.read_text())
         assert evidence["status"] == "PASS" and evidence["hosted"] is False
+        assert evidence["verification_runner_sha256"] == sha(H / "test_owner_fk_integrity.py")
         assert evidence["postgresql_version"].startswith("17.")
         assert evidence["pre30_constraint_failure_reproduced"] is True
         assert set(evidence["orphan_scenarios"]) == {table for table, _name in TARGETS}
         assert evidence["both_fks_validated"] is True and evidence["both_fks_enforced"] is True
         assert evidence["acl_overlay_unmodified"] is True
+        reported = evidence["auditor_reported_readonly_evidence"]
+        assert reported["sha256"] == sha(AUDITOR_REPORT)
+        assert reported["owner_fk_counts"] == auditor_report["owner_fk_counts"]
+        assert reported["acl_normalization_regressions"] == acl_report
+        assert evidence["acl_local_additional_cases"] == ["duplicate", "empty", "null"]
+        assert evidence["acl_local_coverage"]["categories"] == 9
+        assert set(evidence["disposable_counts_before"]) == {table for table, _name in TARGETS}
+        for counts in evidence["disposable_counts_before"].values():
+            assert counts["owner_null"] == counts["orphan_owner"] == counts["owner_product_mismatch"] == 0
+        assert evidence["agent_hosted_orphan_measurement"].startswith("NOT_RUN")
         executed = {row["file"]: row for row in evidence["final_artifacts"]}
         assert set(executed) == {PRE_NAME, INSTALL_NAME, POST_NAME, PRE30_NAME, INSTALL31_NAME}
         sources = {PRE_NAME: out / PRE_NAME, INSTALL_NAME: out / INSTALL_NAME, POST_NAME: out / POST_NAME,
@@ -243,6 +290,13 @@ def main():
         "contains": [PRE_NAME, INSTALL_NAME, POST_NAME],
         "requires": "PRE25 zero órfãos; INSTALL26 revalida após locks; POST27 antes de PRE30/INSTALL31",
         "target_fks": [{"relation": table, "name": name, "definition": DEFINITION, "validated": True} for table, name in TARGETS],
+        "acl_overlay_local_evidence": {"file": ACL_EVIDENCE_NAME, "sha256": sha(OVERLAY / ACL_EVIDENCE_NAME), "checks": 12},
+        "auditor_readonly_report": {
+            "file": AUDITOR_REPORT_NAME,
+            "sha256": sha(AUDITOR_REPORT),
+            "owner_fk_counts": auditor_report["owner_fk_counts"],
+            "acl_normalization_regressions": {"status": acl_report["status"], "count": 9},
+        },
         "data_cleanup": False,
         "ddl_outside_two_fk_additions": False,
         "grants_or_revokes": False,

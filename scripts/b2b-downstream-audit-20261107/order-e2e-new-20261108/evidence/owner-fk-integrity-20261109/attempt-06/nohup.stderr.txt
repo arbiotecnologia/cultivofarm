@@ -1,0 +1,1 @@
+Terminated                 PYTHONUNBUFFERED=1 python3 "$1" "$2" "$3" "$4" "$5" > "$6/test.stdout.txt" 2> "$6/test.stderr.txt"

@@ -23,6 +23,7 @@ TARGETS = (
     ("product_packagings", "product_packagings_owner_organization_id_fkey"),
     ("product_sale_units", "product_sale_units_owner_organization_id_fkey"),
 )
+AUDITOR_REPORT = H / "reconciliation-posplans-20261108/live-owner-fk-reconciliation-20261109.auditor-report.json"
 
 
 def sha(path):
@@ -44,6 +45,7 @@ def main():
         "status": "FAIL",
         "kind": "DISPOSABLE_OWNER_FK_INTEGRITY_NOT_HOSTED",
         "hosted": False,
+        "verification_runner_sha256": sha(Path(__file__).resolve()),
         "checks": checks,
         "raw": raw,
         "final_artifacts": final_artifacts,
@@ -88,7 +90,7 @@ def main():
         os.environ["PATH"] = str(pg17) + ":" + os.environ["PATH"]
         restored = B.restore.restore()
         assert not any(restored.values()), restored
-        B.C.prepare_checkpoint(Path("/tmp/owner-fk-confirmation-checkpoint.sql"))
+        B.C.prepare_checkpoint(OUT.parent / "owner-fk-confirmation-checkpoint.sql")
         B.current_catalog.apply(B.run_raw, B.last, B.ok, B.T.A)
         commercial = load("owner_fk_commercial", H / "commercial.py")
         work = OUT.parent / "commercial-work"
@@ -124,7 +126,7 @@ def main():
               WHERE n.nspname='public' AND c.relname IN ('produtos','catalogo_volumes','product_packagings','product_sale_units')
               AND a.attnum>0 AND NOT a.attisdropped;"""))
             constraints = json.loads(B.last("""SELECT coalesce(jsonb_agg(jsonb_build_object(
-              'relation',c.relname,'name',x.conname,'definition',pg_get_constraintdef(x.oid,true),
+              'relation',c.relname,'name',x.conname,'definition',pg_get_constraintdef(x.oid),
               'validated',x.convalidated) ORDER BY c.relname,x.conname),'[]'::jsonb)
               FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
               WHERE n.nspname='public' AND c.relname IN ('produtos','catalogo_volumes','product_packagings','product_sale_units');"""))
@@ -158,11 +160,44 @@ def main():
                               if row["relation"] == "product_sale_units" and row["name"] == "forma_fisica")
         assert shape_before["default"] is None and shape_expected["default"], shape_before
         B.sql("ALTER TABLE ONLY public.product_packagings ALTER COLUMN peso_liquido_kg TYPE numeric(12,3) USING peso_liquido_kg::numeric(12,3);")
-        B.sql(f"ALTER TABLE ONLY public.product_sale_units ALTER COLUMN forma_fisica SET DEFAULT {shape_expected['default']};")
+        B.sql(f"""ALTER TABLE ONLY public.product_sale_units
+          DROP COLUMN forma_fisica,
+          ADD COLUMN forma_fisica text GENERATED ALWAYS AS ({shape_expected['default']}) STORED;""")
         report["fixture_column_reconciliation"] = [
             {"relation": "product_packagings", "column": "peso_liquido_kg", "before": weight_before["type"], "after": "numeric(12,3)"},
-            {"relation": "product_sale_units", "column": "forma_fisica", "before": None, "after": shape_expected["default"]},
+            {"relation": "product_sale_units", "column": "forma_fisica", "before": "regular column without expression", "after": "GENERATED ALWAYS AS captured expression STORED"},
         ]
+        measure_constraint = next(row for row in capture["constraints"]
+                                  if row["relation"] == "catalogo_volumes" and row["name"] == "catalogo_volumes_medida_shape")
+        assert not any(row["relation"] == "catalogo_volumes" and row["name"] == "catalogo_volumes_medida_shape"
+                       for row in before_reconcile["constraints"])
+        invalid_measure_rows = json.loads(B.last("""SELECT coalesce(jsonb_agg(jsonb_build_object(
+          'id',id,'medida',medida,'volume_ml',volume_ml,'item_tipo',item_tipo,'preco_brl',preco_brl,'rotulo',rotulo)
+          ORDER BY id),'[]'::jsonb) FROM public.catalogo_volumes
+          WHERE ((medida='volume' AND volume_ml IS NOT NULL AND volume_ml>0)
+            OR (medida='embalagem' AND volume_ml IS NULL AND item_tipo='produto' AND preco_brl=0
+                AND rotulo IS NOT NULL AND btrim(rotulo)<>'')) IS NOT TRUE;"""))
+        assert invalid_measure_rows and all(
+            row["medida"] == "embalagem" and row["volume_ml"] is None and row["item_tipo"] == "produto"
+            and row["rotulo"] and row["preco_brl"] != 0 for row in invalid_measure_rows
+        ), invalid_measure_rows
+        # Fixture B3 antiga usava 0,01 como sentinel de preço legado. A captura real
+        # exige zero na apresentação; catalogo_precos_embalagem permanece intacta.
+        B.sql("""SET session_replication_role=replica;
+          UPDATE public.catalogo_volumes SET preco_brl=0
+          WHERE medida='embalagem' AND volume_ml IS NULL AND item_tipo='produto'
+            AND preco_brl<>0 AND rotulo IS NOT NULL AND btrim(rotulo)<>'';
+          SET session_replication_role=origin;""")
+        assert B.last("""SELECT count(*) FROM public.catalogo_volumes
+          WHERE ((medida='volume' AND volume_ml IS NOT NULL AND volume_ml>0)
+            OR (medida='embalagem' AND volume_ml IS NULL AND item_tipo='produto' AND preco_brl=0
+                AND rotulo IS NOT NULL AND btrim(rotulo)<>'')) IS NOT TRUE;""") == "0"
+        report["fixture_row_reconciliation"] = {
+            "operation": "UPDATE synthetic legacy packaging price sentinel to zero; no rows deleted; separate packaging prices untouched",
+            "before": invalid_measure_rows,
+        }
+        B.sql(f"ALTER TABLE ONLY public.catalogo_volumes ADD CONSTRAINT catalogo_volumes_medida_shape {measure_constraint['definition']};")
+        report["fixture_constraint_reconciliation"] = [measure_constraint]
         for table, name in TARGETS:
             assert B.last(f"""SELECT count(*) FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid
               JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public'
@@ -188,12 +223,26 @@ def main():
                                      for field in ("definition", "validated")):
                 constraint_drift.append({"key": key, "actual": actual, "expected": expected})
         assert not constraint_drift and not target_keys.intersection(actual_constraints), constraint_drift
-        ok("ambiente descartável reconciliado com numeric(12,3), 57 colunas, 24 constraints e duas FKs ausentes")
+        ok("ambiente descartável reconciliado com numeric(12,3), coluna gerada, constraint de medida, 57 colunas, 24 constraints e duas FKs ausentes")
         expect_error("PRE30 reprova a ausência real sem afrouxar o guard", OVERLAY / PRE30,
                      "FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_packagings.product_packagings_owner_organization_id_fkey")
         report["pre30_constraint_failure_reproduced"] = True
         execute(PACKAGE / PRE, final_artifacts)
-        ok("PRE25 final aceita estrutura reconciliada e zero órfãos")
+        disposable_counts = {}
+        for table, _name in TARGETS:
+            counts = json.loads(B.last(f"""SELECT jsonb_build_object(
+              'total',(SELECT count(*) FROM public.{table}),
+              'owner_null',(SELECT count(*) FROM public.{table} WHERE owner_organization_id IS NULL),
+              'orphan_owner',(SELECT count(*) FROM public.{table} child
+                LEFT JOIN public.organizations parent ON parent.id=child.owner_organization_id
+                WHERE child.owner_organization_id IS NOT NULL AND parent.id IS NULL),
+              'owner_product_mismatch',(SELECT count(*) FROM public.{table} child
+                JOIN public.produtos product ON product.id=child.product_id
+                WHERE product.owner_organization_id IS DISTINCT FROM child.owner_organization_id));"""))
+            assert counts["owner_null"] == counts["orphan_owner"] == counts["owner_product_mismatch"] == 0, counts
+            disposable_counts[table] = counts
+        report["disposable_counts_before"] = disposable_counts
+        ok("PRE25 final aceita estrutura reconciliada e mede os quatro contadores com zero divergências")
 
         orphan_scenarios = []
         for table, name in TARGETS:
@@ -239,7 +288,8 @@ def main():
               FROM public.{table} ORDER BY 1 LIMIT 1) selected;"""))
             key = "product_id" if table == "product_sale_units" else "id"
             expect_error(f"FK instalada impede owner inexistente em {table}",
-                         f"UPDATE public.{table} SET owner_organization_id='00000000-0000-4000-8000-00000000f666' WHERE {key}='{row['id']}';",
+                         f"""BEGIN;ALTER TABLE ONLY public.{table} DISABLE TRIGGER USER;
+                         UPDATE public.{table} SET owner_organization_id='00000000-0000-4000-8000-00000000f666' WHERE {key}='{row['id']}';COMMIT;""",
                          name, "23503")
         report["both_fks_enforced"] = True
         expect_error("reexecução de INSTALL26 falha fechado sem duplicar objetos", PACKAGE / INSTALL,
@@ -250,6 +300,35 @@ def main():
           GRANT ALL ON public.estoque_movimentacoes TO service_role;
           GRANT SELECT ON public.estoque_movimentacoes TO authenticated;""")
         execute(OVERLAY / PRE30, final_artifacts)
+
+        # Complementa as cinco negações da suíte ACL: duplicata, vazio e NULL.
+        # A expressão é exatamente a mesma usada pelos dez guards gerados.
+        acl_generator = load("owner_fk_acl_generator", physical / "assemble.py")
+        overlay_origin = json.loads((OVERLAY / "origin.json").read_text())
+        expected_acl = next(row["expected_acl"] for row in overlay_origin["relations"]
+                            if row["relation"] == "public.estoque_movimentacoes")
+        expected_expression = f"{acl_generator.lit(expected_acl)}::aclitem[]"
+        acl_entries = expected_acl.strip("{}").split(",")
+        acl_cases = {
+            "duplicate": "ARRAY[" + ",".join(acl_generator.lit(item) + "::aclitem" for item in acl_entries + [acl_entries[0]]) + "]::aclitem[]",
+            "empty": "'{}'::aclitem[]",
+            "null": "NULL::aclitem[]",
+        }
+        for case, actual_expression in acl_cases.items():
+            statement = f"""DO $$DECLARE actual jsonb;expected jsonb;BEGIN
+ SELECT {acl_generator.acl_items_sql(actual_expression)},{acl_generator.acl_items_sql(expected_expression)} INTO actual,expected;
+ IF actual IS NOT DISTINCT FROM expected THEN RAISE EXCEPTION 'ACL_CASE_WAS_ACCEPTED {case}';END IF;
+ RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT public.estoque_movimentacoes';
+END$$;"""
+            expect_error(f"ACL {case} rejeitada pela normalização exata", statement,
+                         "FINISHED_PRE_RELATION_DRIFT public.estoque_movimentacoes")
+        report["acl_local_additional_cases"] = sorted(acl_cases)
+        report["acl_local_coverage"] = {
+            "previous_overlay_suite": "12/12: ordem + privilégio/grant option/role ausente/role extra/grantor",
+            "this_suite": "3/3: duplicata/vazio/NULL",
+            "categories": 9,
+        }
+
         execute(OVERLAY / INSTALL31, final_artifacts)
         execute(FROZEN / "32-physical-post.sql.readonly", supporting_artifacts)
         execute(FROZEN / "93-physical-rollback-deny.sql.review", supporting_artifacts)
@@ -274,10 +353,26 @@ def main():
         assert history_after == history_before and plans_after == plans_before
         assert sha(OVERLAY / PRE30) == "bfc9718efe58008d6d6891d7e3464f5e032cd3d9628416daf5e0ef46828d0e48"
         assert sha(OVERLAY / INSTALL31) == "3af1e8dd9fb80c1d1c37679ca926cdf64758f94755f260fcf9b2b5165b15aebb"
+        auditor_report = json.loads(AUDITOR_REPORT.read_text())
+        assert auditor_report["kind"] == "AUDITOR_REPORTED_READONLY_EVIDENCE"
+        assert auditor_report["project_ref"] == "swzpzcwiasxmjutrmvkm"
+        assert auditor_report["agent_hosted_io"] is False
+        assert auditor_report["acl_normalization_regressions"]["count"] == 9
+        assert auditor_report["acl_normalization_regressions"]["status"] == "PASS_REPORTED_BY_AUDITOR"
+        assert set(auditor_report["owner_fk_counts"]) == {table for table, _name in TARGETS}
+        for counts in auditor_report["owner_fk_counts"].values():
+            assert counts["total"] == 1
+            assert counts["owner_null"] == counts["orphan_owner"] == counts["owner_product_mismatch"] == 0
         report.update({
             "status": "PASS",
             "postgresql_version": B.last("SHOW server_version;"),
             "acl_overlay_unmodified": True,
+            "auditor_reported_readonly_evidence": {
+                "path": str(AUDITOR_REPORT.relative_to(ROOT)),
+                "sha256": sha(AUDITOR_REPORT),
+                "owner_fk_counts": auditor_report["owner_fk_counts"],
+                "acl_normalization_regressions": auditor_report["acl_normalization_regressions"],
+            },
             "relation_security_pins": len(relations_before),
             "relation_security_preserved": True,
             "history_before": history_before,
@@ -287,13 +382,17 @@ def main():
             "data_cleanup": False,
             "grants_or_revokes_in_candidate": False,
             "gates_activated": False,
-            "live_orphan_counts": "NOT_RUN; PRE25 final exige zero na execução real",
+            "agent_hosted_orphan_measurement": "NOT_RUN; contagens reais são relato READ ONLY independente do auditor",
+            "fresh_orphan_measurement_required": "PRE25/INSTALL26/POST27 medem novamente e exigem zero owner nulo/órfão",
             "synthetic_seams": [
                 "Auth/claims e papéis SQL somente no PostgreSQL descartável",
                 "product_packagings.peso_liquido_kg ajustado de numeric para numeric(12,3) somente no descartável",
-                "product_sale_units.forma_fisica recebe o default derivado capturado somente no descartável; produtos.oculto permanece fora do escopo do PRE",
+                "product_sale_units.forma_fisica é recriada como coluna gerada STORED com a expressão capturada somente no descartável; produtos.oculto permanece fora do escopo do PRE",
+                "catalogo_volumes_medida_shape adicionada com a definição capturada somente no descartável; leitura de constraints usa pg_get_constraintdef(oid), como o PRE",
+                "somente na fixture B3 antiga, preco_brl=0,01 de apresentações foi reconciliado para zero sem apagar linhas; catalogo_precos_embalagem e dados reais permanecem intocados",
                 "duas FKs removidas somente no descartável para reproduzir a captura real",
-                "órfãos temporários com triggers desabilitados somente na fixture e restaurados; writers finais com triggers habilitados",
+                "órfãos temporários com session_replication_role=replica somente na fixture e restaurados",
+                "sonda de enforcement usa DISABLE TRIGGER USER dentro de transação abortada no descartável; gatilhos internos da FK permanecem ativos e writers finais usam triggers habilitados",
                 "artefatos 00/11/12/20/21/22/32/93 executados apenas como composição local",
             ],
         })
