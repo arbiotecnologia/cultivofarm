@@ -31,7 +31,7 @@ def pinned(name):
 frozen=json.loads((PKG/'pins.json').read_text()) if (PKG/'pins.json').exists() else None
 ok('installed bodies = frozen pins (if frozen)',frozen is None or frozen==pins,(frozen,pins))
 post=pinned('02-status-post.sql.readonly')
-o=run(post);ok('02 POST_OK',"C2AS_POST_OK" in o,o[-300:])
+o=run(post);print('POSTOUT',o[-400:],flush=True);ok('02 POST_OK',"C2AS_POST_OK" in o,o[-300:])
 o=run(pre);ok('PRE after install refuses (already present)','C2AS_PRE_ALREADY_PRESENT' in o,o[-200:])
 o=run((PKG/'01-status-install.sql.review').read_text());ok('re-install refused','C2AS_INSTALL_PRECONDITION' in o,o[-200:])
 for role in ('anon','service_role','PUBLIC'):
@@ -65,7 +65,8 @@ if fresh:
  # Two tabs / devices: both read none, both prepare concurrently on the server.
  pa=start(f"SELECT public.recover_partner_order_attempt_v1('{P}')",'tab-a',fresh);pb=start(f"SELECT public.recover_partner_order_attempt_v1('{P}')",'tab-b',fresh)
  oa,ea=finish(pa);ob,eb=finish(pb)
- ra=json.loads([l for l in oa.splitlines() if l.strip().startswith('{')][0]);rb=json.loads([l for l in ob.splitlines() if l.strip().startswith('{')][0])
+ print('TABS',repr(oa[-400:]),repr(ob[-400:]),flush=True)
+ra=json.loads([l for l in oa.splitlines() if l.strip().startswith('{')][-1]);rb=json.loads([l for l in ob.splitlines() if l.strip().startswith('{')][-1])
  ok('two tabs prepare: exactly one reservation row, same key',not ea and not eb and jcount(fresh)==1 and ra['key']==rb['key'],(ra,rb,ea,eb))
  ok('two tabs prepare: exactly one sees reserved, the other sees uncertain (client with fresh expectation must refuse)',sorted([ra['state'],rb['state']])==['reserved','uncertain'],(ra['state'],rb['state']))
  K=ra['key']
