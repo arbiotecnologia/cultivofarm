@@ -605,8 +605,8 @@ export default function NovoPedido() {
       toast.error("Contexto de acesso indisponível. Aguarde a confirmação e tente novamente.");
       return;
     }
-    if(durableAttempt.mode!=='legacy' && (durableAttempt.mode!=='durable' ||
-      !durableAttempt.journal || !['reserved','uncertain'].includes(durableAttempt.journal.state))) {
+    if(durableAttempt.mode!=='legacy' && (durableAttempt.mode!=='durable' || (!durableAttempt.next &&
+      (!durableAttempt.journal || !['reserved','uncertain'].includes(durableAttempt.journal.state))))) {
       toast.error('Verifique o envio anterior antes de continuar.');return;
     }
     const items = cartList.map(({ key, ...rest }) => rest);
@@ -624,8 +624,10 @@ export default function NovoPedido() {
     const fingerprint = orderAttemptFingerprint(input);
     // Mesmo payload => mesma chave (servidor deduplica). Payload alterado após
     // resultado incerto NÃO gera chave nova: exige confirmar o envio anterior.
-    const prepared = durableAttempt.mode==='durable' && durableAttempt.journal
-      ? {ok:true as const,key:durableAttempt.journal.key}
+    // Durable: the server key comes from prepareDurableOrder (reserved right before dispatch when `next`);
+    // the value below is never dispatched in durable mode.
+    const prepared = durableAttempt.mode==='durable' && (durableAttempt.next || durableAttempt.journal)
+      ? {ok:true as const,key:durableAttempt.next ? 'durable-next' : durableAttempt.journal!.key}
       : prepareOrderAttempt(attemptSlot, fingerprint, () =>
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
@@ -642,7 +644,8 @@ export default function NovoPedido() {
     if(durableAttempt.mode==='legacy')markOrderAttemptSending(slot, prepared.key);
     createOrder.mutate(
       { ...input, idempotency_key: prepared.key, attempt_slot: slot,
-        journal_expected:durableAttempt.mode==='durable'?durableAttempt.journal??undefined:undefined,
+        journal_expected:durableAttempt.mode==='durable' && !durableAttempt.next?durableAttempt.journal??undefined:undefined,
+        journal_next:durableAttempt.mode==='durable' && durableAttempt.next?durableAttempt.next:undefined,
         current_payload:()=>fence() && orderAttemptFingerprint(liveInputRef.current)===fingerprint },
       {
         onSuccess: () => {
@@ -763,7 +766,7 @@ export default function NovoPedido() {
         </p>
       </div>
 
-          {!isSimulationMode && durableAttempt.mode!=='legacy' && durableAttempt.journal?.state!=='reserved' && <Alert role="status" data-journal={durableAttempt.mode}>
+          {!isSimulationMode && durableAttempt.mode!=='legacy' && !durableAttempt.next && durableAttempt.journal?.state!=='reserved' && <Alert role="status" data-journal={durableAttempt.mode}>
             <AlertDescription className="space-y-2">
               {durableAttempt.journal?.state==='committed' ? <>
                 <span className="block">Pedido {durableAttempt.journal.numero} já registrado. Consulte-o antes de iniciar outro pedido.</span>
