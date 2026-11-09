@@ -39,6 +39,7 @@ allow "null_plan_allowed" "INSERT INTO partner_orders VALUES (gen_random_uuid(),
 deny  "update_cannot_launder_insert" "BEGIN; INSERT INTO partner_orders VALUES ('00000000-0000-0000-0000-000000000103','00000000-0000-0000-0000-0000000000a1','00000000-0000-0000-0000-0000000000c2'); UPDATE partner_orders SET payment_plan_id='00000000-0000-0000-0000-0000000000c1' WHERE id='00000000-0000-0000-0000-000000000103'; COMMIT;"
 [ "$($P -c "SELECT count(*) FROM partner_orders WHERE id='00000000-0000-0000-0000-000000000038'")" = 1 ] && ok "historical_order_preserved" || fail historical
 $P -c "UPDATE partner_orders SET payment_plan_id=payment_plan_id WHERE id='00000000-0000-0000-0000-000000000038'" && ok "historical_update_not_blocked" || fail hist_upd
+deny  "update_existing_to_configured_plan_denied" "UPDATE partner_orders SET payment_plan_id='00000000-0000-0000-0000-0000000000c1' WHERE payment_plan_id IS NULL"
 [ "$($P -c "SELECT has_function_privilege('authenticated','platform_private.b2b_condition_contract_required_guard()','EXECUTE')::text||has_function_privilege('anon','platform_private.b2b_condition_contract_required_guard()','EXECUTE')::text")" = falsefalse ] && ok "no_client_execute" || fail acl
 if $P -f "$D/81-condition-required-install.sql.review" 2>"$W/e"; then fail rerun; else grep -q CCR_PRE_ALREADY_INSTALLED "$W/e" && ok "rerun_aborts" || fail rerun; fi
 $P -f "$D/96-condition-required-rollback.sql.review"

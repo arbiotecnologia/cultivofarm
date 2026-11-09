@@ -1,7 +1,7 @@
 -- REVIEW ONLY. Not applied. Auditor installs after independent review.
 -- Blocks NEW partner_orders on a plan with an approved, unretired B2B_PAYMENT_CONDITION_V1
 -- version of the seller unless the same transaction wrote the private condition snapshot
--- (create_partner_order_condition_secure). Existing orders untouched (AFTER INSERT only).
+-- (create_partner_order_condition_secure). Existing orders untouched unless their plan/partner is changed.
 BEGIN;
 DO $pre$ BEGIN
   IF current_setting('server_version_num')::int < 170000 THEN RAISE EXCEPTION 'CCR_PRE_PG_VERSION'; END IF;
@@ -9,18 +9,20 @@ DO $pre$ BEGIN
      OR to_regclass('platform_private.b2b_order_condition_snapshots') IS NULL OR to_regclass('platform_private.b2b_order_condition_quote_snapshots') IS NULL
   THEN RAISE EXCEPTION 'CCR_PRE_MISSING_RELATION'; END IF;
   IF to_regprocedure('platform_private.b2b_condition_contract_required_guard()') IS NOT NULL
-     OR EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_zz_b2b_condition_contract_required')
+     OR EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname IN ('trg_zz_b2b_condition_contract_required','trg_zz_b2b_condition_contract_required_upd'))
   THEN RAISE EXCEPTION 'CCR_PRE_ALREADY_INSTALLED'; END IF;
 END $pre$;
 
 CREATE FUNCTION platform_private.b2b_condition_contract_required_guard()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $f$
-DECLARE v_org uuid;
+DECLARE v_org uuid; v_plan uuid;
 BEGIN
-  IF NEW.payment_plan_id IS NULL THEN RETURN NULL; END IF;
-  SELECT a.commercial_owner_organization_id INTO v_org FROM public.partner_accounts a WHERE a.id = NEW.partner_id;
+  -- Deferred: re-read the committed-to-be row so insert-then-update cannot launder the plan.
+  SELECT a.commercial_owner_organization_id, po.payment_plan_id INTO v_org, v_plan
+    FROM public.partner_orders po LEFT JOIN public.partner_accounts a ON a.id = po.partner_id WHERE po.id = NEW.id;
+  IF NOT FOUND OR v_plan IS NULL THEN RETURN NULL; END IF;
   IF EXISTS (SELECT 1 FROM platform_private.b2b_condition_versions v
-              WHERE v.organization_id = v_org AND v.plan_id = NEW.payment_plan_id AND v.configuration_approved IS TRUE
+              WHERE v.organization_id = v_org AND v.plan_id = v_plan AND v.configuration_approved IS TRUE
                 AND NOT EXISTS (SELECT 1 FROM platform_private.b2b_condition_retirements r
                                  WHERE r.organization_id = v.organization_id AND r.plan_id = v.plan_id
                                    AND r.version = v.version AND r.method = v.method))
@@ -42,4 +44,8 @@ END $r$;
 CREATE CONSTRAINT TRIGGER trg_zz_b2b_condition_contract_required
   AFTER INSERT ON public.partner_orders DEFERRABLE INITIALLY DEFERRED
   FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_condition_contract_required_guard();
+CREATE CONSTRAINT TRIGGER trg_zz_b2b_condition_contract_required_upd
+  AFTER UPDATE OF payment_plan_id, partner_id ON public.partner_orders DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW WHEN (OLD.payment_plan_id IS DISTINCT FROM NEW.payment_plan_id OR OLD.partner_id IS DISTINCT FROM NEW.partner_id)
+  EXECUTE FUNCTION platform_private.b2b_condition_contract_required_guard();
 COMMIT;

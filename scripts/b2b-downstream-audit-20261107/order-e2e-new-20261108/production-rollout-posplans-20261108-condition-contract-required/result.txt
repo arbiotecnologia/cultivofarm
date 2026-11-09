@@ -5,5 +5,13 @@ PASS unapproved_version_legacy_allowed
 PASS retired_version_legacy_allowed
 PASS other_seller_unconfigured_allowed
 PASS null_plan_allowed
-FAIL update_cannot_launder_insert
-exit=1
+PASS update_cannot_launder_insert
+PASS historical_order_preserved
+PASS historical_update_not_blocked
+PASS update_existing_to_configured_plan_denied
+PASS no_client_execute
+PASS rerun_aborts
+PASS rollback_restores_legacy
+PASS reinstall_after_rollback
+RESULT PASS 15 17.11
+exit=0
