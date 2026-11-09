@@ -91,11 +91,13 @@ def run(psql0, check, md5_of, call_sql, res, out_dir, ids):
         sig = x["sig"]
         rt_live = re.search(r"\n RETURNS (.*)\n", x["definition"]).group(1)
         rt_mirror = psql(f"SELECT pg_get_function_result('{sig}'::regprocedure)").stdout.strip() if pre[sig] != "<<ABSENT>>" else None
-        if rt_mirror is not None and rt_mirror != rt_live:
+        args_live = re.search(r"FUNCTION [^(]+\((.*?)\)\n", x["definition"]).group(1)
+        args_mirror = psql(f"SELECT pg_get_function_arguments('{sig}'::regprocedure)").stdout.strip() if pre[sig] != "<<ABSENT>>" else None
+        if rt_mirror is not None and (rt_mirror != rt_live or args_mirror != args_live):
             # Return/OUT shape differs (mirror body was a reduced stub): DROP without CASCADE (fails if a dependency exists),
             # recreate verbatim, then restore exactly the mirror's previous proacl (no new grantee/privilege).
             acl = psql(f"SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid='{sig}'::regprocedure").stdout.strip()
-            res["live_exact7_drop_recreate"][sig] = {"mirror_result": rt_mirror, "live_result": rt_live, "mirror_acl_restored": acl}
+            res["live_exact7_drop_recreate"][sig] = {"mirror_result": rt_mirror, "live_result": rt_live, "mirror_args": args_mirror, "live_args": args_live, "mirror_acl_restored": acl}
             sql.append(f"DROP FUNCTION {sig};")
             sql.append(x["definition"].rstrip("\n") + ";")
             sql.append(f"REVOKE ALL ON FUNCTION {sig} FROM PUBLIC;")
