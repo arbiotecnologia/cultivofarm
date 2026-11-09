@@ -257,6 +257,7 @@ DO $$ BEGIN
  IF current_setting('b2b_forecast.review_project_ref',true) IS DISTINCT FROM '{REF}' THEN RAISE EXCEPTION 'B2B_FORECAST_REF_NOT_VERIFIED';END IF;
  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{OLD_APPROVE_MD5}' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_PRE_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '{current["approve_b2b_payment_terms_secure"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_PRE_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '{current["approve_b2b_credit"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_PRE_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '{current["fn_b2b_credit_exposure"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_PRE_DRIFT';END IF;
  IF to_regclass('platform_private.b2b_financial_forecasts') IS NOT NULL OR to_regclass('platform_private.b2b_financial_forecast_events') IS NOT NULL THEN RAISE EXCEPTION 'B2B_FORECAST_ALREADY_INSTALLED';END IF;
 END$$;
