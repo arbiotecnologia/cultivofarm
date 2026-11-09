@@ -1,4 +1,4 @@
--- REVIEW ONLY deny-only; preserva previsões/eventos e restaura aprovação LIVE.
+-- REVIEW ONLY deny-only; preserva previsões/eventos e não reabre crédito legado subestimado.
 BEGIN;
 SET LOCAL lock_timeout='3s';
 CREATE OR REPLACE FUNCTION public.approve_partner_order(p_order_id uuid, p_approval_notes text DEFAULT NULL::text, p_estimated_delivery_date date DEFAULT NULL::date)
@@ -111,7 +111,79 @@ BEGIN
 END
 $function$
 ;
+CREATE OR REPLACE FUNCTION public.approve_b2b_payment_terms_secure(p_partner_order_id uuid, p_notes text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_terms_id uuid;
+  v_created_by uuid;
+  v_numero text;
+BEGIN
+
+  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+  IF NOT (public.has_role(v_uid,'administrador')
+       OR public.has_role(v_uid,'financeiro')
+       OR public.has_role(v_uid,'gestor_comercial')) THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+
+  SELECT po.payment_terms_id, po.created_by, po.numero
+    INTO v_terms_id, v_created_by, v_numero
+  FROM public.partner_orders po
+  WHERE po.id = p_partner_order_id;
+
+  IF v_terms_id IS NULL THEN
+    RAISE EXCEPTION 'payment_terms_not_defined';
+  END IF;
+
+  UPDATE public.partner_order_payment_terms
+     SET approval_status = 'approved',
+         approved_by = v_uid,
+         approved_at = now(),
+         approval_notes = COALESCE(p_notes, approval_notes),
+         updated_at = now()
+   WHERE id = v_terms_id;
+
+  UPDATE public.partner_orders
+     SET financial_approval_status = 'approved',
+         payment_condition_status = 'approved',
+         updated_at = now()
+   WHERE id = p_partner_order_id;
+
+  INSERT INTO public.partner_order_audit_logs(order_id, acao, usuario_id, dados_novos)
+  VALUES (p_partner_order_id, 'payment_terms_approved', v_uid,
+          jsonb_build_object('notes', p_notes));
+
+  -- Notifica comercial (criador)
+  IF v_created_by IS NOT NULL THEN
+    INSERT INTO public.notificacoes_operacionais(usuario_id, tipo, titulo, mensagem, link)
+    VALUES (v_created_by, 'b2b_payment_terms',
+            'Condição financeira aprovada',
+            format('Pedido %s teve a condição de pagamento aprovada.', COALESCE(v_numero,'B2B')),
+            '/comercial/pedidos-b2b');
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'status', 'approved');
+END;
+$function$
+;
+CREATE OR REPLACE FUNCTION public.fn_b2b_credit_exposure(p_partner_id uuid, p_new_order_amount numeric DEFAULT 0, p_exclude_order_id uuid DEFAULT NULL::uuid)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $$BEGIN RAISE EXCEPTION 'B2B_CREDIT_RECONCILIATION_ROLLED_BACK' USING ERRCODE='42501';END$$;
+REVOKE ALL ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.get_b2b_financial_forecast_secure(uuid) FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb),platform_private.b2b_financial_forecast_transition_v1(uuid,integer,text,text,jsonb),platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text) FROM PUBLIC,anon,authenticated,service_role;
-DO $$ BEGIN IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '664f63441c92a6716f0117362255ec9e' THEN RAISE EXCEPTION 'B2B_FORECAST_ROLLBACK_POST_DRIFT';END IF;END$$;
+DO $$ BEGIN
+ IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '664f63441c92a6716f0117362255ec9e' THEN RAISE EXCEPTION 'B2B_FORECAST_ROLLBACK_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM 'a61daa8542058bdbf239903d655c2a1b' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_ROLLBACK_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM 'fe625e6ba823caad73696da0ff4a008c' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_ROLLBACK_POST_DRIFT';END IF;
+END$$;
 COMMIT;
