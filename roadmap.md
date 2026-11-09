@@ -1,3 +1,7 @@
+## 09/11 20:19 — UI74d2: intenção explícita de aprovações de crédito
+- [ ] Corrigir somente o link `FinanceiroB2B` → `/comercial/pedidos-b2b?status=aguardando_aprovacao_credito`: query válida deve selecionar crédito uma vez, sem persistir escolhas na URL; inválida/sem query volta a Todos, pausas do mesmo ator preservam, logout/tenant não herda e reload reseta.
+- [ ] Remover imports `useRef` não usados, testar clique/entrada válida, inválida, padrão, pausa, logout/tenant e recarga; depois conciliar a ponte fiscal pendente e entregar hashes/diff restrito. Sem SQL hospedado ou publicação.
+
 ## 09/11 19:52 — Reconciliação Seller91 e ponte fiscal com corpos atuais
 - [ ] Incorporar a captura autorizada de 101 pinagens e seis corpos atuais; corrigir o manifesto/espelho para executar Seller91 MD5 `97bcdb9884b54adb3bd4aae4915e32d0`, sem apenas declarar overlay nem reaplicar SQL hospedado.
 - [ ] Reconciliar legado `tg_auto_b2b_receivable` com B4/ponte, preservando ACL, dez gatilhos, `a00_delivery_no_downstream`, snapshots, histórico e contenções.
