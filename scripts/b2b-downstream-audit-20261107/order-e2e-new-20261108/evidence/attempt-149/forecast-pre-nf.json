@@ -1,0 +1,65 @@
+{
+  "forecast": {
+    "state": "aguardando_fiscal",
+    "version": 8,
+    "order_id": "a60be2a8-177c-4046-9237-64ad462dff26",
+    "schedule": [
+      {
+        "id": "156e178a-f90a-49c4-b517-1dc6acf133ee",
+        "amount": 124.35,
+        "status": "planned",
+        "due_date": "2026-12-09",
+        "created_at": "2026-11-09T22:24:30.947761+00:00",
+        "interest_amount": 6.48,
+        "partner_order_id": "a60be2a8-177c-4046-9237-64ad462dff26",
+        "payment_terms_id": "05080e71-b211-42db-b81b-b7a96f5fb5cd",
+        "principal_amount": 117.87,
+        "installment_number": 1,
+        "receivable_installment_id": null
+      },
+      {
+        "id": "fc5ebb1f-b5d6-43fa-8663-af9f0e6fee89",
+        "amount": 124.35,
+        "status": "planned",
+        "due_date": "2027-01-09",
+        "created_at": "2026-11-09T22:24:30.947761+00:00",
+        "interest_amount": 4.36,
+        "partner_order_id": "a60be2a8-177c-4046-9237-64ad462dff26",
+        "payment_terms_id": "05080e71-b211-42db-b81b-b7a96f5fb5cd",
+        "principal_amount": 119.99,
+        "installment_number": 2,
+        "receivable_installment_id": null
+      },
+      {
+        "id": "3336eacb-ba3c-476c-8df3-e29eac0c8982",
+        "amount": 124.34,
+        "status": "planned",
+        "due_date": "2027-02-09",
+        "created_at": "2026-11-09T22:24:30.947761+00:00",
+        "interest_amount": 2.2,
+        "partner_order_id": "a60be2a8-177c-4046-9237-64ad462dff26",
+        "payment_terms_id": "05080e71-b211-42db-b81b-b7a96f5fb5cd",
+        "principal_amount": 122.14,
+        "installment_number": 3,
+        "receivable_installment_id": null
+      }
+    ],
+    "created_at": "2026-11-09T22:24:31.864071+00:00",
+    "partner_id": "00000000-0000-0000-0000-000000000011",
+    "updated_at": "2026-11-09T22:24:32.373526+00:00",
+    "forecast_id": "36905aaf-212e-4f96-bde2-ef5dbf5a5041",
+    "total_amount": 373.04,
+    "last_error_code": "LOCAL_RETRY_CLOSED",
+    "organization_id": "00000000-0000-0000-0000-000000000001",
+    "residual_amount": 373.04,
+    "fiscal_intent_id": "00000000-0000-0000-0000-000000000950",
+    "due_dates_estimated": true
+  },
+  "replay": {
+    "state": "aguardando_fiscal",
+    "replayed": true,
+    "forecast_id": "36905aaf-212e-4f96-bde2-ef5dbf5a5041"
+  },
+  "cross_tenant_denied": "ERROR:  42501: B2B_FORECAST_READ_DENIED\nCONTEXT:  PL/pgSQL function public.get_b2b_financial_forecast_secure(uuid) line 11 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+  "receivables_before_nf": 0
+}

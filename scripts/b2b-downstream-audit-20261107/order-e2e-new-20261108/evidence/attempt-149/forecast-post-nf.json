@@ -1,0 +1,44 @@
+{
+  "forecast": {
+    "state": "faturado_total",
+    "version": 9,
+    "residual_amount": 0.0
+  },
+  "credit_before": {
+    "partner_id": "00000000-0000-0000-0000-000000000011",
+    "novo_pedido": 0.0,
+    "reason_code": "OK",
+    "credit_limit": 1000000.0,
+    "tem_vencidos": false,
+    "saldo_vencido": 0.0,
+    "exposicao_atual": 5968.64,
+    "saldo_em_aberto": 0.0,
+    "block_if_overdue": false,
+    "credito_disponivel": 994031.36,
+    "credit_limit_action": "block",
+    "exposicao_projetada": 5968.64,
+    "percentual_utilizado": 0.6,
+    "comprometido_pendente": 0.0,
+    "overdue_tolerance_days": 0,
+    "comprometido_nao_faturado": 5968.64
+  },
+  "credit_after": {
+    "partner_id": "00000000-0000-0000-0000-000000000011",
+    "novo_pedido": 0.0,
+    "reason_code": "OK",
+    "credit_limit": 1000000.0,
+    "tem_vencidos": false,
+    "saldo_vencido": 0.0,
+    "exposicao_atual": 5968.64,
+    "saldo_em_aberto": 373.04,
+    "block_if_overdue": false,
+    "credito_disponivel": 994031.36,
+    "credit_limit_action": "block",
+    "exposicao_projetada": 5968.64,
+    "percentual_utilizado": 0.6,
+    "comprometido_pendente": 0.0,
+    "overdue_tolerance_days": 0,
+    "comprometido_nao_faturado": 5595.6
+  },
+  "one_title_for_invoice": true
+}
