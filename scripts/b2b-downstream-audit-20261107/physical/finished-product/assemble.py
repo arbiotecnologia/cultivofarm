@@ -88,6 +88,24 @@ def trigger_pin(entry):
 END$$;"""
 
 
+def acl_items_sql(acl_expression):
+    """Canonical exact ACL comparison: order-insensitive, privilege/grantor-sensitive."""
+    return f"""(SELECT coalesce(jsonb_agg(item::text ORDER BY item::text COLLATE "C"),'[]'::jsonb) FROM unnest({acl_expression}) AS acl_items(item))"""
+
+
+def relation_pin(rel):
+    schema = rel.get("schema", "public")
+    name = rel["name"]
+    label = f"{schema}.{name}"
+    relation = f"""(SELECT c.oid FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname={lit(schema)} AND c.relname={lit(name)})"""
+    expected_acl = f"{lit(rel['acl'])}::aclitem[]" if rel["acl"] else "NULL::aclitem[]"
+    return f"""DO $$DECLARE actual jsonb;expected jsonb:={acl_items_sql(expected_acl)};BEGIN
+ SELECT {acl_items_sql('c.relacl')} INTO actual FROM pg_class c WHERE c.oid={relation};
+ IF (SELECT r.rolname FROM pg_class c JOIN pg_roles r ON r.oid=c.relowner WHERE c.oid={relation}) IS DISTINCT FROM {lit(rel['owner'])}
+  OR actual IS DISTINCT FROM expected THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT {label}';END IF;
+END$$;"""
+
+
 def build():
     functions = {x["signature"]: x for x in BASE["functions"]}
     dependencies = {x["signature"]: x for x in BASE.get("dependency_functions", [])}
