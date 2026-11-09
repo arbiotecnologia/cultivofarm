@@ -316,6 +316,7 @@ REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_after_approval_v1
 DO $$ BEGIN
  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{OLD_APPROVE_MD5}' THEN RAISE EXCEPTION 'B2B_FORECAST_ROLLBACK_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '{current["approve_b2b_payment_terms_secure"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_ROLLBACK_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '{current["approve_b2b_credit"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_ROLLBACK_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '{credit_rollback_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_ROLLBACK_POST_DRIFT';END IF;
 END$$;
 COMMIT;
