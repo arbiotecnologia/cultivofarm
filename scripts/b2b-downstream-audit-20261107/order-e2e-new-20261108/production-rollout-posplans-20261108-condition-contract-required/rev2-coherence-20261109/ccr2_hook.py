@@ -74,6 +74,7 @@ def run(ns):
         r = subprocess.run(SP.su() + ["psql", "-X", "-q", "-h", SP.SOCK[0], "-p", SP.PORT, "-U", "postgres", "-d", "t", "-v", "ON_ERROR_STOP=%s" % ("0" if os.environ.get("CCR2_PROBE") == "1" else "1"), "-f", str(f)], capture_output=True, text=True, timeout=120)
         if os.environ.get("CCR2_PROBE") == "1": r = subprocess.CompletedProcess(r.args, 9, r.stdout, "\n".join(l for l in r.stderr.splitlines() if "ERROR" in l))
         lv = {k: {"mirror": md5_of(k), "live": v} for k, v in live_bodies.LIVE.items()}
+        res["live_bodies_other_md5_unconfirmed"] = {k: md5_of(k) for k in live_bodies.OTHER}
         res["live_bodies"] = {"install_rc": r.returncode, "install_err": r.stderr[-6000:], "md5": lv, "seams": [x[0] for x in live_bodies.SEAMS]}
         check("CCR2 LIVE: corpos atuais (cc1f6cc) instalados no espelho", r.returncode == 0, r.stderr[-400:])
         check("CCR2 LIVE: md5 dos writers no espelho = LIVE informado", all(x["mirror"] == x["live"] for x in lv.values()), lv)

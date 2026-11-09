@@ -19,6 +19,9 @@ def fn(path, name):
 
 # Reduced-harness schema seams: columns/objects that exist in LIVE (see cc1f6cc captures) but not in the B3 mirror.
 # Columns only add structure; no grant, no data beyond deterministic backfill of the mirror's own synthetic rows.
+# Other cc1f6cc bodies exercised by 81 tests; LIVE md5 not supplied by the auditor -> reported for comparison, never treated as pinned.
+OTHER = ["public.respond_b2b_order_quote_secure(uuid,text,text,date,text,uuid,uuid)"]
+
 SEAMS = [
  ("clientes.status_cliente", "ALTER TABLE public.clientes ADD COLUMN IF NOT EXISTS status_cliente text NOT NULL DEFAULT 'ativo';"),
  ("commercial_payment_plans.created_by/is_default/sort_order + code_key/uq_cpp_single_default (LIVE pre-cc1f6cc shape)",
