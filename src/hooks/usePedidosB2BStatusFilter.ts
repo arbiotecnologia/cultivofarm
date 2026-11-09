@@ -5,7 +5,7 @@ import { pauseStateKey, readPauseState, writePauseState } from "@/lib/authz/paus
 
 export const PEDIDOS_B2B_DEFAULT_STATUS = "all";
 
-type FilterState = { key: string | null; value: string; consume: boolean };
+type FilterState = { key: string | null; value: string };
 
 /**
  * Preferência NÃO sensível (valor do filtro de status) de /comercial/pedidos-b2b,
