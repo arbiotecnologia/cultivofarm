@@ -1,0 +1,10 @@
+[
+  {
+    "test": "fresh full physical catalog restoration and reviewed upstream composition",
+    "status": "PASS"
+  },
+  {
+    "test": "new composition",
+    "status": "FAIL"
+  }
+]
