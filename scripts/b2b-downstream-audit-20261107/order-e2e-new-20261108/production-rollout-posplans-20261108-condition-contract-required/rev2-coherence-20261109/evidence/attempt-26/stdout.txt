@@ -1,0 +1,21 @@
+FAIL CCR2 LIVE: partner_users.valid_from timestamptz NOT NULL DEFAULT now() 
+FAIL CCR2 LIVE23: md5(pg_get_functiondef) dos 23 no espelho = captura produção 09/11 {'platform_private.entitlements_for_user(uuid)': {'mirror_before': '96cee77def46bad306f05747db882529', 'live': '7f4ec7facaebbdf35444dd490fdebe56', 'mirror_after': '96cee77def46bad306f05747db882529', 'acl_live': '{postgres=X/postgres,service_role=X/postgres}', 'acl_after': '', 'rc': 3, 'err': 'ERROR:  relation "public.organization_subscriptions" does not exist\nLINE 20:     FROM public.organization
+FAIL CCR2 LIVE23: ACL (aclitems ordenados) dos 23 no espelho = ACL produção 09/11 {'platform_private.entitlements_for_user(uuid)': ('', '{postgres=X/postgres,service_role=X/postgres}')}
+FAIL CCR2 positivo: writer REAL de condição (parceiro P do piloto) cria pedido com snapshot coerente ERROR:  function platform_private.b2b_commercial_context() does not exist
+LINE 1: c := platform_private.b2b_commercial_context()
+             ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+QUERY:  c := platform_private.b2b_commercial_context()
+CONTEXT:  PL/pgSQL function platform_private.c2_owner_order_create_allowed(uuid,uuid) line 8 at 
+FAIL CCR2 positivo: novo parceiro PN (piloto ampliado) cria pedido com snapshot coerente ERROR:  function platform_private.b2b_commercial_context() does not exist
+LINE 1: c := platform_private.b2b_commercial_context()
+             ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+QUERY:  c := platform_private.b2b_commercial_context()
+CONTEXT:  PL/pgSQL function platform_private.c2_owner_order_create_allowed(uuid,uuid) line 8 at 
+FAIL CCR2 alcance: tenant F sem ativação segue contrato atual (sem bloqueio global) ERROR:  function platform_private.b2b_commercial_context() does not exist
+LINE 1: c := platform_private.b2b_commercial_context()
+             ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+QUERY:  c := platform_private.b2b_commercial_context()
+CONTEXT:  PL/pgSQL function platform_private.c2_owner_order_create_allowed(uuid,uuid) line 8 at 
