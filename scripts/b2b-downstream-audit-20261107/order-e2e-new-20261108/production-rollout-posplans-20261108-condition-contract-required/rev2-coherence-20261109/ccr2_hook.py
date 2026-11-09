@@ -315,7 +315,7 @@ def run(ns):
                 h.stdin.write("COMMIT;\n"); h.stdin.close(); h.communicate(timeout=30)
                 o, e = rsp.communicate(timeout=60)
                 psql(restore)
-                res["seller_respond"]["lock_" + label] = {"waited": waited, "err": e[-400:], "rc": rsp.returncode}
+                res["seller_respond"]["lock_" + label] = {"waited": waited, "err": e, "rc": rsp.returncode}
                 check(f"CCR2 RESPOND FIX lock: {label} — esperou o lock, negou ({expect}) sem gravar/replay",
                       waited and rsp.returncode != 0 and any(x in e for x in expect) and qs(jq["id"]) == st1 and receipts() == rc0, e[-300:])
             for who, uid, tok in (("financeiro da empresa dona (sem autoridade de preço)", UFIN, "forbidden_quote_response"),
