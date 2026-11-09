@@ -1,0 +1,111 @@
+{
+  "status": "PASS",
+  "exit_code": 0,
+  "checks": [
+    {
+      "name": "checkpoint descartável da composição capturada restaurado",
+      "status": "PASS",
+      "detail": "42d547a914f64fa09de24d3aef20e8ddad148cc38e09c40dad28536222968fa0"
+    },
+    {
+      "name": "baseline LIVE integral: 20 corpos, 120 triggers, 17 ACLs e 4 dependências medidas",
+      "status": "PASS",
+      "detail": "8a53b1443ed789c76115b9ef16807ae835e1e0bda888d50e6f1606197792a6ac"
+    },
+    {
+      "name": "writers de confirmação/envio ativados somente no PostgreSQL descartável",
+      "status": "PASS"
+    },
+    {
+      "name": "UNIQUE global codigo_lote continua instalada sem alteração",
+      "status": "PASS"
+    },
+    {
+      "name": "ARBio/FSF sintéticos recebem mesmo lote externo com códigos internos distintos",
+      "status": "PASS"
+    },
+    {
+      "name": "mesmo tenant/produto/apresentação aceita recebimento diferente do mesmo lote externo",
+      "status": "PASS"
+    },
+    {
+      "name": "apresentações distintas preservam conteúdo e referência externa exata; código é UUID servidor",
+      "status": "PASS"
+    },
+    {
+      "name": "quatro recebimentos têm exatamente quatro entradas com lote fornecedor intacto no ledger",
+      "status": "PASS"
+    },
+    {
+      "name": "mesma chave/payload retorna mesmos IDs sem gerar outro lote",
+      "status": "PASS"
+    },
+    {
+      "name": "mesma chave com quantidade divergente conflita",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT"
+    },
+    {
+      "name": "mesma chave com referência externa divergente conflita",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT"
+    },
+    {
+      "name": "mesma chave com apresentação divergente conflita",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT"
+    },
+    {
+      "name": "ator FSF não compra produto ARBio",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_CATALOG_DENIED"
+    },
+    {
+      "name": "ator FSF não recupera receipt ARBio pela mesma chave",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT"
+    },
+    {
+      "name": "replay e conflitos não duplicam saldo, lote ou ledger; ARBio mantém 9 UN/165 kg",
+      "status": "PASS"
+    }
+  ],
+  "raw": [
+    {
+      "name": "mesma chave com quantidade divergente conflita",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  23505: FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) line 42 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "name": "mesma chave com referência externa divergente conflita",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  23505: FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) line 42 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "name": "mesma chave com apresentação divergente conflita",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  23505: FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) line 42 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "name": "ator FSF não compra produto ARBio",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: FINISHED_PRODUCT_CATALOG_DENIED\nCONTEXT:  PL/pgSQL function platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) line 53 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "name": "ator FSF não recupera receipt ARBio pela mesma chave",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  23505: FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) line 42 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  ],
+  "hosted": false,
+  "synthetic_seams": [
+    "Auth/claims e fixtures ARBio/FSF locais, não identidades reais",
+    "catálogo/apresentação upstream com replica; compra executa todos os triggers habilitados",
+    "PostgreSQL descartável, não JWT/RLS/Storage hosted nem E2E de pedido B2B"
+  ]
+}

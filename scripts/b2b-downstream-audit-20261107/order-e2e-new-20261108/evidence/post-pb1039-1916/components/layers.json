@@ -1,0 +1,26 @@
+{
+  "kind": "DISPOSABLE_FINISHED_PRODUCT_LAYERED_INSTALL_NOT_HOSTED",
+  "status": "FAIL",
+  "exit_code": 1,
+  "passed": 0,
+  "total": 1,
+  "checks": [
+    {
+      "name": "execução das camadas terminou no ponto concreto",
+      "status": "FAIL",
+      "detail": "Traceback (most recent call last):\n  File \"/tmp/post-pb1039-components-BvBXHT/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_layers.py\", line 22, in main\n    B.restore_checkpoint()\n    ~~~~~~~~~~~~~~~~~~~~^^\n  File \"/tmp/post-pb1039-components-BvBXHT/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 83, in restore_checkpoint\n    assert cached.is_file() and cached.is_relative_to(Path(\"/tmp\"))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+    }
+  ],
+  "hosted": false,
+  "reported_live_state": {
+    "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)": "ABSENT",
+    "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)": "ABSENT",
+    "other_six": "REPORTED_MATCH"
+  },
+  "synthetic_seams": [
+    "ausência simulada por DROP somente na composição descartável; nenhuma nova leitura ou escrita LIVE",
+    "dependências reconstituídas com os corpos capturados e MD5 conferidos antes da camada downstream",
+    "Auth/claims, produto, demanda e comprovante fictícios; sem JWT/RLS/Storage/PostgREST/browser",
+    "nenhum efeito fiscal, financeiro, contábil ou de comunicação"
+  ]
+}

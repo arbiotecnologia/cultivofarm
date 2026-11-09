@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { clearAllPauseStates, pauseStateKey, writePauseState } from "@/lib/authz/pauseRetainedState";
 
 let auth: any;
@@ -12,7 +13,12 @@ const actor = (uid: string, org: string, epoch = 0, authzReady = true) => ({
   user: { id: uid }, profile: { user_id: uid, organization_id: org, ativo: true },
   roles: ["comercial"], authzEpoch: epoch, authzReady, loading: false,
 });
-const use = () => renderHook(() => usePedidosB2BStatusFilter(OPTS, DEF));
+let observedSearch = "";
+const LocationProbe = () => { observedSearch = useLocation().search; return null; };
+const use = (initial = "/comercial/pedidos-b2b") => renderHook(
+  () => usePedidosB2BStatusFilter(OPTS, DEF),
+  { wrapper: ({ children }) => <MemoryRouter initialEntries={[initial]}><LocationProbe />{children}</MemoryRouter> },
+);
 
 describe("filtro de status /comercial/pedidos-b2b", () => {
   beforeEach(() => { clearAllPauseStates(); auth = actor("uA", "orgA"); });
@@ -22,6 +28,20 @@ describe("filtro de status /comercial/pedidos-b2b", () => {
     act(() => h.result.current[1]("all"));
     h.unmount();
     expect(use().result.current[0]).toBe("all");
+  });
+
+  it("reload real preserva o filtro na URL, mesmo sem memória volátil", () => {
+    const h = use("/comercial/pedidos-b2b?aba=carteira");
+    act(() => h.result.current[1]("all"));
+    expect(observedSearch).toBe("?aba=carteira&status=all");
+    h.unmount();
+    clearAllPauseStates(); // um reload perde todo o Map volátil
+    expect(use(`/comercial/pedidos-b2b${observedSearch}`).result.current[0]).toBe("all");
+  });
+
+  it("status explícito no endereço prevalece sobre a retenção da pausa", () => {
+    writePauseState(`${pauseStateKey({ userId: "uA", organizationId: "orgA", roles: ["comercial"], epoch: 0 })}:pedidos-b2b:status`, "all");
+    expect(use("/comercial/pedidos-b2b?status=aprovado").result.current[0]).toBe("aprovado");
   });
 
   it("ready -> revalidando (nova época) -> ready não reseta", () => {
@@ -42,7 +62,7 @@ describe("filtro de status /comercial/pedidos-b2b", () => {
   });
 
   it("troca A -> B não herda (montado e remontado)", () => {
-    const h = renderHook(() => usePedidosB2BStatusFilter(OPTS, DEF));
+    const h = use();
     act(() => h.result.current[1]("all"));
     auth = actor("uB", "orgB");
     h.rerender();

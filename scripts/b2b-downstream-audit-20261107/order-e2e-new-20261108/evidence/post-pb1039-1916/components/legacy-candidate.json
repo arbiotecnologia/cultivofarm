@@ -1,0 +1,12 @@
+{
+  "status": "FAIL",
+  "checks": [
+    {
+      "name": "FAIL ",
+      "status": "PASS"
+    }
+  ],
+  "candidate_installed": true,
+  "gate_enabled": false,
+  "hosted": false
+}

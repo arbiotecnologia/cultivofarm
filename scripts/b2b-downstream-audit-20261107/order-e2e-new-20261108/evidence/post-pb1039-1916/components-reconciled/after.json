@@ -1,0 +1,32 @@
+{
+  "status": "FAIL",
+  "checks": [
+    {
+      "name": "checkpoint descartável da composição capturada restaurado",
+      "status": "PASS",
+      "detail": "42d547a914f64fa09de24d3aef20e8ddad148cc38e09c40dad28536222968fa0"
+    },
+    {
+      "name": "baseline LIVE integral: 20 corpos, 120 triggers, 17 ACLs e 4 dependências medidas",
+      "status": "PASS",
+      "detail": "8a53b1443ed789c76115b9ef16807ae835e1e0bda888d50e6f1606197792a6ac"
+    },
+    {
+      "name": "writers de confirmação/envio ativados somente no PostgreSQL descartável",
+      "status": "PASS"
+    },
+    {
+      "name": "FAIL CURRENT_LIVE_BASELINE_DRIFT\ntrigger_function_md5:entregas:trg_validate_entrega_confirmacao:d0da45cbb808b0315947404f99aa3da4!=6add438d185c91379d436dc90d1e7617\ntrigger_function_md5:entregas:zz_delivery_mutation_closed:5a8dcd6c12274fabe4a1a8498f4354be!=8fa73fc045c51addd05576597ecd4c88\nTraceback (most recent call last):\n  File \"/tmp/post-pb1039-components-BvBXHT/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py\", line 89, in main\n    B.restore_checkpoint()\n    ~~~~~~~~~~~~~~~~~~~~^^\n  File \"/tmp/post-pb1039-components-BvBXHT/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 129, in restore_checkpoint\n    current_catalog.assert_current(last)\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"/tmp/post-pb1039-components-BvBXHT/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/current_catalog.py\", line 275, in assert_current\n    raise AssertionError(\"CURRENT_LIVE_BASELINE_DRIFT\\n\" + \"\\n\".join(errors))\nAssertionError: CURRENT_LIVE_BASELINE_DRIFT\ntrigger_function_md5:entregas:trg_validate_entrega_confirmacao:d0da45cbb808b0315947404f99aa3da4!=6add438d185c91379d436dc90d1e7617\ntrigger_function_md5:entregas:zz_delivery_mutation_closed:5a8dcd6c12274fabe4a1a8498f4354be!=8fa73fc045c51addd05576597ecd4c88\n",
+      "status": "PASS"
+    }
+  ],
+  "hosted": false,
+  "real_nf_or_receivable": false,
+  "purchase_origin": "compra_produto_acabado_revenda",
+  "synthetic_seams": [
+    "Auth/claims e chamada interna privilegiada somente no PG descartável",
+    "schema de catálogo atual reconciliado na captura antiga; sem writers Owned ou preços",
+    "guard de tenant capturado e pinado; sonda isolada só para a função de entrada, além da composição real dos triggers",
+    "produtos/demanda/comprovantes fictícios; entrada e downstream com triggers reais"
+  ]
+}

@@ -1,0 +1,253 @@
+{
+  "kind": "STATIC_B4_REVIEW_MANUAL_NULL_1813_NO_HOSTED",
+  "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
+  "historical_63_added": false,
+  "passed": 61,
+  "total": 61,
+  "checks": [
+    {
+      "name": "gerado determinístico: b4-candidate.sql.review",
+      "ok": true
+    },
+    {
+      "name": "gerado determinístico: 01-pre.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "gerado determinístico: 02-install.sql.review",
+      "ok": true
+    },
+    {
+      "name": "gerado determinístico: 03-post.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "gerado determinístico: 04-rollback-deny.sql.review",
+      "ok": true
+    },
+    {
+      "name": "gerado determinístico: b4-pins.json",
+      "ok": true
+    },
+    {
+      "name": "gerado determinístico: SHA256SUMS",
+      "ok": true
+    },
+    {
+      "name": "gerado determinístico: live-readonly-4097d4e2.json",
+      "ok": true
+    },
+    {
+      "name": "gerado determinístico: live-readonly-manual-null-1813.json",
+      "ok": true
+    },
+    {
+      "name": "gerado determinístico: b4-object-manifest.json",
+      "ok": true
+    },
+    {
+      "name": "status permanece inativo/bloqueado/não aprovado",
+      "ok": true
+    },
+    {
+      "name": "manifesto cobre 56 alterações sem contagem de testes sobreposta",
+      "ok": true
+    },
+    {
+      "name": "histórico 63 preservado byte a byte",
+      "ok": true
+    },
+    {
+      "name": "histórico não é promovido nem somado",
+      "ok": true
+    },
+    {
+      "name": "ref canônico explícito",
+      "ok": true
+    },
+    {
+      "name": "quatro achados do revisor têm entradas próprias",
+      "ok": true
+    },
+    {
+      "name": "writers compartilhados são REPLACE com baseline",
+      "ok": true
+    },
+    {
+      "name": "projeção é CREATE com ausência LIVE relatada",
+      "ok": true
+    },
+    {
+      "name": "não há baseline de projeção inventada",
+      "ok": true
+    },
+    {
+      "name": "PRE exige zero overloads pelo catálogo pg_proc",
+      "ok": true
+    },
+    {
+      "name": "POST exige exatamente um overload da projeção",
+      "ok": true
+    },
+    {
+      "name": "índice compartilhado é DROP_AND_RECREATE com definição LIVE relatada",
+      "ok": true
+    },
+    {
+      "name": "todos os objetos têm baseline e candidato",
+      "ok": true
+    },
+    {
+      "name": "objetos novos exigem ausência no PRE",
+      "ok": true
+    },
+    {
+      "name": "inventário de funções cobre exatamente o corpo candidato",
+      "ok": true
+    },
+    {
+      "name": "duplicidade histórica do guard compartilhado fica visível",
+      "ok": true
+    },
+    {
+      "name": "toda função candidata tem MD5 no manifesto",
+      "ok": true
+    },
+    {
+      "name": "todo MD5 de função nova aparece no POST",
+      "ok": true
+    },
+    {
+      "name": "MD5/owner/ACL dos writers relatados aparecem no PRE",
+      "ok": true
+    },
+    {
+      "name": "tabela compartilhada tem todas as colunas",
+      "ok": true
+    },
+    {
+      "name": "tabela compartilhada tem todas as constraints",
+      "ok": true
+    },
+    {
+      "name": "tabela compartilhada tem ACL/RLS/owner",
+      "ok": true
+    },
+    {
+      "name": "todos os índices compartilhados entram no PRE/POST",
+      "ok": true
+    },
+    {
+      "name": "dez triggers compartilhados entram no PRE/POST",
+      "ok": true
+    },
+    {
+      "name": "trigger automático dependente também é pinado",
+      "ok": true
+    },
+    {
+      "name": "coluna/FK novas exigem ausência e têm pós-condição",
+      "ok": true
+    },
+    {
+      "name": "baixa não B2B sem parceiro usa matemática legada",
+      "ok": true
+    },
+    {
+      "name": "prova obrigatória cobre B2B ou devedor resolvido inclusive partner_id NULL",
+      "ok": true
+    },
+    {
+      "name": "origem desconhecida de parceiro continua explicitamente bloqueada",
+      "ok": true
+    },
+    {
+      "name": "resolvedor de escopo é função nova owner-only",
+      "ok": true
+    },
+    {
+      "name": "crédito inclui cliente ligado sem UNION nem dupla contagem",
+      "ok": true
+    },
+    {
+      "name": "ambiguidade, conflito e owner têm negações explícitas",
+      "ok": true
+    },
+    {
+      "name": "não há backfill dos cinco títulos nem cancelamento LIVE",
+      "ok": true
+    },
+    {
+      "name": "forma LIVE relatada 4 OPEN/1 OVERDUE permanece bloqueio de aprovação",
+      "ok": true
+    },
+    {
+      "name": "crédito usa prova monetária interna no tenant vendedor",
+      "ok": true
+    },
+    {
+      "name": "limite zero é configuração válida; NULL/negativo/NaN continuam fechados",
+      "ok": true
+    },
+    {
+      "name": "limite zero positivo usa limite excedido, nunca NO_LIMIT_DEFINED",
+      "ok": true
+    },
+    {
+      "name": "residual legado não usa projeção do ator comprador",
+      "ok": true
+    },
+    {
+      "name": "projeção pública conserva guard de ator, papel e tenant",
+      "ok": true
+    },
+    {
+      "name": "resolvedor interno é função nova owner-only",
+      "ok": true
+    },
+    {
+      "name": "blocos DO do PRE balanceados",
+      "ok": true
+    },
+    {
+      "name": "blocos DO do POST balanceados",
+      "ok": true
+    },
+    {
+      "name": "instalação é transacional e contém PRE+POST",
+      "ok": true
+    },
+    {
+      "name": "instalação não contém GRANT",
+      "ok": true
+    },
+    {
+      "name": "instalação não injeta stub operacional",
+      "ok": true
+    },
+    {
+      "name": "dependência operacional real permanece sempre deny",
+      "ok": true
+    },
+    {
+      "name": "separação instalação/operação declarada",
+      "ok": true
+    },
+    {
+      "name": "funções novas não herdam EXECUTE de PUBLIC",
+      "ok": true
+    },
+    {
+      "name": "rollback é deny-only e exige POST completo",
+      "ok": true
+    },
+    {
+      "name": "impacto em dados LIVE continua bloqueio explícito",
+      "ok": true
+    },
+    {
+      "name": "hashes gerados cobrem os artefatos",
+      "ok": true
+    }
+  ]
+}

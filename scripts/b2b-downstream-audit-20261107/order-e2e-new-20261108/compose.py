@@ -237,6 +237,12 @@ def main():
   (OUT/'buyer-order.json').write_text(json.dumps(data,indent=2)+'\n')
   checks.append(dict(test='new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery',status='PASS',order_id=order_id))
   before=json.loads(Q.psql(f"SELECT to_jsonb(o)::text FROM public.partner_orders o WHERE id='{order_id}'").stdout.strip())
+  promotion_denied,promotion_denied_error=Q.call(Q.UADM,f"public.c2_promote_accounting_pending_order_v1('{order_id}','{before['updated_at']}'::timestamptz)")
+  assert promotion_denied is None and 'C2_ACCOUNTING_PENDING' in (promotion_denied_error or ''),promotion_denied_error or promotion_denied
+  after_promotion_denied=json.loads(Q.psql(f"SELECT to_jsonb(o)::text FROM public.partner_orders o WHERE id='{order_id}'").stdout.strip())
+  assert after_promotion_denied==before,'promotion denied before accounting changed order'
+  (OUT/'accounting-pending-promotion-denial.json').write_text(json.dumps(dict(status='PASS',error=promotion_denied_error,order_unchanged=True,hosted=False),indent=2)+'\n')
+  checks.append(dict(test='accounting pending promotion denied atomically before synthetic validation',status='PASS'))
   denied=Q.as_user(Q.UADM,f"SELECT public.approve_partner_order('{order_id}',NULL,NULL);")
   assert denied.returncode!=0 and 'C2_ACCOUNTING_PENDING' in denied.stderr,denied.stderr
   after_denied=json.loads(Q.psql(f"SELECT to_jsonb(o)::text FROM public.partner_orders o WHERE id='{order_id}'").stdout.strip())
