@@ -264,9 +264,13 @@ def run(ns):
         check("CCR2 concorrência aposentadoria: PC tem opção atribuída", False, "sem opção para PC")
     # ---------- snapshot immutability / ACL (B3 objects, read-only checks) ----------
     for t in ("b2b_order_condition_snapshots", "b2b_order_condition_quote_snapshots", "b2b_condition_assignment_revocations", "b2b_condition_retirements"):
+        n = psql(f"SELECT count(*) FROM platform_private.{t}").stdout.strip()
         e = psql(f"BEGIN; UPDATE platform_private.{t} SET created_at=created_at WHERE true; ROLLBACK;" if t.endswith("snapshots") else f"BEGIN; DELETE FROM platform_private.{t}; ROLLBACK;", check=False)
         n = psql(f"SELECT count(*) FROM platform_private.{t}").stdout.strip()
-        check(f"CCR2 {t}: UPDATE/DELETE negados pelo gatilho imutável (mesmo postgres)", n == "0" or "B2B_CONDITION_RECORD_IMMUTABLE" in e.stderr, e.stderr[-160:])
+        n2 = psql(f"SELECT count(*) FROM platform_private.{t}").stdout.strip()
+        res.setdefault("immutability", {})[t] = {"rows": n, "error": (e.stderr or "").strip().splitlines()[:1]}
+        check(f"CCR2 {t}: há linhas e UPDATE/DELETE é negado pelo gatilho imutável (mesmo postgres), contagem preservada",
+              int(n) > 0 and e.returncode != 0 and "B2B_CONDITION_RECORD_IMMUTABLE" in e.stderr and n2 == n, (n, n2, e.stderr[-160:]))
         acl = psql(f"SELECT bool_or(has_table_privilege(r,'platform_private.{t}','SELECT,INSERT,UPDATE,DELETE,TRUNCATE')) FROM unnest(ARRAY['anon','authenticated','service_role']) r").stdout.strip()
         check(f"CCR2 {t}: nenhum privilégio de tabela para anon/authenticated/service_role", acl == "f", acl)
     # ---------- writer pins used here vs LIVE reported by the auditor (never repinned) ----------
