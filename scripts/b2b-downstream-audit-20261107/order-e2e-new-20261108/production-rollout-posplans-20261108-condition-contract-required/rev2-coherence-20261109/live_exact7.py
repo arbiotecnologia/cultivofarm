@@ -101,6 +101,12 @@ ALTER TABLE public.entregas ADD COLUMN IF NOT EXISTS estoque_produto_id uuid;
 ALTER TABLE public.platform_org_admin_invites ADD COLUMN IF NOT EXISTS access_operation_status text, ADD COLUMN IF NOT EXISTS access_valid_after timestamptz;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS senha_provisoria boolean NOT NULL DEFAULT false;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+ALTER TABLE public.partner_users ADD COLUMN IF NOT EXISTS version integer NOT NULL DEFAULT 1;
+DO $u$ BEGIN
+ IF to_regclass('public.user_clientes') IS NULL THEN CREATE TABLE public.user_clientes(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid, cliente_id uuid, is_active boolean NOT NULL DEFAULT true, revoked_at timestamptz, valid_from timestamptz NOT NULL DEFAULT now(), valid_until timestamptz); REVOKE ALL ON public.user_clientes FROM PUBLIC; END IF;
+ IF to_regclass('public.fazendas') IS NULL THEN CREATE TABLE public.fazendas(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), cliente_id uuid, organization_id uuid, ativo boolean NOT NULL DEFAULT true); REVOKE ALL ON public.fazendas FROM PUBLIC; END IF;
+END $u$;
 DO $j$ BEGIN IF to_regprocedure('auth.jwt()') IS NULL THEN
  -- Declared Auth seam (Supabase shape): claims from request.jwt.claims; iat absent -> access_valid_after branch inert.
  CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $f$ SELECT coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $f$;
@@ -108,12 +114,16 @@ END IF; END $j$;"""
 
 # Real hosted capture of 22/10 (contracts-c2 integral hosted-capture.json fns[98]); NOT reconfirmed 09/11 -> declared, capture requested.
 HC = ROOT / "scripts/contracts-c2-20261022/integral/hosted-capture.json"
+RR = ROOT / "scripts/financial-installments-initial-20261024/receivable-recursive-live-20261029.json"  # real production 29/10
 PD = ROOT / "scripts/arbio-fsf-incremental-20261029/capture/production-dependencies.json"  # real production capture 29/10
 def hosted_fn(name):
     """Newest real production capture in the repo: 29/10 production-dependencies first, then 22/10 hosted-capture."""
     for f in json.loads(PD.read_text())["functions"]:
         if f["signature"].split("(")[0] == name and hashlib.md5(f["body"].encode()).hexdigest() == f["md5"]:
             return f["body"], "arbio-fsf-incremental-20261029 production-dependencies 29/10 md5 " + f["md5"]
+    for f in json.loads(RR.read_text())["functions"]:
+        if f["signature"].split("(")[0] == name and hashlib.md5(f["body"].encode()).hexdigest() == f["md5"]:
+            return f["body"], "financial-installments-initial-20261024 receivable-recursive-live 29/10 md5 " + f["md5"]
     for f in json.loads(HC.read_text())["fns"]:
         if f.get("def", "").startswith("CREATE OR REPLACE FUNCTION " + name + "("):
             return f["def"], "contracts-c2-20261022 hosted-capture 22/10 md5 " + f.get("md5", "?")
