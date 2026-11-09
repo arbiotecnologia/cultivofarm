@@ -37,12 +37,14 @@ def run(B, Review, Q, A, choice, out):
 
     # SQL roles/claims are synthetic transport only: never hosted JWT/RLS/Storage proof.
     R = Review(B, Q, A, choice, {})
+    R.sequence = int(time.time() * 1000) % 100000000
     fixture = R.make_order([Q.S(3)], "pilot-contained")
+    run_id = fixture["journal"]["key"][:16]
     order, item = fixture["id"], fixture["items"][0]
     item_id, product = item["id"], item["product_id"]
-    os_key = "pilot-os-create-0001"
+    os_key = f"pilot-os-create-{run_id}"
     create = R.os_create_sql(order, item_id, fixture["accepted"]["updated_at"], os_key)
-    purchase_key = "pilot-purchase-0001"
+    purchase_key = f"pilot-purchase-{run_id}"
     purchase = A.purchase({"product": product, "packaging": item["packaging_id_snapshot"]}, 3, purchase_key, actor=Q.UADM)
     before = B.last("SELECT jsonb_build_array((SELECT count(*) FROM public.accounts_receivable),(SELECT count(*) FROM public.fiscal_invoices),(SELECT count(*) FROM public.comunicacao_outbox))::text;")
     B.sql("UPDATE platform_private.finished_product_gate_v1 SET enabled=true WHERE singleton;UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=true WHERE singleton;")
@@ -58,7 +60,7 @@ def run(B, Review, Q, A, choice, out):
         AND NOT EXISTS(SELECT 1 FROM public.organization_subscriptions os WHERE os.organization_id='{Q.F}' AND os.status='ACTIVE');SET session_replication_role=origin;""")
     deny("other organization feature ON role valid remains denied", reader(order, Q.UADMF),
          ("RESALE_PILOT_SCOPE_DENIED", "B2B_RESALE_ORDER_SCOPE_DENIED", "B2B_RESALE_ACTOR_DENIED"))
-    deny("other organization cannot purchase using ARBio product", A.purchase({"product": product, "packaging": item["packaging_id_snapshot"]}, 3, "pilot-other-org-purchase", actor=Q.UADMF))
+    deny("other organization cannot purchase using ARBio product", A.purchase({"product": product, "packaging": item["packaging_id_snapshot"]}, 3, f"pilot-other-org-{run_id}", actor=Q.UADMF))
     deny("authenticated cannot write server allowlist", B.T.actor(Q.UADM) + f"INSERT INTO platform_private.resale_pilot_allowlist_v1(gate,operation,actor_id,organization_id,product_id,valid_until) VALUES('finished_product','purchase','{Q.UADM}','{Q.A}','{product}',now()+interval '1 hour');", ("permission denied",))
     deny("client GUC cannot substitute allowlist authority", B.T.actor(Q.UADM) + "SET app.pilot_allowed='true';" + create)
 
@@ -86,7 +88,7 @@ def run(B, Review, Q, A, choice, out):
     update_grant(reserve_grant, f"stock_id='{stock}'")
     ok("reserve uses exact allowlisted references and canonical returned split stock")
 
-    group_key = "pilot-delivery-before-grant"
+    group_key = f"pilot-delivery-before-{run_id}"
     observed_os = B.last(f"SELECT updated_at FROM public.ordens_servico WHERE id='{os_id}';")
     observed_stock = B.last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{stock}';")
     items = json.dumps([{"item_id": stock, "quantidade": 3, "observed_updated_at": observed_stock}])
@@ -96,9 +98,9 @@ def run(B, Review, Q, A, choice, out):
     delivery = R.group(os_id, stock, 3, "pilot-delivery")
     ok("allowlisted delivery create succeeds")
 
-    deny("proof before proof grant is denied", B.T.actor(Q.UADM) + f"SELECT public.rpc_entrega_formulario_gerar_v1('{delivery}','pilot-proof-before');")
+    deny("proof before proof grant is denied", B.T.actor(Q.UADM) + f"SELECT public.rpc_entrega_formulario_gerar_v1('{delivery}','pilot-proof-before-{run_id}');")
     send_observed = B.last(f"SELECT updated_at FROM public.entregas WHERE id='{delivery}';")
-    send_sql = B.T.actor(Q.UADM) + f"SELECT public.rpc_entrega_enviar_manual_v1('{delivery}','{send_observed}','pilot-send-0001');"
+    send_sql = B.T.actor(Q.UADM) + f"SELECT public.rpc_entrega_enviar_manual_v1('{delivery}','{send_observed}','pilot-send-{run_id}');"
     deny("send before send grant is denied", send_sql)
     send_grant = grant("b2b_resale", "send", Q.UADM, Q.A, Q.P, order, item_id, product, stock, delivery)
     sent = json.loads(B.last(send_sql))
@@ -114,7 +116,7 @@ def run(B, Review, Q, A, choice, out):
     ok("proof grant is distinct and succeeds after explicit provisioning")
 
     confirm_observed = B.last(f"SELECT updated_at FROM public.entregas WHERE id='{delivery}';")
-    confirm_sql = B.T.actor(Q.UADM) + f"SELECT public.rpc_entrega_confirmar_manual_v1('{delivery}','{confirm_observed}','pilot-confirm-0001','{{\"nome\":\"LOCAL PILOTO\"}}'::jsonb);"
+    confirm_sql = B.T.actor(Q.UADM) + f"SELECT public.rpc_entrega_confirmar_manual_v1('{delivery}','{confirm_observed}','pilot-confirm-{run_id}','{{\"nome\":\"LOCAL PILOTO\"}}'::jsonb);"
     deny("confirm before confirm grant is denied", confirm_sql)
     confirm_grant = grant("b2b_resale", "confirm", Q.UADM, Q.A, Q.P, order, item_id, product, stock, delivery)
     confirmed = json.loads(B.last(confirm_sql))
@@ -139,7 +141,7 @@ def run(B, Review, Q, A, choice, out):
     c_item = concurrent["items"][0]
     grant("b2b_resale", "read", Q.UADM, Q.A, Q.P, concurrent["id"])
     grant("b2b_resale", "os_create", Q.UADM, Q.A, Q.P, concurrent["id"], c_item["id"], c_item["product_id"])
-    statement = R.os_create_sql(concurrent["id"], c_item["id"], concurrent["accepted"]["updated_at"], "pilot-concurrent-os-0001")
+    statement = R.os_create_sql(concurrent["id"], c_item["id"], concurrent["accepted"]["updated_at"], f"pilot-concurrent-{concurrent['journal']['key'][:16]}")
     holder = B.T.session(f"BEGIN;SELECT 1 FROM public.partner_orders WHERE id='{concurrent['id']}' FOR UPDATE;")
     time.sleep(0.1)
     workers = [B.T.session(statement), B.T.session(statement)]
