@@ -1,3 +1,7 @@
+## 09/11 04:17 — Revisão independente ce03702 da coluna gerada
+- [ ] Corrigir a lacuna de prova da fixture: reproduzir `forma_fisica` com `GENERATED ALWAYS AS (...) STORED` e verificar no PostgreSQL descartável `attgenerated='s'`, `attidentity=''`, tipo, nullabilidade e expressão via `pg_get_expr`, sem forjar `pg_attrdef`.
+- [ ] Preservar captura original, dados reais e SQL `25/26/27`; revisar todas as divergências anteriores antes de novo ensaio, promover somente com `exit=0` e atualizar manifesto/hashes. Sem SQL hospedado, publicação ou ativação.
+
 ## 09/11 03:32 — Integridade separada das FKs owner de catálogo
 - [x] Execução interrompida inspecionada antes de reiniciar; tentativas 02–08 e logs/exit codes preservados, sem tratar timeout ou interrupção como PASS. Tentativa 09 terminou `exit=0` com 20 verificações e foi a única promovida.
 - [x] PostgreSQL descartável reconciliado com as duas FKs ausentes, `numeric(12,3)`, `forma_fisica` gerada STORED, constraint de medida e sentinel sintético de preço legado, sem apagar linhas nem afrouxar guards. Divergências das tentativas 05/07/08 foram corrigidas somente na fixture e documentadas.

@@ -116,11 +116,15 @@ def main():
 
         current_scope = load("owner_fk_current_scope", H / "current_scope.py")
         capture = json.loads((H / "reconciliation-posplans-20261108/live-catalog-owner-fk-20261109.capture.json").read_text())
+        auditor_report = json.loads(AUDITOR_REPORT.read_text())
+        reported_shape = auditor_report["reported_column_shapes"]["product_sale_units.forma_fisica"]
+        assert reported_shape["generated"] == "s" and reported_shape["identity"] == ""
 
         def actual_catalog():
             columns = json.loads(B.last("""SELECT coalesce(jsonb_agg(jsonb_build_object(
               'relation',c.relname,'name',a.attname,'type',format_type(a.atttypid,a.atttypmod),
-              'default',pg_get_expr(d.adbin,d.adrelid),'notnull',a.attnotnull) ORDER BY c.relname,a.attname),'[]'::jsonb)
+              'default',pg_get_expr(d.adbin,d.adrelid),'notnull',a.attnotnull,
+              'generated',a.attgenerated,'identity',a.attidentity) ORDER BY c.relname,a.attname),'[]'::jsonb)
               FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
               LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
               WHERE n.nspname='public' AND c.relname IN ('produtos','catalogo_volumes','product_packagings','product_sale_units')

@@ -18,6 +18,16 @@
       "owner_product_mismatch": 0
     }
   },
+  "reported_column_shapes": {
+    "product_sale_units.forma_fisica": {
+      "reported_at_utc": "2026-11-09T04:17:00Z",
+      "type": "text",
+      "notnull": false,
+      "generated": "s",
+      "identity": "",
+      "generation_expression": "\nCASE\n    WHEN (unidade_conteudo = ANY (ARRAY['kg'::text, 'g'::text])) THEN 'solido'::text\n    ELSE 'liquido'::text\nEND"
+    }
+  },
   "acl_normalization_regressions": {
     "status": "PASS_REPORTED_BY_AUDITOR",
     "execution": "READ_ONLY",
