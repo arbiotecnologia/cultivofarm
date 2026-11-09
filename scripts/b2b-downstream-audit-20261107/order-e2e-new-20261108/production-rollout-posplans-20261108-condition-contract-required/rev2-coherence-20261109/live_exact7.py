@@ -130,7 +130,11 @@ def install23(psql, check, res, out_dir):
     res["live23_extra_real_unconfirmed"] = {}
     for n in EXTRA_REAL:
         if psql(f"SELECT count(*) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname='{n}'").stdout.strip() == "0":
-            body, src = hosted_fn(n); r = psql("BEGIN;\n" + body.rstrip("\n") + ";\nCOMMIT;")
+            try:
+                body, src = hosted_fn(n)
+            except SystemExit:
+                res["live23_extra_real_unconfirmed"][n] = "MISSING_CAPTURE"; continue
+            r = psql("BEGIN;\n" + body.rstrip("\n") + ";\nCOMMIT;")
             res["live23_extra_real_unconfirmed"][n] = {"source": src, "rc": r.returncode, "err": (r.stderr or "")[-300:],
                 "md5_mirror": psql(f"SELECT json_object_agg(p.oid::regprocedure::text, md5(pg_get_functiondef(p.oid))) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname='{n}'").stdout.strip()}
             psql(f"DO $r$DECLARE f oid; BEGIN FOR f IN SELECT p.oid FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname='{n}' LOOP EXECUTE 'REVOKE ALL ON FUNCTION '||f::regprocedure||' FROM PUBLIC'; END LOOP; END $r$;")
