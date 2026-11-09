@@ -107,7 +107,7 @@ def run(B, Review, Q, A, choice, out):
     assert sent["success"] is True and sent["status"] == "em_rota"
     ok("exact delivery send grant succeeds")
     update_grant(send_grant, "revoked_at=now(),revoked_by=actor_id,revoke_reason='local revocation test'")
-    deny("revoked send grant blocks exact replay", send_sql)
+    deny("revoked send grant blocks exact replay", send_sql, ("RESALE_PILOT_SCOPE_DENIED", "DELIVERY_CONFIRM_SCOPE_DENIED"))
 
     proof_grant = grant("b2b_resale", "proof", Q.UADM, Q.A, Q.P, order, item_id, product, stock, delivery)
     R.proof(delivery, "pilot-proof")
