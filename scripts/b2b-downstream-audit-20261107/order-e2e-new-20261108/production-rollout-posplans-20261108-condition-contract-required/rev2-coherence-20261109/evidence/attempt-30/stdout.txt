@@ -1,0 +1,7 @@
+348/351
+FAIL CCR2 RESPOND FIX: superadmin da plataforma (sem autoridade de preço do tenant) negado sem alterar estado {'id': '3056e599-9d36-46aa-9f1d-ec27802d442d', 'total': 1036.22, 'numero': 'PB-000035', 'status': 'em_analise_comercial', 'schedule': [{'amount': 345.4, 'due_date': '2026-12-09', 'estimated': True, 'interest_amount': 18.0, 'nominal_due_date': '2026-12-09', 'principal_amount': 327.4, 'installment_number': 1, 'business_day_adjusted': False}, {'amount': 345.4, 'due_date': '2027-01-09', 'estimated': T
+FAIL CCR2 RESPOND FIX lock: tenant do gestor trocado durante o lock de crédito (3ª revalidação) — esperou o lock, negou (('payment_condition_stale', 'scope_denied', 'C2_', '42501')) sem gravar/replay 
+FAIL CCR2 RESPOND FIX lock: papel revogado durante o lock antes do replay — esperou o lock, negou (('forbidden_quote_response', 'scope_denied', '42501')) sem gravar/replay .c2_external_origin_assert(jsonb,uuid,uuid) line 22 at RAISE
+SQL statement "SELECT platform_private.c2_external_origin_assert(v_order.c2_external_origin_snapshot,v_order.partner_id,v_order.cliente_id)"
+PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 54 at PERFORM
+

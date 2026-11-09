@@ -285,6 +285,72 @@ def run(ns):
                   md5_of("platform_private.b2b_phase1_partner_visible(uuid,boolean)") == "915f516e605af7cc14584e2e762a2661"
                   and md5_of("public.b2b_phase1_order_visible(uuid)") == ovm
                   and md5_of("platform_private.b2b_owner_internal_partner_readable(uuid)") == "fa72ca18fc673cb4a5ff4867e65137cd")
+            # ---- revisão independente: autoridade do vendedor nas 3 revalidações (antes do lock, após row lock/antes do replay, após crédito/resolve)
+            import time as _t
+            BASE = SP.su() + ["psql", "-X", "-q", "-t", "-A", "-h", SP.SOCK[0], "-p", SP.PORT, "-U", "postgres", "-d", "t", "-v", "ON_ERROR_STOP=1"]
+            UFIN, UGC = ns["UFIN"], ns["UGC"]
+            # superadmin de plataforma SEM papel de preço no tenant (o USUP do harness também é administrador de A, logo autorizado)
+            USA = "00000000-0000-0000-0000-0000000005a1"
+            psql(f"INSERT INTO public.profiles(user_id,organization_id,ativo) VALUES ('{USA}','{A}',true);"
+                 f"INSERT INTO public.user_roles VALUES ('{USA}','superadmin'); INSERT INTO public.superadmins VALUES ('{USA}');", check=False)
+            res.setdefault("seller_respond", {})["superadmin_fixture"] = psql(f"SELECT json_build_object('roles',(SELECT array_agg(role) FROM public.user_roles WHERE user_id='{USA}'),'sa',(SELECT count(*) FROM public.superadmins WHERE user_id='{USA}'))").stdout.strip()
+            LINES = js([{"item_id": qi, "unit_price": 1000}])
+            def as_sql(uid, body):
+                return (f"SET ROLE authenticated; SELECT set_config('request.jwt.claim.sub','{uid}',false), set_config('request.jwt.claims', json_build_object('sub','{uid}','role','authenticated')::text, false) \\g /dev/null\n" + body)
+            RESP = lambda uid: as_sql(uid, f"SELECT public.respond_b2b_order_quote_secure('{jq['id']}','{LINES}'::jsonb,NULL,NULL,NULL);")
+            def receipts():
+                return psql(f"SELECT count(*) FROM platform_private.b2b_quote_response_receipts WHERE order_id='{jq['id']}'").stdout.strip()
+            def during_lock(lock_key, mutation, restore, uid, label, expect):
+                st1 = qs(jq["id"]); rc0 = receipts()
+                h = subprocess.Popen(BASE, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                h.stdin.write(f"BEGIN; SELECT pg_advisory_xact_lock(hashtextextended('{lock_key}',0)); {mutation}\nSELECT 'HELD';\n"); h.stdin.flush()
+                _t.sleep(0.8)
+                rsp = subprocess.Popen(BASE, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                rsp.stdin.write(RESP(uid)); rsp.stdin.close()
+                waited = False
+                for _ in range(50):
+                    if psql("SELECT count(*) FROM pg_locks WHERE locktype='advisory' AND NOT granted").stdout.strip() != "0":
+                        waited = True; break
+                    _t.sleep(0.1)
+                h.stdin.write("COMMIT;\n"); h.stdin.close(); h.communicate(timeout=30)
+                o, e = rsp.communicate(timeout=60)
+                psql(restore)
+                res["seller_respond"]["lock_" + label] = {"waited": waited, "err": e, "rc": rsp.returncode}
+                check(f"CCR2 RESPOND FIX lock: {label} — esperou o lock, negou ({expect}) sem gravar/replay",
+                      waited and rsp.returncode != 0 and any(x in e for x in expect) and qs(jq["id"]) == st1 and receipts() == rc0, e[-300:])
+            for who, uid, tok in (("financeiro da empresa dona (sem autoridade de preço)", UFIN, "forbidden_quote_response"),
+                                  ("superadmin da plataforma sem papel de preço no tenant", USA, "")):
+                st1 = qs(jq["id"]); jn, en = respond(uid, jq["id"], [{"item_id": qi, "unit_price": 1000}])
+                res["seller_respond"]["neg_" + who] = en or jn
+                check(f"CCR2 RESPOND FIX: {who} negado sem alterar estado", jn is None and bool(en) and tok in en and qs(jq["id"]) == st1, en or jn)
+            QK, CK = f"b2b_quote:{jq['id']}", f"b2b_credit:{PN}"
+            during_lock(QK, f"UPDATE public.profiles SET ativo=false WHERE user_id='{UADM}';", f"UPDATE public.profiles SET ativo=true WHERE user_id='{UADM}';",
+                        UADM, "perfil do admin inativado durante o lock da cotação", ("scope_denied", "42501", "inactive", "C2_", "forbidden"))
+            during_lock(QK, f"DELETE FROM public.user_roles WHERE user_id='{UADM}' AND role='administrador';", f"INSERT INTO public.user_roles VALUES ('{UADM}','administrador');",
+                        UADM, "papel administrador revogado durante o lock da cotação", ("forbidden_quote_response", "scope_denied", "C2_", "42501"))
+            during_lock(QK, f"UPDATE public.profiles SET organization_id='{F}' WHERE user_id='{UADM}';", f"UPDATE public.profiles SET organization_id='{A}' WHERE user_id='{UADM}';",
+                        UADM, "tenant do admin trocado para F durante o lock da cotação", ("scope_denied", "C2_", "42501", "forbidden"))
+            during_lock(CK, f"UPDATE public.profiles SET organization_id='{F}' WHERE user_id='{UGC}';", f"UPDATE public.profiles SET organization_id='{A}' WHERE user_id='{UGC}';",
+                        UGC, "tenant do gestor trocado durante o lock de crédito (3ª revalidação)", ("payment_condition_stale", "scope_denied", "C2_", "42501"))
+            # isola a 3ª revalidação: vínculo externo ativo a OUTRO parceiro (P) surge durante o lock de crédito; origem/guards de item seguem válidos,
+            # mas o caminho do dono (b2b_owner_internal_partner_readable) deixa de valer e o pedido de PN não é visível -> payment_condition_stale
+            during_lock(CK, f"INSERT INTO public.partner_users(user_id,partner_id,tenant_id) SELECT '{UGC}','{P}',commercial_owner_organization_id FROM public.partner_accounts WHERE id='{P}';",
+                        f"DELETE FROM public.partner_users WHERE user_id='{UGC}' AND partner_id='{P}';",
+                        UGC, "vínculo externo a outro parceiro criado durante o lock de crédito (3ª revalidação isolada)", ("payment_condition_stale",))
+            jg, eg = respond(UGC, jq["id"], [{"item_id": qi, "unit_price": 1000}])
+            res["seller_respond"]["gestor_owner"] = eg or jg
+            check("CCR2 RESPOND FIX: gestor comercial da empresa dona responde a cotação", jg is not None and receipts() == "1", eg or jg)
+            ja, ea = respond(UADM, jq["id"], [{"item_id": qi, "unit_price": 1000}])
+            check("CCR2 RESPOND FIX: admin dono no replay idêntico recebe o mesmo resultado (idempotência)", ja is not None and jg is not None and ja == jg, ea or ja)
+            jc, ec = respond(UADM, jq["id"], [{"item_id": qi, "unit_price": 999}])
+            check("CCR2 RESPOND FIX: replay com preço diferente = quote_idempotency_conflict", jc is None and "quote_idempotency_conflict" in (ec or ""), ec or jc)
+            for who, mut, rst in (("papel revogado", f"DELETE FROM public.user_roles WHERE user_id='{UGC}' AND role='gestor_comercial';", f"INSERT INTO public.user_roles VALUES ('{UGC}','gestor_comercial');"),
+                                  ("perfil inativo", f"UPDATE public.profiles SET ativo=false WHERE user_id='{UGC}';", f"UPDATE public.profiles SET ativo=true WHERE user_id='{UGC}';")):
+                psql(mut); jr, er = respond(UGC, jq["id"], [{"item_id": qi, "unit_price": 1000}]); psql(rst)
+                res["seller_respond"]["replay_" + who] = er or jr
+                check(f"CCR2 RESPOND FIX: replay do gestor com {who} negado (não devolve recibo)", jr is None and bool(er), er or jr)
+            during_lock(QK, f"DELETE FROM public.user_roles WHERE user_id='{UGC}' AND role='gestor_comercial';", f"INSERT INTO public.user_roles VALUES ('{UGC}','gestor_comercial');",
+                        UGC, "papel revogado durante o lock antes do replay", ("forbidden_quote_response", "scope_denied", "C2_", "42501"))
             for who, uid in (("admin da empresa F", UADMF), ("comprador PN", UN), ("comprador P de outro parceiro", UB)):
                 st1 = qs(jq["id"]); jn, en = respond(uid, jq["id"], [{"item_id": qi, "unit_price": 1000}])
                 res["seller_respond"]["neg_" + who] = en or jn
