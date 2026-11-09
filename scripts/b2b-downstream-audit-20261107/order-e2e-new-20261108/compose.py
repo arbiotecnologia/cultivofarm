@@ -451,10 +451,10 @@ def main():
    B.sql((pilot_out/'04-rollback-deny.sql.review').read_text())
    B.sql((OUT/'logistics/rollback.sql.review').read_text())
    B.sql((physical_out/'rollback.sql.review').read_text())
-   send_state=measured_final_delivery_state()
+   send_state=measured_final_delivery_state(S.STATE)
    current_scope.write_final_send_rollback(send_out,send_state,S.STATE)
    B.sql((send_out/'rollback-composed.sql.review').read_text())
-   confirmation_state=measured_final_delivery_state()
+   confirmation_state=measured_final_delivery_state(C.G.STATE)
    current_scope.write_final_confirmation_rollback(confirmation_out,confirmation_state,C.G.STATE)
    B.sql((confirmation_out/'rollback-composed.sql.review').read_text())
    closed=json.loads(B.last("""SELECT jsonb_build_object(
