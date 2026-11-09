@@ -151,7 +151,7 @@ def build():
     rollback += "REVOKE ALL ON FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;\n"
     rollback += "REVOKE ALL ON FUNCTION public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid),public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;\n"
     rollback += "REVOKE EXECUTE ON FUNCTION public.generate_b2b_receivable_secure(uuid) FROM PUBLIC,anon,authenticated;\n"
-    rollback += function_assert(SIG, old_md5, "B2B_STRICT_ROLLBACK_NOT_CLOSED") + "COMMIT;\n"
+    rollback += "DO $p$ BEGIN\n" + function_assert(SIG, old_md5, "B2B_STRICT_ROLLBACK_NOT_CLOSED") + "END $p$;\nCOMMIT;\n"
     return {
         "01-pre.sql.readonly": pre,
         "02-install.sql.review": install,
