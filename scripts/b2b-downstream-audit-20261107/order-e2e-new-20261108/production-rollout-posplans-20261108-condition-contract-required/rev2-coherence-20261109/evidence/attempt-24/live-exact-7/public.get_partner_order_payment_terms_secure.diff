@@ -1,0 +1,32 @@
+--- mirror-before/public.get_partner_order_payment_terms_secure
++++ live-20261109/public.get_partner_order_payment_terms_secure
+@@ -4,10 +4,24 @@
+  STABLE SECURITY DEFINER
+- SET search_path TO 'public'
++ SET search_path TO ''
+ AS $function$
++-- B2B_ORDER_PAYMENT_TERMS_READ_V1: somente leitura; não aprova, não altera e não expõe credit_decision_snapshot.
++DECLARE v_uid uuid := auth.uid(); v_partner uuid; v_n integer; v_terms jsonb;
+ BEGIN
+-  IF NOT EXISTS (SELECT 1 FROM partner_orders o JOIN partner_accounts pa ON pa.id = o.partner_id WHERE o.id = p_order_id AND (
+-      EXISTS (SELECT 1 FROM partner_users pu WHERE pu.partner_id = o.partner_id AND pu.user_id = auth.uid())
+-      OR (has_role(auth.uid(),'administrador') AND EXISTS (SELECT 1 FROM profiles p WHERE p.user_id = auth.uid() AND p.organization_id = pa.commercial_owner_organization_id)))) THEN
++  IF v_uid IS NULL OR p_order_id IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
++  SELECT o.partner_id INTO v_partner FROM public.partner_orders o WHERE o.id = p_order_id;
++  -- Mesmas portas do guard restritivo de SELECT de partner_orders; pedido inexistente nega igual (sem oráculo).
++  IF v_partner IS NULL OR NOT (platform_private.b2b_phase1_partner_visible(v_partner, false) IS TRUE
++                               OR platform_private.b2b_owner_internal_partner_readable(v_partner) IS TRUE) THEN
+     RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
+-  RETURN '{}'::jsonb;
++  -- Mesma regra de papel da policy permissiva popt_select.
++  IF NOT (platform_private.has_role(v_uid, 'administrador'::public.app_role) OR platform_private.has_role(v_uid, 'financeiro'::public.app_role)
++          OR platform_private.has_role(v_uid, 'gestor_comercial'::public.app_role)
++          OR (platform_private.has_role(v_uid, 'parceiro_b2b'::public.app_role)
++              AND EXISTS (SELECT 1 FROM public.partner_users pu WHERE pu.partner_id = v_partner AND pu.user_id = v_uid))) THEN
++    RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
++  SELECT count(*) INTO v_n FROM public.partner_order_payment_terms t WHERE t.partner_order_id = p_order_id;
++  IF v_n > 1 THEN RAISE EXCEPTION 'payment_terms_ambiguous' USING ERRCODE='P0001'; END IF;
++  SELECT jsonb_build_object('id', t.id, 'partner_order_id', t.partner_order_id, 'payment_plan_id', t.payment_plan_id, 'plan_name_snapshot', t.plan_name_snapshot, 'plan_code_snapshot', t.plan_code_snapshot, 'pricing_mode_snapshot', t.pricing_mode_snapshot, 'discount_percent_snapshot', t.discount_percent_snapshot, 'monthly_interest_percent_snapshot', t.monthly_interest_percent_snapshot, 'months_count_snapshot', t.months_count_snapshot, 'interest_type_snapshot', t.interest_type_snapshot, 'installment_count', t.installment_count, 'first_due_date', t.first_due_date, 'table_amount', t.table_amount, 'discount_amount', t.discount_amount, 'net_amount_after_discount', t.net_amount_after_discount, 'financial_interest_amount', t.financial_interest_amount, 'final_amount', t.final_amount, 'approval_status', t.approval_status, 'approved_at', t.approved_at, 'approval_notes', t.approval_notes, 'created_at', t.created_at, 'updated_at', t.updated_at) INTO v_terms FROM public.partner_order_payment_terms t WHERE t.partner_order_id = p_order_id;
++  RETURN jsonb_build_object('contract', 'B2B_ORDER_PAYMENT_TERMS_READ_V1', 'order_id', p_order_id,
++                            'present', v_terms IS NOT NULL, 'terms', v_terms);
+ END $function$

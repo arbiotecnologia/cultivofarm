@@ -1,0 +1,13 @@
+--- mirror-before/public.fn_b2b_status_is_approved_or_later
++++ live-20261109/public.fn_b2b_status_is_approved_or_later
+@@ -1,4 +1,8 @@
+-CREATE OR REPLACE FUNCTION public.fn_b2b_status_is_approved_or_later(partner_order_status)
++CREATE OR REPLACE FUNCTION public.fn_b2b_status_is_approved_or_later(p_status partner_order_status)
+  RETURNS boolean
+  LANGUAGE sql
+-AS $function$ SELECT $1 IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','faturado') $function$
++ IMMUTABLE
++ SET search_path TO 'public'
++AS $function$
++  SELECT p_status = 'aprovado' OR public.fn_b2b_status_is_operational(p_status)
++$function$
