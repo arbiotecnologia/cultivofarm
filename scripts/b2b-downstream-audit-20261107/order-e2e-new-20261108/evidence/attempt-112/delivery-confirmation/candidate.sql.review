@@ -1,0 +1,477 @@
+CREATE OR REPLACE FUNCTION platform_private.delivery_proof_apply_20261030(p_action text,p_entrega uuid,p_request_key text,p_payload jsonb)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' SET lock_timeout='3s' AS $$
+DECLARE v_uid uuid:=auth.uid(); v_org uuid; v_e public.entregas%ROWTYPE; v_c public.entrega_comprovantes%ROWTYPE;
+ v_p jsonb; v_fp text; v_prev platform_private.delivery_requests_20261030%ROWTYPE; v_action text:='proof:'||p_action;
+ v_path text; v_num text; v_token uuid; v_hash text; v_result jsonb; v_reused boolean:=false;
+BEGIN
+ v_org:=platform_private.delivery_proof_actor_20261030();
+ IF p_entrega IS NULL OR p_request_key IS NULL OR p_request_key !~ '^[A-Za-z0-9:_-]{8,128}$' THEN RAISE EXCEPTION 'DELIVERY_PROOF_INVALID: key' USING ERRCODE='22023'; END IF;
+ v_p:=platform_private.delivery_proof_payload_20261030(p_action,p_entrega,p_payload);
+ v_fp:=pg_catalog.md5(pg_catalog.jsonb_build_object('entrega',p_entrega,'action',p_action,'payload',v_p)::text);
+ SELECT * INTO v_e FROM public.entregas WHERE id=p_entrega AND organization_id=v_org;
+ IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_PROOF_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('entrega_proof:'||p_entrega::text));
+ IF platform_private.delivery_proof_actor_20261030() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'DELIVERY_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ PERFORM platform_private.delivery_proof_gate_20261030(v_org);
+ SELECT * INTO v_e FROM public.entregas WHERE id=p_entrega AND organization_id=v_org FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_PROOF_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ -- Replay only after full reauthorization under every lock (re-read, not the pre-lock copy).
+ v_e:=platform_private.delivery_proof_recheck_20261030(p_entrega,v_org,p_action);
+ SELECT * INTO v_prev FROM platform_private.delivery_requests_20261030
+ WHERE organization_id=v_org AND actor=v_uid AND action=v_action AND request_key=p_request_key;
+ IF FOUND THEN
+  IF v_prev.fingerprint<>v_fp THEN RAISE EXCEPTION 'DELIVERY_PROOF_REQUEST_CONFLICT' USING ERRCODE='PT409'; END IF;
+-- Injected only into exact sign receipt replay, after canonical actor/tenant/row locks.
+-- No receipt/proof rewrite. Only a cryptographically reconstructed legacy delivery hash.
+IF p_action='sign' THEN
+ SELECT * INTO v_c FROM public.entrega_comprovantes WHERE id=v_e.comprovante_id AND entrega_id=v_e.id FOR UPDATE;
+ v_e:=platform_private.delivery_proof_recheck_20261030(p_entrega,v_org,p_action);
+ IF v_c.id IS NULL THEN RAISE EXCEPTION 'DELIVERY_PROOF_REPLAY_STATE_DENIED' USING ERRCODE='42501'; END IF;
+ IF v_e.validation_hash IS DISTINCT FROM v_c.validation_hash THEN
+  v_path:=v_p->>'assinatura_digital_png_path';
+  PERFORM 1 FROM storage.objects WHERE bucket_id='entrega-documentos' AND name=v_path AND owner_id=v_uid::text FOR SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_PROOF_OBJECT_DENIED' USING ERRCODE='42501'; END IF;
+  v_e:=platform_private.delivery_proof_recheck_20261030(p_entrega,v_org,p_action);
+  PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,v_org);
+  IF v_prev.result->>'success' IS DISTINCT FROM 'true' OR v_prev.result->>'action' IS DISTINCT FROM 'sign'
+   OR v_prev.result->>'entrega_id' IS DISTINCT FROM v_e.id::text OR v_prev.result->>'comprovante_id' IS DISTINCT FROM v_c.id::text
+   OR v_prev.result->>'object_path' IS DISTINCT FROM v_path OR v_prev.result->>'validation_token' IS DISTINCT FROM v_c.validation_token::text
+   OR v_prev.result->>'numero_formulario' IS DISTINCT FROM v_c.numero_formulario
+   OR v_e.comprovante_id IS DISTINCT FROM v_c.id OR v_c.entrega_id IS DISTINCT FROM v_e.id
+   OR v_e.status::text NOT IN ('separado','em_rota') OR v_c.status IS DISTINCT FROM 'assinatura_digital_coletada'
+   OR v_e.comprovante_status IS DISTINCT FROM 'assinatura_digital_coletada' OR v_c.tipo IS DISTINCT FROM 'formulario_entrega'
+   OR v_c.assinatura_coletada IS NOT TRUE OR v_c.assinatura_tipo IS DISTINCT FROM 'digital_tela' OR v_e.assinatura_tipo IS DISTINCT FROM 'digital_tela'
+   OR v_c.validation_token IS NULL OR v_e.validation_token IS DISTINCT FROM v_c.validation_token
+   OR v_c.gerado_por IS DISTINCT FROM v_uid OR v_e.formulario_gerado_por IS DISTINCT FROM v_uid
+   OR v_e.assinatura_digital_capturada_por IS DISTINCT FROM v_uid OR v_c.assinatura_digital_png_path IS DISTINCT FROM v_path
+   OR v_c.assinatura_hash IS DISTINCT FROM v_p->>'assinatura_hash' OR v_c.assinatura_hash !~ '^[0-9a-f]{64}$'
+   OR v_c.recebedor_nome IS DISTINCT FROM v_p->>'recebedor_nome'
+   OR v_c.recebedor_documento IS DISTINCT FROM v_p->>'recebedor_documento'
+   OR v_c.recebedor_cargo IS DISTINCT FROM v_p->>'recebedor_cargo'
+   OR v_c.recebedor_telefone IS DISTINCT FROM v_p->>'recebedor_telefone'
+   OR v_c.assinatura_digital_svg IS DISTINCT FROM v_p->>'assinatura_digital_svg'
+   OR v_c.assinatura_user_agent IS DISTINCT FROM v_p->>'assinatura_user_agent'
+   OR v_c.assinatura_capturada_em IS NULL OR v_c.gerado_em IS NULL
+   OR v_c.data_assinatura IS DISTINCT FROM v_c.assinatura_capturada_em
+   OR v_e.assinatura_digital_capturada_em IS DISTINCT FROM v_c.assinatura_capturada_em
+   OR v_e.formulario_gerado_em IS DISTINCT FROM v_c.gerado_em
+   OR v_c.validation_hash IS DISTINCT FROM encode(extensions.digest(v_e.id::text||v_c.assinatura_hash||v_c.assinatura_capturada_em::text,'sha256'),'hex')
+   OR v_e.validation_hash IS DISTINCT FROM encode(extensions.digest(v_e.id::text||v_c.numero_formulario||v_c.validation_token::text||v_c.gerado_em::text,'sha256'),'hex')
+   OR EXISTS(SELECT 1 FROM public.entrega_comprovantes WHERE id<>v_c.id AND (arquivo_path=v_path OR assinatura_digital_png_path=v_path))
+  THEN RAISE EXCEPTION 'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED' USING ERRCODE='42501'; END IF;
+  -- Existing one-shot exact-image table; proof remains byte-for-byte unchanged.
+  INSERT INTO platform_private.delivery_confirm_permits_v1(txid,actor,organization_id,target,proof,old_delivery,new_delivery,old_proof,new_proof)
+  VALUES(txid_current(),v_uid,v_org,v_e.id,v_c.id,to_jsonb(v_e),to_jsonb(v_e)||jsonb_build_object('validation_hash',v_c.validation_hash,'updated_at',now()),to_jsonb(v_c),to_jsonb(v_c));
+  INSERT INTO platform_private.delivery_context_20261030(txid,actor,organization_id,action,target,mutation) VALUES(txid_current(),v_uid,v_org,'proof_recover',v_e.id,'recover_hash');
+  PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,v_org);
+  PERFORM platform_private.delivery_proof_recheck_20261030(p_entrega,v_org,p_action);
+  UPDATE public.entregas SET validation_hash=v_c.validation_hash,updated_at=now() WHERE id=v_e.id;
+  IF NOT EXISTS(SELECT 1 FROM platform_private.delivery_confirm_permits_v1 WHERE txid=txid_current() AND delivery_consumed AND NOT proof_consumed)
+   OR NOT EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=txid_current() AND mutation='done')
+  THEN RAISE EXCEPTION 'DELIVERY_PROOF_RECOVERY_PERMIT_UNUSED' USING ERRCODE='42501'; END IF;
+  DELETE FROM platform_private.delivery_confirm_permits_v1 WHERE txid=txid_current();
+  DELETE FROM platform_private.delivery_context_20261030 WHERE txid=txid_current();
+ END IF;
+END IF;
+  RETURN v_prev.result||'{"replayed":true}'::jsonb;
+ END IF;
+ IF p_action IN ('sign','attach') THEN
+  v_path:=CASE p_action WHEN 'sign' THEN v_p->>'assinatura_digital_png_path' ELSE v_p->>'arquivo_path' END;
+  -- Object must exist, belong to the caller and stay locked until commit.
+  PERFORM 1 FROM storage.objects WHERE bucket_id='entrega-documentos' AND name=v_path AND owner_id=v_uid::text FOR SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_PROOF_OBJECT_DENIED' USING ERRCODE='42501'; END IF;
+  -- The FOR SHARE may have waited: re-authorize before trusting anything.
+  v_e:=platform_private.delivery_proof_recheck_20261030(p_entrega,v_org,p_action);
+  IF EXISTS(SELECT 1 FROM public.entrega_comprovantes WHERE arquivo_path=v_path OR assinatura_digital_png_path=v_path) THEN
+   RAISE EXCEPTION 'DELIVERY_PROOF_OBJECT_ALREADY_LINKED' USING ERRCODE='PT409';
+  END IF;
+ END IF;
+ IF v_e.comprovante_id IS NOT NULL THEN
+  SELECT * INTO v_c FROM public.entrega_comprovantes WHERE id=v_e.comprovante_id FOR UPDATE;
+  IF NOT FOUND OR v_c.entrega_id<>v_e.id THEN RAISE EXCEPTION 'DELIVERY_PROOF_INCONSISTENT' USING ERRCODE='PT409'; END IF;
+ ELSE
+  SELECT * INTO v_c FROM public.entrega_comprovantes WHERE entrega_id=v_e.id AND tipo='formulario_entrega' ORDER BY gerado_em DESC LIMIT 1 FOR UPDATE;
+ END IF;
+ -- The comprovante FOR UPDATE may have waited: re-authorize again.
+ v_e:=platform_private.delivery_proof_recheck_20261030(p_entrega,v_org,p_action);
+ IF v_c.id IS NOT NULL AND v_c.status IN ('rejeitado','cancelado') THEN v_c:=NULL; END IF;
+ IF p_action<>'generate' AND v_c.status='confirmado' THEN RAISE EXCEPTION 'DELIVERY_PROOF_CLOSED' USING ERRCODE='PT409'; END IF;
+ INSERT INTO platform_private.delivery_context_20261030(txid,actor,organization_id,action,target,mutation)
+ VALUES(pg_catalog.txid_current(),v_uid,v_org,'proof',v_e.id,'proof');
+ IF v_c.id IS NULL THEN
+  v_token:=pg_catalog.gen_random_uuid();
+  v_num:='AR-ENT-'||pg_catalog.lpad(pg_catalog.nextval('public.entrega_formulario_seq')::text,6,'0');
+  v_hash:=pg_catalog.encode(extensions.digest(v_e.id::text||v_num||v_token::text||pg_catalog.now()::text,'sha256'),'hex');
+  INSERT INTO public.entrega_comprovantes(entrega_id,numero_formulario,tipo,status,validation_token,validation_hash,qr_code_payload,gerado_por)
+  VALUES(v_e.id,v_num,'formulario_entrega','gerado',v_token,v_hash,v_token::text,v_uid) RETURNING * INTO v_c;
+  PERFORM public._entrega_seed_checklist(v_e.id);
+  INSERT INTO public.financial_audit_log(entity_type,entity_id,action,new_data,performed_by)
+  VALUES('entrega',v_e.id,'DELIVERY_FORM_GENERATED',pg_catalog.jsonb_build_object('comprovante_id',v_c.id,'numero_formulario',v_num),v_uid);
+ ELSE v_reused:=true; END IF;
+ IF p_action='sign' THEN
+  UPDATE public.entrega_comprovantes SET status='assinatura_digital_coletada',assinatura_coletada=true,assinatura_tipo='digital_tela',
+   assinatura_digital_png_path=v_path,assinatura_digital_svg=v_p->>'assinatura_digital_svg',assinatura_hash=v_p->>'assinatura_hash',
+   assinatura_user_agent=v_p->>'assinatura_user_agent',assinatura_capturada_em=pg_catalog.now(),
+   recebedor_nome=v_p->>'recebedor_nome',recebedor_documento=v_p->>'recebedor_documento',recebedor_cargo=v_p->>'recebedor_cargo',recebedor_telefone=v_p->>'recebedor_telefone',
+   data_assinatura=pg_catalog.now(),
+   validation_hash=pg_catalog.encode(extensions.digest(v_e.id::text||(v_p->>'assinatura_hash')||pg_catalog.now()::text,'sha256'),'hex'),updated_at=pg_catalog.now()
+  WHERE id=v_c.id RETURNING * INTO v_c;
+  INSERT INTO public.financial_audit_log(entity_type,entity_id,action,new_data,performed_by)
+  VALUES('entrega',v_e.id,'DELIVERY_DIGITAL_SIGNATURE_CAPTURED',pg_catalog.jsonb_build_object('comprovante_id',v_c.id,'hash',v_p->>'assinatura_hash'),v_uid);
+ ELSIF p_action='attach' THEN
+  UPDATE public.entrega_comprovantes SET status='anexado',arquivo_path=v_path,arquivo_url=NULL,arquivo_nome=v_p->>'arquivo_nome',arquivo_mime=v_p->>'arquivo_mime',
+   assinatura_coletada=true,assinatura_tipo='fisica_anexada',
+   recebedor_nome=v_p->>'recebedor_nome',recebedor_documento=v_p->>'recebedor_documento',recebedor_cargo=v_p->>'recebedor_cargo',recebedor_telefone=v_p->>'recebedor_telefone',
+   data_assinatura=pg_catalog.now(),anexado_por=v_uid,anexado_em=pg_catalog.now(),updated_at=pg_catalog.now()
+  WHERE id=v_c.id RETURNING * INTO v_c;
+  INSERT INTO public.financial_audit_log(entity_type,entity_id,action,new_data,performed_by)
+  VALUES('entrega',v_e.id,'DELIVERY_PROOF_ATTACHED',pg_catalog.jsonb_build_object('comprovante_id',v_c.id,'arquivo_path',v_path),v_uid);
+ END IF;
+ -- Immediately before the delivery writer: re-authorize (no wait is trusted).
+ PERFORM platform_private.delivery_proof_recheck_20261030(p_entrega,v_org,p_action);
+ -- Exactly one delivery row update; the barrier verifies the column set.
+ UPDATE public.entregas SET
+  comprovante_id=v_c.id,
+  comprovante_status=CASE p_action WHEN 'generate' THEN CASE WHEN v_reused THEN comprovante_status ELSE 'formulario_gerado' END WHEN 'sign' THEN 'assinatura_digital_coletada' ELSE 'anexado' END,
+  formulario_gerado_em=CASE WHEN v_reused THEN formulario_gerado_em ELSE pg_catalog.now() END,
+  formulario_gerado_por=CASE WHEN v_reused THEN formulario_gerado_por ELSE v_uid END,
+  validation_token=v_c.validation_token,
+  validation_hash=v_c.validation_hash,
+  assinatura_tipo=CASE p_action WHEN 'sign' THEN 'digital_tela' WHEN 'attach' THEN 'fisica_anexada' ELSE assinatura_tipo END,
+  recebedor_nome=CASE WHEN p_action='generate' THEN recebedor_nome ELSE v_p->>'recebedor_nome' END,
+  recebedor_documento=coalesce(v_p->>'recebedor_documento',recebedor_documento),
+  recebedor_cargo=coalesce(v_p->>'recebedor_cargo',recebedor_cargo),
+  recebedor_telefone=coalesce(v_p->>'recebedor_telefone',recebedor_telefone),
+  assinatura_digital_capturada_em=CASE WHEN p_action='sign' THEN pg_catalog.now() ELSE assinatura_digital_capturada_em END,
+  assinatura_digital_capturada_por=CASE WHEN p_action='sign' THEN v_uid ELSE assinatura_digital_capturada_por END,
+  comprovante_anexado_em=CASE WHEN p_action='attach' THEN pg_catalog.now() ELSE comprovante_anexado_em END,
+  comprovante_anexado_por=CASE WHEN p_action='attach' THEN v_uid ELSE comprovante_anexado_por END,
+  updated_at=pg_catalog.now()
+ WHERE id=v_e.id;
+ IF NOT EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=pg_catalog.txid_current() AND mutation='done') THEN
+  RAISE EXCEPTION 'DELIVERY_PROOF_PERMIT_UNUSED' USING ERRCODE='42501';
+ END IF;
+ -- One-shot permit is removed on success; receipts are kept.
+ DELETE FROM platform_private.delivery_context_20261030 WHERE txid=pg_catalog.txid_current() AND action='proof';
+ v_result:=pg_catalog.jsonb_build_object('success',true,'action',p_action,'entrega_id',v_e.id,'comprovante_id',v_c.id,
+  'numero_formulario',v_c.numero_formulario,'validation_token',v_c.validation_token,'reused',v_reused,'object_path',v_path);
+ INSERT INTO platform_private.delivery_requests_20261030(request_key,actor,organization_id,action,fingerprint,result)
+ VALUES(p_request_key,v_uid,v_org,v_action,v_fp,v_result);
+ RETURN v_result;
+END $$;
+CREATE TABLE platform_private.delivery_confirm_permits_v1 (
+ txid bigint PRIMARY KEY, actor uuid NOT NULL, organization_id uuid NOT NULL,target uuid NOT NULL,proof uuid NOT NULL,
+ old_delivery jsonb NOT NULL,new_delivery jsonb NOT NULL,old_proof jsonb NOT NULL,new_proof jsonb NOT NULL,
+ delivery_consumed boolean NOT NULL DEFAULT false,proof_consumed boolean NOT NULL DEFAULT false
+);
+REVOKE ALL ON platform_private.delivery_confirm_permits_v1 FROM PUBLIC,anon,authenticated,service_role;
+ALTER TABLE platform_private.delivery_confirm_permits_v1 ENABLE ROW LEVEL SECURITY;
+CREATE FUNCTION platform_private.delivery_confirm_exact_guard_v1()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE p platform_private.delivery_confirm_permits_v1; org uuid; BEGIN
+ -- Leave unrelated reviewed proof writers unchanged. A confirmation context always needs its exact permit.
+ IF NOT EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=txid_current() AND action IN ('confirm','proof_recover')) THEN RETURN NEW; END IF;
+ org:=platform_private.delivery_confirm_actor_v1();
+ SELECT * INTO p FROM platform_private.delivery_confirm_permits_v1 WHERE txid=txid_current() AND actor=auth.uid() AND organization_id=org;
+ IF NOT FOUND OR TG_OP<>'UPDATE' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_EXACT_PERMIT_DENIED' USING ERRCODE='42501'; END IF;
+ IF TG_TABLE_NAME='entregas' AND NEW.id=p.target AND NOT p.delivery_consumed AND to_jsonb(OLD)=p.old_delivery AND to_jsonb(NEW)=p.new_delivery THEN
+  UPDATE platform_private.delivery_confirm_permits_v1 SET delivery_consumed=true WHERE txid=p.txid;
+ ELSIF TG_TABLE_NAME='entrega_comprovantes' AND NEW.id=p.proof AND NOT p.proof_consumed AND to_jsonb(OLD)=p.old_proof AND to_jsonb(NEW)=p.new_proof THEN
+  UPDATE platform_private.delivery_confirm_permits_v1 SET proof_consumed=true WHERE txid=p.txid;
+ ELSE RAISE EXCEPTION 'DELIVERY_CONFIRM_EXACT_IMAGE_DENIED' USING ERRCODE='42501'; END IF;
+ RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.delivery_confirm_exact_guard_v1() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER zzzz_confirm_exact AFTER INSERT OR UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_confirm_exact_guard_v1();
+CREATE TRIGGER zzzz_confirm_exact AFTER INSERT OR UPDATE ON public.entrega_comprovantes FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_confirm_exact_guard_v1();
+
+-- Review-only manual physical confirmation. Never dispatches stock or billing.
+CREATE FUNCTION platform_private.delivery_confirm_actor_v1()
+RETURNS uuid LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid; BEGIN
+ org:=public.h15_actor_organization();
+ IF auth.uid() IS NULL OR org IS NULL
+ OR EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=auth.uid() AND role IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor','consultor_tecnico','aplicador','operador_onfarm','superadmin'))
+ OR EXISTS(SELECT 1 FROM public.partner_users WHERE user_id=auth.uid() AND revoked_at IS NULL AND (valid_from IS NULL OR valid_from<=now()))
+ OR NOT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=auth.uid() AND role IN ('administrador','gestor','administrativo','producao'))
+ OR NOT public.saas_has_feature('estoque_embalagens') OR NOT public.saas_has_feature('ordens_producao')
+ THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ RETURN org;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.delivery_confirm_actor_v1() FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.delivery_confirm_recheck_v1(p_id uuid,p_org uuid)
+RETURNS public.entregas LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE e public.entregas; BEGIN
+ IF platform_private.delivery_confirm_actor_v1() IS DISTINCT FROM p_org THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ SELECT * INTO e FROM public.entregas WHERE id=p_id AND organization_id=p_org;
+ IF NOT FOUND OR e.ordem_servico_id IS NULL OR e.partner_order_id IS NOT NULL OR e.ordem_servico_onfarm_id IS NOT NULL OR e.receivable_id IS NOT NULL OR e.os_faturamento_base_id IS NOT NULL
+ OR NOT EXISTS(SELECT 1 FROM public.ordens_servico o JOIN public.clientes c ON c.id=o.cliente_id WHERE o.id=e.ordem_servico_id AND o.organization_id=p_org AND c.organization_id=p_org AND o.cliente_id=e.cliente_id AND o.origem='agronomica' AND o.partner_order_id IS NULL)
+ OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=e.ordem_servico_id)
+ THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ RETURN e;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.delivery_confirm_recheck_v1(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.delivery_confirm_proof_v1(p_e public.entregas)
+RETURNS public.entrega_comprovantes LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE c public.entrega_comprovantes; path text; owner_actor uuid; BEGIN
+ SELECT * INTO c FROM public.entrega_comprovantes WHERE id=p_e.comprovante_id AND entrega_id=p_e.id;
+ IF NOT FOUND OR c.status IS NULL OR c.status NOT IN ('anexado','assinatura_digital_coletada','assinado','confirmado') OR p_e.validation_token IS DISTINCT FROM c.validation_token
+ OR p_e.validation_hash IS DISTINCT FROM c.validation_hash OR c.validation_token IS NULL OR c.validation_hash IS NULL OR c.tipo IS DISTINCT FROM 'formulario_entrega'
+ THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_PROOF_DENIED' USING ERRCODE='42501'; END IF;
+ IF p_e.assinatura_obrigatoria AND (c.assinatura_coletada IS NOT TRUE OR c.status NOT IN ('anexado','assinatura_digital_coletada','assinado','confirmado') OR nullif(btrim(c.recebedor_nome),'') IS NULL)
+ THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_SIGNATURE_REQUIRED' USING ERRCODE='42501'; END IF;
+ IF c.assinatura_tipo='digital_tela' AND c.assinatura_coletada THEN
+  path:=c.assinatura_digital_png_path; owner_actor:=p_e.assinatura_digital_capturada_por;
+  IF path IS NULL OR path !~ ('^entregas/'||p_e.id::text||'/assinaturas/[0-9a-f-]{36}\.png$') OR coalesce(c.assinatura_hash,'') !~ '^[0-9a-f]{64}$' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_OBJECT_DENIED' USING ERRCODE='42501'; END IF;
+ ELSIF c.assinatura_tipo='fisica_anexada' OR c.arquivo_path IS NOT NULL THEN
+  path:=c.arquivo_path; owner_actor:=c.anexado_por;
+  IF path IS NULL OR path !~ ('^entregas/'||p_e.id::text||'/comprovantes/[0-9a-f-]{36}\.(pdf|png|jpg|jpeg|webp)$') THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_OBJECT_DENIED' USING ERRCODE='42501'; END IF;
+ ELSIF p_e.comprovante_entrega_obrigatorio OR p_e.assinatura_obrigatoria THEN
+  RAISE EXCEPTION 'DELIVERY_CONFIRM_OBJECT_REQUIRED' USING ERRCODE='42501';
+ END IF;
+ IF path IS NOT NULL THEN
+  -- Owner is the immutable canonical proof writer, never current profile ownership.
+  IF owner_actor IS NULL OR NOT EXISTS(SELECT 1 FROM storage.objects WHERE bucket_id='entrega-documentos' AND name=path AND owner_id=owner_actor::text)
+   OR EXISTS(SELECT 1 FROM public.entrega_comprovantes WHERE id<>c.id AND (arquivo_path=path OR assinatura_digital_png_path=path))
+  THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_OBJECT_DENIED' USING ERRCODE='42501'; END IF;
+ END IF;
+ RETURN c;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.delivery_confirm_proof_v1(public.entregas) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.delivery_confirm_apply_v1(p_entrega uuid,p_observed timestamptz,p_key text,p_recebedor jsonb)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' SET lock_timeout='3s' AS $$
+DECLARE org uuid; v_actor uuid:=auth.uid(); e public.entregas; initial public.entregas; s public.estoque_produto; l public.lotes; pp public.programacao_producao; c public.entrega_comprovantes; prev platform_private.delivery_requests_20261030;
+ fp text; result jsonb; ack jsonb; pend int; total numeric; reserved numeric; finalizada boolean:=false; os_status text; p jsonb; k text; v jsonb; path text; image jsonb; proof_image jsonb;
+BEGIN
+ IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000'; END IF;
+ org:=platform_private.delivery_confirm_actor_v1();
+ IF p_entrega IS NULL OR p_observed IS NULL OR p_key IS NULL OR p_key !~ '^[A-Za-z0-9:_-]{8,128}$' OR p_recebedor IS NULL OR jsonb_typeof(p_recebedor)<>'object' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_INVALID' USING ERRCODE='22023'; END IF;
+ p:='{}';
+ FOR k,v IN SELECT * FROM jsonb_each(p_recebedor) LOOP
+  IF k NOT IN ('nome','cargo','documento','observacoes') OR jsonb_typeof(v) NOT IN ('string','null') OR length(coalesce(v#>>'{}',''))>(CASE WHEN k='observacoes' THEN 1000 ELSE 255 END) THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_INVALID' USING ERRCODE='22023'; END IF;
+  p:=p||jsonb_build_object(k,nullif(btrim(v#>>'{}'),''));
+ END LOOP;
+ IF nullif(p->>'nome','') IS NULL THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_RECEIVER_REQUIRED' USING ERRCODE='22023'; END IF;
+ initial:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ fp:=encode(extensions.digest(jsonb_build_array(v_actor,org,p_entrega,p_observed,p)::text,'sha256'),'hex');
+ PERFORM pg_advisory_xact_lock(hashtextextended('delivery_confirm:'||jsonb_build_array(v_actor,org,p_key)::text,0));
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ PERFORM 1 FROM public.organizations WHERE id=org AND ativo FOR SHARE;
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ PERFORM 1 FROM public.ordens_servico WHERE id=initial.ordem_servico_id AND organization_id=org FOR UPDATE;
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ PERFORM 1 FROM public.entregas WHERE id=p_entrega AND organization_id=org FOR UPDATE;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ IF e.status::text='cancelada' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
+ IF e.ordem_servico_id IS DISTINCT FROM initial.ordem_servico_id OR e.estoque_produto_id IS DISTINCT FROM initial.estoque_produto_id OR e.cliente_id IS DISTINCT FROM initial.cliente_id OR e.lote_id IS DISTINCT FROM initial.lote_id THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_ROOT_CHANGED' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.clientes WHERE id=e.cliente_id AND organization_id=org FOR SHARE;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ SELECT * INTO s FROM public.estoque_produto WHERE id=e.estoque_produto_id FOR UPDATE;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ SELECT * INTO l FROM public.lotes WHERE id=s.lote_id AND organization_id=org FOR SHARE;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ SELECT * INTO pp FROM public.programacao_producao WHERE id=l.programacao_id AND organization_id=org FOR SHARE;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ IF s.id IS NULL OR l.id IS NULL OR pp.id IS NULL OR e.lote_id IS DISTINCT FROM l.id OR pp.ordem_servico_id IS DISTINCT FROM e.ordem_servico_id OR pp.ordem_servico_onfarm_id IS NOT NULL
+ OR s.produto_id IS DISTINCT FROM l.produto_id OR e.produto_id IS DISTINCT FROM l.produto_id OR pp.produto_id IS DISTINCT FROM l.produto_id
+ OR s.reservado_para_os_id IS DISTINCT FROM e.ordem_servico_id OR s.reservado_para_os_tipo IS DISTINCT FROM 'manual' OR s.reservado_para_cliente_id IS DISTINCT FROM e.cliente_id OR s.reservado_para_partner_order_id IS NOT NULL
+ THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_LINEAGE_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.entrega_comprovantes WHERE id=e.comprovante_id FOR UPDATE;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ c:=platform_private.delivery_confirm_proof_v1(e);
+ path:=CASE WHEN c.assinatura_tipo='digital_tela' THEN c.assinatura_digital_png_path ELSE c.arquivo_path END;
+ IF path IS NOT NULL THEN
+  PERFORM 1 FROM storage.objects WHERE bucket_id='entrega-documentos' AND name=path FOR SHARE;
+  e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org); c:=platform_private.delivery_confirm_proof_v1(e);
+ END IF;
+ SELECT * INTO prev FROM platform_private.delivery_requests_20261030 WHERE organization_id=org AND actor=v_actor AND action='confirm' AND request_key=p_key;
+ IF FOUND THEN
+  SELECT status::text INTO os_status FROM public.ordens_servico WHERE id=e.ordem_servico_id;
+  IF os_status NOT IN ('entregue','finalizada') OR s.status::text<>'expedido' OR s.quantidade IS DISTINCT FROM e.quantidade_entregue OR s.quantidade_reservada IS DISTINCT FROM e.quantidade_entregue
+   OR (SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_tipo='entrega' AND referencia_id=e.id AND acao='expedicao' AND quantidade=e.quantidade_entregue AND os_id=e.ordem_servico_id AND os_tipo='manual' AND lote_id=l.id)<>1
+   OR EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_id=e.id AND acao IN ('entrega','estorno_expedicao','devolucao')) THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_REPLAY_STATE_DENIED' USING ERRCODE='42501'; END IF;
+  IF prev.fingerprint IS DISTINCT FROM fp OR e.status::text<>'entregue' OR c.status<>'confirmado' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
+  RETURN prev.result||jsonb_build_object('replay',true);
+ END IF;
+ IF e.status::text='entregue' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_LEGACY_REVIEW_REQUIRED' USING ERRCODE='PT409'; END IF;
+ IF e.status::text NOT IN ('separado','em_rota') OR e.updated_at IS DISTINCT FROM p_observed THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
+ SELECT status::text INTO os_status FROM public.ordens_servico WHERE id=e.ordem_servico_id;
+ IF os_status NOT IN ('pronto_entrega','entregue') OR s.status::text<>'expedido' OR e.quantidade_entregue IS NULL OR e.quantidade_entregue<=0 OR e.quantidade_entregue::text IN ('NaN','Infinity','-Infinity')
+ OR s.quantidade IS DISTINCT FROM e.quantidade_entregue OR s.quantidade_reservada IS DISTINCT FROM e.quantidade_entregue
+ THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_STATE_CONFLICT' USING ERRCODE='PT409'; END IF;
+ -- Expedition was already performed by the reviewed group motor. Do not repeat it.
+ IF (SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_tipo='entrega' AND referencia_id=e.id AND acao='expedicao' AND quantidade=e.quantidade_entregue AND os_id=e.ordem_servico_id AND os_tipo='manual' AND lote_id=l.id)<>1
+ OR EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_id=e.id AND acao IN ('estorno_expedicao','entrega','devolucao')) THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_LEDGER_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_id=e.id ORDER BY id FOR SHARE;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ image:=to_jsonb(e)||jsonb_build_object('status','entregue','entregue_em',now(),'recebido_por_nome',p->>'nome','recebido_por_cargo',coalesce(p->>'cargo',e.recebido_por_cargo),'recebido_por_documento',coalesce(p->>'documento',e.recebido_por_documento),'observacoes_confirmacao',coalesce(p->>'observacoes',e.observacoes_confirmacao),'confirmado_por',v_actor,'recebimento_confirmado_em',now(),'recebimento_confirmado_por',v_actor,'comprovante_status','confirmado','updated_at',now());
+ proof_image:=to_jsonb(c)||jsonb_build_object('status','confirmado','confirmado_por',v_actor,'confirmado_em',now(),'updated_at',now());
+ INSERT INTO platform_private.delivery_confirm_permits_v1(txid,actor,organization_id,target,proof,old_delivery,new_delivery,old_proof,new_proof) VALUES(txid_current(),v_actor,org,e.id,c.id,to_jsonb(e),image,to_jsonb(c),proof_image);
+ INSERT INTO platform_private.delivery_context_20261030(txid,actor,organization_id,action,target,mutation) VALUES(txid_current(),v_actor,org,'confirm',e.id,'confirm');
+ UPDATE public.entrega_comprovantes SET status='confirmado',confirmado_por=v_actor,confirmado_em=now(),updated_at=now() WHERE id=c.id;
+ c:=platform_private.delivery_confirm_proof_v1(e);
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ UPDATE public.entregas SET status='entregue',entregue_em=now(),recebido_por_nome=p->>'nome',recebido_por_cargo=coalesce(p->>'cargo',recebido_por_cargo),recebido_por_documento=coalesce(p->>'documento',recebido_por_documento),observacoes_confirmacao=coalesce(p->>'observacoes',observacoes_confirmacao),confirmado_por=v_actor,
+ recebimento_confirmado_em=now(),recebimento_confirmado_por=v_actor,comprovante_status='confirmado' WHERE id=e.id AND updated_at=p_observed;
+ IF NOT FOUND OR NOT EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=txid_current() AND mutation='done') THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_PERMIT_UNUSED' USING ERRCODE='42501'; END IF;
+ ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,'manual','enviar_entrega',NULL);
+ IF ack->>'success' IS DISTINCT FROM 'true' OR (SELECT status::text FROM public.ordens_servico WHERE id=e.ordem_servico_id) IS DISTINCT FROM 'entregue' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_ADVANCE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ -- Coverage is independently measured per programming/product in canonical millilitres.
+ -- Cancelled deliveries and reversed reservations never cover outstanding demand.
+ PERFORM 1 FROM public.programacao_producao WHERE ordem_servico_id=e.ordem_servico_id ORDER BY id FOR SHARE;
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ SELECT count(*) INTO pend FROM public.entregas WHERE ordem_servico_id=e.ordem_servico_id AND status::text NOT IN ('entregue','cancelada');
+ IF pend=0 AND EXISTS(SELECT 1 FROM public.programacao_producao WHERE ordem_servico_id=e.ordem_servico_id)
+ AND NOT EXISTS(
+  SELECT 1 FROM public.programacao_producao demand WHERE demand.ordem_servico_id=e.ordem_servico_id AND (
+   demand.organization_id IS DISTINCT FROM org OR demand.produto_id IS NULL OR demand.volume_necessario IS NULL OR demand.volume_necessario<=0 OR demand.volume_necessario::text IN ('NaN','Infinity','-Infinity')
+   OR coalesce((SELECT sum(st.volume_total*1000) FROM public.entregas delivered JOIN public.estoque_produto st ON st.id=delivered.estoque_produto_id JOIN public.lotes lot ON lot.id=st.lote_id
+    WHERE delivered.ordem_servico_id=e.ordem_servico_id AND delivered.organization_id=org AND delivered.status::text='entregue' AND lot.programacao_id=demand.id AND lot.organization_id=org
+    AND lot.produto_id=demand.produto_id AND st.produto_id=demand.produto_id AND delivered.produto_id=demand.produto_id AND delivered.lote_id=lot.id
+    AND st.status::text='expedido' AND st.reservado_para_os_id=e.ordem_servico_id AND st.reservado_para_os_tipo='manual'
+    AND st.quantidade=delivered.quantidade_entregue AND st.quantidade_reservada=delivered.quantidade_entregue AND st.volume_total>0 AND st.volume_total::text NOT IN ('NaN','Infinity','-Infinity')
+    AND NOT EXISTS(SELECT 1 FROM public.estoque_movimentacoes m WHERE m.estoque_produto_id=st.id AND m.referencia_id=delivered.id AND m.acao IN ('estorno_expedicao','devolucao','entrega'))),0)<demand.volume_necessario)) THEN
+  ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,'manual','finalizar_os',NULL);
+  IF ack->>'success' IS DISTINCT FROM 'true' OR (SELECT status::text FROM public.ordens_servico WHERE id=e.ordem_servico_id) IS DISTINCT FROM 'finalizada' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_FINALIZE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+  finalizada:=true;
+ END IF;
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ result:=jsonb_build_object('success',true,'action','confirm','replay',false,'actor_id',v_actor,'organization_id',org,'entrega_id',e.id,'os_id',e.ordem_servico_id,'comprovante_id',c.id,'status','entregue','os_status',(SELECT status::text FROM public.ordens_servico WHERE id=e.ordem_servico_id),'finalizada',finalizada,'updated_at',(SELECT updated_at FROM public.entregas WHERE id=e.id));
+ INSERT INTO platform_private.delivery_requests_20261030(request_key,actor,organization_id,action,fingerprint,result) VALUES(p_key,v_actor,org,'confirm',fp,result);
+ IF NOT EXISTS(SELECT 1 FROM platform_private.delivery_confirm_permits_v1 WHERE txid=txid_current() AND delivery_consumed AND proof_consumed) THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_EXACT_PERMIT_UNUSED' USING ERRCODE='42501'; END IF;
+ DELETE FROM platform_private.delivery_confirm_permits_v1 WHERE txid=txid_current();
+ DELETE FROM platform_private.delivery_context_20261030 WHERE txid=txid_current();
+ RETURN result;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION public.rpc_entrega_confirmar_manual_v1(p_entrega uuid,p_observed timestamptz,p_request_key text,p_recebedor jsonb)
+RETURNS jsonb LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path='' AS $$ SELECT platform_private.delivery_confirm_apply_v1(p_entrega,p_observed,p_request_key,p_recebedor) $$;
+REVOKE ALL ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE OR REPLACE FUNCTION platform_private.delivery_mutation_guard_20261030()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE c platform_private.delivery_context_20261030%ROWTYPE; v_org uuid;
+ v_proof text[]:=ARRAY['comprovante_status','assinatura_tipo','recebedor_nome','recebedor_documento','recebedor_cargo','recebedor_telefone','comprovante_anexado_em','comprovante_anexado_por','assinatura_digital_capturada_em','assinatura_digital_capturada_por','comprovante_id','formulario_gerado_em','formulario_gerado_por','validation_token','validation_hash','updated_at'];
+BEGIN
+ IF TG_OP='DELETE' THEN RAISE EXCEPTION 'DELIVERY_MUTATION_CLOSED' USING ERRCODE='42501'; END IF;
+ SELECT * INTO c FROM platform_private.delivery_context_20261030
+ WHERE txid=pg_catalog.txid_current() AND actor=auth.uid();
+ IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_MUTATION_CLOSED' USING ERRCODE='42501'; END IF;
+ IF c.action='confirm' THEN
+  v_org:=platform_private.delivery_confirm_actor_v1();
+  IF TG_OP='UPDATE' AND c.mutation='confirm' AND c.organization_id=v_org AND NEW.id=c.target AND OLD.id=c.target
+   AND NEW.organization_id=OLD.organization_id AND OLD.organization_id=v_org AND OLD.status::text IN ('separado','em_rota') AND NEW.status::text='entregue'
+   AND NEW.confirmado_por=auth.uid() AND NEW.recebimento_confirmado_por=auth.uid()
+   AND (to_jsonb(NEW)-ARRAY['status','entregue_em','recebido_por_nome','recebido_por_cargo','recebido_por_documento','observacoes_confirmacao','confirmado_por','recebimento_confirmado_em','recebimento_confirmado_por','comprovante_status','updated_at'])
+    IS NOT DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','entregue_em','recebido_por_nome','recebido_por_cargo','recebido_por_documento','observacoes_confirmacao','confirmado_por','recebimento_confirmado_em','recebimento_confirmado_por','comprovante_status','updated_at'])
+  THEN UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid; RETURN NEW; END IF;
+  RAISE EXCEPTION 'DELIVERY_CONFIRM_MUTATION_DENIED' USING ERRCODE='42501';
+ END IF;
+ IF c.action='proof_recover' THEN
+  v_org:=platform_private.delivery_confirm_actor_v1();
+  PERFORM platform_private.delivery_proof_recheck_20261030(OLD.id,v_org,'sign');
+  IF TG_OP='UPDATE' AND c.mutation='recover_hash' AND c.organization_id=v_org AND OLD.id=c.target AND NEW.id=c.target
+   AND OLD.status::text IN ('separado','em_rota') AND NEW.status=OLD.status
+   AND (to_jsonb(NEW)-ARRAY['validation_hash','updated_at']) IS NOT DISTINCT FROM (to_jsonb(OLD)-ARRAY['validation_hash','updated_at'])
+  THEN UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid; RETURN NEW; END IF;
+  RAISE EXCEPTION 'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED' USING ERRCODE='42501';
+ END IF;
+ IF c.action='proof' THEN
+  v_org:=platform_private.delivery_proof_actor_20261030();
+  IF TG_OP='UPDATE' AND c.mutation='proof' AND c.organization_id=v_org AND NEW.id=c.target AND OLD.id=c.target
+  AND OLD.organization_id=v_org AND NEW.organization_id=v_org
+  AND OLD.partner_order_id IS NULL AND NEW.partner_order_id IS NULL
+  AND OLD.ordem_servico_onfarm_id IS NULL AND NEW.ordem_servico_onfarm_id IS NULL
+  AND NEW.status=OLD.status AND NEW.receivable_id IS NOT DISTINCT FROM OLD.receivable_id
+  AND (pg_catalog.to_jsonb(NEW)-v_proof) IS NOT DISTINCT FROM (pg_catalog.to_jsonb(OLD)-v_proof) THEN
+   UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid;
+   RETURN NEW;
+  END IF;
+  RAISE EXCEPTION 'DELIVERY_MUTATION_CLOSED' USING ERRCODE='42501';
+ END IF;
+ v_org:=platform_private.delivery_actor_20261030(c.action);
+ IF c.organization_id IS DISTINCT FROM v_org OR NEW.organization_id IS DISTINCT FROM v_org
+ OR NEW.partner_order_id IS NOT NULL OR NEW.receivable_id IS NOT NULL OR NEW.ordem_servico_onfarm_id IS NOT NULL
+ THEN RAISE EXCEPTION 'DELIVERY_MUTATION_CLOSED' USING ERRCODE='42501'; END IF;
+ IF c.action='group' AND TG_OP='INSERT' AND c.mutation='create' AND c.delivery IS NULL
+ AND NEW.ordem_servico_id=c.target AND NEW.estoque_produto_id=c.item AND NEW.status::text='separado' THEN
+  UPDATE platform_private.delivery_context_20261030 SET delivery=NEW.id,mutation='decorate' WHERE txid=c.txid;
+ ELSIF c.action='group' AND TG_OP='UPDATE' AND c.mutation='decorate' AND NEW.id=c.delivery
+ AND OLD.id=c.delivery AND NEW.ordem_servico_id=c.target AND NEW.estoque_produto_id=c.item
+ AND NEW.organization_id=OLD.organization_id AND NEW.status=OLD.status THEN
+  UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid;
+ ELSIF c.action='cancel' AND TG_OP='UPDATE' AND c.mutation='cancel' AND NEW.id=c.target AND OLD.id=c.target
+ AND OLD.organization_id=v_org AND NEW.status::text='cancelada' AND NEW.financial_status='CANCELED'
+ AND (pg_catalog.to_jsonb(NEW)-ARRAY['status','motivo_cancelamento','updated_at','cancelada_em','cancelada_por','financial_status'])
+ IS NOT DISTINCT FROM (pg_catalog.to_jsonb(OLD)-ARRAY['status','motivo_cancelamento','updated_at','cancelada_em','cancelada_por','financial_status']) THEN
+  UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid;
+ ELSE RAISE EXCEPTION 'DELIVERY_MUTATION_CLOSED' USING ERRCODE='42501'; END IF;
+ RETURN NEW;
+END $function$;
+
+CREATE OR REPLACE FUNCTION public.fn_validate_entrega_confirmacao()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_anexos int;
+BEGIN
+  IF NEW.status::text = 'entregue'
+     AND (TG_OP = 'INSERT' OR OLD.status::text IS DISTINCT FROM 'entregue') THEN
+
+    IF TG_OP = 'UPDATE' AND OLD.status::text = 'cancelada' THEN
+      RAISE EXCEPTION 'Não é possível confirmar uma entrega cancelada.'
+        USING ERRCODE = 'check_violation';
+    END IF;
+
+    IF COALESCE(TRIM(NEW.recebido_por_nome), '') = '' THEN
+      RAISE EXCEPTION 'Informe o nome de quem recebeu a entrega.'
+        USING ERRCODE = 'check_violation';
+    END IF;
+
+    IF NEW.confirmado_por IS NULL THEN
+      RAISE EXCEPTION 'A entrega precisa ser confirmada por um usuário autenticado.'
+        USING ERRCODE = 'check_violation';
+    END IF;
+
+    IF NEW.entregue_em IS NULL THEN
+      NEW.entregue_em := now();
+    END IF;
+
+    IF NEW.comprovante_entrega_obrigatorio THEN
+      PERFORM platform_private.delivery_confirm_proof_v1(NEW);
+      v_anexos:=1;
+      IF v_anexos = 0 THEN
+        RAISE EXCEPTION 'É obrigatório anexar pelo menos um comprovante para confirmar esta entrega.'
+          USING ERRCODE = 'check_violation';
+      END IF;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$function$
+;
+CREATE FUNCTION public.rpc_entrega_confirmacao_capability_v1(p_entrega uuid) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid; e public.entregas; available boolean:=false; BEGIN
+ BEGIN org:=platform_private.delivery_confirm_actor_v1(); e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ available:=has_function_privilege('authenticated','public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb)','EXECUTE') AND e.status::text IN ('separado','em_rota','entregue');
+ EXCEPTION WHEN insufficient_privilege THEN available:=false; END;
+ RETURN jsonb_build_object('capability','delivery_confirmation_manual_v1','available',available,'actor_id',auth.uid(),'organization_id',org,'entrega_id',p_entrega,'os_id',e.ordem_servico_id,'comprovante_id',e.comprovante_id,'updated_at',e.updated_at,'status',e.status::text);
+END $$;
+REVOKE ALL ON FUNCTION public.rpc_entrega_confirmacao_capability_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_entrega_confirmacao_capability_v1(uuid) TO authenticated;
+
