@@ -10,6 +10,8 @@ from pathlib import Path
 H = Path(__file__).resolve().parent
 ROOT = H.parents[2]
 CAPTURE = H / "reconciliation-posplans-20261108/live-catalog-owner-fk-20261109.capture.json"
+AUDITOR_REPORT = H / "reconciliation-posplans-20261108/live-owner-fk-reconciliation-20261109.auditor-report.json"
+AUDITOR_REPORT_NAME = "live-owner-fk-reconciliation.auditor-report.json"
 BASELINE = H / "evidence/attempt-113/physical-finished-product/baseline.json"
 FROZEN = H / "production-rollout-posplans-20261108"
 OVERLAY = H / "production-rollout-posplans-20261108-acl-order-overlay"

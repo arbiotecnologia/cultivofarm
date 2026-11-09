@@ -23,6 +23,7 @@ TARGETS = (
     ("product_packagings", "product_packagings_owner_organization_id_fkey"),
     ("product_sale_units", "product_sale_units_owner_organization_id_fkey"),
 )
+AUDITOR_REPORT = H / "reconciliation-posplans-20261108/live-owner-fk-reconciliation-20261109.auditor-report.json"
 
 
 def sha(path):

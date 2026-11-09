@@ -3,7 +3,7 @@
 - [ ] Reconciliar o PostgreSQL descartável com a captura real: ausência de `product_packagings_owner_organization_id_fkey` e `product_sale_units_owner_organization_id_fkey`, sem remover ou afrouxar os guards de PRE30/INSTALL31.
 - [ ] Gerar correção separada PRE25/INSTALL26/POST27: zero órfãos antes e depois dos locks, constraints validadas, ACL/owner preservados, sem cleanup, grants ou efeitos comerciais; órfãos e divergências falham fechado.
 - [ ] Executar artefatos finais e PRE30/31 no PostgreSQL 17 descartável com saída incremental, promover manifest/evidência somente após PASS; produção segue só com `11/21` fechados e sem `31+`, sem SQL hospedado/publicação/ativação.
-- [ ] Integrar o complemento de contagens reais caso esteja disponível; não inventar contagens nem classificar o timeout anterior como evidência.
+- [x] Complemento independente recebido às 03:57 UTC: cada tabela tem `total=1`, `owner_null=0`, `orphan_owner=0`, `owner_product_mismatch=0`; nove regressões ACL READ ONLY relatadas como PASS. Preservado como relato do auditor com hash, sem apresentá-lo como medição hospedada do agente nem como autorização de instalação.
 
 ## 09/11 03:02 — Normalização estrita de ACL no PRE30/installer31
 - [x] Registrado como relato do auditor: produção canônica recebeu somente `11` confirmação fechada e `21` envio fechado, com `12/22` PASS; PRE30 parou em `FINISHED_PRE_RELATION_DRIFT public.estoque_movimentacoes` apenas por ordem textual de ACL. Nenhuma reinstalação `11/21`, reordenação de grants, operação hospedada, publicação ou ativação pelo agente.
