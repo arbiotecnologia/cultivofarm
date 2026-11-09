@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-iHIJtX7P/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 287, in main
+    assert terms_approved.returncode==0,terms_approved.stderr
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ERROR:  42501: b2b_phase1_scope_denied
+CONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 9 at RAISE
+LOCATION:  exec_stmt_raise, pl_exec.c:3911
+
