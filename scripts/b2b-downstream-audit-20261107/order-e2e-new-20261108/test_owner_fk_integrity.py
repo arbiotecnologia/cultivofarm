@@ -214,6 +214,22 @@ def main():
         reconciled = actual_catalog()
         actual_columns = {(row["relation"], row["name"]): row for row in reconciled["columns"]}
         expected_columns = {(row["relation"], row["name"]): row for row in capture["columns"]}
+        expected_generated_shape = {
+            "relation": "product_sale_units",
+            "name": "forma_fisica",
+            "type": reported_shape["type"],
+            "default": reported_shape["generation_expression"],
+            "notnull": reported_shape["notnull"],
+            "generated": reported_shape["generated"],
+            "identity": reported_shape["identity"],
+        }
+        actual_generated_shape = actual_columns[("product_sale_units", "forma_fisica")]
+        assert actual_generated_shape == expected_generated_shape, actual_generated_shape
+        report["fixture_generated_column"] = {
+            "actual": actual_generated_shape,
+            "source": "pg_attribute.attgenerated/attidentity e pg_get_expr(adbin,adrelid) medidos no PostgreSQL descartável",
+            "pg_attrdef_synthesized": False,
+        }
         column_drift = [key for key in sorted(expected_columns)
                         if any(actual_columns.get(key, {}).get(field) != expected_columns[key].get(field)
                                for field in ("type", "default", "notnull"))]

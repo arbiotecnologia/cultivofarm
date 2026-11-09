@@ -182,6 +182,13 @@ def main():
     assert auditor_report["kind"] == "AUDITOR_REPORTED_READONLY_EVIDENCE"
     assert auditor_report["project_ref"] == "swzpzcwiasxmjutrmvkm"
     assert auditor_report["agent_hosted_io"] is False
+    reported_shape = auditor_report["reported_column_shapes"]["product_sale_units.forma_fisica"]
+    captured_shape = next(row for row in capture["columns"]
+                          if row["relation"] == "product_sale_units" and row["name"] == "forma_fisica")
+    assert reported_shape["type"] == captured_shape["type"] == "text"
+    assert reported_shape["notnull"] is captured_shape["notnull"] is False
+    assert reported_shape["generated"] == "s" and reported_shape["identity"] == ""
+    assert reported_shape["generation_expression"] == captured_shape["default"]
     assert set(auditor_report["owner_fk_counts"]) == {table for table, _name in TARGETS}
     for counts in auditor_report["owner_fk_counts"].values():
         assert counts["total"] == 1
