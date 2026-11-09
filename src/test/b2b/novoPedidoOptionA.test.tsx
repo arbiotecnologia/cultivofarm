@@ -269,7 +269,7 @@ it('falha na releitura depois de intenção valida bloqueia handler e aposenta n
  await waitFor(()=>expect(screen.queryByRole('button',{name:'Iniciar nova tentativa'})).toBeNull());
  await simulate(view);const send=await submitBtn();await waitFor(()=>expect(send).toBeEnabled());
  // A new terminal observation retires the intent; status failure must never restore it.
- terminal='committed';await act(async()=>{await readAttemptStatus(SLOT,state.partner,()=>true);});
+ generation=2;terminal='committed';await act(async()=>{await readAttemptStatus(SLOT,state.partner,()=>true);});
  failure=true;fireEvent.click(await screen.findByRole('button',{name:'Confirmar pedido existente e iniciar novo'}));
  fireEvent.click(await screen.findByRole('button',{name:'Confirmar e iniciar novo'}));
  await screen.findByText('Não foi possível verificar a continuidade do pedido. Nada foi liberado.');

@@ -24,7 +24,7 @@ export function useOrderJournal(partnerId: string | undefined) {
  const statusInstalled=useRef<Record<string,boolean>>({});
  const [pending,setPending]=useState(false);
  const lock=useRef(false);
- const basisOf=(j:Journal|null)=>j?`${j.key}:${j.generation}:${j.state}`:null;
+ const basisOf=(j:Journal|null)=>j?JSON.stringify([j.key,j.generation,j.state,j.order_id??null,j.numero??null]):null;
  const read=async(current:()=>boolean)=>{
   if(!partnerId || !slot)return;
   const s=await readAttemptStatus(slot,partnerId,current);
