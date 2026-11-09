@@ -135,6 +135,14 @@ def main():
             "ddl_candidate_sha256": hashlib.sha256(candidate.encode()).hexdigest(),
             "ddl_candidate_byte_identical": True,
         },
+        "overlay_generator": {
+            "path": str(Path(__file__).resolve().relative_to(ROOT)),
+            "sha256": sha(Path(__file__).resolve()),
+        },
+        "verification_runner": {
+            "path": str((H / "test_acl_order_overlay.py").relative_to(ROOT)),
+            "sha256": sha(H / "test_acl_order_overlay.py"),
+        },
         "relations": relations,
         "auditor_reported_production": {
             "ref": "swzpzcwiasxmjutrmvkm",
