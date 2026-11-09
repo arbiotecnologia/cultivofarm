@@ -1,10 +1,11 @@
 --- scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py	2026-11-09 19:16:52.586273164 +0000
-+++ /tmp/post-pb1039-components-BvBXHT/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py	2026-11-09 19:27:05.371448008 +0000
-@@ -126,7 +126,7 @@
++++ /tmp/post-pb1039-components-BvBXHT/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py	2026-11-09 19:28:08.205758563 +0000
+@@ -126,7 +126,8 @@
      # Ativação exclusivamente no harness; os artefatos de release permanecem fechados.
      sql("GRANT EXECUTE ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb),public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text) TO authenticated;")
      ok("writers de confirmação/envio ativados somente no PostgreSQL descartável")
 -    current_catalog.assert_current(last)
++    sql('GRANT ALL ON platform_private.authz_tickets TO postgres;') # same owner-only ACL normalization as attempt-114; no client grant
 +    current_catalog.assert_current(last, {('entregas','trg_validate_entrega_confirmacao'),('entregas','zz_delivery_mutation_closed')}, set())
  
  

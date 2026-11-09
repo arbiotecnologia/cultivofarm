@@ -1,9 +1,9 @@
 {
   "kind": "DISPOSABLE_FINISHED_PRODUCT_NULL_CONTRACT_NOT_HOSTED",
-  "status": "FAIL",
-  "exit_code": 1,
-  "passed": 3,
-  "total": 4,
+  "status": "PASS",
+  "exit_code": 0,
+  "passed": 52,
+  "total": 52,
   "checks": [
     {
       "name": "checkpoint descartável da composição capturada restaurado",
@@ -20,12 +20,664 @@
       "status": "PASS"
     },
     {
-      "name": "execução da matriz de nulidade terminou no ponto concreto",
-      "status": "FAIL",
-      "detail": "Traceback (most recent call last):\n  File \"/tmp/post-pb1039-components-BvBXHT/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_null_contract.py\", line 25, in main\n    raise AssertionError(\"candidate PRE/install failed\\n\" + loaded.stdout[-2000:] + loaded.stderr[-6000:])\nAssertionError: candidate PRE/install failed\nERROR:  P0001: FINISHED_PRE_RELATION_DRIFT platform_private.authz_tickets\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n\n"
+      "name": "candidato instalado para matriz isolada de nulidade",
+      "status": "PASS"
+    },
+    {
+      "name": "gate True: helper nega origem inesperada sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate True: CHECK nega origem inesperada",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate True: helper nega embalagem_versao NULL sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate True: CHECK nega embalagem_versao NULL",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate True: helper nega conteudo_por_unidade NULL sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate True: CHECK nega conteudo_por_unidade NULL",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate True: helper nega unidade_conteudo NULL sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate True: CHECK nega unidade_conteudo NULL",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate True: helper nega quantidade_conteudo NULL sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate True: CHECK nega quantidade_conteudo NULL",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate True: helper nega quantidade NULL sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate True: CHECK nega quantidade NULL",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate True: helper nega embalagem_id NULL sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate True: CHECK nega embalagem_id NULL",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate True: helper nega dimensão sólida com volume sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate True: CHECK nega dimensão sólida com volume",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate True: helper nega dimensão de conteúdo incoerente sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate True: CHECK nega dimensão de conteúdo incoerente",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate True: helper nega unidade comercial NULL sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate True: CHECK nega unidade comercial NULL",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate False: helper nega origem inesperada sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate False: CHECK nega origem inesperada",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate False: helper nega embalagem_versao NULL sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate False: CHECK nega embalagem_versao NULL",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate False: helper nega conteudo_por_unidade NULL sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate False: CHECK nega conteudo_por_unidade NULL",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate False: helper nega unidade_conteudo NULL sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate False: CHECK nega unidade_conteudo NULL",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate False: helper nega quantidade_conteudo NULL sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate False: CHECK nega quantidade_conteudo NULL",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate False: helper nega quantidade NULL sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate False: CHECK nega quantidade NULL",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate False: helper nega embalagem_id NULL sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate False: CHECK nega embalagem_id NULL",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate False: helper nega dimensão sólida com volume sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate False: CHECK nega dimensão sólida com volume",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate False: helper nega dimensão de conteúdo incoerente sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate False: CHECK nega dimensão de conteúdo incoerente",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "gate False: helper nega unidade comercial NULL sem NULL",
+      "status": "PASS",
+      "detail": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      }
+    },
+    {
+      "name": "gate False: CHECK nega unidade comercial NULL",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "caller usa IS NOT TRUE: public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)",
+      "status": "PASS"
+    },
+    {
+      "name": "caller usa IS NOT TRUE: public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)",
+      "status": "PASS"
+    },
+    {
+      "name": "caller usa IS NOT TRUE: platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)",
+      "status": "PASS"
+    },
+    {
+      "name": "caller usa IS NOT TRUE: platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
+      "status": "PASS"
+    },
+    {
+      "name": "caller usa IS NOT TRUE: platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
+      "status": "PASS"
+    },
+    {
+      "name": "caller usa IS NOT TRUE: public.validate_estoque_entrada()",
+      "status": "PASS"
+    },
+    {
+      "name": "controle válido permanece aceito com gate ligado",
+      "status": "PASS"
+    },
+    {
+      "name": "controle válido é negado com gate desligado",
+      "status": "PASS"
     }
   ],
-  "probes": [],
+  "probes": [
+    {
+      "case": "origem inesperada",
+      "gate_enabled": true,
+      "overrides": {
+        "origem_estoque": "origem_inesperada"
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012000, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, 2, null, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, origem_inesperada, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "embalagem_versao NULL",
+      "gate_enabled": true,
+      "overrides": {
+        "embalagem_versao": null
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012001, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, 2, null, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, null).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "conteudo_por_unidade NULL",
+      "gate_enabled": true,
+      "overrides": {
+        "conteudo_por_unidade": null
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012002, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, 2, null, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, null, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "unidade_conteudo NULL",
+      "gate_enabled": true,
+      "overrides": {
+        "unidade_conteudo": null
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012003, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, 2, null, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, null, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "quantidade_conteudo NULL",
+      "gate_enabled": true,
+      "overrides": {
+        "quantidade_conteudo": null
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012004, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, 2, null, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, null, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "quantidade NULL",
+      "gate_enabled": true,
+      "overrides": {
+        "quantidade": null
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012005, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, null, null, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "embalagem_id NULL",
+      "gate_enabled": true,
+      "overrides": {
+        "embalagem_id": null
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012006, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, 2, null, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, null, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "dimensão sólida com volume",
+      "gate_enabled": true,
+      "overrides": {
+        "volume_total": 50
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012007, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, 2, 50, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "dimensão de conteúdo incoerente",
+      "gate_enabled": true,
+      "overrides": {
+        "quantidade_conteudo": 49
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012008, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, 2, null, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 49, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "unidade comercial NULL",
+      "gate_enabled": true,
+      "overrides": {
+        "unidade_comercial": null
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012009, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, 2, null, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, null, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "origem inesperada",
+      "gate_enabled": false,
+      "overrides": {
+        "origem_estoque": "origem_inesperada"
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012100, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, 2, null, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, origem_inesperada, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "embalagem_versao NULL",
+      "gate_enabled": false,
+      "overrides": {
+        "embalagem_versao": null
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012101, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, 2, null, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, null).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "conteudo_por_unidade NULL",
+      "gate_enabled": false,
+      "overrides": {
+        "conteudo_por_unidade": null
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012102, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, 2, null, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, null, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "unidade_conteudo NULL",
+      "gate_enabled": false,
+      "overrides": {
+        "unidade_conteudo": null
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012103, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, 2, null, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, null, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "quantidade_conteudo NULL",
+      "gate_enabled": false,
+      "overrides": {
+        "quantidade_conteudo": null
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012104, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, 2, null, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, null, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "quantidade NULL",
+      "gate_enabled": false,
+      "overrides": {
+        "quantidade": null
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012105, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, null, null, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "embalagem_id NULL",
+      "gate_enabled": false,
+      "overrides": {
+        "embalagem_id": null
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012106, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, 2, null, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, null, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "dimensão sólida com volume",
+      "gate_enabled": false,
+      "overrides": {
+        "volume_total": 50
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012107, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, 2, 50, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "dimensão de conteúdo incoerente",
+      "gate_enabled": false,
+      "overrides": {
+        "quantidade_conteudo": 49
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012108, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, 2, null, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 49, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    },
+    {
+      "case": "unidade comercial NULL",
+      "gate_enabled": false,
+      "overrides": {
+        "unidade_comercial": null
+      },
+      "helper": {
+        "value": false,
+        "fail_closed_denies": true,
+        "legacy_if_not_denies": true
+      },
+      "check": {
+        "returncode": 3,
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012109, 10000000-0000-4000-8000-000000005011, cc7428ec-19a0-456a-aa83-b2a582fe0ce9, 2, null, 2028-12-31, disponivel, 2026-11-09 19:28:48.046028+00, 2026-11-09 19:28:48.046028+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, null, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "denied": true
+      }
+    }
+  ],
   "hosted": false,
   "synthetic_seams": [
     "Auth/claims e catálogo fictícios somente no PostgreSQL descartável",

@@ -1,5 +1,5 @@
 {
-  "status": "FAIL",
+  "status": "PASS",
   "checks": [
     {
       "name": "checkpoint descartável da composição capturada restaurado",
@@ -16,8 +16,21 @@
       "status": "PASS"
     },
     {
-      "name": "FAIL ERROR:  P0001: FINISHED_PRE_RELATION_DRIFT platform_private.authz_tickets\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "name": "candidato instalado e gate permanece desligado para o legado",
       "status": "PASS"
+    },
+    {
+      "name": "legado biológico mantém programação, envio e confirmação canônicos com gate desligado",
+      "status": "PASS"
+    },
+    {
+      "name": "legado biológico mantém cancelamento e recomposição de estoque",
+      "status": "PASS"
+    },
+    {
+      "name": "legado sem envase continua negado pelo writer físico",
+      "status": "PASS",
+      "detail": "P0001"
     }
   ],
   "candidate_installed": true,
