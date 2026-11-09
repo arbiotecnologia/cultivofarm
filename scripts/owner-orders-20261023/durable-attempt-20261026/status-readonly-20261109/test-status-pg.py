@@ -59,7 +59,7 @@ for k in ('GB','GT','PR'):
   s=status(u)
   if s.get('state')=='none':fresh=u;break
  except Exception as e:print('probe',k,str(e)[:160],flush=True)
-ok('fresh authorised actor available in fixture',fresh is not None)
+ok('fresh authorised actor available in fixture (cumulative gestor+técnico GT)',fresh is not None and fresh==env['env']['GT'],fresh)
 if fresh:
  jf=jcount(fresh);a=status(fresh);b=status(fresh)
  ok('first access: status none, NO reservation',a['state']=='none' and a['contract']=='C2_ORDER_ATTEMPT_STATUS_V1' and jcount(fresh)==jf==0,a)
@@ -114,7 +114,7 @@ if fresh:
  ok('status revocation test waits',waiting('status-rev'))
  pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=now(),revoked_by='{ADMIN}',revoke_reason='synthetic' WHERE user_id='{fresh}'; SET session_replication_role=origin;")
  release(h);os_,es=finish(ps)
- ok('revocation during status wait denies, no state disclosed',first(es)=='ERROR:  42501: forbidden_partner' and 'uncertain' not in os_,first(es))
+ ok('revocation during status wait denies with canonical 42501 (cumulative gestor+técnico actor reaches forbidden_financial_terms), no state disclosed',first(es) in ('ERROR:  42501: forbidden_partner','ERROR:  42501: forbidden_financial_terms') and 'uncertain' not in os_ and 'committed' not in os_,first(es))
  pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL WHERE user_id='{fresh}'; SET session_replication_role=origin;")
 # Negative actors.
 b=jcount();e=error(ADMIN_B,f"SELECT public.partner_order_attempt_status_v1('{P}')")
