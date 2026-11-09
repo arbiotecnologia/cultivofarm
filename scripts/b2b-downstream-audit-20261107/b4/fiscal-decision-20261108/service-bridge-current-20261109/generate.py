@@ -97,7 +97,7 @@ def function_assert(sig, expected, code):
 def metadata_assert(code):
     acl = BASELINE["ACL"]
     trigger_md5 = BASELINE["TRIGGERS_MD5"]
-    return f""" IF (SELECT coalesce(relacl::text,'') FROM pg_class WHERE oid='public.accounts_receivable'::regclass) IS DISTINCT FROM '{acl}' THEN RAISE EXCEPTION '{code}:ACL'; END IF;
+    return f""" IF (SELECT array_agg(x::text ORDER BY x::text) FROM pg_class c CROSS JOIN LATERAL unnest(coalesce(c.relacl,acldefault('r',c.relowner))) x WHERE c.oid='public.accounts_receivable'::regclass) IS DISTINCT FROM (SELECT array_agg(x::text ORDER BY x::text) FROM unnest('{acl}'::aclitem[]) x) THEN RAISE EXCEPTION '{code}:ACL'; END IF;
  IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND NOT tgisinternal)<>14 THEN RAISE EXCEPTION '{code}:TRIGGER_COUNT_WITH_CANDIDATES'; END IF;
  IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND NOT tgisinternal AND tgname NOT IN ('zz_b2b_shared_credit_guard','a01_b2b_fiscal_title_fence','a01_b2b_fiscal_title_identity','b2b_fiscal_created_by_guard'))<>10 THEN RAISE EXCEPTION '{code}:TRIGGER_COUNT'; END IF;
  IF (SELECT md5(string_agg(tgname||'|'||pg_get_triggerdef(oid)||'|'||tgenabled,'^' ORDER BY tgname)) FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND NOT tgisinternal AND tgname NOT IN ('zz_b2b_shared_credit_guard','a01_b2b_fiscal_title_fence','a01_b2b_fiscal_title_identity','b2b_fiscal_created_by_guard')) IS DISTINCT FROM '{trigger_md5}' THEN RAISE EXCEPTION '{code}:TRIGGERS'; END IF;
