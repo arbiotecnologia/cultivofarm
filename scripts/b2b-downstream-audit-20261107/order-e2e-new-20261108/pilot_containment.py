@@ -331,7 +331,7 @@ def build_bodies(raw):
     sig = "public.rpc_entrega_comprovacao_preflight_v1(uuid,text)"
     body = defs[sig]["body"]
     anchor = " IF NOT FOUND OR NOT platform_private.delivery_proof_row_ok_20261030(v_e,v_org,p_action) THEN RAISE EXCEPTION 'DELIVERY_PROOF_SCOPE_DENIED' USING ERRCODE='42501'; END IF;"
-    body = one(body, anchor, anchor + "\n IF (v_e.partner_order_id IS NOT NULL OR v_e.origem_estoque IS NOT NULL) AND platform_private.resale_pilot_delivery_allowed_v1(CASE WHEN v_e.partner_order_id IS NULL THEN 'finished_product' ELSE 'b2b_resale' END,'proof',auth.uid(),v_org,v_e.id) IS NOT TRUE THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;", "proof preflight pilot")
+    body = one(body, anchor, anchor + "\n IF (v_e.partner_order_id IS NOT NULL OR v_e.origem_estoque IS NOT NULL) AND platform_private.resale_pilot_delivery_scope_v1(CASE WHEN v_e.partner_order_id IS NULL THEN 'finished_product' ELSE 'b2b_resale' END,'proof',auth.uid(),v_org,v_e.id) IS NOT TRUE THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;", "proof preflight scope")
     defs[sig]["new"] = body
     return defs
 
