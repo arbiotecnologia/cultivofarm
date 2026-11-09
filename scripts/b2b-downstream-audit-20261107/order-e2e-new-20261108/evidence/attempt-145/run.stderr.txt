@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-J5GEqsQ9/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 38, in main
+    B.C.prepare_checkpoint(checkpoint)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-J5GEqsQ9/project/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 73, in prepare_checkpoint
+    for p in [S/'delivery-proof-authz-20261030/release-combined.sql.review',S/'stock-envase-recovery-20261027/install-v2.sql.review',S/'proof-select-tenant-20261030/install.sql.review',S/'delivery-evidence-tenant-20261030/install.sql.review',S/'produto-etiquetas-tenant-20261030/install.sql.review',S/'delivery-checklist-occurrence-authz-20261030/install.sql.review',S/'delivery-waiver-closure-20261030/install.sql.review',S/'delivery-group-capability-20261030/install.sql.review',ISO/'install.sql.review',ISO/'legacy-closure-install.sql.review',ISO/'release.sql.review']:load(p)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ~~~~^^^
+  File "/tmp/new-order-e2e-J5GEqsQ9/project/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 19, in load
+    def load(p):sources.append({'file':str(p.relative_to(ROOT)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()});sql(p.read_text())
+                                                                                        ~~~~~~~~~~~~^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/pathlib/_abc.py", line 625, in read_bytes
+    with self.open(mode='rb') as f:
+         ~~~~~~~~~^^^^^^^^^^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/pathlib/_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/new-order-e2e-J5GEqsQ9/project/scripts/proof-select-tenant-20261030/install.sql.review'
