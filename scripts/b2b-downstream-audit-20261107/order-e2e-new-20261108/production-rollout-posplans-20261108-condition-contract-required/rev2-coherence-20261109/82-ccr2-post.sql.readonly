@@ -11,11 +11,11 @@ BEGIN
                'platform_private.b2b_condition_mode(uuid)'::regprocedure, 'platform_private.b2b_condition_required_check()'::regprocedure)
   LOOP
     n := n + 1;
-    IF v NOT IN ('platform_private.b2b_condition_order_coherence_check(uuid,boolean)|__MD5_CHECK__|postgres|postgres=X/postgres|search_path=""|true',
-                 'platform_private.b2b_condition_order_coherence_trg()|__MD5_OTRG__|postgres|postgres=X/postgres|search_path=""|true',
-                 'platform_private.b2b_condition_snapshot_coherence_trg()|__MD5_STRG__|postgres|postgres=X/postgres|search_path=""|true',
-                 'platform_private.b2b_condition_mode(uuid)|7830c32a4ae139d9ab7e377dd39c8df6|postgres|postgres=X/postgres|search_path=""|true',
-                 'platform_private.b2b_condition_required_check()|236b821b0ca568c81a9667512dae5def|postgres|postgres=X/postgres|search_path=""|true')
+    IF v NOT IN ('platform_private.b2b_condition_order_coherence_check(uuid,boolean)|__MD5_CHECK__|postgres|postgres=X/postgres|search_path=""|t',
+                 'platform_private.b2b_condition_order_coherence_trg()|__MD5_OTRG__|postgres|postgres=X/postgres|search_path=""|t',
+                 'platform_private.b2b_condition_snapshot_coherence_trg()|__MD5_STRG__|postgres|postgres=X/postgres|search_path=""|t',
+                 'platform_private.b2b_condition_mode(uuid)|7830c32a4ae139d9ab7e377dd39c8df6|postgres|postgres=X/postgres|search_path=""|t',
+                 'platform_private.b2b_condition_required_check()|236b821b0ca568c81a9667512dae5def|postgres|postgres=X/postgres|search_path=""|t')
     THEN RAISE EXCEPTION 'CCR2_POST_FN %', v; END IF;
   END LOOP;
   IF n <> 5 THEN RAISE EXCEPTION 'CCR2_POST_FN_COUNT %', n; END IF;

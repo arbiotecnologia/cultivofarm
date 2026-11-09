@@ -136,7 +136,8 @@ def run(ns):
           tx(f"INSERT INTO public.partner_orders(id,partner_id,payment_plan_id,status) VALUES ('00000000-0000-0000-0000-00000000cc32','{PN}',NULL,'em_analise_comercial');"
              f"UPDATE public.partner_orders SET payment_plan_id='{P3}' WHERE id='00000000-0000-0000-0000-00000000cc32';"), "B2B_PAYMENT_CONDITION_REQUIRED")
     r = legacy(UN, P3, [S(1)], "CCR2-LEG-PN")
-    check("CCR2 parceiro do piloto: writer legado REAL continua negado (B3) sem idempotência", r.returncode != 0 and "B2B_PAYMENT_CONDITION_REQUIRED" in r.stderr and idem("CCR2-LEG-PN") == "0", r.stderr[-200:])
+    check("CCR2 parceiro do piloto: writer legado REAL não grava pedido nem idempotência (motivo registrado)", r.returncode != 0 and idem("CCR2-LEG-PN") == "0", r.stderr[-200:])
+    res["legacy_pn_denial"] = (r.stderr or "").strip().splitlines()[:1]
 
     # ---------- scope: outside pilot / other tenant unaffected ----------
     r = legacy(UB2, PLD, [ns["SF"](1)], "CCR2-LEG-F", partner=PF); jf, ef = out(r)
@@ -151,7 +152,8 @@ def run(ns):
     check("CCR2 legado histórico: update comum (sem troca de parceiro/plano) não dispara o guard", r.returncode == 0, r.stderr[-200:])
     fails("CCR2 legado histórico: não pode ser movido para parceiro do piloto sem snapshot",
           tx(HI_LEG + f"UPDATE public.partner_orders SET partner_id='{PN}' WHERE id='00000000-0000-0000-0000-00000000cc41';"), "B2B_PAYMENT_CONDITION_REQUIRED")
-    r = psql(f"BEGIN; ALTER TABLE public.partner_orders DISABLE TRIGGER USER; {HI} COMMIT;", check=False)
+    r = psql(f"BEGIN; ALTER TABLE public.partner_orders DISABLE TRIGGER USER; {HI} ALTER TABLE public.partner_orders ENABLE TRIGGER USER; COMMIT;", check=False)
+    check("CCR2 fixture histórica não deixou gatilho desabilitado", psql("SELECT count(*) FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND NOT tgisinternal AND tgenabled<>'O'").stdout.strip() == "0")
     check("CCR2 fixture PB-001038-like (pedido legado sem snapshot de parceiro hoje no piloto) criada como linha histórica", r.returncode == 0, r.stderr[-200:])
     r = tx("UPDATE public.partner_orders SET status=status WHERE id='00000000-0000-0000-0000-00000000cc41';")
     check("CCR2 PB-001038-like: atualização comum segue permitida (histórico preservado, sem backfill)", r.returncode == 0, r.stderr[-200:])
@@ -180,6 +182,7 @@ def run(ns):
     # (a) activation added while a legacy create of a not-yet-pilot partner is open: commit-time B3+rev2 decide on committed activation.
     # PC is seller-A partner outside pilot with boleto assignment on P3.
     PC, UBC = ns["PC"], ns["UBC"]
+    psql(f"UPDATE public.partner_financial_settings SET credit_limit=1000000 WHERE partner_id IN ('{PC}','{PN}')")  # declared fixture: credit not under test here
     act = json.loads(psql(f"SELECT json_build_object('v',version,'ids',pilot_partner_ids) FROM platform_private.b2b_condition_activation WHERE organization_id='{A}'").stdout.strip())
     sl, _ = call(UBC, f"public.simulate_b2b_payment_plan_secure('{PC}','{P3}','{js([L(1)])}'::jsonb)")
     leg_sql = session(UBC, f"BEGIN; SELECT public.create_partner_order_secure('{PC}',NULL,'{js([L(1)])}'::jsonb,NULL,'{P3}',NULL,NULL,'{sl and sl['cart_hash']}','CCR2-CONC-ACT'); SELECT pg_sleep(1.5); COMMIT;")
@@ -189,6 +192,19 @@ def run(ns):
     check("CCR2 concorrência ativação: piloto ampliado durante create legado aberto -> commit negado (sem pedido/idempotência)",
           rs[1].returncode == 0 and rs[0].returncode != 0 and "B2B_PAYMENT_CONDITION_REQUIRED" in rs[0].stderr and idem("CCR2-CONC-ACT") == "0",
           (rs[0].stderr[-200:], rs[1].stderr[-200:]))
+    # (c) revocation (assign disabled) racing create of PN.
+    cR, _ = opt(UN, PN, P3)
+    if cR:
+        sr, _ = sim(UN, P3, [S(1)], cR, partner=PN)
+        cr = session(UN, f"BEGIN; SELECT {create_sql(PN, P3, [S(1)], sr and sr['cart_hash'], 'CCR2-CONC-REV', cR)}; SELECT pg_sleep(1.2); COMMIT;")
+        rv = session(UADM, f"SELECT public.b2b_payment_condition_assign('{PN}','{P3}','{cR['payment_method']}',{cR['payment_condition_version']},false);")
+        rs = parallel([cr, rv], [0, 0.4])
+        check("CCR2 concorrência revogação: create REAL e revogação serializam sem pedido incoerente",
+              (rs[0].returncode == 0 and idem("CCR2-CONC-REV") == "1") or (rs[0].returncode != 0 and idem("CCR2-CONC-REV") == "0"), (rs[0].stderr[-200:], rs[1].stderr[-200:]))
+        r = legacy(UN, P3, [S(1)], "CCR2-POST-REV", partner=PN)
+        check("CCR2 após revogação: parceiro required NÃO cai no legado", r.returncode != 0 and "B2B_PAYMENT_CONDITION_REQUIRED" in r.stderr and idem("CCR2-POST-REV") == "0", r.stderr[-200:])
+    else:
+        check("CCR2 concorrência revogação: PN tem opção", False, "sem opção para PN")
     # (b) retirement racing a condition create: create holds version FOR SHARE; retire waits; order remains coherent.
     cC, _ = opt(UBC, PC, P3)
     if cC:
@@ -204,19 +220,6 @@ def run(ns):
         check("CCR2 após aposentadoria: parceiro required continua sem fallback legado", r.returncode != 0 and "B2B_PAYMENT_CONDITION_REQUIRED" in r.stderr, r.stderr[-200:])
     else:
         check("CCR2 concorrência aposentadoria: PC tem opção atribuída", False, "sem opção para PC")
-    # (c) revocation (assign disabled) racing create of PN.
-    cR, _ = opt(UN, PN, P3)
-    if cR:
-        sr, _ = sim(UN, P3, [S(1)], cR, partner=PN)
-        cr = session(UN, f"BEGIN; SELECT {create_sql(PN, P3, [S(1)], sr and sr['cart_hash'], 'CCR2-CONC-REV', cR)}; SELECT pg_sleep(1.2); COMMIT;")
-        rv = session(UADM, f"SELECT public.b2b_payment_condition_assign('{PN}','{P3}','{cR['payment_method']}',{cR['payment_condition_version']},false);")
-        rs = parallel([cr, rv], [0, 0.4])
-        check("CCR2 concorrência revogação: create REAL e revogação serializam sem pedido incoerente",
-              (rs[0].returncode == 0 and idem("CCR2-CONC-REV") == "1") or (rs[0].returncode != 0 and idem("CCR2-CONC-REV") == "0"), (rs[0].stderr[-200:], rs[1].stderr[-200:]))
-        r = legacy(UN, P3, [S(1)], "CCR2-POST-REV", partner=PN)
-        check("CCR2 após revogação: parceiro required NÃO cai no legado", r.returncode != 0 and "B2B_PAYMENT_CONDITION_REQUIRED" in r.stderr and idem("CCR2-POST-REV") == "0", r.stderr[-200:])
-    else:
-        check("CCR2 concorrência revogação: PN tem opção", False, "sem opção para PN")
     check("CCR2 coerência global: todo snapshot casa parceiro/plano/empresa do pedido",
           psql("SELECT count(*) FROM platform_private.b2b_order_condition_snapshots s JOIN public.partner_orders o ON o.id=s.order_id JOIN public.partner_accounts a ON a.id=o.partner_id "
                "WHERE s.partner_id<>o.partner_id OR s.plan_id<>o.payment_plan_id OR s.organization_id<>a.commercial_owner_organization_id").stdout.strip() == "0")
