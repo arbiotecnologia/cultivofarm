@@ -13,10 +13,7 @@ def exposure(B, Q):
 def run_override(B, Q, OUT):
     """Crédito manual é exceção; crédito OK sem override já foi coberto pelo caso principal."""
     choice = Q.ch('boleto', 1, 30)
-    B.sql(f"""UPDATE public.partner_financial_settings SET credit_limit=1,credit_limit_action='approval_required',block_if_overdue=false WHERE partner_id='{Q.PC}';
-UPDATE public.catalogo_precos_embalagem SET valid_until=current_date-1 WHERE id='{Q.SP.PR25}' AND valid_until IS NULL;
-INSERT INTO public.catalogo_precos_embalagem(produto_id,owner_organization_id,packaging_id,preco_brl,valid_from)
- SELECT produto_id,owner_organization_id,packaging_id,10,current_date FROM public.catalogo_precos_embalagem WHERE id='{Q.SP.PR25}';""")
+    B.sql(f"""UPDATE public.partner_financial_settings SET credit_limit=1,credit_limit_action='approval_required',block_if_overdue=false WHERE partner_id='{Q.PC}';""")
     simulated, error = Q.sim(Q.UBC, Q.P3, [Q.S(2)], choice, partner=Q.PC)
     assert simulated is not None, error
     created, error = Q.create(Q.UBC, Q.P3, [Q.S(2)], simulated['cart_hash'], 'LOCAL-FORECAST-MANUAL-CREDIT-18', choice, partner=Q.PC)
