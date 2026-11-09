@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-7n7_q2lv/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 419, in main
+    pilot_results=PilotTests.run(B,Review70.Review,Q,A,choice,pilot_out)
+  File "/tmp/new-order-e2e-7n7_q2lv/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_pilot_containment.py", line 245, in run
+    (out / "checks.json").write_text(json.dumps({"hosted": False, "synthetic_auth": True, "checks": checks}, indent=2, ensure_ascii=False) + "\n")
+     ~~~~^~~~~~~~~~~~~~~
+TypeError: unsupported operand type(s) for /: 'str' and 'str'
