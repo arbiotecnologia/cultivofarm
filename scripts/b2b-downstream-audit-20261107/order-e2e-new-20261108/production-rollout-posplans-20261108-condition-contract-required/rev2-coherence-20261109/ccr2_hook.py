@@ -264,6 +264,38 @@ def run(ns):
     check("CCR2 cotação: writer REAL cria cotação com snapshot (quote) para PN", jq and jq["status"] == "aguardando_cotacao", eq)
     if jq:
         qi = psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{jq['id']}'").stdout.strip()
+        RFIX = None; PQ = lambda q: psql(q, check=False)
+        if os.environ.get("CCR2_LIVE_EXACT7") == "1":
+            import seller_respond_fix as RF
+            qs = ns["quote_state"]; st0 = qs(jq["id"])
+            j0, e0 = respond(UADM, jq["id"], [{"item_id": qi, "unit_price": 1000}])
+            res.setdefault("seller_respond", {})["live_body_admin_owner"] = e0 or j0
+            check("CCR2 RESPOND LIVE (4926a99c): admin dono sem vínculo externo é negado por b2b_phase1_scope_denied (defeito reproduzido)",
+                  j0 is None and "b2b_phase1_scope_denied" in (e0 or ""), e0 or j0)
+            check("CCR2 RESPOND LIVE: negativa não altera estado", qs(jq["id"]) == st0)
+            ovm = md5_of("public.b2b_phase1_order_visible(uuid)")
+            b = RF.build(psql, pathlib.Path(os.environ.get("CCR2_EVIDENCE", str(work))), ovm)
+            r = PQ(b["pre"]); check("CCR2 RESPOND FIX 90 PRE sem ref afirmado aborta (fail-closed)", r.returncode != 0 and "RESPOND_FIX_REF_NOT_ASSERTED" in r.stderr, r.stderr[-200:])
+            r = PQ(RF.MIRROR_REF + b["pre"]); check("CCR2 RESPOND FIX 90 PRE_OK", r.returncode == 0 and "RESPOND_FIX_PRE_OK" in r.stderr, r.stderr[-300:])
+            RFIX = RF.finish(psql, b, pathlib.Path(os.environ.get("CCR2_EVIDENCE", str(work))))
+            res["seller_respond"]["fix"] = {k: v for k, v in RFIX.items() if k not in ("post", "rollback")}
+            check("CCR2 RESPOND FIX 91 install (candidato, só espelho)", RFIX["install_rc"] == 0, RFIX["install_err"])
+            r = PQ(RFIX["post"]); check("CCR2 RESPOND FIX 92 POST_OK (md5/owner/ACL)", r.returncode == 0 and "RESPOND_FIX_POST_OK" in r.stderr, r.stderr[-300:])
+            check("CCR2 RESPOND FIX: funções globais de visibilidade inalteradas",
+                  md5_of("platform_private.b2b_phase1_partner_visible(uuid,boolean)") == "915f516e605af7cc14584e2e762a2661"
+                  and md5_of("public.b2b_phase1_order_visible(uuid)") == ovm
+                  and md5_of("platform_private.b2b_owner_internal_partner_readable(uuid)") == "fa72ca18fc673cb4a5ff4867e65137cd")
+            for who, uid in (("admin da empresa F", UADMF), ("comprador PN", UN), ("comprador P de outro parceiro", UB)):
+                st1 = qs(jq["id"]); jn, en = respond(uid, jq["id"], [{"item_id": qi, "unit_price": 1000}])
+                res["seller_respond"]["neg_" + who] = en or jn
+                check(f"CCR2 RESPOND FIX: {who} continua negado sem alterar estado", jn is None and bool(en) and qs(jq["id"]) == st1, en or jn)
+            st1 = qs(jq["id"])
+            # admin A with an ACTIVE partner link (external link) must not use the owner path
+            r = PQ(f"BEGIN; INSERT INTO public.partner_users(user_id,partner_id,tenant_id) SELECT '{UADM}','{PN}',commercial_owner_organization_id FROM public.partner_accounts WHERE id='{PN}';"
+                     f" SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claim.sub','{UADM}',true), set_config('request.jwt.claims', json_build_object('sub','{UADM}','role','authenticated')::text, true);"
+                     f" SELECT public.respond_b2b_order_quote_secure('{jq['id']}','{js([{'item_id': qi, 'unit_price': 1000}])}'::jsonb,NULL,NULL,NULL); ROLLBACK;")
+            res["seller_respond"]["neg_admin_with_active_partner_link"] = (r.stderr or "")[-300:]
+            check("CCR2 RESPOND FIX: admin A com vínculo externo ativo não usa caminho do dono", "ERROR" in (r.stderr or "") and qs(jq["id"]) == st1, r.stderr[-300:])
         j, e = respond(UADM, jq["id"], [{"item_id": qi, "unit_price": 1000}])
         nq = psql(f"SELECT count(*) FROM platform_private.b2b_order_condition_quote_snapshots WHERE order_id='{jq['id']}'").stdout.strip()
         check("CCR2 resposta do vendedor REAL: snapshot econômico coerente aceito pelo guard", j is not None and nq == "1", e or j)
@@ -272,6 +304,10 @@ def run(ns):
                  f"INSERT INTO platform_private.b2b_order_condition_snapshots SELECT '00000000-0000-0000-0000-00000000cc51',organization_id,partner_id,actor_id,plan_id,choice,condition,request_hash,rows,principal,financed_interest,financed_total,quote,payment_terms_id,cart_hash,payment_method_name,estimated,due_basis,estimated_reference_date,created_at,condition_version,condition_method FROM platform_private.b2b_order_condition_snapshots WHERE order_id='{jq['id']}';"
                  f"INSERT INTO platform_private.b2b_order_condition_quote_snapshots SELECT '00000000-0000-0000-0000-00000000cc51',organization_id,partner_id,actor_id,plan_id,choice,condition,request_hash,rows,principal,financed_interest,financed_total,payment_terms_id,cart_hash,payment_method_name,estimated,due_basis,estimated_reference_date,1,'pix',created_at FROM platform_private.b2b_order_condition_quote_snapshots WHERE order_id='{jq['id']}';"),
               "B2B_PAYMENT_CONDITION")
+        if RFIX:
+            r = PQ(RFIX["rollback"]); check("CCR2 RESPOND FIX 97 rollback restaura corpo LIVE 4926a99c", r.returncode == 0 and md5_of("public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)") == "4926a99c3fa3086b34ff25bb4b4038bb", r.stderr[-300:])
+            r = PQ(RFIX["post"]); check("CCR2 RESPOND FIX POST após rollback recusa (drift)", r.returncode != 0 and "RESPOND_FIX_POST_DRIFT" in r.stderr, r.stderr[-200:])
+            r = PQ(RFIX["rollback"]); check("CCR2 RESPOND FIX rollback repetido recusado", r.returncode != 0 and "RESPOND_FIX_ROLLBACK_DRIFT" in r.stderr, r.stderr[-200:])
 
     # ---------- concurrency with real writers ----------
     # (a) activation added while a legacy create of a not-yet-pilot partner is open: commit-time B3+rev2 decide on committed activation.

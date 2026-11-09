@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/tmp/ccr2-mirror-k8a6_8op/scripts/b2b-payment-condition-v1-rebase-20261106/test-local-pg.py", line 826, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/tmp/ccr2-mirror-k8a6_8op/scripts/b2b-payment-condition-v1-rebase-20261106/test-local-pg.py", line 806, in main
+    import sys as _s; _s.path.insert(0, '/dev-server/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109'); import ccr2_hook; ccr2_hook.run(globals() | locals())
+                                                                                                                                                                                                                                ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/ccr2_hook.py", line 257, in run
+    tx(f"INSERT INTO platform_private.b2b_order_condition_snapshots SELECT '00000000-0000-0000-0000-00000000cc41',organization_id,partner_id,actor_id,plan_id,choice,condition,request_hash,rows,principal,financed_interest,financed_total,quote,payment_terms_id,cart_hash,payment_method_name,estimated,due_basis,estimated_reference_date,created_at,condition_version,condition_method FROM platform_private.b2b_order_condition_snapshots WHERE order_id='{jN['id'] if jN else jP['id']}';"),
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     ~~^^^^^^
+TypeError: 'NoneType' object is not subscriptable

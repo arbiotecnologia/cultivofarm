@@ -1,0 +1,19 @@
+FAIL CCR2 LIVE: partner_users.valid_from timestamptz NOT NULL DEFAULT now() timestamp with time zone|true|now()
+FAIL CCR2 positivo: writer REAL de condição (parceiro P do piloto) cria pedido com snapshot coerente ERROR:  function platform_private.c2_producer_links(uuid, uuid) does not exist
+LINE 6:  'producer_links_valid',platform_private.c2_producer_links(u...
+                                ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+QUERY:  result:=jsonb_build_object('contract','C2_MULTIPROFILE_V1','actor_id',u,'tenant_id',org,
+ 'organizatio
+FAIL CCR2 positivo: novo parceiro PN (piloto ampliado) cria pedido com snapshot coerente ERROR:  function platform_private.c2_producer_links(uuid, uuid) does not exist
+LINE 6:  'producer_links_valid',platform_private.c2_producer_links(u...
+                                ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+QUERY:  result:=jsonb_build_object('contract','C2_MULTIPROFILE_V1','actor_id',u,'tenant_id',org,
+ 'organizatio
+FAIL CCR2 alcance: tenant F sem ativação segue contrato atual (sem bloqueio global) ERROR:  function platform_private.c2_producer_links(uuid, uuid) does not exist
+LINE 6:  'producer_links_valid',platform_private.c2_producer_links(u...
+                                ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+QUERY:  result:=jsonb_build_object('contract','C2_MULTIPROFILE_V1','actor_id',u,'tenant_id',org,
+ 'organizatio

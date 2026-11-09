@@ -62,6 +62,132 @@ CREATE TABLE IF NOT EXISTS platform_private.delivery_context_20261030(txid bigin
   action text NOT NULL, target uuid, consumed boolean DEFAULT false NOT NULL, item uuid, delivery uuid, mutation text);"""
 
 
+CAP23 = PKG / "live-exact-7" / "capture-23-20261109.json"
+S31 = ROOT / "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/31-physical-install.sql.review"
+S61 = ROOT / "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/61-pilot-containment-install.sql.review"
+# Real step-61 objects (installed in production, POST62 pins resale_pilot_delivery_scope_v1 = 2350b653…); copied verbatim by line range.
+S61_RANGES = [(22, 42), (44, 67), (112, 127)]
+S61_DELIVERY_SCOPE_POST = "2350b6535c4b6289f47c200c03000dfb"
+
+
+def capture23():
+    c = json.loads(CAP23.read_text())
+    for x in c:
+        if hashlib.md5(x["definition"].encode()).hexdigest() != x["md5"]:
+            raise SystemExit("LIVE23_CAPTURE_TAMPERED " + x["signature"])
+    return c
+
+
+def s61_sql():
+    L = S61.read_text().splitlines()
+    return "\n".join("\n".join(L[a - 1:b]) for a, b in S61_RANGES) + "\n"
+
+
+# Declared REDUCED seams so the verbatim LIVE bodies compile (all absent-only, empty, no grants):
+#  - finished_product_gate_v1 DDL verbatim from installed step 31 (row enabled=false);
+#  - estoque_produto(id) and entregas.estoque_produto_id referenced by step-61 delivery scope;
+#  - profiles.senha_provisoria (LIVE NOT NULL DEFAULT false), platform_org_admin_invites(user_id, access_operation_status,
+#    access_valid_after) read by platform_actor_access_ready; authz_tickets(txid,scope,target) read by has_ticket.
+SEAMS23 = """DO $s$ BEGIN
+ IF to_regclass('platform_private.finished_product_gate_v1') IS NULL THEN
+  CREATE TABLE platform_private.finished_product_gate_v1(singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),enabled boolean NOT NULL DEFAULT false);
+  INSERT INTO platform_private.finished_product_gate_v1(singleton,enabled) VALUES(true,false);
+  REVOKE ALL ON platform_private.finished_product_gate_v1 FROM PUBLIC; END IF;
+ IF to_regclass('public.estoque_produto') IS NULL THEN CREATE TABLE public.estoque_produto(id uuid PRIMARY KEY DEFAULT gen_random_uuid()); REVOKE ALL ON public.estoque_produto FROM PUBLIC; END IF;
+ IF to_regclass('platform_private.authz_tickets') IS NULL THEN CREATE TABLE platform_private.authz_tickets(txid bigint NOT NULL, scope text NOT NULL, target uuid); REVOKE ALL ON platform_private.authz_tickets FROM PUBLIC; END IF;
+ IF to_regclass('public.platform_org_admin_invites') IS NULL THEN CREATE TABLE public.platform_org_admin_invites(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid, access_operation_status text, access_valid_after timestamptz); REVOKE ALL ON public.platform_org_admin_invites FROM PUBLIC; END IF;
+END $s$;
+ALTER TABLE public.entregas ADD COLUMN IF NOT EXISTS estoque_produto_id uuid;
+ALTER TABLE public.platform_org_admin_invites ADD COLUMN IF NOT EXISTS access_operation_status text, ADD COLUMN IF NOT EXISTS access_valid_after timestamptz;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS senha_provisoria boolean NOT NULL DEFAULT false;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+ALTER TABLE public.partner_users ADD COLUMN IF NOT EXISTS version integer NOT NULL DEFAULT 1;
+DO $u$ BEGIN
+ IF to_regclass('public.user_clientes') IS NULL THEN CREATE TABLE public.user_clientes(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid, cliente_id uuid, is_active boolean NOT NULL DEFAULT true, revoked_at timestamptz, valid_from timestamptz NOT NULL DEFAULT now(), valid_until timestamptz); REVOKE ALL ON public.user_clientes FROM PUBLIC; END IF;
+ IF to_regclass('public.fazendas') IS NULL THEN CREATE TABLE public.fazendas(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), cliente_id uuid, organization_id uuid, ativo boolean NOT NULL DEFAULT true); REVOKE ALL ON public.fazendas FROM PUBLIC; END IF;
+END $u$;
+DO $j$ BEGIN IF to_regprocedure('auth.jwt()') IS NULL THEN
+ -- Declared Auth seam (Supabase shape): claims from request.jwt.claims; iat absent -> access_valid_after branch inert.
+ CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $f$ SELECT coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $f$;
+END IF; END $j$;"""
+
+# Real hosted capture of 22/10 (contracts-c2 integral hosted-capture.json fns[98]); NOT reconfirmed 09/11 -> declared, capture requested.
+HC = ROOT / "scripts/contracts-c2-20261022/integral/hosted-capture.json"
+RR = ROOT / "scripts/financial-installments-initial-20261024/receivable-recursive-live-20261029.json"  # real production 29/10
+PD = ROOT / "scripts/arbio-fsf-incremental-20261029/capture/production-dependencies.json"  # real production capture 29/10
+def hosted_fn(name):
+    """Newest real production capture in the repo: 29/10 production-dependencies first, then 22/10 hosted-capture."""
+    for f in json.loads(PD.read_text())["functions"]:
+        if f["signature"].split("(")[0] == name and hashlib.md5(f["body"].encode()).hexdigest() == f["md5"]:
+            return f["body"], "arbio-fsf-incremental-20261029 production-dependencies 29/10 md5 " + f["md5"]
+    for f in json.loads(RR.read_text())["functions"]:
+        if f["signature"].split("(")[0] == name and hashlib.md5(f["body"].encode()).hexdigest() == f["md5"]:
+            return f["body"], "financial-installments-initial-20261024 receivable-recursive-live 29/10 md5 " + f["md5"]
+    for f in json.loads(HC.read_text())["fns"]:
+        if f.get("def", "").startswith("CREATE OR REPLACE FUNCTION " + name + "("):
+            return f["def"], "contracts-c2-20261022 hosted-capture 22/10 md5 " + f.get("md5", "?")
+    raise SystemExit("HOSTED_CAPTURE_MISSING " + name)
+EXTRA_REAL = ["platform_private.assert_b2b_partner_scope", "platform_private.b2b_commercial_context", "platform_private.c2_producer_links"]
+
+
+def install23(psql, check, res, out_dir):
+    """Install the 23 bodies read in production on 09/11 verbatim, one transaction each, with the exact LIVE proacl."""
+    cap = capture23(); d = out_dir / "live-23"; d.mkdir(exist_ok=True)
+    r = psql("BEGIN;\n" + SEAMS23 + "\nCOMMIT;"); res["live23_seams"] = {"rc": r.returncode, "err": (r.stderr or "")[-800:]}
+    if psql("SELECT to_regprocedure('platform_private.resale_pilot_delivery_scope_v1(text,text,uuid,uuid,uuid)') IS NULL").stdout.strip() == "t":
+        r = psql("BEGIN;\n" + s61_sql() + "COMMIT;"); res["live23_s61"] = {"rc": r.returncode, "err": (r.stderr or "")[-800:]}
+    res["live23_extra_real_unconfirmed"] = {}
+    for n in EXTRA_REAL:
+        if psql(f"SELECT count(*) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname='{n}'").stdout.strip() == "0":
+            try:
+                body, src = hosted_fn(n)
+            except SystemExit:
+                res["live23_extra_real_unconfirmed"][n] = "MISSING_CAPTURE"; continue
+            r = psql("BEGIN;\n" + body.rstrip("\n") + ";\nCOMMIT;")
+            res["live23_extra_real_unconfirmed"][n] = {"source": src, "rc": r.returncode, "err": (r.stderr or "")[-300:],
+                "md5_mirror": psql(f"SELECT json_object_agg(p.oid::regprocedure::text, md5(pg_get_functiondef(p.oid))) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname='{n}'").stdout.strip()}
+            psql(f"DO $r$DECLARE f oid; BEGIN FOR f IN SELECT p.oid FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname='{n}' LOOP EXECUTE 'REVOKE ALL ON FUNCTION '||f::regprocedure||' FROM PUBLIC'; END LOOP; END $r$;")
+    out = {}
+    for x in cap:
+        sig = x["signature"]
+        before = psql(f"SELECT coalesce((SELECT pg_get_functiondef(p) FROM to_regprocedure('{sig}') p WHERE p IS NOT NULL),'<<ABSENT>>')").stdout.rstrip("\n")
+        (d / (sig.split("(")[0] + ".mirror-before.sql")).write_text(before + "\n")
+        mb = hashlib.md5((before + "\n").encode()).hexdigest() if before != "<<ABSENT>>" else None
+        sql = ["BEGIN;"]
+        if before != "<<ABSENT>>":
+            rt_m = psql(f"SELECT pg_get_function_result('{sig}'::regprocedure)").stdout.strip()
+            rt_l = re.search(r"\n RETURNS (.*)\n", x["definition"]).group(1)
+            ar_m = psql(f"SELECT pg_get_function_arguments('{sig}'::regprocedure)").stdout.strip()
+            ar_l = re.search(r"FUNCTION [^(]+\((.*?)\)\n", x["definition"]).group(1)
+            if rt_m != rt_l or ar_m != ar_l:
+                sql.append(f"DROP FUNCTION {sig};")  # no CASCADE: fails if anything depends on the old shape
+        sql.append(x["definition"].rstrip("\n") + ";")
+        sql.append(f"REVOKE ALL ON FUNCTION {sig} FROM PUBLIC, anon, authenticated, service_role;")
+        for g, p in re.findall(r"([a-z_]*)=([A-Za-z*]+)/", x["acl"].strip("{}")):
+            if g != "postgres" and "X" in p:
+                sql.append(f"GRANT EXECUTE ON FUNCTION {sig} TO {g or 'PUBLIC'};")
+        sql.append("COMMIT;")
+        r = psql("\n".join(sql))
+        post = psql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure)), coalesce(proacl::text,'') FROM pg_proc WHERE oid=to_regprocedure('{sig}')").stdout.strip().split("|")
+        out[sig] = {"mirror_before": mb, "live": x["md5"], "mirror_after": post[0] if post and post[0] else None,
+                    "acl_live": x["acl"], "acl_after": post[1] if len(post) > 1 else None, "rc": r.returncode, "err": (r.stderr or "")[-400:]}
+    res["live23"] = out
+    # Declared seam: the B3 harness has no SaaS subscription tables (organization_subscriptions/saas_*); the LIVE
+    # entitlements_for_user cannot compile, so the mirror's entitlement provider stays and is reported, never claimed LIVE.
+    SEAM_KEEP = {"platform_private.entitlements_for_user(uuid)": "SaaS subscription tables absent in harness"}
+    res["live23_declared_seams"] = {k: dict(reason=v, mirror_md5=out[k]["mirror_after"], live_md5=out[k]["live"]) for k, v in SEAM_KEEP.items()}
+    bad = {k: v for k, v in out.items() if v["mirror_after"] != v["live"] and k not in SEAM_KEEP}
+    check("CCR2 LIVE23: md5(pg_get_functiondef) dos 23 no espelho = captura produção 09/11 (exceto costura declarada entitlements)", not bad, bad)
+    norm = lambda a: sorted(a.strip("{}").split(",")) if a else []
+    badacl = {k: (v["acl_after"], v["acl_live"]) for k, v in out.items() if norm(v["acl_after"]) != norm(v["acl_live"]) and k not in SEAM_KEEP}
+    check("CCR2 LIVE23: ACL (aclitems ordenados) dos 23 no espelho = ACL produção 09/11", not badacl, badacl)
+    dsc = psql("SELECT md5(pg_get_functiondef('platform_private.resale_pilot_delivery_scope_v1(text,text,uuid,uuid,uuid)'::regprocedure))").stdout.strip()
+    res["live23_s61_delivery_scope_md5"] = dsc
+    check("CCR2 LIVE23: resale_pilot_delivery_scope_v1 do repo (etapa 61) = pin POST62", dsc == S61_DELIVERY_SCOPE_POST, dsc)
+    return not bad
+
+
 def run(psql0, check, md5_of, call_sql, res, out_dir, ids):
     psql = lambda q: psql0(q, check=False)
     cap = capture()
@@ -75,10 +201,13 @@ def run(psql0, check, md5_of, call_sql, res, out_dir, ids):
     deps_pre = {n: psql(f"SELECT count(*) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname='{n}'").stdout.strip() for n in DEPS}
     # Declared FIXTURE seam: LIVE is_valid_b2b_partner_user requires pu.valid_from<=now(); the mirror backfill left it NULL on the
     # synthetic links. Set it to a past instant (no link added/removed, revoked_at untouched).
-    FIX = "UPDATE public.partner_users SET valid_from=now()-interval '1 day' WHERE valid_from IS NULL;"
+    # LIVE: partner_users.valid_from timestamptz NOT NULL DEFAULT now() (auditor 09/11). Synthetic rows created before this
+    # column existed in the mirror get now() (their creation instant in this run); then the LIVE constraint/default is applied.
+    FIX = ("UPDATE public.partner_users SET valid_from=now() WHERE valid_from IS NULL;"
+           " ALTER TABLE public.partner_users ALTER COLUMN valid_from SET DEFAULT now(), ALTER COLUMN valid_from SET NOT NULL;")
     sql = ["BEGIN;", LOGISTICS_SEAM, FIX]
     res["live_exact7_seams"] = ["REDUCED logistics schema seam (empty ordens_servico/entregas if absent) + delivery_context_20261030 DDL from real_triggers.py",
-                                "Auth: request.jwt.claims set by harness (not hosted JWT)", "FIXTURE: partner_users.valid_from NULL -> now()-1d (synthetic rows only)"]
+                                "Auth: request.jwt.claims set by harness (not hosted JWT)", "FIXTURE: partner_users.valid_from = LIVE shape timestamptz NOT NULL DEFAULT now() (NULL synthetic rows -> now())"]
     if psql(f"SELECT to_regclass('{GATE}') IS NULL").stdout.strip() == "t":
         sql.append(gate_sql())
     res["live_exact7_cap06_installed"] = []
@@ -129,6 +258,10 @@ def run(psql0, check, md5_of, call_sql, res, out_dir, ids):
           {k: v for k, v in md.items() if v["mirror"] != v["live"]})
     res["live_exact7_deps_md5_unconfirmed"] = {n + "(...)": psql(f"SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname='{n}'").stdout.strip() for n in DEPS}
     check("CCR2 LIVE7: gate logístico permanece fechado (enabled=false)", psql(f"SELECT bool_and(NOT enabled) FROM {GATE}").stdout.strip() == "t")
+    check("CCR2 LIVE7: gate logístico enabled count = 0 (como produção)", psql(f"SELECT count(*) FILTER (WHERE enabled) FROM {GATE}").stdout.strip() == "0")
+    check("CCR2 LIVE: partner_users.valid_from timestamptz NOT NULL DEFAULT now()",
+          psql("SELECT format_type(atttypid,atttypmod)||'|'||attnotnull||'|'||pg_get_expr(d.adbin,d.adrelid) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE attrelid='public.partner_users'::regclass AND attname='valid_from'").stdout.strip() == "timestamp with time zone|true|now()", psql("SELECT format_type(atttypid,atttypmod)||'|'||attnotnull||'|'||coalesce(pg_get_expr(d.adbin,d.adrelid),'') FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE attrelid='public.partner_users'::regclass AND attname='valid_from'").stdout.strip())
+    install23(psql, check, res, out_dir)
 
     UB, P, PF, UB2 = ids["UB"], ids["P"], ids["PF"], ids["UB2"]
     def scope(prefix=""):
@@ -152,7 +285,7 @@ def run(psql0, check, md5_of, call_sql, res, out_dir, ids):
     rc, e = authz(UB, PF); res["live_exact7_behaviour"]["attempt_authz_cross_tenant"] = [rc, e]
     check("CCR2 LIVE7 attempt_authz: parceiro de outra empresa negado", "ERROR" in e, e)
     rc, e = authz(UB, P, f"UPDATE public.partner_users SET revoked_at=now() WHERE user_id='{UB}';"); res["live_exact7_behaviour"]["attempt_authz_revoked"] = [rc, e]
-    check("CCR2 LIVE7 attempt_authz: vínculo revogado negado [depende de get_user_partner_id/c2_order_actor_scope sem captura LIVE]", "ERROR" in e, e)
+    check("CCR2 LIVE7 attempt_authz: vínculo revogado negado (get_user_partner_id/c2_order_actor_scope LIVE 09/11)", "ERROR" in e, e)
     r = psql("SELECT count(*) FILTER (WHERE platform_private.b2b_resale_delivery_status_transition_valid_v1(o, (jsonb_populate_record(o, jsonb_build_object('status','entregue'))))) FROM public.partner_orders o")
     check("CCR2 LIVE7 transição de entrega de revenda falsa com gate OFF para todos os pedidos", r.returncode == 0 and r.stdout.strip() == "0", (r.stdout, r.stderr[-200:]))
     r = psql(f"BEGIN; SELECT set_config('request.jwt.claim.sub','{ids['UADM']}',true), set_config('request.jwt.claims', json_build_object('sub','{ids['UADM']}')::text, true); UPDATE public.partner_orders SET status='em_producao' WHERE id=(SELECT id FROM public.partner_orders WHERE platform_private.c2_external_origin_contract_valid(c2_external_origin_snapshot) IS TRUE AND status::text NOT IN ('cancelado','reprovado') LIMIT 1); ROLLBACK;")

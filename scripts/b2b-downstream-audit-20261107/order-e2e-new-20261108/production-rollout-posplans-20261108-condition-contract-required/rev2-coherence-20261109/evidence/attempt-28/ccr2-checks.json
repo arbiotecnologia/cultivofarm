@@ -1,0 +1,522 @@
+{
+  "passed": 129,
+  "total": 129,
+  "checks": [
+    {
+      "name": "CCR2 pins B3: mode/required_check MD5 = metadados B3 instalados",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE: corpos atuais (cc1f6cc) instalados no espelho",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE: md5 dos writers no espelho = LIVE informado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE7: 7 corpos LIVE + dependência real da etapa 41 instalados no espelho",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE7: public.fn_b2b_status_is_approved_or_later(partner_order_status) recriado com ACL idêntica à do espelho anterior",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE7: platform_private.b2b_actor_scope(uuid) recriado com ACL idêntica à do espelho anterior",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE7: platform_private.c2_partner_order_attempt_authz(uuid,uuid) recriado com ACL idêntica à do espelho anterior",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE7: md5(pg_get_functiondef) dos 7 no espelho = captura produção 09/11",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE7: gate logístico permanece fechado (enabled=false)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE7: gate logístico enabled count = 0 (como produção)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE: partner_users.valid_from timestamptz NOT NULL DEFAULT now()",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE23: md5(pg_get_functiondef) dos 23 no espelho = captura produção 09/11 (exceto costura declarada entitlements)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE23: ACL (aclitems ordenados) dos 23 no espelho = ACL produção 09/11",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE23: resale_pilot_delivery_scope_v1 do repo (etapa 61) = pin POST62",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE7 b2b_actor_scope: vínculo real válido resolve o próprio parceiro",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE7 b2b_actor_scope negado (revogado): user_partner não resolve",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE7 b2b_actor_scope negado (tenant divergente): user_partner não resolve",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE7 b2b_actor_scope negado (valid_from futuro): user_partner não resolve",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE7 b2b_actor_scope negado (parceiro inativo): user_partner não resolve",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE7 attempt_authz: comprador no próprio parceiro autorizado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE7 attempt_authz: parceiro de outra empresa negado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE7 attempt_authz: vínculo revogado negado (get_user_partner_id/c2_order_actor_scope LIVE 09/11)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE7 transição de entrega de revenda falsa com gate OFF para todos os pedidos",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE7 guarda LIVE bloqueia avanço operacional com gate OFF",
+      "ok": true
+    },
+    {
+      "name": "CCR2 TENANT fixture: nenhum plano atribuído a parceiros de mais de um tenant",
+      "ok": true
+    },
+    {
+      "name": "CCR2 TENANT fixture: todo plano com atribuição tem organization_id resolvido (nenhum NULL/ambíguo)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 TENANT fixture: PLD/PLQ/P3 -> A e PLDF/PLQF -> F",
+      "ok": true
+    },
+    {
+      "name": "CCR2 DIAG: organization_id do plano é imutável pós-instalação (forçar NULL negado por COMMERCIAL_PLAN_TENANT_IMMUTABLE)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 CONTROLE POSITIVO: comprador P vê opção disponível em PLD exclusivo de A (fixture corrigida)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 CONTROLE POSITIVO: simulação com escolha válida devolve cart_hash (sem payment_choice_required)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 CONTROLE NEGATIVO: mesma simulação sem escolha -> payment_choice_required (erro é da escolha, não da guarda 81)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 CROSS-TENANT negado (nenhuma opção exposta): comprador F (UB2) lista opções do plano de A para PF",
+      "ok": true
+    },
+    {
+      "name": "CCR2 CROSS-TENANT negado (nenhuma opção exposta): comprador A (UB) lista opções do plano de F para P",
+      "ok": true
+    },
+    {
+      "name": "CCR2 CROSS-TENANT negado: comprador F simula com plano de A",
+      "ok": true
+    },
+    {
+      "name": "CCR2 CROSS-TENANT negado: comprador A simula com plano de F",
+      "ok": true
+    },
+    {
+      "name": "CCR2 CROSS-TENANT negado: comprador F cria (legado) com plano de A",
+      "ok": true
+    },
+    {
+      "name": "CCR2 CROSS-TENANT negado: comprador A cria (condição) com plano de F",
+      "ok": true
+    },
+    {
+      "name": "CCR2 CROSS-TENANT negado: admin A publica condição no plano de F",
+      "ok": true
+    },
+    {
+      "name": "CCR2 CROSS-TENANT negado: admin F publica condição no plano de A",
+      "ok": true
+    },
+    {
+      "name": "CCR2 CROSS-TENANT negado: admin A atribui plano de F ao parceiro P",
+      "ok": true
+    },
+    {
+      "name": "CCR2 CROSS-TENANT negado: admin F atribui plano de A ao parceiro PF",
+      "ok": true
+    },
+    {
+      "name": "CCR2 CROSS-TENANT negado: admin F aposenta condição do plano de A",
+      "ok": true
+    },
+    {
+      "name": "CCR2 CROSS-TENANT: zero delta em pedidos/snapshots/idempotência/versões/atribuições/planos",
+      "ok": true
+    },
+    {
+      "name": "CCR2 CONTROLE POSITIVO F: comprador F vê a própria opção pix em PLDF",
+      "ok": true
+    },
+    {
+      "name": "CCR2 80 PRE_OK no B3 instalado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 81 install",
+      "ok": true
+    },
+    {
+      "name": "CCR2 corpos instalados = pins congelados em 82/96",
+      "ok": true
+    },
+    {
+      "name": "CCR2 install não altera dados",
+      "ok": true
+    },
+    {
+      "name": "CCR2 82 POST_OK (owner/ACL/search_path/definer/gatilhos exatos)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 reexecução de 81 recusada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 PRE após install recusa (já instalado)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 anon sem EXECUTE nas funções novas",
+      "ok": true
+    },
+    {
+      "name": "CCR2 authenticated sem EXECUTE nas funções novas",
+      "ok": true
+    },
+    {
+      "name": "CCR2 service_role sem EXECUTE nas funções novas",
+      "ok": true
+    },
+    {
+      "name": "CCR2 cliente não chama o checker diretamente",
+      "ok": true
+    },
+    {
+      "name": "CCR2 positivo: writer REAL de condição (parceiro P do piloto) cria pedido com snapshot coerente",
+      "ok": true
+    },
+    {
+      "name": "CCR2 positivo: novo parceiro PN (piloto ampliado) cria pedido com snapshot coerente",
+      "ok": true
+    },
+    {
+      "name": "CCR2 snapshot PN grava empresa A/parceiro/plano/versão/meio escolhidos",
+      "ok": true
+    },
+    {
+      "name": "CCR2 idempotência: replay da mesma chave devolve o mesmo pedido sem novo snapshot",
+      "ok": true
+    },
+    {
+      "name": "CCR2 troca de plano em pedido com snapshot negada (snapshot antigo não legitima)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 troca de parceiro (P->PN) em pedido com snapshot negada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 troca para parceiro de outro tenant (F) negada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 troca e volta no mesmo commit: estado final coerente é exigido (ida para plano sem condição negada)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 pilha integrada (todos os gatilhos reais): troca de plano em pedido com snapshot não confirma",
+      "ok": true
+    },
+    {
+      "name": "CCR2 troca e volta ao plano original no mesmo commit: estado final coerente aceito",
+      "ok": true
+    },
+    {
+      "name": "CCR2 snapshot de outro pedido/parceiro inserido em pedido alheio negado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 snapshot com versão/meio adulterados no JSON da escolha negado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 nenhum pedido/snapshot forjado sobreviveu",
+      "ok": true
+    },
+    {
+      "name": "CCR2 pedido real intacto após negações integradas",
+      "ok": true
+    },
+    {
+      "name": "CCR2 lavagem: insere em parceiro legado PO e move para PN do piloto no mesmo commit -> negado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 lavagem: insere sem plano e atribui plano a parceiro do piloto -> negado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 parceiro do piloto: writer legado REAL não grava pedido nem idempotência (motivo registrado)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 alcance: tenant F sem ativação segue contrato atual (sem bloqueio global)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 alcance: troca de plano em pedido legado de F sem ativação não é afetada pelo guard novo",
+      "ok": true
+    },
+    {
+      "name": "CCR2 legado histórico: update comum (sem troca de parceiro/plano) não dispara o guard",
+      "ok": true
+    },
+    {
+      "name": "CCR2 legado histórico: não pode ser movido para parceiro do piloto sem snapshot",
+      "ok": true
+    },
+    {
+      "name": "CCR2 fixture histórica não deixou gatilho desabilitado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 fixture PB-001038-like (pedido legado sem snapshot de parceiro hoje no piloto) criada como linha histórica",
+      "ok": true
+    },
+    {
+      "name": "CCR2 PB-001038-like: atualização comum segue permitida (histórico preservado, sem backfill)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 PB-001038-like: troca de plano sem snapshot negada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 legado histórico: backfill de snapshot fictício negado (escolha/condição de outro pedido)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 cotação: writer REAL cria cotação com snapshot (quote) para PN",
+      "ok": true
+    },
+    {
+      "name": "CCR2 RESPOND LIVE (4926a99c): admin dono sem vínculo externo é negado por b2b_phase1_scope_denied (defeito reproduzido)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 RESPOND LIVE: negativa não altera estado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 RESPOND FIX 90 PRE_OK",
+      "ok": true
+    },
+    {
+      "name": "CCR2 RESPOND FIX 91 install (candidato, só espelho)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 RESPOND FIX 92 POST_OK (md5/owner/ACL)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 RESPOND FIX: funções globais de visibilidade inalteradas",
+      "ok": true
+    },
+    {
+      "name": "CCR2 RESPOND FIX: admin da empresa F continua negado sem alterar estado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 RESPOND FIX: comprador PN continua negado sem alterar estado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 RESPOND FIX: comprador P de outro parceiro continua negado sem alterar estado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 RESPOND FIX: admin A com vínculo externo ativo não usa caminho do dono",
+      "ok": true
+    },
+    {
+      "name": "CCR2 resposta do vendedor REAL: snapshot econômico coerente aceito pelo guard",
+      "ok": true
+    },
+    {
+      "name": "CCR2 snapshot de resposta com versão/meio (pix v1 existente) divergente da escolha inicial negado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 RESPOND FIX 97 rollback restaura corpo LIVE 4926a99c",
+      "ok": true
+    },
+    {
+      "name": "CCR2 RESPOND FIX POST após rollback recusa (drift)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 RESPOND FIX rollback repetido recusado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 concorrência ativação: piloto ampliado durante create legado aberto -> commit negado (sem pedido/idempotência)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 mutação: revogação injetada com falha reprova o veredito de concorrência",
+      "ok": true
+    },
+    {
+      "name": "CCR2 concorrência revogação: revogação REAL exit 0 e persistida; create serializa sem pedido incoerente",
+      "ok": true
+    },
+    {
+      "name": "CCR2 após revogação: PN sem opção disponível",
+      "ok": true
+    },
+    {
+      "name": "CCR2 após revogação: replay com hash válido pré-revogação + nova chave -> payment_condition_unavailable, zero pedido/snapshot/idempotência",
+      "ok": true
+    },
+    {
+      "name": "CCR2 após revogação: parceiro required NÃO cai no legado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 mutação: aposentadoria injetada com falha reprova o veredito de concorrência",
+      "ok": true
+    },
+    {
+      "name": "CCR2 concorrência aposentadoria: retire REAL exit 0 e persistido; create serializa sem pedido incoerente",
+      "ok": true
+    },
+    {
+      "name": "CCR2 após aposentadoria: replay com hash válido pré-retire + nova chave -> payment_condition_unavailable, zero pedido/snapshot/idempotência",
+      "ok": true
+    },
+    {
+      "name": "CCR2 após aposentadoria: parceiro required continua sem fallback legado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_order_condition_snapshots: há linhas e UPDATE/DELETE é negado pelo gatilho imutável (mesmo postgres), contagem preservada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_order_condition_snapshots: nenhum privilégio de tabela para anon/authenticated/service_role",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_order_condition_quote_snapshots: há linhas e UPDATE/DELETE é negado pelo gatilho imutável (mesmo postgres), contagem preservada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_order_condition_quote_snapshots: nenhum privilégio de tabela para anon/authenticated/service_role",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_condition_assignment_revocations: há linhas e UPDATE/DELETE é negado pelo gatilho imutável (mesmo postgres), contagem preservada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_condition_assignment_revocations: nenhum privilégio de tabela para anon/authenticated/service_role",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_condition_retirements: há linhas e UPDATE/DELETE é negado pelo gatilho imutável (mesmo postgres), contagem preservada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_condition_retirements: nenhum privilégio de tabela para anon/authenticated/service_role",
+      "ok": true
+    },
+    {
+      "name": "CCR2 pins dos writers usados registrados vs LIVE (divergência exige diff, não repin)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 coerência global: todo snapshot casa parceiro/plano/empresa do pedido",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE: os 25 corpos POSPLANOS no espelho = pins do POST cc1f6cc (POST PASS relatado pelo auditor)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 rollback com pin divergente aborta sem remover nada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 96 rollback exato",
+      "ok": true
+    },
+    {
+      "name": "CCR2 rollback preserva pedidos/snapshots/idempotência",
+      "ok": true
+    },
+    {
+      "name": "CCR2 rollback mantém guarda B3 de INSERT (sem reabrir legado)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 PRE volta a passar após rollback",
+      "ok": true
+    },
+    {
+      "name": "CCR2 reinstall após rollback",
+      "ok": true
+    },
+    {
+      "name": "CCR2 POST após reinstall",
+      "ok": true
+    },
+    {
+      "name": "CCR2 rollback/reinstall 81 preserva todos os writers POSPLANOS (md5 idênticos)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 rollback/reinstall 81 preserva dados (pedidos/snapshots/idempotência/versões/atribuições/planos)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 rollback final antes do rollback B3 do harness",
+      "ok": true
+    },
+    {
+      "name": "CCR2 rollback final preserva POSPLANOS e dados",
+      "ok": true
+    }
+  ]
+}

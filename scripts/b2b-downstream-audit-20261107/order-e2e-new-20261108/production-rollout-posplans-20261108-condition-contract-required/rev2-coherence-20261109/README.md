@@ -63,3 +63,12 @@ Todas as mudanças são predicados de negação adicionais, sem novos INSERT/UPD
 | 05 | 0 | 69/69 | veredito reforçado + mutação; imutabilidade ainda aceitava tabela vazia |
 | 06 | 0 | 69/69 | imutabilidade exige linhas e erro explícito |
 | 07 | 0 | 69/69 | final congelado (04 preservada) |
+
+### Tentativas 25–29 (corpos LIVE 09/11: 7 + 23)
+| Tentativa | exit | CCR2 | harness | causa |
+|---|---|---|---|---|
+| 25 | 1 | — | — | dependências ausentes (`assert_b2b_partner_scope`, `auth.jwt`, colunas) |
+| 26 | 1 | — | — | `b2b_commercial_context` ausente; `entitlements_for_user` sem tabelas SaaS |
+| 27 | 1 | — | — | `c2_producer_links` ausente; comparação de `valid_from` |
+| 28 | 0 | 129/129 | 338/338 | PRE da correção do vendedor sem ref obrigatório |
+| 29 | 0 | 130/130 | 339/339 | 22/23 LIVE exatos + costura entitlements; defeito do vendedor reproduzido; candidato `seller-respond-fix-20261109/` |

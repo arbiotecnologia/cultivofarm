@@ -1,0 +1,430 @@
+{
+  "live_bodies_other_md5_unconfirmed": {
+    "create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "fe82f5381d426136f2627803f3b0005d",
+    "simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": "6e81e29397a9bd633f2fe6ec364d8cf3",
+    "respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": "4926a99c3fa3086b34ff25bb4b4038bb",
+    "platform_private.b2b_resolve_condition(uuid,uuid,jsonb,boolean)": "abbffddb1a3062fd7dabbf14c5af8822",
+    "b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)": "c6fbe15906c5d893ab80e962ee162b3c",
+    "b2b_payment_condition_retire(uuid,text,integer)": "a049478a9e2b74f315d6c5baf204efa1",
+    "b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)": "f0d3ff51f5a4164da41db1a6ef262c8f",
+    "b2b_payment_condition_config_list()": "728b3b92bc4848873f6df85779585295",
+    "platform_private.commercial_plan_actor_organization()": "1256fcfcf607971ed7d8aff1210272c2",
+    "platform_private.commercial_plan_target_organization(text,uuid,uuid)": "d0d7bd6da7d12e920bd09b9d8133a79a",
+    "platform_private.commercial_plan_revalidate_actor(uuid)": "01a3360abff0d2dbc6193d238b6e2471",
+    "platform_private.commercial_plan_partner_visible(uuid,uuid)": "df00b1478d8214bc9a17d63d841b24c4",
+    "platform_private.commercial_plan_tenant_guard()": "6fe3f8993c0fd97b17b36fbff2305218",
+    "platform_private.commercial_b3_version_tenant_guard()": "d30de3e0a2bba2b99cdb8831bfc62c51",
+    "platform_private.commercial_plan_admin_allowed(uuid)": "c837aee86bd22018286bf8cf1ca38cf3",
+    "platform_private.commercial_plan_scope_allowed(uuid,text,uuid,uuid)": "e26e53b6e085f7339e7f2f7ec93922dc",
+    "platform_private.c2p1_history_allowed(text,uuid,jsonb,jsonb)": "775c1540b15842d3ce0696e4a5d27f3b",
+    "platform_private.commercial_plan_buyer_visible(uuid,uuid)": "b7397c945cbcfdaef83851ea18b17c5a",
+    "rpc_admin_list_commercial_plans(text,text,integer,integer)": "c6672029349b7a312066341defb625ab",
+    "rpc_admin_create_commercial_plan(jsonb)": "6136f97079a2b445c949b047aac62108",
+    "rpc_admin_version_commercial_plan(uuid,jsonb,text)": "8e2cf62e686d9f0aa5d181a18f33df65",
+    "rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer)": "7bbfe461fdcc5da0d9fbaff3793d730d",
+    "rpc_admin_set_commercial_plan_active(uuid,boolean,text)": "bf83cf4a8a35861b723bdcb278112697",
+    "rpc_admin_set_default_commercial_plan(uuid)": "0bf1ce6d0a62f06d962c5dcb8657f760",
+    "rpc_admin_reorder_commercial_plans(jsonb)": "0c6825b70cdc5650855784e4b39585d7",
+    "rpc_b2b_list_selectable_payment_plans()": "5bceeda188eee7525172eadeed17f7c0",
+    "platform_private.c2p1_assignment_fence()": "fe958e7d52fb36faa77881933a808434",
+    "platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid)": "8212432313c52b2a12a1398ec40c814e",
+    "platform_private.c2p1_item_fence()": "c1c88697a57168ba49c30692e7a85046",
+    "platform_private.c2p1_rule_fence()": "4337496c5ece403ad072adcaee88faf2",
+    "rpc_cc_list_assignments(text)": "72af313fcbdd40436e45a36ecf854ac9",
+    "rpc_cc_validate_matrix(uuid,text,uuid,uuid)": "b4f0ff6f4f0856c90faef8654e0c4980",
+    "rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)": "3aa53f85f13a3a1d9322673c40d262bd",
+    "convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)": "cb179ec0c999b6a566b9431a11ad0212"
+  },
+  "live_bodies": {
+    "install_rc": 0,
+    "install_err": "psql:/tmp/b2bcond-eg7rzn6o/ccr2-live-bodies.sql:5: NOTICE:  column \"superseded_by_id\" of relation \"commercial_payment_plans\" already exists, skipping\n",
+    "md5": {
+      "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": {
+        "mirror": "fe82f5381d426136f2627803f3b0005d",
+        "live": "fe82f5381d426136f2627803f3b0005d"
+      },
+      "public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)": {
+        "mirror": "e86385fefb25c68d9dd4d0fef6619f27",
+        "live": "e86385fefb25c68d9dd4d0fef6619f27"
+      }
+    },
+    "seams": [
+      "clientes.status_cliente",
+      "commercial_payment_plans.created_by/is_default/sort_order + code_key/uq_cpp_single_default (LIVE pre-cc1f6cc shape)",
+      "commercial_payment_plans.root_plan_id/superseded_by_id; assignments.id; partner_users.revoked_at",
+      "platform_private.c2p1_assignment_allowed/c2p1_item_allowed real bodies (owner-orders p1-isolation/core)",
+      "partner_users.tenant_id/valid_from (backfill = owner org of partner)",
+      "LIVE policies cppa_admin_read/cpr_internal_select (created closed; cc1f6cc ALTERs their predicate) and item_prices ids",
+      "platform_private.c2p1_snapshot_allowed real body (owner-orders p1-isolation/channels-core)",
+      "public._cpp_validate_payload/_cpp_audit real bodies (migration 20260730014752)"
+    ]
+  },
+  "live_exact7_seams": [
+    "REDUCED logistics schema seam (empty ordens_servico/entregas if absent) + delivery_context_20261030 DDL from real_triggers.py",
+    "Auth: request.jwt.claims set by harness (not hosted JWT)",
+    "FIXTURE: partner_users.valid_from = LIVE shape timestamptz NOT NULL DEFAULT now() (NULL synthetic rows -> now())"
+  ],
+  "live_exact7_cap06_installed": [
+    "public.is_valid_b2b_partner_user.0bb0dea0.live-20261106.sql",
+    "platform_private.b2b_phase1_partner_visible.915f516e.live-20261106.sql",
+    "public.b2b_phase1_partner_visible.6b3defc0.live-20261106.sql",
+    "platform_private.b2b_owner_internal_partner_readable.fa72ca18.live-20261106.sql",
+    "platform_private.b2b_phase1_order_visible.8504f07f.live-20261106.sql"
+  ],
+  "live_exact7_drop_recreate": {
+    "public.fn_b2b_status_is_approved_or_later(partner_order_status)": {
+      "mirror_result": "boolean",
+      "live_result": "boolean",
+      "mirror_args": "partner_order_status",
+      "live_args": "p_status partner_order_status",
+      "mirror_acl_restored": ""
+    },
+    "platform_private.b2b_actor_scope(uuid)": {
+      "mirror_result": "TABLE(profile_ok boolean, partner_valid boolean, user_partner_count integer, user_partner uuid, org_partner uuid, has_catalog boolean)",
+      "live_result": "TABLE(profile_ok boolean, org_partner uuid, user_partner uuid, user_partner_count integer, partner_valid boolean, has_catalog boolean)",
+      "mirror_args": "p uuid",
+      "live_args": "_uid uuid",
+      "mirror_acl_restored": ""
+    },
+    "platform_private.c2_partner_order_attempt_authz(uuid,uuid)": {
+      "mirror_result": "void",
+      "live_result": "void",
+      "mirror_args": "p_uid uuid, p_partner uuid",
+      "live_args": "p_uid uuid, p_partner_id uuid",
+      "mirror_acl_restored": ""
+    }
+  },
+  "live_exact7_install": {
+    "rc": 0,
+    "err": "NOTICE:  relation \"delivery_context_20261030\" already exists, skipping\n",
+    "deps_absent_before": {
+      "platform_private.b2b_resale_delivery_order_valid_v1": "0",
+      "platform_private.b2b_resale_delivery_status_transition_valid_v1": "0"
+    },
+    "overlay_sha256": "06ce62bfaf801e21f6696661e869485267e4a259fe75a0498231e39739bdeb77"
+  },
+  "live_exact7_acl_after": {
+    "public.b2b_phase1_order_visible(uuid)": "",
+    "public.fn_b2b_status_is_approved_or_later(partner_order_status)": "{postgres=X/postgres}",
+    "public.get_partner_order_payment_terms_secure(uuid)": "{postgres=X/postgres,authenticated=X/postgres}",
+    "platform_private.b2b_actor_scope(uuid)": "{postgres=X/postgres}",
+    "platform_private.b2b_internal_commercial_actor()": "",
+    "platform_private.c2_partner_order_attempt_authz(uuid,uuid)": "{postgres=X/postgres}",
+    "platform_private.b2b_internal_order_snapshot_guard()": ""
+  },
+  "live_exact7_md5": {
+    "public.b2b_phase1_order_visible(uuid)": {
+      "mirror": "8812508716f279a88e3d5a31b15621d8",
+      "live": "8812508716f279a88e3d5a31b15621d8",
+      "mirror_before": "77120e278f83c3376df1b74781ae5132"
+    },
+    "public.fn_b2b_status_is_approved_or_later(partner_order_status)": {
+      "mirror": "8fed429cd642c9eaa431f8bbfa320931",
+      "live": "8fed429cd642c9eaa431f8bbfa320931",
+      "mirror_before": "ebfaf3c3a969d0928cec31de08636f57"
+    },
+    "public.get_partner_order_payment_terms_secure(uuid)": {
+      "mirror": "efb3d18c65088d7d69471fc5aa9ac859",
+      "live": "efb3d18c65088d7d69471fc5aa9ac859",
+      "mirror_before": "468bf3e6de67c826434fc480d28ce977"
+    },
+    "platform_private.b2b_actor_scope(uuid)": {
+      "mirror": "c3f2997746f24bc2efd15db5c0ccc862",
+      "live": "c3f2997746f24bc2efd15db5c0ccc862",
+      "mirror_before": "59b12ef2f73dec1a298daa49354ac5e2"
+    },
+    "platform_private.b2b_internal_commercial_actor()": {
+      "mirror": "6555396c4f8fe914177d2ccfc3891279",
+      "live": "6555396c4f8fe914177d2ccfc3891279",
+      "mirror_before": "b7e42090c96145a74268f7ab69603601"
+    },
+    "platform_private.c2_partner_order_attempt_authz(uuid,uuid)": {
+      "mirror": "e15d9fccd42c67caf51b15122a61270d",
+      "live": "e15d9fccd42c67caf51b15122a61270d",
+      "mirror_before": "98122a0d5b7599e26b0bdb650f4bb2de"
+    },
+    "platform_private.b2b_internal_order_snapshot_guard()": {
+      "mirror": "1c342be2cdaf7bf458a3cd1aa15e7ba5",
+      "live": "1c342be2cdaf7bf458a3cd1aa15e7ba5",
+      "mirror_before": "9cad2aaa995277b913f8b40816fea504"
+    }
+  },
+  "live_exact7_deps_md5_unconfirmed": {
+    "platform_private.b2b_resale_delivery_order_valid_v1(...)": "79c7407838a0a5e6303c7b856c32600d",
+    "platform_private.b2b_resale_delivery_status_transition_valid_v1(...)": "72d5d18157ffd837b89245bad19fc17e"
+  },
+  "live23_seams": {
+    "rc": 0,
+    "err": "NOTICE:  column \"access_operation_status\" of relation \"platform_org_admin_invites\" already exists, skipping\nNOTICE:  column \"access_valid_after\" of relation \"platform_org_admin_invites\" already exists, skipping\n"
+  },
+  "live23_s61": {
+    "rc": 0,
+    "err": ""
+  },
+  "live23": {
+    "public.get_user_partner_id()": {
+      "mirror_before": "98b2ce25cbe60fe7a47d639d53e2820d",
+      "live": "b334c3a454ebc4233d3b9e0d0a700d78",
+      "mirror_after": "b334c3a454ebc4233d3b9e0d0a700d78",
+      "acl_live": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "acl_after": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "rc": 0,
+      "err": ""
+    },
+    "platform_private.c2_order_actor_scope(uuid,uuid)": {
+      "mirror_before": "207c86ff2e16618e4fe2ac5ba058910b",
+      "live": "54c4327d63f48e39f598129ff9dd8f09",
+      "mirror_after": "54c4327d63f48e39f598129ff9dd8f09",
+      "acl_live": "{postgres=X/postgres}",
+      "acl_after": "{postgres=X/postgres}",
+      "rc": 0,
+      "err": ""
+    },
+    "platform_private.b2b_phase1_partner_visible(uuid,boolean)": {
+      "mirror_before": "915f516e605af7cc14584e2e762a2661",
+      "live": "915f516e605af7cc14584e2e762a2661",
+      "mirror_after": "915f516e605af7cc14584e2e762a2661",
+      "acl_live": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_after": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "rc": 0,
+      "err": ""
+    },
+    "platform_private.b2b_phase1_order_visible(uuid)": {
+      "mirror_before": "8504f07fbc3a7975accf919f386d00eb",
+      "live": "8504f07fbc3a7975accf919f386d00eb",
+      "mirror_after": "8504f07fbc3a7975accf919f386d00eb",
+      "acl_live": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_after": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "rc": 0,
+      "err": ""
+    },
+    "public.b2b_phase1_partner_visible(uuid,boolean)": {
+      "mirror_before": "6b3defc01a66040146562c60ad224f03",
+      "live": "6b3defc01a66040146562c60ad224f03",
+      "mirror_after": "6b3defc01a66040146562c60ad224f03",
+      "acl_live": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_after": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "rc": 0,
+      "err": ""
+    },
+    "public.is_valid_b2b_partner_user(uuid,uuid)": {
+      "mirror_before": "0bb0dea04be8ca84c66db7ca6329876c",
+      "live": "0bb0dea04be8ca84c66db7ca6329876c",
+      "mirror_after": "0bb0dea04be8ca84c66db7ca6329876c",
+      "acl_live": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "acl_after": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "rc": 0,
+      "err": ""
+    },
+    "platform_private.b2b_owner_internal_partner_readable(uuid)": {
+      "mirror_before": "fa72ca18fc673cb4a5ff4867e65137cd",
+      "live": "fa72ca18fc673cb4a5ff4867e65137cd",
+      "mirror_after": "fa72ca18fc673cb4a5ff4867e65137cd",
+      "acl_live": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_after": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "rc": 0,
+      "err": ""
+    },
+    "platform_private.b2b_resale_delivery_status_transition_valid_v1(partner_orders,partner_orders)": {
+      "mirror_before": "72d5d18157ffd837b89245bad19fc17e",
+      "live": "72d5d18157ffd837b89245bad19fc17e",
+      "mirror_after": "72d5d18157ffd837b89245bad19fc17e",
+      "acl_live": "{postgres=X/postgres}",
+      "acl_after": "{postgres=X/postgres}",
+      "rc": 0,
+      "err": ""
+    },
+    "platform_private.b2b_resale_delivery_order_valid_v1(entregas)": {
+      "mirror_before": "79c7407838a0a5e6303c7b856c32600d",
+      "live": "bd76345c3bceaa5e6203013920427df4",
+      "mirror_after": "bd76345c3bceaa5e6203013920427df4",
+      "acl_live": "{postgres=X/postgres}",
+      "acl_after": "{postgres=X/postgres}",
+      "rc": 0,
+      "err": ""
+    },
+    "platform_private.c2_external_origin_assert(jsonb,uuid,uuid)": {
+      "mirror_before": "999e5e9fd9887595e252523fb2142726",
+      "live": "999e5e9fd9887595e252523fb2142726",
+      "mirror_after": "999e5e9fd9887595e252523fb2142726",
+      "acl_live": "{postgres=X/postgres}",
+      "acl_after": "{postgres=X/postgres}",
+      "rc": 0,
+      "err": ""
+    },
+    "platform_private.c2_owner_order_create_allowed(uuid,uuid)": {
+      "mirror_before": "290fceb1d1b2c9fe2631df62ddaead33",
+      "live": "5f0a08d1d4f8d8c5a7ae58e24c71071e",
+      "mirror_after": "5f0a08d1d4f8d8c5a7ae58e24c71071e",
+      "acl_live": "{postgres=X/postgres}",
+      "acl_after": "{postgres=X/postgres}",
+      "rc": 0,
+      "err": ""
+    },
+    "platform_private.c2_accounting_promotion_ok(jsonb,jsonb,uuid)": {
+      "mirror_before": "05938c5e9abf096d560e57aad10af69f",
+      "live": "05938c5e9abf096d560e57aad10af69f",
+      "mirror_after": "05938c5e9abf096d560e57aad10af69f",
+      "acl_live": "{postgres=X/postgres}",
+      "acl_after": "{postgres=X/postgres}",
+      "rc": 0,
+      "err": ""
+    },
+    "platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)": {
+      "mirror_before": "6bbb61aa5899b18d13ac55d4f76f45e1",
+      "live": "6bbb61aa5899b18d13ac55d4f76f45e1",
+      "mirror_after": "6bbb61aa5899b18d13ac55d4f76f45e1",
+      "acl_live": "{postgres=X/postgres,service_role=X/postgres}",
+      "acl_after": "{postgres=X/postgres,service_role=X/postgres}",
+      "rc": 0,
+      "err": ""
+    },
+    "platform_private.has_ticket(text,uuid)": {
+      "mirror_before": "29adae3347e8a5ff23327fa86fceb54b",
+      "live": "29adae3347e8a5ff23327fa86fceb54b",
+      "mirror_after": "29adae3347e8a5ff23327fa86fceb54b",
+      "acl_live": "{postgres=X/postgres}",
+      "acl_after": "{postgres=X/postgres}",
+      "rc": 0,
+      "err": ""
+    },
+    "platform_private.platform_actor_access_ready(uuid)": {
+      "mirror_before": "9069d50e6a6ac54cf0b2efe1ea1a9129",
+      "live": "048249c0c2106c3761e26eacb8d0de84",
+      "mirror_after": "9069d50e6a6ac54cf0b2efe1ea1a9129",
+      "acl_live": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_after": "",
+      "rc": 3,
+      "err": "ERROR:  function auth.jwt() does not exist\nLINE 8: ... AND auth.uid()=p_user AND to_timestamp(COALESCE((auth.jwt()...\n                                                             ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\n"
+    },
+    "platform_private.entitlements_for_user(uuid)": {
+      "mirror_before": "96cee77def46bad306f05747db882529",
+      "live": "7f4ec7facaebbdf35444dd490fdebe56",
+      "mirror_after": "96cee77def46bad306f05747db882529",
+      "acl_live": "{postgres=X/postgres,service_role=X/postgres}",
+      "acl_after": "",
+      "rc": 3,
+      "err": "ERROR:  column p.created_at does not exist\nLINE 16:     ORDER BY p.created_at, p.organization_id\n                      ^\n"
+    },
+    "platform_private.has_role(uuid,app_role)": {
+      "mirror_before": "68b329da9893e34099c7d8ad5cb9c940",
+      "live": "c5af5b55de6d79da9b73a33948746ae2",
+      "mirror_after": null,
+      "acl_live": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "acl_after": null,
+      "rc": 3,
+      "err": "ERROR:  function platform_private.has_role(uuid, app_role) does not exist\n"
+    },
+    "public.has_role(uuid,app_role)": {
+      "mirror_before": "0e727e7ccc6459ac669e165c9759cbae",
+      "live": "4d90e93d521a4819d9085f28d742030f",
+      "mirror_after": "0e727e7ccc6459ac669e165c9759cbae",
+      "acl_live": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_after": "",
+      "rc": 3,
+      "err": "ERROR:  function platform_private.has_role(uuid, public.app_role) does not exist\nLINE 6: AS $function$ SELECT platform_private.has_role(_user_id,_rol...\n                             ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\n"
+    },
+    "public.h15_actor_organization()": {
+      "mirror_before": "55edafec08bcc84a00f1526c14334a2c",
+      "live": "55edafec08bcc84a00f1526c14334a2c",
+      "mirror_after": "55edafec08bcc84a00f1526c14334a2c",
+      "acl_live": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_after": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "rc": 0,
+      "err": ""
+    },
+    "public.fn_cc_can_prepare(uuid)": {
+      "mirror_before": "439d9c28f69029b9c71fddbef1054e57",
+      "live": "439d9c28f69029b9c71fddbef1054e57",
+      "mirror_after": "439d9c28f69029b9c71fddbef1054e57",
+      "acl_live": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "acl_after": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "rc": 0,
+      "err": ""
+    },
+    "public._saas_user_has_feature(uuid,text)": {
+      "mirror_before": "501dd958e117d2df8a4d38f6bcbeed04",
+      "live": "501dd958e117d2df8a4d38f6bcbeed04",
+      "mirror_after": "501dd958e117d2df8a4d38f6bcbeed04",
+      "acl_live": "{postgres=X/postgres,service_role=X/postgres}",
+      "acl_after": "{postgres=X/postgres,service_role=X/postgres}",
+      "rc": 0,
+      "err": ""
+    },
+    "public.fn_b2b_status_is_operational(partner_order_status)": {
+      "mirror_before": "1b397fd4f651c103e6eddcc3e140a86e",
+      "live": "1b397fd4f651c103e6eddcc3e140a86e",
+      "mirror_after": "1b397fd4f651c103e6eddcc3e140a86e",
+      "acl_live": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_after": "{postgres=X/postgres,=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "rc": 0,
+      "err": ""
+    },
+    "public.is_platform_superadmin(uuid)": {
+      "mirror_before": "1bc3abc78ccc7480495ee5071f5753bf",
+      "live": "3dfe79d976821244d9b7a7f893d765f2",
+      "mirror_after": "3dfe79d976821244d9b7a7f893d765f2",
+      "acl_live": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_after": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "rc": 0,
+      "err": ""
+    }
+  },
+  "live23_s61_delivery_scope_md5": "2350b6535c4b6289f47c200c03000dfb",
+  "live_exact7_behaviour": {
+    "actor_scope_positive": {
+      "profile_ok": true,
+      "org_partner": "00000000-0000-0000-0000-000000000011",
+      "user_partner": "00000000-0000-0000-0000-000000000011",
+      "user_partner_count": 1,
+      "partner_valid": true,
+      "has_catalog": true
+    },
+    "actor_scope_revogado": {
+      "profile_ok": true,
+      "org_partner": null,
+      "user_partner": null,
+      "user_partner_count": 0,
+      "partner_valid": false,
+      "has_catalog": true
+    },
+    "actor_scope_tenant divergente": {
+      "profile_ok": true,
+      "org_partner": null,
+      "user_partner": null,
+      "user_partner_count": 1,
+      "partner_valid": false,
+      "has_catalog": true
+    },
+    "actor_scope_valid_from futuro": {
+      "profile_ok": true,
+      "org_partner": null,
+      "user_partner": null,
+      "user_partner_count": 1,
+      "partner_valid": false,
+      "has_catalog": true
+    },
+    "actor_scope_parceiro inativo": {
+      "profile_ok": true,
+      "org_partner": null,
+      "user_partner": null,
+      "user_partner_count": 1,
+      "partner_valid": false,
+      "has_catalog": true
+    },
+    "attempt_authz_own": [
+      3,
+      "ERROR:  function platform_private.assert_b2b_partner_scope(uuid, uuid) does not exist\nLINE 1: SELECT platform_private.assert_b2b_partner_scope(_uid,_partn...\n               ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\nQUERY:  SELECT platf | stdout:00000000-0000-0000-0000-000000000011"
+    ],
+    "attempt_authz_cross_tenant": [
+      3,
+      "ERROR:  function platform_private.assert_b2b_partner_scope(uuid, uuid) does not exist\nLINE 1: SELECT platform_private.assert_b2b_partner_scope(_uid,_partn...\n               ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\nQUERY:  SELECT platf | stdout:00000000-0000-0000-0000-000000000011"
+    ],
+    "attempt_authz_revoked": [
+      3,
+      "ERROR:  function platform_private.assert_b2b_partner_scope(uuid, uuid) does not exist\nLINE 1: SELECT platform_private.assert_b2b_partner_scope(_uid,_partn...\n               ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\nQUERY:  SELECT platf | stdout:"
+    ],
+    "guard_operational_update": "ERROR:  B2B_INTERNAL_DOWNSTREAM_UNVERIFIED\nCONTEXT:  PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 32 at RAISE",
+    "guard_operational_target_found": "17"
+  }
+}
