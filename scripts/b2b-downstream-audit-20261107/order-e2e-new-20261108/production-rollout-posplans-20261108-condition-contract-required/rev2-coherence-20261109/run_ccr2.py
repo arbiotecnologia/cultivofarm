@@ -14,7 +14,7 @@ DIRS = ["b2b-payment-condition-v1-rebase-20261106", "b2b-solid-packaging-order-2
 MARK = "        # ---------- rollback deny-only transacional ----------\n"
 
 
-def main(attempt):
+def main(attempt, live=False, probe=False):
     ev = PKG / "evidence" / f"attempt-{attempt:02d}"
     if ev.exists():
         raise SystemExit(f"{ev} exists; never overwrite evidence")
@@ -33,6 +33,7 @@ def main(attempt):
                                                       capture_output=True, text=True).stdout)
     t0 = time.time()
     try:
+        os.environ["CCR2_LIVE_BODIES"] = "1" if live else "0"; os.environ["CCR2_PROBE"] = "1" if probe else "0"
         os.environ["CCR2_EVIDENCE"] = str(ev.resolve()); os.chmod(ev, 0o777)
         r = subprocess.run([sys.executable, str(t)], capture_output=True, text=True, timeout=580, cwd=str(mirror))
         rc, so, se = r.returncode, r.stdout, r.stderr
@@ -54,4 +55,4 @@ def main(attempt):
 
 
 if __name__ == "__main__":
-    main(int(sys.argv[1]))
+    main(int(sys.argv[1]), live='--live' in sys.argv, probe='--probe' in sys.argv)

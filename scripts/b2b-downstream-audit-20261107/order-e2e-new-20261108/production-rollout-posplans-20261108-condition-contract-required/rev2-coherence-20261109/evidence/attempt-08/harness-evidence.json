@@ -1,0 +1,1188 @@
+{
+  "contract": "B2B_PAYMENT_CONDITION_V1",
+  "rebase_of": "financial-price-generator-20261029/integration (sha256 b1416978)",
+  "kind": "DISPOSABLE_PG_REAL_CREATE_c34e7404_WITH_DECLARED_SEAMS_NOT_HOSTED_PROOF",
+  "passed": 276,
+  "total": 291,
+  "checks": [
+    {
+      "name": "estado instalado B2: 01-pre.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "estado instalado B2: 02-install.sql.review",
+      "ok": true
+    },
+    {
+      "name": "estado instalado B2: 03-post.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "guardas de origem REAIS carregadas (não stub permissivo)",
+      "ok": true
+    },
+    {
+      "name": "corpo REAL = LIVE: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+      "ok": true
+    },
+    {
+      "name": "corpo REAL = LIVE: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+      "ok": true
+    },
+    {
+      "name": "corpo REAL = LIVE: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "ok": true
+    },
+    {
+      "name": "corpo REAL = LIVE: platform_private.b2b_partner_catalog_reader(uuid)",
+      "ok": true
+    },
+    {
+      "name": "corpo REAL = LIVE: platform_private.h15_actor_organization()",
+      "ok": true
+    },
+    {
+      "name": "corpo REAL = LIVE: public.fn_b2b_credit_exposure(uuid,numeric,uuid)",
+      "ok": true
+    },
+    {
+      "name": "candidata comprovada: schema.sql.review/build.py com 14103/13768 caracteres e sha256 pinado",
+      "ok": true
+    },
+    {
+      "name": "02 com corpo LIVE divergente aborta sem deixar objetos",
+      "ok": true
+    },
+    {
+      "name": "01 PRE_OK",
+      "ok": true
+    },
+    {
+      "name": "ordem de locks padronizada: create e quote resolvem versão antes do advisory de crédito",
+      "ok": true
+    },
+    {
+      "name": "02 install",
+      "ok": true
+    },
+    {
+      "name": "03 POST_OK",
+      "ok": true
+    },
+    {
+      "name": "rerun do install recusado",
+      "ok": true
+    },
+    {
+      "name": "create/simulate LIVE originais intactos; somente a resposta de cotação ganhou o ramo condicionado",
+      "ok": true
+    },
+    {
+      "name": "sem dois contratos: nenhum objeto rev.2 B2B_PAYMENT_METHOD_V1 nem create antigo de 10 argumentos",
+      "ok": true
+    },
+    {
+      "name": "sem ativação: comprador segue contrato atual (nenhum bloqueio global)",
+      "ok": true
+    },
+    {
+      "name": "sem ativação: outro tenant (papel FSF) segue contrato atual",
+      "ok": true
+    },
+    {
+      "name": "legado FSF não ativado: cotação criada com limite zero como antes",
+      "ok": true
+    },
+    {
+      "name": "legado FSF não ativado: zero NÃO bloqueia resposta (guarda >0 preservada)",
+      "ok": true
+    },
+    {
+      "name": "admin A publica Pix v1 (5 dias)",
+      "ok": true
+    },
+    {
+      "name": "financeiro A publica boleto 3x Price 1,8% em 30 dias",
+      "ok": true
+    },
+    {
+      "name": "promissória personalizável: 3x taxa explícita 0",
+      "ok": true
+    },
+    {
+      "name": "cartão de crédito personalizável: 2x 2,5%",
+      "ok": true
+    },
+    {
+      "name": "débito: parcela única com 1 dia",
+      "ok": true
+    },
+    {
+      "name": "publicação sintética: boleto aceita 1 parcela com taxa explícita 1,8%",
+      "ok": true
+    },
+    {
+      "name": "publicação sintética: promissoria aceita 1 parcela com taxa explícita 1,8%",
+      "ok": true
+    },
+    {
+      "name": "publicação sintética: cartao_credito aceita 1 parcela com taxa explícita 1,8%",
+      "ok": true
+    },
+    {
+      "name": "plano com juros próprios recusado (uma fonte de juros)",
+      "ok": true
+    },
+    {
+      "name": "Pix parcelado recusado",
+      "ok": true
+    },
+    {
+      "name": "boleto 4x recusado",
+      "ok": true
+    },
+    {
+      "name": "dinheiro: parcela única com juros continua recusada",
+      "ok": true
+    },
+    {
+      "name": "pix: parcela única com juros continua recusada",
+      "ok": true
+    },
+    {
+      "name": "cartao_debito: parcela única com juros continua recusada",
+      "ok": true
+    },
+    {
+      "name": "meio fora dos seis recusado",
+      "ok": true
+    },
+    {
+      "name": "prazo acima do plano recusado",
+      "ok": true
+    },
+    {
+      "name": "meio inativo no catálogo recusado",
+      "ok": true
+    },
+    {
+      "name": "categoria não RECEITA recusada",
+      "ok": true
+    },
+    {
+      "name": "categoria RECEITA inativa recusada",
+      "ok": true
+    },
+    {
+      "name": "publicação com CAS antigo = stale",
+      "ok": true
+    },
+    {
+      "name": "comprador não configura",
+      "ok": true
+    },
+    {
+      "name": "técnico não configura",
+      "ok": true
+    },
+    {
+      "name": "gestor comercial (só leitura) não configura",
+      "ok": true
+    },
+    {
+      "name": "superadmin não configura",
+      "ok": true
+    },
+    {
+      "name": "admin F publica a própria versão (isolada)",
+      "ok": true
+    },
+    {
+      "name": "admin F atribui ao próprio parceiro",
+      "ok": true
+    },
+    {
+      "name": "admin A não atribui parceiro de F",
+      "ok": true
+    },
+    {
+      "name": "admin F não atribui parceiro de A",
+      "ok": true
+    },
+    {
+      "name": "gestor comercial lê condições de A (sem editar), default 30 dias exposto",
+      "ok": true
+    },
+    {
+      "name": "lista de F não vê condições de A",
+      "ok": true
+    },
+    {
+      "name": "comprador não lista configurações",
+      "ok": true
+    },
+    {
+      "name": "tabela privada fechada ao cliente",
+      "ok": true
+    },
+    {
+      "name": "anônimo sem EXECUTE",
+      "ok": true
+    },
+    {
+      "name": "opções do comprador P: só versões atribuídas de A; mode legacy antes da ativação",
+      "ok": true
+    },
+    {
+      "name": "comprador F vê só o Pix de F (2 dias)",
+      "ok": true
+    },
+    {
+      "name": "comprador P pedindo parceiro F negado",
+      "ok": true
+    },
+    {
+      "name": "técnico negado",
+      "ok": true
+    },
+    {
+      "name": "comprador inativo negado",
+      "ok": true
+    },
+    {
+      "name": "cartão de crédito publicado mas não atribuído: indisponível ao comprador",
+      "ok": true
+    },
+    {
+      "name": "ator interno de A vê opções do parceiro de A",
+      "ok": true
+    },
+    {
+      "name": "ator interno de F não vê parceiro de A",
+      "ok": true
+    },
+    {
+      "name": "resolução: boleto/promissória/crédito em 1x com 1,8% explícito ficam disponíveis ao comprador",
+      "ok": true
+    },
+    {
+      "name": "oráculo independente n=1: 1000 a 1,8% = 1018,00; principal 1000,00 e juros 18,00",
+      "ok": true
+    },
+    {
+      "name": "simulação boleto n=1: total 1018, principal 1000 e juros 18",
+      "ok": true
+    },
+    {
+      "name": "simulação promissoria n=1: total 1018, principal 1000 e juros 18",
+      "ok": true
+    },
+    {
+      "name": "simulação cartao_credito n=1: total 1018, principal 1000 e juros 18",
+      "ok": true
+    },
+    {
+      "name": "create n=1: ACK total 1018, juros 18, principal 1000 e mesma escolha/hash",
+      "ok": true
+    },
+    {
+      "name": "persistência n=1: pedido/termos/cronograma/snapshot/idempotência = 1018; principal 1000; juros 18; taxa 1,8%",
+      "ok": true
+    },
+    {
+      "name": "leitor persistido n=1 devolve 1018, principal 1000, juros 18 e taxa 1,8%",
+      "ok": true
+    },
+    {
+      "name": "exemplo do revisor: 1000 a 1,8% 3x = 345,40/345,40/345,42 (Decimal independente)",
+      "ok": true
+    },
+    {
+      "name": "simulação: final/amounts/juros/cronograma/crédito = 1036,22; 1º vencimento estimado = hoje+30",
+      "ok": true
+    },
+    {
+      "name": "hash com condição ≠ hash LIVE do mesmo carrinho",
+      "ok": true
+    },
+    {
+      "name": "create com hash LIVE (1000) recusado: price_changed",
+      "ok": true
+    },
+    {
+      "name": "prazo adulterado na escolha recusado",
+      "ok": true
+    },
+    {
+      "name": "escolha com campo extra (parcelas do cliente) recusada",
+      "ok": true
+    },
+    {
+      "name": "create Price: ACK total/final/juros 1036,22 e mesmo hash",
+      "ok": true
+    },
+    {
+      "name": "pedido/termos/cronograma/snapshot/idempotência: todos 1036,22 e as mesmas 3 parcelas estimadas",
+      "ok": true
+    },
+    {
+      "name": "replay mesma chave+escolha: mesmo pedido e mesmo ACK",
+      "ok": true
+    },
+    {
+      "name": "replay não duplica snapshot/termos",
+      "ok": true
+    },
+    {
+      "name": "mesma chave com outro meio: conflito",
+      "ok": true
+    },
+    {
+      "name": "Pix líquido com desconto 10%: R$ 0.90 em 1 parcela hoje+5 (estimada)",
+      "ok": true
+    },
+    {
+      "name": "Pix embalagem inteira com desconto 10%: R$ 162.00 em 1 parcela hoje+5 (estimada)",
+      "ok": true
+    },
+    {
+      "name": "Pix misto com desconto 10%: R$ 162.90 em 1 parcela hoje+5 (estimada)",
+      "ok": true
+    },
+    {
+      "name": "pedido misto: snapshots de embalagem inteira + líquido preservados",
+      "ok": true
+    },
+    {
+      "name": "preço client-side ignorado: hash não confere",
+      "ok": true
+    },
+    {
+      "name": "vencimento/parcelas do cliente não existem no contrato",
+      "ok": true
+    },
+    {
+      "name": "cotação: aguardando_cotacao, sem termos, snapshot de escolha sem valor",
+      "ok": true
+    },
+    {
+      "name": "prazo 30 > max_days 29: resolução recusa explicitamente, sem clamp",
+      "ok": true
+    },
+    {
+      "name": "prazo incoerente: create recusa sem novo pedido",
+      "ok": true
+    },
+    {
+      "name": "prazo incoerente: nenhuma idempotência de create persistida",
+      "ok": true
+    },
+    {
+      "name": "prazo incoerente: quote recusa antes de persistir terms/schedule",
+      "ok": true
+    },
+    {
+      "name": "prazo incoerente: todos os registros da cotação preservados",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: fixture REAL contém dois itens",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: parcial 1/2 negado",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: parcial 1/2 preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: duplicados negado",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: duplicados preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: item de outro pedido negado",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: item de outro pedido preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: carrinho vazio consistente negado com guards ativos",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: fixture vazia revertida sem efeitos",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: resposta completa positiva persiste ambos subtotais 100 e principal 200",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: terms.first_due_date igual à primeira data do schedule",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: fixture REAL contém dois itens",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: parcial 1/2 negado",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: parcial 1/2 preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: duplicados negado",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: duplicados preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: item de outro pedido negado",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: item de outro pedido preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: carrinho vazio consistente negado com guards ativos",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: fixture vazia revertida sem efeitos",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: resposta completa positiva persiste ambos subtotais 100 e principal 200",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: terms.first_due_date igual à primeira data do schedule",
+      "ok": true
+    },
+    {
+      "name": "fixture rollback legada de dois itens criada",
+      "ok": true
+    },
+    {
+      "name": "cotação: comprador externo não responde; guarda REAL de proprietário nega",
+      "ok": true
+    },
+    {
+      "name": "cotação: admin de outro vendedor negado pela guarda REAL de origem",
+      "ok": true
+    },
+    {
+      "name": "cotação: revogação do vendedor durante espera nega e restaura itens/termos",
+      "ok": true
+    },
+    {
+      "name": "cotação Price: resposta autorizada recalcula 1000 em 3x = 1036,22 pela condição escolhida",
+      "ok": true
+    },
+    {
+      "name": "externo comercial AR Bio: resposta permitida com c2_external_origin_assert REAL e guards inalterados",
+      "ok": true
+    },
+    {
+      "name": "cotação: pedido/termos/cronograma/snapshot econômico compartilham UMA economia",
+      "ok": true
+    },
+    {
+      "name": "cotação: escolha inicial permanece imutável e resposta é append-only",
+      "ok": true
+    },
+    {
+      "name": "cotação idempotente: replay idêntico devolve o MESMO recibo/ACK sem duplicar",
+      "ok": true
+    },
+    {
+      "name": "replay com recibo existente: papel administrador revogado (origem permanece válida via financeiro) durante espera bloqueia devolução do ACK",
+      "ok": true
+    },
+    {
+      "name": "replay com recibo existente: perfil desativado durante espera bloqueia devolução do ACK",
+      "ok": true
+    },
+    {
+      "name": "replay com recibo existente: vínculo perfil/tenant alterado durante espera bloqueia devolução do ACK",
+      "ok": true
+    },
+    {
+      "name": "cotação idempotente: mesmo pedido com preço divergente = conflito, sem segunda economia",
+      "ok": true
+    },
+    {
+      "name": "cotação: conflito não altera termos",
+      "ok": true
+    },
+    {
+      "name": "segunda cotação sintética fica pendente para prova de rollback",
+      "ok": true
+    },
+    {
+      "name": "ramo novo v_has_condition: zero explícito bloqueia resposta de cotação AR Bio",
+      "ok": true
+    },
+    {
+      "name": "zero no ramo novo é atômico e preserva cotação pendente",
+      "ok": true
+    },
+    {
+      "name": "crédito: simulação avisa excesso com o total Price (não o líquido)",
+      "ok": true
+    },
+    {
+      "name": "crédito real: create bloqueado pelo total Price",
+      "ok": true
+    },
+    {
+      "name": "limite 1018,11 (entre principal 1000 e Price 1036,22): simulação avisa, nunca usa principal para liberar",
+      "ok": true
+    },
+    {
+      "name": "limite 1018,11: create bloqueado pelo total 1036,22 e nada gravado",
+      "ok": true
+    },
+    {
+      "name": "limite entre valores: falha atômica sem idempotência",
+      "ok": true
+    },
+    {
+      "name": "limite NULL: simulação indisponível (não vira apto)",
+      "ok": true
+    },
+    {
+      "name": "limite NULL: create indisponível e sem pedido",
+      "ok": true
+    },
+    {
+      "name": "limite NULL: falha atômica",
+      "ok": true
+    },
+    {
+      "name": "zero EXPLÍCITO é limite zero (não ausente nem ilimitado): simulação informa excesso",
+      "ok": true
+    },
+    {
+      "name": "zero explícito: create excede limite, não CREDIT_SETTINGS_INCOMPLETE",
+      "ok": true
+    },
+    {
+      "name": "limite negativo: simulação bloqueada",
+      "ok": true
+    },
+    {
+      "name": "limite negativo: create bloqueado atomicamente",
+      "ok": true
+    },
+    {
+      "name": "limite negativo: nenhuma idempotência gravada",
+      "ok": true
+    },
+    {
+      "name": "limite NaN: simulação bloqueada",
+      "ok": true
+    },
+    {
+      "name": "limite NaN: create bloqueado atomicamente",
+      "ok": true
+    },
+    {
+      "name": "limite NaN: nenhuma idempotência gravada",
+      "ok": true
+    },
+    {
+      "name": "erro transitório: simulação ABORTA (não devolve credit NULL)",
+      "ok": true
+    },
+    {
+      "name": "erro transitório: create não grava nem libera operação",
+      "ok": true
+    },
+    {
+      "name": "erro transitório: falha atômica",
+      "ok": true
+    },
+    {
+      "name": "função REAL de crédito restaurada byte a byte após injeção transitória",
+      "ok": true
+    },
+    {
+      "name": "limite exatamente 1036,22: simulação apta com o MESMO total Price",
+      "ok": true
+    },
+    {
+      "name": "limite exatamente 1036,22: create positivo no limite, sem folga inventada",
+      "ok": true
+    },
+    {
+      "name": "sem escolha: payment_choice_required (sem fallback Pix)",
+      "ok": true
+    },
+    {
+      "name": "create sem escolha: payment_choice_required",
+      "ok": true
+    },
+    {
+      "name": "versão inexistente sem oráculo",
+      "ok": true
+    },
+    {
+      "name": "versão de F pelo comprador de A",
+      "ok": true
+    },
+    {
+      "name": "meio de outra condição",
+      "ok": true
+    },
+    {
+      "name": "promissória sem atribuição em PLD indisponível",
+      "ok": true
+    },
+    {
+      "name": "técnico não simula",
+      "ok": true
+    },
+    {
+      "name": "anônimo sem EXECUTE no create",
+      "ok": true
+    },
+    {
+      "name": "Pix v2 com CAS; atribuições copiadas",
+      "ok": true
+    },
+    {
+      "name": "simulação versão antiga: stale",
+      "ok": true
+    },
+    {
+      "name": "create versão antiga: stale",
+      "ok": true
+    },
+    {
+      "name": "Pix v2 disponível ao mesmo parceiro (7 dias)",
+      "ok": true
+    },
+    {
+      "name": "snapshot histórico preserva v1/5 dias",
+      "ok": true
+    },
+    {
+      "name": "snapshot imutável",
+      "ok": true
+    },
+    {
+      "name": "versões append-only",
+      "ok": true
+    },
+    {
+      "name": "duas sessões: atribuição revogada durante a espera -> create espera a trava e nega",
+      "ok": true
+    },
+    {
+      "name": "duas sessões: versão aposentada durante a espera -> negada",
+      "ok": true
+    },
+    {
+      "name": "dinheiro v2 publicada após aposentar a v1 (nova versão explícita)",
+      "ok": true
+    },
+    {
+      "name": "duas sessões: atribuição comercial LIVE revogada durante a espera -> indisponível",
+      "ok": true
+    },
+    {
+      "name": "duas sessões: meio desativado no catálogo durante a espera -> indisponível",
+      "ok": true
+    },
+    {
+      "name": "duas sessões: categoria RECEITA desativada durante a espera -> indisponível",
+      "ok": true
+    },
+    {
+      "name": "duas sessões: papel do comprador revogado durante a espera de crédito -> negado na revalidação final",
+      "ok": true
+    },
+    {
+      "name": "publish: papel revogado durante a espera do advisory -> forbidden (reautoriza após lock)",
+      "ok": true
+    },
+    {
+      "name": "publish concorrente com o mesmo CAS: exatamente um vence",
+      "ok": true
+    },
+    {
+      "name": "mesma chave em paralelo: um pedido",
+      "ok": true
+    },
+    {
+      "name": "financeiro não ativa",
+      "ok": true
+    },
+    {
+      "name": "piloto com parceiro de outro tenant recusado",
+      "ok": true
+    },
+    {
+      "name": "piloto sem condição atribuída ao parceiro recusado",
+      "ok": true
+    },
+    {
+      "name": "admin A ativa piloto só para o parceiro P",
+      "ok": true
+    },
+    {
+      "name": "ativação com CAS antigo recusada",
+      "ok": true
+    },
+    {
+      "name": "piloto: comprador P vê mode required",
+      "ok": true
+    },
+    {
+      "name": "novo parceiro tem condição vigente atribuída antes da ativação",
+      "ok": true
+    },
+    {
+      "name": "expansão do piloto com CAS antigo não altera escopo",
+      "ok": true
+    },
+    {
+      "name": "novo parceiro entra no piloto sem remover o antigo nem enforced global",
+      "ok": true
+    },
+    {
+      "name": "targeting após expansão: antigo e novo required; parceiro fora do array legacy",
+      "ok": true
+    },
+    {
+      "name": "novo parceiro no piloto: fallback legado negado sem pedido/idempotência",
+      "ok": true
+    },
+    {
+      "name": "piloto: contrato antigo do comprador P bloqueado (B2B_PAYMENT_CONDITION_REQUIRED, nada gravado)",
+      "ok": true
+    },
+    {
+      "name": "piloto: ator interno de A simula com condição (mesma verdade monetária)",
+      "ok": true
+    },
+    {
+      "name": "sem emitente válido: barreira LIVE de origem interna preservada nos dois caminhos",
+      "ok": true
+    },
+    {
+      "name": "POSITIVO INTERNO com guards REAIS: create REAL grava em análise e servidor sela origem validada",
+      "ok": true
+    },
+    {
+      "name": "positivo interno não libera operação/cobrança/fiscal",
+      "ok": true
+    },
+    {
+      "name": "guarda de origem REAL não foi alterada para obter PASS",
+      "ok": true
+    },
+    {
+      "name": "controle: removida a fixture válida, MESMA guarda volta a negar emitente ambíguo",
+      "ok": true
+    },
+    {
+      "name": "controle negativo interno sem idempotência",
+      "ok": true
+    },
+    {
+      "name": "fixture de concorrência: cotação P3 criada pelo create REAL com guards e snapshot",
+      "ok": true
+    },
+    {
+      "name": "três fluxos create/config_publish/quote: nenhum deadlock 40P01 sob espera forçada",
+      "ok": true
+    },
+    {
+      "name": "concorrência: publish CAS cometeu exatamente a v2; create/quote concluíram ou falharam stale, nunca por guarda relaxada",
+      "ok": true
+    },
+    {
+      "name": "piloto de A não afeta comprador de F (papel FSF)",
+      "ok": true
+    },
+    {
+      "name": "gatilho DEFERRED isolado: pedido sem snapshot falha no COMMIT",
+      "ok": true
+    },
+    {
+      "name": "comprador lê condição/parcelas do pedido (mesmo total, estimado)",
+      "ok": true
+    },
+    {
+      "name": "admin F não lê pedido de A",
+      "ok": true
+    },
+    {
+      "name": "cotação LEGADA de F pronta para controle de rollback",
+      "ok": true
+    },
+    {
+      "name": "PB-001036/teste4 fora do escopo: nenhum pedido real no PG descartável",
+      "ok": true
+    },
+    {
+      "name": "CCR2 pins B3: mode/required_check MD5 = metadados B3 instalados",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE: corpos atuais (cc1f6cc) instalados no espelho",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE: md5 dos writers no espelho = LIVE informado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 80 PRE_OK no B3 instalado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 81 install",
+      "ok": true
+    },
+    {
+      "name": "CCR2 corpos instalados = pins congelados em 82/96",
+      "ok": true
+    },
+    {
+      "name": "CCR2 install não altera dados",
+      "ok": true
+    },
+    {
+      "name": "CCR2 82 POST_OK (owner/ACL/search_path/definer/gatilhos exatos)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 reexecução de 81 recusada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 PRE após install recusa (já instalado)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 anon sem EXECUTE nas funções novas",
+      "ok": true
+    },
+    {
+      "name": "CCR2 authenticated sem EXECUTE nas funções novas",
+      "ok": true
+    },
+    {
+      "name": "CCR2 service_role sem EXECUTE nas funções novas",
+      "ok": true
+    },
+    {
+      "name": "CCR2 cliente não chama o checker diretamente",
+      "ok": true
+    },
+    {
+      "name": "CCR2 positivo: writer REAL de condição (parceiro P do piloto) cria pedido com snapshot coerente",
+      "ok": false,
+      "detail": "ERROR:  payment_choice_required\nCONTEXT:  PL/pgSQL function platform_private.b2b_choice(jsonb) line 7 at RAISE\nPL/pgSQL function create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb) line 35 at assignment"
+    },
+    {
+      "name": "CCR2 positivo: novo parceiro PN (piloto ampliado) cria pedido com snapshot coerente",
+      "ok": true
+    },
+    {
+      "name": "CCR2 snapshot PN grava empresa A/parceiro/plano/versão/meio escolhidos",
+      "ok": true
+    },
+    {
+      "name": "CCR2 idempotência: replay da mesma chave devolve o mesmo pedido sem novo snapshot",
+      "ok": true
+    },
+    {
+      "name": "CCR2 lavagem: insere em parceiro legado PO e move para PN do piloto no mesmo commit -> negado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 lavagem: insere sem plano e atribui plano a parceiro do piloto -> negado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 parceiro do piloto: writer legado REAL não grava pedido nem idempotência (motivo registrado)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 alcance: tenant F sem ativação segue contrato atual (sem bloqueio global)",
+      "ok": false,
+      "detail": "ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 118 at RAISE"
+    },
+    {
+      "name": "CCR2 legado histórico: update comum (sem troca de parceiro/plano) não dispara o guard",
+      "ok": true
+    },
+    {
+      "name": "CCR2 legado histórico: não pode ser movido para parceiro do piloto sem snapshot",
+      "ok": true
+    },
+    {
+      "name": "CCR2 fixture histórica não deixou gatilho desabilitado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 fixture PB-001038-like (pedido legado sem snapshot de parceiro hoje no piloto) criada como linha histórica",
+      "ok": true
+    },
+    {
+      "name": "CCR2 PB-001038-like: atualização comum segue permitida (histórico preservado, sem backfill)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 PB-001038-like: troca de plano sem snapshot negada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 legado histórico: backfill de snapshot fictício negado (escolha/condição de outro pedido)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 cotação: writer REAL cria cotação com snapshot (quote) para PN",
+      "ok": true
+    },
+    {
+      "name": "CCR2 resposta do vendedor REAL: snapshot econômico coerente aceito pelo guard",
+      "ok": true
+    },
+    {
+      "name": "CCR2 snapshot de resposta com versão/meio (pix v1 existente) divergente da escolha inicial negado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 concorrência ativação: piloto ampliado durante create legado aberto -> commit negado (sem pedido/idempotência)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 mutação: revogação injetada com falha reprova o veredito de concorrência",
+      "ok": true
+    },
+    {
+      "name": "CCR2 concorrência revogação: revogação REAL exit 0 e persistida; create serializa sem pedido incoerente",
+      "ok": true
+    },
+    {
+      "name": "CCR2 após revogação: PN sem opção disponível",
+      "ok": true
+    },
+    {
+      "name": "CCR2 após revogação: writer de condição REAL negado, sem idempotência",
+      "ok": true
+    },
+    {
+      "name": "CCR2 após revogação: parceiro required NÃO cai no legado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 mutação: aposentadoria injetada com falha reprova o veredito de concorrência",
+      "ok": true
+    },
+    {
+      "name": "CCR2 concorrência aposentadoria: retire REAL exit 0 e persistido; create serializa sem pedido incoerente",
+      "ok": true
+    },
+    {
+      "name": "CCR2 após aposentadoria: writer de condição REAL negado, sem idempotência",
+      "ok": true
+    },
+    {
+      "name": "CCR2 após aposentadoria: parceiro required continua sem fallback legado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_order_condition_snapshots: há linhas e UPDATE/DELETE é negado pelo gatilho imutável (mesmo postgres), contagem preservada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_order_condition_snapshots: nenhum privilégio de tabela para anon/authenticated/service_role",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_order_condition_quote_snapshots: há linhas e UPDATE/DELETE é negado pelo gatilho imutável (mesmo postgres), contagem preservada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_order_condition_quote_snapshots: nenhum privilégio de tabela para anon/authenticated/service_role",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_condition_assignment_revocations: há linhas e UPDATE/DELETE é negado pelo gatilho imutável (mesmo postgres), contagem preservada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_condition_assignment_revocations: nenhum privilégio de tabela para anon/authenticated/service_role",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_condition_retirements: há linhas e UPDATE/DELETE é negado pelo gatilho imutável (mesmo postgres), contagem preservada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_condition_retirements: nenhum privilégio de tabela para anon/authenticated/service_role",
+      "ok": true
+    },
+    {
+      "name": "CCR2 pins dos writers usados registrados vs LIVE (divergência exige diff, não repin)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 coerência global: todo snapshot casa parceiro/plano/empresa do pedido",
+      "ok": true
+    },
+    {
+      "name": "CCR2 rollback com pin divergente aborta sem remover nada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 96 rollback exato",
+      "ok": true
+    },
+    {
+      "name": "CCR2 rollback preserva pedidos/snapshots/idempotência",
+      "ok": true
+    },
+    {
+      "name": "CCR2 rollback mantém guarda B3 de INSERT (sem reabrir legado)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 PRE volta a passar após rollback",
+      "ok": true
+    },
+    {
+      "name": "CCR2 reinstall após rollback",
+      "ok": true
+    },
+    {
+      "name": "CCR2 POST após reinstall",
+      "ok": true
+    },
+    {
+      "name": "CCR2 rollback final antes do rollback B3 do harness",
+      "ok": true
+    },
+    {
+      "name": "04 com pin divergente aborta sem mudar nada",
+      "ok": true
+    },
+    {
+      "name": "04 rollback deny-only",
+      "ok": false,
+      "detail": "psql:/tmp/b2bcond-w-3udglzsy/04-rollback-deny.sql.review:15: ERROR:  ROLLBACK: public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer) divergente\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\n"
+    },
+    {
+      "name": "ROLLBACK legado: fixture REAL contém dois itens",
+      "ok": true
+    },
+    {
+      "name": "ROLLBACK legado: parcial 1/2 negado",
+      "ok": false,
+      "detail": "esperado 'quote_incomplete'; obtido ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE"
+    },
+    {
+      "name": "ROLLBACK legado: parcial 1/2 preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
+      "ok": true
+    },
+    {
+      "name": "ROLLBACK legado: duplicados negado",
+      "ok": false,
+      "detail": "esperado 'quote_duplicate_line'; obtido ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE"
+    },
+    {
+      "name": "ROLLBACK legado: duplicados preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
+      "ok": true
+    },
+    {
+      "name": "ROLLBACK legado: item de outro pedido negado",
+      "ok": false,
+      "detail": "esperado 'quote_item_not_found'; obtido ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE"
+    },
+    {
+      "name": "ROLLBACK legado: item de outro pedido preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
+      "ok": true
+    },
+    {
+      "name": "ROLLBACK legado: carrinho vazio consistente negado com guards ativos",
+      "ok": false,
+      "detail": "ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE\n"
+    },
+    {
+      "name": "ROLLBACK legado: fixture vazia revertida sem efeitos",
+      "ok": true
+    },
+    {
+      "name": "ROLLBACK legado: resposta completa positiva persiste ambos subtotais 100 e principal 200",
+      "ok": false,
+      "detail": "ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE"
+    },
+    {
+      "name": "ROLLBACK legado: terms.first_due_date igual à primeira data do schedule",
+      "ok": false,
+      "detail": "ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE"
+    },
+    {
+      "name": "ROLLBACK novo: cotação com dois itens permanece deny-only",
+      "ok": false,
+      "detail": "esperado 'b2b_payment_condition_rolled_back'; obtido {'id': '82ec19d9-6848-439c-a1f2-7a4918dc22f9', 'total': 207.24, 'numero': 'PB-000008', 'status': 'em_analise_comercial', 'schedule': [{'amount': 69.08, 'due_date': '2026-12-09', 'estimated': True, 'interest_amount': 3.6, 'nominal_due_date': '2026-12-09', 'principal_amount': 65.48, 'installment_number': 1, 'business_day_adjusted': False}, {'amoun"
+    },
+    {
+      "name": "ROLLBACK novo: deny preserva todos os registros",
+      "ok": true
+    },
+    {
+      "name": "após rollback: opções negadas",
+      "ok": false,
+      "detail": "esperado 'permission denied'; obtido {'mode': 'required', 'options': [], 'contract': 'B2B_PAYMENT_CONDITION_V1', 'due_basis': 'nf_issue', 'partner_id': '00000000-0000-0000-0000-000000000011', 'payment_plan_id': '00000000-0000-0000-0000-000000000071'}"
+    },
+    {
+      "name": "após rollback: resposta de cotação com condição ativada fica negada, sem reabrir legado",
+      "ok": false,
+      "detail": "esperado 'b2b_payment_condition_rolled_back'; obtido ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE"
+    },
+    {
+      "name": "rollback da cotação é atômico",
+      "ok": true
+    },
+    {
+      "name": "após rollback: cotação LEGADA de empresa não ativada (papel FSF) continua funcionando",
+      "ok": false,
+      "detail": "ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE"
+    },
+    {
+      "name": "após rollback: empresa ativada continua bloqueada (nunca reabre fallback)",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "após rollback: empresa não ativada segue contrato atual",
+      "ok": false,
+      "detail": "ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 118 at RAISE\n"
+    },
+    {
+      "name": "após rollback: snapshots/versões preservados",
+      "ok": true
+    }
+  ]
+}
