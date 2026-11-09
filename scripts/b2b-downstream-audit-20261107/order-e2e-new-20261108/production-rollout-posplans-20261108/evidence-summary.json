@@ -1,7 +1,7 @@
 {
-  "evidence_directory": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-110",
+  "evidence_directory": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-113",
   "scope": "PostgreSQL 17.11 descart\u00e1vel e testes locais; n\u00e3o \u00e9 prova JWT/RLS/Storage/hosted",
-  "source_manifest_sha256": "ddef1976ef6870206809c0c72aec3bca88833e58b7242ed3abe69f975f134700",
+  "source_manifest_sha256": "3d7f2ec3f3e464e4fa829d92b2540af1d6e0dd3dae7d784a788f6c9de98f6123",
   "source_files_revalidated": 2890,
   "capture_sha256": "8a53b1443ed789c76115b9ef16807ae835e1e0bda888d50e6f1606197792a6ac",
   "independent_diff_sha256": "8af0e9df54e8802a6e6ebd2e9072a84799cbe72d2956b4bd2992a4526571ce6a",
@@ -14,22 +14,22 @@
   "composition_checks": 40,
   "partial_regressions": 13,
   "endpoint_reader_checks": 15,
-  "pilot_containment_checks": 33,
-  "pilot_candidate_sha256": "50f2b5d75ed4abbde0db50263695fd8e82f8eb78f5d039ae31c5446b54708c7a",
+  "pilot_containment_checks": 35,
+  "pilot_candidate_sha256": "821a974cc93ebb379e811036d4e973cb356b554536de56b702ea5f100d44eb7a",
   "frontend": {
     "frontend-ui": {
       "exitcode": 0,
-      "sha256": "d0ffaa136aea4b464f1564cb69c96f112a604bb9a788a4ec91dd843188969d8f",
+      "sha256": "367579e89c20e0f19e5719d3f14a2671a04a27a5d9ea3de817310161ac1a3be7",
       "tests": 21
     },
     "frontend-candidate": {
       "exitcode": 0,
-      "sha256": "c808f9034876b77cceaa70d5e5feb9c05d61758a3333eabee1fc30de3b040cb5",
+      "sha256": "731c181febababbc14026067154e586cd9f85e97cdc53b2cf96e3222afc23134",
       "tests": 13
     },
     "frontend-os-compat": {
       "exitcode": 0,
-      "sha256": "d3fa54d257d80e5c33378dac6be0cc7a06c606903ddb9fc79d2004682223c165",
+      "sha256": "b92530ed961e8926b4f72fe35f88eafdabb869c39bfe97582fcd3c0434810d39",
       "tests": 73
     },
     "typecheck": {
@@ -48,23 +48,23 @@
       "purchase_writer": false
     },
     "history_before": {
-      "os": 22,
+      "os": 23,
       "movements": 53,
       "deliveries": 15,
-      "resale_receipts": 12
+      "resale_receipts": 13
     },
     "history_after": {
-      "os": 22,
+      "os": 23,
       "movements": 53,
       "deliveries": 15,
-      "resale_receipts": 12
+      "resale_receipts": 13
     },
     "plans_before": {
-      "md5": "29778412a25f8ad308a2a9c406bf7b6e",
+      "md5": "44c11e2ae868c541eed770126690528e",
       "count": 9
     },
     "plans_after": {
-      "md5": "29778412a25f8ad308a2a9c406bf7b6e",
+      "md5": "44c11e2ae868c541eed770126690528e",
       "count": 9
     },
     "current_catalog_preserved": true,
@@ -157,7 +157,7 @@
   "final_artifact_execution": {
     "status": "PASS",
     "artifacts": 24,
-    "evidence_sha256": "60ab51def01b86dd03fc6087832e4d7a65dbcf6087a131b18a87bdefbd59894c",
+    "evidence_sha256": "140ee0372293d7d8f3b33f7a944aa45656385cd8c8c723e24b1a45e1188be343",
     "postgresql_version": "17.11"
   },
   "b4_fiscal_scope": {

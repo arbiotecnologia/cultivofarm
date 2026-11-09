@@ -99,14 +99,17 @@ CREATE FUNCTION platform_private.resale_pilot_allowed_v1(
  p_gate text,p_operation text,p_actor uuid,p_org uuid,p_partner uuid,p_order uuid,
  p_item uuid,p_product uuid,p_stock uuid,p_delivery uuid)
 RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
-DECLARE v_grant record;
+DECLARE v_grant record;v_enabled boolean;
 BEGIN
+ -- Pré-checagem somente: nunca é a autorização final e não retém lock.
  IF NOT (CASE p_gate
    WHEN 'finished_product' THEN EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled IS TRUE)
    WHEN 'b2b_resale' THEN EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)
    ELSE false END) OR p_actor IS NULL OR p_org IS NULL THEN RETURN false; END IF;
- -- A autorização final serializa com UPDATE/revogação na MESMA linha. O tempo é
- -- medido somente DEPOIS da espera do lock: now() não pode manter grant expirado.
+ -- Ordem única dos locks: concessão -> gate. Quem ainda espera a concessão não
+ -- segura o gate, portanto gate OFF/revogação pode confirmar e será releído.
+ -- Depois da autorização, ambos os locks permanecem até o commit/rollback do
+ -- writer; gate OFF e revogação serializam com a escrita já autorizada.
  FOR v_grant IN
   SELECT a.* FROM platform_private.resale_pilot_allowlist_v1 a
   WHERE a.gate=p_gate AND (p_operation IS NULL OR a.operation=p_operation)
@@ -117,8 +120,15 @@ BEGIN
    AND a.product_id IS NOT DISTINCT FROM p_product
    AND a.stock_id IS NOT DISTINCT FROM p_stock
    AND a.delivery_id IS NOT DISTINCT FROM p_delivery
-  ORDER BY a.id FOR UPDATE
+   ORDER BY a.id FOR UPDATE
  LOOP
+  IF p_gate='finished_product' THEN
+   SELECT g.enabled INTO v_enabled FROM platform_private.finished_product_gate_v1 g WHERE g.singleton FOR UPDATE;
+  ELSIF p_gate='b2b_resale' THEN
+   SELECT g.enabled INTO v_enabled FROM platform_private.b2b_resale_logistics_gate_v1 g WHERE g.singleton FOR UPDATE;
+  ELSE RETURN false; END IF;
+  -- enabled e o relógio são medidos DEPOIS de TODA espera dos dois locks.
+  IF v_enabled IS NOT TRUE THEN RETURN false; END IF;
   IF v_grant.synthetic IS TRUE AND v_grant.revoked_at IS NULL
    AND v_grant.valid_from<=pg_catalog.clock_timestamp()
    AND v_grant.valid_until>pg_catalog.clock_timestamp() THEN RETURN true; END IF;

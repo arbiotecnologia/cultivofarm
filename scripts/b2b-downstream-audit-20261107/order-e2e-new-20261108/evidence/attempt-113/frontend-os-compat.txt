@@ -1,0 +1,13 @@
+$ vitest run src/test/ordens-servico/validacao.test.ts src/test/ordens-servico/programming.test.tsx src/test/ordens-servico/approval.test.tsx
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/ordens-servico/validacao.test.ts (36 tests) 39ms
+ ✓ src/test/ordens-servico/approval.test.tsx (10 tests) 591ms
+ ✓ src/test/ordens-servico/programming.test.tsx (27 tests) 1245ms
+
+ Test Files  3 passed (3)
+      Tests  73 passed (73)
+   Start at  02:37:09
+   Duration  4.80s (transform 373ms, setup 527ms, collect 2.20s, tests 1.88s, environment 3.30s, prepare 385ms)
+

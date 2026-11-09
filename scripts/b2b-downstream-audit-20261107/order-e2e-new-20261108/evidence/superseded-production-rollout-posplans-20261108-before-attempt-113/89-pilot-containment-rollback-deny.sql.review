@@ -1,0 +1,5 @@
+UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;
+UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false WHERE singleton;
+REVOKE ALL ON FUNCTION platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid),platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid),platform_private.resale_pilot_delivery_scope_v1(text,text,uuid,uuid,uuid),platform_private.resale_pilot_delivery_allowed_v1(text,text,uuid,uuid,uuid),platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION public.rpc_finished_product_purchase_capability_v1(),public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date),public.rpc_b2b_resale_os_availability_v1(uuid),public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text) FROM PUBLIC,anon,authenticated,service_role;
+-- Deny-only: allowlist, recibos e histórico permanecem; gates nunca são reabertos.

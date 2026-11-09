@@ -1,0 +1,116 @@
+{
+  "status": "PASS",
+  "snapshot": {
+    "receivable": {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdm/postgres,authenticated=arwdm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": true,
+      "owner": "postgres",
+      "acl_md5": "93490607307bc83e36605d2c0e7dc4ec",
+      "triggers": [
+        {
+          "name": "a00_delivery_no_downstream",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER a00_delivery_no_downstream BEFORE INSERT OR DELETE OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_no_downstream_20261030()"
+        },
+        {
+          "name": "a01_b2b_fiscal_title_fence",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER a01_b2b_fiscal_title_fence BEFORE INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_title_insert_fence()"
+        },
+        {
+          "name": "a01_b2b_fiscal_title_identity",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER a01_b2b_fiscal_title_identity BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_title_insert_fence()"
+        },
+        {
+          "name": "b2b_fiscal_created_by_guard",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER b2b_fiscal_created_by_guard BEFORE INSERT OR UPDATE OF created_by, b2b_document_id, organization_id, partner_id ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_fiscal_created_by_guard()"
+        },
+        {
+          "name": "d51_5_validate_tenant_links",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, customer_id ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()"
+        },
+        {
+          "name": "tenant_organization_guard",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()"
+        },
+        {
+          "name": "trg_ar_gen_installments",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER trg_ar_gen_installments AFTER INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_generate_receivable_installments()"
+        },
+        {
+          "name": "trg_ar_uat",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER trg_ar_uat BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+        },
+        {
+          "name": "trg_audit_ar",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER trg_audit_ar AFTER INSERT OR DELETE OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_financial_audit()"
+        },
+        {
+          "name": "trg_h6_ar_snapshot",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER trg_h6_ar_snapshot BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_title_snapshot()"
+        },
+        {
+          "name": "trg_h6d_ar_no_delete",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER trg_h6d_ar_no_delete BEFORE DELETE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()"
+        },
+        {
+          "name": "trg_saas_gate",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature('contas_receber')"
+        },
+        {
+          "name": "trg_sync_b2b_financial_status",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER trg_sync_b2b_financial_status AFTER UPDATE OF status ON public.accounts_receivable FOR EACH ROW WHEN ((old.status IS DISTINCT FROM new.status)) EXECUTE FUNCTION tg_sync_b2b_financial_status()"
+        },
+        {
+          "name": "zz_b2b_shared_credit_guard",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER zz_b2b_shared_credit_guard BEFORE INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_shared_receivable_credit_guard()"
+        }
+      ],
+      "force_rls": false,
+      "trigger_md5": "f2900481b112ae50a6024002a7faed9c"
+    },
+    "registration": {
+      "fence_md5": "f87cc2894dc551d242c2586f17e2cdd4",
+      "default_acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "default_md5": "76bd832ba608662d84f1641f8a3b8226",
+      "default_owner": "postgres"
+    },
+    "downstream_guard": {
+      "acl": "{postgres=X/postgres}",
+      "md5": "95e0e5a84ef511cd72d7807351f61cf4",
+      "owner": "postgres"
+    },
+    "registration_triggers": [
+      {
+        "name": "c2p1_settings_fence",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER c2p1_settings_fence BEFORE INSERT OR DELETE OR UPDATE ON public.partner_financial_settings FOR EACH ROW EXECUTE FUNCTION platform_private.c2p1_settings_fence()"
+      },
+      {
+        "name": "trg_create_default_pfs",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER trg_create_default_pfs AFTER INSERT ON public.partner_accounts FOR EACH ROW EXECUTE FUNCTION tg_create_default_pfs()"
+      }
+    ]
+  },
+  "original_ten_triggers_preserved": true,
+  "b4_additional_triggers_retained": [
+    "a01_b2b_fiscal_title_fence",
+    "a01_b2b_fiscal_title_identity",
+    "b2b_fiscal_created_by_guard",
+    "zz_b2b_shared_credit_guard"
+  ],
+  "hosted": false
+}

@@ -84,12 +84,20 @@ def main():
     checks = json.loads((package / 'evidence-checks.json').read_text())
     pilot = json.loads((package / 'evidence-pilot-checks.json').read_text())['checks']
     assert all(row['status'] == 'PASS' for row in checks)
-    assert len(pilot) == 33 and all(row['status'] == 'PASS' for row in pilot)
+    assert len(pilot) == 35 and all(row['status'] == 'PASS' for row in pilot)
+    pilot_names = {row['test'] for row in pilot}
+    assert {
+        'transaction begun before expiry and unlocked after expiry is denied at final authorization',
+        'concurrent revoke confirmed before final authorization denies writer without effects',
+        'revoke waits on the same allowlist row after final authorization and confirms after writer commit',
+        'gate OFF confirmed while writer waits on grant lock denies final authorization without effects',
+        'gate OFF waits for an already authorized writer and confirms only after its commit',
+    } <= pilot_names
     summary = json.loads((package / 'evidence-summary.json').read_text())
     assert summary['capture_functions_md5_verified'] == 20
     assert summary['relation_security_pins'] == 18
     assert summary['relation_security_sha256'] == sha(relation_security_path)
-    assert summary['pilot_containment_checks'] == 33
+    assert summary['pilot_containment_checks'] == 35
     assert summary['positive_fiscal_receivable'] == 'NOT_RUN_OUT_OF_SCOPE'
     reverse = summary['full_reverse_rollback']
     expected_checks = {'logistics-only': 40, 'integrated': 41}[reverse['branch']]
