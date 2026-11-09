@@ -294,7 +294,8 @@ def build_bodies(raw):
   WHERE (p_origem='b2b' AND platform_private.resale_pilot_allowed_v1('b2b_resale','delivery_create',v_actor,v_org,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=v_os.partner_order_id),v_os.partner_order_id,v_os.partner_order_item_id,s.produto_id,s.id,NULL) IS NOT TRUE)
     OR (p_origem='manual' AND s.origem_estoque IS NOT NULL AND platform_private.resale_pilot_allowed_v1('finished_product','delivery_create',v_actor,v_org,NULL,NULL,NULL,s.produto_id,s.id,NULL) IS NOT TRUE)
  ) THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;"""
-    body = one(body, scope, check, "group pilot before replay and after lock", 2)
+    body = one(body, scope, check.replace("resale_pilot_allowed_v1", "resale_pilot_scope_v1"), "group early scope before locks")
+    body = one(body, scope, check, "group authorization after OS lock")
     defs[sig]["new"] = body
 
     sig = "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)"
