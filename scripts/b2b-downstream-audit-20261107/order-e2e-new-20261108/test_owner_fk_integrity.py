@@ -113,6 +113,22 @@ def main():
         ok("pré-requisitos locais 00/11/12/20/21/22; nenhuma operação hospedada")
 
         current_scope = load("owner_fk_current_scope", H / "current_scope.py")
+        capture = json.loads((H / "reconciliation-posplans-20261108/live-catalog-owner-fk-20261109.capture.json").read_text())
+
+        def actual_catalog():
+            columns = json.loads(B.last("""SELECT coalesce(jsonb_agg(jsonb_build_object(
+              'relation',c.relname,'name',a.attname,'type',format_type(a.atttypid,a.atttypmod),
+              'default',pg_get_expr(d.adbin,d.adrelid),'notnull',a.attnotnull) ORDER BY c.relname,a.attname),'[]'::jsonb)
+              FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+              LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+              WHERE n.nspname='public' AND c.relname IN ('produtos','catalogo_volumes','product_packagings','product_sale_units')
+              AND a.attnum>0 AND NOT a.attisdropped;"""))
+            constraints = json.loads(B.last("""SELECT coalesce(jsonb_agg(jsonb_build_object(
+              'relation',c.relname,'name',x.conname,'definition',pg_get_constraintdef(x.oid,true),
+              'validated',x.convalidated) ORDER BY c.relname,x.conname),'[]'::jsonb)
+              FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+              WHERE n.nspname='public' AND c.relname IN ('produtos','catalogo_volumes','product_packagings','product_sale_units');"""))
+            return {"columns": columns, "constraints": constraints}
 
         def relation_security():
             actual = {}
@@ -132,12 +148,37 @@ def main():
           'sale_units',(SELECT count(*) FROM public.product_sale_units));"""))
         plans_before = B.last("SELECT md5(coalesce(jsonb_agg(to_jsonb(p) ORDER BY id)::text,'[]')) FROM public.commercial_payment_plans p;")
 
+        before_reconcile = actual_catalog()
+        weight_before = next(row for row in before_reconcile["columns"]
+                             if row["relation"] == "product_packagings" and row["name"] == "peso_liquido_kg")
+        assert weight_before["type"] == "numeric", weight_before
+        B.sql("ALTER TABLE ONLY public.product_packagings ALTER COLUMN peso_liquido_kg TYPE numeric(12,3) USING peso_liquido_kg::numeric(12,3);")
+        report["fixture_column_reconciliation"] = {"relation": "product_packagings", "column": "peso_liquido_kg",
+                                                    "before": weight_before["type"], "after": "numeric(12,3)"}
         for table, name in TARGETS:
             assert B.last(f"""SELECT count(*) FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid
               JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public'
               AND c.relname='{table}' AND x.conname='{name}';""") == "1"
             B.sql(f"ALTER TABLE ONLY public.{table} DROP CONSTRAINT {name};")
-        ok("ambiente descartável reconciliado com as duas FKs ausentes na captura real")
+        reconciled = actual_catalog()
+        actual_columns = {(row["relation"], row["name"]): row for row in reconciled["columns"]}
+        expected_columns = {(row["relation"], row["name"]): row for row in capture["columns"]}
+        column_drift = [key for key in sorted(expected_columns)
+                        if any(actual_columns.get(key, {}).get(field) != expected_columns[key].get(field)
+                               for field in ("type", "default", "notnull"))]
+        extra_columns = sorted(set(actual_columns) - set(expected_columns))
+        assert not column_drift and not extra_columns, {"column_drift": column_drift, "extra_columns": extra_columns}
+        actual_constraints = {(row["relation"], row["name"]): row for row in reconciled["constraints"]}
+        target_keys = {(table, name) for table, name in TARGETS}
+        constraint_drift = []
+        for expected in capture["constraints"]:
+            key = (expected["relation"], expected["name"])
+            actual = actual_constraints.get(key)
+            if actual is None or any(actual.get(field) != expected.get(field)
+                                     for field in ("definition", "validated")):
+                constraint_drift.append({"key": key, "actual": actual, "expected": expected})
+        assert not constraint_drift and not target_keys.intersection(actual_constraints), constraint_drift
+        ok("ambiente descartável reconciliado com numeric(12,3), 57 colunas, 24 constraints e duas FKs ausentes")
         expect_error("PRE30 reprova a ausência real sem afrouxar o guard", OVERLAY / PRE30,
                      "FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_packagings.product_packagings_owner_organization_id_fkey")
         report["pre30_constraint_failure_reproduced"] = True
@@ -239,6 +280,7 @@ def main():
             "live_orphan_counts": "NOT_RUN; PRE25 final exige zero na execução real",
             "synthetic_seams": [
                 "Auth/claims e papéis SQL somente no PostgreSQL descartável",
+                "product_packagings.peso_liquido_kg ajustado de numeric para numeric(12,3) somente no descartável",
                 "duas FKs removidas somente no descartável para reproduzir a captura real",
                 "órfãos temporários com triggers desabilitados somente na fixture e restaurados; writers finais com triggers habilitados",
                 "artefatos 00/11/12/20/21/22/32/93 executados apenas como composição local",

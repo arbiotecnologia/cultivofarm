@@ -21,6 +21,8 @@ A instalação é permitida somente com zero órfãos nas duas relações. Não 
 
 As contagens do ensaio são sintéticas e não substituem as contagens reais do PRE25. O complemento de contagens mencionado na fila não estava disponível no histórico recuperado; nenhuma contagem foi inventada. O PRE final mede os valores reais no momento de sua execução.
 
+Para reproduzir a captura, a fixture descartável reconcilia `product_packagings.peso_liquido_kg` de `numeric` para `numeric(12,3)` e remove temporariamente as duas FKs-alvo. Essas mudanças pertencem somente ao ensaio: o INSTALL26 não altera tipos e contém exclusivamente as duas adições de FK. O runner compara todas as 57 colunas e as 24 constraints restantes antes de executar o PRE25, falhando sobre qualquer divergência não reconciliada.
+
 ## Limites
 
 PASS no PostgreSQL 17 descartável valida somente os artefatos e as costuras declaradas. Não certifica JWT, RLS, Storage, navegador, produção ou autoridade comercial; prova autenticada real permanece `NOT_RUN`. Qualquer aplicação futura é exclusiva do auditor, após revisão e autorização específica.
