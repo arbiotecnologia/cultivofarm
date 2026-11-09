@@ -2,8 +2,8 @@
   "contract": "B2B_PAYMENT_CONDITION_V1",
   "rebase_of": "financial-price-generator-20261029/integration (sha256 b1416978)",
   "kind": "DISPOSABLE_PG_REAL_CREATE_c34e7404_WITH_DECLARED_SEAMS_NOT_HOSTED_PROOF",
-  "passed": 231,
-  "total": 231,
+  "passed": 276,
+  "total": 291,
   "checks": [
     {
       "name": "estado instalado B2: 01-pre.sql.readonly",
@@ -842,12 +842,255 @@
       "ok": true
     },
     {
+      "name": "CCR2 pins B3: mode/required_check MD5 = metadados B3 instalados",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE: corpos atuais (cc1f6cc) instalados no espelho",
+      "ok": true
+    },
+    {
+      "name": "CCR2 LIVE: md5 dos writers no espelho = LIVE informado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 80 PRE_OK no B3 instalado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 81 install",
+      "ok": true
+    },
+    {
+      "name": "CCR2 corpos instalados = pins congelados em 82/96",
+      "ok": true
+    },
+    {
+      "name": "CCR2 install não altera dados",
+      "ok": true
+    },
+    {
+      "name": "CCR2 82 POST_OK (owner/ACL/search_path/definer/gatilhos exatos)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 reexecução de 81 recusada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 PRE após install recusa (já instalado)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 anon sem EXECUTE nas funções novas",
+      "ok": true
+    },
+    {
+      "name": "CCR2 authenticated sem EXECUTE nas funções novas",
+      "ok": true
+    },
+    {
+      "name": "CCR2 service_role sem EXECUTE nas funções novas",
+      "ok": true
+    },
+    {
+      "name": "CCR2 cliente não chama o checker diretamente",
+      "ok": true
+    },
+    {
+      "name": "CCR2 positivo: writer REAL de condição (parceiro P do piloto) cria pedido com snapshot coerente",
+      "ok": false,
+      "detail": "ERROR:  payment_choice_required\nCONTEXT:  PL/pgSQL function platform_private.b2b_choice(jsonb) line 7 at RAISE\nPL/pgSQL function create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb) line 35 at assignment"
+    },
+    {
+      "name": "CCR2 positivo: novo parceiro PN (piloto ampliado) cria pedido com snapshot coerente",
+      "ok": true
+    },
+    {
+      "name": "CCR2 snapshot PN grava empresa A/parceiro/plano/versão/meio escolhidos",
+      "ok": true
+    },
+    {
+      "name": "CCR2 idempotência: replay da mesma chave devolve o mesmo pedido sem novo snapshot",
+      "ok": true
+    },
+    {
+      "name": "CCR2 lavagem: insere em parceiro legado PO e move para PN do piloto no mesmo commit -> negado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 lavagem: insere sem plano e atribui plano a parceiro do piloto -> negado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 parceiro do piloto: writer legado REAL não grava pedido nem idempotência (motivo registrado)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 alcance: tenant F sem ativação segue contrato atual (sem bloqueio global)",
+      "ok": false,
+      "detail": "ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 118 at RAISE"
+    },
+    {
+      "name": "CCR2 legado histórico: update comum (sem troca de parceiro/plano) não dispara o guard",
+      "ok": true
+    },
+    {
+      "name": "CCR2 legado histórico: não pode ser movido para parceiro do piloto sem snapshot",
+      "ok": true
+    },
+    {
+      "name": "CCR2 fixture histórica não deixou gatilho desabilitado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 fixture PB-001038-like (pedido legado sem snapshot de parceiro hoje no piloto) criada como linha histórica",
+      "ok": true
+    },
+    {
+      "name": "CCR2 PB-001038-like: atualização comum segue permitida (histórico preservado, sem backfill)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 PB-001038-like: troca de plano sem snapshot negada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 legado histórico: backfill de snapshot fictício negado (escolha/condição de outro pedido)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 cotação: writer REAL cria cotação com snapshot (quote) para PN",
+      "ok": true
+    },
+    {
+      "name": "CCR2 resposta do vendedor REAL: snapshot econômico coerente aceito pelo guard",
+      "ok": true
+    },
+    {
+      "name": "CCR2 snapshot de resposta com versão/meio (pix v1 existente) divergente da escolha inicial negado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 concorrência ativação: piloto ampliado durante create legado aberto -> commit negado (sem pedido/idempotência)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 mutação: revogação injetada com falha reprova o veredito de concorrência",
+      "ok": true
+    },
+    {
+      "name": "CCR2 concorrência revogação: revogação REAL exit 0 e persistida; create serializa sem pedido incoerente",
+      "ok": true
+    },
+    {
+      "name": "CCR2 após revogação: PN sem opção disponível",
+      "ok": true
+    },
+    {
+      "name": "CCR2 após revogação: writer de condição REAL negado, sem idempotência",
+      "ok": true
+    },
+    {
+      "name": "CCR2 após revogação: parceiro required NÃO cai no legado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 mutação: aposentadoria injetada com falha reprova o veredito de concorrência",
+      "ok": true
+    },
+    {
+      "name": "CCR2 concorrência aposentadoria: retire REAL exit 0 e persistido; create serializa sem pedido incoerente",
+      "ok": true
+    },
+    {
+      "name": "CCR2 após aposentadoria: writer de condição REAL negado, sem idempotência",
+      "ok": true
+    },
+    {
+      "name": "CCR2 após aposentadoria: parceiro required continua sem fallback legado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_order_condition_snapshots: há linhas e UPDATE/DELETE é negado pelo gatilho imutável (mesmo postgres), contagem preservada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_order_condition_snapshots: nenhum privilégio de tabela para anon/authenticated/service_role",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_order_condition_quote_snapshots: há linhas e UPDATE/DELETE é negado pelo gatilho imutável (mesmo postgres), contagem preservada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_order_condition_quote_snapshots: nenhum privilégio de tabela para anon/authenticated/service_role",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_condition_assignment_revocations: há linhas e UPDATE/DELETE é negado pelo gatilho imutável (mesmo postgres), contagem preservada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_condition_assignment_revocations: nenhum privilégio de tabela para anon/authenticated/service_role",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_condition_retirements: há linhas e UPDATE/DELETE é negado pelo gatilho imutável (mesmo postgres), contagem preservada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 b2b_condition_retirements: nenhum privilégio de tabela para anon/authenticated/service_role",
+      "ok": true
+    },
+    {
+      "name": "CCR2 pins dos writers usados registrados vs LIVE (divergência exige diff, não repin)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 coerência global: todo snapshot casa parceiro/plano/empresa do pedido",
+      "ok": true
+    },
+    {
+      "name": "CCR2 rollback com pin divergente aborta sem remover nada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 96 rollback exato",
+      "ok": true
+    },
+    {
+      "name": "CCR2 rollback preserva pedidos/snapshots/idempotência",
+      "ok": true
+    },
+    {
+      "name": "CCR2 rollback mantém guarda B3 de INSERT (sem reabrir legado)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 PRE volta a passar após rollback",
+      "ok": true
+    },
+    {
+      "name": "CCR2 reinstall após rollback",
+      "ok": true
+    },
+    {
+      "name": "CCR2 POST após reinstall",
+      "ok": true
+    },
+    {
+      "name": "CCR2 rollback final antes do rollback B3 do harness",
+      "ok": true
+    },
+    {
       "name": "04 com pin divergente aborta sem mudar nada",
       "ok": true
     },
     {
       "name": "04 rollback deny-only",
-      "ok": true
+      "ok": false,
+      "detail": "psql:/tmp/b2bcond-w-3udglzsy/04-rollback-deny.sql.review:15: ERROR:  ROLLBACK: public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer) divergente\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\n"
     },
     {
       "name": "ROLLBACK legado: fixture REAL contém dois itens",
@@ -855,7 +1098,8 @@
     },
     {
       "name": "ROLLBACK legado: parcial 1/2 negado",
-      "ok": true
+      "ok": false,
+      "detail": "esperado 'quote_incomplete'; obtido ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE"
     },
     {
       "name": "ROLLBACK legado: parcial 1/2 preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
@@ -863,7 +1107,8 @@
     },
     {
       "name": "ROLLBACK legado: duplicados negado",
-      "ok": true
+      "ok": false,
+      "detail": "esperado 'quote_duplicate_line'; obtido ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE"
     },
     {
       "name": "ROLLBACK legado: duplicados preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
@@ -871,7 +1116,8 @@
     },
     {
       "name": "ROLLBACK legado: item de outro pedido negado",
-      "ok": true
+      "ok": false,
+      "detail": "esperado 'quote_item_not_found'; obtido ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE"
     },
     {
       "name": "ROLLBACK legado: item de outro pedido preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
@@ -879,7 +1125,8 @@
     },
     {
       "name": "ROLLBACK legado: carrinho vazio consistente negado com guards ativos",
-      "ok": true
+      "ok": false,
+      "detail": "ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE\n"
     },
     {
       "name": "ROLLBACK legado: fixture vazia revertida sem efeitos",
@@ -887,15 +1134,18 @@
     },
     {
       "name": "ROLLBACK legado: resposta completa positiva persiste ambos subtotais 100 e principal 200",
-      "ok": true
+      "ok": false,
+      "detail": "ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE"
     },
     {
       "name": "ROLLBACK legado: terms.first_due_date igual à primeira data do schedule",
-      "ok": true
+      "ok": false,
+      "detail": "ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE"
     },
     {
       "name": "ROLLBACK novo: cotação com dois itens permanece deny-only",
-      "ok": true
+      "ok": false,
+      "detail": "esperado 'b2b_payment_condition_rolled_back'; obtido {'id': '82ec19d9-6848-439c-a1f2-7a4918dc22f9', 'total': 207.24, 'numero': 'PB-000008', 'status': 'em_analise_comercial', 'schedule': [{'amount': 69.08, 'due_date': '2026-12-09', 'estimated': True, 'interest_amount': 3.6, 'nominal_due_date': '2026-12-09', 'principal_amount': 65.48, 'installment_number': 1, 'business_day_adjusted': False}, {'amoun"
     },
     {
       "name": "ROLLBACK novo: deny preserva todos os registros",
@@ -903,11 +1153,13 @@
     },
     {
       "name": "após rollback: opções negadas",
-      "ok": true
+      "ok": false,
+      "detail": "esperado 'permission denied'; obtido {'mode': 'required', 'options': [], 'contract': 'B2B_PAYMENT_CONDITION_V1', 'due_basis': 'nf_issue', 'partner_id': '00000000-0000-0000-0000-000000000011', 'payment_plan_id': '00000000-0000-0000-0000-000000000071'}"
     },
     {
       "name": "após rollback: resposta de cotação com condição ativada fica negada, sem reabrir legado",
-      "ok": true
+      "ok": false,
+      "detail": "esperado 'b2b_payment_condition_rolled_back'; obtido ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE"
     },
     {
       "name": "rollback da cotação é atômico",
@@ -915,15 +1167,18 @@
     },
     {
       "name": "após rollback: cotação LEGADA de empresa não ativada (papel FSF) continua funcionando",
-      "ok": true
+      "ok": false,
+      "detail": "ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE"
     },
     {
       "name": "após rollback: empresa ativada continua bloqueada (nunca reabre fallback)",
-      "ok": true
+      "ok": false,
+      "detail": ""
     },
     {
       "name": "após rollback: empresa não ativada segue contrato atual",
-      "ok": true
+      "ok": false,
+      "detail": "ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 118 at RAISE\n"
     },
     {
       "name": "após rollback: snapshots/versões preservados",
