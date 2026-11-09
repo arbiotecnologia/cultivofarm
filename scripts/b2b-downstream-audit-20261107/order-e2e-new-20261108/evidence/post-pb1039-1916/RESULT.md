@@ -52,12 +52,30 @@ A expressão “recebível único” fica demonstrada como **um por documento/ev
 - O positivo fiscal integrado permanece `NOT_RUN_BLOCKED`; ponte real, NFS-e, cancelamento automático e provedores não foram homologados.
 - Tentativas de harness com checkpoint ausente, permissões do diretório temporário, argumento `--phase after`, diretório de evidência ausente e ACL de proprietário foram preservadas em `components/` e `components-reconciled/`. A repetição final usou artefatos da tentativa 114 e declarou no diff somente as duas deltas atuais e a normalização owner-only de `authz_tickets`; não houve stub silencioso.
 
-## Defeito frontend confirmado e corrigido
+## Registro temporal 19:16 — persistência na URL (SUPERADA às 19:34)
 
 A lista `/comercial/pedidos-b2b` mantinha o filtro apenas no `Map` volátil; reload completo retornava ao padrão `aguardando_aprovacao_credito` e podia aparentar carteira vazia. O teste ANTES falhou 2/8. `usePedidosB2BStatusFilter` agora reflete `status` na URL, preserva outros parâmetros, aceita link explícito e não herda o parâmetro entre identidades/empresas. Não houve mudança de consulta, RLS, RPC ou autorização.
 
 - DEPOIS: **4 arquivos, 44/44 testes**, typecheck exit 0 e build automático OK.
 - Arquivos: `src/hooks/usePedidosB2BStatusFilter.ts`, `src/test/pedidos/pedidosB2BStatusFilter.test.tsx`.
+- Não publicado pelo agente.
+
+## Complemento auditado 19:34 — negação real e reconciliação do legado
+
+Fonte: relato do auditor em `auditor-report-20261109-1934.json`; não houve consulta, escrita ou execução de produção pelo agente.
+
+- Promoção autenticada de PB-001039 pela UI de produção: **HTTP 403 `C2_ACCOUNTING_PENDING`**. Hash do pedido `8127886e51e0327e880fe6102a106833`, `updated_at=2026-11-09T18:32:29.585832Z` e `audit_count=6` iguais antes/depois; `receivable=false`. É a negação atômica esperada, sem promoção, aprovação contábil fictícia ou título.
+- Leitura LIVE relatada: `generate_b2b_receivable_secure(uuid)` MD5 `c49cc7ccedbcb28cba9b816b7e47c521`; implementação MD5 `1bdac7fae6d702fb42d3a30539e9c9c3`; `tg_auto_b2b_receivable` MD5 `0f679538fe394924b140e54938a3bb9e`, ainda com eventos `na_aprovacao`, `na_entrega` e `na_producao_finalizada`, trigger **O** (habilitada).
+- `accounts_receivable` conserva dez triggers, incluindo `a00_delivery_no_downstream` **O**. Isso caracteriza legado sob contenção, **não** ponte fiscal instalada.
+- Antes de qualquer aprovação de ponte fiscal é obrigatória reconciliação específica desses corpos, trigger, ACL e efeitos. **Nenhum título pode ser liberado sob o gatilho antigo.** Os PASS locais anteriores não removem este bloqueio nem certificam produção.
+
+## Decisão UI atual 19:34 — padrão Todos e reset esperado
+
+O auditor esclareceu que a retenção somente em memória volátil por identidade é deliberada e que reload completo deve resetar o filtro. A persistência na URL registrada às 19:16 foi retirada; não se persiste status no endereço nem entre identidades. A lista agora abre por padrão em **Todos**, evitando a aparência de carteira vazia, enquanto desmontagem/remontagem durante pausa de autorização do mesmo ator preserva a seleção. Consultas, escopo, gates, RLS e RPC não mudaram.
+
+- DEPOIS: **3 arquivos, 27/27 testes** (`pedidosB2BStatusFilter` 9, `accountingPending` 5 e `partnerOrdersAdminScope` 13), typecheck exit 0 e build automático OK.
+- Arquivos atuais: `src/hooks/usePedidosB2BStatusFilter.ts`, `src/pages/comercial/PedidosB2B.tsx`, `src/test/pedidos/pedidosB2BStatusFilter.test.tsx`.
+- Duas tentativas de regressão citaram nomes ausentes (`pedidosAdminListIsolation.test.tsx` e `pedidosCreditPause.test.tsx`): **NOT_RUN / arquivo inexistente**, não PASS nem falha comportamental. Foram substituídas pelas regressões reais acima.
 - Não publicado pelo agente.
 
 ## Contenção final

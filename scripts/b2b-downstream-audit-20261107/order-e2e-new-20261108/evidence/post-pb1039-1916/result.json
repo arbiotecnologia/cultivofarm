@@ -1,5 +1,5 @@
 {
-  "status": "LOCAL_AUDIT_COMPLETE_WITH_REAL_GAPS",
+  "status": "LOCAL_AUDIT_COMPLETE_WITH_REAL_GAPS_AND_LIVE_LEGACY_RECONCILIATION_PENDING",
   "hosted": false,
   "publication": false,
   "external_effects": false,
@@ -14,14 +14,29 @@
     "b4_component": {"passed": 198, "total": 198, "exit": 0, "integrated_positive": false, "declared_dependency_seam": true},
     "fiscal_units": {"passed": 178, "total": 178, "exit": 0},
     "b4_manifest": {"passed": 61, "total": 61, "exit": 0},
-    "ui": {"files": 4, "passed": 44, "total": 44, "exit": 0, "typecheck_exit": 0, "build": "OK"}
+    "ui_previous_1916": {"files": 4, "passed": 44, "total": 44, "exit": 0, "typecheck_exit": 0, "build": "OK", "url_persistence": "SUPERSEDED_AT_1934"},
+    "ui_current_1934": {"files": 3, "passed": 27, "total": 27, "exit": 0, "typecheck_exit": 0, "build": "OK", "suites": {"pedidosB2BStatusFilter": 9, "accountingPending": 5, "partnerOrdersAdminScope": 13}}
   },
   "negative_controls": {
     "accounting_pending_promotion": "C2_ACCOUNTING_PENDING_ORDER_UNCHANGED",
     "accounting_pending_approval": "C2_ACCOUNTING_PENDING_ORDER_UNCHANGED",
+    "production_pb1039_promotion_1934": {"http": 403, "code": "C2_ACCOUNTING_PENDING", "order_hash_before_after": "8127886e51e0327e880fe6102a106833", "updated_at_before_after": "2026-11-09T18:32:29.585832Z", "audit_count_before_after": 6, "receivable": false, "source": "AUDITOR_REPORT"},
     "fiscal_receivable_integrated": "REAL_ALWAYS_DENY_ZERO_DOCUMENT_ALLOCATION_SNAPSHOT_RECEIVABLE",
     "stock_delivery": "INDEPENDENT_GATES_AND_GRANTS_CLOSED_NOT_A_SINGLE_FISCAL_GUARD",
     "rollback": "DENY_ONLY_HISTORY_PRESERVED_WRITERS_CLOSED"
+  },
+  "live_legacy_reconciliation_1934": {
+    "source": "AUDITOR_READ_REPORT_NOT_AGENT_QUERY",
+    "generate_b2b_receivable_secure_uuid_md5": "c49cc7ccedbcb28cba9b816b7e47c521",
+    "implementation_md5": "1bdac7fae6d702fb42d3a30539e9c9c3",
+    "tg_auto_b2b_receivable_md5": "0f679538fe394924b140e54938a3bb9e",
+    "legacy_events": ["na_aprovacao", "na_entrega", "na_producao_finalizada"],
+    "legacy_trigger_state": "O_ENABLED",
+    "accounts_receivable_trigger_count": 10,
+    "a00_delivery_no_downstream_state": "O_ENABLED",
+    "classification": "CONTAINED_LEGACY_NOT_FISCAL_BRIDGE",
+    "fiscal_bridge_approval": "BLOCKED_PENDING_RECONCILIATION",
+    "title_release_under_legacy_trigger": "PROHIBITED"
   },
   "receivable_cardinality": {
     "proven": "ONE_PER_FISCAL_DOCUMENT_EVENT_WITH_REPLAY_AND_CONCURRENCY",
@@ -29,11 +44,14 @@
     "observed_component_behavior": "THREE_VALID_INDEPENDENT_DOCUMENTS_THREE_TITLES"
   },
   "backend_defects_reproduced": 0,
-  "frontend_defects_fixed": ["PEDIDOS_B2B_FILTER_LOST_ON_FULL_RELOAD"],
+  "frontend_current": {"default_status": "all", "full_reload": "RESET_TO_ALL", "pause_retention": "VOLATILE_MEMORY_BY_IDENTITY_TENANT_ROLES", "url_status_persistence": false, "scope_or_query_changed": false},
+  "frontend_superseded": ["PEDIDOS_B2B_FILTER_URL_PERSISTENCE_FROM_1916"],
+  "not_run_missing_test_names": ["src/test/pedidos/pedidosAdminListIsolation.test.tsx", "src/test/pedidos/pedidosCreditPause.test.tsx"],
   "capture_gaps": [
     "platform_private.b2b_resale_delivery_order_valid_v1(...) current body/owner/ACL",
     "platform_private.b2b_resale_delivery_status_transition_valid_v1(...) current body/owner/ACL",
-    "current manifest for entries marked live_bodies_other_md5_unconfirmed and live23_extra_real_unconfirmed in CCR2 attempt-37"
+    "current manifest for entries marked live_bodies_other_md5_unconfirmed and live23_extra_real_unconfirmed in CCR2 attempt-37",
+    "specific reconciliation of legacy receivable function/trigger/ACL/effects before fiscal bridge approval"
   ],
-  "limits": ["NO_JWT_RLS_STORAGE_HOSTED_PROOF", "NO_REAL_FISCAL_ACCOUNTING_PROVIDER_PAYMENT_COMMUNICATION", "NO_GATE_ACTIVATION_OR_PRODUCTION_RELEASE"]
+  "limits": ["NO_JWT_RLS_STORAGE_HOSTED_PROOF", "NO_REAL_FISCAL_ACCOUNTING_PROVIDER_PAYMENT_COMMUNICATION", "NO_GATE_ACTIVATION_OR_PRODUCTION_RELEASE", "NO_TITLE_UNDER_LEGACY_TRIGGER"]
 }
