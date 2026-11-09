@@ -500,7 +500,7 @@
     ],
     [
       "private.guard_os_separate_approval()",
-      "f00397fe862e611fbfa0eba3911d95c6"
+      "71d8237bb37c69f0d9995d09e704e327"
     ],
     [
       "public._comunicacao_trg_os_pronto_retirada()",
@@ -1306,7 +1306,7 @@
       "aa_guard_separate_approval",
       "O",
       "private.guard_os_separate_approval()",
-      "f00397fe862e611fbfa0eba3911d95c6",
+      "71d8237bb37c69f0d9995d09e704e327",
       "CREATE TRIGGER aa_guard_separate_approval BEFORE INSERT OR UPDATE OF status ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION private.guard_os_separate_approval()"
     ],
     [
@@ -1442,7 +1442,7 @@
       "zz_audit_separate_approval",
       "O",
       "private.guard_os_separate_approval()",
-      "f00397fe862e611fbfa0eba3911d95c6",
+      "71d8237bb37c69f0d9995d09e704e327",
       "CREATE TRIGGER zz_audit_separate_approval AFTER UPDATE OF status ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION private.guard_os_separate_approval()"
     ],
     [
