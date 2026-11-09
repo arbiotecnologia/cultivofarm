@@ -32,3 +32,9 @@ Se o passo 2 for rejeitado, a atribuição do passo 1 sozinha não muda o modo, 
 - Guard 81 (bloqueio do legado em plano configurado) é independente e ainda não instalado. Recomenda-se revisá-lo antes de qualquer novo pedido real.
 - PB-001038 continua legado, sem backfill. Fiscal pendente; aprovação e promoção não acionadas.
 - O primeiro pedido V2 real só ocorre depois de aprovar este plano e, depois dele, ler o snapshot privado da condição.
+
+## Atualização do proprietário (15:29Z)
+- A versão boleto v1 do `a129001e…` foi publicada pelo proprietário na UI admin ARBio. A categoria `9347fdab…` é fictícia (teste). Não publicar outra versão nem duplicar a configuração.
+- Leitura SQL do proprietário: 0 atribuições para `5c4f…`; ativação continua v1 só com `7e52…`. A seleção do piloto foi preparada na UI, mas **Ativar não foi clicado**.
+- Os passos 1 e 2 aguardam confirmação explícita do proprietário quanto à ampliação de acesso ao novo fluxo.
+- Causa confirmada: escopo do piloto. PB-001038 sem backfill.
