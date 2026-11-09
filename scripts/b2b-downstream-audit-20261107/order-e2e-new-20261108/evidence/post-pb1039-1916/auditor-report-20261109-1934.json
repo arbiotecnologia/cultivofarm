@@ -1,0 +1,41 @@
+{
+  "captured_at_utc": "2026-11-09T19:34:00Z",
+  "source": "AUDITOR_REPORT_NOT_HOSTED_QUERY_OR_EXECUTION_BY_AGENT",
+  "production_authenticated_negative": {
+    "order": "PB-001039",
+    "order_id": "305145ab-8bf7-4f85-a20f-86c23e4be64e",
+    "action": "PROMOTE_VIA_UI",
+    "http_status": 403,
+    "code": "C2_ACCOUNTING_PENDING",
+    "order_hash_before_after": "8127886e51e0327e880fe6102a106833",
+    "updated_at_before_after": "2026-11-09T18:32:29.585832Z",
+    "audit_count_before_after": 6,
+    "receivable": false,
+    "interpretation": "EXPECTED_ATOMIC_DENIAL_NO_ORDER_OR_AUDIT_MUTATION"
+  },
+  "live_read_reconciliation": {
+    "generate_b2b_receivable_secure_uuid_md5": "c49cc7ccedbcb28cba9b816b7e47c521",
+    "implementation_md5": "1bdac7fae6d702fb42d3a30539e9c9c3",
+    "tg_auto_b2b_receivable_md5": "0f679538fe394924b140e54938a3bb9e",
+    "legacy_trigger_events_still_present": ["na_aprovacao", "na_entrega", "na_producao_finalizada"],
+    "legacy_trigger_enabled": true,
+    "accounts_receivable_trigger_count": 10,
+    "a00_delivery_no_downstream_enabled": true,
+    "interpretation": "CONTAINED_LEGACY_NOT_INSTALLED_FISCAL_BRIDGE",
+    "release_condition": "RECONCILE_BEFORE_ANY_FISCAL_BRIDGE_APPROVAL_NO_TITLE_UNDER_LEGACY_TRIGGER"
+  },
+  "ui_decision": {
+    "storage": "VOLATILE_MEMORY_BY_IDENTITY_TENANT_ROLES_ONLY",
+    "full_reload": "EXPECTED_RESET",
+    "default": "all",
+    "url_status_persistence": false,
+    "reason": "AVOID_APPARENTLY_EMPTY_ORDER_CATALOG_WITHOUT_PERSISTING_FILTER_STATE"
+  },
+  "agent_operations": {
+    "hosted_sql": false,
+    "production_execution": false,
+    "publication": false,
+    "fiscal_emission": false,
+    "charges_or_messages": false
+  }
+}
