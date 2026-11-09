@@ -97,7 +97,7 @@ def main():
     assert summary['capture_functions_md5_verified'] == 20
     assert summary['relation_security_pins'] == 18
     assert summary['relation_security_sha256'] == sha(relation_security_path)
-    assert summary['pilot_containment_checks'] == 33
+    assert summary['pilot_containment_checks'] == 35
     assert summary['positive_fiscal_receivable'] == 'NOT_RUN_OUT_OF_SCOPE'
     reverse = summary['full_reverse_rollback']
     expected_checks = {'logistics-only': 40, 'integrated': 41}[reverse['branch']]
