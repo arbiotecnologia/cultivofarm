@@ -6,12 +6,12 @@ DECLARE v text; n int := 0;
 BEGIN
   FOR v IN SELECT format('%s|%s|%s|%s|%s|%s', p.oid::regprocedure, md5(pg_get_functiondef(p.oid)), pg_get_userbyid(p.proowner),
                          array_to_string(ARRAY(SELECT x::text FROM unnest(p.proacl) x ORDER BY 1), ','), array_to_string(p.proconfig, ','), p.prosecdef)
-             FROM pg_proc p WHERE p.oid IN ('platform_private.b2b_condition_order_coherence_check(uuid,boolean)'::regprocedure,
+             FROM pg_proc p WHERE p.oid IN ('platform_private.b2b_condition_order_coherence_check(uuid,text)'::regprocedure,
                'platform_private.b2b_condition_order_coherence_trg()'::regprocedure, 'platform_private.b2b_condition_snapshot_coherence_trg()'::regprocedure,
                'platform_private.b2b_condition_mode(uuid)'::regprocedure, 'platform_private.b2b_condition_required_check()'::regprocedure)
   LOOP
     n := n + 1;
-    IF v NOT IN ('platform_private.b2b_condition_order_coherence_check(uuid,boolean)|__MD5_CHECK__|postgres|postgres=X/postgres|search_path=""|t',
+    IF v NOT IN ('platform_private.b2b_condition_order_coherence_check(uuid,text)|__MD5_CHECK__|postgres|postgres=X/postgres|search_path=""|t',
                  'platform_private.b2b_condition_order_coherence_trg()|__MD5_OTRG__|postgres|postgres=X/postgres|search_path=""|t',
                  'platform_private.b2b_condition_snapshot_coherence_trg()|__MD5_STRG__|postgres|postgres=X/postgres|search_path=""|t',
                  'platform_private.b2b_condition_mode(uuid)|7830c32a4ae139d9ab7e377dd39c8df6|postgres|postgres=X/postgres|search_path=""|t',

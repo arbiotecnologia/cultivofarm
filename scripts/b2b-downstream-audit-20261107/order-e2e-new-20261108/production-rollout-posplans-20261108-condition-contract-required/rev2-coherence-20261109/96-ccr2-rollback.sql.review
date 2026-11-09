@@ -3,7 +3,7 @@
 BEGIN;
 SET LOCAL lock_timeout = '5s'; SET LOCAL statement_timeout = '60s';
 DO $pre$ BEGIN
-  IF md5(pg_get_functiondef('platform_private.b2b_condition_order_coherence_check(uuid,boolean)'::regprocedure)) <> '__MD5_CHECK__'
+  IF md5(pg_get_functiondef('platform_private.b2b_condition_order_coherence_check(uuid,text)'::regprocedure)) <> '__MD5_CHECK__'
      OR md5(pg_get_functiondef('platform_private.b2b_condition_order_coherence_trg()'::regprocedure)) <> '__MD5_OTRG__'
      OR md5(pg_get_functiondef('platform_private.b2b_condition_snapshot_coherence_trg()'::regprocedure)) <> '__MD5_STRG__'
   THEN RAISE EXCEPTION 'CCR2_RB_PIN_DRIFT'; END IF;
@@ -13,7 +13,7 @@ DROP TRIGGER b2b_condition_zz_coherence_snap ON platform_private.b2b_order_condi
 DROP TRIGGER b2b_condition_zz_coherence_upd ON public.partner_orders;
 DROP FUNCTION platform_private.b2b_condition_snapshot_coherence_trg();
 DROP FUNCTION platform_private.b2b_condition_order_coherence_trg();
-DROP FUNCTION platform_private.b2b_condition_order_coherence_check(uuid, boolean);
+DROP FUNCTION platform_private.b2b_condition_order_coherence_check(uuid, text);
 DO $post$ BEGIN
   IF md5(pg_get_functiondef('platform_private.b2b_condition_required_check()'::regprocedure)) <> '236b821b0ca568c81a9667512dae5def'
   THEN RAISE EXCEPTION 'CCR2_RB_B3_DRIFT'; END IF;

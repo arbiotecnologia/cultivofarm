@@ -69,7 +69,7 @@ def run(ns):
     r = runsql("80-ccr2-pre.sql.readonly"); check("CCR2 80 PRE_OK no B3 instalado", r.returncode == 0 and "CCR2_PRE_OK" in r.stderr, r.stderr[-400:])
     before = counts()
     r = runsql("81-ccr2-install.sql.review"); check("CCR2 81 install", r.returncode == 0, r.stderr[-600:])
-    pins = {"__MD5_CHECK__": md5_of("platform_private.b2b_condition_order_coherence_check(uuid,boolean)"),
+    pins = {"__MD5_CHECK__": md5_of("platform_private.b2b_condition_order_coherence_check(uuid,text)"),
             "__MD5_OTRG__": md5_of("platform_private.b2b_condition_order_coherence_trg()"),
             "__MD5_STRG__": md5_of("platform_private.b2b_condition_snapshot_coherence_trg()")}
     res["pins"] = pins
@@ -78,10 +78,10 @@ def run(ns):
     r = runsql("81-ccr2-install.sql.review"); check("CCR2 reexecução de 81 recusada", r.returncode != 0 and "CCR2_ALREADY_INSTALLED" in r.stderr, r.stderr[-200:])
     r = runsql("80-ccr2-pre.sql.readonly"); check("CCR2 PRE após install recusa (já instalado)", r.returncode != 0 and "CCR2_PRE_ALREADY_INSTALLED" in r.stderr, r.stderr[-200:])
     for role in ("anon", "authenticated", "service_role"):
-        v = psql(f"SELECT bool_or(has_function_privilege('{role}',f,'EXECUTE'))::text FROM unnest(ARRAY['platform_private.b2b_condition_order_coherence_check(uuid,boolean)'::regprocedure,"
+        v = psql(f"SELECT bool_or(has_function_privilege('{role}',f,'EXECUTE'))::text FROM unnest(ARRAY['platform_private.b2b_condition_order_coherence_check(uuid,text)'::regprocedure,"
                  f"'platform_private.b2b_condition_order_coherence_trg()'::regprocedure,'platform_private.b2b_condition_snapshot_coherence_trg()'::regprocedure]) f", check=False)
         check(f"CCR2 {role} sem EXECUTE nas funções novas", v.returncode != 0 or v.stdout.strip() == "false", v.stdout + v.stderr[-200:])
-    j, e = out(SP.as_user(UB, "SELECT platform_private.b2b_condition_order_coherence_check(gen_random_uuid(),true)::text;"))
+    j, e = out(SP.as_user(UB, "SELECT platform_private.b2b_condition_order_coherence_check(gen_random_uuid(),'order_update')::text;"))
     check("CCR2 cliente não chama o checker diretamente", j is None and ("permission denied" in (e or "")), e)
 
     # ---------- positive: real condition writer, pilot partners ----------
@@ -229,7 +229,7 @@ def run(ns):
     f = work / "ccr2-bad-rb.sql"; f.write_text(bad.replace("__MD5_OTRG__", pins["__MD5_OTRG__"]).replace("__MD5_STRG__", pins["__MD5_STRG__"])); f.chmod(0o644)
     r = subprocess.run(SP.su() + ["psql", "-X", "-q", "-h", SP.SOCK[0], "-p", SP.PORT, "-U", "postgres", "-d", "t", "-v", "ON_ERROR_STOP=1", "-f", str(f)], capture_output=True, text=True)
     check("CCR2 rollback com pin divergente aborta sem remover nada", r.returncode != 0 and "CCR2_RB_PIN_DRIFT" in r.stderr
-          and psql("SELECT to_regprocedure('platform_private.b2b_condition_order_coherence_check(uuid,boolean)') IS NOT NULL").stdout.strip() == "t")
+          and psql("SELECT to_regprocedure('platform_private.b2b_condition_order_coherence_check(uuid,text)') IS NOT NULL").stdout.strip() == "t")
     n0 = counts()
     r = runsql("96-ccr2-rollback.sql.review"); check("CCR2 96 rollback exato", r.returncode == 0, r.stderr[-300:])
     check("CCR2 rollback preserva pedidos/snapshots/idempotência", counts() == n0)

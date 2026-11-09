@@ -12,7 +12,7 @@ BEGIN
   THEN RAISE EXCEPTION 'CCR2_PRE_MISSING_RELATION'; END IF;
   -- rev1 (32cfcc905) must never have been installed; rev2 replaces it.
   IF to_regprocedure('platform_private.b2b_condition_contract_required_guard()') IS NOT NULL THEN RAISE EXCEPTION 'CCR2_PRE_REV1_PRESENT'; END IF;
-  IF to_regprocedure('platform_private.b2b_condition_order_coherence_check(uuid,boolean)') IS NOT NULL
+  IF to_regprocedure('platform_private.b2b_condition_order_coherence_check(uuid,text)') IS NOT NULL
      OR to_regprocedure('platform_private.b2b_condition_order_coherence_trg()') IS NOT NULL
      OR to_regprocedure('platform_private.b2b_condition_snapshot_coherence_trg()') IS NOT NULL
   THEN RAISE EXCEPTION 'CCR2_PRE_ALREADY_INSTALLED'; END IF;
@@ -37,6 +37,10 @@ BEGIN
         AND column_name IN ('id', 'partner_id', 'payment_plan_id') AND data_type = 'uuid') <> 3
      OR (SELECT count(*) FROM information_schema.columns WHERE table_schema = 'platform_private' AND table_name IN ('b2b_order_condition_snapshots', 'b2b_order_condition_quote_snapshots')
         AND column_name IN ('order_id', 'organization_id', 'partner_id', 'plan_id', 'choice', 'condition', 'condition_version', 'condition_method')) <> 16
+     OR (SELECT count(*) FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'partner_order_payment_terms'
+        AND column_name IN ('id', 'partner_order_id') AND data_type = 'uuid') <> 2
+     OR (SELECT count(*) FROM information_schema.columns WHERE table_schema = 'platform_private' AND table_name = 'b2b_order_condition_snapshots'
+        AND column_name IN ('quote', 'payment_terms_id')) <> 2
   THEN RAISE EXCEPTION 'CCR2_PRE_COLUMNS'; END IF;
   RAISE NOTICE 'CCR2_PRE_OK';
 END $pre$;
