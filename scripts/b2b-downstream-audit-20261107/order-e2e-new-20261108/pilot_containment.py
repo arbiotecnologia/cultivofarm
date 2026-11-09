@@ -358,7 +358,7 @@ def install(B, out):
     loaded = B.run_raw(sql)
     (out / "install.stderr.txt").write_text(loaded.stderr)
     assert loaded.returncode == 0, loaded.stderr
-    values2 = ",".join("('" + s.replace("'", "''") + "')" for s in CHANGED + [ALLOW, DELIVERY])
+    values2 = ",".join("('" + s.replace("'", "''") + "')" for s in CHANGED + [SCOPE, ALLOW, DELIVERY_SCOPE, DELIVERY])
     post = json.loads(B.last(f"""SELECT coalesce(jsonb_agg(jsonb_build_object('signature',v.signature,'md5',md5(pg_get_functiondef(p.oid)),'owner',pg_get_userbyid(p.proowner),'acl',coalesce(p.proacl::text,'')) ORDER BY v.signature),'[]'::jsonb) FROM (VALUES {values2}) v(signature) JOIN pg_proc p ON p.oid=to_regprocedure(v.signature);"""))
     assert len(post) == len(CHANGED) + 2
     blocks = []
