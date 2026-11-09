@@ -11,7 +11,7 @@ const P='33333333-3333-4333-8333-333333333333', K='44444444-4444-4444-8444-44444
 const K2='66666666-6666-4666-8666-666666666666', contract='C2_ORDER_JOURNAL_V1';
 const s=vi.hoisted(()=>({actor:'',org:'',rpc:vi.fn()}));
 vi.mock('@/hooks/useAuth',()=>({useAuth:()=>({user:{id:s.actor},profile:{user_id:s.actor,organization_id:s.org,ativo:true},roles:['parceiro_b2b'],loading:false,authzReady:true,authzEpoch:0,checkAuthzAccess:()=>true})}));
-vi.mock('@/integrations/supabase/client',()=>({supabase:{rpc:(...a:unknown[])=>s.rpc(...a)}}));
+vi.mock('@/integrations/supabase/client',()=>({supabase:{rpc:(...a:unknown[])=>a[0]==='partner_order_attempt_status_v1'?Promise.resolve({data:null,error:{code:'PGRST202',message:'Could not find the function public.partner_order_attempt_status_v1'}}):s.rpc(...a)}}));
 import { useOrderJournal } from '@/hooks/useOrderJournal';
 import { useCloseOrderAttempt } from '@/hooks/useCloseOrderAttempt';
 import { closeAttemptFeedback } from '@/lib/authz/closeAttemptFeedback';
