@@ -413,6 +413,7 @@ def main():
   # Mandatory pilot overlay: installed while both global switches are OFF. The
   # singleton is only a master switch after this stage, never sufficient authority.
   Pilot=load('pilot_containment',H/'pilot_containment.py')
+  B.sql("UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false WHERE singleton;")
   pilot_out=Pilot.install(B,OUT)
   PilotTests=load('pilot_containment_tests',H/'test_pilot_containment.py')
   pilot_results=PilotTests.run(B,Review70.Review,Q,A,choice,pilot_out)
