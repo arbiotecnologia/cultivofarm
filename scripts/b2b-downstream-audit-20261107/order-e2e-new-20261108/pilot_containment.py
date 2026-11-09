@@ -39,6 +39,11 @@ def one(body, old, new, label, count=1):
     return body.replace(old, new)
 
 
+def many(body, old, new, label):
+    assert body.count(old) >= 1, f"PILOT_ANCHOR_DRIFT:{label}:0"
+    return body.replace(old, new)
+
+
 def foundation():
     return r"""
 CREATE TABLE platform_private.resale_pilot_allowlist_v1(
@@ -247,19 +252,20 @@ def build_bodies(raw):
         ("platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)", "confirm"),
     ):
         body = defs[sig]["body"]
-        body = one(body, " initial:=to_jsonb(e);", f" initial:=to_jsonb(e);\n IF platform_private.resale_pilot_delivery_allowed_v1(CASE WHEN e.partner_order_id IS NULL THEN 'finished_product' ELSE 'b2b_resale' END,'{operation}',v_actor,org,e.id) IS NOT TRUE THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;", operation + " writer pilot")
+        anchor = " e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);"
+        body = many(body, anchor, anchor + f"\n IF (e.partner_order_id IS NOT NULL OR e.origem_estoque IS NOT NULL) AND platform_private.resale_pilot_delivery_allowed_v1(CASE WHEN e.partner_order_id IS NULL THEN 'finished_product' ELSE 'b2b_resale' END,'{operation}',v_actor,org,e.id) IS NOT TRUE THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;", operation + " every replay and writer revalidation")
         defs[sig]["new"] = body
 
     sig = "public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)"
     body = defs[sig]["body"]
-    anchor = " v_e:=platform_private.delivery_confirm_recheck_v1(p_entrega,v_org);"
-    body = one(body, anchor, anchor + "\n IF v_e.partner_order_id IS NOT NULL OR v_e.origem_estoque IS NOT NULL THEN\n  IF platform_private.resale_pilot_delivery_allowed_v1(CASE WHEN v_e.partner_order_id IS NULL THEN 'finished_product' ELSE 'b2b_resale' END,'cancel',v_actor,v_org,v_e.id) IS NOT TRUE THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n END IF;", "cancel writer pilot")
+    anchor = " PERFORM platform_private.delivery_gate_20261030(v_org,'cancel');"
+    body = many(body, anchor, anchor + "\n IF (v_e.partner_order_id IS NOT NULL OR v_e.origem_estoque IS NOT NULL) AND platform_private.resale_pilot_delivery_allowed_v1(CASE WHEN v_e.partner_order_id IS NULL THEN 'finished_product' ELSE 'b2b_resale' END,'cancel',v_actor,v_org,v_e.id) IS NOT TRUE THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;", "cancel every replay and writer revalidation")
     defs[sig]["new"] = body
 
     sig = "platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb)"
     body = defs[sig]["body"]
     anchor = " v_e:=platform_private.delivery_proof_recheck_20261030(p_entrega,v_org,p_action);"
-    body = one(body, anchor, anchor + "\n IF (v_e.partner_order_id IS NOT NULL OR v_e.origem_estoque IS NOT NULL) AND platform_private.resale_pilot_delivery_allowed_v1(CASE WHEN v_e.partner_order_id IS NULL THEN 'finished_product' ELSE 'b2b_resale' END,'proof',v_uid,v_org,v_e.id) IS NOT TRUE THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;", "proof replay and writer pilot", 3)
+    body = many(body, anchor, anchor + "\n IF (v_e.partner_order_id IS NOT NULL OR v_e.origem_estoque IS NOT NULL) AND platform_private.resale_pilot_delivery_allowed_v1(CASE WHEN v_e.partner_order_id IS NULL THEN 'finished_product' ELSE 'b2b_resale' END,'proof',v_uid,v_org,v_e.id) IS NOT TRUE THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;", "proof every replay and writer revalidation")
     defs[sig]["new"] = body
 
     sig = "public.rpc_entrega_comprovacao_preflight_v1(uuid,text)"
