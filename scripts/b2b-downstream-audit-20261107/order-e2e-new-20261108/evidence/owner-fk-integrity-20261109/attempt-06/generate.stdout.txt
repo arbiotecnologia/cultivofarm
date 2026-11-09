@@ -1,0 +1,8 @@
+{
+  "out": "/tmp/owner-fk-work-AlppNe/package",
+  "pre25_sha256": "cdddc3e488f952c7971727997e0592a5760d23e7f7d2dfacb05ebacf3052f547",
+  "install26_sha256": "4c59f747b4255112e09a09768491f84ffae53e7f0f615b1213240a9eab02ffd9",
+  "post27_sha256": "df4656ed01f97002ec4a2b06369390f02a11d2318224763b50beab74cf522a06",
+  "manifest_sha256": "47fed6f82db0c1e7a4944108b8a384a47cdf247798e07d3d38723b0660fa3847",
+  "local_verification": "NOT_RUN_PENDING_TEMPORARY_STAGING"
+}
