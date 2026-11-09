@@ -39,7 +39,17 @@ def run(ns):
         j, e2 = create(uid, plan, items, s and s["cart_hash"], key, c, partner=partner)
         return j, (e2 or e or dbg), c
 
+    ISO = ("ALTER TABLE public.partner_orders DISABLE TRIGGER USER;"
+           "ALTER TABLE public.partner_orders ENABLE TRIGGER b2b_condition_zz_coherence_upd;"
+           "ALTER TABLE public.partner_orders ENABLE TRIGGER b2b_payment_condition_required;")
+
     def tx(sql):
+        # Isolated negative/positive proof: other USER triggers of partner_orders disabled, rev2 + B3 guards enabled,
+        # deferred constraints forced at the end, then ROLLBACK (nothing persists).
+        return psql("BEGIN;\n" + ISO + "\n" + sql + "\nSET CONSTRAINTS ALL IMMEDIATE;\nROLLBACK;", check=False)
+
+    def integ(sql):
+        # Integrated stack: every real trigger enabled, real COMMIT.
         return psql("BEGIN;\n" + sql + "\nCOMMIT;", check=False)
 
     def fails(name, r, token):
@@ -59,7 +69,6 @@ def run(ns):
     # here (PN is already in pilot), so a historical row is created as the real legacy writer would leave it for seller A
     # partner PO (not in pilot), then PO stays legacy; and one for PN is inserted with the B3 trigger deferred-satisfied by
     # being on a NULL plan and later moved - that path is exactly what rev2 must deny.
-    hist = psql(f"SELECT id FROM public.partner_orders WHERE partner_id='{PO}' ORDER BY created_at LIMIT 1").stdout.strip()
 
     r = runsql("80-ccr2-pre.sql.readonly"); check("CCR2 80 PRE_OK no B3 instalado", r.returncode == 0 and "CCR2_PRE_OK" in r.stderr, r.stderr[-400:])
     before = counts()
@@ -106,10 +115,10 @@ def run(ns):
         fails("CCR2 troca e volta no mesmo commit: estado final coerente é exigido (ida para plano sem condição negada)",
               tx(f"UPDATE public.partner_orders SET payment_plan_id='{PLQ}' WHERE id='{jP['id']}'; UPDATE public.partner_orders SET payment_plan_id='{P3}' WHERE id='{jP['id']}';"),
               "B2B_PAYMENT_CONDITION_SNAPSHOT_INCOHERENT")
+        r = integ(f"UPDATE public.partner_orders SET payment_plan_id='{PLQ}' WHERE id='{jP['id']}';")
+        check("CCR2 pilha integrada (todos os gatilhos reais): troca de plano em pedido com snapshot não confirma", r.returncode != 0, r.stderr[-200:])
         r = tx(f"UPDATE public.partner_orders SET payment_plan_id='{P3}' WHERE id='{jP['id']}'; UPDATE public.partner_orders SET payment_plan_id='{PLD}' WHERE id='{jP['id']}';")
         check("CCR2 troca e volta ao plano original no mesmo commit: estado final coerente aceito", r.returncode == 0, r.stderr[-200:])
-        pl = psql(f"SELECT partner_id||':'||payment_plan_id FROM public.partner_orders WHERE id='{jP['id']}'").stdout.strip()
-        check("CCR2 negações não mudaram parceiro/plano do pedido", pl == f"{P}:{PLD}", pl)
         # a snapshot copied from another order cannot be grafted onto a different order
         fails("CCR2 snapshot de outro pedido/parceiro inserido em pedido alheio negado",
               tx(f"INSERT INTO public.partner_orders(id,partner_id,payment_plan_id,status) VALUES ('00000000-0000-0000-0000-00000000cc21','{PN}','{P3}','em_analise_comercial');"
@@ -120,6 +129,8 @@ def run(ns):
                  f"INSERT INTO platform_private.b2b_order_condition_snapshots SELECT '00000000-0000-0000-0000-00000000cc22',organization_id,partner_id,actor_id,plan_id,choice || jsonb_build_object('payment_method','boleto'),condition,request_hash,rows,principal,financed_interest,financed_total,quote,payment_terms_id,cart_hash,payment_method_name,estimated,due_basis,estimated_reference_date,created_at,condition_version,condition_method FROM platform_private.b2b_order_condition_snapshots WHERE order_id='{jP['id']}';"),
               "B2B_PAYMENT_CONDITION_SNAPSHOT_INCOHERENT")
         check("CCR2 nenhum pedido/snapshot forjado sobreviveu", psql("SELECT count(*) FROM public.partner_orders WHERE id::text LIKE '00000000-0000-0000-0000-00000000cc2%'").stdout.strip() == "0")
+        jj = json.loads(psql(f"SELECT json_build_object('p',partner_id,'pl',payment_plan_id) FROM public.partner_orders WHERE id='{jP['id']}'").stdout.strip())
+        check("CCR2 pedido real intacto após negações integradas", jj == {"p": P, "pl": PLD}, jj)
 
     # ---------- required partner without snapshot via UPDATE (B3 INSERT-only gap) ----------
     fails("CCR2 lavagem: insere em parceiro legado PO e move para PN do piloto no mesmo commit -> negado",
@@ -136,21 +147,19 @@ def run(ns):
     check("CCR2 alcance: tenant F sem ativação segue contrato atual (sem bloqueio global)", jf is not None, ef)
     if jf:
         r = tx(f"UPDATE public.partner_orders SET payment_plan_id='{PLQ}' WHERE id='{jf['id']}';")
-        check("CCR2 alcance: troca de plano em pedido legado de F sem ativação não é afetada pelo guard novo",
-              r.returncode == 0 or "B2B_PAYMENT_CONDITION" not in r.stderr, r.stderr[-200:])
-    if hist:
-        r = tx(f"UPDATE public.partner_orders SET observacoes = coalesce(observacoes,'') WHERE id='{hist}';")
-        check("CCR2 histórico legado: UPDATE sem troca de parceiro/plano não dispara o guard", r.returncode == 0 or "B2B_PAYMENT_CONDITION" not in r.stderr, r.stderr[-200:])
-
-    # historical legacy order of a partner later put in pilot (PB-001038 shape): created while legacy, then pilot added
-    jo = None
-    rr = legacy(ns["UB"], PLD, [L(1)], "CCR2-HIST-PO", partner=PO) if False else None  # PO has no buyer in harness; build via F-style below
-    psql(f"INSERT INTO public.partner_orders(id,partner_id,payment_plan_id,status) VALUES ('00000000-0000-0000-0000-00000000cc41','{PO}','{P3}','em_analise_comercial')")
-    check("CCR2 PB-001038-like: pedido legado de parceiro fora do piloto existe sem snapshot", psql("SELECT count(*) FROM public.partner_orders WHERE id='00000000-0000-0000-0000-00000000cc41'").stdout.strip() == "1")
-    r = tx("UPDATE public.partner_orders SET status=status WHERE id='00000000-0000-0000-0000-00000000cc41';")
-    check("CCR2 legado histórico: status/update comum preservado", r.returncode == 0 or "B2B_PAYMENT_CONDITION" not in r.stderr, r.stderr[-200:])
+        check("CCR2 alcance: troca de plano em pedido legado de F sem ativação não é afetada pelo guard novo", r.returncode == 0, r.stderr[-200:])
+    # historical legacy order (PB-001038 shape: legacy order, no snapshot, partner now 'required')
+    HI = f"INSERT INTO public.partner_orders(id,partner_id,payment_plan_id,status) VALUES ('00000000-0000-0000-0000-00000000cc41','{PN}','{P3}','em_analise_comercial');"
+    HI_LEG = f"INSERT INTO public.partner_orders(id,partner_id,payment_plan_id,status) VALUES ('00000000-0000-0000-0000-00000000cc41','{PO}','{P3}','em_analise_comercial');"
+    r = tx(HI_LEG + "UPDATE public.partner_orders SET status=status WHERE id='00000000-0000-0000-0000-00000000cc41';")
+    check("CCR2 legado histórico: update comum (sem troca de parceiro/plano) não dispara o guard", r.returncode == 0, r.stderr[-200:])
     fails("CCR2 legado histórico: não pode ser movido para parceiro do piloto sem snapshot",
-          tx(f"UPDATE public.partner_orders SET partner_id='{PN}' WHERE id='00000000-0000-0000-0000-00000000cc41';"), "B2B_PAYMENT_CONDITION_REQUIRED")
+          tx(HI_LEG + f"UPDATE public.partner_orders SET partner_id='{PN}' WHERE id='00000000-0000-0000-0000-00000000cc41';"), "B2B_PAYMENT_CONDITION_REQUIRED")
+    r = psql(f"BEGIN; ALTER TABLE public.partner_orders DISABLE TRIGGER USER; {HI} COMMIT;", check=False)
+    check("CCR2 fixture PB-001038-like (pedido legado sem snapshot de parceiro hoje no piloto) criada como linha histórica", r.returncode == 0, r.stderr[-200:])
+    r = tx("UPDATE public.partner_orders SET status=status WHERE id='00000000-0000-0000-0000-00000000cc41';")
+    check("CCR2 PB-001038-like: atualização comum segue permitida (histórico preservado, sem backfill)", r.returncode == 0, r.stderr[-200:])
+    fails("CCR2 PB-001038-like: troca de plano sem snapshot negada", tx(f"UPDATE public.partner_orders SET payment_plan_id='{PLD}' WHERE id='00000000-0000-0000-0000-00000000cc41';"), "B2B_PAYMENT_CONDITION_REQUIRED")
     fails("CCR2 legado histórico: backfill de snapshot fictício negado (escolha/condição de outro pedido)",
           tx(f"INSERT INTO platform_private.b2b_order_condition_snapshots SELECT '00000000-0000-0000-0000-00000000cc41',organization_id,partner_id,actor_id,plan_id,choice,condition,request_hash,rows,principal,financed_interest,financed_total,quote,payment_terms_id,cart_hash,payment_method_name,estimated,due_basis,estimated_reference_date,created_at,condition_version,condition_method FROM platform_private.b2b_order_condition_snapshots WHERE order_id='{jN['id'] if jN else jP['id']}';"),
           "B2B_PAYMENT_CONDITION_SNAPSHOT_INCOHERENT")
