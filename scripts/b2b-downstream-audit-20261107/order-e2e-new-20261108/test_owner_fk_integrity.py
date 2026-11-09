@@ -152,7 +152,7 @@ def main():
             key = "product_id" if table == "product_sale_units" else "id"
             orphan = "00000000-0000-4000-8000-00000000f666"
             assert orphan != row["owner"]
-            B.sql(f"UPDATE public.{table} SET owner_organization_id='{orphan}' WHERE {key}='{row['id']}';")
+            B.sql(f"SET session_replication_role=replica;UPDATE public.{table} SET owner_organization_id='{orphan}' WHERE {key}='{row['id']}';SET session_replication_role=origin;")
             try:
                 expect_error(f"PRE25 nega órfão em {table}", PACKAGE / PRE,
                              f"OWNER_FK_ORPHANS_PRESENT public.{table} count=1", "23503")
@@ -164,7 +164,7 @@ def main():
                       AND c.relname='{other_table}' AND x.conname='{other_name}';""") == "0"
                 orphan_scenarios.append(table)
             finally:
-                B.sql(f"UPDATE public.{table} SET owner_organization_id='{row['owner']}' WHERE {key}='{row['id']}';")
+                B.sql(f"SET session_replication_role=replica;UPDATE public.{table} SET owner_organization_id='{row['owner']}' WHERE {key}='{row['id']}';SET session_replication_role=origin;")
         report["orphan_scenarios"] = orphan_scenarios
         ok("ambos os cenários de órfãos foram negados sem limpeza ou instalação parcial")
 
@@ -240,7 +240,7 @@ def main():
             "synthetic_seams": [
                 "Auth/claims e papéis SQL somente no PostgreSQL descartável",
                 "duas FKs removidas somente no descartável para reproduzir a captura real",
-                "órfãos temporários restaurados sem qualquer efeito hospedado",
+                "órfãos temporários com triggers desabilitados somente na fixture e restaurados; writers finais com triggers habilitados",
                 "artefatos 00/11/12/20/21/22/32/93 executados apenas como composição local",
             ],
         })

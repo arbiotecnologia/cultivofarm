@@ -59,10 +59,10 @@ def column_guard(row):
  WHERE n.nspname='public' AND c.relname={lit(row['relation'])} AND a.attname={lit(row['name'])}
  AND a.attnum>0 AND NOT a.attisdropped"""
     return f"""DO $$DECLARE actual record;BEGIN
- SELECT * FROM ({source}) shape(type,column_default,notnull) INTO actual;
+ SELECT * FROM ({source}) shape(type,column_default,is_not_null) INTO actual;
  IF actual.type IS DISTINCT FROM {lit(row['type'])}
   OR actual.column_default IS DISTINCT FROM {lit(row['default'])}
-  OR actual.notnull IS DISTINCT FROM {lit(row['notnull'])} THEN
+  OR actual.is_not_null IS DISTINCT FROM {lit(row['notnull'])} THEN
   RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT {relation}';
  END IF;
 END$$;"""
