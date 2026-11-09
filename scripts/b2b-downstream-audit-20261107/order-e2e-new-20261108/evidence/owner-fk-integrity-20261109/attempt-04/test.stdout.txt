@@ -46,3 +46,17 @@ CHECKPOINT sql_calls=4300 elapsed=102.1s
 CHECKPOINT sql_calls=4400 elapsed=104.4s
 CHECKPOINT sql_calls=4500 elapsed=106.7s
 CHECKPOINT sql_calls=4600 elapsed=109.1s
+CHECKPOINT sql_calls=4700 elapsed=111.6s
+CHECKPOINT sql_calls=4800 elapsed=113.8s
+CHECKPOINT sql_calls=4900 elapsed=116.0s
+CHECKPOINT sql_calls=5000 elapsed=118.3s
+CHECKPOINT sql_calls=5100 elapsed=120.4s
+CHECKPOINT sql_calls=5200 elapsed=122.8s
+CHECKPOINT sql_calls=5300 elapsed=125.3s
+CHECKPOINT sql_calls=5400 elapsed=128.0s
+CHECKPOINT sql_calls=5500 elapsed=130.6s
+CHECKPOINT sql_calls=5600 elapsed=132.9s
+CHECKPOINT sql_calls=5700 elapsed=135.4s
+CHECKPOINT sql_calls=5800 elapsed=137.8s
+CHECKPOINT sql_calls=5900 elapsed=140.3s
+CHECKPOINT sql_calls=6000 elapsed=142.9s
