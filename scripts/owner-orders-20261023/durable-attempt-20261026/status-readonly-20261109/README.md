@@ -41,3 +41,16 @@ Escolha do proprietário de 09/11/2026. Este pacote é separado do 81. Não foi 
 | 05 | 0 | 38/38 | pins congelados no 02/99 |
 
 MD5 das funções: núcleo `cc5167a749b5bed25adb80ef3be8a289`, wrapper `6c25d70132420bc342bcfbefad427954`. O auditor deve conferir os pins de PRE (`8e6d6191…`, `191fc048…`, `f5aa4059…`, `f6d227ad…`, `6ca96c9d…`, `4d7a7a49…`) em LIVE antes de instalar. Isto não é prova de JWT/RLS/PostgREST hospedado.
+
+## Atualização aditiva — relato auditado de 09/11/2026, 18:35 UTC
+
+O texto anterior conserva o estado histórico de preparação, não é instrução para reinstalar SQL. Conforme relatos anteriores, status-only backend, Seller91 e Guard81 foram instalados pelo auditor/conector; Seller91/Guard81 com POST PASS. Nenhuma instalação foi executada pelo agente neste registro.
+
+- Pós-revisão `f86871cc`: diff frontend revisado e 119/119 testes locais. Prévia primeiro serviu bundle antigo `wnRHNPxG`; reload seguinte serviu `vqoJpoyC`, corrigido.
+- Teste real comprador **renatos PASS, conforme relato do auditor**: “Iniciar nova tentativa”, status e simular não reservaram (journal 3); dispatch pela UI criou **PB-001039**, ID `305145ab-8bf7-4f85-a20f-86c23e4be64e`, total 18, duas embalagens de 25 kg, tabela 20 menos desconto 2.
+- Snapshot privado informado: boleto/v1, principal 18, juros 0, total 18, `due_basis=nf_issue`, `estimated=true`. Fiscal DRAFT, `accounting=false`, `receivable=false`.
+- Journal 4 após envio e após reload; dois pedidos PB-001038/PB-001039, sem duplicação relatada. Vendedor ARBio leu plano, itens e total 18; bloqueios contábeis preservados.
+- **Negativa FSF sobre PB-001039 na PRÉVIA pendente**, aguardando login do usuário e teste do auditor antes de qualquer publicação; publicação não autorizada.
+- Registro exclusivamente documental: sem alteração de código, SQL hospedado, publicação ou novos pedidos/envios pelo agente. Envios bloqueados, fiscal pendente, sem cobranças. Não equivale a prova independente executada pelo agente, negativa cross-tenant ou certificação do fluxo financeiro completo.
+
+Registro estruturado: `evidence/auditor-report-20261109-1835.json`. Evidências e resultados anteriores permanecem intactos.
