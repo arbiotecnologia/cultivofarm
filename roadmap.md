@@ -1,7 +1,12 @@
+## 09/11 18:20 — Seller91 instalado e correção frontend Opção A
+- [x] Registrar relato do auditor: Seller91 `b2b_seller_quote_authorization_reviewed_20261109` instalada, POST92 PASS, respond MD5 `97bcdb9884b54adb3bd4aae4915e32d0`; guarda81 já instalada/POST82 PASS. Não reaplicar SQL; estoque/logística OFF, fiscal DRAFT, PB-001038 preservado.
+- [x] NovoPedido é o único consumidor de produção de useOrderJournal: botão/handler compartilham canSubmit/takeDispatch, journal observado revalidado no clique, escopo inclui slot e recibo terminal, submit lock síncrono; intenção next não fecha diálogo nem reserva antes do dispatch. Hook create/CAS/idempotência inalterados.
+- [x] 8 arquivos/119 testes PASS (10 novos de componente real + 2 de handler), typecheck exit 0 e build automático OK; boleto 1x/0%/30 dias após NF/total18, closed/none/ACK/reload/outra aba/status/checking/uncertain/scope/duplo clique cobertos com transporte sintético. Diff, logs e hashes em status-readonly-20261109/evidence/ui-next-20261109-1820/. Nenhuma publicação/SQL hosted/pedido real; prova autenticada positiva com dispatch NÃO EXECUTADA por proibição expressa.
+
 ## 09/11 18:13 — Atualização do auditor: guarda 81 instalada, Seller91 pendente
 - [x] Registrar relato externo de revisão independente da tentativa 33 (352/352, CCR2 143/143), 101 corpos usados: 98 iguais LIVE e 3 ausentes esperadas antes da instalação. PRE80 PASS, migration `b2b_condition_coherence_reviewed_20261109` instalada pelo auditor no ref canônico, POST82 PASS; não reaplicar 81.
 - [x] Concluir reconciliação documental das capturas 29b já atendidas: tentativa 36 confirma 11/11 corpo/owner/ACL; não confundir costura entitlements com leitura pendente nem promover prova sintética a JWT/RLS/Storage/E2E real. Evidências anteriores e SQL congelados preservados.
-- [ ] Seller91 não instalado; PRE90 ACL/ref PASS e respond LIVE MD5 `4926a99c3fa3086b34ff25bb4b4038bb` relatados. Bloqueio externo: aprovação humana do conector pelo auditor após expiração técnica; agente não executa SQL hospedado.
+- [x] SUPERADO pelo relato 18:20: Seller91 instalado pelo conector, POST92 PASS, respond MD5 `97bcdb9884b54adb3bd4aae4915e32d0`; sem reinstalação pelo agente.
 - [x] Gates OFF, PB-001038 único sem recebível e frontend não publicado registrados como relato, sem consulta/escrita de produção pelo agente. Fiscal, cobrança, envios e liberação operacional continuam fechados.
 
 ## 09/11 04:17 — Revisão independente ce03702 da coluna gerada

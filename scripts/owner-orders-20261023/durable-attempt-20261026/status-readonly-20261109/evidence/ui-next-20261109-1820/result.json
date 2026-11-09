@@ -1,0 +1,28 @@
+{
+  "kind": "REAL_REACT_COMPONENT_AND_HOOKS_SYNTHETIC_TRANSPORT_NOT_HOSTED_PROOF",
+  "tests": {
+    "files": 8,
+    "passed": 119,
+    "total": 119,
+    "exit": 0,
+    "new_component_cases": 10,
+    "handler_cases_added": 2
+  },
+  "typecheck_exit": 0,
+  "build": "automatic build OK observed 2026-11-09T18:25:55Z",
+  "base_commit": "3e8bf7d2674c57f15a5dad8fea5b79c4fe9f2cda",
+  "implementation_commits": [
+    "78fa67a583d4fd95fd12ac346fd985c86429c023",
+    "d792ac5a1"
+  ],
+  "hosted_sql": false,
+  "publish": false,
+  "real_order_dispatch": false,
+  "scope": "NovoPedido is the only production consumer of useOrderJournal; canonical create hook unchanged",
+  "sha256": {
+    "src/hooks/useOrderJournal.ts": "e261e01e0565007e7fb30860f7f2b0a1687af188cf5435289185bc29b16b1824",
+    "src/pages/portal-parceiro/NovoPedido.tsx": "1dc68f673e86484c883fd6c857f9037d6f5b735ae5e65e2e5c596ac39dec9949",
+    "src/test/b2b/novoPedidoOptionA.test.tsx": "7a9058f98b45b3a9fd228481299b6e053b9eb14ed45c57c95c1b94769210e35c",
+    "src/test/pedidos/orderAttemptStatusReadOnly.test.tsx": "b4416d170389abafa302be848df8a1d448256128269ecdce1b3e7c1cc32c2ff2"
+  }
+}

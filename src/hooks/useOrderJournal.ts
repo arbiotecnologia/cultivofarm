@@ -17,14 +17,14 @@ export function useOrderJournal(partnerId: string | undefined) {
  const scope=useStorageAccessScope('partner-order-journal');
  const slot=partnerId ? orderAttemptSlot({userId:user?.id,organizationId:profile?.organization_id,roles},partnerId):null;
  const journal=useSyncExternalStore(subscribeJournal,()=>readObservedJournal(scope.ready?slot:null));
- const [status,setStatus]=useState<{scope:string;mode:'checking'|'legacy'|'durable'|'blocked'}>({scope:scope.scope,mode:'checking'});
- const setMode=(mode:typeof status.mode)=>setStatus({scope:scope.scope,mode});
- const mode=status.scope===scope.scope?status.mode:'checking';
+ const [status,setStatus]=useState<{scope:string;slot:string|null;mode:'checking'|'legacy'|'durable'|'blocked'}>({scope:scope.scope,slot,mode:'checking'});
+ const setMode=(mode:typeof status.mode)=>setStatus({scope:scope.scope,slot,mode});
+ const mode=scope.ready && status.scope===scope.scope && status.slot===slot?status.mode:'checking';
  const [nextState,setNextState]=useState<{scope:string;slot:string;basis:string|null;value:NextAttempt}|null>(null);
  const statusInstalled=useRef<Record<string,boolean>>({});
  const [pending,setPending]=useState(false);
  const lock=useRef(false);
- const basisOf=(j:Journal|null)=>j?`${j.key}:${j.generation}:${j.state}`:null;
+ const basisOf=(j:Journal|null)=>j?JSON.stringify([j.key,j.generation,j.state,j.order_id??null,j.numero??null]):null;
  const read=async(current:()=>boolean)=>{
   if(!partnerId || !slot)return;
   const s=await readAttemptStatus(slot,partnerId,current);
@@ -65,5 +65,16 @@ export function useOrderJournal(partnerId: string | undefined) {
  };
  const next=mode==='durable' && nextState && nextState.scope===scope.scope && nextState.slot===slot &&
   nextState.basis===basisOf(journal) ? nextState.value : null;
- return {mode,journal:mode==='durable'?journal:null,next,pending,recover};
+ // One eligibility contract for controls AND handlers. Re-read the observed journal on click:
+ // another tab may invalidate a rendered intent before React paints the next disabled state.
+ const takeDispatch=()=>{
+  if(!scope.ready || !scope.capture()() || pending || lock.current || !slot)return null;
+  if(mode==='legacy')return {kind:'legacy' as const};
+  if(mode!=='durable' || basisOf(readObservedJournal(slot))!==basisOf(journal))return null;
+  if(next)return {kind:'durable' as const,next};
+  if(journal && ['reserved','uncertain'].includes(journal.state))return {kind:'durable' as const,expected:journal};
+  return null;
+ };
+ const canSubmit=takeDispatch()!==null;
+ return {mode,journal:mode==='durable'?journal:null,next,pending,recover,canSubmit,takeDispatch};
 }

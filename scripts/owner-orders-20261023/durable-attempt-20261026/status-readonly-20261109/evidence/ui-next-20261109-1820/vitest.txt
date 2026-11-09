@@ -1,0 +1,305 @@
+$ vitest run "src/test/b2b/novoPedidoOptionA.test.tsx" src/test/pedidos/orderAttemptStatusReadOnly.test.tsx src/test/pedidos/novoPedidoAckDialog.test.tsx "src/test/b2b/novoPedidoPaymentMethod.test.tsx" src/test/pedidos/novoPedidoAmbiguousRetry.test.tsx src/test/pedidos/novoPedidoAttemptClosure.test.tsx src/test/pedidos/orderJournal.integration.test.tsx src/test/pedidos/orderJournalUncertainRecovery.test.tsx "--maxWorkers=2"
+
+ RUN  v3.2.4 /dev-server
+
+stderr | src/test/pedidos/novoPedidoAttemptClosure.test.tsx > nunca encerra automaticamente após falha/timeout: só por clique
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/pedidos/novoPedidoAmbiguousRetry.test.tsx > resposta perdida + remontagem: reenvio idêntico reutiliza a MESMA chave
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/pedidos/novoPedidoAmbiguousRetry.test.tsx (16 tests) 25179ms
+   ✓ resposta perdida + remontagem: reenvio idêntico reutiliza a MESMA chave  2962ms
+   ✓ payload alterado após resultado incerto NÃO gera outra chave: envio bloqueado  2776ms
+   ✓ pedido aceito com resposta tardia durante desmontagem: aviso, carrinho novo preservado e nova chave só após confirmação  2515ms
+   ✓ rejeição conclusiva do servidor no primeiro envio descarta a tentativa  1444ms
+   ✓ outro ator não herda a tentativa; logout NÃO libera a do ator original  3364ms
+   ✓ sucesso tardio não apaga data editada enquanto a RPC estava pendente  1392ms
+   ✓ sucesso tardio não apaga observação editada enquanto a RPC estava pendente  1327ms
+   ✓ erro não conclusivo {"code":"PGRST301","message":"JWT expired"} mantém a tentativa incerta  1091ms
+   ✓ erro não conclusivo {"code":"","message":"Failed to fetch"} mantém a tentativa incerta  1153ms
+   ✓ erro não conclusivo {"code":"08006","message":"conn"} mantém a tentativa incerta  1189ms
+   ✓ erro não conclusivo {"code":"57P01","message":"shutdown"} mantém a tentativa incerta  1190ms
+   ✓ erro não conclusivo {"code":"XX000","message":"internal"} mantém a tentativa incerta  1196ms
+   ✓ erro não conclusivo {"code":"P0001","message":"idempotency_conflict"} mantém a tentativa incerta  1184ms
+   ✓ erro não conclusivo {"message":"502 Bad Gateway"} mantém a tentativa incerta  1154ms
+   ✓ dois cliques no mesmo tick: a reserva síncrona bloqueia o segundo envio (1 RPC)  1229ms
+stderr | src/test/b2b/novoPedidoPaymentMethod.test.tsx > sem escolha explícita do meio: envio bloqueado e nenhuma simulação/criação com meio
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/pedidos/novoPedidoAttemptClosure.test.tsx (16 tests) 41765ms
+   ✓ nunca encerra automaticamente após falha/timeout: só por clique  3044ms
+   ✓ closed validado: mesma chave/parceiro na RPC, libera nova chave e envia o carrinho editado mantido  3209ms
+   ✓ committed com schema válido: mostra número e navega pelo caminho canônico; não cria outro  3189ms
+   ✓ committed sem número não é conclusivo: bloqueio preservado  2815ms
+   ✓ committed com id inválido não é conclusivo: bloqueio preservado  2863ms
+   ✓ in_progress não é conclusivo: bloqueio preservado  2718ms
+   ✓ contrato desconhecido não é conclusivo: bloqueio preservado  2697ms
+   ✓ vazio não é conclusivo: bloqueio preservado  2628ms
+   ✓ erro PostgREST mantém bloqueio  2541ms
+   ✓ exceção de rede mantém bloqueio  2745ms
+   ✓ duplo clique em verificar: uma única RPC  3371ms
+   ✓ revogação durante a verificação: closed tardio NÃO libera e carrinho editado permanece  3125ms
+   ✓ desmontagem durante a verificação: resposta antiga não libera; remontado continua bloqueado  2191ms
+   ✓ troca de empresa durante a verificação: nada liberado para nenhum dos dois contextos  1598ms
+   ✓ logout e espera não descartam a tentativa; outro ator não a vê  3009ms
+stderr | src/test/b2b/novoPedidoOptionA.test.tsx > closed → iniciar → simular → habilitado; uma reserva CAS somente no dispatch, duplo clique não duplica
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/b2b/novoPedidoPaymentMethod.test.tsx > crédito incompleto: tela informa condição financeira indisponível e envio permanece bloqueado
+Warning: An update to NovoPedido inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at NovoPedido (/dev-server/src/pages/portal-parceiro/NovoPedido.tsx:154:64)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Outlet (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1186:28)
+    at EntitlementOutlet (/dev-server/src/components/guards/EntitlementOutlet.tsx:17:48)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Outlet (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1186:28)
+    at main
+    at div
+    at div
+    at SidebarProvider (/dev-server/src/test/b2b/novoPedidoPaymentMethod.test.tsx:76:29)
+    at PortalParceiroLayout (/dev-server/src/pages/portal-parceiro/PortalParceiroLayout.tsx:69:139)
+    at div
+    at AuthzEpochBoundary (/dev-server/src/components/authz/AuthzEpochBoundary.tsx:25:35)
+    at B2BRouteGuard (/dev-server/src/components/guards/B2BRouteGuard.tsx:31:30)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+
+ ✓ src/test/b2b/novoPedidoPaymentMethod.test.tsx (18 tests) 19023ms
+   ✓ sem escolha explícita do meio: envio bloqueado e nenhuma simulação/criação com meio  2272ms
+   ✓ meio escolhido: simulação e criação levam meio/versão/prazo; cliente não envia parcelas nem vencimento; datas rotuladas como estimadas  1687ms
+   ✓ falha ao ler meios: erro persistente, envio bloqueado e nova leitura só por clique  1166ms
+   ✓ leitor ausente (pré-instalação exata): servidor ainda sem exigência, segue o contrato atual sem seletor de meio  1077ms
+   ✓ ativação legacy → required aposenta a simulação antiga durante a releitura e volta a exigir meio  1866ms
+   ✓ releitura da capability com o diálogo aberto não mantém envio legado habilitado  1293ms
+   ✓ outro erro com código de ausência mas endpoint diferente (42883/PGRST202 sem o nome exato) falha fechado  662ms
+   ✓ empresa não ativada (mode legacy no leitor instalado): contrato atual, sem bloqueio global  771ms
+   ✓ resposta sem modo explícito é contrato indisponível (nunca lista vazia silenciosa)  695ms
+   ✓ promissória configurada pelo vendedor é selecionável (todos os meios personalizáveis)  699ms
+   ✓ Price: tela mostra o MESMO total do servidor (1.036,22) e as três parcelas devolvidas  866ms
+   ✓ Price em parcela única: tela aceita taxa explícita e mostra 1018, principal 1000 e juros 18  1017ms
+   ✓ plano legado 1x: cartão, cronograma e total seguem V1 3x/1,8%; troca de versão/meio aposenta economia anterior  1125ms
+   ✓ crédito incompleto: tela informa condição financeira indisponível e envio permanece bloqueado  772ms
+   ✓ resposta com credit null não é aceita como apta: erro visível e envio bloqueado  679ms
+   ✓ Price incoerente (soma das parcelas ≠ total) é resposta inválida: erro e envio bloqueado  761ms
+   ✓ ACK com total diferente da simulação não é sucesso (sem navegação)  771ms
+   ✓ ACK com outro meio/versão não é tratado como sucesso (sem navegação)  839ms
+stderr | src/test/pedidos/novoPedidoAckDialog.test.tsx > nunca usa window.confirm; diálogo cita o número e Voltar não chama RPC nem limpa carrinho
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/b2b/novoPedidoOptionA.test.tsx (10 tests) 11339ms
+   ✓ closed → iniciar → simular → habilitado; uma reserva CAS somente no dispatch, duplo clique não duplica  1764ms
+   ✓ none inicial só lê; simulação permite envio e reserva apenas no clique  857ms
+   ✓ committed exige ACK explícito do pedido exato antes da intenção, sem reservar no ACK  1102ms
+   ✓ reload perde intenção closed e não reserva; precisa de novo clique explícito  768ms
+   ✓ outra aba publica uncertain e invalida intenção com diálogo aberto; handler não envia nova geração  924ms
+   ✓ status falho bloqueia botão e não reserva nem despacha  956ms
+   ✓ checking/pending conserva bloqueio mesmo com simulação pronta  1082ms
+   ✓ scope revogado entre clique e reserva impede dispatch e mantém nenhuma criação  983ms
+   ✓ outra aba conclui geração e fecha diálogo; clique no controle antigo não contorna terminal  936ms
+   ✓ falha na releitura depois de intenção valida bloqueia handler e aposenta next  1965ms
+stderr | src/test/pedidos/orderAttemptStatusReadOnly.test.tsx > encerrada: "Iniciar nova tentativa" não reserva no clique; reserva com CAS só no envio
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+stderr | src/test/pedidos/orderAttemptStatusReadOnly.test.tsx > encerrada: "Iniciar nova tentativa" não reserva no clique; reserva com CAS só no envio
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+stderr | src/test/pedidos/orderAttemptStatusReadOnly.test.tsx > pedido confirmado: avanço exige ACK do pedido exato; intenção vira reserva só no envio
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+stderr | src/test/pedidos/orderAttemptStatusReadOnly.test.tsx > pedido confirmado: avanço exige ACK do pedido exato; intenção vira reserva só no envio
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+ ✓ src/test/pedidos/orderAttemptStatusReadOnly.test.tsx (11 tests) 574ms
+ ✓ src/test/pedidos/novoPedidoAckDialog.test.tsx (9 tests) 8383ms
+   ✓ nunca usa window.confirm; diálogo cita o número e Voltar não chama RPC nem limpa carrinho  1466ms
+   ✓ duplo clique em confirmar avança uma única vez com key/geração/pedido capturados  1240ms
+   ✓ estado do servidor muda com o diálogo aberto (outra aba): não confirma geração errada  520ms
+   ✓ revogação/troca de contexto com o diálogo aberto nega o avanço  669ms
+   ✓ troca de papel com o diálogo aberto fecha sem avançar  617ms
+   ✓ comprador novo: reserva inicial conserva a chave e não oferece encerramento nem avança ao montar  1351ms
+   ✓ envio incerto só encerra após clique e conserva a geração terminal até novo clique  1432ms
+   ✓ closed não avança na montagem; clique usa CAS sem confirmação fictícia de pedido  499ms
+   ✓ troca de conta do committed para comprador novo fecha ACK e não encerra nem avança a reserva  584ms
+stderr | src/test/pedidos/orderJournal.integration.test.tsx > reopened React hook recovers server committed without any local storage
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+stderr | src/test/pedidos/orderJournal.integration.test.tsx > reopened React hook recovers server committed without any local storage
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+stderr | src/test/pedidos/orderJournal.integration.test.tsx > reopened React hook recovers server committed without any local storage
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+stderr | src/test/pedidos/orderJournal.integration.test.tsx > reopened React hook recovers server committed without any local storage
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+stderr | src/test/pedidos/orderJournal.integration.test.tsx > reopened React hook recovers server committed without any local storage
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+stderr | src/test/pedidos/orderJournal.integration.test.tsx > reopened React hook recovers server committed without any local storage
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+stderr | src/test/pedidos/orderJournal.integration.test.tsx > A uncertain / B closed+advanced / A hook recovers N+1 with authoritative predecessor
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+stderr | src/test/pedidos/orderJournal.integration.test.tsx > A uncertain / B closed+advanced / A hook recovers N+1 with authoritative predecessor
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+stderr | src/test/pedidos/orderJournal.integration.test.tsx > A uncertain / B closed+advanced / A hook recovers N+1 with authoritative predecessor
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+ ✓ src/test/pedidos/orderJournal.integration.test.tsx (34 tests) 302ms
+ ✓ src/test/pedidos/orderJournalUncertainRecovery.test.tsx (5 tests) 422ms
+
+ Test Files  8 passed (8)
+      Tests  119 passed (119)
+   Start at  18:26:13
+   Duration  64.29s (transform 1.77s, setup 1.08s, collect 9.03s, tests 106.99s, environment 6.47s, prepare 989ms)
+
