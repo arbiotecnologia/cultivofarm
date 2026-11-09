@@ -21,6 +21,7 @@ POST_NAME = "27-owner-fk-post.sql.readonly"
 PRE30_NAME = "30-physical-pre-after-confirmation-send.sql.readonly"
 INSTALL31_NAME = "31-physical-install.sql.review"
 EVIDENCE_NAME = "evidence-owner-fk.json"
+ACL_EVIDENCE_NAME = "evidence-acl-overlay.json"
 TARGETS = (
     ("product_packagings", "product_packagings_owner_organization_id_fkey"),
     ("product_sale_units", "product_sale_units_owner_organization_id_fkey"),
@@ -197,6 +198,10 @@ def main():
             path.write_text(text)
     shutil.copyfile(H / "owner-fk-integrity.README.md", out / "README.md")
     shutil.copyfile(AUDITOR_REPORT, out / AUDITOR_REPORT_NAME)
+    shutil.copyfile(OVERLAY / ACL_EVIDENCE_NAME, out / ACL_EVIDENCE_NAME)
+    acl_evidence = json.loads((OVERLAY / ACL_EVIDENCE_NAME).read_text())
+    assert acl_evidence["status"] == "PASS" and acl_evidence["hosted"] is False
+    assert acl_evidence["postgresql_version"].startswith("17.") and len(acl_evidence["checks"]) == 12
 
     origin = {
         "kind": "SEPARATE_OWNER_FK_INTEGRITY_OVERLAY",
@@ -224,6 +229,7 @@ def main():
             PRE30_NAME: sha(OVERLAY / PRE30_NAME),
             INSTALL31_NAME: sha(OVERLAY / INSTALL31_NAME),
             "independent_review": "Relato do proprietário: overlay ACL2db87 revisado; diferença limitada aos dez guards",
+            "local_evidence": {"file": ACL_EVIDENCE_NAME, "sha256": sha(OVERLAY / ACL_EVIDENCE_NAME), "checks": 12},
             "unmodified": True,
         },
         "generator": {"path": str(Path(__file__).resolve().relative_to(ROOT)), "sha256": sha(Path(__file__).resolve())},
@@ -248,7 +254,7 @@ def main():
         "hosted_io": False,
     }
     write_json(out / "origin.json", origin)
-    files = [PRE_NAME, INSTALL_NAME, POST_NAME, "README.md", AUDITOR_REPORT_NAME, "origin.json"]
+    files = [PRE_NAME, INSTALL_NAME, POST_NAME, "README.md", AUDITOR_REPORT_NAME, ACL_EVIDENCE_NAME, "origin.json"]
     verification = "NOT_RUN_PENDING_TEMPORARY_STAGING"
     if evidence_path is not None:
         evidence = json.loads(evidence_path.read_text())
@@ -284,6 +290,7 @@ def main():
         "contains": [PRE_NAME, INSTALL_NAME, POST_NAME],
         "requires": "PRE25 zero órfãos; INSTALL26 revalida após locks; POST27 antes de PRE30/INSTALL31",
         "target_fks": [{"relation": table, "name": name, "definition": DEFINITION, "validated": True} for table, name in TARGETS],
+        "acl_overlay_local_evidence": {"file": ACL_EVIDENCE_NAME, "sha256": sha(OVERLAY / ACL_EVIDENCE_NAME), "checks": 12},
         "auditor_readonly_report": {
             "file": AUDITOR_REPORT_NAME,
             "sha256": sha(AUDITOR_REPORT),
