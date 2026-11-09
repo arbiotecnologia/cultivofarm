@@ -61,6 +61,7 @@
 - Envase consultation remounts by canonical session scope; history uses filter/page fences and independent latest-request generations, products use session fences, and realtime callbacks retire on cleanup — prevents stale row adoption without replacing RLS or reopening writers.
 - Required B2B payment cards use scoped choice/validated condition ACK and exact schedule amounts, not legacy plan installments/rates or averages; legacy mode stays unchanged — prevents contradictory summaries.
 - Seller terms reuse the scoped V1 condition reader; handlers recheck current flags and the shared authorization monitor, and dialogs retire on actor/resource/epoch or availability changes; V1 contract identifies Price, never rate positivity — prevents stale confirmations without changing server authority.
+- Order-journal consumers share the hook's canSubmit/takeDispatch eligibility, re-read the observed basis at click, and retain a synchronous submit lock; terminal next intentions stay volatile and reserve only through prepareDurableOrder — prevents enabled-control/handler drift and pre-dispatch duplicate reservations.
 <!-- LOVABLE:END -->
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
 - Wizard requires persisted prerequisites and confirmation lock — prevents duplicates.

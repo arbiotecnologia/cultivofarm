@@ -309,11 +309,13 @@ export default function NovoPedido() {
   const attempt = useSyncExternalStore(subscribeOrderAttempts, () => readOrderAttempt(attemptSlot));
   const closeAttempt = useCloseOrderAttempt();
   const durableAttempt=useOrderJournal(isSimulationMode?undefined:partner?.id);
+  const submitLock=useRef(false);
+  const [submitPending,setSubmitPending]=useState(false);
   useEffect(()=>{
     // Terminal server receipt is shown on the same catalogue, including empty carts.
     // Do not clear user edits or authorize a next generation.
-    if(durableAttempt.mode==='durable' && ['committed','closed'].includes(durableAttempt.journal?.state??'')) setConfirmOpen(false);
-  },[durableAttempt.mode,durableAttempt.journal?.state]);
+    if(durableAttempt.mode==='durable' && !durableAttempt.next && ['committed','closed'].includes(durableAttempt.journal?.state??'')) setConfirmOpen(false);
+  },[durableAttempt.mode,durableAttempt.journal?.state,durableAttempt.next]);
   // Confirmação explícita do pedido existente (diálogo React; nunca window.confirm).
   // Captura key/geração/pedido/slot/escopo ao abrir; confirmar só avança se tudo
   // ainda coincide. Cancelar/fechar não chama RPC nem altera o carrinho.
@@ -605,8 +607,9 @@ export default function NovoPedido() {
       toast.error("Contexto de acesso indisponível. Aguarde a confirmação e tente novamente.");
       return;
     }
-    if(durableAttempt.mode!=='legacy' && (durableAttempt.mode!=='durable' || (!durableAttempt.next &&
-      (!durableAttempt.journal || !['reserved','uncertain'].includes(durableAttempt.journal.state))))) {
+    const dispatch=durableAttempt.takeDispatch();
+    if(submitLock.current || createOrder.isPending || attempt?.inflight || closeAttempt.pending)return;
+    if(!dispatch) {
       toast.error('Verifique o envio anterior antes de continuar.');return;
     }
     const items = cartList.map(({ key, ...rest }) => rest);
@@ -626,8 +629,8 @@ export default function NovoPedido() {
     // resultado incerto NÃO gera chave nova: exige confirmar o envio anterior.
     // Durable: the server key comes from prepareDurableOrder (reserved right before dispatch when `next`);
     // the value below is never dispatched in durable mode.
-    const prepared = durableAttempt.mode==='durable' && (durableAttempt.next || durableAttempt.journal)
-      ? {ok:true as const,key:durableAttempt.next ? 'durable-next' : durableAttempt.journal!.key}
+    const prepared = dispatch.kind==='durable'
+      ? {ok:true as const,key:dispatch.next ? 'durable-next' : dispatch.expected?.key ?? ''}
       : prepareOrderAttempt(attemptSlot, fingerprint, () =>
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
@@ -641,18 +644,20 @@ export default function NovoPedido() {
     const slot = attemptSlot;
     // Reserva síncrona antes de qualquer await: dois cliques no mesmo tick ou
     // remontagens contam envios em voo e nenhum desfecho apaga o outro.
-    if(durableAttempt.mode==='legacy')markOrderAttemptSending(slot, prepared.key);
+    submitLock.current=true;setSubmitPending(true);
+    if(dispatch.kind==='legacy')markOrderAttemptSending(slot, prepared.key);
     createOrder.mutate(
       { ...input, idempotency_key: prepared.key, attempt_slot: slot,
-        journal_expected:durableAttempt.mode==='durable' && !durableAttempt.next?durableAttempt.journal??undefined:undefined,
-        journal_next:durableAttempt.mode==='durable' && durableAttempt.next?durableAttempt.next:undefined,
+        journal_expected:dispatch.kind==='durable'?dispatch.expected:undefined,
+        journal_next:dispatch.kind==='durable'?dispatch.next:undefined,
         current_payload:()=>fence() && orderAttemptFingerprint(liveInputRef.current)===fingerprint },
       {
+        onSettled:()=>{submitLock.current=false;setSubmitPending(false);},
         onSuccess: () => {
           // Callback por chamada também é cercado: resposta tardia de outro
           // ator/empresa/época não limpa carrinho nem navega.
           if (!fence()) return;
-          if(durableAttempt.mode==='legacy')settleOrderAttempt(slot, prepared.key);
+          if(dispatch.kind==='legacy')settleOrderAttempt(slot, prepared.key);
           // Payload COMPLETO atual (itens, obs, data, plano, parcelas, vencimento):
           // qualquer edição após o envio é preservada — sem fechar/limpar/navegar.
           if (orderAttemptFingerprint(liveInputRef.current) !== fingerprint) return;
@@ -1447,8 +1452,8 @@ export default function NovoPedido() {
             ) : (
               <Button
                 onClick={() => handleSubmit()}
-                disabled={createOrder.isPending || !!attempt?.inflight || durableAttempt.pending ||
-                  (durableAttempt.mode!=='legacy' && (durableAttempt.mode!=='durable' || !durableAttempt.journal || !['reserved','uncertain'].includes(durableAttempt.journal.state))) || !selectedPlanId || methodMode === null || (requireMethod && !selectedMethod) || selSim.pending || !visibleSimulation || !!visibleSimFailure}
+                disabled={submitPending || createOrder.isPending || !!attempt?.inflight || closeAttempt.pending || !durableAttempt.canSubmit ||
+                  !selectedPlanId || methodMode === null || (requireMethod && !selectedMethod) || selSim.pending || !visibleSimulation || !!visibleSimFailure}
               >
                 {createOrder.isPending
                   ? "Enviando..."
