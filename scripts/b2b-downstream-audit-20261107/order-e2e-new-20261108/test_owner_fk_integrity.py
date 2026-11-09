@@ -397,6 +397,7 @@ END$$;"""
                 "owner_fk_counts": auditor_report["owner_fk_counts"],
                 "acl_normalization_regressions": auditor_report["acl_normalization_regressions"],
             },
+            "generated_column_shape_verified": True,
             "relation_security_pins": len(relations_before),
             "relation_security_preserved": True,
             "history_before": history_before,

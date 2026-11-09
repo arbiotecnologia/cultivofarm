@@ -272,6 +272,18 @@ def main():
         assert set(evidence["orphan_scenarios"]) == {table for table, _name in TARGETS}
         assert evidence["both_fks_validated"] is True and evidence["both_fks_enforced"] is True
         assert evidence["acl_overlay_unmodified"] is True
+        assert evidence["generated_column_shape_verified"] is True
+        generated_column = evidence["fixture_generated_column"]
+        assert generated_column["pg_attrdef_synthesized"] is False
+        assert generated_column["actual"] == {
+            "relation": "product_sale_units",
+            "name": "forma_fisica",
+            "type": reported_shape["type"],
+            "default": reported_shape["generation_expression"],
+            "notnull": reported_shape["notnull"],
+            "generated": "s",
+            "identity": "",
+        }
         reported = evidence["auditor_reported_readonly_evidence"]
         assert reported["sha256"] == sha(AUDITOR_REPORT)
         assert reported["owner_fk_counts"] == auditor_report["owner_fk_counts"]
