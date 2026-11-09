@@ -110,6 +110,10 @@ def main():
   checks.append(dict(test='new physical control purchase reserve send proof confirm without manufacture',status='PASS'))
   commercial=load('new_commercial_merge',H/'commercial.py')
   Q=commercial.apply(B,load,ROOT,OUT)
+  customer_id=Q.u(301)
+  B.sql(f"SET session_replication_role=replica;INSERT INTO public.clientes(id,organization_id,nome) VALUES('{customer_id}','{Q.A}','CLIENTE FISCAL SINTETICO LOCAL') ON CONFLICT(id) DO NOTHING;UPDATE public.partner_accounts SET client_id='{customer_id}' WHERE id='{Q.P}' AND commercial_owner_organization_id='{Q.A}';SET session_replication_role=origin;")
+  assert B.last(f"SELECT client_id FROM public.partner_accounts WHERE id='{Q.P}' AND commercial_owner_organization_id='{Q.A}';")==customer_id
+  (OUT/'financial-customer-fixture.json').write_text(json.dumps(dict(customer_id=customer_id,partner_id=Q.P,organization_id=Q.A,synthetic=True,hosted=False,reason='B4 requires partner_accounts.client_id; same fixture seam as strict battery'),indent=2)+'\n')
   checks.append(dict(test='new B3 captured economic composition merged without dropped physical guards',status='PASS'))
   # f32c4f3: o candidato de planos é instalado no MESMO banco da B3/logística.
   # PRE/POST permanecem integrais; divergência de pin aborta sem stub ou bypass.
