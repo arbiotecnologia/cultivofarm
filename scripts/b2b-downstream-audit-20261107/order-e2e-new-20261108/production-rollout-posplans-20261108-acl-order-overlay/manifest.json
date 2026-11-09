@@ -1,0 +1,46 @@
+{
+  "status": "REVIEW_ONLY_INACTIVE_NOT_APPROVED",
+  "overlay_of": "ad87",
+  "base_manifest_sha256": "3efa7271a9f844be97f4883ff10d13f20998e80e9d167e1dcf247cd7cf44ac5e",
+  "contains_only_changed_rollout_artifacts": [
+    "30-physical-pre-after-confirmation-send.sql.readonly",
+    "31-physical-install.sql.review"
+  ],
+  "excludes_reinstall": [
+    "11",
+    "12",
+    "20",
+    "21",
+    "22"
+  ],
+  "guards_changed": 10,
+  "ddl_changed": false,
+  "local_verification": "PASS_DISPOSABLE_PG17_NOT_HOSTED",
+  "hosted_io": false,
+  "activation": false,
+  "publication": false,
+  "production_received_31_or_later": false,
+  "authenticated_real_proof": "NOT_RUN",
+  "files": {
+    "30-physical-pre-after-confirmation-send.sql.readonly": {
+      "sha256": "bfc9718efe58008d6d6891d7e3464f5e032cd3d9628416daf5e0ef46828d0e48",
+      "bytes": 43206
+    },
+    "31-physical-install.sql.review": {
+      "sha256": "3af1e8dd9fb80c1d1c37679ca926cdf64758f94755f260fcf9b2b5165b15aebb",
+      "bytes": 117111
+    },
+    "README.md": {
+      "sha256": "d8c22228711f1418cc8be3449e7911d1d6742953f804f814be0f3ca00a88466f",
+      "bytes": 2107
+    },
+    "origin.json": {
+      "sha256": "be34f8fca68ec299e650233b16aeb33c9f5d0ca40d38dab40e451efad6279bfb",
+      "bytes": 4186
+    },
+    "evidence-acl-overlay.json": {
+      "sha256": "d447cd9d360f7768a4ab8a8166a21f1dddfe35fe996a69f8a30c45837b0377d2",
+      "bytes": 5942
+    }
+  }
+}

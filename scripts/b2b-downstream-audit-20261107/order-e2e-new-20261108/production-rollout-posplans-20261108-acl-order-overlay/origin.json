@@ -1,0 +1,106 @@
+{
+  "kind": "SEPARATE_ACL_ORDER_OVERLAY",
+  "auditor_package_label": "ad87",
+  "frozen_package_unmodified": true,
+  "frozen_package": {
+    "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108",
+    "manifest_sha256": "3efa7271a9f844be97f4883ff10d13f20998e80e9d167e1dcf247cd7cf44ac5e",
+    "30-physical-pre-after-confirmation-send.sql.readonly": "607ff4ed23f662be2aec66a29c14019213899acc64dbabf414ff72069d18efbb",
+    "31-physical-install.sql.review": "c6d42ee3cc84b6d1ed7506e5643820086479d0f10c457091ceb7c8612d031632"
+  },
+  "generator": {
+    "path": "scripts/b2b-downstream-audit-20261107/physical/finished-product/assemble.py",
+    "sha256": "4edd7b0b83f5a3bad5e221bd15bd24d6ccced32ec87176fb31424c3a3a4eeba9",
+    "comparison": "jsonb_agg(aclitem::text ORDER BY aclitem::text COLLATE C)",
+    "preserves": [
+      "grantee",
+      "privileges",
+      "grant_option",
+      "grantor"
+    ],
+    "guards_changed": 10,
+    "ddl_candidate_sha256": "93aa96092d2e7210bfc8ae7e6741db41bd439c1ac737fc8301248ce1ff9dabbf",
+    "ddl_candidate_byte_identical": true
+  },
+  "overlay_generator": {
+    "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/acl_order_overlay.py",
+    "sha256": "68b270ef152caa6c071cbf04500796529291ff1978e0d2a291f6b220d6502c42"
+  },
+  "verification_runner": {
+    "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_acl_order_overlay.py",
+    "sha256": "d3d53185085dc76ad457e0050a63ac2b655844e047e820a855201a92c07e40a1"
+  },
+  "relations": [
+    {
+      "relation": "platform_private.authz_tickets",
+      "expected_acl": "{postgres=arwdDxtm/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "relation": "public.catalogo_volumes",
+      "expected_acl": "{postgres=arwdDxtm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "relation": "public.entregas",
+      "expected_acl": "{postgres=arwdDxtm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "relation": "public.estoque_movimentacoes",
+      "expected_acl": "{postgres=arwdDxtm/postgres,authenticated=r/postgres,service_role=arwdDxtm/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "relation": "public.estoque_produto",
+      "expected_acl": "{postgres=arwdDxtm/postgres,authenticated=r/postgres,service_role=arwdDxtm/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "relation": "public.lotes",
+      "expected_acl": "{postgres=arwdDxtm/postgres,anon=arwd/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "relation": "public.microrganismos",
+      "expected_acl": "{postgres=arwdDxtm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "relation": "public.product_packagings",
+      "expected_acl": "{postgres=arwdDxtm/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "relation": "public.product_sale_units",
+      "expected_acl": "{postgres=arwdDxtm/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "relation": "public.produtos",
+      "expected_acl": "{postgres=arwdDxtm/postgres,authenticated=r/postgres,service_role=arwdDxtm/postgres}",
+      "owner": "postgres"
+    }
+  ],
+  "auditor_reported_production": {
+    "ref": "swzpzcwiasxmjutrmvkm",
+    "installed": [
+      "11-confirmation-install.sql.review",
+      "21-send-install.sql.review"
+    ],
+    "post_pass": [
+      "12-confirmation-post.sql.readonly",
+      "22-send-post.sql.readonly"
+    ],
+    "writers_enabled": false,
+    "pre30_stop": "FINISHED_PRE_RELATION_DRIFT public.estoque_movimentacoes",
+    "actual_acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=r/postgres}",
+    "expected_acl": "{postgres=arwdDxtm/postgres,authenticated=r/postgres,service_role=arwdDxtm/postgres}",
+    "rls": true,
+    "force_rls": false,
+    "owner": "postgres",
+    "received_31_or_later": false,
+    "source": "Relato independente do auditor em 09/11/2026 03:02 UTC; nenhuma operação hospedada pelo gerador"
+  },
+  "hosted_io": false
+}
