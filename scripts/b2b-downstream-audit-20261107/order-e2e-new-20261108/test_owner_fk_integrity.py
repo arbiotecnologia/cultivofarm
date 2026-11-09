@@ -275,10 +275,26 @@ def main():
         assert history_after == history_before and plans_after == plans_before
         assert sha(OVERLAY / PRE30) == "bfc9718efe58008d6d6891d7e3464f5e032cd3d9628416daf5e0ef46828d0e48"
         assert sha(OVERLAY / INSTALL31) == "3af1e8dd9fb80c1d1c37679ca926cdf64758f94755f260fcf9b2b5165b15aebb"
+        auditor_report = json.loads(AUDITOR_REPORT.read_text())
+        assert auditor_report["kind"] == "AUDITOR_REPORTED_READONLY_EVIDENCE"
+        assert auditor_report["project_ref"] == "swzpzcwiasxmjutrmvkm"
+        assert auditor_report["agent_hosted_io"] is False
+        assert auditor_report["acl_normalization_regressions"]["count"] == 9
+        assert auditor_report["acl_normalization_regressions"]["status"] == "PASS_REPORTED_BY_AUDITOR"
+        assert set(auditor_report["owner_fk_counts"]) == {table for table, _name in TARGETS}
+        for counts in auditor_report["owner_fk_counts"].values():
+            assert counts["total"] == 1
+            assert counts["owner_null"] == counts["orphan_owner"] == counts["owner_product_mismatch"] == 0
         report.update({
             "status": "PASS",
             "postgresql_version": B.last("SHOW server_version;"),
             "acl_overlay_unmodified": True,
+            "auditor_reported_readonly_evidence": {
+                "path": str(AUDITOR_REPORT.relative_to(ROOT)),
+                "sha256": sha(AUDITOR_REPORT),
+                "owner_fk_counts": auditor_report["owner_fk_counts"],
+                "acl_normalization_regressions": auditor_report["acl_normalization_regressions"],
+            },
             "relation_security_pins": len(relations_before),
             "relation_security_preserved": True,
             "history_before": history_before,
@@ -288,7 +304,8 @@ def main():
             "data_cleanup": False,
             "grants_or_revokes_in_candidate": False,
             "gates_activated": False,
-            "live_orphan_counts": "NOT_RUN; PRE25 final exige zero na execução real",
+            "agent_hosted_orphan_measurement": "NOT_RUN; contagens reais são relato READ ONLY independente do auditor",
+            "fresh_orphan_measurement_required": "PRE25/INSTALL26/POST27 medem novamente e exigem zero owner nulo/órfão",
             "synthetic_seams": [
                 "Auth/claims e papéis SQL somente no PostgreSQL descartável",
                 "product_packagings.peso_liquido_kg ajustado de numeric para numeric(12,3) somente no descartável",

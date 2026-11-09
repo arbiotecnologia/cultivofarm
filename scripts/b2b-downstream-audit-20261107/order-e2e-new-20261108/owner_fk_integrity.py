@@ -109,10 +109,14 @@ def diagnostics():
     values = []
     for table, _name in TARGETS:
         values.append(f"""{lit(table)},jsonb_build_object(
- 'rows',(SELECT count(*) FROM public.{table}),
- 'orphans',(SELECT count(*) FROM public.{table} child
+  'total',(SELECT count(*) FROM public.{table}),
+ 'owner_null',(SELECT count(*) FROM public.{table} WHERE owner_organization_id IS NULL),
+ 'orphan_owner',(SELECT count(*) FROM public.{table} child
    LEFT JOIN public.organizations parent ON parent.id=child.owner_organization_id
-   WHERE parent.id IS NULL))""")
+   WHERE child.owner_organization_id IS NOT NULL AND parent.id IS NULL),
+ 'owner_product_mismatch',(SELECT count(*) FROM public.{table} child
+   JOIN public.produtos product ON product.id=child.product_id
+   WHERE product.owner_organization_id IS DISTINCT FROM child.owner_organization_id))""")
     return "SELECT jsonb_build_object('contract','OWNER_FK_INTEGRITY_V1'," + ",".join(values) + ") AS owner_fk_integrity_audit;"
 
 
