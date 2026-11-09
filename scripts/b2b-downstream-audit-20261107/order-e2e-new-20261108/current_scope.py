@@ -418,7 +418,7 @@ def write_final_confirmation_rollback(confirmation_out: Path, send_out: Path, fi
     (confirmation_out / "rollback-scope.json").write_text(json.dumps(doc, indent=2) + "\n")
     (confirmation_out / "rollback-composed.sql.review").write_text(
         "BEGIN;\n" + _guard(doc, state_expression, "CONFIRM_COMPOSED_ROLLBACK")
-        + "REVOKE EXECUTE ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;\nCOMMIT;\n"
+        + "REVOKE EXECUTE ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb),public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text) FROM PUBLIC,anon,authenticated,service_role;\nCOMMIT;\n"
     )
 
 
