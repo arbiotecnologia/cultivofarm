@@ -1,0 +1,549 @@
+{
+  "columns": [
+    {
+      "name": "id",
+      "type": "uuid",
+      "default": "gen_random_uuid()",
+      "notnull": true,
+      "relation": "catalogo_volumes"
+    },
+    {
+      "name": "item_tipo",
+      "type": "text",
+      "default": null,
+      "notnull": true,
+      "relation": "catalogo_volumes"
+    },
+    {
+      "name": "produto_id",
+      "type": "uuid",
+      "default": null,
+      "notnull": false,
+      "relation": "catalogo_volumes"
+    },
+    {
+      "name": "microrganismo_id",
+      "type": "uuid",
+      "default": null,
+      "notnull": false,
+      "relation": "catalogo_volumes"
+    },
+    {
+      "name": "volume_ml",
+      "type": "numeric",
+      "default": null,
+      "notnull": false,
+      "relation": "catalogo_volumes"
+    },
+    {
+      "name": "rotulo",
+      "type": "text",
+      "default": null,
+      "notnull": false,
+      "relation": "catalogo_volumes"
+    },
+    {
+      "name": "preco_brl",
+      "type": "numeric",
+      "default": "0",
+      "notnull": true,
+      "relation": "catalogo_volumes"
+    },
+    {
+      "name": "moeda",
+      "type": "text",
+      "default": "'BRL'::text",
+      "notnull": true,
+      "relation": "catalogo_volumes"
+    },
+    {
+      "name": "ativo",
+      "type": "boolean",
+      "default": "true",
+      "notnull": true,
+      "relation": "catalogo_volumes"
+    },
+    {
+      "name": "ordem",
+      "type": "integer",
+      "default": "0",
+      "notnull": true,
+      "relation": "catalogo_volumes"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "default": "now()",
+      "notnull": true,
+      "relation": "catalogo_volumes"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "default": "now()",
+      "notnull": true,
+      "relation": "catalogo_volumes"
+    },
+    {
+      "name": "preco_litro_brl",
+      "type": "numeric",
+      "default": null,
+      "notnull": false,
+      "relation": "catalogo_volumes"
+    },
+    {
+      "name": "valor_dose_100ml_brl",
+      "type": "numeric",
+      "default": null,
+      "notnull": false,
+      "relation": "catalogo_volumes"
+    },
+    {
+      "name": "doses_por_volume",
+      "type": "numeric",
+      "default": null,
+      "notnull": false,
+      "relation": "catalogo_volumes"
+    },
+    {
+      "name": "owner_organization_id",
+      "type": "uuid",
+      "default": null,
+      "notnull": true,
+      "relation": "catalogo_volumes"
+    },
+    {
+      "name": "medida",
+      "type": "text",
+      "default": "'volume'::text",
+      "notnull": true,
+      "relation": "catalogo_volumes"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "default": null,
+      "notnull": true,
+      "relation": "product_packagings"
+    },
+    {
+      "name": "product_id",
+      "type": "uuid",
+      "default": null,
+      "notnull": true,
+      "relation": "product_packagings"
+    },
+    {
+      "name": "owner_organization_id",
+      "type": "uuid",
+      "default": null,
+      "notnull": true,
+      "relation": "product_packagings"
+    },
+    {
+      "name": "codigo",
+      "type": "text",
+      "default": null,
+      "notnull": true,
+      "relation": "product_packagings"
+    },
+    {
+      "name": "descricao",
+      "type": "text",
+      "default": null,
+      "notnull": false,
+      "relation": "product_packagings"
+    },
+    {
+      "name": "peso_liquido_kg",
+      "type": "numeric(12,3)",
+      "default": null,
+      "notnull": true,
+      "relation": "product_packagings"
+    },
+    {
+      "name": "version",
+      "type": "integer",
+      "default": "1",
+      "notnull": true,
+      "relation": "product_packagings"
+    },
+    {
+      "name": "ativo",
+      "type": "boolean",
+      "default": "true",
+      "notnull": true,
+      "relation": "product_packagings"
+    },
+    {
+      "name": "valid_from",
+      "type": "timestamp with time zone",
+      "default": "now()",
+      "notnull": true,
+      "relation": "product_packagings"
+    },
+    {
+      "name": "valid_to",
+      "type": "timestamp with time zone",
+      "default": null,
+      "notnull": false,
+      "relation": "product_packagings"
+    },
+    {
+      "name": "created_by",
+      "type": "uuid",
+      "default": null,
+      "notnull": false,
+      "relation": "product_packagings"
+    },
+    {
+      "name": "product_id",
+      "type": "uuid",
+      "default": null,
+      "notnull": true,
+      "relation": "product_sale_units"
+    },
+    {
+      "name": "owner_organization_id",
+      "type": "uuid",
+      "default": null,
+      "notnull": true,
+      "relation": "product_sale_units"
+    },
+    {
+      "name": "unidade_conteudo",
+      "type": "text",
+      "default": null,
+      "notnull": true,
+      "relation": "product_sale_units"
+    },
+    {
+      "name": "forma_fisica",
+      "type": "text",
+      "default": "\nCASE\n    WHEN (unidade_conteudo = ANY (ARRAY['kg'::text, 'g'::text])) THEN 'solido'::text\n    ELSE 'liquido'::text\nEND",
+      "notnull": false,
+      "relation": "product_sale_units"
+    },
+    {
+      "name": "version",
+      "type": "integer",
+      "default": "1",
+      "notnull": true,
+      "relation": "product_sale_units"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "default": "now()",
+      "notnull": true,
+      "relation": "product_sale_units"
+    },
+    {
+      "name": "updated_by",
+      "type": "uuid",
+      "default": null,
+      "notnull": false,
+      "relation": "product_sale_units"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "default": "gen_random_uuid()",
+      "notnull": true,
+      "relation": "produtos"
+    },
+    {
+      "name": "nome",
+      "type": "text",
+      "default": null,
+      "notnull": true,
+      "relation": "produtos"
+    },
+    {
+      "name": "tipo",
+      "type": "tipo_produto",
+      "default": null,
+      "notnull": true,
+      "relation": "produtos"
+    },
+    {
+      "name": "dose_ml_ha",
+      "type": "numeric",
+      "default": null,
+      "notnull": false,
+      "relation": "produtos"
+    },
+    {
+      "name": "descricao",
+      "type": "text",
+      "default": null,
+      "notnull": false,
+      "relation": "produtos"
+    },
+    {
+      "name": "modo_acao",
+      "type": "text",
+      "default": null,
+      "notnull": false,
+      "relation": "produtos"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "default": "now()",
+      "notnull": true,
+      "relation": "produtos"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "default": "now()",
+      "notnull": true,
+      "relation": "produtos"
+    },
+    {
+      "name": "codigo",
+      "type": "text",
+      "default": null,
+      "notnull": false,
+      "relation": "produtos"
+    },
+    {
+      "name": "funcao_completa",
+      "type": "text",
+      "default": null,
+      "notnull": false,
+      "relation": "produtos"
+    },
+    {
+      "name": "modo_aplicacao",
+      "type": "text",
+      "default": null,
+      "notnull": false,
+      "relation": "produtos"
+    },
+    {
+      "name": "valor_ha_brl",
+      "type": "numeric(10,2)",
+      "default": null,
+      "notnull": false,
+      "relation": "produtos"
+    },
+    {
+      "name": "versao_catalogo",
+      "type": "text",
+      "default": "'v1.2'::text",
+      "notnull": false,
+      "relation": "produtos"
+    },
+    {
+      "name": "ativo",
+      "type": "boolean",
+      "default": "true",
+      "notnull": false,
+      "relation": "produtos"
+    },
+    {
+      "name": "e_insumo",
+      "type": "boolean",
+      "default": "false",
+      "notnull": false,
+      "relation": "produtos"
+    },
+    {
+      "name": "estoque_minimo",
+      "type": "numeric",
+      "default": "0",
+      "notnull": false,
+      "relation": "produtos"
+    },
+    {
+      "name": "b2b_enabled",
+      "type": "boolean",
+      "default": "true",
+      "notnull": true,
+      "relation": "produtos"
+    },
+    {
+      "name": "valor_dose_brl",
+      "type": "numeric",
+      "default": null,
+      "notnull": false,
+      "relation": "produtos"
+    },
+    {
+      "name": "valor_litro_brl",
+      "type": "numeric",
+      "default": null,
+      "notnull": false,
+      "relation": "produtos"
+    },
+    {
+      "name": "familia_catalogo",
+      "type": "text",
+      "default": null,
+      "notnull": false,
+      "relation": "produtos"
+    },
+    {
+      "name": "classe_catalogo",
+      "type": "text",
+      "default": null,
+      "notnull": false,
+      "relation": "produtos"
+    },
+    {
+      "name": "owner_organization_id",
+      "type": "uuid",
+      "default": null,
+      "notnull": true,
+      "relation": "produtos"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "catalogo_volumes_item_ref",
+      "relation": "catalogo_volumes",
+      "validated": true,
+      "definition": "CHECK ((((item_tipo = 'produto'::text) AND (produto_id IS NOT NULL) AND (microrganismo_id IS NULL)) OR ((item_tipo = 'microrganismo'::text) AND (microrganismo_id IS NOT NULL) AND (produto_id IS NULL))))"
+    },
+    {
+      "name": "catalogo_volumes_item_tipo_check",
+      "relation": "catalogo_volumes",
+      "validated": true,
+      "definition": "CHECK ((item_tipo = ANY (ARRAY['produto'::text, 'microrganismo'::text])))"
+    },
+    {
+      "name": "catalogo_volumes_medida_shape",
+      "relation": "catalogo_volumes",
+      "validated": true,
+      "definition": "CHECK ((((medida = 'volume'::text) AND (volume_ml IS NOT NULL) AND (volume_ml > (0)::numeric)) OR ((medida = 'embalagem'::text) AND (volume_ml IS NULL) AND (item_tipo = 'produto'::text) AND (preco_brl = (0)::numeric) AND (rotulo IS NOT NULL) AND (btrim(rotulo) <> ''::text))))"
+    },
+    {
+      "name": "catalogo_volumes_microrganismo_id_fkey",
+      "relation": "catalogo_volumes",
+      "validated": true,
+      "definition": "FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "catalogo_volumes_owner_organization_id_fkey",
+      "relation": "catalogo_volumes",
+      "validated": true,
+      "definition": "FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "name": "catalogo_volumes_pkey",
+      "relation": "catalogo_volumes",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "catalogo_volumes_preco_brl_check",
+      "relation": "catalogo_volumes",
+      "validated": true,
+      "definition": "CHECK ((preco_brl >= (0)::numeric))"
+    },
+    {
+      "name": "catalogo_volumes_produto_id_fkey",
+      "relation": "catalogo_volumes",
+      "validated": true,
+      "definition": "FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "pp_codigo_version",
+      "relation": "product_packagings",
+      "validated": true,
+      "definition": "UNIQUE (product_id, codigo, version)"
+    },
+    {
+      "name": "pp_presentation_link",
+      "relation": "product_packagings",
+      "validated": true,
+      "definition": "TRIGGER DEFERRABLE INITIALLY DEFERRED"
+    },
+    {
+      "name": "pp_window",
+      "relation": "product_packagings",
+      "validated": true,
+      "definition": "CHECK (((valid_to IS NULL) OR (valid_to >= valid_from)))"
+    },
+    {
+      "name": "product_packagings_codigo_check",
+      "relation": "product_packagings",
+      "validated": true,
+      "definition": "CHECK ((btrim(codigo) <> ''::text))"
+    },
+    {
+      "name": "product_packagings_id_fkey",
+      "relation": "product_packagings",
+      "validated": true,
+      "definition": "FOREIGN KEY (id) REFERENCES catalogo_volumes(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "product_packagings_peso_liquido_kg_check",
+      "relation": "product_packagings",
+      "validated": true,
+      "definition": "CHECK ((peso_liquido_kg > (0)::numeric))"
+    },
+    {
+      "name": "product_packagings_pkey",
+      "relation": "product_packagings",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "product_packagings_product_id_fkey",
+      "relation": "product_packagings",
+      "validated": true,
+      "definition": "FOREIGN KEY (product_id) REFERENCES produtos(id)"
+    },
+    {
+      "name": "product_packagings_version_check",
+      "relation": "product_packagings",
+      "validated": true,
+      "definition": "CHECK ((version >= 1))"
+    },
+    {
+      "name": "product_sale_units_pkey",
+      "relation": "product_sale_units",
+      "validated": true,
+      "definition": "PRIMARY KEY (product_id)"
+    },
+    {
+      "name": "product_sale_units_product_id_fkey",
+      "relation": "product_sale_units",
+      "validated": true,
+      "definition": "FOREIGN KEY (product_id) REFERENCES produtos(id)"
+    },
+    {
+      "name": "product_sale_units_unidade_conteudo_check",
+      "relation": "product_sale_units",
+      "validated": true,
+      "definition": "CHECK ((unidade_conteudo = ANY (ARRAY['kg'::text, 'g'::text, 'ml'::text, 'l'::text])))"
+    },
+    {
+      "name": "product_sale_units_version_check",
+      "relation": "product_sale_units",
+      "validated": true,
+      "definition": "CHECK ((version >= 1))"
+    },
+    {
+      "name": "produtos_familia_catalogo_check",
+      "relation": "produtos",
+      "validated": true,
+      "definition": "CHECK (((familia_catalogo IS NULL) OR (familia_catalogo = ANY (ARRAY['biologico'::text, 'quimico'::text, 'fertilizante_adubo'::text]))))"
+    },
+    {
+      "name": "produtos_owner_organization_id_fkey",
+      "relation": "produtos",
+      "validated": true,
+      "definition": "FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "name": "produtos_pkey",
+      "relation": "produtos",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)"
+    }
+  ]
+}
