@@ -360,7 +360,7 @@ def install(B, out):
     assert loaded.returncode == 0, loaded.stderr
     values2 = ",".join("('" + s.replace("'", "''") + "')" for s in CHANGED + [SCOPE, ALLOW, DELIVERY_SCOPE, DELIVERY])
     post = json.loads(B.last(f"""SELECT coalesce(jsonb_agg(jsonb_build_object('signature',v.signature,'md5',md5(pg_get_functiondef(p.oid)),'owner',pg_get_userbyid(p.proowner),'acl',coalesce(p.proacl::text,'')) ORDER BY v.signature),'[]'::jsonb) FROM (VALUES {values2}) v(signature) JOIN pg_proc p ON p.oid=to_regprocedure(v.signature);"""))
-    assert len(post) == len(CHANGED) + 2
+    assert len(post) == len(CHANGED) + 4
     blocks = []
     for row in post:
         blocks.append(f"DO $$DECLARE p oid:=to_regprocedure('{row['signature']}');BEGIN IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '{row['md5']}' OR (SELECT pg_get_userbyid(pr.proowner) FROM pg_proc pr WHERE pr.oid=p) IS DISTINCT FROM '{row['owner']}' OR coalesce((SELECT pr.proacl::text FROM pg_proc pr WHERE pr.oid=p),'') IS DISTINCT FROM '{row['acl']}' THEN RAISE EXCEPTION 'PILOT_POST_DRIFT {row['signature']}';END IF;END$$;")
