@@ -1,0 +1,455 @@
+{
+  "source": "disposable_canonical_post_catalog_posplans_composition",
+  "hosted": false,
+  "functions": [
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "1ef94d9d9c7aa95fd1e7e6366564f81a",
+      "owner": "postgres",
+      "signature": "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "41ce8f4c7e887241153752b6bd4b9268",
+      "owner": "postgres",
+      "signature": "platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "3a4a13bd87a0d6050fcec38847c6196c",
+      "owner": "postgres",
+      "signature": "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "7837c5852e37159d826875babf9da228",
+      "owner": "postgres",
+      "signature": "platform_private.envase_insert_final_v1()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "c150d00c4e0258ddcf4f7e2f86f53170",
+      "owner": "postgres",
+      "signature": "platform_private.envase_insert_guard_v1()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "4eab765e76ca79f16a7dd481887496d9",
+      "owner": "postgres",
+      "signature": "platform_private.guard_manual_lot_write_v1()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "58abf38671745d272abeb923ee866083",
+      "owner": "postgres",
+      "signature": "platform_private.trg_lab_lot_biological_only()"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "06e64b76968f91e19f03b24363ac610a",
+      "owner": "postgres",
+      "signature": "public.fn_sync_os_classica_downstream()"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "9d62ba2fa4fad1b6e5d5ac67045d2e98",
+      "owner": "postgres",
+      "signature": "public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "a4d47ccf5d116141ed46e9de9ea7eeaa",
+      "owner": "postgres",
+      "signature": "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "9e24938a8d716a02ba023c9fb7ce24e9",
+      "owner": "postgres",
+      "signature": "public.validate_estoque_entrada()"
+    }
+  ],
+  "dependency_functions": [
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "86711a2f96fee0a3d0f9c02b55c55bcd",
+      "owner": "postgres",
+      "signature": "platform_private.entregas_catalog_tenant_guard()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "874c9ca8b5b4e307cf995a0197f98efc",
+      "owner": "postgres",
+      "signature": "platform_private.estoque_produto_catalog_tenant_guard()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "0fc1d2741a73a92ade8e558e3dd58c20",
+      "owner": "postgres",
+      "signature": "platform_private.lotes_catalog_tenant_guard()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "8abd58791e7e27336b07e648cdef35e7",
+      "owner": "postgres",
+      "signature": "platform_private.ordens_servico_catalog_tenant_guard()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "d53f9827e3b5504e632fffe9949fa8c4",
+      "owner": "postgres",
+      "signature": "platform_private.produto_etiquetas_catalog_tenant_guard()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "2e25fe68cf66a79fbc1d2eecee8b20e9",
+      "owner": "postgres",
+      "signature": "platform_private.programacao_producao_catalog_tenant_guard()"
+    }
+  ],
+  "dependency_triggers": [
+    {
+      "name": "a000_entregas_catalog_tenant_guard",
+      "type": 23,
+      "table": "entregas",
+      "schema": "public",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER a000_entregas_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION platform_private.entregas_catalog_tenant_guard()"
+    },
+    {
+      "name": "a000_estoque_produto_catalog_tenant_guard",
+      "type": 23,
+      "table": "estoque_produto",
+      "schema": "public",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER a000_estoque_produto_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.estoque_produto_catalog_tenant_guard()"
+    },
+    {
+      "name": "a000_lotes_catalog_tenant_guard",
+      "type": 23,
+      "table": "lotes",
+      "schema": "public",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER a000_lotes_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.lotes FOR EACH ROW EXECUTE FUNCTION platform_private.lotes_catalog_tenant_guard()"
+    },
+    {
+      "name": "a000_ordens_servico_catalog_tenant_guard",
+      "type": 23,
+      "table": "ordens_servico",
+      "schema": "public",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER a000_ordens_servico_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION platform_private.ordens_servico_catalog_tenant_guard()"
+    },
+    {
+      "name": "a000_produto_etiquetas_catalog_tenant_guard",
+      "type": 23,
+      "table": "produto_etiquetas",
+      "schema": "public",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER a000_produto_etiquetas_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.produto_etiquetas FOR EACH ROW EXECUTE FUNCTION platform_private.produto_etiquetas_catalog_tenant_guard()"
+    },
+    {
+      "name": "a000_programacao_producao_catalog_tenant_guard",
+      "type": 23,
+      "table": "programacao_producao",
+      "schema": "public",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER a000_programacao_producao_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION platform_private.programacao_producao_catalog_tenant_guard()"
+    }
+  ],
+  "relations": [
+    {
+      "acl": "{postgres=arwdDxtm/postgres}",
+      "name": "authz_tickets",
+      "owner": "postgres",
+      "schema": "platform_private"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}",
+      "name": "catalogo_volumes",
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}",
+      "name": "entregas",
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,authenticated=r/postgres,service_role=arwdDxtm/postgres}",
+      "name": "estoque_movimentacoes",
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,authenticated=r/postgres,service_role=arwdDxtm/postgres}",
+      "name": "estoque_produto",
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwd/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres}",
+      "name": "lotes",
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}",
+      "name": "microrganismos",
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres}",
+      "name": "product_packagings",
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres}",
+      "name": "product_sale_units",
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,authenticated=r/postgres,service_role=arwdDxtm/postgres}",
+      "name": "produtos",
+      "owner": "postgres",
+      "schema": "public"
+    }
+  ],
+  "catalog_columns": [
+    {
+      "type": "text",
+      "table": "catalogo_volumes",
+      "column": "medida",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "catalogo_volumes",
+      "column": "owner_organization_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "numeric",
+      "table": "catalogo_volumes",
+      "column": "volume_ml",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "microrganismos",
+      "column": "owner_organization_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "boolean",
+      "table": "product_packagings",
+      "column": "ativo",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "product_packagings",
+      "column": "codigo",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "product_packagings",
+      "column": "created_by",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "product_packagings",
+      "column": "descricao",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "product_packagings",
+      "column": "id",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "product_packagings",
+      "column": "owner_organization_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "numeric",
+      "table": "product_packagings",
+      "column": "peso_liquido_kg",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "product_packagings",
+      "column": "product_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "product_packagings",
+      "column": "valid_from",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "product_packagings",
+      "column": "valid_to",
+      "nullable": "YES"
+    },
+    {
+      "type": "integer",
+      "table": "product_packagings",
+      "column": "version",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "product_sale_units",
+      "column": "forma_fisica",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "product_sale_units",
+      "column": "owner_organization_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "product_sale_units",
+      "column": "product_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "product_sale_units",
+      "column": "unidade_conteudo",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "product_sale_units",
+      "column": "updated_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "product_sale_units",
+      "column": "updated_by",
+      "nullable": "YES"
+    },
+    {
+      "type": "integer",
+      "table": "product_sale_units",
+      "column": "version",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "produtos",
+      "column": "owner_organization_id",
+      "nullable": "NO"
+    }
+  ],
+  "catalog_constraints": [
+    {
+      "name": "catalogo_volumes_owner_organization_id_fkey",
+      "table": "catalogo_volumes",
+      "definition": "FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "name": "microrganismos_owner_organization_id_fkey",
+      "table": "microrganismos",
+      "definition": "FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "name": "pp_codigo_version",
+      "table": "product_packagings",
+      "definition": "UNIQUE (product_id, codigo, version)"
+    },
+    {
+      "name": "pp_presentation_link",
+      "table": "product_packagings",
+      "definition": "TRIGGER DEFERRABLE INITIALLY DEFERRED"
+    },
+    {
+      "name": "pp_window",
+      "table": "product_packagings",
+      "definition": "CHECK (((valid_to IS NULL) OR (valid_to >= valid_from)))"
+    },
+    {
+      "name": "product_packagings_codigo_check",
+      "table": "product_packagings",
+      "definition": "CHECK ((btrim(codigo) <> ''::text))"
+    },
+    {
+      "name": "product_packagings_id_fkey",
+      "table": "product_packagings",
+      "definition": "FOREIGN KEY (id) REFERENCES catalogo_volumes(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "product_packagings_owner_organization_id_fkey",
+      "table": "product_packagings",
+      "definition": "FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "name": "product_packagings_peso_liquido_kg_check",
+      "table": "product_packagings",
+      "definition": "CHECK ((peso_liquido_kg > (0)::numeric))"
+    },
+    {
+      "name": "product_packagings_pkey",
+      "table": "product_packagings",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "product_packagings_product_id_fkey",
+      "table": "product_packagings",
+      "definition": "FOREIGN KEY (product_id) REFERENCES produtos(id)"
+    },
+    {
+      "name": "product_packagings_version_check",
+      "table": "product_packagings",
+      "definition": "CHECK ((version >= 1))"
+    },
+    {
+      "name": "product_sale_units_owner_organization_id_fkey",
+      "table": "product_sale_units",
+      "definition": "FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "name": "product_sale_units_pkey",
+      "table": "product_sale_units",
+      "definition": "PRIMARY KEY (product_id)"
+    },
+    {
+      "name": "product_sale_units_product_id_fkey",
+      "table": "product_sale_units",
+      "definition": "FOREIGN KEY (product_id) REFERENCES produtos(id)"
+    },
+    {
+      "name": "product_sale_units_unidade_conteudo_check",
+      "table": "product_sale_units",
+      "definition": "CHECK ((unidade_conteudo = ANY (ARRAY['kg'::text, 'g'::text, 'ml'::text, 'l'::text])))"
+    },
+    {
+      "name": "product_sale_units_version_check",
+      "table": "product_sale_units",
+      "definition": "CHECK ((version >= 1))"
+    },
+    {
+      "name": "produtos_owner_organization_id_fkey",
+      "table": "produtos",
+      "definition": "FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)"
+    }
+  ],
+  "existing_candidate_columns": []
+}
