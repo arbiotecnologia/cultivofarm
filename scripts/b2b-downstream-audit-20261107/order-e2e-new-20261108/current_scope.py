@@ -155,6 +155,7 @@ def _trigger_function(definition: str) -> str:
 
 def _canonical_trigger_definition(definition: str, table: str) -> str:
     definition = definition.replace(f" ON {table} ", f" ON public.{table} ")
+    definition = definition.replace("WHEN ((", "WHEN (").replace(")) EXECUTE FUNCTION", ") EXECUTE FUNCTION")
     return definition.replace("EXECUTE FUNCTION public.", "EXECUTE FUNCTION ")
 
 
@@ -337,7 +338,7 @@ def _guard(doc: dict, state_expression: str, label: str) -> str:
  FROM (VALUES {trigger_signatures}) v(signature) LEFT JOIN pg_proc p ON p.oid=to_regprocedure(v.signature))"""
     relation_actual = f"""(SELECT coalesce(jsonb_agg(jsonb_build_array(v.relation_name,coalesce((SELECT string_agg(a::text,',' ORDER BY a::text) FROM unnest(c.relacl) a),''),CASE WHEN v.check_flags THEN c.relrowsecurity ELSE NULL END,CASE WHEN v.check_flags THEN c.relforcerowsecurity ELSE NULL END,pg_get_userbyid(c.relowner)) ORDER BY v.relation_name COLLATE "C"),'[]'::jsonb)
  FROM (VALUES {relations}) v(relation_name,check_flags) LEFT JOIN pg_class c ON c.oid=to_regclass(v.relation_name))"""
-    trigger_actual = """(SELECT coalesce(jsonb_agg(jsonb_build_array(c.relname,t.tgname,t.tgenabled::text,pn.nspname||'.'||p.proname||'('||pg_get_function_identity_arguments(p.oid)||')',md5(pg_get_functiondef(p.oid)),replace(replace(pg_get_triggerdef(t.oid,true),' ON '||c.relname||' ',' ON public.'||c.relname||' '),'EXECUTE FUNCTION public.','EXECUTE FUNCTION ')) ORDER BY c.relname COLLATE "C",t.tgname COLLATE "C"),'[]'::jsonb)
+    trigger_actual = """(SELECT coalesce(jsonb_agg(jsonb_build_array(c.relname,t.tgname,t.tgenabled::text,pn.nspname||'.'||p.proname||'('||pg_get_function_identity_arguments(p.oid)||')',md5(pg_get_functiondef(p.oid)),replace(replace(replace(replace(pg_get_triggerdef(t.oid,true),' ON '||c.relname||' ',' ON public.'||c.relname||' '),'WHEN ((','WHEN ('),')) EXECUTE FUNCTION',') EXECUTE FUNCTION'),'EXECUTE FUNCTION public.','EXECUTE FUNCTION ')) ORDER BY c.relname COLLATE "C",t.tgname COLLATE "C"),'[]'::jsonb)
  FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_proc p ON p.oid=t.tgfoid JOIN pg_namespace pn ON pn.oid=p.pronamespace
  WHERE NOT t.tgisinternal AND n.nspname='public' AND c.relname IN ('entregas','entrega_comprovantes','ordens_servico','clientes','organizations','produto_etiquetas','profiles','programacao_producao','estoque_produto','estoque_movimentacoes','lotes','produtos','microrganismos','catalogo_volumes','product_sale_units','product_packagings','partner_order_items'))"""
     structural_actual = f"(({state_expression})-'functions'-'relations'-'triggers'-'send_functions')"
