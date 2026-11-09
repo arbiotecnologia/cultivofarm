@@ -111,8 +111,9 @@ BEGIN
  SELECT * INTO po FROM public.partner_orders WHERE id=p_order FOR UPDATE;
  IF NOT FOUND OR po.status<>'aprovado' OR po.approved_by IS NULL OR po.approved_at IS NULL THEN
   RAISE EXCEPTION 'B2B_FORECAST_COMMERCIAL_APPROVAL_REQUIRED' USING ERRCODE='42501';END IF;
- IF po.payment_terms_id IS NULL OR po.payment_condition_status NOT IN ('defined','approved')
-  OR (po.requires_financial_approval AND po.financial_approval_status<>'approved') THEN
+ IF po.requires_financial_approval AND po.financial_approval_status IS DISTINCT FROM 'approved' THEN
+  RETURN jsonb_build_object('deferred',true,'reason','PAYMENT_TERMS_APPROVAL_REQUIRED');END IF;
+ IF po.payment_terms_id IS NULL OR coalesce(po.payment_condition_status,'') NOT IN ('defined','approved') THEN
   RAISE EXCEPTION 'B2B_FORECAST_CONDITION_UNPROVEN' USING ERRCODE='42501';END IF;
  IF po.credit_approved_at IS NULL AND reason<>'OK' THEN
   RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_REQUIRED' USING ERRCODE='42501';END IF;
