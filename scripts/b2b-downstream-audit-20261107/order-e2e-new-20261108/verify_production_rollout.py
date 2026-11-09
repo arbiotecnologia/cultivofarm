@@ -97,6 +97,8 @@ def main():
         'manifest_sha256': sha(package / 'manifest.json'),
         'pre_sha256': sha(package / '00-production-pre-posplans.sql.readonly'),
         'capture_sha256': sha(capture_path),
+        'relation_security_sha256': sha(relation_security_path),
+        'relation_security_pins': 18,
         'composition_checks': len(checks),
         'pilot_checks': len(pilot),
         'hosted_io': False,

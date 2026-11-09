@@ -325,6 +325,8 @@ def _pair(pre_state: dict, post_state: dict, initial: bool = True) -> tuple[dict
     }
     metadata = {
         "capture_sha256": sha(CAPTURE_PATH),
+        "relation_security_sha256": sha(RELATION_SECURITY_PATH),
+        "relation_security_pins": len(SECURITY_RELATIONS),
         "independent_diff_sha256": sha(DIFF_PATH),
         "diff_baseline_sha256": sha(DIFF_BASELINE_PATH),
         "live_reconstructed_function_count": len(live_functions),
