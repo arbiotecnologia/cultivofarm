@@ -12,6 +12,13 @@ Cada ACL é convertida em um array JSONB ordenado dos textos completos de seus `
 
 Não há `GRANT`, `REVOKE` ou reordenação de ACL no PRE30. Nenhum corpo de função, tabela, constraint, trigger ou candidato DDL mudou. O candidato DDL do novo `31` é byte-idêntico ao do `31` congelado; o manifesto e `origin.json` fixam essa propriedade.
 
+## Evidência local final
+
+- A tentativa 02 passou 12/12 verificações no PostgreSQL 17.11 descartável: reprodução do falso positivo antigo, aceite da ordem equivalente, cinco divergências reais negadas e execução byte a byte de `30/31`, POST32 e rollback93.
+- Após o rollback, o writer de compra e o gate permaneceram fechados; os 18 pins de segurança, o histórico e os planos foram preservados.
+- Checagem de tipos sem erros; testes focados da interface e das ordens: 94/94 + 13/13.
+- Uma segunda geração independente do overlay foi comparada byte a byte com os artefatos promovidos. A tentativa 01, que parou por erro do adaptador do teste antes do SQL de ACL, também foi preservada em `evidence/acl-order-overlay-20261109/`.
+
 ## Uso restrito
 
 - Não reinstalar `11/21` nem repetir etapas já aplicadas.
