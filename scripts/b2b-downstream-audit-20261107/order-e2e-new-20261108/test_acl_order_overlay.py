@@ -71,7 +71,7 @@ def main():
 
     try:
         physical = ROOT / "scripts/b2b-downstream-audit-20261107/physical/finished-product"
-        generator, _ = load("acl_overlay_finished_generator", physical / "assemble.py"), None
+        generator = load("acl_overlay_finished_generator", physical / "assemble.py")
         B = load("acl_overlay_finished", physical / "test_after.py").B
         sys.modules[B.C.__name__] = B.C
         pg17 = next(Path("/nix/store").glob("*-postgresql-17.11/bin"))
