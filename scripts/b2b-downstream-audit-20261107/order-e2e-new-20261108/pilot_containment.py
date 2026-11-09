@@ -241,9 +241,9 @@ def build_bodies(raw):
         "reader outside allowlist denied")
     body = one(body,
         " IF auth.uid() IS DISTINCT FROM actor OR platform_private.b2b_internal_commercial_actor() IS NOT TRUE",
-        " IF platform_private.resale_pilot_allowed_v1('b2b_resale','read',actor,org,v_order.partner_id,p_order_id,NULL,NULL,NULL,NULL) IS DISTINCT FROM gate_open THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;\n IF auth.uid() IS DISTINCT FROM actor OR platform_private.b2b_internal_commercial_actor() IS NOT TRUE",
+        " IF platform_private.resale_pilot_scope_v1('b2b_resale','read',actor,org,v_order.partner_id,p_order_id,NULL,NULL,NULL,NULL) IS DISTINCT FROM gate_open THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;\n IF auth.uid() IS DISTINCT FROM actor OR platform_private.b2b_internal_commercial_actor() IS NOT TRUE",
         "reader revalidation")
-    defs[sig]["new"] = body
+    defs[sig]["new"] = one(body, " STABLE SECURITY DEFINER", " VOLATILE SECURITY DEFINER", "reader volatility")
 
     sig = "platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)"
     body = defs[sig]["body"]
