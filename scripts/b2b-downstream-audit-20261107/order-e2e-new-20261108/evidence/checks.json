@@ -4,7 +4,11 @@
     "status": "PASS"
   },
   {
-    "test": "physical revised install PRE POST; fresh confirmation/send generated pins",
+    "test": "restricted POSPLANOS baseline measures twenty LIVE bodies 120 triggers 17 relation ACLs and four captured dependencies before candidate generation",
+    "status": "PASS"
+  },
+  {
+    "test": "physical revised install exact measured PRE POST with six current tenant guards; fresh confirmation/send generated pins",
     "status": "PASS"
   },
   {
@@ -17,6 +21,10 @@
   },
   {
     "test": "plan tenant candidate PRE POST in same DB; seller positive FSF read write negative and cross tenant same code",
+    "status": "PASS"
+  },
+  {
+    "test": "post catalog Price plans preserve twenty LIVE bodies 120 triggers 17 relation ACLs and four captured dependencies",
     "status": "PASS"
   },
   {
@@ -38,7 +46,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "f847891e-b4db-4fb0-996a-a325c707e54e"
+    "order_id": "aeedcd3c-742d-4427-9afd-2bf466690cc3"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -59,7 +67,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "c8c17c72-5ca7-43e7-8777-34c0953d1e22"
+    "os_id": "8338f9a0-52ec-4e99-b3e9-fa0f8cb09aca"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -68,12 +76,12 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "d2416efa-9692-4ac5-bbf8-3cabad0dd6b9"
+    "delivery_id": "37b22b53-6547-4e9f-b250-769a797c4698"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "3b981e98-5d66-4002-b12e-b16d7b72e877"
+    "delivery_id": "b4c429b4-bfee-4938-85e3-2ad4b2e2d886"
   },
   {
     "test": "review70 two_items_only_one_os_and_delivery",
@@ -271,39 +279,10 @@
   {
     "test": "manual agronomic physical flow still passes after resale candidate",
     "status": "PASS",
-    "delivery_id": "56dd6236-d3a9-4dc9-a0d2-41a745b03d2b"
+    "delivery_id": "3b4d4135-9c44-440a-9c69-3eca6ba0e168"
   },
   {
-    "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers or reader",
-    "status": "PASS",
-    "candidate_sha256": "8ad4def8d4ae3c2e86518f2d82bf57f053cee66b0d7e165b84472cb586812c20"
-  },
-  {
-    "test": "ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback",
-    "status": "PASS"
-  },
-  {
-    "test": "composed PRE post-plans reconciles five dependencies then B4 bridge and composed POST pass without changing B4 body or always-deny",
-    "status": "PASS"
-  },
-  {
-    "test": "B4 credit exposure includes approved unbilled orders without creating receivable or using dependency seam",
-    "status": "PASS"
-  },
-  {
-    "test": "fiscal fixture satisfies every required column and passes real NOT NULL CHECK FK trigger preflight in rolled back transaction",
-    "status": "PASS"
-  },
-  {
-    "test": "real H13 authorized callback and replay preserve one durable transmission with close pending; always-deny yields zero B4 document allocation snapshot or receivable",
-    "status": "PASS"
-  },
-  {
-    "test": "same fresh DB installs B4 and service bridge PRE POST after buyer seller logistics and plan controls; real always-deny preserved and positive fiscal receivable BLOCKED",
-    "status": "PASS"
-  },
-  {
-    "test": "composed reverse deny-only rollback closes bridge B4 and plans without stale B4 POST; preserves plans fiscal evidence deterministic idempotency close pending and all original ten receivable triggers",
-    "status": "PASS"
+    "test": "new composition",
+    "status": "FAIL"
   }
 ]
