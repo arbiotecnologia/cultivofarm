@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/owner-orders-20261023/durable-attempt-20261026/status-readonly-20261109/test-status-pg.py", line 21, in <module>
+    o=pg.sql('\\set VERBOSITY verbose\n'+pre,ok=False);ok('00 PRE_OK on installed durable journal (candidate pins)', 'C2AS_PRE_OK' in o, o[-300:])
+  File "/dev-server/scripts/contracts-c2-20261022/integral/pg.py", line 18, in sql
+    assert r.returncode != 0, 'expected failure, got success: ' + r.stdout[-500:]
+           ^^^^^^^^^^^^^^^^^
+AssertionError: expected failure, got success: C2AS_PRE_OK
+
