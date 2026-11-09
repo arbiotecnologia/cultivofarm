@@ -123,7 +123,14 @@ def main():
         origin = json.loads((OVERLAY / "origin.json").read_text())
         target_entry = next(row for row in origin["relations"] if row["relation"] == TARGET)
         expected_acl = target_entry["expected_acl"]
-        target_guard = generator.relation_pin(target_entry)
+        target_schema, target_name = TARGET.split(".")
+        target_relation = {
+            "schema": target_schema,
+            "name": target_name,
+            "owner": target_entry["owner"],
+            "acl": expected_acl,
+        }
+        target_guard = generator.relation_pin(target_relation)
 
         def actual_acl(relation=TARGET):
             schema, name = relation.split(".")
