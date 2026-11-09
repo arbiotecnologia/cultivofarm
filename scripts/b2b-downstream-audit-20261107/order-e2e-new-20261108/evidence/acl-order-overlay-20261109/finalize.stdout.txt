@@ -1,0 +1,9 @@
+{
+  "out": "/tmp/acl-order-overlay-kr2rTX/staging",
+  "guards_changed": 10,
+  "ddl_candidate_sha256": "93aa96092d2e7210bfc8ae7e6741db41bd439c1ac737fc8301248ce1ff9dabbf",
+  "pre_sha256": "bfc9718efe58008d6d6891d7e3464f5e032cd3d9628416daf5e0ef46828d0e48",
+  "install_sha256": "3af1e8dd9fb80c1d1c37679ca926cdf64758f94755f260fcf9b2b5165b15aebb",
+  "manifest_sha256": "26fa5beba3aa6303525d9e6c7542125d537bec4173f782b4145d182418a607d7",
+  "local_verification": "PASS_DISPOSABLE_PG17_NOT_HOSTED"
+}
