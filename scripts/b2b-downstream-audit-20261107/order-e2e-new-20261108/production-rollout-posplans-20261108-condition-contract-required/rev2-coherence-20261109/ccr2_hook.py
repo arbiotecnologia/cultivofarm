@@ -194,34 +194,90 @@ def run(ns):
     check("CCR2 concorrência ativação: piloto ampliado durante create legado aberto -> commit negado (sem pedido/idempotência)",
           rs[1].returncode == 0 and rs[0].returncode != 0 and "B2B_PAYMENT_CONDITION_REQUIRED" in rs[0].stderr and idem("CCR2-CONC-ACT") == "0",
           (rs[0].stderr[-200:], rs[1].stderr[-200:]))
-    # (c) revocation (assign disabled) racing create of PN.
+    # ---------- revocation / retirement races: the SECOND operation must really succeed and persist ----------
+    def coherent(key):
+        return psql("SELECT count(*) FROM platform_private.b2b_order_condition_snapshots s JOIN public.partner_order_idempotency i ON i.order_id=s.order_id "
+                    f"JOIN public.partner_orders o ON o.id=s.order_id WHERE i.idempotency_key='{key}' AND s.partner_id=o.partner_id AND s.plan_id=o.payment_plan_id").stdout.strip()
+
+    def revoked(partner, c):
+        return psql(f"SELECT count(*) FROM platform_private.b2b_condition_assignment_revocations WHERE organization_id='{A}' AND partner_id='{partner}' AND plan_id='{P3}' "
+                    f"AND version={c['payment_condition_version']} AND method='{c['payment_method']}'").stdout.strip() == "1"
+
+    def retired(c):
+        return psql(f"SELECT count(*) FROM platform_private.b2b_condition_retirements WHERE organization_id='{A}' AND plan_id='{P3}' "
+                    f"AND version={c['payment_condition_version']} AND method='{c['payment_method']}'").stdout.strip() == "1"
+
+    def verdict(rs, key, persisted):
+        # PASS requires: 2nd op exit 0 AND its effect persisted AND create either committed coherently or left nothing.
+        create_ok = (rs[0].returncode == 0 and idem(key) == "1" and coherent(key) == "1") or (rs[0].returncode != 0 and idem(key) == "0")
+        return rs[1].returncode == 0 and persisted() and create_ok, {"create_rc": rs[0].returncode, "second_rc": rs[1].returncode,
+                "persisted": persisted(), "idem": idem(key), "coherent": coherent(key), "create_err": rs[0].stderr[-160:], "second_err": rs[1].stderr[-160:]}
+
+    def after_denied(uid, partner, items, c, key):
+        sx, _ = sim(uid, P3, items, c, partner=partner)
+        r = psql(session(uid, f"SELECT {create_sql(partner, P3, items, sx and sx['cart_hash'], key, c)};"), check=False)
+        return r.returncode != 0 and idem(key) == "0", r.stderr[-200:]
+
     cR, _ = opt(UN, PN, P3)
     if cR:
         sr, _ = sim(UN, P3, [S(1)], cR, partner=PN)
+        # Mutation proof: the same race with an INJECTED failing revocation (stale version) must make the verdict FAIL.
+        bad = dict(cR, payment_condition_version=cR["payment_condition_version"] + 999)
+        cr = session(UN, f"BEGIN; SELECT {create_sql(PN, P3, [S(1)], sr and sr['cart_hash'], 'CCR2-CONC-REV-INJ', cR)}; SELECT pg_sleep(1.2); COMMIT;")
+        rv = session(UADM, f"SELECT public.b2b_payment_condition_assign('{PN}','{P3}','{cR['payment_method']}',{bad['payment_condition_version']},false);")
+        rs = parallel([cr, rv], [0, 0.4]); v, d = verdict(rs, "CCR2-CONC-REV-INJ", lambda: revoked(PN, cR))
+        check("CCR2 mutação: revogação injetada com falha reprova o veredito de concorrência", rs[1].returncode != 0 and not v, d)
+        res["mutation_revocation"] = d
+        sr, _ = sim(UN, P3, [S(1)], cR, partner=PN)
         cr = session(UN, f"BEGIN; SELECT {create_sql(PN, P3, [S(1)], sr and sr['cart_hash'], 'CCR2-CONC-REV', cR)}; SELECT pg_sleep(1.2); COMMIT;")
         rv = session(UADM, f"SELECT public.b2b_payment_condition_assign('{PN}','{P3}','{cR['payment_method']}',{cR['payment_condition_version']},false);")
-        rs = parallel([cr, rv], [0, 0.4])
-        check("CCR2 concorrência revogação: create REAL e revogação serializam sem pedido incoerente",
-              (rs[0].returncode == 0 and idem("CCR2-CONC-REV") == "1") or (rs[0].returncode != 0 and idem("CCR2-CONC-REV") == "0"), (rs[0].stderr[-200:], rs[1].stderr[-200:]))
+        rs = parallel([cr, rv], [0, 0.4]); v, d = verdict(rs, "CCR2-CONC-REV", lambda: revoked(PN, cR))
+        check("CCR2 concorrência revogação: revogação REAL exit 0 e persistida; create serializa sem pedido incoerente", v, d)
+        res["race_revocation"] = d
+        c2, _ = opt(UN, PN, P3)
+        check("CCR2 após revogação: PN sem opção disponível", c2 is None, c2)
+        ok_, e = after_denied(UN, PN, [S(1)], cR, "CCR2-POST-REV-COND")
+        check("CCR2 após revogação: writer de condição REAL negado, sem idempotência", ok_, e)
         r = legacy(UN, P3, [S(1)], "CCR2-POST-REV", partner=PN)
         check("CCR2 após revogação: parceiro required NÃO cai no legado", r.returncode != 0 and "B2B_PAYMENT_CONDITION_REQUIRED" in r.stderr and idem("CCR2-POST-REV") == "0", r.stderr[-200:])
     else:
         check("CCR2 concorrência revogação: PN tem opção", False, "sem opção para PN")
-    # (b) retirement racing a condition create: create holds version FOR SHARE; retire waits; order remains coherent.
     cC, _ = opt(UBC, PC, P3)
     if cC:
         sc, _ = sim(UBC, P3, [L(1)], cC, partner=PC)
+        cr = session(UBC, f"BEGIN; SELECT {create_sql(PC, P3, [L(1)], sc and sc['cart_hash'], 'CCR2-CONC-RET-INJ', cC)}; SELECT pg_sleep(1.2); COMMIT;")
+        rt = session(UADM, f"SELECT public.b2b_payment_condition_retire('{P3}','{cC['payment_method']}',{cC['payment_condition_version'] + 999});")
+        rs = parallel([cr, rt], [0, 0.4]); v, d = verdict(rs, "CCR2-CONC-RET-INJ", lambda: retired(cC))
+        check("CCR2 mutação: aposentadoria injetada com falha reprova o veredito de concorrência", rs[1].returncode != 0 and not v, d)
+        res["mutation_retirement"] = d
+        sc, _ = sim(UBC, P3, [L(1)], cC, partner=PC)
         cr = session(UBC, f"BEGIN; SELECT {create_sql(PC, P3, [L(1)], sc and sc['cart_hash'], 'CCR2-CONC-RET', cC)}; SELECT pg_sleep(1.2); COMMIT;")
         rt = session(UADM, f"SELECT public.b2b_payment_condition_retire('{P3}','{cC['payment_method']}',{cC['payment_condition_version']});")
-        rs = parallel([cr, rt], [0, 0.4])
-        coh = psql("SELECT count(*) FROM platform_private.b2b_order_condition_snapshots s JOIN public.partner_order_idempotency i ON i.order_id=s.order_id "
-                   f"JOIN public.partner_orders o ON o.id=s.order_id WHERE i.idempotency_key='CCR2-CONC-RET' AND s.partner_id=o.partner_id AND s.plan_id=o.payment_plan_id").stdout.strip()
-        check("CCR2 concorrência aposentadoria: create REAL e retire serializam; pedido (se criado) tem snapshot coerente, sem pedido parcial",
-              (rs[0].returncode == 0 and coh == "1") or (rs[0].returncode != 0 and idem("CCR2-CONC-RET") == "0"), (rs[0].stderr[-200:], rs[1].stderr[-200:], coh))
+        rs = parallel([cr, rt], [0, 0.4]); v, d = verdict(rs, "CCR2-CONC-RET", lambda: retired(cC))
+        check("CCR2 concorrência aposentadoria: retire REAL exit 0 e persistido; create serializa sem pedido incoerente", v, d)
+        res["race_retirement"] = d
+        ok_, e = after_denied(UBC, PC, [L(1)], cC, "CCR2-POST-RET-COND")
+        check("CCR2 após aposentadoria: writer de condição REAL negado, sem idempotência", ok_, e)
         r = legacy(UBC, P3, [L(1)], "CCR2-POST-RET", partner=PC)
-        check("CCR2 após aposentadoria: parceiro required continua sem fallback legado", r.returncode != 0 and "B2B_PAYMENT_CONDITION_REQUIRED" in r.stderr, r.stderr[-200:])
+        check("CCR2 após aposentadoria: parceiro required continua sem fallback legado", r.returncode != 0 and "B2B_PAYMENT_CONDITION_REQUIRED" in r.stderr and idem("CCR2-POST-RET") == "0", r.stderr[-200:])
     else:
         check("CCR2 concorrência aposentadoria: PC tem opção atribuída", False, "sem opção para PC")
+    # ---------- snapshot immutability / ACL (B3 objects, read-only checks) ----------
+    for t in ("b2b_order_condition_snapshots", "b2b_order_condition_quote_snapshots", "b2b_condition_assignment_revocations", "b2b_condition_retirements"):
+        e = psql(f"BEGIN; UPDATE platform_private.{t} SET created_at=created_at WHERE true; ROLLBACK;" if t.endswith("snapshots") else f"BEGIN; DELETE FROM platform_private.{t}; ROLLBACK;", check=False)
+        n = psql(f"SELECT count(*) FROM platform_private.{t}").stdout.strip()
+        check(f"CCR2 {t}: UPDATE/DELETE negados pelo gatilho imutável (mesmo postgres)", n == "0" or "B2B_CONDITION_RECORD_IMMUTABLE" in e.stderr, e.stderr[-160:])
+        acl = psql(f"SELECT bool_or(has_table_privilege(r,'platform_private.{t}','SELECT,INSERT,UPDATE,DELETE,TRUNCATE')) FROM unnest(ARRAY['anon','authenticated','service_role']) r").stdout.strip()
+        check(f"CCR2 {t}: nenhum privilégio de tabela para anon/authenticated/service_role", acl == "f", acl)
+    # ---------- writer pins used here vs LIVE reported by the auditor (never repinned) ----------
+    LIVE = {"public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "fe82f5381d426136f2627803f3b0005d",
+            "public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)": "e86385fefb25c68d9dd4d0fef6619f27"}
+    wp = {k: {"harness": md5_of(k), "live_reported": v} for k, v in LIVE.items()}
+    for k, v in wp.items():
+        v["equal"] = v["harness"] == v["live_reported"]
+        (work / ("writer-" + k.split("(")[0].split(".")[1] + ".harness.sql")).write_text(psql(f"SELECT pg_get_functiondef('{k}'::regprocedure)").stdout)
+    res["writer_pins"] = wp
+    check("CCR2 pins dos writers usados registrados vs LIVE (divergência exige diff, não repin)", True, wp)
     check("CCR2 coerência global: todo snapshot casa parceiro/plano/empresa do pedido",
           psql("SELECT count(*) FROM platform_private.b2b_order_condition_snapshots s JOIN public.partner_orders o ON o.id=s.order_id JOIN public.partner_accounts a ON a.id=o.partner_id "
                "WHERE s.partner_id<>o.partner_id OR s.plan_id<>o.payment_plan_id OR s.organization_id<>a.commercial_owner_organization_id").stdout.strip() == "0")
