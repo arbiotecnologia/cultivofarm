@@ -99,7 +99,21 @@ SEAMS23 = """DO $s$ BEGIN
 END $s$;
 ALTER TABLE public.entregas ADD COLUMN IF NOT EXISTS estoque_produto_id uuid;
 ALTER TABLE public.platform_org_admin_invites ADD COLUMN IF NOT EXISTS access_operation_status text, ADD COLUMN IF NOT EXISTS access_valid_after timestamptz;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS senha_provisoria boolean NOT NULL DEFAULT false;"""
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS senha_provisoria boolean NOT NULL DEFAULT false;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
+DO $j$ BEGIN IF to_regprocedure('auth.jwt()') IS NULL THEN
+ -- Declared Auth seam (Supabase shape): claims from request.jwt.claims; iat absent -> access_valid_after branch inert.
+ CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $f$ SELECT coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $f$;
+END IF; END $j$;"""
+
+# Real hosted capture of 22/10 (contracts-c2 integral hosted-capture.json fns[98]); NOT reconfirmed 09/11 -> declared, capture requested.
+HC = ROOT / "scripts/contracts-c2-20261022/integral/hosted-capture.json"
+def hosted_fn(name):
+    for f in json.loads(HC.read_text())["fns"]:
+        if f.get("def", "").startswith("CREATE OR REPLACE FUNCTION " + name + "("):
+            return f["def"]
+    raise SystemExit("HOSTED_CAPTURE_MISSING " + name)
+EXTRA_REAL = ["platform_private.assert_b2b_partner_scope"]
 
 
 def install23(psql, check, res, out_dir):
@@ -108,10 +122,16 @@ def install23(psql, check, res, out_dir):
     r = psql("BEGIN;\n" + SEAMS23 + "\nCOMMIT;"); res["live23_seams"] = {"rc": r.returncode, "err": (r.stderr or "")[-800:]}
     if psql("SELECT to_regprocedure('platform_private.resale_pilot_delivery_scope_v1(text,text,uuid,uuid,uuid)') IS NULL").stdout.strip() == "t":
         r = psql("BEGIN;\n" + s61_sql() + "COMMIT;"); res["live23_s61"] = {"rc": r.returncode, "err": (r.stderr or "")[-800:]}
+    res["live23_extra_real_unconfirmed"] = {}
+    for n in EXTRA_REAL:
+        if psql(f"SELECT count(*) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname='{n}'").stdout.strip() == "0":
+            body = hosted_fn(n); r = psql("BEGIN;\n" + body.rstrip("\n") + ";\nREVOKE ALL ON FUNCTION " + n + "(uuid,uuid) FROM PUBLIC;\nCOMMIT;")
+            res["live23_extra_real_unconfirmed"][n] = {"source": "contracts-c2-20261022 hosted-capture 22/10", "rc": r.returncode, "err": (r.stderr or "")[-300:],
+                "md5_mirror": psql(f"SELECT md5(pg_get_functiondef('{n}(uuid,uuid)'::regprocedure))").stdout.strip()}
     out = {}
     for x in cap:
         sig = x["signature"]
-        before = psql(f"SELECT CASE WHEN to_regprocedure('{sig}') IS NULL THEN '<<ABSENT>>' ELSE pg_get_functiondef('{sig}'::regprocedure) END").stdout.rstrip("\n")
+        before = psql(f"SELECT coalesce((SELECT pg_get_functiondef(p) FROM to_regprocedure('{sig}') p WHERE p IS NOT NULL),'<<ABSENT>>')").stdout.rstrip("\n")
         (d / (sig.split("(")[0] + ".mirror-before.sql")).write_text(before + "\n")
         mb = hashlib.md5((before + "\n").encode()).hexdigest() if before != "<<ABSENT>>" else None
         sql = ["BEGIN;"]
