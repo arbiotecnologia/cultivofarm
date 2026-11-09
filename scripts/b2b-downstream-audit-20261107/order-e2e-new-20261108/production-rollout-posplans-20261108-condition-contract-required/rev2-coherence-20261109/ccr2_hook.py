@@ -65,9 +65,6 @@ def run(ns):
           and md5_of("platform_private.b2b_condition_required_check()") == "236b821b0ca568c81a9667512dae5def",
           (md5_of("platform_private.b2b_condition_mode(uuid)"), md5_of("platform_private.b2b_condition_required_check()")))
 
-    # Legacy historical order of a partner later added to the pilot (PB-001038 shape): create while PN is legacy is impossible
-    # here (PN is already in pilot), so a historical row is created as the real legacy writer would leave it for seller A
-    # partner PO (not in pilot), then PO stays legacy; and one for PN is inserted with the B3 trigger deferred-satisfied by
     # being on a NULL plan and later moved - that path is exactly what rev2 must deny.
 
     r = runsql("80-ccr2-pre.sql.readonly"); check("CCR2 80 PRE_OK no B3 instalado", r.returncode == 0 and "CCR2_PRE_OK" in r.stderr, r.stderr[-400:])
