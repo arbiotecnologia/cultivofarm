@@ -86,7 +86,25 @@ def run(psql0, check, md5_of, call_sql, res, out_dir, ids):
     for n in DEPS:
         if deps_pre[n] == "0":
             sql.append(fn41(n))
+    res["live_exact7_drop_recreate"] = {}
     for x in cap:
+        sig = x["sig"]
+        rt_live = re.search(r"\n RETURNS (.*)\n", x["definition"]).group(1)
+        rt_mirror = psql(f"SELECT pg_get_function_result('{sig}'::regprocedure)").stdout.strip() if pre[sig] != "<<ABSENT>>" else None
+        if rt_mirror is not None and rt_mirror != rt_live:
+            # Return/OUT shape differs (mirror body was a reduced stub): DROP without CASCADE (fails if a dependency exists),
+            # recreate verbatim, then restore exactly the mirror's previous proacl (no new grantee/privilege).
+            acl = psql(f"SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid='{sig}'::regprocedure").stdout.strip()
+            res["live_exact7_drop_recreate"][sig] = {"mirror_result": rt_mirror, "live_result": rt_live, "mirror_acl_restored": acl}
+            sql.append(f"DROP FUNCTION {sig};")
+            sql.append(x["definition"].rstrip("\n") + ";")
+            sql.append(f"REVOKE ALL ON FUNCTION {sig} FROM PUBLIC;")
+            for item in re.findall(r"([a-z_]*)=([A-Za-z*]+)/", acl.strip("{}")):
+                if item[0] and item[0] != "postgres" and "X" in item[1]:
+                    sql.append(f"GRANT EXECUTE ON FUNCTION {sig} TO {item[0]};")
+                elif item[0] == "" and "X" in item[1]:
+                    sql.append(f"GRANT EXECUTE ON FUNCTION {sig} TO PUBLIC;")
+            continue
         sql.append(x["definition"].rstrip("\n") + ";")
     sql.append("COMMIT;")
     f = pathlib.Path(out_dir) / "live-exact-7" / "overlay.sql"; f.write_text("\n".join(sql) + "\n")
@@ -96,6 +114,10 @@ def run(psql0, check, md5_of, call_sql, res, out_dir, ids):
     check("CCR2 LIVE7: 7 corpos LIVE + dependência real da etapa 41 instalados no espelho", r.returncode == 0, (r.stderr or "")[-400:])
     if r.returncode != 0:
         return False
+    acl_after = {x["sig"]: psql(f"SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid='{x['sig']}'::regprocedure").stdout.strip() for x in cap}
+    res["live_exact7_acl_after"] = acl_after
+    for sig, v in res["live_exact7_drop_recreate"].items():
+        check(f"CCR2 LIVE7: {sig} recriado com ACL idêntica à do espelho anterior", sorted(acl_after[sig].strip("{}").split(",")) == sorted(v["mirror_acl_restored"].strip("{}").split(",")) or (acl_after[sig] in ("", "{postgres=X/postgres}") and v["mirror_acl_restored"] in ("", "{postgres=X/postgres}")), (acl_after[sig], v))
     md = {x["sig"]: {"mirror": md5_of(x["sig"]), "live": x["md5"], "mirror_before": hashlib.md5((pre[x["sig"]] + "\n").encode()).hexdigest()} for x in cap}
     res["live_exact7_md5"] = md
     check("CCR2 LIVE7: md5(pg_get_functiondef) dos 7 no espelho = captura produção 09/11", all(v["mirror"] == v["live"] for v in md.values()),
