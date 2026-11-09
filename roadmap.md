@@ -1586,3 +1586,5 @@
 ## 09/11 13:31 — relato auditor produção (owner FK)
 - [x] Registrar relato: PRE25 real PASS, 26 instalada SUCCESS (não reaplicar), POST27 PASS, PRE30 overlay 2db87 real PASS; pacotes congelados intactos.
 - [ ] 31 finished_product_closed_reviewed_20261109 NÃO instalada (confirmação técnica expirada; gate/writer ausentes, migration_count 0) — aguarda aprovação humana do auditor.
+- [x] Overlay separado 40/41/42 para ACL real service_role do snapshot guard (origem migration 20261008192025); tentativa 06 PG17 descartável exit 0, 21 verificações, 50–62 e rollbacks juntos; falhas 01–05 preservadas. Sem hosted/publicação.
+- [ ] Instalação 40/41/42 do overlay e 50+ pelo auditor após revisão; leitura READ ONLY recomendada da ACL de c2_external_origin_contract_valid antes do PRE50.

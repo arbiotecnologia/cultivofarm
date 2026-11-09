@@ -4,3 +4,4 @@
 - Reconstructed logistics remains inactive and non-installable until independent full-contract review; no hosted/Auth/data/publication/external effects.
 - Public OS caller candidates wrap the existing private core without granting it EXECUTE; local partial regression callers use SQL-role authenticated through the new public endpoint, never claim hosted JWT proof.
 - Resale confirmation locks the order before OS/delivery, preserves a ready OS for uncovered item demand, and only attempts terminal sync through exact full-order coverage; partial receipts replay without advancing OS — prevents premature aborts and concurrent under-completion.
+- Function-ACL drift found by real PRE runs is fixed by a separate generated overlay that changes only the drifting pin to the real ordered aclitem set with versioned grant origin, never by adding GRANT/REVOKE or editing frozen packages — preserves real permissions and reviewed hashes.

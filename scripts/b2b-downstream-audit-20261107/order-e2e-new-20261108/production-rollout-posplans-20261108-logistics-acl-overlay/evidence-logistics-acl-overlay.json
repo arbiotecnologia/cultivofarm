@@ -1,0 +1,367 @@
+{
+  "status": "PASS",
+  "kind": "DISPOSABLE_LOGISTICS_FUNCTION_ACL_OVERLAY_NOT_HOSTED",
+  "hosted": false,
+  "verification_runner_sha256": "8489f9c1d9f91826279bec1dea70e9099e6338ab7cfd15acadcf96e543576fee",
+  "checks": [
+    {
+      "name": "baseline POSPLANOS descartável restaurada sem destino hospedado",
+      "status": "PASS"
+    },
+    {
+      "name": "pré-requisitos locais 00/11/12/20/21/22 (produção: já instalados; não reinstalar)",
+      "status": "PASS"
+    },
+    {
+      "name": "estado local equivalente ao relatado: 11/21/26/31 instalados, POST12/22/27/32 PASS (produção: não reinstalar)",
+      "status": "PASS"
+    },
+    {
+      "name": "REPRODUZIDO: PRE40 congelado rejeita a ACL real com service_role",
+      "status": "PASS"
+    },
+    {
+      "name": "guard do overlay aceita exatamente a ACL real",
+      "status": "PASS"
+    },
+    {
+      "name": "negado: service_role ausente",
+      "status": "PASS"
+    },
+    {
+      "name": "negado: authenticated extra",
+      "status": "PASS"
+    },
+    {
+      "name": "negado: anon extra",
+      "status": "PASS"
+    },
+    {
+      "name": "negado: PUBLIC extra",
+      "status": "PASS"
+    },
+    {
+      "name": "negado: grant option service_role",
+      "status": "PASS"
+    },
+    {
+      "name": "negado: role cliente nova",
+      "status": "PASS"
+    },
+    {
+      "name": "negado: grantor diferente",
+      "status": "PASS"
+    },
+    {
+      "name": "mesmo conjunto em outra ordem textual aceito",
+      "status": "PASS",
+      "detail": "{service_role=X/postgres,postgres=X/postgres}"
+    },
+    {
+      "name": "PRE40/INSTALL41/POST42 do overlay passaram; CREATE OR REPLACE preservou a ACL real",
+      "status": "PASS"
+    },
+    {
+      "name": "POST42 congelado rejeitaria a ACL real (confirma necessidade do overlay)",
+      "status": "PASS"
+    },
+    {
+      "name": "reexecução de INSTALL41 falha fechado",
+      "status": "PASS"
+    },
+    {
+      "name": "etapas congeladas 50-62 passam juntas sobre o overlay 40-42 (sem falha serial local)",
+      "status": "PASS"
+    },
+    {
+      "name": "com 51/61 instalados, writer OS nega ator sintético sem contenção (42501 B2B_RESALE_ACTOR_DENIED)",
+      "status": "PASS"
+    },
+    {
+      "name": "rollbacks deny-only 89/90/94/93/92/91 passaram e preservaram a permissão service_role real",
+      "status": "PASS"
+    },
+    {
+      "name": "após rollbacks, authenticated sem EXECUTE em writers, leitor e guard",
+      "status": "PASS",
+      "detail": {
+        "send": "permission denied",
+        "confirmation": "permission denied",
+        "os_writer": "permission denied",
+        "os_reader": "permission denied",
+        "purchase_writer": "permission denied",
+        "snapshot_guard": "permission denied"
+      }
+    },
+    {
+      "name": "gates/writers fechados, segurança de relações, histórico e planos preservados",
+      "status": "PASS"
+    }
+  ],
+  "raw": [
+    {
+      "case": "REPRODUZIDO: PRE40 congelado rejeita a ACL real com service_role",
+      "returncode": 3,
+      "stderr_tail": "ERROR:  P0001: B2B_RESALE_PRE_ACL_DRIFT platform_private.b2b_internal_order_snapshot_guard()\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "negado: service_role ausente",
+      "returncode": 3,
+      "stderr_tail": "ERROR:  P0001: B2B_RESALE_PRE_ACL_DRIFT platform_private.b2b_internal_order_snapshot_guard()\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "negado: authenticated extra",
+      "returncode": 3,
+      "stderr_tail": "ERROR:  P0001: B2B_RESALE_PRE_ACL_DRIFT platform_private.b2b_internal_order_snapshot_guard()\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "negado: anon extra",
+      "returncode": 3,
+      "stderr_tail": "ERROR:  P0001: B2B_RESALE_PRE_ACL_DRIFT platform_private.b2b_internal_order_snapshot_guard()\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "negado: PUBLIC extra",
+      "returncode": 3,
+      "stderr_tail": "ERROR:  P0001: B2B_RESALE_PRE_ACL_DRIFT platform_private.b2b_internal_order_snapshot_guard()\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "negado: grant option service_role",
+      "returncode": 3,
+      "stderr_tail": "ERROR:  P0001: B2B_RESALE_PRE_ACL_DRIFT platform_private.b2b_internal_order_snapshot_guard()\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "negado: role cliente nova",
+      "returncode": 3,
+      "stderr_tail": "ERROR:  P0001: B2B_RESALE_PRE_ACL_DRIFT platform_private.b2b_internal_order_snapshot_guard()\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "negado: grantor diferente",
+      "returncode": 3,
+      "stderr_tail": "ERROR:  P0001: B2B_RESALE_PRE_ACL_DRIFT platform_private.b2b_internal_order_snapshot_guard()\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "POST42 congelado rejeitaria a ACL real (confirma necessidade do overlay)",
+      "returncode": 3,
+      "stderr_tail": "ERROR:  P0001: B2B_RESALE_POST_ACL_DRIFT platform_private.b2b_internal_order_snapshot_guard()\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "reexecução de INSTALL41 falha fechado",
+      "returncode": 3,
+      "stderr_tail": "ERROR:  P0001: B2B_RESALE_PRE_FUNCTION_DRIFT private.guard_os_separate_approval()\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  ],
+  "final_artifacts": [
+    {
+      "file": "40-logistics-pre-after-physical.sql.readonly",
+      "package": "overlay",
+      "sha256": "604dd970604821ab2f28c01185f9405e6a7281359dacf62a0eb2c42b2c58ff41",
+      "returncode": 0
+    },
+    {
+      "file": "41-logistics-install.sql.review",
+      "package": "overlay",
+      "sha256": "565c3a91aca8322d4f806aef95033706502890b489b068b5c5197f5dce6d5c9e",
+      "returncode": 0
+    },
+    {
+      "file": "42-logistics-post.sql.readonly",
+      "package": "overlay",
+      "sha256": "f53eee19a4796ae696105b5df08d400c76483942f1601ef1c57472aa47df5799",
+      "returncode": 0
+    }
+  ],
+  "supporting_artifacts": [
+    {
+      "file": "00-production-pre-posplans.sql.readonly",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "00f726d4dbc254aaa59bce376ab7b53f2985d1a1b80c1160df0e1cc830501616",
+      "returncode": 0
+    },
+    {
+      "file": "11-confirmation-install.sql.review",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "809223b1b6b02041241f9d4bd5ad7c33635aab7bcad18f420a4ac944072163ae",
+      "returncode": 0
+    },
+    {
+      "file": "12-confirmation-post.sql.readonly",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "e45c25b5bec99c6cb6d57b717ab82e9c97b2306966e984c9513adce42e01cd16",
+      "returncode": 0
+    },
+    {
+      "file": "20-send-pre.sql.readonly",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "79a95847c6e3e824e6f205e4a643c597c2fd4882c661e389e7260d383400afd7",
+      "returncode": 0
+    },
+    {
+      "file": "21-send-install.sql.review",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "394fcbf719ba56c3a1c663c376d1fbc6e6cc33ecd8b037d9f711c12a369dd9ef",
+      "returncode": 0
+    },
+    {
+      "file": "22-send-post.sql.readonly",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "12bb897db3595f88177db3e4712dd7b7bb8232cd4c444e684a74e3ac413dff5f",
+      "returncode": 0
+    },
+    {
+      "file": "25-owner-fk-pre.sql.readonly",
+      "package": "production-rollout-posplans-20261108-owner-fk-integrity",
+      "sha256": "cdddc3e488f952c7971727997e0592a5760d23e7f7d2dfacb05ebacf3052f547",
+      "returncode": 0
+    },
+    {
+      "file": "26-owner-fk-install.sql.review",
+      "package": "production-rollout-posplans-20261108-owner-fk-integrity",
+      "sha256": "4c59f747b4255112e09a09768491f84ffae53e7f0f615b1213240a9eab02ffd9",
+      "returncode": 0
+    },
+    {
+      "file": "27-owner-fk-post.sql.readonly",
+      "package": "production-rollout-posplans-20261108-owner-fk-integrity",
+      "sha256": "df4656ed01f97002ec4a2b06369390f02a11d2318224763b50beab74cf522a06",
+      "returncode": 0
+    },
+    {
+      "file": "30-physical-pre-after-confirmation-send.sql.readonly",
+      "package": "production-rollout-posplans-20261108-acl-order-overlay",
+      "sha256": "bfc9718efe58008d6d6891d7e3464f5e032cd3d9628416daf5e0ef46828d0e48",
+      "returncode": 0
+    },
+    {
+      "file": "31-physical-install.sql.review",
+      "package": "production-rollout-posplans-20261108-acl-order-overlay",
+      "sha256": "3af1e8dd9fb80c1d1c37679ca926cdf64758f94755f260fcf9b2b5165b15aebb",
+      "returncode": 0
+    },
+    {
+      "file": "32-physical-post.sql.readonly",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "68baf979ce5690f76fec433d6a24b4a3abf2cf1fd8e5e3fe3a4e0a08098db11e",
+      "returncode": 0
+    },
+    {
+      "file": "50-endpoint-reader-pre.sql.readonly",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "07329a906191d729e4c62c1c77655c197c605b6a26d7a02ca6cdbe915b4421cf",
+      "returncode": 0
+    },
+    {
+      "file": "51-endpoint-reader-install.sql.review",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "617ee5279d9bcf3226c923b29767620707cb28a6c581cf01309db771960d00cb",
+      "returncode": 0
+    },
+    {
+      "file": "52-endpoint-reader-post.sql.readonly",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "bff4207adda764c9a4d7df61f8239137eee983d6a00852c72c30986770fcef88",
+      "returncode": 0
+    },
+    {
+      "file": "60-pilot-containment-pre.sql.readonly",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "439009f4ae8d87a24ced0584ca3bf24b132da1603de54fd6479c5b61e301eea0",
+      "returncode": 0
+    },
+    {
+      "file": "61-pilot-containment-install.sql.review",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "1002c477ad794e0a87b6edf14564cee15b23d75041dca18443ee7152de8a486f",
+      "returncode": 0
+    },
+    {
+      "file": "62-pilot-containment-post.sql.readonly",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "34d240d66e2b91a460e09c667260b424838487702f960154783ada1b6d9c7108",
+      "returncode": 0
+    },
+    {
+      "file": "89-pilot-containment-rollback-deny.sql.review",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "a04eaf2da211f17fdbf19cba6e613a1bfce55e6a5593617adf8e0b2e0583bd15",
+      "returncode": 0
+    },
+    {
+      "file": "90-endpoint-reader-rollback-deny.sql.review",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "2c70397082169b35840bf276d9da40e0a471d55d2374f11eeec6b22daa69ec40",
+      "returncode": 0
+    },
+    {
+      "file": "94-logistics-rollback-deny.sql.review",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "bc03a15aeb273605cec9f550d15aa8f452203ed2ff56dbc9b24eeec2a2d7974a",
+      "returncode": 0
+    },
+    {
+      "file": "93-physical-rollback-deny.sql.review",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "a02aa055b561fad022bea6c257a517aeac67ae2ae4a98b897ca7d97c20b1d72e",
+      "returncode": 0
+    },
+    {
+      "file": "92-send-rollback-deny.sql.review",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "23a7364afd6a87c219da234aebeaac281ed3bc1c2c18601b6ddeb27055473974",
+      "returncode": 0
+    },
+    {
+      "file": "91-confirmation-rollback-deny.sql.review",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "41d5a93b4e6a15bf5c4349a52afde807b26de65d01ffdb37e1619286f8375a85",
+      "returncode": 0
+    }
+  ],
+  "authenticated_real_proof": "NOT_RUN",
+  "fixture_acl_before": "{postgres=X/postgres}",
+  "fixture_acl_reconciled": {
+    "after": "{postgres=X/postgres,service_role=X/postgres}",
+    "origin": "supabase/migrations/20261008192025 GRANT EXECUTE ... TO service_role"
+  },
+  "reordered_acl": "{service_role=X/postgres,postgres=X/postgres}",
+  "postgresql_version": "17.11",
+  "closed": {
+    "os_writer": false,
+    "send_writer": false,
+    "physical_gate": false,
+    "confirm_writer": false,
+    "logistics_gate": false,
+    "purchase_writer": false
+  },
+  "authenticated_negative": {
+    "send": "permission denied",
+    "confirmation": "permission denied",
+    "os_writer": "permission denied",
+    "os_reader": "permission denied",
+    "purchase_writer": "permission denied",
+    "snapshot_guard": "permission denied"
+  },
+  "relation_security_pins": 18,
+  "history_before": {
+    "os": 8,
+    "movements": 0,
+    "deliveries": 0,
+    "receivables": 1,
+    "partner_orders": 0
+  },
+  "history_after": {
+    "os": 8,
+    "movements": 0,
+    "deliveries": 0,
+    "receivables": 1,
+    "partner_orders": 0
+  },
+  "plans_md5": "d783cb8ccbda62bbeb26f550c019ecdb",
+  "gates_activated": false,
+  "synthetic_seams": [
+    "Auth/claims e papéis SQL somente no PostgreSQL descartável",
+    "GRANT EXECUTE service_role no guard reproduz a migration de origem 20261008192025 somente no descartável",
+    "reconciliação de catálogo/FK idêntica ao runner d8dd aprovado, somente no descartável",
+    "11/21/26/31 executados localmente apenas para compor o estado relatado; produção não os reinstala",
+    "roles logacl_client/logacl_grantor existem só no descartável para testes negativos"
+  ]
+}
