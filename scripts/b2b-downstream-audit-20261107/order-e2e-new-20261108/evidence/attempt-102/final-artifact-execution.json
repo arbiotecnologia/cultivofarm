@@ -1,0 +1,127 @@
+{
+  "status": "FAIL",
+  "scope": "exact final artifacts on fresh disposable PostgreSQL 17; synthetic schema/Auth only",
+  "hosted": false,
+  "package": "/tmp/new-order-e2e-vvz7kj3x/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108",
+  "runner_sha256": "3998af2101b23b79340388afefe726245b2346932830727adad4ff6f03df2a98",
+  "artifacts": [
+    {
+      "file": "00-production-pre-posplans.sql.readonly",
+      "sha256": "00f726d4dbc254aaa59bce376ab7b53f2985d1a1b80c1160df0e1cc830501616",
+      "returncode": 0
+    },
+    {
+      "file": "11-confirmation-install.sql.review",
+      "sha256": "809223b1b6b02041241f9d4bd5ad7c33635aab7bcad18f420a4ac944072163ae",
+      "returncode": 0
+    },
+    {
+      "file": "12-confirmation-post.sql.readonly",
+      "sha256": "e45c25b5bec99c6cb6d57b717ab82e9c97b2306966e984c9513adce42e01cd16",
+      "returncode": 0
+    },
+    {
+      "file": "20-send-pre.sql.readonly",
+      "sha256": "79a95847c6e3e824e6f205e4a643c597c2fd4882c661e389e7260d383400afd7",
+      "returncode": 0
+    },
+    {
+      "file": "21-send-install.sql.review",
+      "sha256": "394fcbf719ba56c3a1c663c376d1fbc6e6cc33ecd8b037d9f711c12a369dd9ef",
+      "returncode": 0
+    },
+    {
+      "file": "22-send-post.sql.readonly",
+      "sha256": "12bb897db3595f88177db3e4712dd7b7bb8232cd4c444e684a74e3ac413dff5f",
+      "returncode": 0
+    },
+    {
+      "file": "30-physical-pre-after-confirmation-send.sql.readonly",
+      "sha256": "607ff4ed23f662be2aec66a29c14019213899acc64dbabf414ff72069d18efbb",
+      "returncode": 0
+    },
+    {
+      "file": "31-physical-install.sql.review",
+      "sha256": "c6d42ee3cc84b6d1ed7506e5643820086479d0f10c457091ceb7c8612d031632",
+      "returncode": 0
+    },
+    {
+      "file": "32-physical-post.sql.readonly",
+      "sha256": "68baf979ce5690f76fec433d6a24b4a3abf2cf1fd8e5e3fe3a4e0a08098db11e",
+      "returncode": 0
+    },
+    {
+      "file": "40-logistics-pre-after-physical.sql.readonly",
+      "sha256": "a5ecac743777804ee2fbb65a29ec04c43e77df74cd7a23e46a682dc41399c97a",
+      "returncode": 0
+    },
+    {
+      "file": "41-logistics-install.sql.review",
+      "sha256": "56631263e6ebfe51e9f02822f72c98f895a728f762d3c0ef62c575e44ee7ec09",
+      "returncode": 0
+    },
+    {
+      "file": "42-logistics-post.sql.readonly",
+      "sha256": "e893bc9fe098029b0a1d4f997cfe8ed4e48074b89dddc3d1efaf1df6e98dc0ad",
+      "returncode": 0
+    },
+    {
+      "file": "50-endpoint-reader-pre.sql.readonly",
+      "sha256": "07329a906191d729e4c62c1c77655c197c605b6a26d7a02ca6cdbe915b4421cf",
+      "returncode": 0
+    },
+    {
+      "file": "51-endpoint-reader-install.sql.review",
+      "sha256": "617ee5279d9bcf3226c923b29767620707cb28a6c581cf01309db771960d00cb",
+      "returncode": 0
+    },
+    {
+      "file": "52-endpoint-reader-post.sql.readonly",
+      "sha256": "bff4207adda764c9a4d7df61f8239137eee983d6a00852c72c30986770fcef88",
+      "returncode": 0
+    },
+    {
+      "file": "60-pilot-containment-pre.sql.readonly",
+      "sha256": "a359efa338df4841a241b8f3535edbc2422f68f63cd155359433ca93f1f3a459",
+      "returncode": 0
+    },
+    {
+      "file": "61-pilot-containment-install.sql.review",
+      "sha256": "f15069c4fad6b8a9210a1825d01e7a231f828c901a03e17462a72eb45c26aa99",
+      "returncode": 0
+    },
+    {
+      "file": "62-pilot-containment-post.sql.readonly",
+      "sha256": "172569d55d02da82340044e0703b505f1aa740dcb722a7cdccec774ecfb5dacb",
+      "returncode": 0
+    },
+    {
+      "file": "89-pilot-containment-rollback-deny.sql.review",
+      "sha256": "36d48a9f26ca524d4de6b5d588ae06825f989340ba7f0f3361cf0afa0d0e7c7f",
+      "returncode": 0
+    },
+    {
+      "file": "90-endpoint-reader-rollback-deny.sql.review",
+      "sha256": "2c70397082169b35840bf276d9da40e0a471d55d2374f11eeec6b22daa69ec40",
+      "returncode": 0
+    },
+    {
+      "file": "94-logistics-rollback-deny.sql.review",
+      "sha256": "bc03a15aeb273605cec9f550d15aa8f452203ed2ff56dbc9b24eeec2a2d7974a",
+      "returncode": 0
+    },
+    {
+      "file": "93-physical-rollback-deny.sql.review",
+      "sha256": "a02aa055b561fad022bea6c257a517aeac67ae2ae4a98b897ca7d97c20b1d72e",
+      "returncode": 0
+    },
+    {
+      "file": "92-send-rollback-deny.sql.review",
+      "sha256": "e1edda954610bfc0b59cfb85213fd8afaa680d15721d76395c1e78f08dbc8d1c",
+      "returncode": 3,
+      "stdout_tail": "",
+      "stderr_tail": "ERROR:  P0001: SEND_COMPOSED_ROLLBACK_SCOPED_FUNCTIONS\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  ],
+  "error": "Traceback (most recent call last):\n  File \"/tmp/new-order-e2e-vvz7kj3x/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/execute_final_rollout.py\", line 142, in main\n    raise AssertionError(f\"FINAL_ARTIFACT_FAILED:{name}\\n{completed.stderr[-6000:]}\")\nAssertionError: FINAL_ARTIFACT_FAILED:92-send-rollback-deny.sql.review\nERROR:  P0001: SEND_COMPOSED_ROLLBACK_SCOPED_FUNCTIONS\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n\n"
+}

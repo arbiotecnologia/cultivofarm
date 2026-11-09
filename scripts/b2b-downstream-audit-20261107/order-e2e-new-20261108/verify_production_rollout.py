@@ -2,6 +2,7 @@
 """Offline integrity verification for the scoped review-only rollout."""
 import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -17,6 +18,9 @@ def sha(path):
 
 def main():
     package = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else H / 'production-rollout-posplans-20261108'
+    pending_final = os.environ.get('ROLLOUT_DEFER_FINAL_EXECUTION') == '1'
+    if pending_final:
+        assert package.is_relative_to(Path('/tmp')), 'PENDING_FINAL_EXECUTION_NOT_TEMPORARY'
     manifest = json.loads((package / 'manifest.json').read_text())
     assert manifest['status'] == 'REVIEW_ONLY_INACTIVE_NOT_APPROVED'
     assert manifest['production_ref'] == 'swzpzcwiasxmjutrmvkm'
@@ -79,7 +83,7 @@ def main():
     assert 'Traceback' not in (package / 'evidence-run.stderr.txt').read_text()
     checks = json.loads((package / 'evidence-checks.json').read_text())
     pilot = json.loads((package / 'evidence-pilot-checks.json').read_text())['checks']
-    assert len(checks) == 41 and all(row['status'] == 'PASS' for row in checks)
+    assert all(row['status'] == 'PASS' for row in checks)
     assert len(pilot) == 30 and all(row['status'] == 'PASS' for row in pilot)
     summary = json.loads((package / 'evidence-summary.json').read_text())
     assert summary['capture_functions_md5_verified'] == 20
@@ -88,6 +92,8 @@ def main():
     assert summary['pilot_containment_checks'] == 30
     assert summary['positive_fiscal_receivable'] == 'NOT_RUN_OUT_OF_SCOPE'
     reverse = summary['full_reverse_rollback']
+    expected_checks = {'logistics-only': 40, 'integrated': 41}[reverse['branch']]
+    assert len(checks) == expected_checks, (reverse['branch'], len(checks), expected_checks)
     assert all(value is False for value in reverse['closed'].values())
     assert reverse['history_before'] == reverse['history_after']
     assert reverse['plans_before'] == reverse['plans_after']
@@ -105,8 +111,37 @@ def main():
     for text in (send_rollback, confirm_rollback):
         assert 'CREATE OR REPLACE' not in text and 'GRANT ' not in text
 
+    final_sql = {
+        path.name for path in package.iterdir()
+        if path.name.endswith('.sql.review') or path.name.endswith('.sql.readonly')
+    }
+    final_execution = manifest['final_artifact_execution']
+    if pending_final:
+        assert final_execution['status'] == 'NOT_RUN_PENDING_TEMPORARY_STAGING'
+        assert 'evidence-final-artifact-execution.json' not in manifest['files']
+        final_count = 0
+    else:
+        assert final_execution['status'] == 'PASS'
+        execution_path = package / 'evidence-final-artifact-execution.json'
+        execution = json.loads(execution_path.read_text())
+        assert execution['status'] == 'PASS' and execution['hosted'] is False
+        assert execution['postgresql_version'].startswith('17.')
+        assert execution['relation_security_preserved'] is True
+        assert execution['history_before'] == execution['history_after']
+        assert execution['plans_before_md5'] == execution['plans_after_md5']
+        assert execution['gates_activated'] is False
+        assert sha(execution_path) == final_execution['evidence_sha256']
+        executed = {row['file']: row for row in execution['artifacts']}
+        assert set(executed) == final_sql
+        for name, row in executed.items():
+            assert row['returncode'] == 0 and row['sha256'] == sha(package / name), name
+        assert all(row['permission_denied'] is True and row['returncode'] != 0
+                   for row in execution['authenticated_negative'].values())
+        final_count = len(executed)
+        assert final_count == final_execution['artifacts'] == 24
+
     print(json.dumps({
-        'status': 'VERIFIED_OFFLINE_REVIEW_ONLY_INACTIVE_NOT_APPROVED',
+        'status': 'VERIFIED_OFFLINE_PENDING_FINAL_EXECUTION' if pending_final else 'VERIFIED_OFFLINE_REVIEW_ONLY_INACTIVE_NOT_APPROVED',
         'package': str(package),
         'files_verified': len(manifest['files']),
         'manifest_sha256': sha(package / 'manifest.json'),
@@ -116,6 +151,7 @@ def main():
         'relation_security_pins': 18,
         'composition_checks': len(checks),
         'pilot_checks': len(pilot),
+        'final_artifacts_executed': final_count,
         'hosted_io': False,
         'authenticated_real_proof': 'NOT_RUN',
     }, indent=2))

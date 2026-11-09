@@ -2112,11 +2112,15 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py",
-      "sha256": "61b34d7e31cfd9e47467fc4e051c6a140173cf659986795297b56d6fdd148f3a"
+      "sha256": "4dad90d3b011c2227720111fcd40c6268a6ac93ed4d20534f4ede72500cb93a5"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/current_scope.py",
-      "sha256": "03e68e8bfd182b5fd67ce32316b7f562f308a8e4d9f0188d6d30acb50a17b545"
+      "sha256": "c3c99ba541c6031edea70c017426a0052b9987eec53765001dc460c2da8bf9b3"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/execute_final_rollout.py",
+      "sha256": "3998af2101b23b79340388afefe726245b2346932830727adad4ff6f03df2a98"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/os_endpoint.py",
@@ -2216,27 +2220,27 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/00-production-pre-posplans.sql.readonly",
-      "sha256": "1e71c12c3253e3c83874606c23771443d9b756048ea792cc8fc674859a6c681b"
+      "sha256": "f07b1fdacdff5d5e2adcf43795308c23bc0b66a9b3ffc0f5963343aeb0fc14fd"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/11-confirmation-install.sql.review",
-      "sha256": "382c6379d6d09358fb803be834eff0cceb6f58469c55abd743011e2552a757a8"
+      "sha256": "809223b1b6b02041241f9d4bd5ad7c33635aab7bcad18f420a4ac944072163ae"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/12-confirmation-post.sql.readonly",
-      "sha256": "0935a41dd73e0676b34a1f7da9fca884d93a68f3529d8128d44c8b6c1987e7e5"
+      "sha256": "e45c25b5bec99c6cb6d57b717ab82e9c97b2306966e984c9513adce42e01cd16"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/20-send-pre.sql.readonly",
-      "sha256": "33693eaa916ed1d32f655aa7af857d44aed925ea2a22550eb50c4c137080b7d9"
+      "sha256": "79a95847c6e3e824e6f205e4a643c597c2fd4882c661e389e7260d383400afd7"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/21-send-install.sql.review",
-      "sha256": "7afdc2bf45fdc15809afcd272578f6625001d8635fd4f7429e97d0f090b87928"
+      "sha256": "394fcbf719ba56c3a1c663c376d1fbc6e6cc33ecd8b037d9f711c12a369dd9ef"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/22-send-post.sql.readonly",
-      "sha256": "7fa3762c9bcfb0eb20f85343d4ace5936c0fd66a87f142c7072ffc3ecbe796f4"
+      "sha256": "12bb897db3595f88177db3e4712dd7b7bb8232cd4c444e684a74e3ac413dff5f"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/30-physical-pre-after-confirmation-send.sql.readonly",
@@ -2308,15 +2312,19 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/artifact-sources.json",
-      "sha256": "5fe152cd4c9ca3e5dfd5758a459afccf1e200d86cc0302ce4ee98fd318c07d6c"
+      "sha256": "2b5d3a4f1a1b890711854ebb797130b54fd40e159283ef0f6613ddbd89016365"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/evidence-checks.json",
-      "sha256": "c78d86fd6893f4047dc74be6f7f5f92aa1c0fc91d4020530ec0421c8e93812f0"
+      "sha256": "5ef2e342dec2d8ff76e51a7e6e93f7903b72346497a88f2d1bf47fd29593caac"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/evidence-live-catalog-guards.json",
       "sha256": "3f10a51d264d0c40afe745467a6e20a49bf0c748fb06f0ff3edf220dbf1b9bab"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/evidence-live-relation-security.json",
+      "sha256": "20a514091f0ab4301cd11f67d530e1a17b94c4a7e1fea17196f100dca51f712d"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/evidence-pilot-checks.json",
@@ -2324,23 +2332,23 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/evidence-scope-metadata.json",
-      "sha256": "0dd59616822ae4609f7da8b3793881065dd2ef03eea31e7b0408fa31bc65a224"
+      "sha256": "7e073da436afe022154166c49e4c91c822d8d63be43fa3f22511a2b7dc9aa5c8"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/evidence-source-manifest.json",
-      "sha256": "8d381e2117f29548ab81adffce647b83d9784230e281b0af162dc17cc272ebc7"
+      "sha256": "bfde08eec7c782c0670219d163538a80903342428c68e9db4d98eee05ef3e9aa"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/evidence-summary.json",
-      "sha256": "e0ff15f1454d369b0fde5390cb07644285db682b39421b7ed699cf190e7dea27"
+      "sha256": "8c396c6ce2e1c7c1f720e56a785774b0ad3bffa0a15c2e6cfea5ea12c94052f6"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/manifest.json",
-      "sha256": "8b6ffefb96f7b70608dd0927b7307d43072b20ff9da7d2d478e5ad356fa588a3"
+      "sha256": "bd09de0106bc47ea60a888883a8d9f4c1bb5ed1eca4a3d520e8e686154248693"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production_rollout.py",
-      "sha256": "d9e9d7dd594f2fa2402c56ce18874929e4b101c4891474122a449def410eef6a"
+      "sha256": "7cd5a09f498f08caf1ce7085eb90558dab18dec44cf589f5e2eb58084844eea8"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/real_baselines.py",
@@ -2387,6 +2395,10 @@
       "sha256": "88d0e91900ffa2305121a52a300e0d0febf15e08d90618631b30970bf6fec2fd"
     },
     {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_current_scope_sql.py",
+      "sha256": "5c9ebdc4be0efd0275c7bd92da39368f8eda4a682bf31986f302240f5aaa0d4d"
+    },
+    {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_os_endpoint.py",
       "sha256": "b7866c7678f0adc72b66de6c452c04b503bb49c95650f62fae41d0ef9c8245e3"
     },
@@ -2396,7 +2408,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/verify_production_rollout.py",
-      "sha256": "082025fdb93ac6b6836bbbcc84de4ecf26477a55d2684ed7fb6ae54b6382ce21"
+      "sha256": "3de0b6d1529aed91114e202ccf5059cbf79de9db9e2f0310e2ec061f82c0b087"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/physical/composition-fixes.json",

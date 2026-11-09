@@ -1,0 +1,23 @@
+{
+  "capture_sha256": "8a53b1443ed789c76115b9ef16807ae835e1e0bda888d50e6f1606197792a6ac",
+  "relation_security_sha256": "20a514091f0ab4301cd11f67d530e1a17b94c4a7e1fea17196f100dca51f712d",
+  "relation_security_pins": 18,
+  "independent_diff_sha256": "8af0e9df54e8802a6e6ebd2e9072a84799cbe72d2956b4bd2992a4526571ce6a",
+  "diff_baseline_sha256": "ef892c73f2640189e8f08c92351dd0f4db86a06869b34a175d968f6870f9bff8",
+  "live_reconstructed_function_count": 1415,
+  "guarded_existing_functions": 21,
+  "new_candidate_functions": [
+    "platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text)",
+    "platform_private.delivery_send_exact_guard_v1()",
+    "public.rpc_entrega_enviar_manual_v1(uuid,timestamp with time zone,text)",
+    "public.rpc_entrega_envio_capability_v1(uuid)"
+  ],
+  "changed_candidate_dependencies": [
+    "platform_private.delivery_mutation_guard_20261030()"
+  ],
+  "guarded_relations": 19,
+  "pre_triggers": 122,
+  "post_triggers": 123,
+  "outside_scope": "all other LIVE functions/relations remain untouched and are not pinned by this scoped guard",
+  "transcription_correction": "owner confirmed COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA; captured MD5 a4d47ccf5d116141ed46e9de9ea7eeaa is authoritative"
+}

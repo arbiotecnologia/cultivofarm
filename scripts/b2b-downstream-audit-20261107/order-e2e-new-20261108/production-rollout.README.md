@@ -32,7 +32,7 @@ Não existe script de ativação. `finished_product_gate_v1` e `b2b_resale_logis
 
 Ordem: `89` contenção → `90` endpoint/leitor → `94` logística → `93` físico → `92` ENVIO composto → `91` confirmação composta.
 
-Não usar o antigo rollback isolado de envio: seu POST intermediário é anterior às reversões de logística/físico e não representa o estado final. Os geradores `92` e `91` medem separadamente o estado escopado vigente após todas as reversões anteriores, incluindo `private` e `cf_user_guards_v1`. Cada guard exige os pins exatos medidos e qualquer divergência aborta; a única mutação é revogar o writer daquela etapa. Nenhum corpo antigo é restaurado e nenhuma allowlist, histórico ou recibo é apagado.
+Não usar o antigo rollback isolado de envio: seu POST intermediário é anterior às reversões de logística/físico e não representa o estado final. Os geradores `92` e `91` medem separadamente o estado escopado vigente após todas as reversões anteriores, incluindo `private` e `cf_user_guards_v1`. Antes da medição, os grants usados somente pelo fluxo sintético são removidos: os guards finais representam o estado realmente fechado produzido por PRE → INSTALL/POST, sem ativação escondida, e rejeitam pins com EXECUTE de cliente. Cada guard exige os pins exatos medidos e qualquer divergência aborta; a única mutação é revogar o writer daquela etapa. Nenhum corpo antigo é restaurado e nenhuma allowlist, histórico ou recibo é apagado.
 
 A inversão local completa também chama ENVIO e confirmação como papel `authenticated` depois das revogações e exige `permission denied`, além de conferir histórico, ACLs, catálogo e planos antes/depois.
 
@@ -43,6 +43,8 @@ A inversão local completa também chama ENVIO e confirmação como papel `authe
 - `evidence-live-relation-security.json`: complemento independente com os 18 pins de RLS/FORCE RLS/owner/ACL.
 - `artifact-sources.json`: origem e hash de cada artefato copiado ou insumo de cada arquivo gerado.
 - `manifest.json`: SHA256 e tamanho de todos os arquivos do pacote.
-- `verify_production_rollout.py`, na pasta pai, confere novamente arquivos, origens, captura e resultados sem conexão hospedada.
+- `evidence-final-artifact-execution.json`: execução PostgreSQL 17 dos arquivos finais exatos, com SHA256 e resultado individual de cada PRE/INSTALL/POST/ROLLBACK, negações posteriores como `authenticated` e preservação de RLS/FORCE RLS/ACLs, histórico e planos.
+- `verify_production_rollout.py`, na pasta pai, confere novamente arquivos, origens, captura, resultados e a correspondência entre os hashes executados e os artefatos promovidos, sem conexão hospedada.
+- O gerador remove somente o terminador externo da consulta `SELECT` de estado antes de embuti-la na expressão JSONB. Outro ponto-e-vírgula aborta a geração; nenhum corpo candidato ou pin de segurança é enfraquecido.
 
 A instalação futura exige revisão independente e autorização específica. A etapa autenticada permanece NOT_RUN até concessões exatas e provas reais aprovadas.

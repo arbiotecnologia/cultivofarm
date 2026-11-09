@@ -1,0 +1,15 @@
+{
+  "status": "VERIFIED_OFFLINE_REVIEW_ONLY_INACTIVE_NOT_APPROVED",
+  "package": "/dev-server/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108",
+  "files_verified": 38,
+  "manifest_sha256": "addf01d436399b348ecc1ea07ca9eb6a75b2ffc5d1c8164b8fa2274b9b14163b",
+  "pre_sha256": "00f726d4dbc254aaa59bce376ab7b53f2985d1a1b80c1160df0e1cc830501616",
+  "capture_sha256": "8a53b1443ed789c76115b9ef16807ae835e1e0bda888d50e6f1606197792a6ac",
+  "relation_security_sha256": "20a514091f0ab4301cd11f67d530e1a17b94c4a7e1fea17196f100dca51f712d",
+  "relation_security_pins": 18,
+  "composition_checks": 40,
+  "pilot_checks": 30,
+  "final_artifacts_executed": 24,
+  "hosted_io": false,
+  "authenticated_real_proof": "NOT_RUN"
+}

@@ -346,7 +346,23 @@ def _json_literal(value) -> str:
     return "'" + json.dumps(value, ensure_ascii=False, separators=(",", ":")).replace("'", "''") + "'::jsonb"
 
 
+def _state_sql_expression(state_expression: str) -> str:
+    """Remove only the outer SELECT terminator before embedding the expression.
+
+    A captured state query is a standalone SELECT ending in semicolon. Keeping
+    that terminator inside the structural jsonb subtraction produces SQLSTATE
+    42601. Any remaining semicolon is rejected instead of being stitched over.
+    """
+    expression = state_expression.strip()
+    if expression.endswith(";"):
+        expression = expression[:-1].rstrip()
+    assert expression.upper().startswith("SELECT "), "STATE_EXPRESSION_NOT_SELECT"
+    assert ";" not in expression, "STATE_EXPRESSION_MULTIPLE_STATEMENTS"
+    return expression
+
+
 def _guard(doc: dict, state_expression: str, label: str) -> str:
+    state_expression = _state_sql_expression(state_expression)
     signatures = ",".join("('%s')" % row[0].replace("'", "''") for row in doc["functions"])
     trigger_signatures = ",".join("('%s')" % row[0].replace("'", "''") for row in doc["trigger_functions"])
     relations = ",".join("('%s',%s)" % (row[0].replace("'", "''"), "true" if row[2] is not None else "false") for row in doc["relations"])
@@ -443,10 +459,17 @@ def _write_final_delivery_rollback(out: Path, stage: str, final_state: dict, sta
     }
     if stage == "send":
         label = "SEND_COMPOSED_ROLLBACK"
+        writer = "public.rpc_entrega_enviar_manual_v1(uuid,timestamp with time zone,text)"
         revoke = "REVOKE EXECUTE ON FUNCTION public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text) FROM PUBLIC,anon,authenticated,service_role;\n"
     else:
         label = "CONFIRM_COMPOSED_ROLLBACK"
+        writer = "public.rpc_entrega_confirmar_manual_v1(uuid,timestamp with time zone,text,jsonb)"
         revoke = "REVOKE EXECUTE ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;\n"
+    writer_pin = next(row for row in doc["functions"] if row[0] == writer)
+    writer_grants = writer_pin[2].split(",") if writer_pin[2] else []
+    assert not any(entry.startswith(("anon=", "authenticated=", "service_role=")) for entry in writer_grants), (
+        f"FINAL_{stage.upper()}_ROLLBACK_REQUIRES_CLOSED_WRITER", writer_pin[2]
+    )
     (out / "rollback-scope.json").write_text(json.dumps(doc, indent=2) + "\n")
     (out / "rollback-composed.sql.review").write_text(
         "BEGIN;\n" + _guard(doc, state_expression, label) + revoke + "COMMIT;\n"

@@ -133,6 +133,25 @@ def main():
         assert 'CREATE OR REPLACE' not in rollback_text and 'GRANT ' not in rollback_text
     b4_scope = json.loads((E / 'integrated-b4-fiscal-bridge.json').read_text())
     assert b4_scope['status'] == 'NOT_RUN_OUT_OF_SCOPE' and b4_scope['hosted'] is False
+    pending_final = os.environ.get('ROLLOUT_DEFER_FINAL_EXECUTION') == '1'
+    final_execution_path = E / 'final-artifact-execution.json'
+    final_execution = None
+    if pending_final:
+        # Only a temporary staging package may await exact-artifact execution.
+        assert OUT.is_relative_to(Path('/tmp')), 'PENDING_FINAL_EXECUTION_NOT_TEMPORARY'
+    else:
+        assert final_execution_path.is_file(), 'FINAL_ARTIFACT_EXECUTION_REQUIRED'
+        final_execution = json.loads(final_execution_path.read_text())
+        assert final_execution['status'] == 'PASS' and final_execution['hosted'] is False
+        assert final_execution['postgresql_version'].startswith('17.'), final_execution['postgresql_version']
+        assert final_execution['artifact_count'] == len(final_execution['artifacts'])
+        assert final_execution['relation_security_preserved'] is True
+        assert final_execution['history_before'] == final_execution['history_after']
+        assert final_execution['plans_before_md5'] == final_execution['plans_after_md5']
+        assert final_execution['gates_activated'] is False
+        assert all(value is False for value in final_execution['closed'].values())
+        assert all(row['permission_denied'] is True and row['returncode'] != 0
+                   for row in final_execution['authenticated_negative'].values())
 
     plan_post_path = ROOT / 'scripts/commercial-plans-tenant-20261108/03-post.sql.readonly'
     assert sha(plan_post_path) == '033312331dd757c72c625f027d24176efa33931c8881ab002122a4e56867e894'
@@ -208,6 +227,8 @@ def main():
         '89-pilot-containment-rollback-deny.sql.review': pilot / '04-rollback-deny.sql.review',
         'README.md': H / 'production-rollout.README.md',
     }
+    if not pending_final:
+        artifacts['evidence-final-artifact-execution.json'] = final_execution_path
     for target, source in artifacts.items():
         copy(source, target)
     generated('30-physical-pre-after-confirmation-send.sql.readonly',
@@ -216,6 +237,18 @@ def main():
     generated('40-logistics-pre-after-physical.sql.readonly',
               'BEGIN READ ONLY;\n' + pre_from_install(E / 'logistics/install.sql.review', E / 'logistics/candidate.sql.review') + 'ROLLBACK;\n',
               [E / 'logistics/install.sql.review', E / 'logistics/candidate.sql.review'])
+    final_sql = {
+        path.name for path in staging.iterdir()
+        if path.name.endswith('.sql.review') or path.name.endswith('.sql.readonly')
+    }
+    if not pending_final:
+        executed = {row['file']: row for row in final_execution['artifacts']}
+        assert set(executed) == final_sql, {
+            'not_executed': sorted(final_sql - set(executed)),
+            'missing': sorted(set(executed) - final_sql),
+        }
+        for name, row in executed.items():
+            assert row['returncode'] == 0 and row['sha256'] == sha(staging / name), name
 
     evidence_summary = {
         'evidence_directory': rel(E),
@@ -237,6 +270,12 @@ def main():
         'pilot_candidate_sha256': pilot_manifest['candidate_sha256'],
         'frontend': frontend,
         'full_reverse_rollback': rollback,
+        'final_artifact_execution': {
+            'status': 'NOT_RUN_PENDING_TEMPORARY_STAGING' if pending_final else 'PASS',
+            'artifacts': 0 if pending_final else final_execution['artifact_count'],
+            'evidence_sha256': None if pending_final else sha(final_execution_path),
+            'postgresql_version': None if pending_final else final_execution['postgresql_version'],
+        },
         'b4_fiscal_scope': b4_scope,
         'positive_fiscal_receivable': 'NOT_RUN_OUT_OF_SCOPE',
     }
@@ -280,6 +319,11 @@ def main():
         'previous_package': previous,
         'order': ['00 production PRE', '11/12 confirmation closed', '20/21/22 send closed', '30/31/32 physical OFF', '40/41/42 logistics OFF', '50/51/52 endpoint OFF', '60/61/62 ARBio containment OFF'],
         'rollback_order': ['89 pilot containment', '90 endpoint+reader', '94 logistics', '93 physical', '92 composed send measured after physical', '91 composed confirmation measured after send'],
+        'final_artifact_execution': {
+            'status': 'NOT_RUN_PENDING_TEMPORARY_STAGING' if pending_final else 'PASS',
+            'artifacts': 0 if pending_final else final_execution['artifact_count'],
+            'evidence_sha256': None if pending_final else sha(final_execution_path),
+        },
         'excluded': ['commercial plan reinstall/rollback', 'B4', 'fiscal bridge', 'NF/NFS-e', 'receivables', 'payments', 'communication', 'frontend publication', 'automatic gate activation'],
         'authenticated_real_proof': 'NOT_RUN',
         'files': files,

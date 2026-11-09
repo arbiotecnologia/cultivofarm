@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-vvz7kj3x/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production_rollout.py", line 355, in <module>
+    main()
+    ~~~~^^
+  File "/tmp/new-order-e2e-vvz7kj3x/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production_rollout.py", line 42, in main
+    assert E.is_dir() and E.is_relative_to(H / 'evidence'), E
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: /dev-server/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-102

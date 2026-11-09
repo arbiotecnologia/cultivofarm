@@ -451,6 +451,10 @@ def main():
    B.sql((pilot_out/'04-rollback-deny.sql.review').read_text())
    B.sql((OUT/'logistics/rollback.sql.review').read_text())
    B.sql((physical_out/'rollback.sql.review').read_text())
+   # Os artefatos 11/21 instalam os writers FECHADOS. Os grants acima existem
+   # somente para o fluxo sintético; removê-los antes da medição faz os guards
+   # finais representarem PRE→INSTALL/POST→ROLLBACK sem ativação escondida.
+   B.sql('REVOKE EXECUTE ON FUNCTION public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text),public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;')
    send_state=measured_final_delivery_state(S.STATE)
    current_scope.write_final_send_rollback(send_out,send_state,S.STATE)
    B.sql((send_out/'rollback-composed.sql.review').read_text())

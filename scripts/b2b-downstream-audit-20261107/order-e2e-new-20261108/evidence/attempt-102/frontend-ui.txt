@@ -1,0 +1,17 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/pedidos/resaleOsAttemptStore.test.ts (6 tests) 6ms
+ ✓ src/test/pedidos/resaleOsRequest.test.ts (10 tests) 10ms
+ ✓ src/test/pedidos/resaleOsAvailabilityPanel.test.tsx (5 tests) 175ms
+
+ Test Files  3 passed (3)
+      Tests  21 passed (21)
+   Start at  01:20:17
+   Duration  3.18s (transform 142ms, setup 583ms, collect 518ms, tests 191ms, environment 3.48s, prepare 572ms)
+
+npm notice
+npm notice New major version of npm available! 10.9.9 -> 12.2.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.2
+npm notice To update run: npm install -g npm@12.2.2
+npm notice

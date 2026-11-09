@@ -1,0 +1,18 @@
+{
+  "contract": "POSPLANOS_LIVE_CATALOG_GUARDS_V1",
+  "captured_at_reported": "2026-11-08T22:45:00Z",
+  "production_ref_reported": "swzpzcwiasxmjutrmvkm",
+  "source": "corpos fornecidos pelo proprietário; nenhuma consulta hospedada executada pelo Lovable",
+  "capture_file": "live-catalog-guards-20261108.sql.capture",
+  "capture_sha256": "8e7c2859843d6f4eb39e09e37d49be19c16a8a0c8c530b61ab6cbf26ebe4addb",
+  "hash_method": "md5(pg_get_functiondef(oid)) em PostgreSQL 17.11 descartável",
+  "functions": {
+    "platform_private.entregas_catalog_tenant_guard()": "86711a2f96fee0a3d0f9c02b55c55bcd",
+    "platform_private.estoque_produto_catalog_tenant_guard()": "874c9ca8b5b4e307cf995a0197f98efc",
+    "platform_private.lotes_catalog_tenant_guard()": "0fc1d2741a73a92ade8e558e3dd58c20",
+    "platform_private.ordens_servico_catalog_tenant_guard()": "8abd58791e7e27336b07e648cdef35e7",
+    "platform_private.produto_etiquetas_catalog_tenant_guard()": "d53f9827e3b5504e632fffe9949fa8c4",
+    "platform_private.programacao_producao_catalog_tenant_guard()": "2e25fe68cf66a79fbc1d2eecee8b20e9"
+  },
+  "status": "LOCAL_BASELINE_ONLY_NOT_INSTALLER_NOT_HOSTED_PROOF"
+}
