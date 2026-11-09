@@ -29,6 +29,8 @@ CHANGED = [
     "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
     "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
     "public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)",
+    "platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb)",
+    "public.rpc_entrega_comprovacao_preflight_v1(uuid,text)",
 ]
 
 
@@ -55,7 +57,7 @@ CREATE TABLE platform_private.resale_pilot_allowlist_v1(
   (operation='purchase' AND gate='finished_product' AND partner_id IS NULL AND order_id IS NULL AND order_item_id IS NULL AND product_id IS NOT NULL AND stock_id IS NULL AND delivery_id IS NULL)
   OR (operation='read' AND gate='b2b_resale' AND partner_id IS NOT NULL AND order_id IS NOT NULL AND order_item_id IS NULL AND product_id IS NULL AND stock_id IS NULL AND delivery_id IS NULL)
   OR (operation='os_create' AND gate='b2b_resale' AND partner_id IS NOT NULL AND order_id IS NOT NULL AND order_item_id IS NOT NULL AND product_id IS NOT NULL AND stock_id IS NULL AND delivery_id IS NULL)
-  OR (operation IN ('reserve','delivery_create') AND partner_id IS NOT NULL AND order_id IS NOT NULL AND order_item_id IS NOT NULL AND product_id IS NOT NULL AND stock_id IS NOT NULL AND delivery_id IS NULL)
+  OR (operation IN ('reserve','delivery_create') AND ((gate='b2b_resale' AND partner_id IS NOT NULL AND order_id IS NOT NULL AND order_item_id IS NOT NULL) OR (gate='finished_product' AND partner_id IS NULL AND order_id IS NULL AND order_item_id IS NULL)) AND product_id IS NOT NULL AND stock_id IS NOT NULL AND delivery_id IS NULL)
   OR (operation IN ('send','proof','confirm','cancel') AND product_id IS NOT NULL AND stock_id IS NOT NULL AND delivery_id IS NOT NULL)
  ));
 ALTER TABLE platform_private.resale_pilot_allowlist_v1 ENABLE ROW LEVEL SECURITY;
@@ -253,6 +255,18 @@ def build_bodies(raw):
     anchor = " v_e:=platform_private.delivery_confirm_recheck_v1(p_entrega,v_org);"
     body = one(body, anchor, anchor + "\n IF v_e.partner_order_id IS NOT NULL OR v_e.origem_estoque IS NOT NULL THEN\n  IF platform_private.resale_pilot_delivery_allowed_v1(CASE WHEN v_e.partner_order_id IS NULL THEN 'finished_product' ELSE 'b2b_resale' END,'cancel',v_actor,v_org,v_e.id) IS NOT TRUE THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n END IF;", "cancel writer pilot")
     defs[sig]["new"] = body
+
+    sig = "platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb)"
+    body = defs[sig]["body"]
+    anchor = " v_e:=platform_private.delivery_proof_recheck_20261030(p_entrega,v_org,p_action);"
+    body = one(body, anchor, anchor + "\n IF (v_e.partner_order_id IS NOT NULL OR v_e.origem_estoque IS NOT NULL) AND platform_private.resale_pilot_delivery_allowed_v1(CASE WHEN v_e.partner_order_id IS NULL THEN 'finished_product' ELSE 'b2b_resale' END,'proof',v_uid,v_org,v_e.id) IS NOT TRUE THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;", "proof replay and writer pilot", 3)
+    defs[sig]["new"] = body
+
+    sig = "public.rpc_entrega_comprovacao_preflight_v1(uuid,text)"
+    body = defs[sig]["body"]
+    anchor = " IF NOT FOUND OR NOT platform_private.delivery_proof_row_ok_20261030(v_e,v_org,p_action) THEN RAISE EXCEPTION 'DELIVERY_PROOF_SCOPE_DENIED' USING ERRCODE='42501'; END IF;"
+    body = one(body, anchor, anchor + "\n IF (v_e.partner_order_id IS NOT NULL OR v_e.origem_estoque IS NOT NULL) AND platform_private.resale_pilot_delivery_allowed_v1(CASE WHEN v_e.partner_order_id IS NULL THEN 'finished_product' ELSE 'b2b_resale' END,'proof',auth.uid(),v_org,v_e.id) IS NOT TRUE THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;", "proof preflight pilot")
+    defs[sig]["new"] = body
     return defs
 
 
@@ -290,7 +304,7 @@ def install(B, out):
     assert checked.returncode == 0, checked.stderr
     rollback = """UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;
 UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false WHERE singleton;
-REVOKE ALL ON FUNCTION platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid),platform_private.resale_pilot_delivery_allowed_v1(text,text,uuid,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid),platform_private.resale_pilot_delivery_allowed_v1(text,text,uuid,uuid,uuid),platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION public.rpc_finished_product_purchase_capability_v1(),public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date),public.rpc_b2b_resale_os_availability_v1(uuid),public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text) FROM PUBLIC,anon,authenticated,service_role;
 -- Deny-only: allowlist, recibos e histórico permanecem; gates nunca são reabertos.
 """
