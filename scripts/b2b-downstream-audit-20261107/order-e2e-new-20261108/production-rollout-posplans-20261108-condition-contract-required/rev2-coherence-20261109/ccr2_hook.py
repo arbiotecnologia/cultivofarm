@@ -82,8 +82,10 @@ def run(ns):
             av0 = [o for o in json.loads(r0.stdout.strip().splitlines()[-1]).get("options", []) if o.get("available")]
         except Exception:
             av0 = None
-        check("CCR2 DIAG payment_choice_required: plano com dono NULL (família compartilhada, regra LIVE) não expõe opção ao comprador -> escolha vazia",
-              r0.returncode != 0 or av0 == [], res["diagnosis_shared_plan_null_org"])
+        # Direct reproduction is impossible after install: organization_id is immutable. Cause is demonstrated by attempt-10 (shared family ->
+        # ambiguous backfill NULL -> no option -> choice None -> payment_choice_required) plus the positive/negative controls below.
+        check("CCR2 DIAG: organization_id do plano é imutável pós-instalação (forçar NULL negado por COMMERCIAL_PLAN_TENANT_IMMUTABLE)",
+              r0.returncode != 0 and "COMMERCIAL_PLAN_TENANT_IMMUTABLE" in r0.stderr, res["diagnosis_shared_plan_null_org"])
         c, dbg = opt(UB, P, PLD)
         res["positive_control_P_PLD"] = {"choice": c, "options": dbg}
         check("CCR2 CONTROLE POSITIVO: comprador P vê opção disponível em PLD exclusivo de A (fixture corrigida)", c is not None, dbg)
