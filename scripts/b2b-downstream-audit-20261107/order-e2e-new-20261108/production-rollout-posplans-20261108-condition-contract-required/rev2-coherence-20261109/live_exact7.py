@@ -37,6 +37,23 @@ def gate_sql():
     return t[a:b]
 
 
+# Declared REDUCED schema seam (B3 harness has no logistics tables). Created only if absent, EMPTY, no grants, columns limited
+# to those referenced by the verbatim step-41 bodies. Not LIVE schema (LIVE entregas has 85 columns); only lets the real bodies compile.
+# delivery_context_20261030 DDL copied verbatim from scripts/b2b-solid-packaging-order-20261106/real_triggers.py.
+LOGISTICS_SEAM = """DO $s$ BEGIN
+ IF to_regclass('public.ordens_servico') IS NULL THEN
+  CREATE TABLE public.ordens_servico(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), organization_id uuid, partner_order_id uuid REFERENCES public.partner_orders(id),
+   partner_order_item_id uuid, origem text, produto_id uuid, microrganismo_id uuid);
+  REVOKE ALL ON public.ordens_servico FROM PUBLIC; END IF;
+ IF to_regclass('public.entregas') IS NULL THEN
+  CREATE TABLE public.entregas(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), organization_id uuid, partner_order_id uuid, receivable_id uuid,
+   ordem_servico_id uuid REFERENCES public.ordens_servico(id), ordem_servico_onfarm_id uuid, cliente_id uuid, produto_id uuid, status text, quantidade_entregue numeric);
+  REVOKE ALL ON public.entregas FROM PUBLIC; END IF;
+END $s$;
+CREATE TABLE IF NOT EXISTS platform_private.delivery_context_20261030(txid bigint NOT NULL PRIMARY KEY, actor uuid NOT NULL, organization_id uuid NOT NULL,
+  action text NOT NULL, target uuid, consumed boolean DEFAULT false NOT NULL, item uuid, delivery uuid, mutation text);"""
+
+
 def run(psql0, check, md5_of, call_sql, res, out_dir, ids):
     psql = lambda q: psql0(q, check=False)
     cap = capture()
@@ -48,7 +65,9 @@ def run(psql0, check, md5_of, call_sql, res, out_dir, ids):
         pre[s] = r.stdout.rstrip("\n")
         (d / (s.split("(")[0] + ".mirror-before.sql")).write_text(pre[s] + "\n")
     deps_pre = {n: psql(f"SELECT count(*) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname='{n}'").stdout.strip() for n in DEPS}
-    sql = ["BEGIN;"]
+    sql = ["BEGIN;", LOGISTICS_SEAM]
+    res["live_exact7_seams"] = ["REDUCED logistics schema seam (empty ordens_servico/entregas if absent) + delivery_context_20261030 DDL from real_triggers.py",
+                                "Auth: request.jwt.claims set by harness (not hosted JWT)"]
     if psql(f"SELECT to_regclass('{GATE}') IS NULL").stdout.strip() == "t":
         sql.append(gate_sql())
     for n in DEPS:
