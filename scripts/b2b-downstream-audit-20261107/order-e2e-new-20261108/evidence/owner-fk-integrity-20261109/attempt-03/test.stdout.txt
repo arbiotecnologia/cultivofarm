@@ -64,3 +64,6 @@ CHECKPOINT sql_calls=6100 elapsed=144.5s
 CHECKPOINT sql_calls=6200 elapsed=147.0s
 CHECKPOINT sql_calls=6300 elapsed=149.5s
 CHECKPOINT sql_calls=6400 elapsed=151.9s
+CHECKPOINT sql_calls=6500 elapsed=154.4s
+CHECKPOINT sql_calls=6600 elapsed=157.3s
+CHECKPOINT sql_calls=6700 elapsed=159.9s
