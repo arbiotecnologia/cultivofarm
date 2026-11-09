@@ -256,7 +256,8 @@ def main():
               FROM public.{table} ORDER BY 1 LIMIT 1) selected;"""))
             key = "product_id" if table == "product_sale_units" else "id"
             expect_error(f"FK instalada impede owner inexistente em {table}",
-                         f"UPDATE public.{table} SET owner_organization_id='00000000-0000-4000-8000-00000000f666' WHERE {key}='{row['id']}';",
+                         f"""BEGIN;ALTER TABLE ONLY public.{table} DISABLE TRIGGER USER;
+                         UPDATE public.{table} SET owner_organization_id='00000000-0000-4000-8000-00000000f666' WHERE {key}='{row['id']}';COMMIT;""",
                          name, "23503")
         report["both_fks_enforced"] = True
         expect_error("reexecução de INSTALL26 falha fechado sem duplicar objetos", PACKAGE / INSTALL,
@@ -356,7 +357,8 @@ END$$;"""
                 "product_packagings.peso_liquido_kg ajustado de numeric para numeric(12,3) somente no descartável",
                 "product_sale_units.forma_fisica é recriada como coluna gerada STORED com a expressão capturada somente no descartável; produtos.oculto permanece fora do escopo do PRE",
                 "duas FKs removidas somente no descartável para reproduzir a captura real",
-                "órfãos temporários com triggers desabilitados somente na fixture e restaurados; writers finais com triggers habilitados",
+                "órfãos temporários com session_replication_role=replica somente na fixture e restaurados",
+                "sonda de enforcement usa DISABLE TRIGGER USER dentro de transação abortada no descartável; gatilhos internos da FK permanecem ativos e writers finais usam triggers habilitados",
                 "artefatos 00/11/12/20/21/22/32/93 executados apenas como composição local",
             ],
         })
