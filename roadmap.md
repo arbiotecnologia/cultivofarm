@@ -1,3 +1,10 @@
+## 09/11 02:40 — Serialização do master gate na autorização final
+- [x] Attempt 111 preservou a reprovação do candidato anterior: gate OFF confirmou enquanto o writer já autorizado ainda escrevia; a primeira versão do cenário também identificou e removeu a máscara da segunda checagem do wrapper público.
+- [x] Gerador corrigido com ordem única concessão → gate, revalidação de `enabled` e `clock_timestamp()` depois de todas as esperas e locks retidos até o fim da transação; leituras de escopo continuam sem locks. Nenhuma autoridade deriva de GUC/claims do cliente.
+- [x] Attempt 112 validou também o ramo integrado; attempt 113 logistics-only terminou `exit=0` com 40/40 checkpoints e 35/35 contenções. Gate OFF antes da autorização final negou sem OS/ticket/recibo; depois da autorização aguardou o commit do writer. Expiração e revogação concorrentes continuam PASS.
+- [x] Testes focados repetidos: UI 21/21, candidata 13/13, compatibilidade OS 73/73 e typecheck 0. Os 24 arquivos finais exatos passaram em novo PostgreSQL 17.11 descartável; reversão deny-only, cinco negações `authenticated`, 18 pins, histórico/planos preservados e gates OFF.
+- [x] Pacote `production-rollout-posplans-20261108` promovido com 38/38 arquivos/origens/hashes verificados e estado `REVIEW_ONLY_INACTIVE_NOT_APPROVED`. Sem hosted, instalação, ativação, publicação, fiscal, cobrança ou comunicação; JWT/RLS/Storage/browser reais continuam NOT_RUN.
+
 ## 09/11 01:34 — Revisão de concorrência da contenção do piloto
 - [x] Reproduzido no candidato antigo e corrigido no gerador: autorização final usa `clock_timestamp()` após `FOR UPDATE` na concessão; pré-checagens/leituras não retêm o lock e revogação compartilha a mesma linha dos writers.
 - [x] Attempt 110 `exit=0` no ramo logistics-only: 40/40 checkpoints e 33/33 contenção, incluindo transação iniciada antes do vencimento e liberada depois dele, revogação antes da autorização final e revogação que aguarda writer já autorizado; UI 21/21 + 13/13 + 73/73 e typecheck 0.
