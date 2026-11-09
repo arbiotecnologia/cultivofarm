@@ -296,7 +296,9 @@ def build_bodies(raw):
  ) THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;"""
     assert body.count(scope) == 2, f"PILOT_ANCHOR_DRIFT:group two scopes:{body.count(scope)}!=2"
     body = body.replace(scope, check.replace("resale_pilot_allowed_v1", "resale_pilot_scope_v1"), 1)
-    body = one(body, scope, check, "group authorization after OS lock")
+    head, separator, tail = body.rpartition(scope)
+    assert separator, "PILOT_ANCHOR_DRIFT:group authorization after OS lock missing"
+    body = head + check + tail
     defs[sig]["new"] = body
 
     sig = "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)"
