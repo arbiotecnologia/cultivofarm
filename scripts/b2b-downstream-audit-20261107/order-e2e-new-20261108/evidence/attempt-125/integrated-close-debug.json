@@ -1,0 +1,28 @@
+{
+  "callback": {
+    "nRec": null,
+    "cStat": "104",
+    "chNFe": "35261111111111111111111111111111111111111111",
+    "nProt": "LOCAL-INTEGRATED-PROTOCOL",
+    "state": "SUCCEEDED",
+    "outcome": "AUTHORIZED",
+    "xMotivo": "LOTE PROCESSADO; PROTOCOLO AUTORIZADO",
+    "protocolCStat": "100",
+    "transmissionId": "00000000-0000-0000-0000-000000000901",
+    "reconciliationCode": "FISCAL_AUTHORIZATION_CLOSE_PENDING",
+    "reconciliationPending": true
+  },
+  "close_pending": [
+    {
+      "transmission_id": "00000000-0000-0000-0000-000000000901",
+      "fiscal_invoice_id": "00000000-0000-0000-0000-000000000900",
+      "error_code": "FISCAL_AUTHORIZATION_CLOSE_PENDING",
+      "first_error_at": "2026-11-09T20:47:25.313974+00:00",
+      "last_error_at": "2026-11-09T20:47:25.313974+00:00",
+      "attempts": 1
+    }
+  ],
+  "direct_close_stdout": "",
+  "direct_close_stderr": "ERROR:  P0001: FISCAL_DOCUMENT_LOCKED: documento em estado AUTHORIZED nao aceita alteracao economica/fiscal informal.\nCONTEXT:  PL/pgSQL function tg_h7_fiscal_invoice_immutable_v1() line 15 at RAISE\nSQL statement \"UPDATE public.fiscal_invoices SET receivable_id=(result->>'receivable_id')::uuid,updated_at=now() WHERE id=inv.id\"\nPL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 91 at SQL statement\nPL/pgSQL function rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid) line 76 at assignment\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+  "direct_close_returncode": 3
+}
