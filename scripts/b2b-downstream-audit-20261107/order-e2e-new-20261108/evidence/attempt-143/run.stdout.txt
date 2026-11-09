@@ -1,0 +1,4 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.5s
+NEW_PHYSICAL_BOOT_OK
+PASS baseline LIVE integral: 20 corpos, 120 triggers, 17 ACLs e 4 dependências medidas
