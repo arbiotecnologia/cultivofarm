@@ -9,6 +9,8 @@ exec(compile(src[:cut],str(D/'test-local.py'),'exec'),env)
 pg,val,create,jwt,P,hA,G,T=[env[k] for k in ('pg','val','create','jwt','P','hA','G','T')]
 error,first,start,finish,holding,release,waiting,count=[env[k] for k in ('error','first','start','finish','holding','release','waiting','count')]
 CH=[]
+ADMIN=env.get('ADMIN') or env['G0']['ADMIN']
+ADMIN_B=env.get('ADMIN_B') or env['G0']['ADMIN_B']
 def ok(name,cond,detail=''):
  CH.append({'name':name,'ok':bool(cond),'detail':str(detail)[:600]});print(('PASS ' if cond else 'FAIL ')+name,flush=True)
 def jcount(u=None):
@@ -109,12 +111,12 @@ if fresh:
  # Revocation during the wait fails closed.
  h=holding(l3,'rev-holder');ps=start(f"SELECT public.partner_order_attempt_status_v1('{P}')",'status-rev',fresh)
  ok('status revocation test waits',waiting('status-rev'))
- pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=now(),revoked_by='{env['ADMIN']}',revoke_reason='synthetic' WHERE user_id='{fresh}'; SET session_replication_role=origin;")
+ pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=now(),revoked_by='{ADMIN}',revoke_reason='synthetic' WHERE user_id='{fresh}'; SET session_replication_role=origin;")
  release(h);os_,es=finish(ps)
  ok('revocation during status wait denies, no state disclosed',first(es)=='ERROR:  42501: forbidden_partner' and 'uncertain' not in os_,first(es))
  pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL WHERE user_id='{fresh}'; SET session_replication_role=origin;")
 # Negative actors.
-b=jcount();e=error(env['ADMIN_B'],f"SELECT public.partner_order_attempt_status_v1('{P}')")
+b=jcount();e=error(ADMIN_B,f"SELECT public.partner_order_attempt_status_v1('{P}')")
 ok('other tenant denied before disclosure, no writes',first(e).startswith('ERROR:  42501') and jcount()==b,first(e))
 e=error(T,f"SELECT public.partner_order_attempt_status_v1('{P}')")
 ok('isolated technician denied',first(e).startswith('ERROR:  42501'),first(e))

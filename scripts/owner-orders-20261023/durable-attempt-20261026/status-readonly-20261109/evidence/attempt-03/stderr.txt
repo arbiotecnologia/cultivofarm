@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/owner-orders-20261023/durable-attempt-20261026/status-readonly-20261109/test-status-pg.py", line 12, in <module>
+    ADMIN=env.get('ADMIN') or env['G0']['ADMIN']
+                              ~~~^^^^^^
+KeyError: 'G0'
