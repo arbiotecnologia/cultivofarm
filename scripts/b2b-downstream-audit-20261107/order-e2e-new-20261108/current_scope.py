@@ -450,7 +450,8 @@ def initial_production_pre(evidence: Path, state_expression: str, plan_post: str
         "resale_os_public_overloads": 0,
         "manual_confirmation_overloads": 0,
     }
-    return f"""-- PRE POSPLANOS escopado: captura LIVE integral + diff independente 411cbbc.
+    return f"""-- PRE POSPLANOS escopado: captura LIVE integral + complemento de 18 relações + diff independente 411cbbc.
+-- RLS/FORCE RLS/owner/ACL dos 18 pins vêm do complemento LIVE, nunca de inferência local.
 -- Funções/relações fora do recorte não são redefinidas nem exigidas em versão antiga.
 BEGIN READ ONLY;
 SET LOCAL commercial_plans.review_project_ref='{REF}';
