@@ -211,8 +211,8 @@ def build_bodies(raw):
     body = defs[sig]["body"]
     body = one(body,
         "EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled)",
-        "platform_private.resale_pilot_allowed_v1('b2b_resale','os_create',v_uid,v_org,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_order_id),p_order_id,p_order_item_id,(SELECT i.product_id FROM public.partner_order_items i WHERE i.id=p_order_item_id AND i.order_id=p_order_id),NULL,NULL)",
-        "private OS pilot", 2)
+        "platform_private.resale_pilot_scope_v1('b2b_resale','os_create',v_uid,v_org,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_order_id),p_order_id,p_order_item_id,(SELECT i.product_id FROM public.partner_order_items i WHERE i.id=p_order_item_id AND i.order_id=p_order_id),NULL,NULL)",
+        "private OS early scope", 2)
     body = one(body,
         "EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)",
         "platform_private.resale_pilot_allowed_v1('b2b_resale','os_create',v_uid,v_org,v_order.partner_id,p_order_id,p_order_item_id,v_item.product_id,NULL,NULL)",
