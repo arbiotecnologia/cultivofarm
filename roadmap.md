@@ -1,3 +1,8 @@
+## 09/11 00:27 — Correção factual da transcrição LIVE
+- [x] `COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDO` era somente erro de transcrição local; corrigido para `COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA` na PARTE 2 e na captura concatenada. Produção e captura original do auditor não foram tratadas como inconsistentes nem alteradas.
+- [x] Conferência local: 20/20 definições com MD5 igual ao declarado, incluindo `public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)` = `a4d47ccf5d116141ed46e9de9ea7eeaa`; concatenação PARTE 1 + PARTE 2 exata, com 120 triggers e 17 relações preservados.
+- [x] Evidências anteriores permanecem imutáveis: seus hashes antigos identificam a transcrição pré-correção e não foram reetiquetados como evidência da captura corrigida. Sem operação hospedada ou publicação.
+
 ## 09/11 00:05 — Contenção fail-closed do piloto autenticado ARBio
 - [x] Singletons globais deixaram de ser autoridade suficiente: overlay obrigatório server-side por ator/organização/operação e referências sintéticas exatas, com validade e revogação; leituras/manutenção existentes preservadas.
 - [x] Tentativa descartável 91 `exit=0`: 39 checkpoints da composição + 30 testes de contenção. Outra organização feature ON/papel válido e ARBio fora da allowlist negados; piloto, replays, expiração, revogação e concorrência real verificados. Nenhuma autoridade em GUC/claims de cliente.
