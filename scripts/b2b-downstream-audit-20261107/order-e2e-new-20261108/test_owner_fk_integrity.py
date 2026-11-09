@@ -171,6 +171,31 @@ def main():
                                   if row["relation"] == "catalogo_volumes" and row["name"] == "catalogo_volumes_medida_shape")
         assert not any(row["relation"] == "catalogo_volumes" and row["name"] == "catalogo_volumes_medida_shape"
                        for row in before_reconcile["constraints"])
+        invalid_measure_rows = json.loads(B.last("""SELECT coalesce(jsonb_agg(jsonb_build_object(
+          'id',id,'medida',medida,'volume_ml',volume_ml,'item_tipo',item_tipo,'preco_brl',preco_brl,'rotulo',rotulo)
+          ORDER BY id),'[]'::jsonb) FROM public.catalogo_volumes
+          WHERE ((medida='volume' AND volume_ml IS NOT NULL AND volume_ml>0)
+            OR (medida='embalagem' AND volume_ml IS NULL AND item_tipo='produto' AND preco_brl=0
+                AND rotulo IS NOT NULL AND btrim(rotulo)<>'')) IS NOT TRUE;"""))
+        assert invalid_measure_rows and all(
+            row["medida"] == "embalagem" and row["volume_ml"] is None and row["item_tipo"] == "produto"
+            and row["rotulo"] and row["preco_brl"] != 0 for row in invalid_measure_rows
+        ), invalid_measure_rows
+        # Fixture B3 antiga usava 0,01 como sentinel de preço legado. A captura real
+        # exige zero na apresentação; catalogo_precos_embalagem permanece intacta.
+        B.sql("""SET session_replication_role=replica;
+          UPDATE public.catalogo_volumes SET preco_brl=0
+          WHERE medida='embalagem' AND volume_ml IS NULL AND item_tipo='produto'
+            AND preco_brl<>0 AND rotulo IS NOT NULL AND btrim(rotulo)<>'';
+          SET session_replication_role=origin;""")
+        assert B.last("""SELECT count(*) FROM public.catalogo_volumes
+          WHERE ((medida='volume' AND volume_ml IS NOT NULL AND volume_ml>0)
+            OR (medida='embalagem' AND volume_ml IS NULL AND item_tipo='produto' AND preco_brl=0
+                AND rotulo IS NOT NULL AND btrim(rotulo)<>'')) IS NOT TRUE;""") == "0"
+        report["fixture_row_reconciliation"] = {
+            "operation": "UPDATE synthetic legacy packaging price sentinel to zero; no rows deleted; separate packaging prices untouched",
+            "before": invalid_measure_rows,
+        }
         B.sql(f"ALTER TABLE ONLY public.catalogo_volumes ADD CONSTRAINT catalogo_volumes_medida_shape {measure_constraint['definition']};")
         report["fixture_constraint_reconciliation"] = [measure_constraint]
         for table, name in TARGETS:
@@ -364,6 +389,7 @@ END$$;"""
                 "product_packagings.peso_liquido_kg ajustado de numeric para numeric(12,3) somente no descartável",
                 "product_sale_units.forma_fisica é recriada como coluna gerada STORED com a expressão capturada somente no descartável; produtos.oculto permanece fora do escopo do PRE",
                 "catalogo_volumes_medida_shape adicionada com a definição capturada somente no descartável; leitura de constraints usa pg_get_constraintdef(oid), como o PRE",
+                "somente na fixture B3 antiga, preco_brl=0,01 de apresentações foi reconciliado para zero sem apagar linhas; catalogo_precos_embalagem e dados reais permanecem intocados",
                 "duas FKs removidas somente no descartável para reproduzir a captura real",
                 "órfãos temporários com session_replication_role=replica somente na fixture e restaurados",
                 "sonda de enforcement usa DISABLE TRIGGER USER dentro de transação abortada no descartável; gatilhos internos da FK permanecem ativos e writers finais usam triggers habilitados",
