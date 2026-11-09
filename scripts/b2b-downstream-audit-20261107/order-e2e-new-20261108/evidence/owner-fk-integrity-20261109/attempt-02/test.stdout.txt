@@ -122,3 +122,13 @@ PASS B3 03-post.sql.readonly
 CHECKPOINT sql_calls=10700 elapsed=274.2s
 CHECKPOINT sql_calls=10800 elapsed=277.7s
 CHECKPOINT sql_calls=10900 elapsed=281.5s
+CHECKPOINT sql_calls=11000 elapsed=285.3s
+CHECKPOINT sql_calls=11100 elapsed=289.0s
+CHECKPOINT sql_calls=11200 elapsed=292.0s
+CHECKPOINT sql_calls=11300 elapsed=294.7s
+CHECKPOINT sql_calls=11400 elapsed=297.7s
+CHECKPOINT sql_calls=11500 elapsed=300.0s
+PASS baseline POSPLANOS descartável restaurada sem destino hospedado
+PASS pré-requisitos locais 00/11/12/20/21/22; nenhuma operação hospedada
+PASS ambiente descartável reconciliado com as duas FKs ausentes na captura real
+PASS PRE30 reprova a ausência real sem afrouxar o guard
