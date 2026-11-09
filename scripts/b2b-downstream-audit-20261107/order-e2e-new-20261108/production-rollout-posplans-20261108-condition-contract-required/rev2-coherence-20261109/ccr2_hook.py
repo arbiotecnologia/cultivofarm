@@ -288,7 +288,12 @@ def run(ns):
             # ---- revisão independente: autoridade do vendedor nas 3 revalidações (antes do lock, após row lock/antes do replay, após crédito/resolve)
             import time as _t
             BASE = SP.su() + ["psql", "-X", "-q", "-t", "-A", "-h", SP.SOCK[0], "-p", SP.PORT, "-U", "postgres", "-d", "t", "-v", "ON_ERROR_STOP=1"]
-            UFIN, UGC, USUP = ns["UFIN"], ns["UGC"], ns["SP"].USUP
+            UFIN, UGC = ns["UFIN"], ns["UGC"]
+            # superadmin de plataforma SEM papel de preço no tenant (o USUP do harness também é administrador de A, logo autorizado)
+            USA = "00000000-0000-0000-0000-0000000005a1"
+            psql(f"INSERT INTO public.profiles(user_id,organization_id,ativo) VALUES ('{USA}','{A}',true);"
+                 f"INSERT INTO public.user_roles VALUES ('{USA}','superadmin'); INSERT INTO public.superadmins VALUES ('{USA}');", check=False)
+            res.setdefault("seller_respond", {})["superadmin_fixture"] = psql(f"SELECT json_build_object('roles',(SELECT array_agg(role) FROM public.user_roles WHERE user_id='{USA}'),'sa',(SELECT count(*) FROM public.superadmins WHERE user_id='{USA}'))").stdout.strip()
             LINES = js([{"item_id": qi, "unit_price": 1000}])
             def as_sql(uid, body):
                 return (f"SET ROLE authenticated; SELECT set_config('request.jwt.claim.sub','{uid}',false), set_config('request.jwt.claims', json_build_object('sub','{uid}','role','authenticated')::text, false) \\g /dev/null\n" + body)
@@ -314,7 +319,7 @@ def run(ns):
                 check(f"CCR2 RESPOND FIX lock: {label} — esperou o lock, negou ({expect}) sem gravar/replay",
                       waited and rsp.returncode != 0 and any(x in e for x in expect) and qs(jq["id"]) == st1 and receipts() == rc0, e[-300:])
             for who, uid, tok in (("financeiro da empresa dona (sem autoridade de preço)", UFIN, "forbidden_quote_response"),
-                                  ("superadmin da plataforma (sem autoridade de preço do tenant)", USUP, "")):
+                                  ("superadmin da plataforma sem papel de preço no tenant", USA, "")):
                 st1 = qs(jq["id"]); jn, en = respond(uid, jq["id"], [{"item_id": qi, "unit_price": 1000}])
                 res["seller_respond"]["neg_" + who] = en or jn
                 check(f"CCR2 RESPOND FIX: {who} negado sem alterar estado", jn is None and bool(en) and tok in en and qs(jq["id"]) == st1, en or jn)
@@ -340,7 +345,7 @@ def run(ns):
                 res["seller_respond"]["replay_" + who] = er or jr
                 check(f"CCR2 RESPOND FIX: replay do gestor com {who} negado (não devolve recibo)", jr is None and bool(er), er or jr)
             during_lock(QK, f"DELETE FROM public.user_roles WHERE user_id='{UGC}' AND role='gestor_comercial';", f"INSERT INTO public.user_roles VALUES ('{UGC}','gestor_comercial');",
-                        UGC, "papel revogado durante o lock antes do replay", ("forbidden_quote_response", "scope_denied", "42501"))
+                        UGC, "papel revogado durante o lock antes do replay", ("forbidden_quote_response", "scope_denied", "C2_", "42501"))
             for who, uid in (("admin da empresa F", UADMF), ("comprador PN", UN), ("comprador P de outro parceiro", UB)):
                 st1 = qs(jq["id"]); jn, en = respond(uid, jq["id"], [{"item_id": qi, "unit_price": 1000}])
                 res["seller_respond"]["neg_" + who] = en or jn
