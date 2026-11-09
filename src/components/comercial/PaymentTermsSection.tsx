@@ -153,10 +153,11 @@ export function PaymentTermsSection({
               ? `${fmt(terms.financial_interest_amount)} (Price · ${condition.monthly_rate}% a.m. · ${condition.installment_count} parcela(s))`
               : `${fmt(terms.financial_interest_amount)} (${terms.monthly_interest_percent_snapshot}% a.m. × ${terms.months_count_snapshot}m)`} />
             <Field label="Valor final" value={fmt(terms.final_amount)} highlight />
-            <Field label={condition ? "1º vencimento estimado" : "1º vencimento"} value={fmtDate(terms.first_due_date)} />
+            {/* Data-base é a NF: o snapshot do pedido nunca é vencimento definitivo. */}
+            <Field label="1º vencimento estimado" value={terms.first_due_date ? `${fmtDate(terms.first_due_date)} (estimativa)` : "A definir após confirmação fiscal"} />
             <Field label="Parcelas" value={`${condition?.installment_count ?? terms.installment_count}x`} />
           </div>
-          {condition && <p className="text-xs text-muted-foreground">Datas estimadas: os vencimentos serão recalculados na emissão da NF, que é a data-base do pagamento.</p>}
+          <p className="text-xs text-muted-foreground" data-testid="due-date-estimate-note">Datas estimadas: os vencimentos serão definidos a partir da emissão da NF, que é a data-base do pagamento.</p>
           {conditionQuery.isError && <p className="text-destructive text-xs">Snapshot da condição indisponível. Decisões financeiras bloqueadas.</p>}
           {accountingPending && <p className="text-destructive text-xs">Decisões financeiras indisponíveis enquanto a validação fiscal/contábil do pedido estiver pendente.</p>}
 
