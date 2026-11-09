@@ -32,7 +32,7 @@ Não existe script de ativação. `finished_product_gate_v1` e `b2b_resale_logis
 
 Ordem: `89` contenção → `90` endpoint/leitor → `94` logística → `93` físico → `92` ENVIO composto → `91` confirmação composta.
 
-Não usar o antigo rollback isolado de envio: seu POST intermediário é anterior às reversões de logística/físico e não representa o estado final. Os geradores `92` e `91` medem separadamente o estado escopado vigente após todas as reversões anteriores, incluindo `private` e `cf_user_guards_v1`. Cada guard exige os pins exatos medidos e qualquer divergência aborta; a única mutação é revogar o writer daquela etapa. Nenhum corpo antigo é restaurado e nenhuma allowlist, histórico ou recibo é apagado.
+Não usar o antigo rollback isolado de envio: seu POST intermediário é anterior às reversões de logística/físico e não representa o estado final. Os geradores `92` e `91` medem separadamente o estado escopado vigente após todas as reversões anteriores, incluindo `private` e `cf_user_guards_v1`. Antes da medição, os grants usados somente pelo fluxo sintético são removidos: os guards finais representam o estado realmente fechado produzido por PRE → INSTALL/POST, sem ativação escondida, e rejeitam pins com EXECUTE de cliente. Cada guard exige os pins exatos medidos e qualquer divergência aborta; a única mutação é revogar o writer daquela etapa. Nenhum corpo antigo é restaurado e nenhuma allowlist, histórico ou recibo é apagado.
 
 A inversão local completa também chama ENVIO e confirmação como papel `authenticated` depois das revogações e exige `permission denied`, além de conferir histórico, ACLs, catálogo e planos antes/depois.
 

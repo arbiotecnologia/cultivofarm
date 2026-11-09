@@ -459,10 +459,17 @@ def _write_final_delivery_rollback(out: Path, stage: str, final_state: dict, sta
     }
     if stage == "send":
         label = "SEND_COMPOSED_ROLLBACK"
+        writer = "public.rpc_entrega_enviar_manual_v1(uuid,timestamp with time zone,text)"
         revoke = "REVOKE EXECUTE ON FUNCTION public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text) FROM PUBLIC,anon,authenticated,service_role;\n"
     else:
         label = "CONFIRM_COMPOSED_ROLLBACK"
+        writer = "public.rpc_entrega_confirmar_manual_v1(uuid,timestamp with time zone,text,jsonb)"
         revoke = "REVOKE EXECUTE ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;\n"
+    writer_pin = next(row for row in doc["functions"] if row[0] == writer)
+    writer_grants = writer_pin[2].split(",") if writer_pin[2] else []
+    assert not any(entry.startswith(("anon=", "authenticated=", "service_role=")) for entry in writer_grants), (
+        f"FINAL_{stage.upper()}_ROLLBACK_REQUIRES_CLOSED_WRITER", writer_pin[2]
+    )
     (out / "rollback-scope.json").write_text(json.dumps(doc, indent=2) + "\n")
     (out / "rollback-composed.sql.review").write_text(
         "BEGIN;\n" + _guard(doc, state_expression, label) + revoke + "COMMIT;\n"
