@@ -204,6 +204,26 @@ def run(B, Review, Q, A, choice, out):
     assert os_effects(revoked["id"]) == revoked_before
     ok("concurrent revoke confirmed before final authorization denies writer without effects")
 
+    # Gate ON is observed before the final grant lock. The writer then waits on
+    # that exact grant while a second connection confirms gate OFF. Releasing
+    # the grant must not authorize a write using the stale master-gate reading.
+    gate_off = R.make_order([Q.S(1)], "pilot-gate-off-before-final")
+    gate_off_item = gate_off["items"][0]
+    gate_off_grant = grant("b2b_resale", "os_create", Q.UADM, Q.A, Q.P, gate_off["id"], gate_off_item["id"], gate_off_item["product_id"])
+    gate_off_before = os_effects(gate_off["id"])
+    holder = B.T.session(f"BEGIN;SELECT 1 FROM platform_private.resale_pilot_allowlist_v1 WHERE id='{gate_off_grant}' FOR UPDATE;")
+    time.sleep(0.1)
+    worker = B.T.session("BEGIN;" + R.os_create_sql(gate_off["id"], gate_off_item["id"], gate_off["accepted"]["updated_at"], f"pilot-gate-off-before-{run_id}"))
+    B.T.wait()
+    B.sql("UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false WHERE singleton;")
+    assert B.last("SELECT enabled FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton;") == "f"
+    B.T.finish(holder, "COMMIT;")
+    worker_out, worker_err = B.T.finish(worker)
+    assert "RESALE_PILOT_SCOPE_DENIED" in worker_err, (worker_out, worker_err)
+    assert os_effects(gate_off["id"]) == gate_off_before
+    ok("gate OFF confirmed while writer waits on grant lock denies final authorization without effects")
+    B.sql("UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=true WHERE singleton;")
+
     # Synchronization-only trigger: it never changes authority or the row. It holds
     # the real writer immediately AFTER its final authorization, proving that a
     # concurrent revoke cannot confirm until that writer transaction finishes.
