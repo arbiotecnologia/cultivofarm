@@ -43,6 +43,8 @@ A inversão local completa também chama ENVIO e confirmação como papel `authe
 - `evidence-live-relation-security.json`: complemento independente com os 18 pins de RLS/FORCE RLS/owner/ACL.
 - `artifact-sources.json`: origem e hash de cada artefato copiado ou insumo de cada arquivo gerado.
 - `manifest.json`: SHA256 e tamanho de todos os arquivos do pacote.
-- `verify_production_rollout.py`, na pasta pai, confere novamente arquivos, origens, captura e resultados sem conexão hospedada.
+- `evidence-final-artifact-execution.json`: execução PostgreSQL 17 dos arquivos finais exatos, com SHA256 e resultado individual de cada PRE/INSTALL/POST/ROLLBACK, negações posteriores como `authenticated` e preservação de RLS/FORCE RLS/ACLs, histórico e planos.
+- `verify_production_rollout.py`, na pasta pai, confere novamente arquivos, origens, captura, resultados e a correspondência entre os hashes executados e os artefatos promovidos, sem conexão hospedada.
+- O gerador remove somente o terminador externo da consulta `SELECT` de estado antes de embuti-la na expressão JSONB. Outro ponto-e-vírgula aborta a geração; nenhum corpo candidato ou pin de segurança é enfraquecido.
 
 A instalação futura exige revisão independente e autorização específica. A etapa autenticada permanece NOT_RUN até concessões exatas e provas reais aprovadas.

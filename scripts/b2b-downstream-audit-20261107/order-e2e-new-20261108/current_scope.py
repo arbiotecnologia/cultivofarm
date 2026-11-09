@@ -346,7 +346,23 @@ def _json_literal(value) -> str:
     return "'" + json.dumps(value, ensure_ascii=False, separators=(",", ":")).replace("'", "''") + "'::jsonb"
 
 
+def _state_sql_expression(state_expression: str) -> str:
+    """Remove only the outer SELECT terminator before embedding the expression.
+
+    A captured state query is a standalone SELECT ending in semicolon. Keeping
+    that terminator inside the structural jsonb subtraction produces SQLSTATE
+    42601. Any remaining semicolon is rejected instead of being stitched over.
+    """
+    expression = state_expression.strip()
+    if expression.endswith(";"):
+        expression = expression[:-1].rstrip()
+    assert expression.upper().startswith("SELECT "), "STATE_EXPRESSION_NOT_SELECT"
+    assert ";" not in expression, "STATE_EXPRESSION_MULTIPLE_STATEMENTS"
+    return expression
+
+
 def _guard(doc: dict, state_expression: str, label: str) -> str:
+    state_expression = _state_sql_expression(state_expression)
     signatures = ",".join("('%s')" % row[0].replace("'", "''") for row in doc["functions"])
     trigger_signatures = ",".join("('%s')" % row[0].replace("'", "''") for row in doc["trigger_functions"])
     relations = ",".join("('%s',%s)" % (row[0].replace("'", "''"), "true" if row[2] is not None else "false") for row in doc["relations"])

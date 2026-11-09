@@ -1,3 +1,8 @@
+## 09/11 01:13 — Bloqueio SQLSTATE 42601 no PRE final e execução dos artefatos promovidos
+- [ ] Corrigir o gerador para remover somente o terminador externo da consulta de estado antes de embuti-la na subtração JSONB; qualquer outro ponto-e-vírgula permanece erro fail-closed. Regenerar todos os PRE/INSTALL/POST/ROLLBACK afetados, sem alterar corpos candidatos ou pins de segurança.
+- [ ] Executar no PostgreSQL 17 descartável os arquivos finais exatos, na ordem PRE → INSTALL/POST → rollback deny-only, com hash e exit individual; validar negação `authenticated`, RLS/FORCE RLS/ACLs, histórico, catálogo e planos.
+- [ ] Promover ao repositório somente o pacote ensaiado no espelho, conferir manifesto/origens/hashes e registrar resultados reais. Sem hosted, ativação, publicação, fiscal, cobrança ou comunicação; prova JWT/RLS/Storage/browser continua NOT_RUN.
+
 ## 09/11 00:47 — Rollback final composto de ENVIO e confirmação
 - [ ] Reproduzir nos ramos logistics-only e integrado a inversão completa com contenção, logística, físico, ENVIO e confirmação. Cada um dos dois últimos rollbacks deve ser gerado dos pins exatos medidos após as reversões anteriores, deny-only e sem restaurar corpos antigos.
 - [ ] Exigir negação real como `authenticated` para ENVIO/confirmação após rollback; preservar histórico, ACLs, catálogo, planos e baseline de recebíveis/cadastro.
