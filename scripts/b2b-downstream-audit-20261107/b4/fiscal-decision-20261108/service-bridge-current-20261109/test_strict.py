@@ -12,7 +12,7 @@ import tempfile
 import time
 from decimal import Decimal
 
-H = pathlib.Path(__file__).resolve().parent
+H = pathlib.Path(__file__).resolve().parent.parents[1]
 ROOT = H.parents[2]
 B3DIR = ROOT / "scripts/b2b-payment-condition-v1-rebase-20261106"
 CAPTURE = ROOT / "scripts/delivery-atomic-hardening-20261030/capture/current.json"

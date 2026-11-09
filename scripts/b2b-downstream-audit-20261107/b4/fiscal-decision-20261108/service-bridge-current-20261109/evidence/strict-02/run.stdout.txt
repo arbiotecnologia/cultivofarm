@@ -1,0 +1,54 @@
+PASS boot B2/B3 com gatilhos reais
+PASS B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)
+PASS B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)
+PASS B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)
+PASS B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)
+PASS B3 corpo atual pinado: platform_private.h15_actor_organization()
+PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+PASS B3 01-pre.sql.readonly
+PASS B3 02-install.sql.review
+PASS B3 03-post.sql.readonly
+PASS publicação B3 usada pelo B4
+PASS publicação B3 usada pelo B4
+PASS piloto B3 restrito ao parceiro fictício
+PASS cotação B3 criada sem título
+PASS resposta de cotação B3 com centavos
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture independente de recuperação criada sem título
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture independente do callback fiscal criada sem título
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture independente para ordenação de locks criada sem título
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture contábil pendente separada
+PASS guard downstream real tem MD5 exato
+PASS trigger compartilhado candidato ainda ausente antes dos históricos
+PASS cinco históricos locais 4 OPEN/1 OVERDUE nascem com partner_id NULL
+PASS históricos de ambiguidade/conflito são preservados sem correção retroativa
+PASS PRE confirma writers/índice e ausência de todos os overloads da projeção
+PASS instalação descartável cria projeção nova e passa PRE+POST íntegros
+PASS POST confirma exatamente um overload owner-only e metadata completa
+PASS instalação não habilita a dependência fiscal/contábil
+PASS rerun falha fechado ao encontrar overload/objetos já criados
+PASS instalação não substitui dependência operacional por stub
+PASS 32 gatilhos reais carregados pelo harness B3 continuam habilitados
+PASS B3 create/simulate antigos não foram restaurados nem alterados
+PASS autorização fiscal continua service-only e sem integração de recebível
+PASS gate fiscal/contábil não comprovado permanece fechado
+PASS pedido aprovado sem evento fiscal alocado permanece previsão, sem dívida
+PASS cliente não invoca alocador privado
+PASS componente econômico direto fora desta bateria estrita
+PASS rollback B4 deny-only antes da ponte preserva histórico
+PASS nenhum título fiscal existe antes da confirmação
+FAIL execução sem exceção de harness :: RuntimeError("ERROR:  INSERT has more expressions than target columns\nLINE 2: ...ED',now(),'AR BIO FIXTURE LOCAL','00000000000191',7 WHERE NO...\n                                                             ^\n")
