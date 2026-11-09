@@ -118,6 +118,7 @@ def main():
   forecast_pre=B.sql("SET b2b_forecast.review_project_ref='swzpzcwiasxmjutrmvkm';"+(forecast_dir/'01-pre.sql.readonly').read_text())
   B.sql("SET b2b_forecast.review_project_ref='swzpzcwiasxmjutrmvkm';"+(forecast_dir/'02-install.sql.review').read_text())
   forecast_post=B.sql("SET b2b_forecast.review_project_ref='swzpzcwiasxmjutrmvkm';"+(forecast_dir/'03-post.sql.readonly').read_text())
+  forecast_extra=load('forecast_residual_scenario',forecast_dir.parent/'forecast_residual_scenario.py')
   checks.append(dict(test='new B3 captured economic composition merged without dropped physical guards',status='PASS'))
   # f32c4f3: o candidato de planos é instalado no MESMO banco da B3/logística.
   # PRE/POST permanecem integrais; divergência de pin aborta sem stub ou bypass.
@@ -234,6 +235,10 @@ def main():
   assert B.last("SELECT count(*) FROM public.partner_orders;")=='0'
   (OUT/'buyer-scope-negatives.json').write_text(json.dumps(negative,indent=2)+'\n')
   checks.append(dict(test='real NULL seller org shape; global guards unchanged; role tenant inactive revocation and multilink negatives',status='PASS'))
+  published,publish_error=Q.publish(Q.UFIN,Q.P3,'boleto',Q.M_BOL,30,1,'0',1);assert published is not None,publish_error
+  assigned,assign_error=Q.assign(Q.UADM,Q.P,Q.P3,'boleto',2);assert assigned is not None,assign_error
+  B.sql(f"UPDATE public.commercial_payment_plans SET discount_percent=10,requires_financial_approval=true WHERE id='{Q.P3}';BEGIN;UPDATE public.catalogo_precos_embalagem SET valid_until=current_date-1 WHERE id='{Q.SP.PR25}';INSERT INTO public.catalogo_precos_embalagem(id,produto_id,owner_organization_id,packaging_id,preco_brl,valid_from) SELECT '{Q.u(970)}',produto_id,owner_organization_id,packaging_id,10,current_date FROM public.catalogo_precos_embalagem WHERE id='{Q.SP.PR25}';COMMIT;")
+  choice=Q.ch('boleto',2,30)
   data,error=Q.sim(Q.UB,Q.P3,[Q.S(2)],choice);assert data is not None,error
   journal,journal_error=Q.call(Q.UB,f"public.recover_partner_order_attempt_v1('{Q.P}',NULL,NULL,false,NULL)")
   assert journal is not None,journal_error
@@ -275,6 +280,13 @@ def main():
   accepted=json.loads(Q.psql(f"SELECT to_jsonb(o)::text FROM public.partner_orders o WHERE id='{order_id}'").stdout.strip())
   assert accepted['status']=='aprovado' and accepted['internal_economic_snapshot'] is not None,accepted
   assert accepted['ready_for_production'] is False,'external resale must not open biological production'
+  assert float(accepted['final_amount_with_interest'])==18.0 and accepted['credit_approved_at'] is None,accepted
+  assert accepted['financial_approval_status']=='pending',accepted
+  assert B.last(f"SELECT count(*) FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}';")=='0'
+  terms_approved=Q.as_user(Q.UADM,f"SELECT public.approve_b2b_payment_terms_secure('{order_id}','LOCAL TERMS APPROVAL');")
+  assert terms_approved.returncode==0,terms_approved.stderr
+  accepted=json.loads(Q.psql(f"SELECT to_jsonb(o)::text FROM public.partner_orders o WHERE id='{order_id}'").stdout.strip())
+  assert accepted['financial_approval_status']=='approved' and accepted['payment_condition_status']=='approved',accepted
   forecast_read=Q.as_user(Q.UADM,f"SELECT public.get_b2b_financial_forecast_secure('{order_id}');")
   assert forecast_read.returncode==0,forecast_read.stderr
   forecast=json.loads(forecast_read.stdout.strip().splitlines()[-1])
@@ -306,6 +318,8 @@ def main():
   checks.append(dict(test='forecast separate after commercial and valid credit; idempotent scoped no receivable and failure retry timeout consultation preserve one forecast',status='PASS',forecast_id=forecast['forecast_id']))
   (OUT/'seller-acceptance.json').write_text(json.dumps(dict(promotion=promoted,order=accepted),indent=2)+'\n')
   checks.append(dict(test='synthetic accounting CAS promotion and canonical seller acceptance; biological production stays closed',status='PASS'))
+  override=forecast_extra.run_override(B,Q,OUT)
+  checks.append(dict(test='credit OK without override creates 18 only after commercial and payment terms; separate manual override and cross tenant scope use real canonical approvals',status='PASS',override_order=override['order_id'],seller_scope=override['seller_scope']))
 
   # Nova ponte de revenda: gerada no espelho a partir dos corpos recém-instalados.
   # Nenhum writer privado recebe grant de cliente; o gate começa e termina fechado.
@@ -674,6 +688,8 @@ CREATE TABLE IF NOT EXISTS public.fiscal_sefaz_transmissions(id uuid PRIMARY KEY
 CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),table_name text,record_id uuid,action text,old_values jsonb,new_values jsonb,changed_by uuid);""")
   invoice_id=Q.u(900);transmission_id=Q.u(901);xml_run_id=Q.u(902);access_key='35261111111111111111111111111111111111111111'
   company_settings_id=accepted['internal_economic_snapshot']['origin']['company_settings_id']
+  partial_amount=round(float(accepted['final_amount_with_interest'])/2,2)
+  assert partial_amount==9.0,partial_amount
   # A restauração contém o schema fiscal real. A costura é somente o evento
   # sintético; NOT NULL, CHECK, FK, triggers e índices permanecem obrigatórios.
   invoice_idem=f'integrated-fiscal-invoice:{order_id}:v1'
@@ -701,9 +717,9 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   fixture_sql=f"""SET ROLE service_role;
  INSERT INTO public.fiscal_invoices(id,invoice_type,document_model,idempotency_key,status,normalized_status,environment,company_settings_id,organization_id,
    partner_order_id,debtor_partner_id,issue_date,total_amount,created_by,provider_reference,access_key)
-  VALUES('{invoice_id}','NFE','NFE','{invoice_idem}','PENDING','PENDING','HOMOLOGATION','{company_settings_id}','{Q.A}','{order_id}','{Q.P}','2027-02-01','{accepted['total']}','{Q.UADM}','LOCAL-INTEGRATED','{access_key}');
+  VALUES('{invoice_id}','NFE','NFE','{invoice_idem}','PENDING','PENDING','HOMOLOGATION','{company_settings_id}','{Q.A}','{order_id}','{Q.P}','2027-02-01','{partial_amount}','{Q.UADM}','LOCAL-INTEGRATED','{access_key}');
  INSERT INTO public.fiscal_invoice_items(fiscal_invoice_id,partner_order_item_id,item_sequence,item_kind,quantity,commercial_unit,taxable_quantity,taxable_unit,net_value)
-  VALUES('{invoice_id}','{item['id']}',1,'PRODUCT','{item['quantidade']}','UN','{float(item['quantidade'])*float(item['packaging_peso_liquido_kg_snapshot'])}','KG','{accepted['total']}');
+  VALUES('{invoice_id}','{item['id']}',1,'PRODUCT',1,'UN',25,'KG','{partial_amount}');
  INSERT INTO public.fiscal_xml_runs(id,fiscal_invoice_id,idempotency_key,run_version,schema_version,environment_code,access_key,state,payload,payload_sha256,signed_sha256,signed_path,signed_at,validation,signature_metadata,created_by,updated_at)
   VALUES('{xml_run_id}','{invoice_id}','{xml_idem}',1,'LOCAL-NFE-4.00','2','{access_key}','SIGNED','{xml_payload}'::jsonb,'{xml_sha256}','{xml_sha256}','local/{invoice_id}.xml',now(),'{{"synthetic":true,"network":false}}'::jsonb,'{{"synthetic":true,"adapter":"LOCAL_FIXTURE_ONLY"}}'::jsonb,'{Q.UADM}',now());
  INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,xml_run_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,c_stat,x_motivo,ch_nfe,n_prot,ambiente_retorno,dh_recbto,completed_at,created_by)
@@ -756,7 +772,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   assert blocked['transmission_idempotency']==transmission_idem and blocked['transmission_fingerprint']==transmission_fingerprint,blocked
   receivable_id=blocked['invoice_receivable']
   forecast_after=json.loads(B.last(f"SELECT jsonb_build_object('state',state,'residual_amount',residual_amount,'version',version)::text FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}';"))
-  assert forecast_after['state']=='faturado_total' and float(forecast_after['residual_amount'])==0 and forecast_after['version']==9,forecast_after
+  assert forecast_after['state']=='faturado_parcial' and float(forecast_after['residual_amount'])==9 and forecast_after['version']==9,forecast_after
   credit_claims="'"+json.dumps(json.dumps({'sub':Q.UADM,'role':'authenticated','iat':1,'exp':4102444800})).replace("'","''")+"'"
   credit_after=json.loads(B.last(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims={credit_claims};SELECT public.fn_b2b_credit_exposure('{Q.P}',0,NULL);"))
   assert abs(float(credit_after['exposicao_atual'])-float(credit['exposicao_atual']))<0.01,(credit,credit_after)
@@ -764,6 +780,8 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   (OUT/'forecast-post-nf.json').write_text(json.dumps(dict(forecast=forecast_after,credit_before=credit,credit_after=credit_after,one_title_for_invoice=True),indent=2)+'\n')
   (OUT/'integrated-strict-fiscal-callback.json').write_text(json.dumps(dict(callback=callback_data,replay=replay_data,confirmed=blocked,schema_and_fiscal_events_synthetic=True,always_allow_substitution=False,strict_permit_required=True),indent=2)+'\n')
   checks.append(dict(test='real H13 envelope 104 protocol 100 generates one receivable and replay preserves one document allocation snapshot and title without close pending',status='PASS',receivable_id=receivable_id))
+  partial_completion=forecast_extra.run_partial_completion(B,Q,OUT,order_id,accepted,item,invoice_id,receivable_id,credit)
+  checks.append(dict(test='two authorized NF 9 plus residual 9 preserve exposure 18; replay race H7 and payment 4 leave exposure 14 without reopening residual',status='PASS',second_receivable=partial_completion['second_receivable']))
 
   (OUT/'integrated-b4-fiscal-bridge.json').write_text(json.dumps(dict(
    status='STRICT_FISCAL_CONFIRMED_TO_ONE_RECEIVABLE_REVIEW_ONLY',hosted=False,
@@ -794,7 +812,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   assert B.last("SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND tablename='commercial_payment_plans' AND indexname='uq_cpp_tenant_code';")=='1'
   current=R.snapshot(B);after_triggers={x['name']:x for x in current['receivable']['triggers']}
   for trigger in original: assert after_triggers.get(trigger['name'])==trigger,trigger['name']
-  assert B.last("SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots;")=='1'
+  assert B.last("SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots;")=='2'
   assert B.last(f"SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_id}';")=='AUTHORIZED'
   assert B.last(f"SELECT receivable_id FROM public.fiscal_invoices WHERE id='{invoice_id}';")==receivable_id
   assert B.last(f"SELECT count(*) FROM public.accounts_receivable WHERE id='{receivable_id}' AND b2b_document_id='{invoice_id}';")=='1'

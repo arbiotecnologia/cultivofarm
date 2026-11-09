@@ -7,6 +7,7 @@ import json
 H = Path(__file__).resolve().parent
 ROOT = H.parents[5]
 CAPTURE = ROOT / "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-125/current-pre-physical.json"
+CAPTURE5 = H / "capture-5-functions-20261109.json"
 BASELINE = CAPTURE.with_name("real-baselines.json")
 REF = "swzpzcwiasxmjutrmvkm"
 OLD_APPROVE_MD5 = "664f63441c92a6716f0117362255ec9e"
@@ -22,12 +23,54 @@ def main():
     baseline = json.loads(BASELINE.read_text())
     assert baseline["canonical_ref"] == REF and baseline["hosted"] is False
     capture = json.loads(CAPTURE.read_text())
-    rows = [f for f in capture["functions"] if f.get("name") == "approve_partner_order"]
-    assert len(rows) == 1
-    approve = rows[0]["body"]
+    capture5 = json.loads(CAPTURE5.read_text())
+    assert capture5["canonical_ref"] == REF and capture5["hosted"] is False
+    current = {r["proname"]: r for r in capture5["functions"]}
+    assert set(current) == {"approve_b2b_credit", "approve_b2b_payment_terms_secure", "approve_partner_order", "fn_b2b_credit_exposure", "tg_h7_fiscal_invoice_immutable_v1"}
+    for name, row in current.items():
+        assert md5(row["definition"]) == row["md5"], name
+    approve = current["approve_partner_order"]["definition"]
     assert md5(approve) == OLD_APPROVE_MD5 and approve.count(ANCHOR) == 1
     candidate_approve = approve.replace(ANCHOR, REPLACEMENT)
     new_approve_md5 = md5(candidate_approve)
+
+    scope_old = "IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN"
+    scope_new = "IF NOT (public.b2b_phase1_order_visible(p_partner_order_id) OR EXISTS (SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN"
+    credit_approval = current["approve_b2b_credit"]["definition"]
+    assert credit_approval.count(scope_old) == 2
+    candidate_credit_approval = credit_approval.replace(scope_old, scope_new)
+    new_credit_approval_md5 = md5(candidate_credit_approval)
+
+    terms = current["approve_b2b_payment_terms_secure"]["definition"]
+    assert terms.count(scope_old) == 1
+    scoped_terms = terms.replace(scope_old, scope_new)
+    terms_anchor = "  RETURN jsonb_build_object('success', true, 'status', 'approved');"
+    assert scoped_terms.count(terms_anchor) == 1
+    candidate_terms = scoped_terms.replace(terms_anchor, "  PERFORM platform_private.b2b_financial_forecast_after_approval_v1(p_partner_order_id,\n    public.fn_b2b_credit_exposure((SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_partner_order_id),0,NULL));\n" + terms_anchor)
+    new_terms_md5 = md5(candidate_terms)
+
+    credit = current["fn_b2b_credit_exposure"]["definition"]
+    committed_start = credit.index("  -- (b) pedidos com compromisso financeiro real")
+    committed_end = credit.index("  -- (c) H4-001:", committed_start)
+    committed_residual = """  -- (b) compromisso aprovado: com previsão B4, somente o residual ainda sem NF.
+  -- O título em aberto já entra em (a); sem previsão, preserva o legado e seus links.
+  SELECT COALESCE(SUM(ROUND(CASE
+    WHEN f.order_id IS NOT NULL THEN f.residual_amount
+    ELSE COALESCE(po.final_amount_with_interest, po.total, 0) END,2)),0)
+    INTO v_committed
+  FROM public.partner_orders po
+  LEFT JOIN platform_private.b2b_financial_forecasts f ON f.order_id=po.id
+  WHERE po.partner_id = p_partner_id
+    AND po.status IN ('aprovado','em_producao','produzido','aguardando_entrega',
+                      'confirmado','em_separacao','enviado','entregue')
+    AND (f.order_id IS NOT NULL OR (COALESCE(po.receivable_generated,false) = false
+      AND NOT EXISTS (SELECT 1 FROM public.partner_order_financial_links pofl
+                      WHERE pofl.partner_order_id = po.id)))
+    AND (p_exclude_order_id IS NULL OR po.id <> p_exclude_order_id);
+
+"""
+    candidate_credit = credit[:committed_start] + committed_residual + credit[committed_end:]
+    new_credit_md5 = md5(candidate_credit)
     schema = r"""
 CREATE TABLE platform_private.b2b_financial_forecasts(
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),order_id uuid NOT NULL UNIQUE REFERENCES public.partner_orders(id),
@@ -77,8 +120,9 @@ BEGIN
  SELECT * INTO po FROM public.partner_orders WHERE id=p_order FOR UPDATE;
  IF NOT FOUND OR po.status<>'aprovado' OR po.approved_by IS NULL OR po.approved_at IS NULL THEN
   RAISE EXCEPTION 'B2B_FORECAST_COMMERCIAL_APPROVAL_REQUIRED' USING ERRCODE='42501';END IF;
- IF po.payment_terms_id IS NULL OR po.payment_condition_status NOT IN ('defined','approved')
-  OR (po.requires_financial_approval AND po.financial_approval_status<>'approved') THEN
+ IF po.requires_financial_approval AND po.financial_approval_status IS DISTINCT FROM 'approved' THEN
+  RETURN jsonb_build_object('deferred',true,'reason','PAYMENT_TERMS_APPROVAL_REQUIRED');END IF;
+ IF po.payment_terms_id IS NULL OR coalesce(po.payment_condition_status,'') NOT IN ('defined','approved') THEN
   RAISE EXCEPTION 'B2B_FORECAST_CONDITION_UNPROVEN' USING ERRCODE='42501';END IF;
  IF po.credit_approved_at IS NULL AND reason<>'OK' THEN
   RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_REQUIRED' USING ERRCODE='42501';END IF;
@@ -212,6 +256,9 @@ BEGIN READ ONLY;
 DO $$ BEGIN
  IF current_setting('b2b_forecast.review_project_ref',true) IS DISTINCT FROM '{REF}' THEN RAISE EXCEPTION 'B2B_FORECAST_REF_NOT_VERIFIED';END IF;
  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{OLD_APPROVE_MD5}' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_PRE_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '{current["approve_b2b_payment_terms_secure"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_PRE_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '{current["approve_b2b_credit"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_PRE_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '{current["fn_b2b_credit_exposure"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_PRE_DRIFT';END IF;
  IF to_regclass('platform_private.b2b_financial_forecasts') IS NOT NULL OR to_regclass('platform_private.b2b_financial_forecast_events') IS NOT NULL THEN RAISE EXCEPTION 'B2B_FORECAST_ALREADY_INSTALLED';END IF;
 END$$;
 ROLLBACK;
@@ -220,6 +267,9 @@ ROLLBACK;
 BEGIN READ ONLY;
 DO $$ BEGIN
  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{new_approve_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '{new_terms_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '{new_credit_approval_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '{new_credit_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_POST_DRIFT';END IF;
  IF (SELECT count(*) FROM pg_class WHERE oid IN ('platform_private.b2b_financial_forecasts'::regclass,'platform_private.b2b_financial_forecast_events'::regclass) AND NOT relrowsecurity)<>0 THEN RAISE EXCEPTION 'B2B_FORECAST_RLS_MISSING';END IF;
  IF has_function_privilege('anon','public.get_b2b_financial_forecast_secure(uuid)','EXECUTE') OR NOT has_function_privilege('authenticated','public.get_b2b_financial_forecast_secure(uuid)','EXECUTE') THEN RAISE EXCEPTION 'B2B_FORECAST_READER_ACL_INVALID';END IF;
 END$$;
@@ -231,19 +281,44 @@ SET LOCAL lock_timeout='3s';
 DO $$ BEGIN
  IF current_setting('b2b_forecast.review_project_ref',true) IS DISTINCT FROM '{REF}' THEN RAISE EXCEPTION 'B2B_FORECAST_REF_NOT_VERIFIED';END IF;
  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{OLD_APPROVE_MD5}' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_INSTALL_PRE_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '{current["approve_b2b_payment_terms_secure"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_INSTALL_PRE_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '{current["approve_b2b_credit"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_INSTALL_PRE_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '{current["fn_b2b_credit_exposure"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_INSTALL_PRE_DRIFT';END IF;
 END$$;
 {schema}
+{candidate_credit_approval};
+{candidate_terms};
+{candidate_credit};
 {candidate_approve};
-DO $$ BEGIN IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{new_approve_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_INSTALL_POST_DRIFT';END IF;END$$;
+DO $$ BEGIN
+ IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{new_approve_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_INSTALL_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '{new_terms_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_INSTALL_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '{new_credit_approval_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_INSTALL_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '{new_credit_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_INSTALL_POST_DRIFT';END IF;
+END$$;
 COMMIT;
 """
-    rollback = f"""-- REVIEW ONLY deny-only; preserva previsões/eventos e restaura aprovação LIVE.
+    credit_rollback = """CREATE OR REPLACE FUNCTION public.fn_b2b_credit_exposure(p_partner_id uuid, p_new_order_amount numeric DEFAULT 0, p_exclude_order_id uuid DEFAULT NULL::uuid)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $$BEGIN RAISE EXCEPTION 'B2B_CREDIT_RECONCILIATION_ROLLED_BACK' USING ERRCODE='42501';END$$"""
+    credit_rollback_md5 = md5(credit_rollback)
+    rollback = f"""-- REVIEW ONLY deny-only; preserva previsões/eventos e não reabre crédito legado subestimado.
 BEGIN;
 SET LOCAL lock_timeout='3s';
 {approve};
+{credit_approval};
+{terms};
+{credit_rollback};
+REVOKE ALL ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.get_b2b_financial_forecast_secure(uuid) FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb),platform_private.b2b_financial_forecast_transition_v1(uuid,integer,text,text,jsonb),platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text) FROM PUBLIC,anon,authenticated,service_role;
-DO $$ BEGIN IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{OLD_APPROVE_MD5}' THEN RAISE EXCEPTION 'B2B_FORECAST_ROLLBACK_POST_DRIFT';END IF;END$$;
+DO $$ BEGIN
+ IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{OLD_APPROVE_MD5}' THEN RAISE EXCEPTION 'B2B_FORECAST_ROLLBACK_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '{current["approve_b2b_payment_terms_secure"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_ROLLBACK_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '{current["approve_b2b_credit"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_ROLLBACK_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '{credit_rollback_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_ROLLBACK_POST_DRIFT';END IF;
+END$$;
 COMMIT;
 """
     reconcile_pre = f"""-- REVIEW ONLY READ ONLY; fase 2 exige B4 e previsão já instalados.
@@ -280,8 +355,10 @@ COMMIT;
              "07-post-fiscal-reconcile.sql.readonly": reconcile_post, "08-rollback-fiscal-reconcile-deny.sql.review": reconcile_rollback}
     for name, text in files.items(): (H/name).write_text(text)
     manifest = {"project_ref":REF,"status":"REVIEW_ONLY_INACTIVE_NOT_APPROVED","phase":"FORECAST_AFTER_COMMERCIAL_AND_CREDIT_BEFORE_NF",
-      "capture":str(CAPTURE.relative_to(ROOT)),"capture_sha256":sha(CAPTURE.read_text()),"live_approve_md5":OLD_APPROVE_MD5,
-      "after_forecast_approve_md5":new_approve_md5,"accounts_receivable_before_nf":False,"definitive_cardinality":"ONE_PER_AUTHORIZED_FISCAL_DOCUMENT",
+      "capture":str(CAPTURE5.relative_to(ROOT)),"capture_sha256":sha(CAPTURE5.read_text()),"live_approve_md5":OLD_APPROVE_MD5,
+      "live_payment_terms_md5":current["approve_b2b_payment_terms_secure"]["md5"],"live_credit_approval_md5":current["approve_b2b_credit"]["md5"],"live_credit_exposure_md5":current["fn_b2b_credit_exposure"]["md5"],
+      "after_forecast_approve_md5":new_approve_md5,"after_forecast_payment_terms_md5":new_terms_md5,"after_seller_scope_credit_approval_md5":new_credit_approval_md5,"after_residual_credit_exposure_md5":new_credit_md5,
+      "rollback_credit_exposure_md5":credit_rollback_md5,"accounts_receivable_before_nf":False,"definitive_cardinality":"ONE_PER_AUTHORIZED_FISCAL_DOCUMENT",
       "forecast_additive_to_credit":False,"files":{n:sha(t) for n,t in files.items()},"hosted":False}
     (H/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
     print(json.dumps(manifest,indent=2))

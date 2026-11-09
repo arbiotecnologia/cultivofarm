@@ -1,3 +1,8 @@
+## 09/11 22:27 — Captura de cinco funções e reconciliação residual B4
+- [ ] Pinar as cinco funções capturadas; testar crédito OK sem override, override financeiro e escopo vendedor antes de qualquer correção de `approve_b2b_credit`.
+- [ ] Reconciliar `fn_b2b_credit_exposure` com residual de previsão B4, nunca soma aditiva; caso 18: NF 9 + residual 9, replay, segunda NF 9 e pagamentos sem reabrir residual.
+- [ ] Cobrir aprovação comercial/termos nos dois eixos, H7 imutável, parciais/replay/concorrência e rollback deny-only em PostgreSQL descartável; sem hosted/publicação/emissão/cobrança/envio.
+
 ## 09/11 21:39 — Decisão final aprovada: previsão separada + recebível por NF
 - [x] Implementar/testar somente localmente previsão não exigível após aprovação comercial E crédito/condição/preço válidos; nenhum título pré-NF e nenhuma previsão em simulação/cotação. Tentativa 149: 50/50 PASS.
 - [ ] NF total 104/100 → um título, replay sem duplicação e crédito sem dupla contagem PASS; reexecutar parciais/residual, concorrência específica do reconciliador e cancelamento/estorno pós-autorização contra esta nova costura. Dez triggers, ACL, snapshots e histórico preservados.

@@ -1,0 +1,145 @@
+{
+  "versions": [
+    {
+      "id": "00000000-0000-0000-0000-000000000806",
+      "status": "PUBLISHED",
+      "plan_id": "00000000-0000-0000-0000-000000000805",
+      "currency": "BRL",
+      "revision": 1,
+      "draft_key": null,
+      "created_at": "2026-11-09T22:38:11.222334+00:00",
+      "created_by": null,
+      "trial_days": 1,
+      "updated_at": "2026-11-09T22:38:11.222334+00:00",
+      "archived_at": null,
+      "archived_by": null,
+      "publish_key": null,
+      "effective_to": null,
+      "price_amount": 0.0,
+      "published_at": "2026-11-08T22:38:11.222334+00:00",
+      "billing_cycle": "monthly",
+      "name_snapshot": "LOCAL B2B E2E",
+      "archive_reason": null,
+      "correlation_id": null,
+      "effective_from": "2026-11-08T22:38:11.222334+00:00",
+      "version_number": 1,
+      "limits_snapshot": {},
+      "features_snapshot": [
+        "pedidos_b2b",
+        "catalogo_precos",
+        "estoque_embalagens",
+        "ordens_producao",
+        "lotes_qualidade"
+      ],
+      "publication_reason": null,
+      "description_snapshot": null
+    }
+  ],
+  "overrides": null,
+  "actor_scope": {
+    "profile_ok": true,
+    "has_catalog": true,
+    "org_partner": "00000000-0000-0000-0000-000000000011",
+    "user_partner": "00000000-0000-0000-0000-000000000011",
+    "partner_valid": true,
+    "user_partner_count": 1
+  },
+  "buyer_links": [
+    {
+      "id": "f47fdff7-93b1-4070-9e76-1a83390cdc45",
+      "papel": "gestor",
+      "user_id": "00000000-0000-0000-0000-000000000021",
+      "version": 1,
+      "tenant_id": "00000000-0000-0000-0000-000000000001",
+      "created_at": "2026-11-09T22:38:08.905315+00:00",
+      "partner_id": "00000000-0000-0000-0000-000000000011",
+      "revoked_at": null,
+      "revoked_by": null,
+      "valid_from": "2026-11-09T22:38:08.905315+00:00",
+      "revoke_reason": null
+    }
+  ],
+  "entitlements": [
+    {
+      "config": null,
+      "module_key": "local",
+      "feature_key": "estoque_embalagens",
+      "limit_value": null
+    },
+    {
+      "config": null,
+      "module_key": "local",
+      "feature_key": "lotes_qualidade",
+      "limit_value": null
+    },
+    {
+      "config": null,
+      "module_key": "local",
+      "feature_key": "ordens_producao",
+      "limit_value": null
+    },
+    {
+      "config": null,
+      "module_key": "local_b2b_e2e",
+      "feature_key": "catalogo_precos",
+      "limit_value": null
+    },
+    {
+      "config": null,
+      "module_key": "local_b2b_e2e",
+      "feature_key": "pedidos_b2b",
+      "limit_value": null
+    }
+  ],
+  "subscriptions": [
+    {
+      "id": "00000000-0000-0000-0000-000000000807",
+      "status": "ACTIVE",
+      "plan_id": "00000000-0000-0000-0000-000000000805",
+      "cancel_at": null,
+      "created_at": "2026-11-09T22:38:11.227268+00:00",
+      "created_by": null,
+      "started_at": "2026-11-09T21:38:11.227268+00:00",
+      "updated_at": "2026-11-09T22:38:11.227268+00:00",
+      "cancelled_at": null,
+      "suspended_at": null,
+      "billing_cycle": null,
+      "trial_ends_at": null,
+      "price_snapshot": null,
+      "limits_snapshot": null,
+      "organization_id": "00000000-0000-0000-0000-000000000001",
+      "plan_version_id": "00000000-0000-0000-0000-000000000806",
+      "state_changed_at": null,
+      "currency_snapshot": null,
+      "features_snapshot": null,
+      "current_period_end": null,
+      "last_correlation_id": null,
+      "current_period_start": null,
+      "billing_cycle_snapshot": null
+    }
+  ],
+  "commercial_context": {
+    "mode": "commercial_owner",
+    "role": "parceiro_b2b",
+    "papel": "gestor",
+    "manager": true,
+    "actor_id": "00000000-0000-0000-0000-000000000021",
+    "contract": "C2_MULTIPROFILE_V1",
+    "tenant_id": "00000000-0000-0000-0000-000000000001",
+    "partner_id": "00000000-0000-0000-0000-000000000011",
+    "technician": false,
+    "link_version": 1,
+    "profile_stamp": "2026-11-09T22:38:08.102056+00:00",
+    "external_roles": [
+      "parceiro_b2b"
+    ],
+    "organization_id": "00000000-0000-0000-0000-000000000001",
+    "producer_links_valid": false,
+    "commercial_owner_organization_id": "00000000-0000-0000-0000-000000000001"
+  },
+  "valid_partner_user": true,
+  "owner_order_allowed": true,
+  "owner_plan_assigned": true,
+  "entitlement_resolver_md5": "7f4ec7facaebbdf35444dd490fdebe56",
+  "seller_org_partner_is_null": true
+}
