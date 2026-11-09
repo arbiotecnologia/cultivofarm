@@ -1,0 +1,32 @@
+276/291
+FAIL CCR2 positivo: writer REAL de condição (parceiro P do piloto) cria pedido com snapshot coerente ERROR:  payment_choice_required
+CONTEXT:  PL/pgSQL function platform_private.b2b_choice(jsonb) line 7 at RAISE
+PL/pgSQL function create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb) line 35 at assignment
+FAIL CCR2 alcance: tenant F sem ativação segue contrato atual (sem bloqueio global) ERROR:  plan_not_found
+CONTEXT:  PL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 118 at RAISE
+FAIL 04 rollback deny-only psql:/tmp/b2bcond-w-smy5qk97/04-rollback-deny.sql.review:15: ERROR:  ROLLBACK: public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer) divergente
+CONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE
+
+FAIL ROLLBACK legado: parcial 1/2 negado esperado 'quote_incomplete'; obtido ERROR:  plan_not_found
+CONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE
+FAIL ROLLBACK legado: duplicados negado esperado 'quote_duplicate_line'; obtido ERROR:  plan_not_found
+CONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE
+FAIL ROLLBACK legado: item de outro pedido negado esperado 'quote_item_not_found'; obtido ERROR:  plan_not_found
+CONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE
+FAIL ROLLBACK legado: carrinho vazio consistente negado com guards ativos ERROR:  plan_not_found
+CONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE
+
+FAIL ROLLBACK legado: resposta completa positiva persiste ambos subtotais 100 e principal 200 ERROR:  plan_not_found
+CONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE
+FAIL ROLLBACK legado: terms.first_due_date igual à primeira data do schedule ERROR:  plan_not_found
+CONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE
+FAIL ROLLBACK novo: cotação com dois itens permanece deny-only esperado 'b2b_payment_condition_rolled_back'; obtido {'id': 'ae105999-1c7a-4043-a66f-f89b50403a7b', 'total': 207.24, 'numero': 'PB-000008', 'status': 'em_analise_comercial', 'schedule': [{'amount': 69.08, 'due_date': '2026-12-09', 'estimated': True, 'interest_amount': 3.6, 'nominal_due_date': '2026-12-09', 'principal_amount': 65.48, 'installment_number': 1, 'business_day_adjusted': False}, {'amoun
+FAIL após rollback: opções negadas esperado 'permission denied'; obtido {'mode': 'required', 'options': [], 'contract': 'B2B_PAYMENT_CONDITION_V1', 'due_basis': 'nf_issue', 'partner_id': '00000000-0000-0000-0000-000000000011', 'payment_plan_id': '00000000-0000-0000-0000-000000000071'}
+FAIL após rollback: resposta de cotação com condição ativada fica negada, sem reabrir legado esperado 'b2b_payment_condition_rolled_back'; obtido ERROR:  plan_not_found
+CONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE
+FAIL após rollback: cotação LEGADA de empresa não ativada (papel FSF) continua funcionando ERROR:  plan_not_found
+CONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 84 at RAISE
+FAIL após rollback: empresa ativada continua bloqueada (nunca reabre fallback) 
+FAIL após rollback: empresa não ativada segue contrato atual ERROR:  plan_not_found
+CONTEXT:  PL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 118 at RAISE
+

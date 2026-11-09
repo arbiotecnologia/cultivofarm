@@ -228,10 +228,23 @@ def run(ns):
         return rs[1].returncode == 0 and persisted() and create_ok, {"create_rc": rs[0].returncode, "second_rc": rs[1].returncode,
                 "persisted": persisted(), "idem": idem(key), "coherent": coherent(key), "create_err": rs[0].stderr[-160:], "second_err": rs[1].stderr[-160:]}
 
-    def after_denied(uid, partner, items, c, key):
-        sx, _ = sim(uid, P3, items, c, partner=partner)
-        r = psql(session(uid, f"SELECT {create_sql(partner, P3, items, sx and sx['cart_hash'], key, c)};"), check=False)
-        return r.returncode != 0 and idem(key) == "0", r.stderr[-200:]
+    EXPECTED_UNAVAILABLE = "payment_condition_unavailable"
+
+    def counts():
+        return psql("SELECT json_build_object('orders',(SELECT count(*) FROM public.partner_orders),'snap',(SELECT count(*) FROM platform_private.b2b_order_condition_snapshots),"
+                    "'idem',(SELECT count(*) FROM public.partner_order_idempotency))::text").stdout.strip()
+
+    def after_denied(uid, partner, items, c, key, pre_hash):
+        # Replay with the VALID cart_hash/condition captured BEFORE the revocation/retirement, under a NEW key.
+        # PASS only with the specific unavailable-condition error and zero order/snapshot/idempotency deltas.
+        if not pre_hash:
+            return False, {"error": "pre-revocation cart_hash missing (NOT_RUN)"}
+        before = counts()
+        r = psql(session(uid, f"SELECT {create_sql(partner, P3, items, pre_hash, key, c)};"), check=False)
+        after = counts(); err = (r.stderr or "")
+        first = next((l for l in err.splitlines() if l.startswith("ERROR:")), "")
+        ok = r.returncode != 0 and first.strip() == "ERROR:  " + EXPECTED_UNAVAILABLE and before == after and idem(key) == "0"
+        return ok, {"rc": r.returncode, "error": first, "expected": EXPECTED_UNAVAILABLE, "before": before, "after": after, "pre_hash": pre_hash}
 
     cR, _ = opt(UN, PN, P3)
     if cR:
@@ -243,7 +256,7 @@ def run(ns):
         rs = parallel([cr, rv], [0, 0.4]); v, d = verdict(rs, "CCR2-CONC-REV-INJ", lambda: revoked(PN, cR))
         check("CCR2 mutação: revogação injetada com falha reprova o veredito de concorrência", rs[1].returncode != 0 and not v, d)
         res["mutation_revocation"] = d
-        sr, _ = sim(UN, P3, [S(1)], cR, partner=PN)
+        sr, _ = sim(UN, P3, [S(1)], cR, partner=PN); pre_rev_hash = sr and sr["cart_hash"]
         cr = session(UN, f"BEGIN; SELECT {create_sql(PN, P3, [S(1)], sr and sr['cart_hash'], 'CCR2-CONC-REV', cR)}; SELECT pg_sleep(1.2); COMMIT;")
         rv = session(UADM, f"SELECT public.b2b_payment_condition_assign('{PN}','{P3}','{cR['payment_method']}',{cR['payment_condition_version']},false);")
         rs = parallel([cr, rv], [0, 0.4]); v, d = verdict(rs, "CCR2-CONC-REV", lambda: revoked(PN, cR))
@@ -251,8 +264,9 @@ def run(ns):
         res["race_revocation"] = d
         c2, _ = opt(UN, PN, P3)
         check("CCR2 após revogação: PN sem opção disponível", c2 is None, c2)
-        ok_, e = after_denied(UN, PN, [S(1)], cR, "CCR2-POST-REV-COND")
-        check("CCR2 após revogação: writer de condição REAL negado, sem idempotência", ok_, e)
+        ok_, e = after_denied(UN, PN, [S(1)], cR, "CCR2-POST-REV-COND-NEWKEY", pre_rev_hash)
+        check("CCR2 após revogação: replay com hash válido pré-revogação + nova chave -> payment_condition_unavailable, zero pedido/snapshot/idempotência", ok_, e)
+        res["after_revocation_replay"] = e
         r = legacy(UN, P3, [S(1)], "CCR2-POST-REV", partner=PN)
         check("CCR2 após revogação: parceiro required NÃO cai no legado", r.returncode != 0 and "B2B_PAYMENT_CONDITION_REQUIRED" in r.stderr and idem("CCR2-POST-REV") == "0", r.stderr[-200:])
     else:
@@ -265,14 +279,15 @@ def run(ns):
         rs = parallel([cr, rt], [0, 0.4]); v, d = verdict(rs, "CCR2-CONC-RET-INJ", lambda: retired(cC))
         check("CCR2 mutação: aposentadoria injetada com falha reprova o veredito de concorrência", rs[1].returncode != 0 and not v, d)
         res["mutation_retirement"] = d
-        sc, _ = sim(UBC, P3, [L(1)], cC, partner=PC)
+        sc, _ = sim(UBC, P3, [L(1)], cC, partner=PC); pre_ret_hash = sc and sc["cart_hash"]
         cr = session(UBC, f"BEGIN; SELECT {create_sql(PC, P3, [L(1)], sc and sc['cart_hash'], 'CCR2-CONC-RET', cC)}; SELECT pg_sleep(1.2); COMMIT;")
         rt = session(UADM, f"SELECT public.b2b_payment_condition_retire('{P3}','{cC['payment_method']}',{cC['payment_condition_version']});")
         rs = parallel([cr, rt], [0, 0.4]); v, d = verdict(rs, "CCR2-CONC-RET", lambda: retired(cC))
         check("CCR2 concorrência aposentadoria: retire REAL exit 0 e persistido; create serializa sem pedido incoerente", v, d)
         res["race_retirement"] = d
-        ok_, e = after_denied(UBC, PC, [L(1)], cC, "CCR2-POST-RET-COND")
-        check("CCR2 após aposentadoria: writer de condição REAL negado, sem idempotência", ok_, e)
+        ok_, e = after_denied(UBC, PC, [L(1)], cC, "CCR2-POST-RET-COND-NEWKEY", pre_ret_hash)
+        check("CCR2 após aposentadoria: replay com hash válido pré-retire + nova chave -> payment_condition_unavailable, zero pedido/snapshot/idempotência", ok_, e)
+        res["after_retirement_replay"] = e
         r = legacy(UBC, P3, [L(1)], "CCR2-POST-RET", partner=PC)
         check("CCR2 após aposentadoria: parceiro required continua sem fallback legado", r.returncode != 0 and "B2B_PAYMENT_CONDITION_REQUIRED" in r.stderr and idem("CCR2-POST-RET") == "0", r.stderr[-200:])
     else:
