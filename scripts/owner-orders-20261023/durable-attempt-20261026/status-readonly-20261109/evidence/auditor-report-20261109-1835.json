@@ -1,0 +1,33 @@
+{
+  "recorded_at_utc": "2026-11-09T18:35:00Z",
+  "provenance": "Relato auditado fornecido pelo proprietário; não executado nem verificado independentemente pelo agente neste turno",
+  "review": "f86871cc",
+  "frontend_diff_reviewed_reported": true,
+  "local_tests_reported": {"passed": 119, "total": 119},
+  "preview_bundles_reported": {"initial_stale": "wnRHNPxG", "after_reload_corrected": "vqoJpoyC"},
+  "buyer_test_reported": {
+    "buyer": "renatos",
+    "result": "PASS_REPORTED",
+    "start_status_simulation_reserved": false,
+    "journal_before_dispatch": 3,
+    "dispatch": "UI",
+    "order_number": "PB-001039",
+    "order_id": "305145ab-8bf7-4f85-a20f-86c23e4be64e",
+    "total": 18,
+    "packaging": {"count": 2, "kg_each": 25},
+    "table_amount": 20,
+    "discount_amount": 2,
+    "private_snapshot": {"method": "boleto", "version": "v1", "principal": 18, "interest": 0, "total": 18, "due_basis": "nf_issue", "estimated": true},
+    "journal_after_dispatch": 4,
+    "journal_after_reload": 4,
+    "orders_present": ["PB-001038", "PB-001039"],
+    "order_count": 2,
+    "duplication_reported": false
+  },
+  "seller_test_reported": {"seller": "ARBio", "read": ["plan", "items", "total_18"], "accounting_blocks_preserved": true},
+  "prior_installation_reports": {"Seller91": "INSTALLED_POST92_PASS_REPORTED", "Guard81": "INSTALLED_POST82_PASS_REPORTED", "reapply_sql": false},
+  "gates_reported": {"fiscal": "DRAFT", "accounting": false, "receivable": false, "external_deliveries": "BLOCKED", "charges": "NONE"},
+  "pending": {"FSF_negative_1039_preview": "NOT_RUN_AWAITING_USER_LOGIN_AND_AUDITOR_TEST", "publication": "NOT_AUTHORIZED"},
+  "agent_turn": {"scope": "DOCUMENTATION_ONLY", "code_changes": false, "hosted_sql": false, "publication": false, "order_creation": false, "external_deliveries": false},
+  "limitations": ["Relato externo, não prova independente do agente", "Negativa cross-tenant FSF pendente", "Fluxo financeiro completo não validado: fiscal e contabilidade pendentes", "Resultados históricos e evidências anteriores preservados sem reclassificação retroativa"]
+}
