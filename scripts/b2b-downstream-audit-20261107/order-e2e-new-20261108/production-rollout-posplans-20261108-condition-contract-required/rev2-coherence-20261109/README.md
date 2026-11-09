@@ -32,3 +32,34 @@ Substitui o rev1 `32cfcc905`, reprovado na revisão independente. Nada foi aplic
 | 04 | 0 | 55/55 | 286/286 | PASS final com pins congelados em 82/96 |
 
 As falhas 01/02 ficam preservadas e não contam como PASS. PostgreSQL 17.11.
+
+## Revisão independente a0e1d250 (09/11/2026 16:12) — reforço antes de liberar o 81
+O auditor rodou o PRE80 em LIVE sem erro (pins B3 compatíveis) e NÃO instalou o 81.
+
+- **Falha de teste corrigida:** CCR2-CONC-REV e CCR2-CONC-RET aceitavam PASS mesmo que a revogação ou a aposentadoria falhassem. Agora o veredito exige:
+  - `rs[1].returncode==0`;
+  - a linha persistida em `b2b_condition_assignment_revocations`/`b2b_condition_retirements` para a versão e o meio exatos;
+  - o create concorrente confirmado com snapshot coerente ou sem nada gravado;
+  - o writer **de condição** REAL negado em seguida, sem idempotência, além do legado e da ausência de opção.
+- **Prova de mutação:** a mesma corrida, com a segunda operação falhando de propósito (versão +999 → `payment_condition_config_stale`), faz o veredito reprovar (`mutation_*` em `hook-results.json`).
+- **Imutabilidade e ACL** de snapshots de pedido e de cotação, revogações e aposentadorias: há linhas, UPDATE/DELETE como postgres é negado por `B2B_CONDITION_RECORD_IMMUTABLE`, a contagem é preservada, e nenhuma tabela tem privilégio para anon, authenticated ou service_role.
+- **Limite de `same_tx`:** `created_at = now()` no pedido e no snapshot é uma proteção de dados contra backfill e cópia pelos caminhos normais. **Não** prova uma transação inviolável: um papel privilegiado (postgres/owner) pode forjar `created_at`, desligar gatilhos ou usar `session_replication_role`. O que protege contra isso são a imutabilidade, a ACL fechada e a governança de quem tem acesso privilegiado, não esta guarda.
+
+### Pins dos writers usados no ensaio comparados com LIVE (nunca repinados)
+| writer | ensaio (pg_get_functiondef) | LIVE informado | resultado |
+|---|---|---|---|
+| `create_partner_order_condition_secure(...)` | `e86385fe…` | `e86385fe…` | igual |
+| `create_partner_order_secure(...)` | `c34e7404…` (B3, pré-POSPLANOS) | `fe82f538…` | **diverge** |
+
+A divergência é a instalação `cc1f6cc` de planos comerciais (POSPLANOS). Os diffs ficam em `writer-live-diff/`, gerados a partir de `commercial-plans-tenant-20261108/02-install.sql.review` contra `capture/functions/`:
+- **create legado:** `plan_not_found` passa a valer também quando `NOT commercial_plan_partner_visible(plan, partner)`;
+- **resposta de cotação:** o mesmo, sobre o pedido;
+- **assign e retire:** acrescentam `commercial_plan_admin_allowed(plan)` (duas ocorrências).
+
+Todas as mudanças são predicados de negação adicionais, sem novos INSERT/UPDATE em `partner_orders` nem em snapshots. Os gatilhos do rev2 não dependem desses corpos. Mesmo assim, **o ensaio não executou os corpos LIVE de create legado, resposta, assign e retire: isso fica NOT_RUN**. Para fechar, falta rodar o rev2 sobre o harness de planos comerciais, que instala esses corpos, ou com uma costura declarada, antes da liberação.
+
+| Tentativa | exit | CCR2 | observação |
+|---|---|---|---|
+| 05 | 0 | 69/69 | veredito reforçado + mutação; imutabilidade ainda aceitava tabela vazia |
+| 06 | 0 | 69/69 | imutabilidade exige linhas e erro explícito |
+| 07 | 0 | 69/69 | final congelado (04 preservada) |
