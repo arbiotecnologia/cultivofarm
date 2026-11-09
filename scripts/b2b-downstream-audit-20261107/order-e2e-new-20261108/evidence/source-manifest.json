@@ -2112,7 +2112,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py",
-      "sha256": "f01df9b7e499f4c75f1de85c1e47a4e2229a4affc3334eb295458ed549f7fc27"
+      "sha256": "14a6365f114920419ee2ff004e22dd6bb1e9202c7265ec479c905133d149c7ef"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/current_scope.py",
@@ -2128,7 +2128,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/pilot_containment.py",
-      "sha256": "79c13a1e8de98c1be20c9101729122a98d6ec0e9e218149084dae59604a9a7f8"
+      "sha256": "d99783375f47e4b8bf4e7d2b2dd1cd73888d26d6c71ee2edeb3532e0caccbac7"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/00-production-pre-posplans.sql.readonly",
@@ -2356,7 +2356,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_pilot_containment.py",
-      "sha256": "c71c5a413dfbf339270db0f63b06993241afa5e3bab2b3440836593096441fe7"
+      "sha256": "e2a5eb58c81fa5449de4a0066c8a7400cd791193efed240a24735ded0c42999c"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/physical/composition-fixes.json",

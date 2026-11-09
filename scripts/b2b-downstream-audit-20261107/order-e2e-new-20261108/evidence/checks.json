@@ -46,7 +46,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "aeedcd3c-742d-4427-9afd-2bf466690cc3"
+    "order_id": "aec4b7bd-8ff2-40e1-b39a-d85e6b1d26d0"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -67,7 +67,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "8338f9a0-52ec-4e99-b3e9-fa0f8cb09aca"
+    "os_id": "61218b1c-259c-4cf5-b9da-c18ae853edc2"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -76,12 +76,12 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "37b22b53-6547-4e9f-b250-769a797c4698"
+    "delivery_id": "17916e91-3f5c-4f93-a337-dfd2dd1ec205"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "b4c429b4-bfee-4938-85e3-2ad4b2e2d886"
+    "delivery_id": "d0bfc29e-2f19-4253-ac2f-16fd7c3dce52"
   },
   {
     "test": "review70 two_items_only_one_os_and_delivery",
@@ -279,7 +279,22 @@
   {
     "test": "manual agronomic physical flow still passes after resale candidate",
     "status": "PASS",
-    "delivery_id": "3b4d4135-9c44-440a-9c69-3eca6ba0e168"
+    "delivery_id": "4a13b07c-5576-4909-a37a-e29f3527c9b3"
+  },
+  {
+    "test": "mandatory ARBio actor org exact synthetic references scoped pilot with cross tenant denial expiry revocation replay and real concurrency",
+    "status": "PASS",
+    "checks": 30,
+    "hosted": false
+  },
+  {
+    "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers or reader",
+    "status": "PASS",
+    "candidate_sha256": "8ad4def8d4ae3c2e86518f2d82bf57f053cee66b0d7e165b84472cb586812c20"
+  },
+  {
+    "test": "ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback",
+    "status": "PASS"
   },
   {
     "test": "new composition",
