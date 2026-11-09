@@ -54,7 +54,8 @@ def run(B, Review, Q, A, choice, out):
     # role stays valid, no allowlist row is created for this other organization.
     B.sql("SET session_replication_role=replica;" + f"""INSERT INTO public.organization_subscriptions(id,organization_id,plan_id,plan_version_id,status,started_at)
       SELECT gen_random_uuid(),'{Q.F}',plan_id,plan_version_id,'ACTIVE',now()-interval '1 hour'
-      FROM public.organization_subscriptions WHERE id='{Q.u(807)}';SET session_replication_role=origin;""")
+      FROM public.organization_subscriptions src WHERE src.id='{Q.u(807)}'
+        AND NOT EXISTS(SELECT 1 FROM public.organization_subscriptions os WHERE os.organization_id='{Q.F}' AND os.status='ACTIVE');SET session_replication_role=origin;""")
     deny("other organization feature ON role valid remains denied", reader(order, Q.UADMF),
          ("RESALE_PILOT_SCOPE_DENIED", "B2B_RESALE_ORDER_SCOPE_DENIED", "B2B_RESALE_ACTOR_DENIED"))
     deny("other organization cannot purchase using ARBio product", A.purchase({"product": product, "packaging": item["packaging_id_snapshot"]}, 3, "pilot-other-org-purchase", actor=Q.UADMF))
