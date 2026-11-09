@@ -13,7 +13,14 @@ def exposure(B, Q):
 def run_override(B, Q, OUT):
     """Crédito manual é exceção; crédito OK sem override já foi coberto pelo caso principal."""
     choice = Q.ch('boleto', 2, 30)
-    B.sql(f"""UPDATE public.partner_financial_settings SET credit_limit=1,credit_limit_action='approval_required',block_if_overdue=false WHERE partner_id='{Q.PC}';""")
+    baseline = json.loads(B.last(f"SELECT to_jsonb(s)::text FROM public.partner_financial_settings s WHERE partner_id='{Q.PC}';"))
+    fields = ['billing_trigger','payment_terms_days','default_payment_method','credit_limit','block_if_overdue','auto_generate_receivable','active','credit_limit_action','overdue_tolerance_days','credit_alert_threshold_1','credit_alert_threshold_2']
+    values = {k: baseline[k] for k in fields}
+    values.update(credit_limit=1, credit_limit_action='approval_required', block_if_overdue=False)
+    expected_sql = json.dumps(baseline).replace("'", "''")
+    values_sql = json.dumps(values).replace("'", "''")
+    configured = Q.as_user(Q.UFIN, f"SELECT public.rpc_update_partner_financial_settings('{Q.PC}','{expected_sql}'::jsonb,'{values_sql}'::jsonb);")
+    assert configured.returncode == 0, configured.stderr
     simulated, error = Q.sim(Q.UBC, Q.P3, [Q.S(2)], choice, partner=Q.PC)
     assert simulated is not None, error
     created, error = Q.create(Q.UBC, Q.P3, [Q.S(2)], simulated['cart_hash'], 'LOCAL-FORECAST-MANUAL-CREDIT-18', choice, partner=Q.PC)

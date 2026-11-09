@@ -5,8 +5,21 @@ import { useScopedB2BFinancialQuery } from "@/hooks/useB2BFinancialScope";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useAuth } from "@/hooks/useAuth";
 import { activePaymentMethodValid, canConfigurePartnerSettings, settingsFields, type PartnerSettings } from "@/lib/financeiro/partnerSettings";
+import { parseB2BForecast } from "@/lib/financeiro/b2bForecast";
 
 const sb = supabase as any;
+
+export function useB2BOrderForecast(orderId: string) {
+  return useScopedB2BFinancialQuery({
+    queryKey: ["b2b-order-forecast", orderId],
+    enabled: !!orderId,
+    queryFn: async () => {
+      const { data, error } = await sb.rpc("get_b2b_financial_forecast_secure", { p_order: orderId });
+      if (error) throw error; // Pre-install absence is unavailable, never inferred from an order.
+      return parseB2BForecast(data, orderId);
+    },
+  });
+}
 
 export interface B2BReceivableRow {
   partner_order_id: string;
