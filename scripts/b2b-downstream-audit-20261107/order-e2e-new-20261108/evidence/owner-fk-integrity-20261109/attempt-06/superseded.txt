@@ -1,0 +1,1 @@
+SUPERSEDED_BEFORE_RESULT: runner sem sonda FK isolada e sem self-hash; interrompido localmente, nunca promovido.
