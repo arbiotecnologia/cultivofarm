@@ -35,6 +35,13 @@ SEAMS = [
  ("partner_users.tenant_id/valid_from (backfill = owner org of partner)",
   "ALTER TABLE public.partner_users ADD COLUMN IF NOT EXISTS tenant_id uuid, ADD COLUMN IF NOT EXISTS valid_from timestamptz;"
   " UPDATE public.partner_users pu SET tenant_id=pa.commercial_owner_organization_id FROM public.partner_accounts pa WHERE pa.id=pu.partner_id AND pu.tenant_id IS NULL;"),
+ ("LIVE policies cppa_admin_read/cpr_internal_select (created closed; cc1f6cc ALTERs their predicate) and item_prices ids",
+  "DO $m$ BEGIN"
+  " IF NOT EXISTS(SELECT 1 FROM pg_policies WHERE policyname='cppa_admin_read') THEN CREATE POLICY cppa_admin_read ON public.commercial_payment_plan_assignments FOR SELECT TO authenticated USING(false); END IF;"
+  " IF NOT EXISTS(SELECT 1 FROM pg_policies WHERE policyname='cpr_internal_select') THEN CREATE POLICY cpr_internal_select ON public.commercial_price_rules FOR SELECT TO authenticated USING(false); END IF;"
+  " END $m$;"
+  " ALTER TABLE public.commercial_condition_item_prices ADD COLUMN IF NOT EXISTS id uuid NOT NULL DEFAULT gen_random_uuid(), ADD COLUMN IF NOT EXISTS assignment_id uuid, ADD COLUMN IF NOT EXISTS plan_id uuid,"
+  " ADD COLUMN IF NOT EXISTS buyer_scope text, ADD COLUMN IF NOT EXISTS partner_id uuid, ADD COLUMN IF NOT EXISTS customer_id uuid;"),
  ("platform_private.c2p1_snapshot_allowed real body (owner-orders p1-isolation/channels-core)",
   fn("scripts/owner-orders-20261023/p1-isolation/channels-core.sql.review", "platform_private.c2p1_snapshot_allowed")),
  ("public._cpp_validate_payload/_cpp_audit real bodies (migration 20260730014752)",
