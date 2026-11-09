@@ -1,0 +1,39 @@
+{
+  "status": "LOCAL_AUDIT_COMPLETE_WITH_REAL_GAPS",
+  "hosted": false,
+  "publication": false,
+  "external_effects": false,
+  "baseline_source": "AUDITOR_REPORT_NOT_HOSTED_QUERY_BY_AGENT",
+  "runs": {
+    "integrated_attempt_115": {"passed": 47, "total": 47, "exit": 0, "positive_fiscal_receivable": "NOT_RUN_BLOCKED"},
+    "ccr2_attempt_37": {"passed": 353, "total": 353, "ccr2_passed": 144, "ccr2_total": 144, "exit": 0, "seller91_md5_in_mirror": "97bcdb9884b54adb3bd4aae4915e32d0"},
+    "physical_after": {"passed": 59, "total": 59, "exit": 0},
+    "biological_legacy": {"passed": 7, "total": 7, "exit": 0},
+    "supplier_lot": {"passed": 15, "total": 15, "exit": 0},
+    "null_contract": {"passed": 52, "total": 52, "exit": 0},
+    "b4_component": {"passed": 198, "total": 198, "exit": 0, "integrated_positive": false, "declared_dependency_seam": true},
+    "fiscal_units": {"passed": 178, "total": 178, "exit": 0},
+    "b4_manifest": {"passed": 61, "total": 61, "exit": 0},
+    "ui": {"files": 4, "passed": 44, "total": 44, "exit": 0, "typecheck_exit": 0, "build": "OK"}
+  },
+  "negative_controls": {
+    "accounting_pending_promotion": "C2_ACCOUNTING_PENDING_ORDER_UNCHANGED",
+    "accounting_pending_approval": "C2_ACCOUNTING_PENDING_ORDER_UNCHANGED",
+    "fiscal_receivable_integrated": "REAL_ALWAYS_DENY_ZERO_DOCUMENT_ALLOCATION_SNAPSHOT_RECEIVABLE",
+    "stock_delivery": "INDEPENDENT_GATES_AND_GRANTS_CLOSED_NOT_A_SINGLE_FISCAL_GUARD",
+    "rollback": "DENY_ONLY_HISTORY_PRESERVED_WRITERS_CLOSED"
+  },
+  "receivable_cardinality": {
+    "proven": "ONE_PER_FISCAL_DOCUMENT_EVENT_WITH_REPLAY_AND_CONCURRENCY",
+    "not_proven": "ONE_PER_ORDER_ACROSS_MULTIPLE_PARTIAL_INVOICES",
+    "observed_component_behavior": "THREE_VALID_INDEPENDENT_DOCUMENTS_THREE_TITLES"
+  },
+  "backend_defects_reproduced": 0,
+  "frontend_defects_fixed": ["PEDIDOS_B2B_FILTER_LOST_ON_FULL_RELOAD"],
+  "capture_gaps": [
+    "platform_private.b2b_resale_delivery_order_valid_v1(...) current body/owner/ACL",
+    "platform_private.b2b_resale_delivery_status_transition_valid_v1(...) current body/owner/ACL",
+    "current manifest for entries marked live_bodies_other_md5_unconfirmed and live23_extra_real_unconfirmed in CCR2 attempt-37"
+  ],
+  "limits": ["NO_JWT_RLS_STORAGE_HOSTED_PROOF", "NO_REAL_FISCAL_ACCOUNTING_PROVIDER_PAYMENT_COMMUNICATION", "NO_GATE_ACTIVATION_OR_PRODUCTION_RELEASE"]
+}
