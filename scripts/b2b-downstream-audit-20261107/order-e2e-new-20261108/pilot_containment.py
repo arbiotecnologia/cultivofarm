@@ -303,7 +303,7 @@ def install(B, out):
     assert len(post) == len(CHANGED) + 2
     blocks = []
     for row in post:
-        blocks.append(f"DO $$DECLARE p oid:=to_regprocedure('{row['signature']}');BEGIN IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '{row['md5']}' OR pg_get_userbyid(p.proowner) IS DISTINCT FROM '{row['owner']}' OR coalesce(p.proacl::text,'') IS DISTINCT FROM '{row['acl']}' THEN RAISE EXCEPTION 'PILOT_POST_DRIFT {row['signature']}';END IF;END$$;")
+        blocks.append(f"DO $$DECLARE p oid:=to_regprocedure('{row['signature']}');BEGIN IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '{row['md5']}' OR (SELECT pg_get_userbyid(pr.proowner) FROM pg_proc pr WHERE pr.oid=p) IS DISTINCT FROM '{row['owner']}' OR coalesce((SELECT pr.proacl::text FROM pg_proc pr WHERE pr.oid=p),'') IS DISTINCT FROM '{row['acl']}' THEN RAISE EXCEPTION 'PILOT_POST_DRIFT {row['signature']}';END IF;END$$;")
     blocks.append("DO $$BEGIN IF EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE enabled) OR EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE enabled) OR has_table_privilege('authenticated','platform_private.resale_pilot_allowlist_v1','SELECT,INSERT,UPDATE,DELETE') OR has_function_privilege('authenticated','platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)','EXECUTE') THEN RAISE EXCEPTION 'PILOT_POST_NOT_CLOSED';END IF;END$$;")
     (out / "03-post.sql.readonly").write_text("BEGIN READ ONLY;\n" + "\n".join(blocks) + "\nROLLBACK;\n")
     checked = B.run_raw((out / "03-post.sql.readonly").read_text())
