@@ -165,6 +165,7 @@ def main():
     artifacts = {
         'evidence-live-catalog-guards.sql.capture': reconciliation / 'live-catalog-guards-20261108.sql.capture',
         'evidence-live-catalog-guards.json': reconciliation / 'live-catalog-guards-20261108.json',
+        'evidence-live-relation-security.json': current_scope.RELATION_SECURITY_PATH,
         'evidence-source-manifest.json': source_manifest_path,
         'evidence-run.stdout.txt': E / 'run.stdout.txt',
         'evidence-run.stderr.txt': E / 'run.stderr.txt',

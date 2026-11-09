@@ -278,7 +278,7 @@ def _pair(pre_state: dict, post_state: dict, initial: bool = True) -> tuple[dict
 
     pre_relations, post_relations = _relation_rows(pre_state), _relation_rows(post_state)
     live_relations = _live_relations()
-    capture_relations = {f"public.{row['table']}": row for row in CAPTURE["relations"]}
+    capture_relations = SECURITY_RELATIONS
     private_pre = {key for key in pre_relations if key.startswith("platform_private.")}
     required_relations = set(capture_relations) | private_pre
     changed_relations = {key for key in pre_relations.keys() & post_relations.keys() if pre_relations[key] != post_relations[key]}
