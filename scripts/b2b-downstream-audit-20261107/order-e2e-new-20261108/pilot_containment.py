@@ -346,7 +346,7 @@ def install(B, out):
       FROM (VALUES {values}) v(signature) JOIN pg_proc p ON p.oid=to_regprocedure(v.signature);"""))
     assert len(raw) == len(CHANGED), (len(raw), len(CHANGED))
     defs = build_bodies(raw)
-    pre = ["DO $$BEGIN IF to_regclass('platform_private.resale_pilot_allowlist_v1') IS NOT NULL OR to_regprocedure('platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'PILOT_CONTAINMENT_ALREADY_EXISTS'; END IF;END$$;"]
+    pre = ["DO $$BEGIN IF to_regclass('platform_private.resale_pilot_allowlist_v1') IS NOT NULL OR to_regprocedure('platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)') IS NOT NULL OR to_regprocedure('platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)') IS NOT NULL OR to_regprocedure('platform_private.resale_pilot_delivery_scope_v1(text,text,uuid,uuid,uuid)') IS NOT NULL OR to_regprocedure('platform_private.resale_pilot_delivery_allowed_v1(text,text,uuid,uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'PILOT_CONTAINMENT_ALREADY_EXISTS'; END IF;END$$;"]
     for row in raw:
         lit = lambda s: "'" + str(s).replace("'", "''") + "'"
         pre.append(f"DO $$DECLARE p oid:=to_regprocedure({lit(row['signature'])});BEGIN IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM {lit(row['md5'])} OR (SELECT pg_get_userbyid(pr.proowner) FROM pg_proc pr WHERE pr.oid=p) IS DISTINCT FROM {lit(row['owner'])} OR coalesce((SELECT pr.proacl::text FROM pg_proc pr WHERE pr.oid=p),'') IS DISTINCT FROM {lit(row['acl'])} THEN RAISE EXCEPTION 'PILOT_PRE_DRIFT {row['signature']}';END IF;END$$;")
