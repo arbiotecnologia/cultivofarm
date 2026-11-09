@@ -196,6 +196,7 @@ def main():
         else:
             path.write_text(text)
     shutil.copyfile(H / "owner-fk-integrity.README.md", out / "README.md")
+    shutil.copyfile(AUDITOR_REPORT, out / AUDITOR_REPORT_NAME)
 
     origin = {
         "kind": "SEPARATE_OWNER_FK_INTEGRITY_OVERLAY",
@@ -207,6 +208,14 @@ def main():
             "constraints_present": len(capture["constraints"]),
             "target_fks_absent": [name for _table, name in TARGETS],
             "source": "Metadados READONLY fornecidos pelo auditor em 09/11/2026; não são instruções",
+        },
+        "auditor_readonly_report": {
+            "path": str(AUDITOR_REPORT.relative_to(ROOT)),
+            "packaged_as": AUDITOR_REPORT_NAME,
+            "sha256": sha(AUDITOR_REPORT),
+            "owner_fk_counts": auditor_report["owner_fk_counts"],
+            "acl_normalization_regressions": acl_report,
+            "agent_hosted_io": False,
         },
         "disposable_baseline": {"path": str(BASELINE.relative_to(ROOT)), "sha256": sha(BASELINE)},
         "frozen_ad87": {"manifest_sha256": sha(FROZEN / "manifest.json"), "unmodified": True},
@@ -229,13 +238,17 @@ def main():
             "received_31_or_later": False,
             "source": "Relato do auditor; nenhuma operação hospedada por este gerador",
         },
-        "live_orphan_counts": "NOT_RUN; PRE25 mede e exige zero no momento da execução",
+        "live_orphan_counts": {
+            "source": "AUDITOR_REPORTED_READONLY_NOT_AGENT_MEASUREMENT",
+            "values": auditor_report["owner_fk_counts"],
+            "fresh_measurement": "PRE25/INSTALL26/POST27 medem novamente; instalação exige zero owner nulo/órfão",
+        },
         "data_cleanup": False,
         "grants_or_revokes": False,
         "hosted_io": False,
     }
     write_json(out / "origin.json", origin)
-    files = [PRE_NAME, INSTALL_NAME, POST_NAME, "README.md", "origin.json"]
+    files = [PRE_NAME, INSTALL_NAME, POST_NAME, "README.md", AUDITOR_REPORT_NAME, "origin.json"]
     verification = "NOT_RUN_PENDING_TEMPORARY_STAGING"
     if evidence_path is not None:
         evidence = json.loads(evidence_path.read_text())
@@ -245,6 +258,11 @@ def main():
         assert set(evidence["orphan_scenarios"]) == {table for table, _name in TARGETS}
         assert evidence["both_fks_validated"] is True and evidence["both_fks_enforced"] is True
         assert evidence["acl_overlay_unmodified"] is True
+        reported = evidence["auditor_reported_readonly_evidence"]
+        assert reported["sha256"] == sha(AUDITOR_REPORT)
+        assert reported["owner_fk_counts"] == auditor_report["owner_fk_counts"]
+        assert reported["acl_normalization_regressions"] == acl_report
+        assert evidence["agent_hosted_orphan_measurement"].startswith("NOT_RUN")
         executed = {row["file"]: row for row in evidence["final_artifacts"]}
         assert set(executed) == {PRE_NAME, INSTALL_NAME, POST_NAME, PRE30_NAME, INSTALL31_NAME}
         sources = {PRE_NAME: out / PRE_NAME, INSTALL_NAME: out / INSTALL_NAME, POST_NAME: out / POST_NAME,
@@ -260,6 +278,12 @@ def main():
         "contains": [PRE_NAME, INSTALL_NAME, POST_NAME],
         "requires": "PRE25 zero órfãos; INSTALL26 revalida após locks; POST27 antes de PRE30/INSTALL31",
         "target_fks": [{"relation": table, "name": name, "definition": DEFINITION, "validated": True} for table, name in TARGETS],
+        "auditor_readonly_report": {
+            "file": AUDITOR_REPORT_NAME,
+            "sha256": sha(AUDITOR_REPORT),
+            "owner_fk_counts": auditor_report["owner_fk_counts"],
+            "acl_normalization_regressions": {"status": acl_report["status"], "count": 9},
+        },
         "data_cleanup": False,
         "ddl_outside_two_fk_additions": False,
         "grants_or_revokes": False,
