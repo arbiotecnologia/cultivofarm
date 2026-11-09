@@ -7,6 +7,7 @@ Declared seams of that harness stay (auth.uid by GUC, minimal roles/entitlements
 import json, os, pathlib, re, subprocess
 
 PKG = pathlib.Path(__file__).resolve().parent
+import sys as _sys; _sys.path.insert(0, str(PKG)); import live_bodies
 
 
 def run(ns):
