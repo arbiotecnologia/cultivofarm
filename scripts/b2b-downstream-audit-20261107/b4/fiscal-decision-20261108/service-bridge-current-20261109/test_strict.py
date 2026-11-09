@@ -523,11 +523,13 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         deny("ponte mantém dependência fiscal/contábil real fechada antes da costura local", denied_dependency, "B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN")
         check("dependência negada não deixa documento/título", B3.psql(f"SELECT (SELECT count(*) FROM platform_private.b2b_authorized_documents WHERE id='{invoice_denied}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_denied}')").stdout.strip() == "0|0")
         STRICT = H / "fiscal-decision-20261108/service-bridge-current-20261109"
-        strict_pre = runfile(STRICT / "01-pre.sql.readonly")
+        def strict_file(name):
+            return service_sql("RESET ROLE;SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';" + (STRICT / name).read_text())
+        strict_pre = strict_file("01-pre.sql.readonly")
         check("etapa estrita PRE confirma B4, ponte, legado e dez gatilhos originais", strict_pre.returncode == 0, strict_pre.stderr[-1400:])
-        strict_install = runfile(STRICT / "02-install.sql.review")
+        strict_install = strict_file("02-install.sql.review")
         check("etapa estrita instala validação por permit fiscal real, sem stub", strict_install.returncode == 0, strict_install.stderr[-1400:])
-        strict_post = runfile(STRICT / "03-post.sql.readonly")
+        strict_post = strict_file("03-post.sql.readonly")
         check("etapa estrita POST preserva ACL, metadata e legado negado", strict_post.returncode == 0, strict_post.stderr[-1200:])
         check("nenhum stub always-allow foi instalado", "LANGUAGE sql AS $$SELECT$$" not in B3.psql("SELECT pg_get_functiondef('platform_private.b2b_integration_dependencies()'::regprocedure)").stdout)
         pending_result, pending_error = service_json(f"platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_pending}')")
@@ -765,7 +767,7 @@ CREATE TRIGGER zz_b4_test_pause_authorized_tx BEFORE UPDATE ON public.fiscal_sef
         expected_null_error = "B2B_SERVICE_ORIGIN_REQUIRED" if REVIEW_BEFORE else "RECEIVABLE_CREATED_BY_REQUIRED"
         check("origem manual sem ator continua fechada sem afrouxar NOT NULL legado", null_manual.returncode != 0 and expected_null_error in null_manual.stderr, null_manual.stderr[-800:])
         bridge_allocations = B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip()
-        strict_rollback = runfile(STRICT / "04-rollback-deny.sql.review")
+        strict_rollback = strict_file("04-rollback-deny.sql.review")
         check("rollback estrito restaura somente negação e preserva títulos/alocações", strict_rollback.returncode == 0 and B3.psql("SELECT pg_get_functiondef('platform_private.b2b_integration_dependencies()'::regprocedure) LIKE '%B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN%'").stdout.strip() == "t", strict_rollback.stderr[-1200:])
         bridge_rollback = bridge_file("04-rollback-deny.sql.review")
         check("rollback deny-only da ponte fecha callback e preserva histórico", bridge_rollback.returncode == 0 and B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip() == bridge_allocations, bridge_rollback.stderr[-900:])
