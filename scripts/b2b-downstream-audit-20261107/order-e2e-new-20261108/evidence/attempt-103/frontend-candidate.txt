@@ -1,0 +1,12 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/osRequest.test.ts (10 tests) 45ms
+ ✓ scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/ResaleOsAction.test.tsx (3 tests) 159ms
+
+ Test Files  2 passed (2)
+      Tests  13 passed (13)
+   Start at  01:29:28
+   Duration  4.31s (transform 194ms, setup 434ms, collect 645ms, tests 203ms, environment 2.48s, prepare 792ms)
+
