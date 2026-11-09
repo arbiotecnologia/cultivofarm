@@ -1,0 +1,11 @@
+{
+  "status": "INTERRUPTED_NOT_RUN_TO_COMPLETION",
+  "reason": "USER_DIRECTION_CHANGE_20261109_2101_UTC",
+  "release_decision": "SUSPENDED",
+  "positive_fiscal_close": "NOT_PROVEN",
+  "hosted": false,
+  "preserve_attempts": [
+    "attempt-125",
+    "attempt-126"
+  ]
+}
