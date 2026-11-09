@@ -75,3 +75,4 @@ Todas as mudanças são predicados de negação adicionais, sem novos INSERT/UPD
 | 30 | 1 | 139/142 | — | USUP do harness também é administrador de A (autorizado); 3ª revalidação não alcançada |
 | 31–32 | 0 | 142/142 | 351/351 | superadmin sem papel de preço; erro completo registrado |
 | 33 | 0 | 143/143 | 352/352 | 3ª revalidação isolada (`payment_condition_stale`); veredito `evidence/attempt-33/VERDICT.md` |
+| 34 | 0 | 143/143 | 352/352 | +3 corpos LIVE 09/11 (assert/target_reason/h15); stub de target_reason eliminado |
