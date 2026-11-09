@@ -226,6 +226,7 @@ def main():
             "packaged_as": AUDITOR_REPORT_NAME,
             "sha256": sha(AUDITOR_REPORT),
             "owner_fk_counts": auditor_report["owner_fk_counts"],
+            "reported_column_shape": reported_shape,
             "acl_normalization_regressions": acl_report,
             "agent_hosted_io": False,
         },

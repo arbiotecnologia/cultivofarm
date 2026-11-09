@@ -395,6 +395,7 @@ END$$;"""
                 "path": str(AUDITOR_REPORT.relative_to(ROOT)),
                 "sha256": sha(AUDITOR_REPORT),
                 "owner_fk_counts": auditor_report["owner_fk_counts"],
+                "reported_column_shape": reported_shape,
                 "acl_normalization_regressions": auditor_report["acl_normalization_regressions"],
             },
             "generated_column_shape_verified": True,
