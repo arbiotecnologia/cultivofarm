@@ -166,8 +166,9 @@ REVOKE ALL ON FUNCTION platform_private.resale_pilot_delivery_allowed_v1(text,te
 
 def _os_guard(body, variable="o"):
     old = "EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)"
-    new = f"platform_private.resale_pilot_allowed_v1('b2b_resale',NULL,auth.uid(),{variable}.organization_id,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id={variable}.partner_order_id),{variable}.partner_order_id,{variable}.partner_order_item_id,{variable}.produto_id,NULL,NULL)"
-    return one(body, old, new, "OS guard " + variable)
+    new = f"platform_private.resale_pilot_scope_v1('b2b_resale',NULL,auth.uid(),{variable}.organization_id,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id={variable}.partner_order_id),{variable}.partner_order_id,{variable}.partner_order_item_id,{variable}.produto_id,NULL,NULL)"
+    body = one(body, old, new, "OS guard " + variable)
+    return one(body, " STABLE SECURITY DEFINER", " VOLATILE SECURITY DEFINER", "OS guard volatility " + variable)
 
 
 def _order_refs(order="p_order_id", item="p_order_item_id", product="p_product_id"):
