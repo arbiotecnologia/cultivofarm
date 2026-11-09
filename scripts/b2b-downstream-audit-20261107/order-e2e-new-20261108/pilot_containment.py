@@ -203,9 +203,9 @@ def build_bodies(raw):
     body = defs[sig]["body"]
     body = one(body,
         "SELECT (platform_private.finished_product_stock_valid_v1(s) IS TRUE",
-        "SELECT ((e.status::text='separado' OR e.partner_order_id IS NOT NULL OR e.origem_estoque IS NULL OR platform_private.resale_pilot_delivery_allowed_v1('finished_product',NULL,auth.uid(),e.organization_id,e.id) IS TRUE)\n  AND platform_private.finished_product_stock_valid_v1(s) IS TRUE",
+        "SELECT ((e.status::text='separado' OR e.partner_order_id IS NOT NULL OR e.origem_estoque IS NULL OR platform_private.resale_pilot_delivery_scope_v1('finished_product',NULL,auth.uid(),e.organization_id,e.id) IS TRUE)\n  AND platform_private.finished_product_stock_valid_v1(s) IS TRUE",
         "physical delivery scoped")
-    defs[sig]["new"] = body
+    defs[sig]["new"] = one(body, " STABLE SECURITY DEFINER", " VOLATILE SECURITY DEFINER", "physical delivery volatility")
 
     sig = "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)"
     body = defs[sig]["body"]
