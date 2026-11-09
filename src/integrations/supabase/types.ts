@@ -24243,6 +24243,19 @@ export type Database = {
           total_recebido: number
         }[]
       }
+      rpc_b2b_resale_os_availability_v1: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
+      rpc_b2b_resale_os_create_v1: {
+        Args: {
+          p_expected_updated_at: string
+          p_order_id: string
+          p_order_item_id: string
+          p_request_key: string
+        }
+        Returns: Json
+      }
       rpc_b2b_revenue_forecast: {
         Args: { p_partner_id?: string }
         Returns: Json
