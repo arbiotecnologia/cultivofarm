@@ -1,0 +1,10 @@
+{
+  "exit": 0,
+  "seconds": 48.9,
+  "pg": "postgres (PostgreSQL) 17.11",
+  "frozen_sources_sha256": {
+    "scripts/b2b-payment-condition-v1-rebase-20261106/test-local-pg.py": "6a82400ec175c8f7d448eb5c9a5ee528f6e0d150de4a976c24a816468e1a298a",
+    "scripts/b2b-solid-packaging-order-20261106/test-local-pg.py": "0c1204a8ec2128989d07bbd9f9ef5dc186f92466eae2e5b6d4d01d25b758695b"
+  },
+  "kind": "DISPOSABLE_PG_REAL_WRITERS_DECLARED_SEAMS_NOT_HOSTED_PROOF"
+}

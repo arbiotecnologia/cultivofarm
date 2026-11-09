@@ -1,0 +1,98 @@
+-- REVIEW ONLY (rev2, supersedes rev1 32cfcc905). Not applied. Auditor installs after independent review and 80 PASS.
+-- Scope: ONLY partners that the installed B3 activation marks 'required' (pilot list or enforced) - reuses
+-- platform_private.b2b_condition_mode unchanged. Tenants without activation keep today's contract (no global block).
+-- Adds snapshot COHERENCE: a condition snapshot only legitimizes the order whose seller/partner/plan/version/method it
+-- describes; an UPDATE of partner/plan can never reuse an old snapshot, and an UPDATE into a 'required' partner without
+-- a snapshot is denied (the installed B3 trigger only checks INSERT). No writer, grant, activation, assignment or data change.
+BEGIN;
+SET LOCAL lock_timeout = '5s'; SET LOCAL statement_timeout = '60s';
+DO $pre$ BEGIN
+  IF to_regprocedure('platform_private.b2b_condition_contract_required_guard()') IS NOT NULL THEN RAISE EXCEPTION 'CCR2_REV1_PRESENT'; END IF;
+  IF to_regprocedure('platform_private.b2b_condition_order_coherence_check(uuid,text)') IS NOT NULL THEN RAISE EXCEPTION 'CCR2_ALREADY_INSTALLED'; END IF;
+  IF md5(pg_get_functiondef('platform_private.b2b_condition_mode(uuid)'::regprocedure)) <> '7830c32a4ae139d9ab7e377dd39c8df6'
+     OR md5(pg_get_functiondef('platform_private.b2b_condition_required_check()'::regprocedure)) <> '236b821b0ca568c81a9667512dae5def'
+  THEN RAISE EXCEPTION 'CCR2_B3_DRIFT'; END IF;
+END $pre$;
+
+CREATE FUNCTION platform_private.b2b_condition_order_coherence_check(p_order_id uuid, p_event text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $f$
+DECLARE o record; v_org uuid; s record; q record;
+BEGIN
+  IF p_event NOT IN ('order_update','snapshot_insert','quote_insert') THEN RAISE EXCEPTION 'CCR2_EVENT' USING ERRCODE='22023'; END IF;
+  -- Deferred: committed-to-be row, so insert-then-update cannot launder partner/plan.
+  SELECT po.id, po.partner_id, po.payment_plan_id, (po.created_at = now()) AS same_tx INTO o FROM public.partner_orders po WHERE po.id = p_order_id;
+  IF NOT FOUND THEN RETURN; END IF;
+  SELECT a.commercial_owner_organization_id INTO v_org FROM public.partner_accounts a WHERE a.id = o.partner_id;
+  SELECT x.organization_id, x.partner_id, x.plan_id, x.condition_version, x.condition_method, x.choice, x.condition, x.quote, x.payment_terms_id, (x.created_at = now()) AS snap_now
+    INTO s FROM platform_private.b2b_order_condition_snapshots x WHERE x.order_id = o.id;
+  IF FOUND THEN
+    IF v_org IS NULL OR s.organization_id IS DISTINCT FROM v_org OR s.partner_id IS DISTINCT FROM o.partner_id
+       OR s.plan_id IS DISTINCT FROM o.payment_plan_id
+       OR s.condition_version IS DISTINCT FROM (s.choice->>'payment_condition_version')::int OR s.condition_method IS DISTINCT FROM s.choice->>'payment_method'
+       OR (s.condition->>'organization_id')::uuid IS DISTINCT FROM s.organization_id OR (s.condition->>'plan_id')::uuid IS DISTINCT FROM s.plan_id
+       OR (s.condition->>'version')::int IS DISTINCT FROM s.condition_version OR s.condition->>'method' IS DISTINCT FROM s.condition_method
+       -- economic link: non-quote snapshot must point at THIS order's own terms row
+       OR (s.payment_terms_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.partner_order_payment_terms t WHERE t.id = s.payment_terms_id AND t.partner_order_id = o.id))
+       OR (s.quote IS FALSE AND s.payment_terms_id IS NULL)
+       -- the initial snapshot is written by the writer in the order's own transaction (now() = transaction start, subtransaction-safe); no later backfill
+       OR (p_event = 'snapshot_insert' AND (o.same_tx IS NOT TRUE OR s.snap_now IS NOT TRUE))
+       OR NOT EXISTS (SELECT 1 FROM platform_private.b2b_condition_versions v WHERE v.organization_id = s.organization_id AND v.plan_id = s.plan_id
+                        AND v.version = s.condition_version AND v.method = s.condition_method)
+    THEN RAISE EXCEPTION 'B2B_PAYMENT_CONDITION_SNAPSHOT_INCOHERENT' USING ERRCODE = 'P0001',
+           HINT = 'Snapshot de condição não corresponde a empresa/parceiro/plano/versão/meio do pedido.';
+    END IF;
+    FOR q IN SELECT y.organization_id, y.partner_id, y.plan_id, y.condition_version, y.condition_method
+               FROM platform_private.b2b_order_condition_quote_snapshots y WHERE y.order_id = o.id LOOP
+      IF q.organization_id IS DISTINCT FROM s.organization_id OR q.partner_id IS DISTINCT FROM s.partner_id OR q.plan_id IS DISTINCT FROM s.plan_id
+         OR q.condition_version IS DISTINCT FROM s.condition_version OR q.condition_method IS DISTINCT FROM s.condition_method
+      THEN RAISE EXCEPTION 'B2B_PAYMENT_CONDITION_SNAPSHOT_INCOHERENT' USING ERRCODE = 'P0001', HINT = 'Snapshot da resposta de cotação diverge da escolha inicial.';
+      END IF;
+    END LOOP;
+  ELSE
+    IF EXISTS (SELECT 1 FROM platform_private.b2b_order_condition_quote_snapshots y WHERE y.order_id = o.id) THEN
+      RAISE EXCEPTION 'B2B_PAYMENT_CONDITION_SNAPSHOT_INCOHERENT' USING ERRCODE = 'P0001', HINT = 'Snapshot de cotação sem escolha inicial.';
+    END IF;
+    IF p_event = 'order_update' AND o.payment_plan_id IS NOT NULL AND platform_private.b2b_condition_mode(o.partner_id) = 'required' THEN
+      RAISE EXCEPTION 'B2B_PAYMENT_CONDITION_REQUIRED' USING ERRCODE = 'P0001',
+        HINT = 'Parceiro com contrato B2B_PAYMENT_CONDITION_V1 exigido; troca de parceiro/plano sem snapshot recusada.';
+    END IF;
+  END IF;
+END $f$;
+
+CREATE FUNCTION platform_private.b2b_condition_order_coherence_trg()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $f$
+BEGIN
+  PERFORM platform_private.b2b_condition_order_coherence_check(NEW.id, 'order_update');
+  RETURN NULL;
+END $f$;
+
+CREATE FUNCTION platform_private.b2b_condition_snapshot_coherence_trg()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $f$
+BEGIN
+  PERFORM platform_private.b2b_condition_order_coherence_check(NEW.order_id,
+    CASE TG_TABLE_NAME WHEN 'b2b_order_condition_snapshots' THEN 'snapshot_insert' WHEN 'b2b_order_condition_quote_snapshots' THEN 'quote_insert' END);
+  RETURN NULL;
+END $f$;
+
+DO $acl$ DECLARE f text; r text; BEGIN
+  FOREACH f IN ARRAY ARRAY['platform_private.b2b_condition_order_coherence_check(uuid,text)', 'platform_private.b2b_condition_order_coherence_trg()',
+                           'platform_private.b2b_condition_snapshot_coherence_trg()'] LOOP
+    EXECUTE format('ALTER FUNCTION %s OWNER TO postgres', f);
+    EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC', f);
+    FOREACH r IN ARRAY ARRAY['anon', 'authenticated', 'service_role'] LOOP
+      IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN EXECUTE format('REVOKE ALL ON FUNCTION %s FROM %I', f, r); END IF;
+    END LOOP;
+  END LOOP;
+END $acl$;
+
+CREATE CONSTRAINT TRIGGER b2b_condition_zz_coherence_upd
+  AFTER UPDATE OF partner_id, payment_plan_id ON public.partner_orders DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW WHEN (OLD.partner_id IS DISTINCT FROM NEW.partner_id OR OLD.payment_plan_id IS DISTINCT FROM NEW.payment_plan_id)
+  EXECUTE FUNCTION platform_private.b2b_condition_order_coherence_trg();
+CREATE CONSTRAINT TRIGGER b2b_condition_zz_coherence_snap
+  AFTER INSERT ON platform_private.b2b_order_condition_snapshots DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_condition_snapshot_coherence_trg();
+CREATE CONSTRAINT TRIGGER b2b_condition_zz_coherence_quote
+  AFTER INSERT ON platform_private.b2b_order_condition_quote_snapshots DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_condition_snapshot_coherence_trg();
+COMMIT;

@@ -20,3 +20,6 @@ São dois constraint triggers deferidos em `public.partner_orders`, um para INSE
 - 96 `12ff93a2063b84ecddb203d985ad6702213f2dcdf29bbf99c35faebc14f5227c`
 - teste `ad1b2a98e566dcc9ec6b43b8b70f99c69fd045826ebb6e6b231361e73f03fb6b`
 - resultado `11f1c06719eddac2854c988cb5920a0cad28468d0582da55d1a9cc79d7571051`
+
+## SUPERSEDED (09/11/2026) — rev1 acima NÃO aprovado
+Revisão independente de `32cfcc905`: rev1 só testava existência de snapshot por `order_id` e valia para todo plano aprovado, mesmo de tenants fora do piloto. Substituído por `rev2-coherence-20261109/` (ver README lá). Arquivos rev1 preservados byte a byte apenas como histórico; nunca instalar 81 rev1 (PRE rev2 aborta se presente).

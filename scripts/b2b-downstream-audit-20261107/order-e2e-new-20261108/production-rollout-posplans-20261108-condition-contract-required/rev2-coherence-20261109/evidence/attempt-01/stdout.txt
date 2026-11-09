@@ -1,0 +1,33 @@
+266/283
+FAIL CCR2 82 POST_OK (owner/ACL/search_path/definer/gatilhos exatos) psql:/tmp/b2bcond-xa2jjwnf/ccr2-82-ccr2-post.sql.readonly:32: ERROR:  CCR2_POST_FN platform_private.b2b_condition_mode(uuid)|7830c32a4ae139d9ab7e377dd39c8df6|postgres|postgres=X/postgres|search_path=""|t
+CONTEXT:  PL/pgSQL function inline_code_block line 16 at RAISE
+
+FAIL CCR2 parceiro do piloto: writer legado REAL continua negado (B3) sem idempotência ERROR:  forbidden_partner
+CONTEXT:  PL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 79 at RAISE
+
+FAIL CCR2 legado histórico: backfill de snapshot fictício negado (escolha/condição de outro pedido) 
+FAIL CCR2 resposta do vendedor REAL: snapshot econômico coerente aceito pelo guard ERROR:  B2B_INTERNAL_ORIGIN_DENIED
+CONTEXT:  PL/pgSQL function platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid) line 7 at RAISE
+SQL statement "SELECT platform_private.b2b_internal_assert_origin((SELECT internal_origin_snapshot FROM public.partner_orders WHERE id=p_order_id),
+      (SELECT partner_id FROM public.partner_orders WHERE id=p_order_id),(SELECT cliente_id FROM public.partner_
+FAIL CCR2 snapshot de resposta com versão divergente da escolha inicial negado 
+FAIL CCR2 concorrência ativação: piloto ampliado durante create legado aberto -> commit negado (sem pedido/idempotência) ('ERROR:  credit_limit_exceeded\nCONTEXT:  PL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 198 at RAISE\n', '')
+FAIL CCR2 após aposentadoria: parceiro required continua sem fallback legado ERROR:  credit_limit_exceeded
+CONTEXT:  PL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 198 at RAISE
+
+FAIL CCR2 concorrência revogação: PN tem opção sem opção para PN
+FAIL CCR2 rollback mantém guarda B3 de INSERT (sem reabrir legado) 
+FAIL CCR2 PRE volta a passar após rollback psql:/tmp/b2bcond-xa2jjwnf/ccr2-80-ccr2-pre.sql.readonly:42: ERROR:  CCR2_PRE_B3_TRIGGER_DRIFT
+CONTEXT:  PL/pgSQL function inline_code_block line 26 at RAISE
+
+FAIL CCR2 POST após reinstall psql:/tmp/b2bcond-xa2jjwnf/ccr2-82-ccr2-post.sql.readonly:32: ERROR:  CCR2_POST_FN platform_private.b2b_condition_mode(uuid)|7830c32a4ae139d9ab7e377dd39c8df6|postgres|postgres=X/postgres|search_path=""|t
+CONTEXT:  PL/pgSQL function inline_code_block line 16 at RAISE
+
+FAIL 04 rollback deny-only psql:/tmp/b2bcond-w-kx8z59cq/04-rollback-deny.sql.review:388: ERROR:  ROLLBACK_POST: trigger de exigência ausente
+CONTEXT:  PL/pgSQL function inline_code_block line 30 at RAISE
+
+FAIL ROLLBACK novo: cotação com dois itens permanece deny-only esperado 'b2b_payment_condition_rolled_back'; obtido {'id': '9c909ae2-ee33-42ff-9457-557b5538bd39', 'total': 207.24, 'numero': 'PB-000008', 'status': 'em_analise_comercial', 'schedule': [{'amount': 69.08, 'due_date': '2026-12-09', 'estimated': True, 'interest_amount': 3.6, 'nominal_due_date': '2026-12-09', 'principal_amount': 65.48, 'installment_number': 1, 'business_day_adjusted': False}, {'amoun
+FAIL após rollback: opções negadas esperado 'permission denied'; obtido {'mode': 'required', 'options': [{'available': True, 'monthly_rate': 0, 'payment_method': 'dinheiro', 'installment_count': 1, 'payment_method_name': 'Dinheiro TESTE', 'payment_deadline_days': 0, 'payment_condition_version': 2}], 'contract': 'B2B_PAYMENT_CONDITION_V1', 'due_basis': 'nf_issue', 'partner_id': '00000000-0000-0000-0000-000000000011', 'payment_plan_i
+FAIL após rollback: resposta de cotação com condição ativada fica negada, sem reabrir legado esperado 'b2b_payment_condition_rolled_back'; obtido {'id': 'b13f442f-5e16-4f70-a5a1-084123b556ee', 'total': 1036.22, 'numero': 'PB-000011', 'status': 'em_analise_comercial', 'schedule': [{'amount': 345.4, 'due_date': '2026-12-09', 'estimated': True, 'interest_amount': 18.0, 'nominal_due_date': '2026-12-09', 'principal_amount': 327.4, 'installment_number': 1, 'business_day_adjusted': False}, {'amo
+FAIL rollback da cotação é atômico 
+FAIL após rollback: empresa ativada continua bloqueada (nunca reabre fallback) 

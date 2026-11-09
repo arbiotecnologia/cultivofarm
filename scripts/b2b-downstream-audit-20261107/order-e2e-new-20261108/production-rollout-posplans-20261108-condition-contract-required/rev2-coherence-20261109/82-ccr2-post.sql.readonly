@@ -1,0 +1,33 @@
+-- READ ONLY postflight for 81 (rev2).
+BEGIN READ ONLY;
+SET LOCAL lock_timeout = '3s'; SET LOCAL statement_timeout = '30s';
+DO $post$
+DECLARE v text; n int := 0;
+BEGIN
+  FOR v IN SELECT format('%s|%s|%s|%s|%s|%s', p.oid::regprocedure, md5(pg_get_functiondef(p.oid)), pg_get_userbyid(p.proowner),
+                         array_to_string(ARRAY(SELECT x::text FROM unnest(p.proacl) x ORDER BY 1), ','), array_to_string(p.proconfig, ','), p.prosecdef)
+             FROM pg_proc p WHERE p.oid IN ('platform_private.b2b_condition_order_coherence_check(uuid,text)'::regprocedure,
+               'platform_private.b2b_condition_order_coherence_trg()'::regprocedure, 'platform_private.b2b_condition_snapshot_coherence_trg()'::regprocedure,
+               'platform_private.b2b_condition_mode(uuid)'::regprocedure, 'platform_private.b2b_condition_required_check()'::regprocedure)
+  LOOP
+    n := n + 1;
+    IF v NOT IN ('platform_private.b2b_condition_order_coherence_check(uuid,text)|d5096452e22262d617384df0fdeffd17|postgres|postgres=X/postgres|search_path=""|t',
+                 'platform_private.b2b_condition_order_coherence_trg()|7f793a95047846b63cb514e5a8b1af11|postgres|postgres=X/postgres|search_path=""|t',
+                 'platform_private.b2b_condition_snapshot_coherence_trg()|eb9e9179be9addb20ce09681956c6eda|postgres|postgres=X/postgres|search_path=""|t',
+                 'platform_private.b2b_condition_mode(uuid)|7830c32a4ae139d9ab7e377dd39c8df6|postgres|postgres=X/postgres|search_path=""|t',
+                 'platform_private.b2b_condition_required_check()|236b821b0ca568c81a9667512dae5def|postgres|postgres=X/postgres|search_path=""|t')
+    THEN RAISE EXCEPTION 'CCR2_POST_FN %', v; END IF;
+  END LOOP;
+  IF n <> 5 THEN RAISE EXCEPTION 'CCR2_POST_FN_COUNT %', n; END IF;
+  SELECT string_agg(pg_get_triggerdef(t.oid) || '|' || t.tgenabled::text, E'\n' ORDER BY t.tgname) INTO v FROM pg_trigger t
+   WHERE t.tgname IN ('b2b_payment_condition_required', 'b2b_condition_zz_coherence_upd', 'b2b_condition_zz_coherence_snap', 'b2b_condition_zz_coherence_quote');
+  IF v IS DISTINCT FROM
+     'CREATE CONSTRAINT TRIGGER b2b_condition_zz_coherence_quote AFTER INSERT ON platform_private.b2b_order_condition_quote_snapshots DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_condition_snapshot_coherence_trg()|O' || E'\n' ||
+     'CREATE CONSTRAINT TRIGGER b2b_condition_zz_coherence_snap AFTER INSERT ON platform_private.b2b_order_condition_snapshots DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_condition_snapshot_coherence_trg()|O' || E'\n' ||
+     'CREATE CONSTRAINT TRIGGER b2b_condition_zz_coherence_upd AFTER UPDATE OF partner_id, payment_plan_id ON public.partner_orders DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.partner_id IS DISTINCT FROM new.partner_id) OR (old.payment_plan_id IS DISTINCT FROM new.payment_plan_id))) EXECUTE FUNCTION platform_private.b2b_condition_order_coherence_trg()|O' || E'\n' ||
+     'CREATE CONSTRAINT TRIGGER b2b_payment_condition_required AFTER INSERT ON public.partner_orders DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_condition_required_check()|O'
+  THEN RAISE EXCEPTION 'CCR2_POST_TRIGGERS %', v; END IF;
+  IF to_regprocedure('platform_private.b2b_condition_contract_required_guard()') IS NOT NULL THEN RAISE EXCEPTION 'CCR2_POST_REV1_PRESENT'; END IF;
+  RAISE NOTICE 'CCR2_POST_OK';
+END $post$;
+ROLLBACK;

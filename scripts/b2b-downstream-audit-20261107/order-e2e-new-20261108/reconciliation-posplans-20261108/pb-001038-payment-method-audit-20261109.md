@@ -40,3 +40,7 @@ Exige incluir 5c4f35f8… no piloto pela UI admin, via `b2b_payment_condition_ac
 - PB-001038 passou pelo caminho legado: não tem snapshot privado nem recibo V1.
 - Causa da elegibilidade: a versão boleto v1 está aprovada para o plano `a129001e…`, mas não há atribuição para `5c4f35f8…` e o piloto só inclui `7e52de9a…`. O modo `legacy` deixou o writer legado aceitar o plano configurado. PB-001036 (`d2e37af8…`, teste4) também não tem snapshot e foi preservado.
 - Correção preparada: `production-rollout-posplans-20261108-condition-contract-required/` (81/82/96), 15/15 PASS em PG17 descartável sintético. Não foi aplicada e não há backfill.
+
+## 09/11/2026 15:40 — revisão independente de 81 rev1 e rev2
+- Auditor: comprador real `renatos` passou na simulação na prévia (2 embalagens TESTE KG25, tabela 20, desconto 2, base 18, boleto escolhido 1x 0% 30 dias após NF, parcela estimada 09/12/2026). Nenhum pedido novo enviado. PB-001038 preservado.
+- rev1 (`32cfcc905`) reprovado: só checava existência de snapshot e valia para qualquer plano aprovado. rev2 em `production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/`: escopo = ativação B3, coerência do snapshot e bloqueio de backfill. PG17 descartável com writers reais, tentativa 04: 55/55 (harness 286/286). Não aplicado.
