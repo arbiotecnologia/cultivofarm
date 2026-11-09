@@ -27,9 +27,9 @@ def main():
     baseline = json.loads(BASELINE.read_text())
     assert baseline["canonical_ref"] == REF and baseline["hosted"] is False
     source = SOURCE.read_text()
-    start = source.index("CREATE FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1")
-    end = source.index("END $$;", start) + 7
-    original = source[start:end].replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION", 1)
+    original = source
+    assert original.startswith("CREATE OR REPLACE FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1")
+    assert md5(original) == "8905212e276f6bb43be32423ee48abc8"
     assert original.count(OLD) == 1
     candidate = original.replace(OLD, NEW)
     allocation_anchor = " result:=platform_private.b2b_allocate_document(inv.id);\n UPDATE public.fiscal_invoices"
