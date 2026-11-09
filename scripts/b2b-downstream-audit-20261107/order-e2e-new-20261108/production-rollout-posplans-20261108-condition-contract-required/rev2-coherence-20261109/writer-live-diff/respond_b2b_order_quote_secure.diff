@@ -1,0 +1,11 @@
+--- scripts/commercial-plans-tenant-20261108/capture/functions/respond_b2b_order_quote_secure.sql	2026-11-09 15:40:52.304633204 +0000
++++ scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/writer-live-diff/respond_b2b_order_quote_secure.live-candidate.sql	2026-11-09 16:18:34.109954150 +0000
+@@ -86,7 +86,7 @@
+   IF EXISTS(SELECT 1 FROM public.partner_order_payment_terms WHERE partner_order_id=p_order_id) THEN RAISE EXCEPTION 'B2B_INTERNAL_QUOTE_REVISION_UNAVAILABLE' USING ERRCODE='42501'; END IF; IF v_order.payment_plan_id IS NULL THEN RAISE EXCEPTION 'payment_plan_required'; END IF;
+ 
+   SELECT * INTO v_plan FROM public.commercial_payment_plans WHERE id = v_order.payment_plan_id;
+-  IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF; IF NOT public.fn_b2b_plan_selectable(v_plan.id) THEN RAISE EXCEPTION 'plan_not_selectable'; END IF;
++  IF NOT FOUND OR NOT platform_private.commercial_plan_partner_visible(v_order.payment_plan_id,v_order.partner_id) THEN RAISE EXCEPTION 'plan_not_found'; END IF; IF NOT public.fn_b2b_plan_selectable(v_plan.id) THEN RAISE EXCEPTION 'plan_not_selectable'; END IF;
+   IF v_plan.active = false THEN RAISE EXCEPTION 'plan_inactive'; END IF;
+   -- Mesma ordem do create: versão/atribuições/plano/meio/categoria FOR SHARE ANTES do advisory de crédito.
+   IF v_has_condition THEN

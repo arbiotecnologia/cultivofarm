@@ -1,0 +1,15 @@
+--- scripts/commercial-plans-tenant-20261108/capture/functions/b2b_payment_condition_assign.sql	2026-11-09 15:40:52.303622495 +0000
++++ scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/writer-live-diff/b2b_payment_condition_assign.live-candidate.sql	2026-11-09 16:18:34.099206300 +0000
+@@ -10,10 +10,12 @@
+   IF p_enabled IS NULL OR p_version IS NULL THEN RAISE EXCEPTION 'payment_condition_config_invalid' USING ERRCODE='22023'; END IF;
+   PERFORM pg_advisory_xact_lock(hashtextextended('b2bcond:' || v_org::text || ':' || p_plan_id::text || ':' || p_method, 0));
+   IF platform_private.b2b_condition_cfg_actor(false) IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
++  IF NOT platform_private.commercial_plan_admin_allowed(p_plan_id) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
+   IF NOT EXISTS (SELECT 1 FROM public.partner_accounts a WHERE a.id=p_partner_id AND a.commercial_owner_organization_id=v_org AND a.ativo IS TRUE) THEN
+     RAISE EXCEPTION 'forbidden_partner' USING ERRCODE='42501'; END IF;
+   SELECT * INTO cur FROM platform_private.b2b_condition_versions v WHERE v.organization_id=v_org AND v.plan_id=p_plan_id AND v.method=p_method
+    ORDER BY v.version DESC LIMIT 1 FOR UPDATE;
++  IF NOT platform_private.commercial_plan_admin_allowed(p_plan_id) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
+   IF cur.version IS NULL OR cur.version <> p_version
+      OR EXISTS (SELECT 1 FROM platform_private.b2b_condition_retirements r WHERE (r.organization_id,r.plan_id,r.version,r.method)=(v_org,p_plan_id,cur.version,p_method)) THEN
+     RAISE EXCEPTION 'payment_condition_config_stale' USING ERRCODE='PT409'; END IF;
