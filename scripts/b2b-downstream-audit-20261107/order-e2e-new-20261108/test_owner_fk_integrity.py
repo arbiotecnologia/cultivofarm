@@ -161,15 +161,19 @@ def main():
         shape_before = next(row for row in before_reconcile["columns"]
                             if row["relation"] == "product_sale_units" and row["name"] == "forma_fisica")
         shape_expected = next(row for row in capture["columns"]
-                              if row["relation"] == "product_sale_units" and row["name"] == "forma_fisica")
-        assert shape_before["default"] is None and shape_expected["default"], shape_before
+                               if row["relation"] == "product_sale_units" and row["name"] == "forma_fisica")
+        assert shape_before["default"] is None, shape_before
+        assert shape_before["generated"] == shape_before["identity"] == "", shape_before
+        assert shape_expected["type"] == reported_shape["type"] == "text"
+        assert shape_expected["notnull"] is reported_shape["notnull"] is False
+        assert shape_expected["default"] == reported_shape["generation_expression"]
         B.sql("ALTER TABLE ONLY public.product_packagings ALTER COLUMN peso_liquido_kg TYPE numeric(12,3) USING peso_liquido_kg::numeric(12,3);")
         B.sql(f"""ALTER TABLE ONLY public.product_sale_units
           DROP COLUMN forma_fisica,
           ADD COLUMN forma_fisica text GENERATED ALWAYS AS ({shape_expected['default']}) STORED;""")
         report["fixture_column_reconciliation"] = [
             {"relation": "product_packagings", "column": "peso_liquido_kg", "before": weight_before["type"], "after": "numeric(12,3)"},
-            {"relation": "product_sale_units", "column": "forma_fisica", "before": "regular column without expression", "after": "GENERATED ALWAYS AS captured expression STORED"},
+            {"relation": "product_sale_units", "column": "forma_fisica", "before": "regular column without expression", "after": "GENERATED ALWAYS AS captured expression STORED; attgenerated=s; attidentity=''"},
         ]
         measure_constraint = next(row for row in capture["constraints"]
                                   if row["relation"] == "catalogo_volumes" and row["name"] == "catalogo_volumes_medida_shape")
