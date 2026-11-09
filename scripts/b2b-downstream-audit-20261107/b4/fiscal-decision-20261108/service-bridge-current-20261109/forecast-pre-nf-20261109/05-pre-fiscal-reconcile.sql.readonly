@@ -1,0 +1,8 @@
+-- REVIEW ONLY READ ONLY; fase 2 exige B4 e previsão já instalados.
+BEGIN READ ONLY;
+DO $$ BEGIN
+ IF current_setting('b2b_forecast.review_project_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'B2B_FORECAST_REF_NOT_VERIFIED';END IF;
+ IF to_regclass('platform_private.b2b_document_allocations') IS NULL OR to_regclass('platform_private.b2b_financial_forecasts') IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_RECONCILE_DEPENDENCY_MISSING';END IF;
+ IF to_regprocedure('platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B2B_FORECAST_RECONCILE_ALREADY_INSTALLED';END IF;
+END$$;
+ROLLBACK;

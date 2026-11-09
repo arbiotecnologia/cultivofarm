@@ -1,0 +1,20 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "status": "REVIEW_ONLY_INACTIVE_NOT_APPROVED",
+  "phase": "AFTER_B4_AND_SERVICE_BRIDGE_BEFORE_H7_LINK",
+  "source": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/02-install.sql.review",
+  "source_sha256": "5db2c160fd3a99bb847fe20a1d9764cbfed82d5cd80915be0eceb94eadfb9964",
+  "canonical_ref_evidence": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-125/real-baselines.json",
+  "before_bridge_md5": "34d90cf3fe03403a23d758cfd44e6d70",
+  "after_bridge_md5": "97802381794915f3d257f1b1a3ed0411",
+  "constraint_changed": false,
+  "action": "UPDATE",
+  "operation_payload": "B2B_RECEIVABLE_RECONCILED",
+  "files": {
+    "01-pre.sql.readonly": "d425f0fc73068726aa3969d5235779bcff28e8e2b33064dd07e1cccf38a54e26",
+    "02-install.sql.review": "393a24b66486dc1ecaf59702ced7462f8095b5df5f608d4994804b16ee40d48e",
+    "03-post.sql.readonly": "f08ca15e29df80a76fd8684e9106e63c513ca0f7356ec2957296c15f7238f718",
+    "04-rollback-deny.sql.review": "c2b95cd7232893fc7dec20feb5dc7fd9ae17d83b374232c826db67f63b6aa1b3"
+  },
+  "hosted": false
+}

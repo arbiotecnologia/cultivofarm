@@ -1,0 +1,7 @@
+-- REVIEW ONLY READ ONLY; ponte pós-B4 antes do delta de auditoria.
+BEGIN READ ONLY;
+DO $$ BEGIN
+ IF current_setting('b2b_fiscal_bridge.review_project_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'B2B_FISCAL_REF_NOT_VERIFIED'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure)) IS DISTINCT FROM '34d90cf3fe03403a23d758cfd44e6d70' THEN RAISE EXCEPTION 'BRIDGE_AUDIT_PRE_MD5_DRIFT'; END IF;
+END $$;
+ROLLBACK;
