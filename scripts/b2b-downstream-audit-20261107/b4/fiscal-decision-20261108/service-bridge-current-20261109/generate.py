@@ -136,7 +136,7 @@ def build():
     post += function_assert("public.generate_b2b_receivable_secure_impl(uuid)", pre_pins["public.generate_b2b_receivable_secure_impl(uuid)"], "B2B_STRICT_POST_LEGACY_IMPL")
     post += function_assert("public.tg_auto_b2b_receivable()", pre_pins["public.tg_auto_b2b_receivable()"], "B2B_STRICT_POST_LEGACY_TRIGGER")
     post += metadata_assert("B2B_STRICT_POST_DRIFT")
-    post += " IF pg_get_userbyid(proowner)<>'postgres' OR NOT prosecdef OR proconfig<>ARRAY['search_path=\"\"'] FROM pg_proc WHERE oid='platform_private.b2b_integration_dependencies()'::regprocedure THEN RAISE EXCEPTION 'B2B_STRICT_POST_METADATA'; END IF;\n"
+    post += " IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_integration_dependencies()'::regprocedure AND pg_get_userbyid(proowner)='postgres' AND prosecdef AND proconfig=ARRAY['search_path=\"\"']) THEN RAISE EXCEPTION 'B2B_STRICT_POST_METADATA'; END IF;\n"
     post += " IF has_function_privilege('anon','platform_private.b2b_integration_dependencies()','EXECUTE') OR has_function_privilege('authenticated','platform_private.b2b_integration_dependencies()','EXECUTE') OR has_function_privilege('service_role','platform_private.b2b_integration_dependencies()','EXECUTE') THEN RAISE EXCEPTION 'B2B_STRICT_POST_ACL'; END IF;\n"
     post += "END $p$;\nROLLBACK;\n"
     install = "-- REVIEW_ONLY_INACTIVE_NOT_APPROVED; somente após B4+ponte.\nBEGIN;\nSET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='60s';\n"
