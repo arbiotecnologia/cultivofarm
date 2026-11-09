@@ -1,6 +1,6 @@
 {
   "exit": 1,
-  "seconds": 34.5,
+  "seconds": 36.0,
   "pg": "postgres (PostgreSQL) 17.11",
   "frozen_sources_sha256": {
     "scripts/b2b-payment-condition-v1-rebase-20261106/test-local-pg.py": "6a82400ec175c8f7d448eb5c9a5ee528f6e0d150de4a976c24a816468e1a298a",

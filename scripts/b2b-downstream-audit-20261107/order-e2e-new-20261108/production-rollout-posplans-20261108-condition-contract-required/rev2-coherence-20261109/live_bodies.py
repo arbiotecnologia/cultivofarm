@@ -24,6 +24,13 @@ SEAMS = [
   "ALTER TABLE public.commercial_payment_plans ADD COLUMN IF NOT EXISTS created_by uuid, ADD COLUMN IF NOT EXISTS is_default boolean NOT NULL DEFAULT false, ADD COLUMN IF NOT EXISTS sort_order integer NOT NULL DEFAULT 0;"
   " ALTER TABLE public.commercial_payment_plans ADD CONSTRAINT commercial_payment_plans_code_key UNIQUE(code);"
   " CREATE UNIQUE INDEX uq_cpp_single_default ON public.commercial_payment_plans(is_default) WHERE is_default;"),
+ ("commercial_payment_plans.root_plan_id/superseded_by_id; assignments.id; partner_users.revoked_at",
+  "ALTER TABLE public.commercial_payment_plans ADD COLUMN IF NOT EXISTS root_plan_id uuid, ADD COLUMN IF NOT EXISTS superseded_by_id uuid;"
+  " ALTER TABLE public.commercial_payment_plan_assignments ADD COLUMN IF NOT EXISTS id uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE;"
+  " ALTER TABLE public.partner_users ADD COLUMN IF NOT EXISTS revoked_at timestamptz;"),
+ ("platform_private.c2p1_assignment_allowed/c2p1_item_allowed real bodies (owner-orders p1-isolation/core)",
+  fn("scripts/owner-orders-20261023/p1-isolation/core.sql.review", "platform_private.c2p1_assignment_allowed") + "\n" +
+  fn("scripts/owner-orders-20261023/p1-isolation/core.sql.review", "platform_private.c2p1_item_allowed")),
  ("clientes.status_cliente", "ALTER TABLE public.clientes ADD COLUMN IF NOT EXISTS status_cliente text NOT NULL DEFAULT 'ativo';"),
  ("partner_users.tenant_id/valid_from (backfill = owner org of partner)",
   "ALTER TABLE public.partner_users ADD COLUMN IF NOT EXISTS tenant_id uuid, ADD COLUMN IF NOT EXISTS valid_from timestamptz;"
