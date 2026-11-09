@@ -76,6 +76,8 @@ def main():
         assert required.is_dir(), f'missing fresh artifact directory: {required}'
     scope_metadata = json.loads((delivery / 'scope-metadata.json').read_text())
     assert scope_metadata['capture_sha256'] == sha(current_scope.CAPTURE_PATH)
+    assert scope_metadata['relation_security_sha256'] == sha(current_scope.RELATION_SECURITY_PATH)
+    assert scope_metadata['relation_security_pins'] == 18
     assert scope_metadata['independent_diff_sha256'] == sha(current_scope.DIFF_PATH)
     assert scope_metadata['guarded_existing_functions'] >= 20
     assert scope_metadata['pre_triggers'] == 120

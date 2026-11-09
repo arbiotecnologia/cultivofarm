@@ -56,9 +56,24 @@ def main():
     short = next(row for row in capture['functions'] if row['signature'] == 'public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)')
     assert short['md5'] == 'a4d47ccf5d116141ed46e9de9ea7eeaa'
     assert 'COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA' in short['definition']
+    relation_security_path = H / 'reconciliation-posplans-20261108/live-current-relation-security-20261109.json'
+    relation_security = json.loads(relation_security_path.read_text())
+    assert relation_security['expected_ref'] == 'swzpzcwiasxmjutrmvkm'
+    assert relation_security['hosted_io_by_agent'] is False
+    assert len(relation_security['relations']) == 18
+    assert len({(row['schema'], row['name']) for row in relation_security['relations']}) == 18
     scope = json.loads((package / 'evidence-scope-metadata.json').read_text())
     assert scope['capture_sha256'] == sha(capture_path) != OLD_CAPTURE_SHA256
+    assert scope['relation_security_sha256'] == sha(relation_security_path)
+    assert scope['relation_security_pins'] == 18
     assert scope['guarded_existing_functions'] >= 20 and scope['pre_triggers'] == 120
+    assert sha(package / 'evidence-live-relation-security.json') == sha(relation_security_path)
+    pre_text = (package / '00-production-pre-posplans.sql.readonly').read_text()
+    for row in relation_security['relations']:
+        name = f"{row['schema']}.{row['name']}"
+        acl = ','.join(sorted(row['acl'].strip('{}').split(','))) if row['acl'] else ''
+        pin = json.dumps([name, acl, row['rls'], row['force_rls'], row['owner']], separators=(',', ':')).replace("'", "''")
+        assert pin in pre_text, ('RELATION_SECURITY_PIN_MISSING', name)
 
     assert (package / 'evidence-run.exitcode').read_text().strip() == '0'
     assert 'Traceback' not in (package / 'evidence-run.stderr.txt').read_text()

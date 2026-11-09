@@ -5,6 +5,7 @@
 - Nenhuma operação hospedada, instalação, ativação, publicação, emissão fiscal, cobrança ou comunicação foi executada.
 - Este pacote substitui o rollout POSPLANOS anterior, cujo PRE agregado antigo não corresponde à captura LIVE reconciliada.
 - O PRE atual é escopado pela captura LIVE integral, pelo diff independente e pelas dependências efetivamente alteradas. Funções e relações fora do recorte não são redefinidas nem pinadas em versões antigas.
+- O complemento LIVE independente fixa RLS, FORCE RLS, owner e ACL de 18 relações no PRE e no POST. `platform_private.envase_insert_permits_v1` permanece com RLS e FORCE RLS desligados e ACL somente do proprietário; as 17 relações públicas permanecem com RLS ligado, FORCE RLS desligado e exatamente as ACLs capturadas. Nenhum grant é acrescentado.
 - A captura corrigida contém `COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA`; o MD5 `a4d47ccf5d116141ed46e9de9ea7eeaa` da sobrecarga curta foi conferido com as demais 19 definições.
 - PASS em PostgreSQL descartável e testes locais não comprova JWT, RLS, Storage, navegador, sessão real nem autoridade hospedada.
 

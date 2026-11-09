@@ -15,9 +15,11 @@ from pathlib import Path
 H = Path(__file__).resolve().parent
 RECONCILIATION = H / "reconciliation-posplans-20261108"
 CAPTURE_PATH = RECONCILIATION / "live-current-metadata-a7b973949.json"
+RELATION_SECURITY_PATH = RECONCILIATION / "live-current-relation-security-20261109.json"
 DIFF_PATH = RECONCILIATION / "live-pre-drift-411cbbc.json"
 DIFF_BASELINE_PATH = H / "evidence/posplans-reconciliation-20261108-attempt10/delivery-confirmation/pre-state.json"
 CAPTURE = json.loads(CAPTURE_PATH.read_text())
+RELATION_SECURITY = json.loads(RELATION_SECURITY_PATH.read_text())
 DIFF = json.loads(DIFF_PATH.read_text())
 DIFF_BASELINE = json.loads(DIFF_BASELINE_PATH.read_text())
 REF = "swzpzcwiasxmjutrmvkm"
