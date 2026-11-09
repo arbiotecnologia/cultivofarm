@@ -1,0 +1,471 @@
+{
+  "status": "PASS",
+  "kind": "DISPOSABLE_OWNER_FK_INTEGRITY_NOT_HOSTED",
+  "hosted": false,
+  "verification_runner_sha256": "d5fefeeaa265c98f8652be83935fa56ea5a7b0f4366c0bf019255021b2c3d122",
+  "checks": [
+    {
+      "name": "baseline POSPLANOS descartável restaurada sem destino hospedado",
+      "status": "PASS"
+    },
+    {
+      "name": "pré-requisitos locais 00/11/12/20/21/22; nenhuma operação hospedada",
+      "status": "PASS"
+    },
+    {
+      "name": "ambiente descartável reconciliado com numeric(12,3), coluna gerada, constraint de medida, 57 colunas, 24 constraints e duas FKs ausentes",
+      "status": "PASS"
+    },
+    {
+      "name": "PRE30 reprova a ausência real sem afrouxar o guard",
+      "status": "PASS"
+    },
+    {
+      "name": "PRE25 final aceita estrutura reconciliada e mede os quatro contadores com zero divergências",
+      "status": "PASS"
+    },
+    {
+      "name": "PRE25 nega órfão em product_packagings",
+      "status": "PASS"
+    },
+    {
+      "name": "INSTALL26 aborta sem criar FKs com órfão em product_packagings",
+      "status": "PASS"
+    },
+    {
+      "name": "PRE25 nega órfão em product_sale_units",
+      "status": "PASS"
+    },
+    {
+      "name": "INSTALL26 aborta sem criar FKs com órfão em product_sale_units",
+      "status": "PASS"
+    },
+    {
+      "name": "ambos os cenários de órfãos foram negados sem limpeza ou instalação parcial",
+      "status": "PASS"
+    },
+    {
+      "name": "INSTALL26 e POST27 finais criaram somente as duas FKs exatas e validadas",
+      "status": "PASS"
+    },
+    {
+      "name": "FK instalada impede owner inexistente em product_packagings",
+      "status": "PASS"
+    },
+    {
+      "name": "FK instalada impede owner inexistente em product_sale_units",
+      "status": "PASS"
+    },
+    {
+      "name": "reexecução de INSTALL26 falha fechado sem duplicar objetos",
+      "status": "PASS"
+    },
+    {
+      "name": "ACL duplicate rejeitada pela normalização exata",
+      "status": "PASS"
+    },
+    {
+      "name": "ACL empty rejeitada pela normalização exata",
+      "status": "PASS"
+    },
+    {
+      "name": "ACL null rejeitada pela normalização exata",
+      "status": "PASS"
+    },
+    {
+      "name": "PRE30/INSTALL31 finais, POST32 e rollback93 passaram após a correção de integridade",
+      "status": "PASS"
+    },
+    {
+      "name": "rollback deny-only preserva as duas FKs e POST27 continua PASS",
+      "status": "PASS"
+    },
+    {
+      "name": "writer de compra e gate permanecem fechados após rollback",
+      "status": "PASS"
+    }
+  ],
+  "raw": [
+    {
+      "case": "PRE30 reprova a ausência real sem afrouxar o guard",
+      "returncode": 3,
+      "stdout_tail": "",
+      "stderr_tail": "ERROR:  P0001: FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_packagings.product_packagings_owner_organization_id_fkey\nCONTEXT:  PL/pgSQL function inline_code_block line 1 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "PRE25 nega órfão em product_packagings",
+      "returncode": 3,
+      "stdout_tail": "{\"contract\": \"OWNER_FK_INTEGRITY_V1\", \"product_packagings\": {\"total\": 6, \"owner_null\": 0, \"orphan_owner\": 1, \"owner_product_mismatch\": 1}, \"product_sale_units\": {\"total\": 3, \"owner_null\": 0, \"orphan_owner\": 0, \"owner_product_mismatch\": 0}}\n",
+      "stderr_tail": "ERROR:  23503: OWNER_FK_ORPHANS_PRESENT public.product_packagings count=1\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "INSTALL26 aborta sem criar FKs com órfão em product_packagings",
+      "returncode": 3,
+      "stdout_tail": "{\"contract\": \"OWNER_FK_INTEGRITY_V1\", \"product_packagings\": {\"total\": 6, \"owner_null\": 0, \"orphan_owner\": 1, \"owner_product_mismatch\": 1}, \"product_sale_units\": {\"total\": 3, \"owner_null\": 0, \"orphan_owner\": 0, \"owner_product_mismatch\": 0}}\n",
+      "stderr_tail": "ERROR:  23503: OWNER_FK_ORPHANS_PRESENT public.product_packagings count=1\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "PRE25 nega órfão em product_sale_units",
+      "returncode": 3,
+      "stdout_tail": "{\"contract\": \"OWNER_FK_INTEGRITY_V1\", \"product_packagings\": {\"total\": 6, \"owner_null\": 0, \"orphan_owner\": 0, \"owner_product_mismatch\": 0}, \"product_sale_units\": {\"total\": 3, \"owner_null\": 0, \"orphan_owner\": 1, \"owner_product_mismatch\": 1}}\n",
+      "stderr_tail": "ERROR:  23503: OWNER_FK_ORPHANS_PRESENT public.product_sale_units count=1\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "INSTALL26 aborta sem criar FKs com órfão em product_sale_units",
+      "returncode": 3,
+      "stdout_tail": "{\"contract\": \"OWNER_FK_INTEGRITY_V1\", \"product_packagings\": {\"total\": 6, \"owner_null\": 0, \"orphan_owner\": 0, \"owner_product_mismatch\": 0}, \"product_sale_units\": {\"total\": 3, \"owner_null\": 0, \"orphan_owner\": 1, \"owner_product_mismatch\": 1}}\n",
+      "stderr_tail": "ERROR:  23503: OWNER_FK_ORPHANS_PRESENT public.product_sale_units count=1\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "FK instalada impede owner inexistente em product_packagings",
+      "returncode": 3,
+      "stdout_tail": "",
+      "stderr_tail": "ERROR:  23503: insert or update on table \"product_packagings\" violates foreign key constraint \"product_packagings_owner_organization_id_fkey\"\nDETAIL:  Key (owner_organization_id)=(00000000-0000-4000-8000-00000000f666) is not present in table \"organizations\".\nSCHEMA NAME:  public\nTABLE NAME:  product_packagings\nCONSTRAINT NAME:  product_packagings_owner_organization_id_fkey\nLOCATION:  ri_ReportViolation, ri_triggers.c:2610\n"
+    },
+    {
+      "case": "FK instalada impede owner inexistente em product_sale_units",
+      "returncode": 3,
+      "stdout_tail": "",
+      "stderr_tail": "ERROR:  23503: insert or update on table \"product_sale_units\" violates foreign key constraint \"product_sale_units_owner_organization_id_fkey\"\nDETAIL:  Key (owner_organization_id)=(00000000-0000-4000-8000-00000000f666) is not present in table \"organizations\".\nSCHEMA NAME:  public\nTABLE NAME:  product_sale_units\nCONSTRAINT NAME:  product_sale_units_owner_organization_id_fkey\nLOCATION:  ri_ReportViolation, ri_triggers.c:2610\n"
+    },
+    {
+      "case": "reexecução de INSTALL26 falha fechado sem duplicar objetos",
+      "returncode": 3,
+      "stdout_tail": "{\"contract\": \"OWNER_FK_INTEGRITY_V1\", \"product_packagings\": {\"total\": 6, \"owner_null\": 0, \"orphan_owner\": 0, \"owner_product_mismatch\": 0}, \"product_sale_units\": {\"total\": 3, \"owner_null\": 0, \"orphan_owner\": 0, \"owner_product_mismatch\": 0}}\n",
+      "stderr_tail": "ERROR:  P0001: OWNER_FK_PRE_ALREADY_INSTALLED product_packagings.product_packagings_owner_organization_id_fkey\nCONTEXT:  PL/pgSQL function inline_code_block line 5 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "ACL duplicate rejeitada pela normalização exata",
+      "returncode": 3,
+      "stdout_tail": "",
+      "stderr_tail": "ERROR:  P0001: FINISHED_PRE_RELATION_DRIFT public.estoque_movimentacoes\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "ACL empty rejeitada pela normalização exata",
+      "returncode": 3,
+      "stdout_tail": "",
+      "stderr_tail": "ERROR:  P0001: FINISHED_PRE_RELATION_DRIFT public.estoque_movimentacoes\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "ACL null rejeitada pela normalização exata",
+      "returncode": 3,
+      "stdout_tail": "",
+      "stderr_tail": "ERROR:  P0001: FINISHED_PRE_RELATION_DRIFT public.estoque_movimentacoes\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  ],
+  "final_artifacts": [
+    {
+      "file": "25-owner-fk-pre.sql.readonly",
+      "sha256": "cdddc3e488f952c7971727997e0592a5760d23e7f7d2dfacb05ebacf3052f547",
+      "returncode": 0
+    },
+    {
+      "file": "26-owner-fk-install.sql.review",
+      "sha256": "4c59f747b4255112e09a09768491f84ffae53e7f0f615b1213240a9eab02ffd9",
+      "returncode": 0
+    },
+    {
+      "file": "27-owner-fk-post.sql.readonly",
+      "sha256": "df4656ed01f97002ec4a2b06369390f02a11d2318224763b50beab74cf522a06",
+      "returncode": 0
+    },
+    {
+      "file": "30-physical-pre-after-confirmation-send.sql.readonly",
+      "sha256": "bfc9718efe58008d6d6891d7e3464f5e032cd3d9628416daf5e0ef46828d0e48",
+      "returncode": 0
+    },
+    {
+      "file": "31-physical-install.sql.review",
+      "sha256": "3af1e8dd9fb80c1d1c37679ca926cdf64758f94755f260fcf9b2b5165b15aebb",
+      "returncode": 0
+    }
+  ],
+  "supporting_artifacts": [
+    {
+      "file": "00-production-pre-posplans.sql.readonly",
+      "sha256": "00f726d4dbc254aaa59bce376ab7b53f2985d1a1b80c1160df0e1cc830501616",
+      "returncode": 0
+    },
+    {
+      "file": "11-confirmation-install.sql.review",
+      "sha256": "809223b1b6b02041241f9d4bd5ad7c33635aab7bcad18f420a4ac944072163ae",
+      "returncode": 0
+    },
+    {
+      "file": "12-confirmation-post.sql.readonly",
+      "sha256": "e45c25b5bec99c6cb6d57b717ab82e9c97b2306966e984c9513adce42e01cd16",
+      "returncode": 0
+    },
+    {
+      "file": "20-send-pre.sql.readonly",
+      "sha256": "79a95847c6e3e824e6f205e4a643c597c2fd4882c661e389e7260d383400afd7",
+      "returncode": 0
+    },
+    {
+      "file": "21-send-install.sql.review",
+      "sha256": "394fcbf719ba56c3a1c663c376d1fbc6e6cc33ecd8b037d9f711c12a369dd9ef",
+      "returncode": 0
+    },
+    {
+      "file": "22-send-post.sql.readonly",
+      "sha256": "12bb897db3595f88177db3e4712dd7b7bb8232cd4c444e684a74e3ac413dff5f",
+      "returncode": 0
+    },
+    {
+      "file": "32-physical-post.sql.readonly",
+      "sha256": "68baf979ce5690f76fec433d6a24b4a3abf2cf1fd8e5e3fe3a4e0a08098db11e",
+      "returncode": 0
+    },
+    {
+      "file": "93-physical-rollback-deny.sql.review",
+      "sha256": "a02aa055b561fad022bea6c257a517aeac67ae2ae4a98b897ca7d97c20b1d72e",
+      "returncode": 0
+    },
+    {
+      "file": "27-owner-fk-post.sql.readonly",
+      "sha256": "df4656ed01f97002ec4a2b06369390f02a11d2318224763b50beab74cf522a06",
+      "returncode": 0
+    }
+  ],
+  "authenticated_real_proof": "NOT_RUN",
+  "fixture_column_reconciliation": [
+    {
+      "relation": "product_packagings",
+      "column": "peso_liquido_kg",
+      "before": "numeric",
+      "after": "numeric(12,3)"
+    },
+    {
+      "relation": "product_sale_units",
+      "column": "forma_fisica",
+      "before": "regular column without expression",
+      "after": "GENERATED ALWAYS AS captured expression STORED; attgenerated=s; attidentity=''"
+    }
+  ],
+  "fixture_row_reconciliation": {
+    "operation": "UPDATE synthetic legacy packaging price sentinel to zero; no rows deleted; separate packaging prices untouched",
+    "before": [
+      {
+        "id": "00000000-0000-0000-0000-000000000051",
+        "medida": "embalagem",
+        "rotulo": "Saco 25 kg",
+        "item_tipo": "produto",
+        "preco_brl": 0.01,
+        "volume_ml": null
+      },
+      {
+        "id": "00000000-0000-0000-0000-000000000052",
+        "medida": "embalagem",
+        "rotulo": "Saco 40 kg",
+        "item_tipo": "produto",
+        "preco_brl": 0.01,
+        "volume_ml": null
+      },
+      {
+        "id": "00000000-0000-0000-0000-000000000053",
+        "medida": "embalagem",
+        "rotulo": "Saco antigo",
+        "item_tipo": "produto",
+        "preco_brl": 0.01,
+        "volume_ml": null
+      },
+      {
+        "id": "00000000-0000-0000-0000-000000000054",
+        "medida": "embalagem",
+        "rotulo": "Saco sem preço",
+        "item_tipo": "produto",
+        "preco_brl": 0.01,
+        "volume_ml": null
+      },
+      {
+        "id": "00000000-0000-0000-0000-000000000055",
+        "medida": "embalagem",
+        "rotulo": "Saco oculto",
+        "item_tipo": "produto",
+        "preco_brl": 0.01,
+        "volume_ml": null
+      },
+      {
+        "id": "00000000-0000-0000-0000-000000000056",
+        "medida": "embalagem",
+        "rotulo": "Saco F",
+        "item_tipo": "produto",
+        "preco_brl": 0.01,
+        "volume_ml": null
+      }
+    ]
+  },
+  "fixture_constraint_reconciliation": [
+    {
+      "name": "catalogo_volumes_medida_shape",
+      "relation": "catalogo_volumes",
+      "validated": true,
+      "definition": "CHECK ((((medida = 'volume'::text) AND (volume_ml IS NOT NULL) AND (volume_ml > (0)::numeric)) OR ((medida = 'embalagem'::text) AND (volume_ml IS NULL) AND (item_tipo = 'produto'::text) AND (preco_brl = (0)::numeric) AND (rotulo IS NOT NULL) AND (btrim(rotulo) <> ''::text))))"
+    }
+  ],
+  "fixture_generated_column": {
+    "actual": {
+      "name": "forma_fisica",
+      "type": "text",
+      "default": "\nCASE\n    WHEN (unidade_conteudo = ANY (ARRAY['kg'::text, 'g'::text])) THEN 'solido'::text\n    ELSE 'liquido'::text\nEND",
+      "notnull": false,
+      "identity": "",
+      "relation": "product_sale_units",
+      "generated": "s"
+    },
+    "source": "pg_attribute.attgenerated/attidentity e pg_get_expr(adbin,adrelid) medidos no PostgreSQL descartável",
+    "pg_attrdef_synthesized": false
+  },
+  "capture_scope_extra_columns": [
+    [
+      "produtos",
+      "oculto"
+    ]
+  ],
+  "pre30_constraint_failure_reproduced": true,
+  "disposable_counts_before": {
+    "product_packagings": {
+      "total": 6,
+      "owner_null": 0,
+      "orphan_owner": 0,
+      "owner_product_mismatch": 0
+    },
+    "product_sale_units": {
+      "total": 3,
+      "owner_null": 0,
+      "orphan_owner": 0,
+      "owner_product_mismatch": 0
+    }
+  },
+  "orphan_scenarios": [
+    "product_packagings",
+    "product_sale_units"
+  ],
+  "both_fks_validated": true,
+  "both_fks_enforced": true,
+  "acl_local_additional_cases": [
+    "duplicate",
+    "empty",
+    "null"
+  ],
+  "acl_local_coverage": {
+    "previous_overlay_suite": "12/12: ordem + privilégio/grant option/role ausente/role extra/grantor",
+    "this_suite": "3/3: duplicata/vazio/NULL",
+    "categories": 9
+  },
+  "postgresql_version": "17.11",
+  "acl_overlay_unmodified": true,
+  "auditor_reported_readonly_evidence": {
+    "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/reconciliation-posplans-20261108/live-owner-fk-reconciliation-20261109.auditor-report.json",
+    "sha256": "435bea392d93873669e6a9ded42ae15ff32d45e54eb20b78c23acf36cdbd8511",
+    "owner_fk_counts": {
+      "product_packagings": {
+        "total": 1,
+        "owner_null": 0,
+        "orphan_owner": 0,
+        "owner_product_mismatch": 0
+      },
+      "product_sale_units": {
+        "total": 1,
+        "owner_null": 0,
+        "orphan_owner": 0,
+        "owner_product_mismatch": 0
+      }
+    },
+    "reported_column_shape": {
+      "reported_at_utc": "2026-11-09T04:17:00Z",
+      "type": "text",
+      "notnull": false,
+      "generated": "s",
+      "identity": "",
+      "generation_expression": "\nCASE\n    WHEN (unidade_conteudo = ANY (ARRAY['kg'::text, 'g'::text])) THEN 'solido'::text\n    ELSE 'liquido'::text\nEND"
+    },
+    "acl_normalization_regressions": {
+      "status": "PASS_REPORTED_BY_AUDITOR",
+      "execution": "READ_ONLY",
+      "count": 9,
+      "cases": [
+        {
+          "case": "different_order",
+          "expected": "accepted",
+          "reported": "accepted"
+        },
+        {
+          "case": "extra_privilege",
+          "expected": "rejected",
+          "reported": "rejected"
+        },
+        {
+          "case": "grant_option",
+          "expected": "rejected",
+          "reported": "rejected"
+        },
+        {
+          "case": "missing_role",
+          "expected": "rejected",
+          "reported": "rejected"
+        },
+        {
+          "case": "extra_role",
+          "expected": "rejected",
+          "reported": "rejected"
+        },
+        {
+          "case": "changed_grantor",
+          "expected": "rejected",
+          "reported": "rejected"
+        },
+        {
+          "case": "duplicate",
+          "expected": "rejected",
+          "reported": "rejected"
+        },
+        {
+          "case": "empty",
+          "expected": "rejected",
+          "reported": "rejected"
+        },
+        {
+          "case": "null",
+          "expected": "rejected",
+          "reported": "rejected"
+        }
+      ]
+    }
+  },
+  "generated_column_shape_verified": true,
+  "relation_security_pins": 18,
+  "relation_security_preserved": true,
+  "history_before": {
+    "os": 8,
+    "movements": 0,
+    "deliveries": 0,
+    "packagings": 6,
+    "sale_units": 3
+  },
+  "history_after": {
+    "os": 8,
+    "movements": 0,
+    "deliveries": 0,
+    "packagings": 6,
+    "sale_units": 3
+  },
+  "plans_before_md5": "9c5627cc94081ccf90cc9f4b48c0d1c4",
+  "plans_after_md5": "9c5627cc94081ccf90cc9f4b48c0d1c4",
+  "data_cleanup": false,
+  "grants_or_revokes_in_candidate": false,
+  "gates_activated": false,
+  "agent_hosted_orphan_measurement": "NOT_RUN; contagens reais são relato READ ONLY independente do auditor",
+  "fresh_orphan_measurement_required": "PRE25/INSTALL26/POST27 medem novamente e exigem zero owner nulo/órfão",
+  "synthetic_seams": [
+    "Auth/claims e papéis SQL somente no PostgreSQL descartável",
+    "product_packagings.peso_liquido_kg ajustado de numeric para numeric(12,3) somente no descartável",
+    "product_sale_units.forma_fisica é recriada como coluna gerada STORED com a expressão capturada somente no descartável; produtos.oculto permanece fora do escopo do PRE",
+    "catalogo_volumes_medida_shape adicionada com a definição capturada somente no descartável; leitura de constraints usa pg_get_constraintdef(oid), como o PRE",
+    "somente na fixture B3 antiga, preco_brl=0,01 de apresentações foi reconciliado para zero sem apagar linhas; catalogo_precos_embalagem e dados reais permanecem intocados",
+    "duas FKs removidas somente no descartável para reproduzir a captura real",
+    "órfãos temporários com session_replication_role=replica somente na fixture e restaurados",
+    "sonda de enforcement usa DISABLE TRIGGER USER dentro de transação abortada no descartável; gatilhos internos da FK permanecem ativos e writers finais usam triggers habilitados",
+    "artefatos 00/11/12/20/21/22/32/93 executados apenas como composição local"
+  ]
+}

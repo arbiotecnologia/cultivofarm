@@ -1,0 +1,151 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.4s
+CHECKPOINT sql_calls=100 elapsed=4.5s
+CHECKPOINT sql_calls=200 elapsed=6.8s
+CHECKPOINT sql_calls=300 elapsed=8.9s
+CHECKPOINT sql_calls=400 elapsed=11.0s
+CHECKPOINT sql_calls=500 elapsed=13.3s
+CHECKPOINT sql_calls=600 elapsed=15.3s
+CHECKPOINT sql_calls=700 elapsed=17.8s
+CHECKPOINT sql_calls=800 elapsed=20.1s
+CHECKPOINT sql_calls=900 elapsed=22.5s
+CHECKPOINT sql_calls=1000 elapsed=25.2s
+CHECKPOINT sql_calls=1100 elapsed=27.4s
+CHECKPOINT sql_calls=1200 elapsed=29.8s
+CHECKPOINT sql_calls=1300 elapsed=32.2s
+CHECKPOINT sql_calls=1400 elapsed=35.0s
+CHECKPOINT sql_calls=1500 elapsed=37.4s
+CHECKPOINT sql_calls=1600 elapsed=39.9s
+CHECKPOINT sql_calls=1700 elapsed=42.6s
+CHECKPOINT sql_calls=1800 elapsed=45.1s
+CHECKPOINT sql_calls=1900 elapsed=47.5s
+CHECKPOINT sql_calls=2000 elapsed=49.9s
+CHECKPOINT sql_calls=2100 elapsed=51.8s
+CHECKPOINT sql_calls=2200 elapsed=53.5s
+CHECKPOINT sql_calls=2300 elapsed=55.3s
+CHECKPOINT sql_calls=2400 elapsed=57.1s
+CHECKPOINT sql_calls=2500 elapsed=59.0s
+CHECKPOINT sql_calls=2600 elapsed=60.9s
+CHECKPOINT sql_calls=2700 elapsed=62.6s
+CHECKPOINT sql_calls=2800 elapsed=64.4s
+CHECKPOINT sql_calls=2900 elapsed=66.2s
+CHECKPOINT sql_calls=3000 elapsed=67.9s
+CHECKPOINT sql_calls=3100 elapsed=69.7s
+CHECKPOINT sql_calls=3200 elapsed=71.3s
+CHECKPOINT sql_calls=3300 elapsed=73.0s
+CHECKPOINT sql_calls=3400 elapsed=74.6s
+CHECKPOINT sql_calls=3500 elapsed=76.4s
+CHECKPOINT sql_calls=3600 elapsed=78.1s
+CHECKPOINT sql_calls=3700 elapsed=79.8s
+CHECKPOINT sql_calls=3800 elapsed=81.6s
+CHECKPOINT sql_calls=3900 elapsed=83.5s
+CHECKPOINT sql_calls=4000 elapsed=85.2s
+CHECKPOINT sql_calls=4100 elapsed=87.0s
+CHECKPOINT sql_calls=4200 elapsed=89.1s
+CHECKPOINT sql_calls=4300 elapsed=91.8s
+CHECKPOINT sql_calls=4400 elapsed=94.4s
+CHECKPOINT sql_calls=4500 elapsed=96.9s
+CHECKPOINT sql_calls=4600 elapsed=99.3s
+CHECKPOINT sql_calls=4700 elapsed=101.8s
+CHECKPOINT sql_calls=4800 elapsed=104.1s
+CHECKPOINT sql_calls=4900 elapsed=106.4s
+CHECKPOINT sql_calls=5000 elapsed=108.6s
+CHECKPOINT sql_calls=5100 elapsed=110.8s
+CHECKPOINT sql_calls=5200 elapsed=113.1s
+CHECKPOINT sql_calls=5300 elapsed=115.6s
+CHECKPOINT sql_calls=5400 elapsed=118.1s
+CHECKPOINT sql_calls=5500 elapsed=121.0s
+CHECKPOINT sql_calls=5600 elapsed=123.6s
+CHECKPOINT sql_calls=5700 elapsed=126.1s
+CHECKPOINT sql_calls=5800 elapsed=128.4s
+CHECKPOINT sql_calls=5900 elapsed=130.6s
+CHECKPOINT sql_calls=6000 elapsed=132.9s
+CHECKPOINT sql_calls=6100 elapsed=135.2s
+CHECKPOINT sql_calls=6200 elapsed=137.6s
+CHECKPOINT sql_calls=6300 elapsed=139.9s
+CHECKPOINT sql_calls=6400 elapsed=142.1s
+CHECKPOINT sql_calls=6500 elapsed=144.6s
+CHECKPOINT sql_calls=6600 elapsed=147.0s
+CHECKPOINT sql_calls=6700 elapsed=149.1s
+CHECKPOINT sql_calls=6800 elapsed=151.2s
+CHECKPOINT sql_calls=6900 elapsed=153.5s
+CHECKPOINT sql_calls=7000 elapsed=155.9s
+CHECKPOINT sql_calls=7100 elapsed=158.0s
+CHECKPOINT sql_calls=7200 elapsed=160.1s
+CHECKPOINT sql_calls=7300 elapsed=162.0s
+CHECKPOINT sql_calls=7400 elapsed=164.0s
+CHECKPOINT sql_calls=7500 elapsed=166.1s
+CHECKPOINT sql_calls=7600 elapsed=168.2s
+CHECKPOINT sql_calls=7700 elapsed=170.4s
+CHECKPOINT sql_calls=7800 elapsed=172.5s
+CHECKPOINT sql_calls=7900 elapsed=174.6s
+CHECKPOINT sql_calls=8000 elapsed=176.9s
+CHECKPOINT sql_calls=8100 elapsed=178.8s
+CHECKPOINT sql_calls=8200 elapsed=180.8s
+CHECKPOINT sql_calls=8300 elapsed=182.9s
+CHECKPOINT sql_calls=8400 elapsed=185.1s
+CHECKPOINT sql_calls=8500 elapsed=187.3s
+CHECKPOINT sql_calls=8600 elapsed=189.4s
+CHECKPOINT sql_calls=8700 elapsed=191.8s
+CHECKPOINT sql_calls=8800 elapsed=194.2s
+CHECKPOINT sql_calls=8900 elapsed=196.4s
+CHECKPOINT sql_calls=9000 elapsed=198.8s
+CHECKPOINT sql_calls=9100 elapsed=201.0s
+CHECKPOINT sql_calls=9200 elapsed=203.2s
+CHECKPOINT sql_calls=9300 elapsed=205.6s
+CHECKPOINT sql_calls=9400 elapsed=208.0s
+CHECKPOINT sql_calls=9500 elapsed=210.8s
+CHECKPOINT sql_calls=9600 elapsed=212.9s
+CHECKPOINT sql_calls=9700 elapsed=215.4s
+CHECKPOINT sql_calls=9800 elapsed=217.7s
+CHECKPOINT sql_calls=9900 elapsed=219.7s
+CHECKPOINT sql_calls=10000 elapsed=221.9s
+CHECKPOINT sql_calls=10100 elapsed=224.1s
+CHECKPOINT sql_calls=10200 elapsed=226.2s
+CHECKPOINT sql_calls=10300 elapsed=228.9s
+CHECKPOINT sql_calls=10400 elapsed=231.5s
+CHECKPOINT sql_calls=10500 elapsed=233.9s
+CHECKPOINT sql_calls=10600 elapsed=236.3s
+PASS reported applied composition including isolated install closure release restored without regeneration
+PASS all ten real downstream tables have EXISTING nonempty sentinels before envase
+PASS existing full-row downstream sentinels seeded in disposable fixture only
+PASS baseline LIVE integral: 20 corpos, 120 triggers, 17 ACLs e 4 dependências medidas
+PASS B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)
+PASS B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)
+PASS B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)
+PASS B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)
+PASS B3 corpo atual pinado: platform_private.h15_actor_organization()
+PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+PASS B3 01-pre.sql.readonly
+PASS B3 02-install.sql.review
+PASS B3 03-post.sql.readonly
+CHECKPOINT sql_calls=10700 elapsed=248.0s
+CHECKPOINT sql_calls=10800 elapsed=251.6s
+CHECKPOINT sql_calls=10900 elapsed=255.2s
+CHECKPOINT sql_calls=11000 elapsed=258.5s
+CHECKPOINT sql_calls=11100 elapsed=261.8s
+CHECKPOINT sql_calls=11200 elapsed=264.6s
+CHECKPOINT sql_calls=11300 elapsed=267.3s
+CHECKPOINT sql_calls=11400 elapsed=270.4s
+CHECKPOINT sql_calls=11500 elapsed=272.8s
+PASS baseline POSPLANOS descartável restaurada sem destino hospedado
+PASS pré-requisitos locais 00/11/12/20/21/22; nenhuma operação hospedada
+CHECKPOINT sql_calls=11600 elapsed=277.2s
+PASS ambiente descartável reconciliado com numeric(12,3), coluna gerada, constraint de medida, 57 colunas, 24 constraints e duas FKs ausentes
+PASS PRE30 reprova a ausência real sem afrouxar o guard
+PASS PRE25 final aceita estrutura reconciliada e mede os quatro contadores com zero divergências
+PASS PRE25 nega órfão em product_packagings
+PASS INSTALL26 aborta sem criar FKs com órfão em product_packagings
+PASS PRE25 nega órfão em product_sale_units
+PASS INSTALL26 aborta sem criar FKs com órfão em product_sale_units
+PASS ambos os cenários de órfãos foram negados sem limpeza ou instalação parcial
+PASS INSTALL26 e POST27 finais criaram somente as duas FKs exatas e validadas
+PASS FK instalada impede owner inexistente em product_packagings
+PASS FK instalada impede owner inexistente em product_sale_units
+PASS reexecução de INSTALL26 falha fechado sem duplicar objetos
+PASS ACL duplicate rejeitada pela normalização exata
+PASS ACL empty rejeitada pela normalização exata
+PASS ACL null rejeitada pela normalização exata
+PASS PRE30/INSTALL31 finais, POST32 e rollback93 passaram após a correção de integridade
+PASS rollback deny-only preserva as duas FKs e POST27 continua PASS
+PASS writer de compra e gate permanecem fechados após rollback

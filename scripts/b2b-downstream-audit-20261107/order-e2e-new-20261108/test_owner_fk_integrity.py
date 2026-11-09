@@ -116,11 +116,15 @@ def main():
 
         current_scope = load("owner_fk_current_scope", H / "current_scope.py")
         capture = json.loads((H / "reconciliation-posplans-20261108/live-catalog-owner-fk-20261109.capture.json").read_text())
+        auditor_report = json.loads(AUDITOR_REPORT.read_text())
+        reported_shape = auditor_report["reported_column_shapes"]["product_sale_units.forma_fisica"]
+        assert reported_shape["generated"] == "s" and reported_shape["identity"] == ""
 
         def actual_catalog():
             columns = json.loads(B.last("""SELECT coalesce(jsonb_agg(jsonb_build_object(
               'relation',c.relname,'name',a.attname,'type',format_type(a.atttypid,a.atttypmod),
-              'default',pg_get_expr(d.adbin,d.adrelid),'notnull',a.attnotnull) ORDER BY c.relname,a.attname),'[]'::jsonb)
+              'default',pg_get_expr(d.adbin,d.adrelid),'notnull',a.attnotnull,
+              'generated',a.attgenerated,'identity',a.attidentity) ORDER BY c.relname,a.attname),'[]'::jsonb)
               FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
               LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
               WHERE n.nspname='public' AND c.relname IN ('produtos','catalogo_volumes','product_packagings','product_sale_units')
@@ -157,15 +161,19 @@ def main():
         shape_before = next(row for row in before_reconcile["columns"]
                             if row["relation"] == "product_sale_units" and row["name"] == "forma_fisica")
         shape_expected = next(row for row in capture["columns"]
-                              if row["relation"] == "product_sale_units" and row["name"] == "forma_fisica")
-        assert shape_before["default"] is None and shape_expected["default"], shape_before
+                               if row["relation"] == "product_sale_units" and row["name"] == "forma_fisica")
+        assert shape_before["default"] is None, shape_before
+        assert shape_before["generated"] == shape_before["identity"] == "", shape_before
+        assert shape_expected["type"] == reported_shape["type"] == "text"
+        assert shape_expected["notnull"] is reported_shape["notnull"] is False
+        assert shape_expected["default"] == reported_shape["generation_expression"]
         B.sql("ALTER TABLE ONLY public.product_packagings ALTER COLUMN peso_liquido_kg TYPE numeric(12,3) USING peso_liquido_kg::numeric(12,3);")
         B.sql(f"""ALTER TABLE ONLY public.product_sale_units
           DROP COLUMN forma_fisica,
           ADD COLUMN forma_fisica text GENERATED ALWAYS AS ({shape_expected['default']}) STORED;""")
         report["fixture_column_reconciliation"] = [
             {"relation": "product_packagings", "column": "peso_liquido_kg", "before": weight_before["type"], "after": "numeric(12,3)"},
-            {"relation": "product_sale_units", "column": "forma_fisica", "before": "regular column without expression", "after": "GENERATED ALWAYS AS captured expression STORED"},
+            {"relation": "product_sale_units", "column": "forma_fisica", "before": "regular column without expression", "after": "GENERATED ALWAYS AS captured expression STORED; attgenerated=s; attidentity=''"},
         ]
         measure_constraint = next(row for row in capture["constraints"]
                                   if row["relation"] == "catalogo_volumes" and row["name"] == "catalogo_volumes_medida_shape")
@@ -206,6 +214,22 @@ def main():
         reconciled = actual_catalog()
         actual_columns = {(row["relation"], row["name"]): row for row in reconciled["columns"]}
         expected_columns = {(row["relation"], row["name"]): row for row in capture["columns"]}
+        expected_generated_shape = {
+            "relation": "product_sale_units",
+            "name": "forma_fisica",
+            "type": reported_shape["type"],
+            "default": reported_shape["generation_expression"],
+            "notnull": reported_shape["notnull"],
+            "generated": reported_shape["generated"],
+            "identity": reported_shape["identity"],
+        }
+        actual_generated_shape = actual_columns[("product_sale_units", "forma_fisica")]
+        assert actual_generated_shape == expected_generated_shape, actual_generated_shape
+        report["fixture_generated_column"] = {
+            "actual": actual_generated_shape,
+            "source": "pg_attribute.attgenerated/attidentity e pg_get_expr(adbin,adrelid) medidos no PostgreSQL descartável",
+            "pg_attrdef_synthesized": False,
+        }
         column_drift = [key for key in sorted(expected_columns)
                         if any(actual_columns.get(key, {}).get(field) != expected_columns[key].get(field)
                                for field in ("type", "default", "notnull"))]
@@ -371,8 +395,10 @@ END$$;"""
                 "path": str(AUDITOR_REPORT.relative_to(ROOT)),
                 "sha256": sha(AUDITOR_REPORT),
                 "owner_fk_counts": auditor_report["owner_fk_counts"],
+                "reported_column_shape": reported_shape,
                 "acl_normalization_regressions": auditor_report["acl_normalization_regressions"],
             },
+            "generated_column_shape_verified": True,
             "relation_security_pins": len(relations_before),
             "relation_security_preserved": True,
             "history_before": history_before,

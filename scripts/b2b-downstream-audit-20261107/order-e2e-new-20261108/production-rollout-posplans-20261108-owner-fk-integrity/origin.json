@@ -15,7 +15,7 @@
   "auditor_readonly_report": {
     "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/reconciliation-posplans-20261108/live-owner-fk-reconciliation-20261109.auditor-report.json",
     "packaged_as": "live-owner-fk-reconciliation.auditor-report.json",
-    "sha256": "e4ced14a2712bdf323178088e4e241c022493700a27cdab8c09387193c2d5635",
+    "sha256": "435bea392d93873669e6a9ded42ae15ff32d45e54eb20b78c23acf36cdbd8511",
     "owner_fk_counts": {
       "product_packagings": {
         "total": 1,
@@ -29,6 +29,14 @@
         "orphan_owner": 0,
         "owner_product_mismatch": 0
       }
+    },
+    "reported_column_shape": {
+      "reported_at_utc": "2026-11-09T04:17:00Z",
+      "type": "text",
+      "notnull": false,
+      "generated": "s",
+      "identity": "",
+      "generation_expression": "\nCASE\n    WHEN (unidade_conteudo = ANY (ARRAY['kg'::text, 'g'::text])) THEN 'solido'::text\n    ELSE 'liquido'::text\nEND"
     },
     "acl_normalization_regressions": {
       "status": "PASS_REPORTED_BY_AUDITOR",
@@ -106,11 +114,11 @@
   },
   "generator": {
     "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/owner_fk_integrity.py",
-    "sha256": "a7e9754e108d1ebd58327b3cd4d438ce9e47dd37c98908c71bf04abf69b1b2ff"
+    "sha256": "a6da5278769b72ba7b5041c46c2d9ed9378f2a249e84fb9c2e1515f64fb406ed"
   },
   "verification_runner": {
     "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_owner_fk_integrity.py",
-    "sha256": "01882f368608db4cae025fe60d17a9972b50b6bd43bd7ece310c33421d7bd16c"
+    "sha256": "d5fefeeaa265c98f8652be83935fa56ea5a7b0f4366c0bf019255021b2c3d122"
   },
   "reported_production": {
     "ref": "swzpzcwiasxmjutrmvkm",

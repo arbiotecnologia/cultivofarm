@@ -182,6 +182,13 @@ def main():
     assert auditor_report["kind"] == "AUDITOR_REPORTED_READONLY_EVIDENCE"
     assert auditor_report["project_ref"] == "swzpzcwiasxmjutrmvkm"
     assert auditor_report["agent_hosted_io"] is False
+    reported_shape = auditor_report["reported_column_shapes"]["product_sale_units.forma_fisica"]
+    captured_shape = next(row for row in capture["columns"]
+                          if row["relation"] == "product_sale_units" and row["name"] == "forma_fisica")
+    assert reported_shape["type"] == captured_shape["type"] == "text"
+    assert reported_shape["notnull"] is captured_shape["notnull"] is False
+    assert reported_shape["generated"] == "s" and reported_shape["identity"] == ""
+    assert reported_shape["generation_expression"] == captured_shape["default"]
     assert set(auditor_report["owner_fk_counts"]) == {table for table, _name in TARGETS}
     for counts in auditor_report["owner_fk_counts"].values():
         assert counts["total"] == 1
@@ -219,6 +226,7 @@ def main():
             "packaged_as": AUDITOR_REPORT_NAME,
             "sha256": sha(AUDITOR_REPORT),
             "owner_fk_counts": auditor_report["owner_fk_counts"],
+            "reported_column_shape": reported_shape,
             "acl_normalization_regressions": acl_report,
             "agent_hosted_io": False,
         },
@@ -265,9 +273,22 @@ def main():
         assert set(evidence["orphan_scenarios"]) == {table for table, _name in TARGETS}
         assert evidence["both_fks_validated"] is True and evidence["both_fks_enforced"] is True
         assert evidence["acl_overlay_unmodified"] is True
+        assert evidence["generated_column_shape_verified"] is True
+        generated_column = evidence["fixture_generated_column"]
+        assert generated_column["pg_attrdef_synthesized"] is False
+        assert generated_column["actual"] == {
+            "relation": "product_sale_units",
+            "name": "forma_fisica",
+            "type": reported_shape["type"],
+            "default": reported_shape["generation_expression"],
+            "notnull": reported_shape["notnull"],
+            "generated": "s",
+            "identity": "",
+        }
         reported = evidence["auditor_reported_readonly_evidence"]
         assert reported["sha256"] == sha(AUDITOR_REPORT)
         assert reported["owner_fk_counts"] == auditor_report["owner_fk_counts"]
+        assert reported["reported_column_shape"] == reported_shape
         assert reported["acl_normalization_regressions"] == acl_report
         assert evidence["acl_local_additional_cases"] == ["duplicate", "empty", "null"]
         assert evidence["acl_local_coverage"]["categories"] == 9

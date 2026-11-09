@@ -1,0 +1,8 @@
+{
+  "out": "/tmp/owner-fk-rebuild-ce03702",
+  "pre25_sha256": "cdddc3e488f952c7971727997e0592a5760d23e7f7d2dfacb05ebacf3052f547",
+  "install26_sha256": "4c59f747b4255112e09a09768491f84ffae53e7f0f615b1213240a9eab02ffd9",
+  "post27_sha256": "df4656ed01f97002ec4a2b06369390f02a11d2318224763b50beab74cf522a06",
+  "manifest_sha256": "e21214ca0a9d759c2f05151b465469b1247556d02c804897e5ed79e064e252f6",
+  "local_verification": "PASS_DISPOSABLE_PG17_NOT_HOSTED"
+}

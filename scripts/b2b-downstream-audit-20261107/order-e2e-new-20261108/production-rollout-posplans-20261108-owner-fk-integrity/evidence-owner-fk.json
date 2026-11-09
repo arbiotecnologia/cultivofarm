@@ -2,7 +2,7 @@
   "status": "PASS",
   "kind": "DISPOSABLE_OWNER_FK_INTEGRITY_NOT_HOSTED",
   "hosted": false,
-  "verification_runner_sha256": "01882f368608db4cae025fe60d17a9972b50b6bd43bd7ece310c33421d7bd16c",
+  "verification_runner_sha256": "d5fefeeaa265c98f8652be83935fa56ea5a7b0f4366c0bf019255021b2c3d122",
   "checks": [
     {
       "name": "baseline POSPLANOS descartável restaurada sem destino hospedado",
@@ -239,7 +239,7 @@
       "relation": "product_sale_units",
       "column": "forma_fisica",
       "before": "regular column without expression",
-      "after": "GENERATED ALWAYS AS captured expression STORED"
+      "after": "GENERATED ALWAYS AS captured expression STORED; attgenerated=s; attidentity=''"
     }
   ],
   "fixture_row_reconciliation": {
@@ -303,6 +303,19 @@
       "definition": "CHECK ((((medida = 'volume'::text) AND (volume_ml IS NOT NULL) AND (volume_ml > (0)::numeric)) OR ((medida = 'embalagem'::text) AND (volume_ml IS NULL) AND (item_tipo = 'produto'::text) AND (preco_brl = (0)::numeric) AND (rotulo IS NOT NULL) AND (btrim(rotulo) <> ''::text))))"
     }
   ],
+  "fixture_generated_column": {
+    "actual": {
+      "name": "forma_fisica",
+      "type": "text",
+      "default": "\nCASE\n    WHEN (unidade_conteudo = ANY (ARRAY['kg'::text, 'g'::text])) THEN 'solido'::text\n    ELSE 'liquido'::text\nEND",
+      "notnull": false,
+      "identity": "",
+      "relation": "product_sale_units",
+      "generated": "s"
+    },
+    "source": "pg_attribute.attgenerated/attidentity e pg_get_expr(adbin,adrelid) medidos no PostgreSQL descartável",
+    "pg_attrdef_synthesized": false
+  },
   "capture_scope_extra_columns": [
     [
       "produtos",
@@ -344,7 +357,7 @@
   "acl_overlay_unmodified": true,
   "auditor_reported_readonly_evidence": {
     "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/reconciliation-posplans-20261108/live-owner-fk-reconciliation-20261109.auditor-report.json",
-    "sha256": "e4ced14a2712bdf323178088e4e241c022493700a27cdab8c09387193c2d5635",
+    "sha256": "435bea392d93873669e6a9ded42ae15ff32d45e54eb20b78c23acf36cdbd8511",
     "owner_fk_counts": {
       "product_packagings": {
         "total": 1,
@@ -358,6 +371,14 @@
         "orphan_owner": 0,
         "owner_product_mismatch": 0
       }
+    },
+    "reported_column_shape": {
+      "reported_at_utc": "2026-11-09T04:17:00Z",
+      "type": "text",
+      "notnull": false,
+      "generated": "s",
+      "identity": "",
+      "generation_expression": "\nCASE\n    WHEN (unidade_conteudo = ANY (ARRAY['kg'::text, 'g'::text])) THEN 'solido'::text\n    ELSE 'liquido'::text\nEND"
     },
     "acl_normalization_regressions": {
       "status": "PASS_REPORTED_BY_AUDITOR",
@@ -412,6 +433,7 @@
       ]
     }
   },
+  "generated_column_shape_verified": true,
   "relation_security_pins": 18,
   "relation_security_preserved": true,
   "history_before": {
@@ -428,8 +450,8 @@
     "packagings": 6,
     "sale_units": 3
   },
-  "plans_before_md5": "89f3e3555842b4c42ca33da747ba62d4",
-  "plans_after_md5": "89f3e3555842b4c42ca33da747ba62d4",
+  "plans_before_md5": "9c5627cc94081ccf90cc9f4b48c0d1c4",
+  "plans_after_md5": "9c5627cc94081ccf90cc9f4b48c0d1c4",
   "data_cleanup": false,
   "grants_or_revokes_in_candidate": false,
   "gates_activated": false,
