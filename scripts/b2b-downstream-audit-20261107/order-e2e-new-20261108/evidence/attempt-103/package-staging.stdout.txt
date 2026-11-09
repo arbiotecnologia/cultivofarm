@@ -1,0 +1,12 @@
+{
+  "out": "/tmp/new-order-e2e-tpgc3fco/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108",
+  "files": 37,
+  "manifest_sha256": "62b365b8f3f041f87c642531c1dec2261c7630c4c93145cd6ef57ef3a88c3f88",
+  "pre_sha256": "00f726d4dbc254aaa59bce376ab7b53f2985d1a1b80c1160df0e1cc830501616",
+  "previous_package": {
+    "manifest_sha256": "bd09de0106bc47ea60a888883a8d9f4c1bb5ed1eca4a3d520e8e686154248693",
+    "pre_sha256": "f07b1fdacdff5d5e2adcf43795308c23bc0b66a9b3ffc0f5963343aeb0fc14fd",
+    "promoted": false,
+    "archive": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/superseded-production-rollout-posplans-20261108-before-attempt-103"
+  }
+}
