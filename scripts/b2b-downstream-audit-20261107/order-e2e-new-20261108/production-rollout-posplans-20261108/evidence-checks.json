@@ -4,7 +4,7 @@
     "status": "PASS"
   },
   {
-    "test": "restricted POSPLANOS baseline measures twenty LIVE bodies 120 triggers 17 relation ACLs and four captured dependencies before candidate generation",
+    "test": "restricted POSPLANOS baseline measures twenty LIVE bodies 120 triggers 18 relation security pins and four captured dependencies before candidate generation",
     "status": "PASS"
   },
   {
@@ -24,7 +24,7 @@
     "status": "PASS"
   },
   {
-    "test": "post catalog Price plans preserve twenty LIVE bodies 120 triggers 17 relation ACLs and four captured dependencies",
+    "test": "post catalog Price plans preserve twenty LIVE bodies 120 triggers 18 relation security pins and four captured dependencies",
     "status": "PASS"
   },
   {
@@ -46,7 +46,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "b60aea06-090a-406c-b83e-6049f1f5623e"
+    "order_id": "3eb7eb0d-748b-470f-bafc-cd92420c452c"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -67,7 +67,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "8a7fa943-55a3-40bb-be7e-32188cec3165"
+    "os_id": "3764dbd9-be92-4e9b-890f-392757726466"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -76,12 +76,12 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "62b3e94a-c11b-4514-932e-abd28713c546"
+    "delivery_id": "c3cdb1d3-8af0-4988-b467-643b322d0266"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "dd47f5bf-2d63-4244-9fcb-68919f45bddc"
+    "delivery_id": "03c4b75b-caaa-4fb5-adc0-b37c0ae8edda"
   },
   {
     "test": "review70 two_items_only_one_os_and_delivery",
@@ -279,7 +279,7 @@
   {
     "test": "manual agronomic physical flow still passes after resale candidate",
     "status": "PASS",
-    "delivery_id": "d4bd2324-0059-4514-9704-6b0fcb9d0a19"
+    "delivery_id": "3137d49e-b08b-4962-9955-f429a24dfb12"
   },
   {
     "test": "mandatory ARBio actor org exact synthetic references scoped pilot with cross tenant denial expiry revocation replay and real concurrency",
@@ -297,7 +297,7 @@
     "status": "PASS"
   },
   {
-    "test": "reverse deny-only rollback closes logistics physical send confirmation and preserves history twenty LIVE bodies 120 triggers 17 ACLs; B4 fiscal NOT_RUN out of scope",
+    "test": "reverse deny-only rollback closes logistics physical send confirmation and preserves history twenty LIVE bodies 120 triggers 18 relation security pins; B4 fiscal NOT_RUN out of scope",
     "status": "PASS"
   }
 ]

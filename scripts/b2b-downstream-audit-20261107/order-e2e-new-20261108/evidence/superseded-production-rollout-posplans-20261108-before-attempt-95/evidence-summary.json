@@ -1,0 +1,137 @@
+{
+  "evidence_directory": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-93",
+  "scope": "PostgreSQL 17.11 descart\u00e1vel e testes locais; n\u00e3o \u00e9 prova JWT/RLS/Storage/hosted",
+  "source_manifest_sha256": "8d381e2117f29548ab81adffce647b83d9784230e281b0af162dc17cc272ebc7",
+  "source_files_revalidated": 2876,
+  "capture_sha256": "8a53b1443ed789c76115b9ef16807ae835e1e0bda888d50e6f1606197792a6ac",
+  "independent_diff_sha256": "8af0e9df54e8802a6e6ebd2e9072a84799cbe72d2956b4bd2992a4526571ce6a",
+  "capture_functions_md5_verified": 20,
+  "capture_triggers": 120,
+  "capture_relations": 17,
+  "transcription_correction": "COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA; MD5 a4d47ccf5d116141ed46e9de9ea7eeaa",
+  "composition_checks": 39,
+  "partial_regressions": 13,
+  "endpoint_reader_checks": 15,
+  "pilot_containment_checks": 30,
+  "pilot_candidate_sha256": "e4b1ceeee68fe1a2fe44702b8dc4e466ee2f045957a10f07b0bd911b694d6e3d",
+  "frontend": {
+    "frontend-ui": {
+      "exitcode": 0,
+      "sha256": "ae29b7d5b5236569eade6cce982d128e9d5234bd620b8b6f835e84dc09932555",
+      "tests": 21
+    },
+    "frontend-candidate": {
+      "exitcode": 0,
+      "sha256": "ebafd91c1fd7112ae935667ddf4ee999fe0afda27a5df7ce419d64f4943cf97a",
+      "tests": 13
+    },
+    "frontend-os-compat": {
+      "exitcode": 0,
+      "sha256": "07e888b6760f6a9671ea6b8650de33a751ed7e84376f793477c85a1e5eaed6f8",
+      "tests": 73
+    },
+    "typecheck": {
+      "exitcode": 0,
+      "sha256": "a88bae2bea8c4e57075772502a79026d50ce12accdce08d43b0c5ec3a3a0ce2e"
+    }
+  },
+  "full_reverse_rollback": {
+    "closed": {
+      "os_writer": false,
+      "send_writer": false,
+      "physical_gate": false,
+      "confirm_writer": false,
+      "logistics_gate": false,
+      "purchase_writer": false
+    },
+    "history_before": {
+      "os": 21,
+      "movements": 53,
+      "deliveries": 15,
+      "resale_receipts": 11
+    },
+    "history_after": {
+      "os": 21,
+      "movements": 53,
+      "deliveries": 15,
+      "resale_receipts": 11
+    },
+    "current_catalog_preserved": true,
+    "allowed_candidate_trigger_function_deltas": [
+      [
+        "entregas",
+        "trg_entrega_sync_partner_order"
+      ],
+      [
+        "entregas",
+        "trg_validate_entrega_confirmacao"
+      ],
+      [
+        "entregas",
+        "zz_delivery_mutation_closed"
+      ],
+      [
+        "estoque_produto",
+        "a00_stock_p1_tenant_guard"
+      ],
+      [
+        "estoque_produto",
+        "a01_stock_final_permit"
+      ],
+      [
+        "estoque_produto",
+        "a01_stock_insert_permit"
+      ],
+      [
+        "estoque_produto",
+        "trg_validate_estoque_entrada"
+      ],
+      [
+        "lotes",
+        "aa_manual_lot_write_fence_v1"
+      ],
+      [
+        "lotes",
+        "trg_lab_lot_biological_only"
+      ],
+      [
+        "ordens_servico",
+        "aa_guard_separate_approval"
+      ],
+      [
+        "ordens_servico",
+        "trg_lab_os_biological_only"
+      ],
+      [
+        "ordens_servico",
+        "trg_sync_os_classica_downstream"
+      ],
+      [
+        "ordens_servico",
+        "zz_audit_separate_approval"
+      ]
+    ],
+    "allowed_candidate_function_deltas": [
+      "platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)",
+      "platform_private.envase_insert_final_v1()",
+      "platform_private.envase_insert_guard_v1()",
+      "platform_private.guard_manual_lot_write_v1()",
+      "platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)",
+      "platform_private.resale_pilot_delivery_allowed_v1(text,text,uuid,uuid,uuid)",
+      "platform_private.trg_lab_lot_biological_only()",
+      "public.fn_sync_os_classica_downstream()",
+      "public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)",
+      "public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)",
+      "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)",
+      "public.validate_estoque_entrada()"
+    ],
+    "b4_fiscal": "NOT_RUN_OUT_OF_SCOPE"
+  },
+  "b4_fiscal_scope": {
+    "status": "NOT_RUN_OUT_OF_SCOPE",
+    "reason": "B4_PRE_SHARED_BODY hist\u00f3rico preservado nas tentativas 7/8; nenhum PRE foi enfraquecido",
+    "positive_fiscal_receivable": "NOT_RUN_BLOCKED",
+    "hosted": false
+  },
+  "positive_fiscal_receivable": "NOT_RUN_OUT_OF_SCOPE"
+}
