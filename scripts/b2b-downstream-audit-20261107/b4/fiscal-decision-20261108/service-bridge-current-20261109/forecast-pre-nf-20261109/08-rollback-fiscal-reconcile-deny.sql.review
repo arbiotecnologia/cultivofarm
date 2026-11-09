@@ -1,0 +1,4 @@
+-- REVIEW ONLY deny-only fase 2; preserva previsões, títulos e eventos.
+BEGIN;
+REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+COMMIT;

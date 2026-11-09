@@ -1,0 +1,25 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "status": "REVIEW_ONLY_INACTIVE_NOT_APPROVED",
+  "phase": "AFTER_B4_AND_STRICT_SERVICE_BRIDGE_BEFORE_FISCAL_CALLBACK",
+  "capture": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-125/current-pre-physical.json",
+  "capture_sha256": "9d3bdf74b25080219a3cedb10cfd1e75f0a97b0f0dd69329362dcb67feba676b",
+  "canonical_ref_evidence": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-125/real-baselines.json",
+  "canonical_ref_evidence_sha256": "b62026431fcbd36d1c25fe272f86420cea734c45e21ca33d1601a5f1706b4cf5",
+  "live_h7_md5": "37b2342921df8bf839f4597ad033696d",
+  "after_b4_h7_md5": "37b2342921df8bf839f4597ad033696d",
+  "after_overlay_h7_md5": "8476dc6c6672b500406d0388da380e83",
+  "environment_contract": {
+    "invoice_environment": "HOMOLOGATION",
+    "transmission_ambiente_retorno": "2",
+    "production_nf_ready": false
+  },
+  "delta": "AUTHORIZED receivable_id NULL->valid B4 title only; exact txid/invoice/document/org/order/partner permit; no economic/fiscal field relaxation",
+  "files": {
+    "01-pre.sql.readonly": "571af39b9d3a563f37a6240b7909d2c4bb6346279d4ab59111b3148d6cf55c02",
+    "02-install.sql.review": "263595514da27d4c9b3369bdadca40ed34af1a28f4192044c0e95aa562408d6b",
+    "03-post.sql.readonly": "7f16b8000db9b9486f5a27e641f1de91dadd396c08b03d57b273e5be2f2ec4fe",
+    "04-rollback-deny.sql.review": "b9af668bc8fd4fd9a9d565ceb4fb29e87048ffe2bb6ec2f22b94b70e232e59ca"
+  },
+  "hosted": false
+}

@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-oa85igoz/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 628, in main
+    bridge_audit_pre=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(audit_dir/'01-pre.sql.readonly').read_text())
+  File "/tmp/new-order-e2e-oa85igoz/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 56, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-oa85igoz/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  BRIDGE_AUDIT_PRE_MD5_DRIFT
+CONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE
+

@@ -1,0 +1,8 @@
+-- REVIEW ONLY READ ONLY PRE; previsão separada, nenhum título pré-NF.
+BEGIN READ ONLY;
+DO $$ BEGIN
+ IF current_setting('b2b_forecast.review_project_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'B2B_FORECAST_REF_NOT_VERIFIED';END IF;
+ IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '664f63441c92a6716f0117362255ec9e' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_PRE_DRIFT';END IF;
+ IF to_regclass('platform_private.b2b_financial_forecasts') IS NOT NULL OR to_regclass('platform_private.b2b_financial_forecast_events') IS NOT NULL THEN RAISE EXCEPTION 'B2B_FORECAST_ALREADY_INSTALLED';END IF;
+END$$;
+ROLLBACK;

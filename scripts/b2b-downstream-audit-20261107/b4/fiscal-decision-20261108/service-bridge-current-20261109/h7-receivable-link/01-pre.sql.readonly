@@ -1,0 +1,9 @@
+-- REVIEW ONLY; READ ONLY PRE H7, captura LIVE/pós-B4 inalterada.
+BEGIN READ ONLY;
+DO $$ BEGIN
+ IF current_setting('b2b_fiscal_bridge.review_project_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'B2B_FISCAL_REF_NOT_VERIFIED'; END IF;
+ IF md5(pg_get_functiondef('public.tg_h7_fiscal_invoice_immutable_v1()'::regprocedure)) IS DISTINCT FROM '37b2342921df8bf839f4597ad033696d' THEN RAISE EXCEPTION 'H7_LINK_PRE_MD5_DRIFT'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.fiscal_invoices'::regclass AND tgname='trg_h7_fiscal_invoice_immutable' AND tgenabled='O') THEN RAISE EXCEPTION 'H7_LINK_PRE_TRIGGER_DISABLED'; END IF;
+ IF to_regclass('platform_private.b2b_fiscal_service_permits') IS NULL THEN RAISE EXCEPTION 'H7_LINK_PERMIT_MISSING'; END IF;
+END $$;
+ROLLBACK;

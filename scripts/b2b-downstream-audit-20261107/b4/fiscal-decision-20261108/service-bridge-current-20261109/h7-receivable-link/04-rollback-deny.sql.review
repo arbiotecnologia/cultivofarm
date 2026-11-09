@@ -1,0 +1,49 @@
+-- REVIEW ONLY; deny-only: restaura H7 real, preserva dados/títulos/histórico.
+BEGIN;
+SET LOCAL lock_timeout='3s';
+DO $$ BEGIN
+ IF md5(pg_get_functiondef('public.tg_h7_fiscal_invoice_immutable_v1()'::regprocedure)) IS DISTINCT FROM '8476dc6c6672b500406d0388da380e83' THEN RAISE EXCEPTION 'H7_LINK_ROLLBACK_PRE_DRIFT'; END IF;
+END $$;
+CREATE OR REPLACE FUNCTION public.tg_h7_fiscal_invoice_immutable_v1()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+BEGIN
+  IF NOT public.fn_fiscal_status_is_terminal(OLD.normalized_status) THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.invoice_number IS DISTINCT FROM OLD.invoice_number
+     OR NEW.series        IS DISTINCT FROM OLD.series
+     OR NEW.access_key    IS DISTINCT FROM OLD.access_key
+     OR NEW.total_amount  IS DISTINCT FROM OLD.total_amount
+     OR NEW.issue_date    IS DISTINCT FROM OLD.issue_date
+     OR NEW.invoice_type  IS DISTINCT FROM OLD.invoice_type
+     OR NEW.receivable_id IS DISTINCT FROM OLD.receivable_id
+  THEN
+    RAISE EXCEPTION
+      'FISCAL_DOCUMENT_LOCKED: documento em estado % nao aceita alteracao economica/fiscal informal.',
+      OLD.normalized_status
+      USING ERRCODE = 'P0001';
+  END IF;
+
+  -- Transições de estado permitidas a partir de um estado terminal.
+  IF NEW.normalized_status IS DISTINCT FROM OLD.normalized_status THEN
+    IF NOT (OLD.normalized_status = 'AUTHORIZED'
+            AND NEW.normalized_status IN ('CANCEL_REQUESTED','CANCELED','SUBSTITUTED')) THEN
+      RAISE EXCEPTION
+        'FISCAL_STATE_TRANSITION_INVALID: % -> % nao permitida.',
+        OLD.normalized_status, NEW.normalized_status
+        USING ERRCODE = 'P0001';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$function$
+;
+DO $$ BEGIN
+ IF md5(pg_get_functiondef('public.tg_h7_fiscal_invoice_immutable_v1()'::regprocedure)) IS DISTINCT FROM '37b2342921df8bf839f4597ad033696d' THEN RAISE EXCEPTION 'H7_LINK_ROLLBACK_POST_DRIFT'; END IF;
+END $$;
+COMMIT;

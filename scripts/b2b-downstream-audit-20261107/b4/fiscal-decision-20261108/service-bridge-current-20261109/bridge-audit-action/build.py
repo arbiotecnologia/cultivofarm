@@ -6,7 +6,7 @@ import json
 
 H = Path(__file__).resolve().parent
 ROOT = H.parents[5]
-SOURCE = ROOT / "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/02-install.sql.review"
+SOURCE = ROOT / "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-136/bridge-before-audit-body.sql"
 BASELINE = ROOT / "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-125/real-baselines.json"
 REF = "swzpzcwiasxmjutrmvkm"
 OLD = """ VALUES('fiscal_invoices',inv.id,'B2B_RECEIVABLE_RECONCILED',jsonb_build_object('receivable_id',inv.receivable_id),
@@ -27,9 +27,9 @@ def main():
     baseline = json.loads(BASELINE.read_text())
     assert baseline["canonical_ref"] == REF and baseline["hosted"] is False
     source = SOURCE.read_text()
-    start = source.index("CREATE FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1")
-    end = source.index("END $$;", start) + 7
-    original = source[start:end].replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION", 1)
+    original = source
+    assert original.startswith("CREATE OR REPLACE FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1")
+    assert md5(original) == "8905212e276f6bb43be32423ee48abc8"
     assert original.count(OLD) == 1
     candidate = original.replace(OLD, NEW)
     allocation_anchor = " result:=platform_private.b2b_allocate_document(inv.id);\n UPDATE public.fiscal_invoices"

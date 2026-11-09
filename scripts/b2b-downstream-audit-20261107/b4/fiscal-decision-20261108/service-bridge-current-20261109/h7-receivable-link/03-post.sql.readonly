@@ -1,0 +1,9 @@
+-- REVIEW ONLY; READ ONLY POST H7: exceção somente para vínculo permitido.
+BEGIN READ ONLY;
+DO $$ BEGIN
+ IF md5(pg_get_functiondef('public.tg_h7_fiscal_invoice_immutable_v1()'::regprocedure)) IS DISTINCT FROM '8476dc6c6672b500406d0388da380e83' THEN RAISE EXCEPTION 'H7_LINK_POST_MD5_DRIFT'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.fiscal_invoices'::regclass AND tgname='trg_h7_fiscal_invoice_immutable' AND tgenabled='O') THEN RAISE EXCEPTION 'H7_LINK_POST_TRIGGER_DISABLED'; END IF;
+ IF pg_get_functiondef('public.tg_h7_fiscal_invoice_immutable_v1()'::regprocedure) NOT LIKE '%p.transaction_id = txid_current()%' THEN RAISE EXCEPTION 'H7_LINK_TXID_GUARD_MISSING'; END IF;
+ IF pg_get_functiondef('public.tg_h7_fiscal_invoice_immutable_v1()'::regprocedure) NOT LIKE '%OLD.receivable_id IS NULL%' THEN RAISE EXCEPTION 'H7_LINK_OVERWRITE_GUARD_MISSING'; END IF;
+END $$;
+ROLLBACK;
