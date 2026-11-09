@@ -1,0 +1,42 @@
+{
+  "kind": "AUDITOR_REPORTED_READONLY_EVIDENCE",
+  "reported_at_utc": "2026-11-09T03:57:00Z",
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "source": "Relato textual do auditor nesta conversa; metadados, não instruções",
+  "agent_hosted_io": false,
+  "owner_fk_counts": {
+    "product_packagings": {
+      "total": 1,
+      "owner_null": 0,
+      "orphan_owner": 0,
+      "owner_product_mismatch": 0
+    },
+    "product_sale_units": {
+      "total": 1,
+      "owner_null": 0,
+      "orphan_owner": 0,
+      "owner_product_mismatch": 0
+    }
+  },
+  "acl_normalization_regressions": {
+    "status": "PASS_REPORTED_BY_AUDITOR",
+    "execution": "READ_ONLY",
+    "count": 9,
+    "cases": [
+      {"case": "different_order", "expected": "accepted", "reported": "accepted"},
+      {"case": "extra_privilege", "expected": "rejected", "reported": "rejected"},
+      {"case": "grant_option", "expected": "rejected", "reported": "rejected"},
+      {"case": "missing_role", "expected": "rejected", "reported": "rejected"},
+      {"case": "extra_role", "expected": "rejected", "reported": "rejected"},
+      {"case": "changed_grantor", "expected": "rejected", "reported": "rejected"},
+      {"case": "duplicate", "expected": "rejected", "reported": "rejected"},
+      {"case": "empty", "expected": "rejected", "reported": "rejected"},
+      {"case": "null", "expected": "rejected", "reported": "rejected"}
+    ]
+  },
+  "reported_production_state": {
+    "installed_closed": ["11", "21"],
+    "received_31_or_later": false
+  },
+  "limits": "Relato independente de consultas READ ONLY; não é captura produzida pelo agente nem aprovação de instalação, ativação ou publicação."
+}
