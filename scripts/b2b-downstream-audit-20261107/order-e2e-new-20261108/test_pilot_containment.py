@@ -200,7 +200,7 @@ def run(B, Review, Q, A, choice, out):
     assert B.last(f"SELECT revoked_at IS NOT NULL FROM platform_private.resale_pilot_allowlist_v1 WHERE id='{revoked_grant}';") == "t"
     B.T.finish(holder, "COMMIT;")
     worker_out, worker_err = B.T.finish(worker)
-    assert "RESALE_PILOT_SCOPE_DENIED" in err, (out, err)
+    assert "RESALE_PILOT_SCOPE_DENIED" in worker_err, (worker_out, worker_err)
     assert os_effects(revoked["id"]) == revoked_before
     ok("concurrent revoke confirmed before final authorization denies writer without effects")
 
