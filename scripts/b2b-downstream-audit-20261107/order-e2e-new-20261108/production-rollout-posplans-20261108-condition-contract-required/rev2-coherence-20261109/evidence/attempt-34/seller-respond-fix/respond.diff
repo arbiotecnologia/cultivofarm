@@ -1,0 +1,29 @@
+--- respond.live-4926a99c.sql
++++ respond.candidate.sql
+@@ -31,7 +31,7 @@
+     PERFORM platform_private.b2b_internal_assert_origin((SELECT internal_origin_snapshot FROM public.partner_orders WHERE id=p_order_id),
+       (SELECT partner_id FROM public.partner_orders WHERE id=p_order_id),(SELECT cliente_id FROM public.partner_orders WHERE id=p_order_id));
+   END IF;
+-  IF NOT public.b2b_phase1_order_visible(p_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
++  IF NOT (public.b2b_phase1_order_visible(p_order_id) OR platform_private.b2b_owner_internal_partner_readable((SELECT po_v.partner_id FROM public.partner_orders po_v WHERE po_v.id=p_order_id))) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+   IF v_uid IS NULL THEN RAISE EXCEPTION 'auth_required'; END IF;
+ 
+   v_is_admin  := has_role(v_uid,'administrador'::app_role);
+@@ -60,7 +60,7 @@
+   ELSE
+     PERFORM platform_private.b2b_internal_assert_origin(v_order.internal_origin_snapshot,v_order.partner_id,v_order.cliente_id);
+   END IF;
+-  IF NOT public.b2b_phase1_order_visible(p_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
++  IF NOT (public.b2b_phase1_order_visible(p_order_id) OR platform_private.b2b_owner_internal_partner_readable((SELECT po_v.partner_id FROM public.partner_orders po_v WHERE po_v.id=p_order_id))) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+   v_is_admin := has_role(v_uid,'administrador'::app_role); v_is_gestor := has_role(v_uid,'gestor_comercial'::app_role);
+   IF NOT (v_is_admin OR v_is_gestor) THEN RAISE EXCEPTION 'forbidden_quote_response' USING ERRCODE='42501'; END IF;
+   SELECT * INTO v_cond_snapshot FROM platform_private.b2b_order_condition_snapshots x WHERE x.order_id=p_order_id;
+@@ -155,7 +155,7 @@
+       PERFORM platform_private.b2b_internal_assert_origin(v_order.internal_origin_snapshot,v_order.partner_id,v_order.cliente_id);
+     END IF;
+     v_cond2 := platform_private.b2b_resolve_condition(v_order.partner_id,v_plan.id,v_choice,false);
+-    IF v_cond2 IS DISTINCT FROM v_cond OR NOT public.b2b_phase1_order_visible(p_order_id) THEN
++    IF v_cond2 IS DISTINCT FROM v_cond OR NOT (public.b2b_phase1_order_visible(p_order_id) OR platform_private.b2b_owner_internal_partner_readable((SELECT po_v.partner_id FROM public.partner_orders po_v WHERE po_v.id=p_order_id))) THEN
+       RAISE EXCEPTION 'payment_condition_stale' USING ERRCODE='PT409';
+     END IF;
+     IF NOT (has_role(v_uid,'administrador'::app_role) OR has_role(v_uid,'gestor_comercial'::app_role)) THEN

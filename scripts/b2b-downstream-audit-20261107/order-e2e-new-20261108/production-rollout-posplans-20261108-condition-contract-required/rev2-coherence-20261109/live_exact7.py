@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS platform_private.delivery_context_20261030(txid bigin
 
 
 CAP23 = PKG / "live-exact-7" / "capture-23-20261109.json"
+CAP3 = PKG / "live-exact-7" / "capture-3-20261109.json"  # complemento 09/11: assert_b2b_partner_scope, c2_internal_order_target_reason, h15 privado
 S31 = ROOT / "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/31-physical-install.sql.review"
 S61 = ROOT / "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/61-pilot-containment-install.sql.review"
 # Real step-61 objects (installed in production, POST62 pins resale_pilot_delivery_scope_v1 = 2350b653…); copied verbatim by line range.
@@ -71,7 +72,7 @@ S61_DELIVERY_SCOPE_POST = "2350b6535c4b6289f47c200c03000dfb"
 
 
 def capture23():
-    c = json.loads(CAP23.read_text())
+    c = json.loads(CAP23.read_text()) + json.loads(CAP3.read_text())
     for x in c:
         if hashlib.md5(x["definition"].encode()).hexdigest() != x["md5"]:
             raise SystemExit("LIVE23_CAPTURE_TAMPERED " + x["signature"])
@@ -128,7 +129,7 @@ def hosted_fn(name):
         if f.get("def", "").startswith("CREATE OR REPLACE FUNCTION " + name + "("):
             return f["def"], "contracts-c2-20261022 hosted-capture 22/10 md5 " + f.get("md5", "?")
     raise SystemExit("HOSTED_CAPTURE_MISSING " + name)
-EXTRA_REAL = ["platform_private.assert_b2b_partner_scope", "platform_private.b2b_commercial_context", "platform_private.c2_producer_links"]
+EXTRA_REAL = ["platform_private.b2b_commercial_context", "platform_private.c2_producer_links"]
 
 
 def install23(psql, check, res, out_dir):
@@ -178,10 +179,10 @@ def install23(psql, check, res, out_dir):
     SEAM_KEEP = {"platform_private.entitlements_for_user(uuid)": "SaaS subscription tables absent in harness"}
     res["live23_declared_seams"] = {k: dict(reason=v, mirror_md5=out[k]["mirror_after"], live_md5=out[k]["live"]) for k, v in SEAM_KEEP.items()}
     bad = {k: v for k, v in out.items() if v["mirror_after"] != v["live"] and k not in SEAM_KEEP}
-    check("CCR2 LIVE23: md5(pg_get_functiondef) dos 23 no espelho = captura produção 09/11 (exceto costura declarada entitlements)", not bad, bad)
+    check("CCR2 LIVE23: md5(pg_get_functiondef) dos 26 (23+3) no espelho = captura produção 09/11 (exceto costura declarada entitlements)", not bad, bad)
     norm = lambda a: sorted(a.strip("{}").split(",")) if a else []
     badacl = {k: (v["acl_after"], v["acl_live"]) for k, v in out.items() if norm(v["acl_after"]) != norm(v["acl_live"]) and k not in SEAM_KEEP}
-    check("CCR2 LIVE23: ACL (aclitems ordenados) dos 23 no espelho = ACL produção 09/11", not badacl, badacl)
+    check("CCR2 LIVE23: ACL (aclitems ordenados) dos 26 (23+3) no espelho = ACL produção 09/11", not badacl, badacl)
     dsc = psql("SELECT md5(pg_get_functiondef('platform_private.resale_pilot_delivery_scope_v1(text,text,uuid,uuid,uuid)'::regprocedure))").stdout.strip()
     res["live23_s61_delivery_scope_md5"] = dsc
     check("CCR2 LIVE23: resale_pilot_delivery_scope_v1 do repo (etapa 61) = pin POST62", dsc == S61_DELIVERY_SCOPE_POST, dsc)

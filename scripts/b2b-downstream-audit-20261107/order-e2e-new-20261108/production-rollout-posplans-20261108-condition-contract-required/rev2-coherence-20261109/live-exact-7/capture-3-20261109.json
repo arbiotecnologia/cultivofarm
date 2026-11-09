@@ -1,0 +1,20 @@
+[
+ {
+  "signature": "platform_private.assert_b2b_partner_scope(uuid,uuid)",
+  "md5": "f86f43f9d9ad3ed97b840fcc02c79476",
+  "definition": "CREATE OR REPLACE FUNCTION platform_private.assert_b2b_partner_scope(_uid uuid, _partner uuid)\n RETURNS void\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE s record;\nBEGIN\n  IF _uid IS NULL OR auth.uid() IS NULL OR _uid <> auth.uid() THEN\n    RAISE EXCEPTION 'auth_required' USING ERRCODE='42501';\n  END IF;\n  IF _partner IS NULL OR NOT EXISTS (SELECT 1 FROM public.partner_accounts pa\n       WHERE pa.id = _partner AND pa.ativo = true AND pa.deleted_at IS NULL) THEN\n    RAISE EXCEPTION 'partner_not_found' USING ERRCODE='42501';\n  END IF;\n  IF public.is_platform_superadmin(_uid) THEN RETURN; END IF;\n  IF public.has_role(_uid,'parceiro_b2b_tecnico'::app_role) THEN\n    RAISE EXCEPTION 'forbidden_financial_terms' USING ERRCODE='42501';\n  END IF;\n  SELECT * INTO s FROM platform_private.b2b_actor_scope(_uid);\n  IF NOT s.profile_ok THEN RAISE EXCEPTION 'inactive_scope' USING ERRCODE='42501'; END IF;\n  IF s.org_partner IS DISTINCT FROM _partner OR NOT s.partner_valid THEN\n    RAISE EXCEPTION 'forbidden_partner' USING ERRCODE='42501';\n  END IF;\n  IF public.has_role(_uid,'parceiro_b2b'::app_role) THEN\n    IF s.user_partner_count <> 1 OR s.user_partner IS DISTINCT FROM _partner THEN\n      RAISE EXCEPTION 'forbidden_partner' USING ERRCODE='42501';\n    END IF;\n    RETURN;\n  END IF;\n  IF NOT (public.has_role(_uid,'administrador'::app_role) OR public.has_role(_uid,'financeiro'::app_role)\n          OR public.has_role(_uid,'gestor_comercial'::app_role)) THEN\n    RAISE EXCEPTION 'forbidden_role' USING ERRCODE='42501';\n  END IF;\nEND $function$\n",
+  "acl": "{postgres=X/postgres,service_role=X/postgres}"
+ },
+ {
+  "signature": "platform_private.c2_internal_order_target_reason(uuid,uuid)",
+  "md5": "07d7c9002cbfe17497c9ee4a92d5a928",
+  "definition": "CREATE OR REPLACE FUNCTION platform_private.c2_internal_order_target_reason(_uid uuid, _partner uuid)\n RETURNS text\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE s record; org uuid;\nBEGIN\n  -- Mirrors LIVE guards; NULL means allowed. Never authorizes by itself: callers must RAISE.\n  IF _uid IS NULL OR auth.uid() IS DISTINCT FROM _uid THEN RETURN 'auth_required'; END IF;\n  IF NOT platform_private.b2b_internal_commercial_actor() THEN RETURN 'actor_not_allowed'; END IF;\n  SELECT * INTO s FROM platform_private.b2b_actor_scope(_uid);\n  IF s.profile_ok IS NOT TRUE THEN RETURN 'inactive_scope'; END IF;\n  IF NOT public._saas_user_has_feature(_uid,'pedidos_b2b') THEN RETURN 'feature_disabled'; END IF;\n  org := public.h15_actor_organization();\n  IF org IS NULL THEN RETURN 'actor_not_allowed'; END IF;\n  IF _partner IS NULL THEN RETURN NULL; END IF;\n  IF NOT EXISTS (SELECT 1 FROM public.partner_accounts p\n       WHERE p.id=_partner AND p.ativo IS TRUE AND p.deleted_at IS NULL AND p.commercial_owner_organization_id=org\n         AND (p.client_id IS NULL OR EXISTS (SELECT 1 FROM public.clientes c WHERE c.id=p.client_id AND c.organization_id=org))) THEN\n    RETURN 'target_outside_portfolio';\n  END IF;\n  RETURN NULL;\nEND $function$\n",
+  "acl": "{postgres=X/postgres}"
+ },
+ {
+  "signature": "platform_private.h15_actor_organization()",
+  "md5": "64e10608403238a41a9baf92857ca881",
+  "definition": "CREATE OR REPLACE FUNCTION platform_private.h15_actor_organization()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT p.organization_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE WHERE p.user_id=auth.uid() AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p.user_id);\n$function$\n",
+  "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+ }
+]
