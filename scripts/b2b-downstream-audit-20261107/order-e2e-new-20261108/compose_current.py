@@ -283,10 +283,15 @@ def main():
   assert float(accepted['final_amount_with_interest'])==18.0 and accepted['credit_approved_at'] is None,accepted
   assert accepted['financial_approval_status']=='pending',accepted
   assert B.last(f"SELECT count(*) FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}';")=='0'
+  terms_before=json.loads(B.last(f"SELECT jsonb_build_object('order',to_jsonb(po),'terms',(SELECT to_jsonb(t) FROM public.partner_order_payment_terms t WHERE t.id=po.payment_terms_id))::text FROM public.partner_orders po WHERE id='{order_id}';"))
   terms_approved=Q.as_user(Q.UADM,f"SELECT public.approve_b2b_payment_terms_secure('{order_id}','LOCAL TERMS APPROVAL');")
+  terms_after=json.loads(B.last(f"SELECT jsonb_build_object('order',to_jsonb(po),'terms',(SELECT to_jsonb(t) FROM public.partner_order_payment_terms t WHERE t.id=po.payment_terms_id))::text FROM public.partner_orders po WHERE id='{order_id}';"))
+  (OUT/'terms-post-commercial-state.json').write_text(json.dumps(dict(before=terms_before,after=terms_after,stdout=terms_approved.stdout,stderr=terms_approved.stderr,exit=terms_approved.returncode),indent=2)+'\n')
   assert terms_approved.returncode==0,terms_approved.stderr
   accepted=json.loads(Q.psql(f"SELECT to_jsonb(o)::text FROM public.partner_orders o WHERE id='{order_id}'").stdout.strip())
-  assert accepted['financial_approval_status']=='approved' and accepted['payment_condition_status']=='approved',accepted
+  assert terms_before['order']['internal_economic_snapshot']==terms_after['order']['internal_economic_snapshot']
+  assert accepted['financial_approval_status']=='pending' and accepted['payment_condition_status']=='defined',accepted
+  assert terms_after['terms']['approval_status']=='approved' and terms_after['terms']['approved_by']==Q.UADM,terms_after
   forecast_read=Q.as_user(Q.UADM,f"SELECT public.get_b2b_financial_forecast_secure('{order_id}');")
   assert forecast_read.returncode==0,forecast_read.stderr
   forecast=json.loads(forecast_read.stdout.strip().splitlines()[-1])

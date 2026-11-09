@@ -2,7 +2,7 @@
 BEGIN READ ONLY;
 DO $$ BEGIN
  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '0d3b85049e3b3b799ba81b4cb95be0da' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_POST_DRIFT';END IF;
- IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '75211662e8c413318a752527328671d3' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM 'c86f0994a94a41c84b0dac7d4e039534' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '26c77e55dfcb2b48fdb63cbc5b2819ed' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '028894275a3b98a3abdc4e01e3fd03bf' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_POST_DRIFT';END IF;
  IF (SELECT count(*) FROM pg_class WHERE oid IN ('platform_private.b2b_financial_forecasts'::regclass,'platform_private.b2b_financial_forecast_events'::regclass) AND NOT relrowsecurity)<>0 THEN RAISE EXCEPTION 'B2B_FORECAST_RLS_MISSING';END IF;
