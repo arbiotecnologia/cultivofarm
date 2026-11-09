@@ -5,9 +5,9 @@
 - [x] Pacote local promovido somente após o ensaio: 38/38 arquivos/origens/hashes verificados; PRE SHA256 `00f726d4dbc254aaa59bce376ab7b53f2985d1a1b80c1160df0e1cc830501616`, manifesto `addf01d436399b348ecc1ea07ca9eb6a75b2ffc5d1c8164b8fa2274b9b14163b`. Pacote anterior arquivado como não promovido; build OK. Sem hosted, ativação, publicação, fiscal, cobrança ou comunicação; revisão independente e prova JWT/RLS/Storage/browser continuam NOT_RUN.
 
 ## 09/11 00:47 — Rollback final composto de ENVIO e confirmação
-- [ ] Reproduzir nos ramos logistics-only e integrado a inversão completa com contenção, logística, físico, ENVIO e confirmação. Cada um dos dois últimos rollbacks deve ser gerado dos pins exatos medidos após as reversões anteriores, deny-only e sem restaurar corpos antigos.
-- [ ] Exigir negação real como `authenticated` para ENVIO/confirmação após rollback; preservar histórico, ACLs, catálogo, planos e baseline de recebíveis/cadastro.
-- [ ] Copiar somente os artefatos da nova execução aprovada localmente para o repositório e verificar todos os hashes/origens. Gates OFF, contenção server-side obrigatória, sem hosted/publicação; prova real JWT/RLS/Storage/browser continua NOT_RUN.
+- [x] Attempts 100/101 reproduziram nos ramos integrado e logistics-only a inversão completa com contenção, logística, físico, ENVIO e confirmação. Attempt 103 corrigiu a medição para o estado fechado dos artefatos finais e repetiu logistics-only com pins exatos após as reversões anteriores, deny-only e sem restaurar corpos antigos.
+- [x] Negação real como `authenticated` para ENVIO/confirmação após rollback; histórico, ACLs, catálogo, planos e baseline de recebíveis/cadastro preservados. A execução dos 24 arquivos finais confirmou cinco negações e 18 pins de segurança.
+- [x] Artefatos da attempt 103 copiados para o repositório e 38/38 hashes/origens verificados. Gates OFF, contenção server-side obrigatória, sem hosted/publicação; prova real JWT/RLS/Storage/browser continua NOT_RUN.
 
 ## 09/11 00:37 — Complemento LIVE de RLS/FORCE RLS/owner/ACL
 - [x] Captura original preservada; complemento independente `live-current-relation-security-20261109.json` contém 18 relações, SHA256 `20a514091f0ab4301cd11f67d530e1a17b94c4a7e1fea17196f100dca51f712d`. PRE/POST exigem RLS, FORCE RLS, owner e ACL exatos: 17 públicas com RLS ON, privada `envase_insert_permits_v1` com RLS OFF, todas FORCE RLS OFF e nenhuma ACL ampliada.
