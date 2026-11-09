@@ -1,3 +1,9 @@
+## 09/11 21:39 — Decisão final aprovada: previsão separada + recebível por NF
+- [ ] Implementar/testar somente localmente previsão não exigível após aprovação comercial E crédito/condição/preço válidos, idempotente por pedido/revisão; nenhum título pré-NF e nenhuma previsão em simulação/cotação.
+- [ ] Fechar autorização NF 104/100 → um recebível por NF/alocação, replay/concorrência, parciais/residual, falha/rejeição/timeout, cancelamento/estorno/tenant/roles, crédito sem dupla contagem e datas definitivas emissão+prazo; preservar dez triggers, ACL, snapshots e histórico.
+- [ ] Corrigir FISCAL_DOCUMENT_LOCKED por relacionamento transacional estreito, sem exceção genérica de imutabilidade; reconciliar corpo current/LIVE por MD5 e manter HOMOLOGATION/ambiente 2 explícito, sem validar empresa real.
+- [ ] Atualizar UI Previsão aguardando NF vs Recebível confirmado; concluir atalho de crédito/build de prévia sem publicar. Entregar pacote REVIEW_ONLY versionado, PRE/POST, rollback deny-only, diffs e evidências. Sem SQL hospedado, emissão, cobrança ou envio.
+
 ## 09/11 21:01 — Mudança de direção: provisório antes da NF
 - [x] Suspender release da ponte pós-confirmação e interromper attempt-127; attempts 125/126 preservados como caracterização H7/CHECK de auditoria, não aprovação. Nenhum positivo integrado promovido.
 - [x] Preparar plano revisável em duas fases para registro provisório `aguardando_fiscal` antes da NF e confirmação posterior do mesmo agregado, com máquina de estados, parciais, crédito sem dupla contagem, cancelamentos, migração e decisões pendentes; proposta NÃO aprovada para implementação.
