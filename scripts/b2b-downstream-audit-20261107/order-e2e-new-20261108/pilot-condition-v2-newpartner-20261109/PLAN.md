@@ -38,3 +38,8 @@ Se o passo 2 for rejeitado, a atribuição do passo 1 sozinha não muda o modo, 
 - Leitura SQL do proprietário: 0 atribuições para `5c4f…`; ativação continua v1 só com `7e52…`. A seleção do piloto foi preparada na UI, mas **Ativar não foi clicado**.
 - Os passos 1 e 2 aguardam confirmação explícita do proprietário quanto à ampliação de acesso ao novo fluxo.
 - Causa confirmada: escopo do piloto. PB-001038 sem backfill.
+
+## Executado pelo proprietário na UI admin (15:29–15:31Z, relato com SQL verificado)
+- `assign` 5c4f35f8… / a129001e… / boleto / v1. `activation_set` passou para pilot v2 com ids exatos `[5c4f35f8…, 7e52de9a…]`. Autorizado por decisão humana.
+- Não repetir nem duplicar a configuração. Gates de estoque/logística OFF, allowlist de entrega 0, PB-001038 com receivable=false.
+- Próximo passo: o comprador simula na prévia (V1 com boleto obrigatório), sem enviar pedido antes da revisão. Depois disso, o guard 81 é recomendado antes do primeiro pedido real.
