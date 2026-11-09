@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/tmp/owner-fk-work-zPShAh/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/owner_fk_integrity.py", line 269, in <module>
+    main()
+    ~~~~^^
+  File "/tmp/owner-fk-work-zPShAh/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/owner_fk_integrity.py", line 173, in main
+    pre, install, post, capture = build_sql()
+                                  ~~~~~~~~~^^
+  File "/tmp/owner-fk-work-zPShAh/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/owner_fk_integrity.py", line 129, in build_sql
+    assert required_relations <= set(relations), required_relations - set(relations)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'organizations'}

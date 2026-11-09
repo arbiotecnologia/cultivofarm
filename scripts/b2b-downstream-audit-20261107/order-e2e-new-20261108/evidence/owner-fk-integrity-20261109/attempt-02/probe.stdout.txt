@@ -1,0 +1,1 @@
+{"file": "25-owner-fk-pre.sql.readonly", "returncode": 2, "stdout_tail": "", "stderr_tail": "psql: error: connection to server on socket \"/tmp/c2-integral-x6wzjxqu/.s.PGSQL.55511\" failed: No such file or directory\n\tIs the server running locally and accepting connections on that socket?\n"}

@@ -1,0 +1,11 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/osRequest.test.ts (10 tests) 23ms
+ ✓ scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/ResaleOsAction.test.tsx (3 tests) 186ms
+
+ Test Files  2 passed (2)
+      Tests  13 passed (13)
+   Start at  03:44:28
+   Duration  4.08s (transform 191ms, setup 477ms, collect 620ms, tests 210ms, environment 2.42s, prepare 1.76s)
+

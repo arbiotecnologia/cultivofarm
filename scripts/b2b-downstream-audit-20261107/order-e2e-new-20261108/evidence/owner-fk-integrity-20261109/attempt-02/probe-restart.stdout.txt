@@ -1,0 +1,2 @@
+CHECKPOINT initdb local
+{"file": "25-owner-fk-pre.sql.readonly", "returncode": 3, "stdout_tail": "", "stderr_tail": "ERROR:  42P01: relation \"public.product_packagings\" does not exist\nLINE 2:  'rows',(SELECT count(*) FROM public.product_packagings),\n                                      ^\nLOCATION:  parserOpenTable, parse_relation.c:1431\n"}

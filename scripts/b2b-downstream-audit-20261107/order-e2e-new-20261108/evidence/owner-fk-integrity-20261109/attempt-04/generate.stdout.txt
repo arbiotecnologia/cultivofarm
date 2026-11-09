@@ -1,0 +1,8 @@
+{
+  "out": "/tmp/owner-fk-work-PKUuuJ/package",
+  "pre25_sha256": "a5656d4fec8ce802904dba3a35e11f179f80d5fbe8b7a2ac5fb4eae0f538426a",
+  "install26_sha256": "bc2843fdb6a3feccfedeab97aa8c88abb807c5abb1c40c13ab736fe70098d976",
+  "post27_sha256": "c501d6bbbbb0323ee963aadaf3e7af4daf367bc70417492e58c179f3af8b2484",
+  "manifest_sha256": "ee065d2c3f2b5870a6c1cfb47554880adc42c14b62896420f15170c4bac2d130",
+  "local_verification": "NOT_RUN_PENDING_TEMPORARY_STAGING"
+}
