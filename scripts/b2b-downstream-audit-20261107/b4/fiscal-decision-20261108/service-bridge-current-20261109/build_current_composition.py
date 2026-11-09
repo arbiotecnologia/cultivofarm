@@ -94,7 +94,10 @@ def main():
     s = edit(s, "  checks.append(dict(test='composed reverse deny-only rollback closes bridge B4 and plans without stale B4 POST; preserves plans fiscal evidence deterministic idempotency close pending and all original ten receivable triggers',status='PASS'))",
                 "  checks.append(dict(test='strict then composed deny-only rollback closes writers; preserves confirmed NF snapshot title idempotency and all original ten receivable triggers',status='PASS'))")
     OUT.write_text(s)
-    print(f"generated {OUT} ({len(s.splitlines())} lines)")
+    runner_source = SOURCE.with_name("rebuild.py").read_text()
+    assert runner_source.count("/ 'compose.py'") == 1
+    SOURCE.with_name("rebuild_current.py").write_text(runner_source.replace("/ 'compose.py'", "/ 'compose_current.py'"))
+    print(f"generated {OUT} ({len(s.splitlines())} lines) and rebuild_current.py")
 
 
 if __name__ == "__main__":
