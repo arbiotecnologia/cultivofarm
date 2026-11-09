@@ -128,3 +128,7 @@ CHECKPOINT sql_calls=11200 elapsed=267.4s
 CHECKPOINT sql_calls=11300 elapsed=270.1s
 CHECKPOINT sql_calls=11400 elapsed=272.5s
 CHECKPOINT sql_calls=11500 elapsed=274.5s
+PASS baseline POSPLANOS descartável restaurada sem destino hospedado
+PASS pré-requisitos locais 00/11/12/20/21/22; nenhuma operação hospedada
+PASS ambiente descartável reconciliado com as duas FKs ausentes na captura real
+PASS PRE30 reprova a ausência real sem afrouxar o guard
