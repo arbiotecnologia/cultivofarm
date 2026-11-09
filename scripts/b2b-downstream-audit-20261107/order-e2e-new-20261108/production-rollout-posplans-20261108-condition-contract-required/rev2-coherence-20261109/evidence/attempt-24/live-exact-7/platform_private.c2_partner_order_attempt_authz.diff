@@ -1,0 +1,38 @@
+--- mirror-before/platform_private.c2_partner_order_attempt_authz
++++ live-20261109/platform_private.c2_partner_order_attempt_authz
+@@ -1,4 +1,33 @@
+-CREATE OR REPLACE FUNCTION platform_private.c2_partner_order_attempt_authz(p_uid uuid, p_partner uuid)
++CREATE OR REPLACE FUNCTION platform_private.c2_partner_order_attempt_authz(p_uid uuid, p_partner_id uuid)
+  RETURNS void
+  LANGUAGE plpgsql
+-AS $function$ BEGIN PERFORM platform_private.c2_order_actor_scope(p_uid, p_partner); END $function$
++ SET search_path TO ''
++AS $function$
++DECLARE
++  v_is_internal boolean; v_is_partner boolean; v_is_partner_tech boolean; v_user_partner uuid;
++BEGIN
++  -- Espelha a autorização do create canônico (mesma ordem/mensagens). Chamado antes E
++  -- depois do lock b2b_idem; cada chamada lê um snapshot novo (READ COMMITTED).
++  IF p_uid IS NULL THEN RAISE EXCEPTION 'auth_required'; END IF;
++  PERFORM platform_private.c2_order_actor_scope(p_uid, p_partner_id);
++  v_is_internal := public.has_role(p_uid,'administrador'::public.app_role)
++                OR public.has_role(p_uid,'financeiro'::public.app_role)
++                OR public.has_role(p_uid,'gestor_comercial'::public.app_role);
++  v_is_partner      := public.has_role(p_uid,'parceiro_b2b'::public.app_role);
++  v_is_partner_tech := public.has_role(p_uid,'parceiro_b2b_tecnico'::public.app_role);
++  v_user_partner    := public.get_user_partner_id();
++  IF public.has_role(p_uid,'cliente_produtor'::public.app_role) AND NOT (v_is_internal OR v_is_partner) THEN
++    RAISE EXCEPTION 'PRODUCER_DIRECT_NOT_ENABLED';
++  END IF;
++  IF v_is_partner_tech AND NOT (v_is_internal OR v_is_partner) THEN
++    RAISE EXCEPTION 'partner_tech_cannot_create_order';
++  END IF;
++  IF NOT v_is_internal THEN
++    IF NOT v_is_partner OR v_user_partner IS NULL OR v_user_partner <> p_partner_id THEN
++      RAISE EXCEPTION 'forbidden_partner';
++    END IF;
++  END IF;
++  PERFORM 1 FROM public.partner_accounts WHERE id = p_partner_id AND ativo = true;
++  IF NOT FOUND THEN RAISE EXCEPTION 'partner_not_found'; END IF;
++END;
++$function$

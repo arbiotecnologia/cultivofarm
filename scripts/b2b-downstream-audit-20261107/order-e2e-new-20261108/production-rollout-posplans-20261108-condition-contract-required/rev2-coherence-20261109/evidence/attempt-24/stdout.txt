@@ -1,0 +1,4 @@
+318/320
+FAIL CCR2 LIVE7 attempt_authz: vínculo revogado negado [depende de get_user_partner_id/c2_order_actor_scope sem captura LIVE]  | stdout:00000000-0000-0000-0000-000000000011
+FAIL CCR2 resposta do vendedor REAL: snapshot econômico coerente aceito pelo guard ERROR:  b2b_phase1_scope_denied
+CONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 29 at RAISE

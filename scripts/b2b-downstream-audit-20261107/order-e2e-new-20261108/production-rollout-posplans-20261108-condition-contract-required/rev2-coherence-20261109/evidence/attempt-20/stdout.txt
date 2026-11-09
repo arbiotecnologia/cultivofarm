@@ -1,0 +1,20 @@
+FAIL CCR2 LIVE7 b2b_actor_scope: vínculo real válido resolve o próprio parceiro {'profile_ok': True, 'org_partner': None, 'user_partner': None, 'user_partner_count': 1, 'partner_valid': False, 'has_catalog': True}
+FAIL CCR2 LIVE7 attempt_authz: comprador no próprio parceiro autorizado ERROR:  forbidden_partner
+CONTEXT:  PL/pgSQL function platform_private.c2_partner_order_attempt_authz(uuid,uuid) line 23 at RAISE
+FAIL CCR2 LIVE7 guarda LIVE bloqueia avanço operacional com gate OFF tion platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 4 at RAISE
+SQL statement "SELECT platform_private.c2_external_origin_assert(OLD.c2_external_origin_snapshot,OLD.partner_id,OLD.cliente_id)"
+PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 29 at PERFORM
+
+FAIL CCR2 CONTROLE POSITIVO: comprador P vê opção disponível em PLD exclusivo de A (fixture corrigida) (None, 'ERROR:  forbidden_partner\nCONTEXT:  PL/pgSQL function platform_private.b2b_partner_catalog_reader(uuid) line 19 at RAISE\nPL/pgSQL function platform_private.b2b_condition_seller(uuid) line 12 at RETURN\nPL/pgSQL function public.b2b_list_payment_condition_options_secure(uuid,uuid) line 8 at assignment')
+FAIL CCR2 CONTROLE POSITIVO F: comprador F vê a própria opção pix em PLDF (None, 'ERROR:  forbidden_partner\nCONTEXT:  PL/pgSQL function platform_private.b2b_partner_catalog_reader(uuid) line 19 at RAISE\nPL/pgSQL function platform_private.b2b_condition_seller(uuid) line 12 at RETURN\nPL/pgSQL function public.b2b_list_payment_condition_options_secure(uuid,uuid) line 8 at assignment')
+FAIL CCR2 positivo: writer REAL de condição (parceiro P do piloto) cria pedido com snapshot coerente ERROR:  payment_choice_required
+CONTEXT:  PL/pgSQL function platform_private.b2b_choice(jsonb) line 7 at RAISE
+PL/pgSQL function create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb) line 35 at assignment
+FAIL CCR2 positivo: novo parceiro PN (piloto ampliado) cria pedido com snapshot coerente ERROR:  payment_choice_required
+CONTEXT:  PL/pgSQL function platform_private.b2b_choice(jsonb) line 7 at RAISE
+PL/pgSQL function create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb) line 35 at assignment
+FAIL CCR2 alcance: tenant F sem ativação segue contrato atual (sem bloqueio global) ERROR:  forbidden_partner
+CONTEXT:  PL/pgSQL function platform_private.b2b_partner_catalog_reader(uuid) line 19 at RAISE
+PL/pgSQL function public.get_partner_catalog_secure(uuid) line 4 at assignment
+SQL expression "NOT EXISTS (SELECT 1 FROM public.get_partner_catalog_secure(p_partner_id) c WHERE c.item_id = v_iid AND c.item_tipo = 'produto')"
+PL/pgSQL function platform_private.b2b_packaging_line(

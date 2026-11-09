@@ -1,0 +1,34 @@
+{
+  "note": "Leitura somente leitura no ref swzpzcwiasxmjutrmvkm: md5(pg_get_functiondef(oid)) + pg_get_functiondef + proacl. Nunca repinar no harness.",
+  "blocking_open_failures": {
+    "public.get_user_partner_id()": "attempt_authz revogado; stub no espelho ignora revoked_at",
+    "platform_private.c2_order_actor_scope(uuid,uuid)": "attempt_authz revogado; stub no espelho",
+    "platform_private.b2b_phase1_partner_visible(uuid,boolean)": "resposta do vendedor negada; captura 06/11 915f516e…",
+    "platform_private.b2b_phase1_order_visible(uuid)": "captura 06/11 8504f07f…",
+    "public.b2b_phase1_partner_visible(uuid,boolean)": "captura 06/11 6b3defc0…",
+    "public.is_valid_b2b_partner_user(uuid,uuid)": "captura 06/11 0bb0dea0…",
+    "platform_private.b2b_owner_internal_partner_readable(uuid)": "captura 06/11 fa72ca18…"
+  },
+  "guard_dependencies_unconfirmed": [
+    "platform_private.b2b_resale_delivery_status_transition_valid_v1(partner_orders,partner_orders) (espelho 72d5d18157ffd837b89245bad19fc17e, etapa 41)",
+    "platform_private.b2b_resale_delivery_order_valid_v1(entregas) (espelho 79c7407838a0a5e6303c7b856c32600d, etapa 41)",
+    "platform_private.c2_external_origin_assert(jsonb,uuid,uuid)",
+    "platform_private.c2_owner_order_create_allowed(uuid,uuid)",
+    "platform_private.c2_accounting_promotion_ok(jsonb,jsonb,uuid)",
+    "platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)",
+    "platform_private.has_ticket(text,uuid)",
+    "platform_private.platform_actor_access_ready(uuid)",
+    "platform_private.entitlements_for_user(uuid)",
+    "platform_private.has_role(uuid,app_role)",
+    "public.has_role(uuid,app_role)",
+    "public.h15_actor_organization()",
+    "public.fn_cc_can_prepare(uuid)",
+    "public._saas_user_has_feature(uuid,text)",
+    "public.fn_b2b_status_is_operational(partner_order_status)",
+    "public.is_platform_superadmin(uuid)"
+  ],
+  "schema": [
+    "public.partner_users: coluna valid_from (tipo, NOT NULL, default) — espelho tinha NULL nas linhas sintéticas",
+    "platform_private.b2b_resale_logistics_gate_v1: valor atual de enabled (esperado false)"
+  ]
+}

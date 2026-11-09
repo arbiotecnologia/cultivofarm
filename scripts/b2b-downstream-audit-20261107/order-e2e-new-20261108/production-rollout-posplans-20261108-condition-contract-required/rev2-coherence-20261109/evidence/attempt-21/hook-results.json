@@ -1,0 +1,761 @@
+{
+  "live_bodies_other_md5_unconfirmed": {
+    "create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "fe82f5381d426136f2627803f3b0005d",
+    "simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": "6e81e29397a9bd633f2fe6ec364d8cf3",
+    "respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": "4926a99c3fa3086b34ff25bb4b4038bb",
+    "platform_private.b2b_resolve_condition(uuid,uuid,jsonb,boolean)": "abbffddb1a3062fd7dabbf14c5af8822",
+    "b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)": "c6fbe15906c5d893ab80e962ee162b3c",
+    "b2b_payment_condition_retire(uuid,text,integer)": "a049478a9e2b74f315d6c5baf204efa1",
+    "b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)": "f0d3ff51f5a4164da41db1a6ef262c8f",
+    "b2b_payment_condition_config_list()": "728b3b92bc4848873f6df85779585295",
+    "platform_private.commercial_plan_actor_organization()": "1256fcfcf607971ed7d8aff1210272c2",
+    "platform_private.commercial_plan_target_organization(text,uuid,uuid)": "d0d7bd6da7d12e920bd09b9d8133a79a",
+    "platform_private.commercial_plan_revalidate_actor(uuid)": "01a3360abff0d2dbc6193d238b6e2471",
+    "platform_private.commercial_plan_partner_visible(uuid,uuid)": "df00b1478d8214bc9a17d63d841b24c4",
+    "platform_private.commercial_plan_tenant_guard()": "6fe3f8993c0fd97b17b36fbff2305218",
+    "platform_private.commercial_b3_version_tenant_guard()": "d30de3e0a2bba2b99cdb8831bfc62c51",
+    "platform_private.commercial_plan_admin_allowed(uuid)": "c837aee86bd22018286bf8cf1ca38cf3",
+    "platform_private.commercial_plan_scope_allowed(uuid,text,uuid,uuid)": "e26e53b6e085f7339e7f2f7ec93922dc",
+    "platform_private.c2p1_history_allowed(text,uuid,jsonb,jsonb)": "775c1540b15842d3ce0696e4a5d27f3b",
+    "platform_private.commercial_plan_buyer_visible(uuid,uuid)": "b7397c945cbcfdaef83851ea18b17c5a",
+    "rpc_admin_list_commercial_plans(text,text,integer,integer)": "c6672029349b7a312066341defb625ab",
+    "rpc_admin_create_commercial_plan(jsonb)": "6136f97079a2b445c949b047aac62108",
+    "rpc_admin_version_commercial_plan(uuid,jsonb,text)": "8e2cf62e686d9f0aa5d181a18f33df65",
+    "rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer)": "7bbfe461fdcc5da0d9fbaff3793d730d",
+    "rpc_admin_set_commercial_plan_active(uuid,boolean,text)": "bf83cf4a8a35861b723bdcb278112697",
+    "rpc_admin_set_default_commercial_plan(uuid)": "0bf1ce6d0a62f06d962c5dcb8657f760",
+    "rpc_admin_reorder_commercial_plans(jsonb)": "0c6825b70cdc5650855784e4b39585d7",
+    "rpc_b2b_list_selectable_payment_plans()": "5bceeda188eee7525172eadeed17f7c0",
+    "platform_private.c2p1_assignment_fence()": "fe958e7d52fb36faa77881933a808434",
+    "platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid)": "8212432313c52b2a12a1398ec40c814e",
+    "platform_private.c2p1_item_fence()": "c1c88697a57168ba49c30692e7a85046",
+    "platform_private.c2p1_rule_fence()": "4337496c5ece403ad072adcaee88faf2",
+    "rpc_cc_list_assignments(text)": "72af313fcbdd40436e45a36ecf854ac9",
+    "rpc_cc_validate_matrix(uuid,text,uuid,uuid)": "b4f0ff6f4f0856c90faef8654e0c4980",
+    "rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)": "3aa53f85f13a3a1d9322673c40d262bd",
+    "convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)": "cb179ec0c999b6a566b9431a11ad0212"
+  },
+  "live_bodies": {
+    "install_rc": 0,
+    "install_err": "psql:/tmp/b2bcond-_e2ayy5g/ccr2-live-bodies.sql:5: NOTICE:  column \"superseded_by_id\" of relation \"commercial_payment_plans\" already exists, skipping\n",
+    "md5": {
+      "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": {
+        "mirror": "fe82f5381d426136f2627803f3b0005d",
+        "live": "fe82f5381d426136f2627803f3b0005d"
+      },
+      "public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)": {
+        "mirror": "e86385fefb25c68d9dd4d0fef6619f27",
+        "live": "e86385fefb25c68d9dd4d0fef6619f27"
+      }
+    },
+    "seams": [
+      "clientes.status_cliente",
+      "commercial_payment_plans.created_by/is_default/sort_order + code_key/uq_cpp_single_default (LIVE pre-cc1f6cc shape)",
+      "commercial_payment_plans.root_plan_id/superseded_by_id; assignments.id; partner_users.revoked_at",
+      "platform_private.c2p1_assignment_allowed/c2p1_item_allowed real bodies (owner-orders p1-isolation/core)",
+      "partner_users.tenant_id/valid_from (backfill = owner org of partner)",
+      "LIVE policies cppa_admin_read/cpr_internal_select (created closed; cc1f6cc ALTERs their predicate) and item_prices ids",
+      "platform_private.c2p1_snapshot_allowed real body (owner-orders p1-isolation/channels-core)",
+      "public._cpp_validate_payload/_cpp_audit real bodies (migration 20260730014752)"
+    ]
+  },
+  "live_exact7_seams": [
+    "REDUCED logistics schema seam (empty ordens_servico/entregas if absent) + delivery_context_20261030 DDL from real_triggers.py",
+    "Auth: request.jwt.claims set by harness (not hosted JWT)",
+    "FIXTURE: partner_users.valid_from NULL -> now()-1d (synthetic rows only)"
+  ],
+  "live_exact7_cap06_installed": [
+    "public.is_valid_b2b_partner_user.0bb0dea0.live-20261106.sql",
+    "platform_private.b2b_phase1_partner_visible.915f516e.live-20261106.sql",
+    "public.b2b_phase1_partner_visible.6b3defc0.live-20261106.sql",
+    "platform_private.b2b_owner_internal_partner_readable.fa72ca18.live-20261106.sql",
+    "platform_private.b2b_phase1_order_visible.8504f07f.live-20261106.sql"
+  ],
+  "live_exact7_drop_recreate": {
+    "public.fn_b2b_status_is_approved_or_later(partner_order_status)": {
+      "mirror_result": "boolean",
+      "live_result": "boolean",
+      "mirror_args": "partner_order_status",
+      "live_args": "p_status partner_order_status",
+      "mirror_acl_restored": ""
+    },
+    "platform_private.b2b_actor_scope(uuid)": {
+      "mirror_result": "TABLE(profile_ok boolean, partner_valid boolean, user_partner_count integer, user_partner uuid, org_partner uuid, has_catalog boolean)",
+      "live_result": "TABLE(profile_ok boolean, org_partner uuid, user_partner uuid, user_partner_count integer, partner_valid boolean, has_catalog boolean)",
+      "mirror_args": "p uuid",
+      "live_args": "_uid uuid",
+      "mirror_acl_restored": ""
+    },
+    "platform_private.c2_partner_order_attempt_authz(uuid,uuid)": {
+      "mirror_result": "void",
+      "live_result": "void",
+      "mirror_args": "p_uid uuid, p_partner uuid",
+      "live_args": "p_uid uuid, p_partner_id uuid",
+      "mirror_acl_restored": ""
+    }
+  },
+  "live_exact7_install": {
+    "rc": 0,
+    "err": "NOTICE:  relation \"delivery_context_20261030\" already exists, skipping\n",
+    "deps_absent_before": {
+      "platform_private.b2b_resale_delivery_order_valid_v1": "0",
+      "platform_private.b2b_resale_delivery_status_transition_valid_v1": "0"
+    },
+    "overlay_sha256": "027b1d41a9341ce181f167c8090bf453d53307530f5c89538bc6f1b8c13802ff"
+  },
+  "live_exact7_acl_after": {
+    "public.b2b_phase1_order_visible(uuid)": "",
+    "public.fn_b2b_status_is_approved_or_later(partner_order_status)": "{postgres=X/postgres}",
+    "public.get_partner_order_payment_terms_secure(uuid)": "{postgres=X/postgres,authenticated=X/postgres}",
+    "platform_private.b2b_actor_scope(uuid)": "{postgres=X/postgres}",
+    "platform_private.b2b_internal_commercial_actor()": "",
+    "platform_private.c2_partner_order_attempt_authz(uuid,uuid)": "{postgres=X/postgres}",
+    "platform_private.b2b_internal_order_snapshot_guard()": ""
+  },
+  "live_exact7_md5": {
+    "public.b2b_phase1_order_visible(uuid)": {
+      "mirror": "8812508716f279a88e3d5a31b15621d8",
+      "live": "8812508716f279a88e3d5a31b15621d8",
+      "mirror_before": "77120e278f83c3376df1b74781ae5132"
+    },
+    "public.fn_b2b_status_is_approved_or_later(partner_order_status)": {
+      "mirror": "8fed429cd642c9eaa431f8bbfa320931",
+      "live": "8fed429cd642c9eaa431f8bbfa320931",
+      "mirror_before": "ebfaf3c3a969d0928cec31de08636f57"
+    },
+    "public.get_partner_order_payment_terms_secure(uuid)": {
+      "mirror": "efb3d18c65088d7d69471fc5aa9ac859",
+      "live": "efb3d18c65088d7d69471fc5aa9ac859",
+      "mirror_before": "468bf3e6de67c826434fc480d28ce977"
+    },
+    "platform_private.b2b_actor_scope(uuid)": {
+      "mirror": "c3f2997746f24bc2efd15db5c0ccc862",
+      "live": "c3f2997746f24bc2efd15db5c0ccc862",
+      "mirror_before": "59b12ef2f73dec1a298daa49354ac5e2"
+    },
+    "platform_private.b2b_internal_commercial_actor()": {
+      "mirror": "6555396c4f8fe914177d2ccfc3891279",
+      "live": "6555396c4f8fe914177d2ccfc3891279",
+      "mirror_before": "b7e42090c96145a74268f7ab69603601"
+    },
+    "platform_private.c2_partner_order_attempt_authz(uuid,uuid)": {
+      "mirror": "e15d9fccd42c67caf51b15122a61270d",
+      "live": "e15d9fccd42c67caf51b15122a61270d",
+      "mirror_before": "98122a0d5b7599e26b0bdb650f4bb2de"
+    },
+    "platform_private.b2b_internal_order_snapshot_guard()": {
+      "mirror": "1c342be2cdaf7bf458a3cd1aa15e7ba5",
+      "live": "1c342be2cdaf7bf458a3cd1aa15e7ba5",
+      "mirror_before": "9cad2aaa995277b913f8b40816fea504"
+    }
+  },
+  "live_exact7_deps_md5_unconfirmed": {
+    "platform_private.b2b_resale_delivery_order_valid_v1(...)": "79c7407838a0a5e6303c7b856c32600d",
+    "platform_private.b2b_resale_delivery_status_transition_valid_v1(...)": "72d5d18157ffd837b89245bad19fc17e"
+  },
+  "live_exact7_behaviour": {
+    "actor_scope_positive": {
+      "profile_ok": true,
+      "org_partner": "00000000-0000-0000-0000-000000000011",
+      "user_partner": "00000000-0000-0000-0000-000000000011",
+      "user_partner_count": 1,
+      "partner_valid": true,
+      "has_catalog": true
+    },
+    "actor_scope_revogado": {
+      "profile_ok": true,
+      "org_partner": null,
+      "user_partner": null,
+      "user_partner_count": 0,
+      "partner_valid": false,
+      "has_catalog": true
+    },
+    "actor_scope_tenant divergente": {
+      "profile_ok": true,
+      "org_partner": null,
+      "user_partner": null,
+      "user_partner_count": 1,
+      "partner_valid": false,
+      "has_catalog": true
+    },
+    "actor_scope_valid_from futuro": {
+      "profile_ok": true,
+      "org_partner": null,
+      "user_partner": null,
+      "user_partner_count": 1,
+      "partner_valid": false,
+      "has_catalog": true
+    },
+    "actor_scope_parceiro inativo": {
+      "profile_ok": true,
+      "org_partner": null,
+      "user_partner": null,
+      "user_partner_count": 1,
+      "partner_valid": false,
+      "has_catalog": true
+    },
+    "attempt_authz_own": [
+      3,
+      "ERROR:  forbidden_partner\nCONTEXT:  PL/pgSQL function platform_private.c2_partner_order_attempt_authz(uuid,uuid) line 23 at RAISE"
+    ],
+    "attempt_authz_cross_tenant": [
+      3,
+      "ERROR:  forbidden_partner\nCONTEXT:  PL/pgSQL function platform_private.c2_partner_order_attempt_authz(uuid,uuid) line 23 at RAISE"
+    ],
+    "attempt_authz_revoked": [
+      3,
+      "ERROR:  forbidden_partner\nCONTEXT:  PL/pgSQL function platform_private.c2_partner_order_attempt_authz(uuid,uuid) line 23 at RAISE"
+    ],
+    "guard_operational_update": "ction platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 4 at RAISE\nSQL statement \"SELECT platform_private.c2_external_origin_assert(OLD.c2_external_origin_snapshot,OLD.partner_id,OLD.cliente_id)\"\nPL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 29 at PERFORM",
+    "guard_operational_target_found": "17"
+  },
+  "plan_tenants": [
+    {
+      "id": "00000000-0000-0000-0000-000000000072",
+      "code": "COT",
+      "org": "00000000-0000-0000-0000-000000000001",
+      "orgs": 1
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000089",
+      "code": "COT-F",
+      "org": "00000000-0000-0000-0000-000000000002",
+      "orgs": 1
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000073",
+      "code": "FIX",
+      "org": null,
+      "orgs": 0
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000071",
+      "code": "PIX",
+      "org": "00000000-0000-0000-0000-000000000001",
+      "orgs": 1
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000088",
+      "code": "PIX-F",
+      "org": "00000000-0000-0000-0000-000000000002",
+      "orgs": 1
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000087",
+      "code": "T1",
+      "org": "00000000-0000-0000-0000-000000000001",
+      "orgs": 1
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000081",
+      "code": "T3",
+      "org": "00000000-0000-0000-0000-000000000001",
+      "orgs": 1
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000084",
+      "code": "T3B",
+      "org": "00000000-0000-0000-0000-000000000001",
+      "orgs": 1
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000082",
+      "code": "TJ",
+      "org": "00000000-0000-0000-0000-000000000001",
+      "orgs": 1
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000083",
+      "code": "TN",
+      "org": "00000000-0000-0000-0000-000000000001",
+      "orgs": 1
+    }
+  ],
+  "diagnosis_shared_plan_null_org": {
+    "rc": 3,
+    "out": "",
+    "err": "ERROR:  COMMERCIAL_PLAN_TENANT_IMMUTABLE\nCONTEXT:  PL/pgSQL function platform_private.commercial_plan_tenant_guard() line 4 at RAISE"
+  },
+  "positive_control_P_PLD": {
+    "choice": {
+      "payment_method": "dinheiro",
+      "payment_condition_version": 2,
+      "payment_deadline_days": 0
+    },
+    "options": [
+      {
+        "mode": "required",
+        "options": [
+          {
+            "available": true,
+            "monthly_rate": 0,
+            "payment_method": "dinheiro",
+            "installment_count": 1,
+            "payment_method_name": "Dinheiro TESTE",
+            "payment_deadline_days": 0,
+            "payment_condition_version": 2
+          }
+        ],
+        "contract": "B2B_PAYMENT_CONDITION_V1",
+        "due_basis": "nf_issue",
+        "partner_id": "00000000-0000-0000-0000-000000000011",
+        "payment_plan_id": "00000000-0000-0000-0000-000000000071"
+      },
+      null
+    ]
+  },
+  "cross_tenant": {
+    "comprador F (UB2) lista opções do plano de A para PF": {
+      "mode": "legacy",
+      "options": [],
+      "contract": "B2B_PAYMENT_CONDITION_V1",
+      "due_basis": "nf_issue",
+      "partner_id": "00000000-0000-0000-0000-000000000013",
+      "payment_plan_id": "00000000-0000-0000-0000-000000000071"
+    },
+    "comprador A (UB) lista opções do plano de F para P": {
+      "mode": "required",
+      "options": [],
+      "contract": "B2B_PAYMENT_CONDITION_V1",
+      "due_basis": "nf_issue",
+      "partner_id": "00000000-0000-0000-0000-000000000011",
+      "payment_plan_id": "00000000-0000-0000-0000-000000000088"
+    },
+    "comprador F simula com plano de A": "ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date) line 48 at RAISE",
+    "comprador A simula com plano de F": "ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date) line 48 at RAISE",
+    "comprador F cria (legado) com plano de A": "ERROR:  plan_not_found\nCONTEXT:  PL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 118 at RAISE",
+    "comprador A cria (condição) com plano de F": "ERROR:  payment_condition_unavailable\nCONTEXT:  PL/pgSQL function platform_private.b2b_resolve_condition(uuid,uuid,jsonb,boolean) line 21 at RAISE\nPL/pgSQL function create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb) line 128 at assignment",
+    "admin A publica condição no plano de F": "ERROR:  forbidden\nCONTEXT:  PL/pgSQL function public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer) line 9 at RAISE",
+    "admin F publica condição no plano de A": "ERROR:  forbidden\nCONTEXT:  PL/pgSQL function public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer) line 9 at RAISE",
+    "admin A atribui plano de F ao parceiro P": "ERROR:  forbidden\nCONTEXT:  PL/pgSQL function public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean) line 8 at RAISE",
+    "admin F atribui plano de A ao parceiro PF": "ERROR:  forbidden\nCONTEXT:  PL/pgSQL function public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean) line 8 at RAISE",
+    "admin F aposenta condição do plano de A": "ERROR:  forbidden\nCONTEXT:  PL/pgSQL function public.b2b_payment_condition_retire(uuid,text,integer) line 7 at RAISE"
+  },
+  "positive_control_PF_PLDF": [
+    {
+      "mode": "legacy",
+      "options": [
+        {
+          "available": true,
+          "monthly_rate": 0,
+          "payment_method": "pix",
+          "installment_count": 1,
+          "payment_method_name": "Pix TESTE",
+          "payment_deadline_days": 2,
+          "payment_condition_version": 1
+        }
+      ],
+      "contract": "B2B_PAYMENT_CONDITION_V1",
+      "due_basis": "nf_issue",
+      "partner_id": "00000000-0000-0000-0000-000000000013",
+      "payment_plan_id": "00000000-0000-0000-0000-000000000088"
+    },
+    null
+  ],
+  "pins": {
+    "__MD5_CHECK__": "d5096452e22262d617384df0fdeffd17",
+    "__MD5_OTRG__": "7f793a95047846b63cb514e5a8b1af11",
+    "__MD5_STRG__": "eb9e9179be9addb20ce09681956c6eda"
+  },
+  "legacy_pn_denial": [
+    "ERROR:  forbidden_partner"
+  ],
+  "mutation_revocation": {
+    "create_rc": 0,
+    "second_rc": 3,
+    "persisted": false,
+    "idem": "1",
+    "coherent": "1",
+    "create_err": "",
+    "second_err": "ERROR:  payment_condition_config_stale\nCONTEXT:  PL/pgSQL function public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean) line 16 at RAISE\n"
+  },
+  "race_revocation": {
+    "create_rc": 0,
+    "second_rc": 0,
+    "persisted": true,
+    "idem": "1",
+    "coherent": "1",
+    "create_err": "",
+    "second_err": ""
+  },
+  "after_revocation_replay": {
+    "rc": 3,
+    "error": "ERROR:  payment_condition_unavailable",
+    "expected": "payment_condition_unavailable",
+    "before": "{\"orders\" : 25, \"snap\" : 16, \"idem\" : 24}",
+    "after": "{\"orders\" : 25, \"snap\" : 16, \"idem\" : 24}",
+    "pre_hash": "6c895d56df6d4ed5bf107964e19900e303d1c12689132db2136ab615a0be60c2"
+  },
+  "mutation_retirement": {
+    "create_rc": 0,
+    "second_rc": 3,
+    "persisted": false,
+    "idem": "1",
+    "coherent": "1",
+    "create_err": "",
+    "second_err": "ERROR:  payment_condition_config_stale\nCONTEXT:  PL/pgSQL function public.b2b_payment_condition_retire(uuid,text,integer) line 11 at RAISE\n"
+  },
+  "race_retirement": {
+    "create_rc": 0,
+    "second_rc": 0,
+    "persisted": true,
+    "idem": "1",
+    "coherent": "1",
+    "create_err": "",
+    "second_err": ""
+  },
+  "after_retirement_replay": {
+    "rc": 3,
+    "error": "ERROR:  payment_condition_unavailable",
+    "expected": "payment_condition_unavailable",
+    "before": "{\"orders\" : 27, \"snap\" : 18, \"idem\" : 26}",
+    "after": "{\"orders\" : 27, \"snap\" : 18, \"idem\" : 26}",
+    "pre_hash": "624427d59b29d3f7cf9a6a83a6b63282bfdce8c78dac11942c5b05edd51ace16"
+  },
+  "immutability": {
+    "b2b_order_condition_snapshots": {
+      "rows": "18",
+      "error": [
+        "ERROR:  B2B_CONDITION_RECORD_IMMUTABLE"
+      ]
+    },
+    "b2b_order_condition_quote_snapshots": {
+      "rows": "3",
+      "error": [
+        "ERROR:  B2B_CONDITION_RECORD_IMMUTABLE"
+      ]
+    },
+    "b2b_condition_assignment_revocations": {
+      "rows": "2",
+      "error": [
+        "ERROR:  B2B_CONDITION_RECORD_IMMUTABLE"
+      ]
+    },
+    "b2b_condition_retirements": {
+      "rows": "5",
+      "error": [
+        "ERROR:  B2B_CONDITION_RECORD_IMMUTABLE"
+      ]
+    }
+  },
+  "writer_pins": {
+    "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": {
+      "harness": "fe82f5381d426136f2627803f3b0005d",
+      "live_reported": "fe82f5381d426136f2627803f3b0005d",
+      "equal": true
+    },
+    "public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)": {
+      "harness": "e86385fefb25c68d9dd4d0fef6619f27",
+      "live_reported": "e86385fefb25c68d9dd4d0fef6619f27",
+      "equal": true
+    }
+  },
+  "posplans_vs_post_pins": {
+    "public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)": {
+      "mirror": "f0d3ff51f5a4164da41db1a6ef262c8f",
+      "live_post_pin": "f0d3ff51f5a4164da41db1a6ef262c8f",
+      "equal": true
+    },
+    "public.b2b_payment_condition_config_list()": {
+      "mirror": "728b3b92bc4848873f6df85779585295",
+      "live_post_pin": "728b3b92bc4848873f6df85779585295",
+      "equal": true
+    },
+    "public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)": {
+      "mirror": "c6fbe15906c5d893ab80e962ee162b3c",
+      "live_post_pin": "c6fbe15906c5d893ab80e962ee162b3c",
+      "equal": true
+    },
+    "public.b2b_payment_condition_retire(uuid,text,integer)": {
+      "mirror": "a049478a9e2b74f315d6c5baf204efa1",
+      "live_post_pin": "a049478a9e2b74f315d6c5baf204efa1",
+      "equal": true
+    },
+    "public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)": {
+      "mirror": "cb179ec0c999b6a566b9431a11ad0212",
+      "live_post_pin": "cb179ec0c999b6a566b9431a11ad0212",
+      "equal": true
+    },
+    "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": {
+      "mirror": "fe82f5381d426136f2627803f3b0005d",
+      "live_post_pin": "fe82f5381d426136f2627803f3b0005d",
+      "equal": true
+    },
+    "platform_private.b2b_resolve_condition(uuid,uuid,jsonb,boolean)": {
+      "mirror": "abbffddb1a3062fd7dabbf14c5af8822",
+      "live_post_pin": "abbffddb1a3062fd7dabbf14c5af8822",
+      "equal": true
+    },
+    "platform_private.c2p1_assignment_fence()": {
+      "mirror": "fe958e7d52fb36faa77881933a808434",
+      "live_post_pin": "fe958e7d52fb36faa77881933a808434",
+      "equal": true
+    },
+    "platform_private.c2p1_history_allowed(text,uuid,jsonb,jsonb)": {
+      "mirror": "775c1540b15842d3ce0696e4a5d27f3b",
+      "live_post_pin": "775c1540b15842d3ce0696e4a5d27f3b",
+      "equal": true
+    },
+    "platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid)": {
+      "mirror": "8212432313c52b2a12a1398ec40c814e",
+      "live_post_pin": "8212432313c52b2a12a1398ec40c814e",
+      "equal": true
+    },
+    "platform_private.c2p1_item_fence()": {
+      "mirror": "c1c88697a57168ba49c30692e7a85046",
+      "live_post_pin": "c1c88697a57168ba49c30692e7a85046",
+      "equal": true
+    },
+    "platform_private.c2p1_rule_fence()": {
+      "mirror": "4337496c5ece403ad072adcaee88faf2",
+      "live_post_pin": "4337496c5ece403ad072adcaee88faf2",
+      "equal": true
+    },
+    "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": {
+      "mirror": "4926a99c3fa3086b34ff25bb4b4038bb",
+      "live_post_pin": "4926a99c3fa3086b34ff25bb4b4038bb",
+      "equal": true
+    },
+    "public.rpc_admin_create_commercial_plan(jsonb)": {
+      "mirror": "6136f97079a2b445c949b047aac62108",
+      "live_post_pin": "6136f97079a2b445c949b047aac62108",
+      "equal": true
+    },
+    "public.rpc_admin_list_commercial_plans(text,text,integer,integer)": {
+      "mirror": "c6672029349b7a312066341defb625ab",
+      "live_post_pin": "c6672029349b7a312066341defb625ab",
+      "equal": true
+    },
+    "public.rpc_admin_reorder_commercial_plans(jsonb)": {
+      "mirror": "0c6825b70cdc5650855784e4b39585d7",
+      "live_post_pin": "0c6825b70cdc5650855784e4b39585d7",
+      "equal": true
+    },
+    "public.rpc_admin_set_commercial_plan_active(uuid,boolean,text)": {
+      "mirror": "bf83cf4a8a35861b723bdcb278112697",
+      "live_post_pin": "bf83cf4a8a35861b723bdcb278112697",
+      "equal": true
+    },
+    "public.rpc_admin_set_default_commercial_plan(uuid)": {
+      "mirror": "0bf1ce6d0a62f06d962c5dcb8657f760",
+      "live_post_pin": "0bf1ce6d0a62f06d962c5dcb8657f760",
+      "equal": true
+    },
+    "public.rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer)": {
+      "mirror": "7bbfe461fdcc5da0d9fbaff3793d730d",
+      "live_post_pin": "7bbfe461fdcc5da0d9fbaff3793d730d",
+      "equal": true
+    },
+    "public.rpc_admin_version_commercial_plan(uuid,jsonb,text)": {
+      "mirror": "8e2cf62e686d9f0aa5d181a18f33df65",
+      "live_post_pin": "8e2cf62e686d9f0aa5d181a18f33df65",
+      "equal": true
+    },
+    "public.rpc_b2b_list_selectable_payment_plans()": {
+      "mirror": "5bceeda188eee7525172eadeed17f7c0",
+      "live_post_pin": "5bceeda188eee7525172eadeed17f7c0",
+      "equal": true
+    },
+    "public.rpc_cc_list_assignments(text)": {
+      "mirror": "72af313fcbdd40436e45a36ecf854ac9",
+      "live_post_pin": "72af313fcbdd40436e45a36ecf854ac9",
+      "equal": true
+    },
+    "public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)": {
+      "mirror": "3aa53f85f13a3a1d9322673c40d262bd",
+      "live_post_pin": "3aa53f85f13a3a1d9322673c40d262bd",
+      "equal": true
+    },
+    "public.rpc_cc_validate_matrix(uuid,text,uuid,uuid)": {
+      "mirror": "b4f0ff6f4f0856c90faef8654e0c4980",
+      "live_post_pin": "b4f0ff6f4f0856c90faef8654e0c4980",
+      "equal": true
+    },
+    "public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": {
+      "mirror": "6e81e29397a9bd633f2fe6ec364d8cf3",
+      "live_post_pin": "6e81e29397a9bd633f2fe6ec364d8cf3",
+      "equal": true
+    }
+  },
+  "used_without_live_pin": [
+    "_cpp_audit(text,uuid,jsonb,jsonb,text)",
+    "_cpp_validate_payload(jsonb)",
+    "audit_partner_order_payment_terms()",
+    "b2b_list_payment_condition_options_secure(uuid,uuid)",
+    "b2b_payment_condition_activation_set(text,uuid[],integer)",
+    "b2b_phase1_order_visible(uuid)",
+    "b2b_phase1_partner_visible(uuid,boolean)",
+    "fn_b2b_apply_interest(numeric,text,numeric,numeric)",
+    "fn_b2b_cart_hash(uuid,uuid,jsonb,numeric)",
+    "fn_b2b_credit_exposure(uuid,numeric,uuid)",
+    "fn_b2b_guard_credit_approval_fields()",
+    "fn_b2b_guard_order_items_immutable()",
+    "fn_b2b_plan_selectable(uuid,timestamp with time zone)",
+    "fn_b2b_status_is_approved_or_later(partner_order_status)",
+    "fn_b2b_status_is_operational(partner_order_status)",
+    "fn_resolve_b2b_cart(uuid,uuid,jsonb,date)",
+    "get_partner_order_payment_condition_secure(uuid)",
+    "get_partner_order_payment_terms_secure(uuid)",
+    "is_valid_b2b_partner_user(uuid,uuid)",
+    "partner_order_has_production(uuid)",
+    "partner_orders_audit_trigger()",
+    "platform_private.b2b_actor_scope(uuid)",
+    "platform_private.b2b_choice(jsonb)",
+    "platform_private.b2b_condition_cfg_actor(boolean)",
+    "platform_private.b2b_condition_hash(text,jsonb,jsonb,numeric)",
+    "platform_private.b2b_condition_immutable()",
+    "platform_private.b2b_condition_mode(uuid)",
+    "platform_private.b2b_condition_order_coherence_check(uuid,text)",
+    "platform_private.b2b_condition_order_coherence_trg()",
+    "platform_private.b2b_condition_required_check()",
+    "platform_private.b2b_condition_seller(uuid)",
+    "platform_private.b2b_condition_snapshot_coherence_trg()",
+    "platform_private.b2b_credit_checked(uuid,numeric,uuid)",
+    "platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)",
+    "platform_private.b2b_internal_child_snapshot_guard()",
+    "platform_private.b2b_internal_commercial_actor()",
+    "platform_private.b2b_internal_order_snapshot_guard()",
+    "platform_private.b2b_internal_origin_valid(jsonb)",
+    "platform_private.b2b_owner_internal_partner_readable(uuid)",
+    "platform_private.b2b_packaging_item_snapshot_guard()",
+    "platform_private.b2b_packaging_line(uuid,uuid,jsonb,date)",
+    "platform_private.b2b_packaging_lock(jsonb)",
+    "platform_private.b2b_partner_catalog_reader(uuid)",
+    "platform_private.b2b_phase1_order_visible(uuid)",
+    "platform_private.b2b_phase1_partner_visible(uuid,boolean)",
+    "platform_private.b2b_resale_delivery_order_valid_v1(entregas)",
+    "platform_private.b2b_resale_delivery_status_transition_valid_v1(partner_orders,partner_orders)",
+    "platform_private.b2b_schedule(numeric,numeric,integer,date,integer)",
+    "platform_private.c2_external_final_state_guard()",
+    "platform_private.c2_external_origin_assert(jsonb,uuid,uuid)",
+    "platform_private.c2_external_origin_contract_valid(jsonb)",
+    "platform_private.c2_partner_order_attempt_authz(uuid,uuid)",
+    "platform_private.c2p1_assignment_allowed(text,uuid,uuid)",
+    "platform_private.c2p1_internal_actor(app_role[])",
+    "platform_private.c2p1_settings_allowed(uuid,boolean)",
+    "platform_private.c2p1_snapshot_allowed(text,uuid,jsonb)",
+    "platform_private.commercial_plan_actor_organization()",
+    "platform_private.commercial_plan_admin_allowed(uuid)",
+    "platform_private.commercial_plan_buyer_visible(uuid,uuid)",
+    "platform_private.commercial_plan_partner_visible(uuid,uuid)",
+    "platform_private.commercial_plan_revalidate_actor(uuid)",
+    "platform_private.commercial_plan_scope_allowed(uuid,text,uuid,uuid)",
+    "platform_private.commercial_plan_target_organization(text,uuid,uuid)",
+    "platform_private.commercial_plan_tenant_guard()",
+    "platform_private.partner_order_items_catalog_tenant_guard()",
+    "simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb)",
+    "tg_audit_partner_order_commercial()",
+    "tg_auto_b2b_receivable()",
+    "tg_b2b_enforce_plan_selectable()",
+    "tg_block_partner_order_delete()",
+    "tg_block_partner_order_edit_after_op()",
+    "tg_block_partner_order_items_after_op()",
+    "tg_partner_order_items_resolve_pending()",
+    "tg_partner_orders_credit_guard()",
+    "tg_partner_orders_require_items()",
+    "trg_partner_order_timeline()",
+    "trg_partner_order_to_planning_fn()"
+  ],
+  "used_md5_mirror": {
+    "_cpp_audit(text,uuid,jsonb,jsonb,text)": "a3cf9f39b41dd3f948c1018898800aac",
+    "_cpp_validate_payload(jsonb)": "9cf317953d08689951689bd89606e0b7",
+    "audit_partner_order_payment_terms()": "96b68bec5b11f2a414f333c68a00d765",
+    "b2b_list_payment_condition_options_secure(uuid,uuid)": "8a7f29c199e77e653966ebdb8a4b3ed3",
+    "b2b_payment_condition_activation_set(text,uuid[],integer)": "9efe4e6eb5afe29d8e3d9f3ef7077863",
+    "b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)": "f0d3ff51f5a4164da41db1a6ef262c8f",
+    "b2b_payment_condition_config_list()": "728b3b92bc4848873f6df85779585295",
+    "b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)": "c6fbe15906c5d893ab80e962ee162b3c",
+    "b2b_payment_condition_retire(uuid,text,integer)": "a049478a9e2b74f315d6c5baf204efa1",
+    "b2b_phase1_order_visible(uuid)": "8812508716f279a88e3d5a31b15621d8",
+    "b2b_phase1_partner_visible(uuid,boolean)": "6b3defc01a66040146562c60ad224f03",
+    "create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)": "e86385fefb25c68d9dd4d0fef6619f27",
+    "create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "fe82f5381d426136f2627803f3b0005d",
+    "fn_b2b_apply_interest(numeric,text,numeric,numeric)": "806e5d8789b08cd6790a10feaf95f26d",
+    "fn_b2b_cart_hash(uuid,uuid,jsonb,numeric)": "e268d3d3a9857c3ec8cbc2bf1f6c2fd6",
+    "fn_b2b_credit_exposure(uuid,numeric,uuid)": "213ac31f3a30816ead75365b0d1fed18",
+    "fn_b2b_guard_credit_approval_fields()": "8902498ed09c4c5804b1749ee0c31cd7",
+    "fn_b2b_guard_order_items_immutable()": "bc1c4dca3a9f5a247a3c098dcbe1c06f",
+    "fn_b2b_plan_selectable(uuid,timestamp with time zone)": "4cb833a3eae76cbebce920f34cd5d5ce",
+    "fn_b2b_status_is_approved_or_later(partner_order_status)": "8fed429cd642c9eaa431f8bbfa320931",
+    "fn_b2b_status_is_operational(partner_order_status)": "1b397fd4f651c103e6eddcc3e140a86e",
+    "fn_resolve_b2b_cart(uuid,uuid,jsonb,date)": "507077a4a5d43f04022c8c7235aef6f3",
+    "get_partner_order_payment_condition_secure(uuid)": "7ffe3bbbefd040bab1b3ce1bce8069a7",
+    "get_partner_order_payment_terms_secure(uuid)": "efb3d18c65088d7d69471fc5aa9ac859",
+    "is_valid_b2b_partner_user(uuid,uuid)": "0bb0dea04be8ca84c66db7ca6329876c",
+    "partner_order_has_production(uuid)": "0cfac18049e90c5427ada9d11ab2c2c4",
+    "partner_orders_audit_trigger()": "df139ef01591892436854b7f8c82f2db",
+    "platform_private.b2b_actor_scope(uuid)": "c3f2997746f24bc2efd15db5c0ccc862",
+    "platform_private.b2b_choice(jsonb)": "a722bbdfc438010e78980783f8e31b62",
+    "platform_private.b2b_condition_cfg_actor(boolean)": "2fcd43420f2cd0cc1b20736882f0ad09",
+    "platform_private.b2b_condition_hash(text,jsonb,jsonb,numeric)": "cf9beadc15956410772d602d3ddaa031",
+    "platform_private.b2b_condition_immutable()": "f9fb08f6004af2e256eaf4222c5cc2c6",
+    "platform_private.b2b_condition_mode(uuid)": "7830c32a4ae139d9ab7e377dd39c8df6",
+    "platform_private.b2b_condition_order_coherence_check(uuid,text)": "d5096452e22262d617384df0fdeffd17",
+    "platform_private.b2b_condition_order_coherence_trg()": "7f793a95047846b63cb514e5a8b1af11",
+    "platform_private.b2b_condition_required_check()": "236b821b0ca568c81a9667512dae5def",
+    "platform_private.b2b_condition_seller(uuid)": "bc4af2afb04c1a32962ae3400b0108d7",
+    "platform_private.b2b_condition_snapshot_coherence_trg()": "eb9e9179be9addb20ce09681956c6eda",
+    "platform_private.b2b_credit_checked(uuid,numeric,uuid)": "41e3b97aee5556fbdacbcec8f0dcf7f9",
+    "platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)": "6bbb61aa5899b18d13ac55d4f76f45e1",
+    "platform_private.b2b_internal_child_snapshot_guard()": "f9fcfca4588854d927f7f9a1bdbe4de7",
+    "platform_private.b2b_internal_commercial_actor()": "6555396c4f8fe914177d2ccfc3891279",
+    "platform_private.b2b_internal_order_snapshot_guard()": "1c342be2cdaf7bf458a3cd1aa15e7ba5",
+    "platform_private.b2b_internal_origin_valid(jsonb)": "70a7c317765a4888b38e8bf277ded7d3",
+    "platform_private.b2b_owner_internal_partner_readable(uuid)": "fa72ca18fc673cb4a5ff4867e65137cd",
+    "platform_private.b2b_packaging_item_snapshot_guard()": "8428ab634e0380194a9503905e1b169e",
+    "platform_private.b2b_packaging_line(uuid,uuid,jsonb,date)": "c8fbde6ba0fba4ea5109b001077849f6",
+    "platform_private.b2b_packaging_lock(jsonb)": "2bae09cbb42267f4979cc243daa1922a",
+    "platform_private.b2b_partner_catalog_reader(uuid)": "bd985484b69c8fa6e63a920eff518369",
+    "platform_private.b2b_phase1_order_visible(uuid)": "8504f07fbc3a7975accf919f386d00eb",
+    "platform_private.b2b_phase1_partner_visible(uuid,boolean)": "915f516e605af7cc14584e2e762a2661",
+    "platform_private.b2b_resale_delivery_order_valid_v1(entregas)": "79c7407838a0a5e6303c7b856c32600d",
+    "platform_private.b2b_resale_delivery_status_transition_valid_v1(partner_orders,partner_orders)": "72d5d18157ffd837b89245bad19fc17e",
+    "platform_private.b2b_resolve_condition(uuid,uuid,jsonb,boolean)": "abbffddb1a3062fd7dabbf14c5af8822",
+    "platform_private.b2b_schedule(numeric,numeric,integer,date,integer)": "e8ef68b673bdffa71ad4d31ed535d9de",
+    "platform_private.c2_external_final_state_guard()": "3f1a5a6b11161bd8204293a8c64371e2",
+    "platform_private.c2_external_origin_assert(jsonb,uuid,uuid)": "999e5e9fd9887595e252523fb2142726",
+    "platform_private.c2_external_origin_contract_valid(jsonb)": "369fd07cd9c659b87941b9a3bf972868",
+    "platform_private.c2_partner_order_attempt_authz(uuid,uuid)": "e15d9fccd42c67caf51b15122a61270d",
+    "platform_private.c2p1_assignment_allowed(text,uuid,uuid)": "ecada72965cd1042fc1502b37864ab42",
+    "platform_private.c2p1_assignment_fence()": "fe958e7d52fb36faa77881933a808434",
+    "platform_private.c2p1_history_allowed(text,uuid,jsonb,jsonb)": "775c1540b15842d3ce0696e4a5d27f3b",
+    "platform_private.c2p1_internal_actor(app_role[])": "97bab97591a9f662bad7b1ccf837bfcd",
+    "platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid)": "8212432313c52b2a12a1398ec40c814e",
+    "platform_private.c2p1_item_fence()": "c1c88697a57168ba49c30692e7a85046",
+    "platform_private.c2p1_rule_fence()": "4337496c5ece403ad072adcaee88faf2",
+    "platform_private.c2p1_settings_allowed(uuid,boolean)": "57baa5fd657952d9383ad0c422c1d028",
+    "platform_private.c2p1_snapshot_allowed(text,uuid,jsonb)": "8e6719d77fa0e6391f353e3ad5408f54",
+    "platform_private.commercial_plan_actor_organization()": "1256fcfcf607971ed7d8aff1210272c2",
+    "platform_private.commercial_plan_admin_allowed(uuid)": "c837aee86bd22018286bf8cf1ca38cf3",
+    "platform_private.commercial_plan_buyer_visible(uuid,uuid)": "b7397c945cbcfdaef83851ea18b17c5a",
+    "platform_private.commercial_plan_partner_visible(uuid,uuid)": "df00b1478d8214bc9a17d63d841b24c4",
+    "platform_private.commercial_plan_revalidate_actor(uuid)": "01a3360abff0d2dbc6193d238b6e2471",
+    "platform_private.commercial_plan_scope_allowed(uuid,text,uuid,uuid)": "e26e53b6e085f7339e7f2f7ec93922dc",
+    "platform_private.commercial_plan_target_organization(text,uuid,uuid)": "d0d7bd6da7d12e920bd09b9d8133a79a",
+    "platform_private.commercial_plan_tenant_guard()": "6fe3f8993c0fd97b17b36fbff2305218",
+    "platform_private.partner_order_items_catalog_tenant_guard()": "211a5c4db841fd3e5ce3859c6477c7ae",
+    "respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": "4926a99c3fa3086b34ff25bb4b4038bb",
+    "rpc_admin_create_commercial_plan(jsonb)": "6136f97079a2b445c949b047aac62108",
+    "rpc_admin_list_commercial_plans(text,text,integer,integer)": "c6672029349b7a312066341defb625ab",
+    "rpc_admin_reorder_commercial_plans(jsonb)": "0c6825b70cdc5650855784e4b39585d7",
+    "rpc_admin_set_commercial_plan_active(uuid,boolean,text)": "bf83cf4a8a35861b723bdcb278112697",
+    "rpc_admin_set_default_commercial_plan(uuid)": "0bf1ce6d0a62f06d962c5dcb8657f760",
+    "rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer)": "7bbfe461fdcc5da0d9fbaff3793d730d",
+    "rpc_admin_version_commercial_plan(uuid,jsonb,text)": "8e2cf62e686d9f0aa5d181a18f33df65",
+    "rpc_b2b_list_selectable_payment_plans()": "5bceeda188eee7525172eadeed17f7c0",
+    "simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb)": "06ea0933992a05a0d2a7fb78c6881bcf",
+    "simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": "6e81e29397a9bd633f2fe6ec364d8cf3",
+    "tg_audit_partner_order_commercial()": "b537eb6807fbfc48b43b59d49ef7297a",
+    "tg_auto_b2b_receivable()": "0f679538fe394924b140e54938a3bb9e",
+    "tg_b2b_enforce_plan_selectable()": "3477a02b069c20ae3e1c832ecca6b1e7",
+    "tg_block_partner_order_delete()": "55b4f2fa662f1d14dbbb663cb475d6a6",
+    "tg_block_partner_order_edit_after_op()": "2884dea0a9efa9ab7badac6bd8b5e46c",
+    "tg_block_partner_order_items_after_op()": "6e7c1a8ac409cf64442396d48f73abb5",
+    "tg_partner_order_items_resolve_pending()": "2e80e713bc0fe3785e1008405a0d02a3",
+    "tg_partner_orders_credit_guard()": "b24a3c30910832e8b14456d912a67589",
+    "tg_partner_orders_require_items()": "2b756289555b287255876e635a516c9a",
+    "trg_partner_order_timeline()": "833de323eb590a831924d5a5fcb490bd",
+    "trg_partner_order_to_planning_fn()": "e5915037d03892fffc5d388595cba685"
+  },
+  "b3_rollback_04": "NOT_RUN: pinned to pre-cc1f6cc publish body; needs its own reviewed package (never repinned here)"
+}

@@ -1,0 +1,120 @@
+--- /dev-server/scripts/b2b-payment-condition-v1-rebase-20261106/test-local-pg.py	2026-11-09 15:40:52.098062109 +0000
++++ /tmp/ccr2-mirror-l02elkga/scripts/b2b-payment-condition-v1-rebase-20261106/test-local-pg.py	2026-11-09 17:01:15.119972876 +0000
+@@ -32,6 +32,7 @@
+ PN, UN = u(100), u(101)  # novo parceiro/comprador sem histórico para expansão aditiva do piloto
+ PLD, PLQ = SP.PLD, SP.PLQ
+ P3, PINT, PNA, P3B = u(81), u(82), u(83), u(84)
++PLDF, PLQF = u(88), u(89)  # [mirror tenant-exclusive] planos exclusivos de F (regra LIVE cc1f6cc)
+ P1 = u(87)  # plano sintético exclusivo do oráculo de parcela única com taxa explícita
+ M_PIX, M_BOL, M_CASH, M_OFF, M_PROM, M_DEB = u(91), u(92), u(93), u(94), u(95), u(96)
+ CAT, CAT_D, CAT_OFF = u(97), u(98), u(99)
+@@ -228,9 +229,10 @@
+   ('{P1}',true,'discount_from_base',0,0,1,'simple',1,90,NULL,false,false,false,'TESTE parcela única','T1'),
+   ('{PINT}',true,'discount_from_base',0,2,3,'compound',3,90,NULL,false,false,false,'TESTE juros 3x','TJ'),
+   ('{PNA}',true,'discount_from_base',0,0,1,'simple',1,30,NULL,false,false,false,'TESTE não publicado','TN');
++INSERT INTO public.commercial_payment_plans SELECT (jsonb_populate_record(NULL::public.commercial_payment_plans, to_jsonb(p) || jsonb_build_object('id',CASE p.id WHEN '{PLD}' THEN '{PLDF}' ELSE '{PLQF}' END,'code',p.code||'-F','name',p.name||' F'))).* FROM public.commercial_payment_plans p WHERE p.id IN ('{PLD}','{PLQ}');
+ INSERT INTO public.commercial_payment_plan_assignments VALUES
+-  ('published','{PLD}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{PLD}','partner','{PF}',NULL,CURRENT_DATE-1,NULL),
+-  ('published','{PLQ}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{PLQ}','partner','{PF}',NULL,CURRENT_DATE-1,NULL),
++  ('published','{PLD}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{PLDF}','partner','{PF}',NULL,CURRENT_DATE-1,NULL),
++  ('published','{PLQ}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{PLQF}','partner','{PF}',NULL,CURRENT_DATE-1,NULL),
+   ('published','{P3}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{P3}','partner','{PC}',NULL,CURRENT_DATE-1,NULL),
+   ('published','{P3}','partner','{PN}',NULL,CURRENT_DATE-1,NULL),
+   ('published','{P3B}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{P1}','partner','{P}',NULL,CURRENT_DATE-1,NULL),
+@@ -342,10 +344,10 @@
+ 
+         # ---------- sem ativação: contrato atual para todos ----------
+         r = legacy(UB, PLD, [L(1)], "TESTE-LEG-0"); check("sem ativação: comprador segue contrato atual (nenhum bloqueio global)", r.returncode == 0, r.stderr[-200:])
+-        r = legacy(UB2, PLD, [SF(1)], "TESTE-LEG-F0", partner=PF); check("sem ativação: outro tenant (papel FSF) segue contrato atual", r.returncode == 0, r.stderr[-200:])
++        r = legacy(UB2, PLDF, [SF(1)], "TESTE-LEG-F0", partner=PF); check("sem ativação: outro tenant (papel FSF) segue contrato atual", r.returncode == 0, r.stderr[-200:])
+         # Controle exato do ramo legado: limite zero continua NO_LIMIT, sem a regra nova de v_has_condition.
+         psql(f"UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{PF}'")
+-        rfq0 = legacy(UB2, PLQ, [SF(1)], "TESTE-LEG-FQ-ZERO", partner=PF); jfq0, efq0 = out(rfq0)
++        rfq0 = legacy(UB2, PLQF, [SF(1)], "TESTE-LEG-FQ-ZERO", partner=PF); jfq0, efq0 = out(rfq0)
+         check("legado FSF não ativado: cotação criada com limite zero como antes", jfq0 and jfq0["status"] == "aguardando_cotacao", efq0 or jfq0)
+         if jfq0:
+             qfi0 = psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{jfq0['id']}'").stdout.strip()
+@@ -379,13 +381,13 @@
+         denied("publicação com CAS antigo = stale", publish(UADM, PLD, "pix", M_PIX, 5, 1, 0, 0), "payment_condition_config_stale")
+         for nm, uid in (("comprador", UB), ("técnico", UT), ("gestor comercial (só leitura)", UGC), ("superadmin", SP.USUP)):
+             denied(f"{nm} não configura", publish(uid, PNA, "pix", M_PIX, 5, 1, 0, 0), "forbidden")
+-        j, e = publish(UADMF, PLD, "pix", M_PIX, 2, 1, 0, 0); check("admin F publica a própria versão (isolada)", j and j["condition"]["organization_id"] == F, e)
++        j, e = publish(UADMF, PLDF, "pix", M_PIX, 2, 1, 0, 0); check("admin F publica a própria versão (isolada)", j and j["condition"]["organization_id"] == F, e)
+         for plan, m in ((PLD, "pix"), (PLD, "dinheiro"), (PLQ, "pix"), (PLQ, "boleto"), (P3, "boleto"), (P3, "pix"), (P3B, "promissoria"),
+                         (P1, "boleto"), (P1, "promissoria"), (P1, "cartao_credito")):
+             assign(UADM, P, plan, m, 1)
+         assign(UADM, PC, P3, "boleto", 1)
+-        j, e = assign(UADMF, PF, PLD, "pix", 1); check("admin F atribui ao próprio parceiro", j and j["enabled"], e)
+-        denied("admin A não atribui parceiro de F", assign(UADM, PF, PLD, "pix", 1), "forbidden_partner")
++        j, e = assign(UADMF, PF, PLDF, "pix", 1); check("admin F atribui ao próprio parceiro", j and j["enabled"], e)
++        denied("admin A não atribui parceiro de F", assign(UADM, PF, PLDF, "pix", 1), "forbidden_partner")
+         denied("admin F não atribui parceiro de A", assign(UADMF, P, PLD, "pix", 1), "forbidden_partner")
+         j, e = call(UGC, "public.b2b_payment_condition_config_list()")
+         check("gestor comercial lê condições de A (sem editar), default 30 dias exposto", j and j["can_edit"] is False and j["default_deadline_days"] == 30
+@@ -399,9 +401,9 @@
+         j, e = call(UB, f"public.b2b_list_payment_condition_options_secure('{P}','{PLD}')")
+         check("opções do comprador P: só versões atribuídas de A; mode legacy antes da ativação",
+               j and sorted(o["payment_method"] for o in j["options"]) == ["dinheiro", "pix"] and j["mode"] == "legacy", e or j)
+-        j, e = call(UB2, f"public.b2b_list_payment_condition_options_secure('{PF}','{PLD}')")
++        j, e = call(UB2, f"public.b2b_list_payment_condition_options_secure('{PF}','{PLDF}')")
+         check("comprador F vê só o Pix de F (2 dias)", j and [(o["payment_method"], o["payment_deadline_days"]) for o in j["options"]] == [("pix", 2)], e or j)
+-        denied("comprador P pedindo parceiro F negado", call(UB, f"public.b2b_list_payment_condition_options_secure('{PF}','{PLD}')"), "forbidden")
++        denied("comprador P pedindo parceiro F negado", call(UB, f"public.b2b_list_payment_condition_options_secure('{PF}','{PLDF}')"), "forbidden")
+         denied("técnico negado", call(UT, f"public.b2b_list_payment_condition_options_secure('{P}','{PLD}')"), "forbidden_financial_terms")
+         denied("comprador inativo negado", call(UINACT, f"public.b2b_list_payment_condition_options_secure('{P}','{PLD}')"), "")
+         j, e = call(UB, f"public.b2b_list_payment_condition_options_secure('{P}','{P3B}')")
+@@ -788,7 +790,7 @@
+         check("concorrência: publish CAS cometeu exatamente a v2; create/quote concluíram ou falharam stale, nunca por guarda relaxada",
+               psql(f"SELECT count(*) FROM platform_private.b2b_condition_versions WHERE organization_id='{A}' AND plan_id='{P3}' AND method='boleto' AND version=2").stdout.strip() == "1"
+               and all(md5_of(sig) == md for sig, md in origin_md5.items()), lock_errors)
+-        r = legacy(UB2, PLD, [SF(1)], "TESTE-LEG-F1", partner=PF); check("piloto de A não afeta comprador de F (papel FSF)", r.returncode == 0, r.stderr[-200:])
++        r = legacy(UB2, PLDF, [SF(1)], "TESTE-LEG-F1", partner=PF); check("piloto de A não afeta comprador de F (papel FSF)", r.returncode == 0, r.stderr[-200:])
+         r = psql("BEGIN; ALTER TABLE platform_private.b2b_order_condition_snapshots DISABLE TRIGGER immutable_update_delete;\n"
+                  + session(UB, f"SELECT {create_sql(P, PLD, [S(2)], sim(UB, PLD, [S(2)], CASH2)[0]['cart_hash'], 'TESTE-DEF2', CASH2)};\nRESET ROLE;\n")
+                  + "DELETE FROM platform_private.b2b_order_condition_snapshots s USING public.partner_order_idempotency i WHERE i.idempotency_key='TESTE-DEF2' AND s.order_id=i.order_id;\nCOMMIT;", check=False)
+@@ -797,41 +799,13 @@
+         check("comprador lê condição/parcelas do pedido (mesmo total, estimado)", j and j["present"] and Decimal(str(j["payment_condition"]["financed_total"])) == Decimal("1036.22")
+               and j["payment_condition"]["estimated"] is True, e or j)
+         denied("admin F não lê pedido de A", call(UADMF, f"public.get_partner_order_payment_condition_secure('{oid}')"), "forbidden")
+-        rfq = legacy(UB2, PLQ, [SF(1)], "TESTE-LEG-FQ", partner=PF); jfq, efq = out(rfq)
++        rfq = legacy(UB2, PLQF, [SF(1)], "TESTE-LEG-FQ", partner=PF); jfq, efq = out(rfq)
+         check("cotação LEGADA de F pronta para controle de rollback", jfq and jfq["status"] == "aguardando_cotacao", efq or jfq)
+         check("PB-001036/teste4 fora do escopo: nenhum pedido real no PG descartável", psql("SELECT count(*) FROM public.partner_orders WHERE numero='PB-001036'").stdout.strip() == "0")
+ 
+-        # ---------- rollback deny-only transacional ----------
+-        files = write(fm["install"])
+-        bad_rb = files["04-rollback-deny.sql.review"].replace(fm["install"]["read"], "0" * 32, 1)
+-        (work / "bad-rb.sql").write_text(bad_rb); (work / "bad-rb.sql").chmod(0o644)
+-        r = runf(work / "bad-rb.sql")
+-        check("04 com pin divergente aborta sem mudar nada", r.returncode != 0 and md5_of(g["PUB"]["read"]) == fm["install"]["read"], r.stderr[-200:])
+-        r = runf(work / "04-rollback-deny.sql.review"); check("04 rollback deny-only", r.returncode == 0, r.stderr[-300:])
+-        if rollback_multi:
+-            quote_completeness("ROLLBACK legado", rollback_multi["id"], qi)
+-        if jmulti:
+-            before = quote_state(jmulti["id"])
+-            denied("ROLLBACK novo: cotação com dois itens permanece deny-only",
+-                   respond(UADM, jmulti["id"], lines_due), "b2b_payment_condition_rolled_back")
+-            check("ROLLBACK novo: deny preserva todos os registros", quote_state(jmulti["id"]) == before)
+-        denied("após rollback: opções negadas", call(UB, f"public.b2b_list_payment_condition_options_secure('{P}','{PLD}')"), "permission denied")
+-        qi_pending = psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{oq_pending}'").stdout.strip()
+-        denied("após rollback: resposta de cotação com condição ativada fica negada, sem reabrir legado",
+-               respond(UADM, oq_pending, [{"item_id": qi_pending, "unit_price": 1000}]), "b2b_payment_condition_rolled_back")
+-        check("rollback da cotação é atômico", psql(f"SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq_pending}'").stdout.strip() == "0")
+-        if jfq:
+-            qfi = psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{jfq['id']}'").stdout.strip()
+-            j, e = respond(UADMF, jfq["id"], [{"item_id": qfi, "unit_price": 90}])
+-            check("após rollback: cotação LEGADA de empresa não ativada (papel FSF) continua funcionando", j and Decimal(str(j["final_amount"])) == Decimal("90.00"), e or j)
+-        r = legacy(UB, PLD, [L(1)], "TESTE-LEG-2")
+-        check("após rollback: empresa ativada continua bloqueada (nunca reabre fallback)", r.returncode != 0 and "B2B_PAYMENT_CONDITION_REQUIRED" in r.stderr)
+-        r = legacy(UB2, PLD, [SF(1)], "TESTE-LEG-F2", partner=PF); check("após rollback: empresa não ativada segue contrato atual", r.returncode == 0, r.stderr[-200:])
+-        check("após rollback: snapshots/versões preservados", int(psql("SELECT count(*) FROM platform_private.b2b_order_condition_snapshots").stdout.strip()) >= 3
+-              and int(psql("SELECT count(*) FROM platform_private.b2b_condition_versions").stdout.strip()) >= 10)
+-        fm["deny"] = {k: md5_of(s) for k, s in g["PUB"].items()}
+-        fm["deny"]["quote"] = md5_of(g["QUOTE_SIG"])
+-        (HERE / "fn-md5.json").write_text(json.dumps(fm, indent=2) + "\n")
++        import sys as _s; _s.path.insert(0, '/dev-server/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109'); import ccr2_hook; ccr2_hook.run(globals() | locals())
++        # [mirror LIVE] B3 04 rollback NOT_RUN: pinned to pre-cc1f6cc publish c6fbe159 != historical; separate review required
++        NOT_RUN_B3_ROLLBACK = True
+     except Exception:
+         for c in CHECKS:
+             if not c["ok"]: print("FAIL", c["name"], c.get("detail", ""))
