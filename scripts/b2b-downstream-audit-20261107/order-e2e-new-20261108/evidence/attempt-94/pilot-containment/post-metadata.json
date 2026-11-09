@@ -1,0 +1,122 @@
+[
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "7f55e490609747983c7404c687efb979",
+    "owner": "postgres",
+    "signature": "platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "725f4047a960aa6c56c022483d52f318",
+    "owner": "postgres",
+    "signature": "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "40d78291e5f78872c03675f519659a1f",
+    "owner": "postgres",
+    "signature": "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "c7cce25d51870adcaedd2dbc52e1dd78",
+    "owner": "postgres",
+    "signature": "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "35b89c850533d17c70c97d4a20ed0c4e",
+    "owner": "postgres",
+    "signature": "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "4714821f5dff5fb025a2ed88e96c177a",
+    "owner": "postgres",
+    "signature": "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "be31a42fb6d8f37711e26d18d52efd8a",
+    "owner": "postgres",
+    "signature": "platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "e1ab3bc4735e4874d82c66eb0e10c5c2",
+    "owner": "postgres",
+    "signature": "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "85c7f78b66f4016e512ac1d48bba2f08",
+    "owner": "postgres",
+    "signature": "platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "75de6b4ef454870afe922c9725fe1e3d",
+    "owner": "postgres",
+    "signature": "platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "1b35b2df4a13d80511bf6a3c8dea9a06",
+    "owner": "postgres",
+    "signature": "platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "ae5a4c227d48ddc82033e0084436ae8e",
+    "owner": "postgres",
+    "signature": "platform_private.resale_pilot_delivery_allowed_v1(text,text,uuid,uuid,uuid)"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "d8c35001e008e0a37a11773afa72f93c",
+    "owner": "postgres",
+    "signature": "public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)"
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "md5": "60f675641cbed6a2216853b368350f1c",
+    "owner": "postgres",
+    "signature": "public.rpc_b2b_resale_os_availability_v1(uuid)"
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "md5": "6a249b41a6e729835ff86cfc2b40e25b",
+    "owner": "postgres",
+    "signature": "public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)"
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "md5": "52501b3c9ea51e704fa92f0f1bfaecd1",
+    "owner": "postgres",
+    "signature": "public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "789ca21deff20abee019a234b17ad1ec",
+    "owner": "postgres",
+    "signature": "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)"
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "md5": "8946d14f7352a47b5b085e46162e1366",
+    "owner": "postgres",
+    "signature": "public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)"
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "md5": "2f89e9ab6b1eab6164008e42e7375d55",
+    "owner": "postgres",
+    "signature": "public.rpc_entrega_comprovacao_preflight_v1(uuid,text)"
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "md5": "dca526e4a2d007a1faadc1b0e7b22eba",
+    "owner": "postgres",
+    "signature": "public.rpc_finished_product_purchase_capability_v1()"
+  }
+]
