@@ -16,6 +16,7 @@ def edit(s, old, new, count=1):
 
 
 def main():
+    raise SystemExit('HISTORICAL_GENERATOR: compose_current.py is now maintained directly (cf7d5fb/214 removed the run-time Seller91 replace); regenerating would reintroduce it')
     s = SOURCE.read_text()
     s = edit(s, "checks=[]\n", "checks=[]\nSTRICT_FISCAL=True\n")
     s = edit(s, "  Q=commercial.apply(B,load,ROOT,OUT)",
