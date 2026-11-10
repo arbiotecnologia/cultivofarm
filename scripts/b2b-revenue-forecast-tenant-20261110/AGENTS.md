@@ -1,0 +1,4 @@
+- Preparação apenas: nunca aplicar 02/04 hospedado nem publicar; o auditor instala após revisão — evita mudança não revisada.
+- Nunca regrantar nem alterar `rpc_b2b_revenue_forecast` legado (sem filtro de empresa); o frontend só usa o leitor tenant e mostra indisponível na ausência — impede vazamento entre empresas.
+- Residual de previsão (não exigível) e títulos confirmados ficam em blocos separados e nunca somados; legado sem previsão/título só como contagem — evita dupla contagem e valores inventados.
+- Rollback é deny-only (mantém corpo, revoga EXECUTE). Stubs do PG descartável não provam JWT/RLS hospedado nem corpos LIVE.
