@@ -13,6 +13,8 @@ def exposure(B, Q):
 def run_override(B, Q, OUT):
     """Crédito manual é exceção; crédito OK sem override já foi coberto pelo caso principal."""
     choice = Q.ch('boleto', 2, 30)
+    assigned, assignment_error = Q.assign(Q.UADM, Q.PC, Q.P3, 'boleto', 2)
+    assert assigned is not None, assignment_error
     baseline = json.loads(B.last(f"SELECT to_jsonb(s)::text FROM public.partner_financial_settings s WHERE partner_id='{Q.PC}';"))
     fields = ['billing_trigger','payment_terms_days','default_payment_method','credit_limit','block_if_overdue','auto_generate_receivable','active','credit_limit_action','overdue_tolerance_days','credit_alert_threshold_1','credit_alert_threshold_2']
     values = {k: baseline[k] for k in fields}
