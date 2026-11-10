@@ -533,6 +533,21 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
     reject(B, consult, '217', 'NF-e nao consta na base de dados da SEFAZ')
     l_consulted = sync(Q, Q.UFIN, consult, l_timeout['version'])
     assert l_consulted['state'] == 'aguardando_fiscal', l_consulted
+    # Functional cancellation control uses this separate reconciled PC order,
+    # not the main authorization-control document still in flight.
+    in_flight=B.last(f"SELECT count(*) FROM public.fiscal_invoices i JOIN public.fiscal_sefaz_transmissions t ON t.fiscal_invoice_id=i.id WHERE i.partner_order_id='{pc_order}' AND t.state IN ('PENDING','SENT');")
+    assert in_flight=='0',in_flight
+    functional_before=forecast_row(B,pc_order)
+    functional=Q.as_user(Q.UFIN,f"BEGIN;SELECT public.rpc_b2b_forecast_cancel_residual_v1('{pc_order}',{l_consulted['version']},'LOCAL DEDICATED RECONCILED CONTROL');ROLLBACK;")
+    assert functional.returncode==0,functional.stderr
+    functional_ack=_last(functional)
+    assert functional_ack['state'] in ('cancelado_residual','cancelado_antes_nf'),functional_ack
+    assert forecast_row(B,pc_order)==functional_before
+    (OUT/'lifecycle-cancel-functional-control.json').write_text(json.dumps(dict(
+      classification='FUNCTIONAL_CANCEL_SUCCESS_DEDICATED_RECONCILED_REFERENCE_ROLLBACK',
+      order_id=pc_order,invoice_id=L['invoice'],consultation_id=consult,in_flight=0,
+      canonical_reconciliation=l_consulted,exit=functional.returncode,ack=functional_ack,
+      state_preserved_after_rollback=True,hosted=False),indent=2)+'\n')
     begin_race = test_begin_cancel_race(B,Q,OUT,pc_order,L,l_consulted['version'])
     # Permanent cancel wins against canonical begin, not only rollback serialization.
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:

@@ -1,0 +1,11 @@
+{
+  "workspace": "/tmp/forecast-run/project",
+  "hosted": false,
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "checkpoint_reuse": false,
+  "source_hashes": {
+    "lifecycle_lock_barrier.py": "372f2917cc794c01931508912ba2d5474fa9d1cabf12cfa1307cfaffad5a2828",
+    "lifecycle_containment_tests.py": "f42c72d7b51bf87a4c0926b109164effba292241da31edaad5641dd77b7ffb31",
+    "forecast_residual_scenario.py": "e5579941b141282a9ccab537eeb824a4c8102165be4c9f1825b330d053f1479f"
+  }
+}
