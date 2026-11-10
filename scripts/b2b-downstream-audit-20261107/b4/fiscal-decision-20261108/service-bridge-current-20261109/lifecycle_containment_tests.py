@@ -101,10 +101,12 @@ def run(B, Q, OUT, order, doc, version):
     }
     for op, call in calls.items():
         for lk, lock_fn in own_locks.items():
-            for name, (change, restore) in (
+            # Lock order is grant -> gate. A gate holder revoking a GRANT would invert it
+            # (attempt 213: 40P01, still fail-closed); valid gate-holder mutation = gate OFF only.
+            for name, (change, restore) in (x for x in (
                 ('gate-off', ("UPDATE platform_private.b2b_forecast_lifecycle_gate_v1 SET enabled=false WHERE singleton;", gate_on)),
                 ('grant-revoked', (f"UPDATE platform_private.b2b_forecast_lifecycle_allowlist_v1 SET revoked_at=clock_timestamp() WHERE operation='{op}';",
-                                   f"UPDATE platform_private.b2b_forecast_lifecycle_allowlist_v1 SET revoked_at=NULL WHERE operation='{op}';"))):
+                                   f"UPDATE platform_private.b2b_forecast_lifecycle_allowlist_v1 SET revoked_at=NULL WHERE operation='{op}';"))) if lk=='own-allowlist' or x[0]=='gate-off'):
                 called, barrier = revoke_after_proven_wait(B, lock_fn(op), 'BEGIN;'+ctx+call+'COMMIT;', change)
                 rows.append(dict(case=f'{op}-wait-in-{lk}-{name}', holder_lock=lock_fn(op), exit=called.returncode,
                                  stderr=called.stderr, barrier=barrier))
