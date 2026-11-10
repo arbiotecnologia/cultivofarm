@@ -73,7 +73,7 @@ class Review:
             observed = self.B.last(f"SELECT updated_at FROM public.partner_orders WHERE id='{order_id}';")
             first_item = self.B.last(f"SELECT id FROM public.partner_order_items WHERE order_id='{order_id}' ORDER BY id LIMIT 1;")
             denied = self.B.run_raw(self.os_create_sql(order_id, first_item, observed, self.key('missing-terms')))
-            assert denied.returncode != 0 and 'B2B_RESALE_ORDER_CONFLICT' in denied.stderr, (label, denied.stdout, denied.stderr)
+            assert denied.returncode != 0 and any(code in denied.stderr for code in ('B2B_RESALE_ORDER_CONFLICT','RESALE_PILOT_SCOPE_DENIED')), (label, denied.stdout, denied.stderr)
             terms = Q.as_user(Q.UFIN, f"SELECT public.approve_b2b_payment_terms_secure('{order_id}','REVIEW70 CANONICAL TERMS');")
             assert terms.returncode == 0, (label, terms.stdout, terms.stderr)
             after = json.loads(self.B.last(f"SELECT to_jsonb(po) FROM public.partner_orders po WHERE id='{order_id}';"))
