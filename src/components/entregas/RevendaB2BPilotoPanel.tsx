@@ -102,6 +102,7 @@ export function RevendaB2BPilotoPanel({ actorId, orgId }: { actorId: string | nu
 
   const createDelivery = async (r: StockRow) => {
     if (!actorId || !orgId || !selected || !store) return;
+    if (pendingGroup || (store && loadPending(store, actorId, orgId))) { setNotice("Há uma entrega com resultado incerto. Resolva-a antes de enviar outra."); return; }
     const captured = session; setBusy(true); setNotice(null);
     try {
       let attempt: RetrySnapshot | null = null;
@@ -136,23 +137,28 @@ export function RevendaB2BPilotoPanel({ actorId, orgId }: { actorId: string | nu
         {notice && <p role="status">{notice}</p>}
         {osList.length === 0 ? <p className="text-muted-foreground">Nenhuma OS de revenda pronta para entrega.</p> : (
           <ul className="space-y-1">{osList.map(os => (
-            <li key={os.id}><Button variant={selected?.id === os.id ? "default" : "outline"} size="sm" onClick={() => loadOs(os)}>OS {os.numero_os ?? os.id.slice(0, 8)}</Button></li>
+            <li key={os.id}><Button variant={selected?.id === os.id ? "default" : "outline"} size="sm" disabled={busy} onClick={() => loadOs(os)}>OS {os.numero_os ?? os.id.slice(0, 8)}</Button></li>
           ))}</ul>
         )}
         {selected && pendingReserve === "corrupt" && <p role="alert">Registro local de reserva inválido. Nenhuma reserva será enviada.</p>}
         {selected && pendingReserve && pendingReserve !== "corrupt" && (
           <Button size="sm" variant="secondary" disabled={busy} onClick={replayReserve}>Consultar mesma reserva</Button>
         )}
-        {selected && pendingGroup && pendingGroup !== "corrupt" && pendingGroup.osId === selected.id && (
-          <Button size="sm" variant="secondary" disabled={busy} onClick={replayGroup}>Repetir mesmo envio</Button>
+        {pendingGroup === "corrupt" && <p role="alert">Registro local de entrega inválido. Nenhuma nova entrega será enviada.</p>}
+        {pendingGroup && pendingGroup !== "corrupt" && (
+          <div role="alert" className="space-y-1">
+            <p>Entrega com resultado incerto da OS {osList.find(o => o.id === pendingGroup.osId)?.numero_os ?? pendingGroup.osId.slice(0, 8)}. Nenhuma outra entrega será enviada até a repetição exata.</p>
+            <Button size="sm" variant="secondary" disabled={busy} onClick={replayGroup}>Repetir mesmo envio</Button>
+          </div>
         )}
         {selected && (
           <table className="w-full"><tbody>{stock.map(r => (
-            <tr key={r.id} aria-label={`Estoque ${r.id}`}>
+            <tr key={r.id} aria-label={`Lote ${r.lotes?.codigo_lote ?? r.lote_id}`}>
+              <td className="font-medium">Lote {r.lotes?.codigo_lote ?? "—"}</td>
               <td>{r.status === "reservado" ? `Reservado: ${r.quantidade_reservada ?? "—"} emb.` : `Disponível: ${r.quantidade ?? "—"} emb.`}</td>
               <td>{r.status === "disponivel" && (
                 <span className="flex gap-2">
-                  <Input aria-label="Quantidade de embalagens" className="w-20" inputMode="numeric" value={qty[r.id] ?? ""} onChange={e => setQty({ ...qty, [r.id]: e.target.value })} />
+                  <Input aria-label={`Quantidade de embalagens do lote ${r.lotes?.codigo_lote ?? r.lote_id}`} className="w-20" inputMode="numeric" value={qty[r.id] ?? ""} onChange={e => setQty({ ...qty, [r.id]: e.target.value })} />
                   <Button size="sm" disabled={busy || !caps[r.id]?.reserve || !!pendingReserve} onClick={() => reserve(r)}>Reservar (piloto)</Button>
                 </span>
               )}
