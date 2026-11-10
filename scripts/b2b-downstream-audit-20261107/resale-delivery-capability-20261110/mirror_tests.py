@@ -141,6 +141,11 @@ def run(B, Review, Q, A, choice, out, manual):
 
     # ---------- Capability v2 via exact files ----------
     gates("false")
+    W = "public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb)"
+    mirror_open = B.last(f"SELECT has_function_privilege('authenticated','{W}','EXECUTE')::text;") == "true"
+    if mirror_open:  # LIVE: authenticated=false; align mirror ACL, restored after rollback
+        B.sql(f"REVOKE EXECUTE ON FUNCTION {W} FROM authenticated;")
+    (out / "mirror-alignment-writer-acl.json").write_text(json.dumps({"function": W, "mirror_authenticated_execute": mirror_open, "live": False}) + "\n")
     ok("cap PRE PASS", "PRE_PASS" in B.sql((CAP / "01-pre.sql.readonly").read_text()))
     B.sql((CAP / "02-install.sql.review").read_text())
     cmd5 = md5(SIG); cpost = (CAP / "03-post.sql.readonly").read_text().replace(":CAP_MD5:", cmd5)
@@ -179,6 +184,8 @@ def run(B, Review, Q, A, choice, out, manual):
     hist = B.last("SELECT count(*) FROM platform_private.stock_batch_requests;")
     B.sql((RES / "04-rollback-deny.sql.review").read_text())
     ok("reserve rollback deny-only keeps receipts and never restores vulnerable body", md5(RSIG) == rmd5 and B.last("SELECT count(*) FROM platform_private.stock_batch_requests;") == hist)
+    if mirror_open:
+        B.sql(f"GRANT EXECUTE ON FUNCTION {W} TO authenticated;")
     # Restore prior state for anything after this hook.
     B.sql(f"GRANT EXECUTE ON FUNCTION {RSIG} TO authenticated;")
     a, b = prior.split(","); B.sql(f"UPDATE platform_private.finished_product_gate_v1 SET enabled={a} WHERE singleton;UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled={b} WHERE singleton;")

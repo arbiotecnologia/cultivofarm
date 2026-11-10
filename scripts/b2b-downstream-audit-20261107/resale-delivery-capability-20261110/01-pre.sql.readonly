@@ -3,6 +3,7 @@ DO $$
 DECLARE r record;
 BEGIN
  IF to_regprocedure('public.rpc_b2b_resale_delivery_capability_v1(uuid,uuid[],text)') IS NOT NULL THEN RAISE EXCEPTION 'PRE_TARGET_PRESENT'; END IF;
+ IF has_function_privilege('authenticated','public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb)','EXECUTE') THEN RAISE EXCEPTION 'PRE_WRITER_OPEN_NOT_LIVE'; END IF;
  FOR r IN SELECT * FROM (VALUES
   ('platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)','63f49feea167f6865fd7840cde7dc63b'),
   ('platform_private.delivery_actor_20261030(text)','c6da1f5d9581a0c290e5e27e4605682c'),
