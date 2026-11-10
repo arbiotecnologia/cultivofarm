@@ -97,7 +97,7 @@ def main():
     run = lambda *a, **k: subprocess.run(list(a), capture_output=True, text=True, env=env, **k)
     pre = None
     if os.geteuid()==0:
-        shutil.chown(tmp,'lovable'); pre = ['runuser','-u','lovable','--','bash','-c']
+        shutil.chown(tmp,'lovable'); pre = ['setpriv','--reuid=1000','--regid=1000','--init-groups','bash','-c']
     def sh(cmd): return run(*(pre+[cmd])) if pre else run('bash','-c',cmd)
     r = sh(f"initdb -D {data} -U postgres -A trust >/dev/null && pg_ctl -D {data} -o '-p {port} -k {tmp}' -l {tmp}/log start -w >/dev/null"); assert r.returncode==0, r.stderr
     ev = {'checks': [], 'limits': 'PostgreSQL descartável; auth.uid/h15/is_financial_staff/_saas_user_has_feature e tabelas são STUBS sintéticos. Não prova JWT/RLS/Storage hospedado nem os corpos LIVE.'}

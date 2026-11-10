@@ -1,0 +1,5 @@
+-- REVIEW_ONLY deny-only rollback. project_ref swzpzcwiasxmjutrmvkm. Mantém corpo; revoga apenas EXECUTE do cliente (UI volta a 'indisponível').
+BEGIN;
+DO $$ BEGIN IF to_regprocedure('public.rpc_b2b_revenue_forecast_tenant_v1(uuid)') IS NULL OR md5(pg_get_functiondef('public.rpc_b2b_revenue_forecast_tenant_v1(uuid)'::regprocedure))<>'c49f76514411568b70768f7b1445bac0' THEN RAISE EXCEPTION 'REVENUE_TENANT_ROLLBACK_TARGET_DRIFT'; END IF; END $$;
+REVOKE ALL ON FUNCTION public.rpc_b2b_revenue_forecast_tenant_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
+COMMIT;
