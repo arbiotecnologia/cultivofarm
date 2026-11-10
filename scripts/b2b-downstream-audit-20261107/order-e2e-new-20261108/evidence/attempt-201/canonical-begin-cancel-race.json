@@ -1,0 +1,19 @@
+[
+  {
+    "case": "two-begins-before-sync",
+    "winner": "{\"state\": \"PENDING\", \"eventId\": null, \"outcome\": \"PENDING\", \"service\": \"NFeAutorizacao4\", \"invoiceId\": \"00000000-0000-0000-0000-000000000985\", \"correlationId\": \"a0cdb74c-e246-459f-b5b6-f63501b0c6d2\", \"transmissionId\": \"d27cde74-77ac-4fe5-9889-e4a2cc15478b\", \"idempotentReplay\": false}\n\n",
+    "loser": "ERROR:  PT409: B2B_FORECAST_BEGIN_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 161 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+    "repeatable": "ERROR:  42501: B2B_FORECAST_READ_COMMITTED_REQUIRED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 86 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "case": "begin-first",
+    "begin_stdout": "{\"state\": \"PENDING\", \"eventId\": null, \"outcome\": \"PENDING\", \"service\": \"NFeAutorizacao4\", \"invoiceId\": \"00000000-0000-0000-0000-000000000985\", \"correlationId\": \"e02650fb-3143-4886-a7c9-e8809dc864a8\", \"transmissionId\": \"de1331ab-a769-4361-b55f-84b18c5a7f61\", \"idempotentReplay\": false}\n\n",
+    "cancel_stderr": "ERROR:  PT409: B2B_FORECAST_FISCAL_IN_FLIGHT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 39 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "case": "cancel-lock-first-rollback",
+    "cancel_stdout": "{\"actor\": \"00000000-0000-0000-0000-000000000029\", \"state\": \"cancelado_residual\", \"version\": 13, \"order_id\": \"b115c983-cf50-4775-afe2-d87853374351\", \"forecast_id\": \"f0c96362-b4d6-4745-a7ff-4a5cacdcdd70\"}\n\n",
+    "begin_stdout": "{\"state\": \"PENDING\", \"eventId\": null, \"outcome\": \"PENDING\", \"service\": \"NFeAutorizacao4\", \"invoiceId\": \"00000000-0000-0000-0000-000000000985\", \"correlationId\": \"a376ead2-875a-49d7-bf22-3978d5831c76\", \"transmissionId\": \"ec23cbaf-0805-4779-9bf7-89c83ae4ff72\", \"idempotentReplay\": false}\n",
+    "elapsed": 0.7599594069999966
+  }
+]
