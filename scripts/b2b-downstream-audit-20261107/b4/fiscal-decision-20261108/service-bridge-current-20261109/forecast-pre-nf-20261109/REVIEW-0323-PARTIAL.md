@@ -129,3 +129,14 @@ Tentativas: 207 exit 1 (mapa dos 38 medido antes de os pacotes de embalagem/cat�
 7. Gate logístico global não aberto.
 
 Regressão: parceiro 747→738 após pagamento 9; títulos 9→18, residual 9→0; rollback com histórico e dez gatilhos preservados. Início fiscal candidato MD5 `38bc13e60350f7117af798c3630d0aef`. 16 SQL do repositório idênticos ao espelho validado: `review-1511-source-hashes.json`. Evidência: `scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-209/`.
+
+## Revisão 209/584d530 — ajustes finais (10/11/2026)
+
+Tentativas: 210 exit 1 (PL/pgSQL `IF` cortado no `THEN` do `CASE` do ACL normalizado → expressão parentizada); 211 exit 1 (rollback com helper=false quebrou pagamento 9: `42501 MONEY_ORIGIN_ACCESS_DENIED`, pois `rpc_register_receivable_payment` chama o leitor); **212 exit 0, 56/56 PASS**, PostgreSQL 17.11 descartável, Auth sintética.
+
+1. Início fiscal: `resale_pilot_allowed_v1` agora roda antes de marcador, XML/assinatura e configuração da emitente; perfil/papéis/features continuam depois; tudo antes de replay/INSERT. Oito casos novos com holder segurando SÓ a linha da allowlist ou SÓ a linha do gate (waiter comprovado por `pg_blocking_pids`): ambiente 1, configuração inativa, marcador revogado → `FISCAL_PRODUCTION_ENDPOINT_BLOCKED`; assinatura removida → `SEFAZ_INVOICE_RUN_MISMATCH`. Transmissões 6→6, previsão inalterada. Overlay begin MD5 `a4074519c0185b67bc0aad0303153fb1`.
+2. Leitor: PRE/POST pinam corpo+owner+ACL normalizada do RPC, helper e cinco dependências; `is_financial_staff` = LIVE `6e8f2fa7…` conferido. Helper estranho pré-existente → `HELPER_PREEXISTS` (PRE e INSTALL); drift de ACL de dependência → `DEP_DRIFT`. Positivos financeiro/administrador/gestor próprios; negativos gestor e admin estrangeiros, comprador, anon, service_role, helper direto, feature revogada, perfil inativo. Rollback valida candidato, só revoga authenticated (RPC `725f5790…` ACL `postgres:EXECUTE:postgres`), não restaura `7c5d3fa0…`; segunda execução falha fechada.
+3. Regressão: parceiro 747→738 após pagamento 9; aberto 9→18→9, residual 9→0; 38 gatilhos íntegros antes dos cenários, antes do rollback final e no fim.
+4. UI: só `get_b2b_financial_forecast_secure` está montado (somente leitura); SYNC/CANCEL e leitor não têm tela. Não há fluxo real completo.
+
+Manifesto: `final-manifest-20261110.json`; hashes: `review-1539-source-hashes.json`. Pacote `REVIEW_ONLY_INACTIVE_NOT_APPROVED`; sem GO hospedado.
