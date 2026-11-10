@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-2b9cdyw0/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 169, in main
+    assert data is not None,error
+           ^^^^^^^^^^^^^^^^
+AssertionError: ERROR:  42501: forbidden
+CONTEXT:  PL/pgSQL function platform_private.b2b_condition_cfg_actor(boolean) line 9 at RAISE
+PL/pgSQL function public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer) line 4 at assignment
+LOCATION:  exec_stmt_raise, pl_exec.c:3911
