@@ -1,0 +1,256 @@
+[
+ {
+  "test": "6 consumers aligned verbatim to frozen production artifacts with LIVE md5 and ACL unchanged",
+  "status": "PASS",
+  "detail": {
+   "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)": {
+    "mirror_md5": "a317c4945f3b933a3b0cfacb0e049e02",
+    "live_md5_after": "804e2a33cdf204ed9fa179f2afa2bf6e",
+    "acl_unchanged": true
+   },
+   "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)": {
+    "mirror_md5": "21110263f68c54278e0874d677cd0418",
+    "live_md5_after": "7cd8ee22794bf57e6592867259c9397e",
+    "acl_unchanged": true
+   },
+   "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)": {
+    "mirror_md5": "49917dec96489dba3b10b8962af245ee",
+    "live_md5_after": "bd76345c3bceaa5e6203013920427df4",
+    "acl_unchanged": true
+   },
+   "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": {
+    "mirror_md5": "22f5c581afab10aa206d1919fe028105",
+    "live_md5_after": "c5b1da90e1f649fe0eeb99deac7094ee",
+    "acl_unchanged": true
+   },
+   "public.rpc_b2b_resale_os_availability_v1(uuid)": {
+    "mirror_md5": "5cb42bd5ff0f7e2a93ad4d8d79d8c22e",
+    "live_md5_after": "e9767fcbcbfb831b92ee7f1523b1262e",
+    "acl_unchanged": true
+   },
+   "public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": {
+    "mirror_md5": "a7eeeff264d350219f1519ddb15c730f",
+    "live_md5_after": "6a249b41a6e729835ff86cfc2b40e25b",
+    "acl_unchanged": true
+   }
+  }
+ },
+ {
+  "test": "PROBE: all non-financial conditions hold (scope grant, owner, family, integer whole packs, weight rule, snapshots)",
+  "status": "PASS",
+  "detail": {
+   "item": {
+    "qty": 5.0,
+    "pack": true,
+    "integer": true,
+    "peso_kg": 25.0,
+    "unidade": "unidade",
+    "conteudo": "kg",
+    "pack_version": 1,
+    "peso_rule_ok": true,
+    "product_family": "fertilizante_adubo",
+    "product_owner_ok": true
+   },
+   "status": "aprovado",
+   "approved_at": true,
+   "approved_by": true,
+   "terms_linked": {
+    "same_order": true,
+    "approved_at": true,
+    "approved_by": true,
+    "approval_status": "approved"
+   },
+   "c2_origin_valid": true,
+   "os_create_grant": 1,
+   "partner_owner_ok": true,
+   "economic_snapshot": true,
+   "credit_approved_pair": true,
+   "internal_origin_null": true,
+   "ready_for_production": false,
+   "receivable_generated": false,
+   "payment_condition_status": "defined",
+   "financial_approval_status": "pending",
+   "requires_financial_approval": true
+  }
+ },
+ {
+  "test": "PROBE: only failing condition is frozen header (financial_approval_status pending) while linked terms are approved",
+  "status": "PASS",
+  "detail": {
+   "item": {
+    "qty": 5.0,
+    "pack": true,
+    "integer": true,
+    "peso_kg": 25.0,
+    "unidade": "unidade",
+    "conteudo": "kg",
+    "pack_version": 1,
+    "peso_rule_ok": true,
+    "product_family": "fertilizante_adubo",
+    "product_owner_ok": true
+   },
+   "status": "aprovado",
+   "approved_at": true,
+   "approved_by": true,
+   "terms_linked": {
+    "same_order": true,
+    "approved_at": true,
+    "approved_by": true,
+    "approval_status": "approved"
+   },
+   "c2_origin_valid": true,
+   "os_create_grant": 1,
+   "partner_owner_ok": true,
+   "economic_snapshot": true,
+   "credit_approved_pair": true,
+   "internal_origin_null": true,
+   "ready_for_production": false,
+   "receivable_generated": false,
+   "payment_condition_status": "defined",
+   "financial_approval_status": "pending",
+   "requires_financial_approval": true
+  }
+ },
+ {
+  "test": "LIVE consumer denies OS creation for canonically approved order",
+  "status": "PASS",
+  "detail": "ERROR:  PT409: B2B_RESALE_ORDER_CONFLICT"
+ },
+ {
+  "test": "PRE PASS",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "POST PASS",
+  "status": "PASS",
+  "detail": {
+   "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)": "30d5e9dea53862e3c3ca0608e95deac4",
+   "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)": "cfb3bc9dd157f4325c23deb285f91531",
+   "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)": "b23b40e68ff5772e0523cc858741766a",
+   "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "befa8844838dcfb0d4c2d069f2500e37",
+   "public.rpc_b2b_resale_os_availability_v1(uuid)": "a3705949d107538151777e119b8a906a",
+   "public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "99758ab06ead6f225d0fe3376db9efe9"
+  }
+ },
+ {
+  "test": "install rerun refused by PRE pins",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "candidate: OS created from linked approved terms",
+  "status": "PASS",
+  "detail": {
+   "ok": true,
+   "os_id": "f3c69c05-8560-45f6-b02c-2eedf55e18f4",
+   "replay": false,
+   "contract": "B2B_RESALE_OS_V1",
+   "order_id": "2891cb7a-c9db-4d66-a1fd-3f67ce327c3f",
+   "order_item_id": "e5287d71-0812-420c-a89a-cc1e7f790cd7"
+  }
+ },
+ {
+  "test": "OS replay same key",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "canonical predicate: control true; pending/rejected/no actor/absent/divergent link/header rejected/no commercial/credit inconsistent all false",
+  "status": "PASS",
+  "detail": {
+   "control_no_mutation": "true,true",
+   "terms_pending_real": "false,false",
+   "terms_rejected": "false,false",
+   "terms_approved_without_actor": "false,false",
+   "link_absent": "false,false",
+   "link_divergent_other_order": "false,false",
+   "header_rejected": "false,false",
+   "commercial_approval_absent": "false,false",
+   "credit_pair_inconsistent": "false,false"
+  }
+ },
+ {
+  "test": "buyer/foreign actor denied on availability reader",
+  "status": "PASS",
+  "detail": "ERROR:  42501: B2B_RESALE_ACTOR_DENIED"
+ },
+ {
+  "test": "two distinct purchased lots",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "reserve lot1 replay: same receipt, no new movement",
+  "status": "PASS",
+  "detail": {
+   "ok": true,
+   "itens": [
+    "a578a0fe-0352-48d9-b016-c302888bf9b0"
+   ],
+   "replay": true
+  }
+ },
+ {
+  "test": "concurrent same-key reserve (2 real sessions, proven wait): exactly one reservation; loser is exact replay or explicit error; later exact replay returns same receipt",
+  "status": "PASS",
+  "detail": {
+   "outs": [
+    {
+     "ok": true,
+     "itens": [
+      "98f40b01-2dda-4fab-83ec-30f3a78e6dc6"
+     ],
+     "replay": false
+    },
+    {
+     "ok": true,
+     "itens": [
+      "98f40b01-2dda-4fab-83ec-30f3a78e6dc6"
+     ],
+     "replay": true
+    }
+   ],
+   "errs": []
+  }
+ },
+ {
+  "test": "no over-reservation beyond purchased lot",
+  "status": "PASS",
+  "detail": "ERROR:  23514: ESTQ_STATUS_INVALIDO: item n\u00e3o est\u00e1 dispon\u00edvel (reservado)."
+ },
+ {
+  "test": "partial delivery 3/5 confirmed; order NOT concluded",
+  "status": "PASS",
+  "detail": "aprovado"
+ },
+ {
+  "test": "confirm replay same key: no new stock movement (no double exit)",
+  "status": "PASS",
+  "detail": [
+   3,
+   "ERROR:  PT409: DELIVERY_CONFIRM_LEGACY_REVIEW_REQUIRED"
+  ]
+ },
+ {
+  "test": "final: 5/5 delivered over two lots, zero reserved left, no receivable created, header untouched (pending)",
+  "status": "PASS",
+  "detail": {
+   "delivered": 5,
+   "receivables": 1,
+   "order_status": "entregue",
+   "reserved_left": 0,
+   "header_financial": "pending"
+  }
+ },
+ {
+  "test": "rollback: LIVE md5 restored, deliveries kept",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "after rollback canonical-terms order is closed again (fail closed)",
+  "status": "PASS",
+  "detail": "ERROR:  PT409: B2B_RESALE_ORDER_CONFLICT"
+ }
+]
