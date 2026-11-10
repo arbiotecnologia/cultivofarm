@@ -1,0 +1,22 @@
+{
+  "order": [
+    "forecast 01-04 (credit untouched, LIVE pin)",
+    "B4 PRE/INSTALL/POST (LIVE->B4)",
+    "credit 09-12 (B4->composed)",
+    "bridge/strict",
+    "forecast 05-08 reconcile+wrappers",
+    "bridge-audit",
+    "H7"
+  ],
+  "live_md5": "213ac31f3a30816ead75365b0d1fed18",
+  "b4_md5": "44e8768ff53d7fe5ff3b9f0889258946",
+  "composed_md5": "7d841856ba1e2dd34b0fa6491c4914b5",
+  "pre": "",
+  "post": "",
+  "b4_reinstall_after_composition_denied": [
+    "CONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE",
+    "LOCATION:  exec_stmt_raise, pl_exec.c:3911"
+  ],
+  "b4_reinstall_exit": 3,
+  "hosted": false
+}

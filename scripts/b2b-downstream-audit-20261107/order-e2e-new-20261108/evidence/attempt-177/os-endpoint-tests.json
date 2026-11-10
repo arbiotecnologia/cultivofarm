@@ -1,0 +1,137 @@
+{
+  "hosted": false,
+  "synthetic_auth": true,
+  "results": [
+    {
+      "name": "availability_reader_exact_cas_scope_and_item",
+      "status": "PASS",
+      "actor": "00000000-0000-0000-0000-000000000024",
+      "organization": "00000000-0000-0000-0000-000000000001"
+    },
+    {
+      "name": "buyer",
+      "status": "PASS",
+      "error": "ERROR:  42501: B2B_RESALE_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "zero_delta": true
+    },
+    {
+      "name": "fsf_feature_off_baseline_not_tenant_proof",
+      "status": "PASS",
+      "error": "ERROR:  42501: ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 8 at assignment\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "zero_delta": true
+    },
+    {
+      "name": "fsf_cross_tenant_feature_on_role_valid",
+      "status": "PASS",
+      "expected": "B2B_RESALE_ORDER_SCOPE_DENIED",
+      "error": "ERROR:  42501: B2B_RESALE_ORDER_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 16 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "feature_on": true,
+      "role_valid": true,
+      "zero_delta": true
+    },
+    {
+      "name": "fsf_reader_cross_tenant_feature_on",
+      "status": "PASS",
+      "expected": "B2B_RESALE_ORDER_SCOPE_DENIED",
+      "error": "ERROR:  42501: B2B_RESALE_ORDER_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_availability_v1(uuid) line 16 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "name": "fsf_own_positive_control_feature_on",
+      "status": "PASS",
+      "ack": {
+        "ok": true,
+        "os_id": "659d5e16-0bc7-42b1-ac2d-4341da3b5bbd",
+        "replay": false,
+        "contract": "B2B_RESALE_OS_V1",
+        "order_id": "6fbb4599-0a25-4ca1-9915-58b38db58f21",
+        "order_item_id": "ce3ad7a2-5a27-4d0b-90c7-7ed87e0fd38d"
+      },
+      "fixture_rollback": true,
+      "zero_delta": true
+    },
+    {
+      "name": "not_approved",
+      "status": "PASS",
+      "error": "ERROR:  PT409: B2B_RESALE_ORDER_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 38 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "fixture_only": true,
+      "all_guards_enabled_at_dispatch": true,
+      "zero_delta": true
+    },
+    {
+      "name": "linked_terms_pending",
+      "status": "PASS",
+      "error": "ERROR:  PT409: B2B_RESALE_ORDER_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 38 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "fixture_only": true,
+      "all_guards_enabled_at_dispatch": true,
+      "zero_delta": true
+    },
+    {
+      "name": "revoked",
+      "status": "PASS",
+      "error": "ERROR:  42501: B2B_RESALE_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "fixture_only": true,
+      "all_guards_enabled_at_dispatch": true,
+      "zero_delta": true
+    },
+    {
+      "name": "feature_closed",
+      "status": "PASS",
+      "error": "ERROR:  42501: ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 8 at assignment\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "fixture_only": true,
+      "all_guards_enabled_at_dispatch": true,
+      "zero_delta": true
+    },
+    {
+      "name": "helper_direct_authenticated_function_acl",
+      "status": "PASS",
+      "error": "ERROR:  42501: permission denied for function b2b_resale_os_create_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+    },
+    {
+      "name": "service_role_catalog_acl_negative_separate_from_schema",
+      "status": "PASS",
+      "acl": {
+        "schema_usage": false,
+        "helper_execute": false,
+        "reader_execute": false,
+        "writer_execute": false
+      },
+      "direct_call_error": "ERROR:  42501: permission denied for schema platform_private\nLINE 1: SELECT platform_private.b2b_resale_os_create_v1(NULL,NULL,NU...\n               ^\nLOCATION:  aclcheck_error, aclchk.c:2845\n",
+      "function_acl_proven_by_catalog": true
+    },
+    {
+      "name": "concurrent_public_create",
+      "status": "PASS",
+      "actual_lock_wait": true,
+      "one_os": true,
+      "acks": [
+        {
+          "ok": true,
+          "os_id": "ccfe3eb0-9060-46e1-aed4-ab8e20d9c18f",
+          "replay": false,
+          "contract": "B2B_RESALE_OS_V1",
+          "order_id": "6fbb4599-0a25-4ca1-9915-58b38db58f21",
+          "order_item_id": "ce3ad7a2-5a27-4d0b-90c7-7ed87e0fd38d"
+        },
+        {
+          "ok": true,
+          "os_id": "ccfe3eb0-9060-46e1-aed4-ab8e20d9c18f",
+          "replay": true,
+          "contract": "B2B_RESALE_OS_V1",
+          "order_id": "6fbb4599-0a25-4ca1-9915-58b38db58f21",
+          "order_item_id": "ce3ad7a2-5a27-4d0b-90c7-7ed87e0fd38d"
+        }
+      ]
+    },
+    {
+      "name": "reader_recovers_existing_os_without_resend",
+      "status": "PASS",
+      "os_id": "ccfe3eb0-9060-46e1-aed4-ab8e20d9c18f",
+      "create_available": false
+    },
+    {
+      "name": "reader_gate_off_never_advertises_writer",
+      "status": "PASS",
+      "available": false
+    }
+  ]
+}
