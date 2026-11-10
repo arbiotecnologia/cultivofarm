@@ -533,12 +533,14 @@ END$$;
              "05-pre-fiscal-reconcile.sql.readonly": reconcile_pre, "06-install-fiscal-reconcile.sql.review": reconcile_install,
              "07-post-fiscal-reconcile.sql.readonly": reconcile_post, "08-rollback-fiscal-reconcile-deny.sql.review": reconcile_rollback, **credit_files}
     for name, text in files.items(): (H/name).write_text(text)
+    from seller91_b4_stages import build as build_seller91
+    seller91 = build_seller91()
     manifest = {"project_ref":REF,"status":"REVIEW_ONLY_INACTIVE_NOT_APPROVED","phase":"FORECAST_AFTER_COMMERCIAL_AND_CREDIT_BEFORE_NF",
       "capture":str(CAPTURE5.relative_to(ROOT)),"capture_sha256":sha(CAPTURE5.read_text()),"live_approve_md5":OLD_APPROVE_MD5,
       "live_payment_terms_md5":current["approve_b2b_payment_terms_secure"]["md5"],"live_credit_approval_md5":current["approve_b2b_credit"]["md5"],"live_credit_exposure_md5":current["fn_b2b_credit_exposure"]["md5"],
       "after_forecast_approve_md5":new_approve_md5,"after_forecast_payment_terms_md5":new_terms_md5,"after_seller_scope_credit_approval_md5":new_credit_approval_md5,"rollback_terms_denied_md5":terms_denied_md5,"forecast_stage_credit_exposure_md5":current["fn_b2b_credit_exposure"]["md5"],
       "superseded_pre_b4_residual_credit_md5":new_credit_md5,"credit_composition":credit_manifest,"accounts_receivable_before_nf":False,"definitive_cardinality":"ONE_PER_AUTHORIZED_FISCAL_DOCUMENT",
-      "forecast_additive_to_credit":False,"files":{n:sha(t) for n,t in files.items()},"hosted":False}
+      "forecast_additive_to_credit":False,"b4_seller91_current":seller91,"creation_pilot":{"gate":"platform_private.b2b_forecast_creation_gate_v1","allowlist":"platform_private.b2b_forecast_creation_allowlist_v1","installed":"enabled=false, zero grants","max_grant_validity":"4 hours","out_of_pilot":"helper returns deferred FORECAST_CREATION_NOT_GRANTED before any snapshot/schedule/credit check; no forecast row"},"files":{n:sha(t) for n,t in files.items()},"hosted":False}
     (H/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
     print(json.dumps(manifest,indent=2))
 
