@@ -3,13 +3,14 @@
  * capability `rpc_b2b_resale_delivery_capability_v1` (actor/tenant/OS/stock, current pilot grant), probed
  * immediately before dispatch; any error, absence or envelope drift keeps it closed. The capability never
  * authorizes: writers re-check everything. Uncertain reservation is reconciled read-only by the same attempt
- * key and is NEVER re-dispatched (no second reservation / stock movement).
+ * key: exact server replay (same idempotency key) or read-only delta; never a new key/second reservation.
  */
 import { DELIVERY_OPERATION_BLOCK } from "./operationalContainment";
 import { DEFINITIVE_REJECTION_CODES, GROUP_RPC, buildGroupArgs, dispatchOnce, freeze, parseGroupAck, probeDeliveryCapability, replayUncertain, type GroupAck, type GroupInput, type Outcome, type RetrySnapshot, type Rpc } from "./deliveryOperationsFlow";
 
 export const RESALE_CAP_RPC = "rpc_b2b_resale_delivery_capability_v1";
-export const RESERVE_RPC = "reservar_estoque_item";
+/** Batch writer with server idempotency key and receipt replay (never the legacy rpc_reservar_embalagem_entrega). */
+export const RESERVE_RPC = "rpc_estoque_reservar_v1";
 const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
 const keysExact = (v: Record<string, unknown>, k: string[]) => { const a = Object.keys(v).sort(); return a.length === k.length && [...k].sort().every((x, i) => x === a[i]); };
@@ -102,13 +103,40 @@ export async function runResaleReservation(rpc: Rpc, store: Store, a: Omit<Reser
   fence(); onDispatch();
   let out: ReserveOutcome;
   try {
-    const { data, error } = await rpc(RESERVE_RPC, { p_item_id: a.stockId, p_qty: a.qty, p_os_id: a.osId, p_os_tipo: "b2b", p_partner_id: a.partnerId, p_partner_order_id: a.partnerOrderId });
-    if (error) out = typeof error.code === "string" && DEFINITIVE_REJECTION_CODES.has(error.code) ? { status: "rejected", code: error.code, message: error.message || "Reserva recusada." } : { status: "uncertain", attempt };
-    else out = typeof data === "string" && UUID.test(data) ? { status: "confirmed", reservedId: data, reconciled: false } : { status: "uncertain", attempt };
+    out = await dispatchReserve(rpc, attempt);
   } catch { out = { status: "uncertain", attempt }; }
   try { fence(); } catch { return { status: "stale" }; }
   if (out.status === "confirmed" || out.status === "rejected") { if (store.getItem(slot) === raw) store.removeItem(slot); }
   return out;
+}
+
+
+const reserveArgs = (a: ReserveAttempt) => ({ p_os_id: a.osId, p_origem: "b2b", p_itens: [{ item_id: a.stockId, quantidade: a.qty }], p_idempotency_key: a.key, p_dados: { partner_id: a.partnerId, partner_order_id: a.partnerOrderId } });
+/** Exact receipt: {ok:true, replay:boolean, itens:[uuid]} (split target id), nothing else. */
+export function parseReserveAck(data: unknown): string | null {
+  if (!isObj(data) || !keysExact(data, ["ok", "replay", "itens"]) || data.ok !== true || typeof data.replay !== "boolean" || !Array.isArray(data.itens) || data.itens.length !== 1) return null;
+  const id = data.itens[0];
+  return typeof id === "string" && UUID.test(id) ? id : null;
+}
+async function dispatchReserve(rpc: Rpc, attempt: ReserveAttempt): Promise<ReserveOutcome> {
+  const { data, error } = await rpc(RESERVE_RPC, reserveArgs(attempt));
+  if (error) return typeof error.code === "string" && DEFINITIVE_REJECTION_CODES.has(error.code) ? { status: "rejected", code: error.code, message: error.message || "Reserva recusada." } : { status: "uncertain", attempt };
+  const id = parseReserveAck(data);
+  return id ? { status: "confirmed", reservedId: id, reconciled: false } : { status: "uncertain", attempt };
+}
+
+/**
+ * Exact replay of an uncertain reservation with the SAME idempotency key and args. The server re-authorizes
+ * actor/tenant/references/current grant after its wait before returning a receipt. A refusal of the replay
+ * does not prove the original did not commit: the attempt stays retained (no clear, no new key).
+ */
+export async function replayResaleReservation(rpc: Rpc, store: Store, attempt: ReserveAttempt, fence: () => void): Promise<ReserveOutcome> {
+  fence();
+  let out: ReserveOutcome;
+  try { out = await dispatchReserve(rpc, attempt); } catch { out = { status: "uncertain", attempt }; }
+  try { fence(); } catch { return { status: "stale" }; }
+  if (out.status === "confirmed") { const slot = reserveSlot(attempt.actor, attempt.org, attempt.osId); if (store.getItem(slot) === JSON.stringify(attempt)) store.removeItem(slot); return out; }
+  return { status: "uncertain", attempt };
 }
 
 /**

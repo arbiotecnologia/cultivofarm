@@ -1,0 +1,58 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/entregas/b2bResaleDeliveryFlow.test.ts (13 tests) 39ms
+ ❯ src/test/estoque/stock-caller-compatibility.test.ts (12 tests | 1 failed) 44ms
+   ✓ compatibilidade dos callers de estoque — sem API real > ação não-entrega mantém nome, parâmetros e resultado da RPC tipada 5ms
+   ✓ compatibilidade dos callers de estoque — sem API real > preserva quantidade NULL e payload default onde ainda aplicável 4ms
+   ✓ compatibilidade dos callers de estoque — sem API real > contenção: expedicao pelo motor legado falha sem chamar RPC 3ms
+   ✓ compatibilidade dos callers de estoque — sem API real > contenção: entrega pelo motor legado falha sem chamar RPC 1ms
+   ✓ compatibilidade dos callers de estoque — sem API real > contenção: estorno_expedicao pelo motor legado falha sem chamar RPC 1ms
+   ✓ compatibilidade dos callers de estoque — sem API real > contenção: devolucao pelo motor legado falha sem chamar RPC 1ms
+   ✓ compatibilidade dos callers de estoque — sem API real > continua propagando o erro de negócio sem repetir escrita 1ms
+   ✓ compatibilidade dos callers de estoque — sem API real > criação vincula OS/chave/CAS e tipo de OS é validado antes de qualquer RPC 3ms
+   ✓ compatibilidade dos callers de estoque — sem API real > capability envelope malformado (recusa por schema): só CAPABILITY_RPC, nenhum GROUP_RPC 2ms
+   ✓ compatibilidade dos callers de estoque — sem API real > capability envelope válido com group:false: só CAPABILITY_RPC, nenhum GROUP_RPC 1ms
+   ✓ compatibilidade dos callers de estoque — sem API real > controle positivo: capability válida group:true despacha mesma chave/CAS e ACK canônico confirma 2ms
+   × compatibilidade dos callers de estoque — sem API real > Entregas passa o tipo da OS e a revisão observada ao contrato atômico 16ms
+     → expected -1 to be greater than -1
+ ✓ src/test/entregas/deliveryOperationsFlow.test.ts (72 tests) 62ms
+stderr | src/test/entregas/deliveryContainmentStock.test.tsx > reserva de embalagem com destino selecionado não envia nem anuncia sucesso
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | src/test/entregas/deliveryAtomicPageMount.test.tsx > Entregas page with atomic adapter (mounted) > send timeout retains ownership until transport settles and never parallel-dispatches
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/entregas/deliveryContainmentStock.test.tsx (7 tests) 531ms
+ ✓ src/test/entregas/deliveryAtomicPageMount.test.tsx (32 tests) 5126ms
+   ✓ Entregas page with atomic adapter (mounted) > send timeout retains ownership until transport settles and never parallel-dispatches  501ms
+   ✓ Entregas page with atomic adapter (mounted) > preflight rejection then refresh uses a fresh observed revision and dispatches once  449ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: reconcile  690ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: terminal  411ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: tenant  547ms
+   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=false)  385ms
+   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=true)  413ms
+   ✓ Entregas page with atomic adapter (mounted) > Enviar replaces direct UPDATE and makes physical confirmation reachable  302ms
+   ✓ Entregas page with atomic adapter (mounted) > cancel uses the revision seen when the dialog opened and refuses if it changed  341ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/estoque/stock-caller-compatibility.test.ts > compatibilidade dos callers de estoque — sem API real > Entregas passa o tipo da OS e a revisão observada ao contrato atômico
+AssertionError: expected -1 to be greater than -1
+ ❯ src/test/estoque/stock-caller-compatibility.test.ts:89:19
+     87|     const caller = readFileSync("src/pages/Entregas.tsx", "utf8");
+     88|     const start = caller.indexOf("runAtomicGroup(supabase.rpc");
+     89|     expect(start).toBeGreaterThan(-1);
+       |                   ^
+     90|     const call = caller.slice(start, caller.indexOf("}, check,", start…
+     91|     expect(call).toContain("osId, osTipo");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 4 passed (5)
+      Tests  1 failed | 135 passed (136)
+   Start at  20:30:33
+   Duration  10.69s (transform 1.27s, setup 1.46s, collect 3.87s, tests 5.80s, environment 10.02s, prepare 1.04s)
+
