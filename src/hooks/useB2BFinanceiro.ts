@@ -6,6 +6,7 @@ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useAuth } from "@/hooks/useAuth";
 import { activePaymentMethodValid, canConfigurePartnerSettings, settingsFields, type PartnerSettings } from "@/lib/financeiro/partnerSettings";
 import { parseB2BForecast } from "@/lib/financeiro/b2bForecast";
+import { parseRevenueForecastTenant, REVENUE_FORECAST_TENANT_RPC, type B2BRevenueForecastTenant } from "@/lib/financeiro/b2bRevenueForecastTenant";
 
 const sb = supabase as any;
 
@@ -387,16 +388,22 @@ export function useB2BAgingDetalhado(filters: { from?: string; to?: string; part
   });
 }
 
+/**
+ * Previsão de receita por empresa via leitor tenant-scoped candidato. Nunca chama o legado
+ * rpc_b2b_revenue_forecast (sem filtro de empresa). Ausência do leitor => indisponível (null), sem fallback.
+ */
 export function useB2BRevenueForecast(partner_id?: string | null) {
+  const partner = partner_id ?? null;
   return useScopedB2BFinancialQuery({
-    queryKey: ["b2b-forecast", partner_id ?? null],
-    queryFn: async () => {
-      const { data, error } = await sb.rpc("rpc_b2b_revenue_forecast", { p_partner_id: partner_id ?? null });
-      if (error) throw error;
-      return data as {
-        confirmada_30: number; confirmada_60: number; confirmada_90: number;
-        projetada: number; em_risco: number;
-      };
+    queryKey: ["b2b-forecast-tenant-v1", partner],
+    queryFn: async (): Promise<B2BRevenueForecastTenant | null> => {
+      const { data, error } = await sb.rpc(REVENUE_FORECAST_TENANT_RPC, { p_partner_id: partner });
+      if (error) {
+        if (error.code === "PGRST202" && typeof error.message === "string" &&
+            error.message.includes(`public.${REVENUE_FORECAST_TENANT_RPC}(p_partner_id)`)) return null;
+        throw error;
+      }
+      return parseRevenueForecastTenant(data, partner);
     },
   });
 }
