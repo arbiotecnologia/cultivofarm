@@ -56,9 +56,23 @@ def test_terms_waits(B, Q, OUT, order_id):
     return results
 
 
-def exposure(B, Q):
+def exposure(B, Q, exclude=None, partner=None):
     claims = "'" + json.dumps(json.dumps({'sub': Q.UADM, 'role': 'authenticated', 'iat': 1, 'exp': 4102444800})).replace("'", "''") + "'"
-    return json.loads(B.last(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims={claims};SELECT public.fn_b2b_credit_exposure('{Q.P}',0,NULL);"))
+    ex = 'NULL' if exclude is None else f"'{exclude}'"
+    return json.loads(B.last(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims={claims};SELECT public.fn_b2b_credit_exposure('{partner or Q.P}',0,{ex});"))
+
+
+def assert_order_exposure(B, Q, order_id, base_open, open_order, residual, partner=None, label=''):
+    """Other orders of the partner are measured with p_exclude_order_id, never assumed zero."""
+    full = exposure(B, Q, partner=partner)
+    others = exposure(B, Q, exclude=order_id, partner=partner)
+    got = dict(open=float(full['saldo_em_aberto']), committed=float(full['comprometido_nao_faturado']), pending=float(full['comprometido_pendente']),
+               others_committed=float(others['comprometido_nao_faturado']), others_pending=float(others['comprometido_pendente']), total=float(full['exposicao_atual']))
+    ok = (abs(got['open'] - (base_open + open_order)) < .001 and abs(got['committed'] - (got['others_committed'] + residual)) < .001
+          and abs(got['pending'] - got['others_pending']) < .001
+          and abs(got['total'] - (base_open + open_order + got['others_committed'] + got['others_pending'] + residual)) < .001)
+    assert ok, (label, got, base_open, open_order, residual)
+    return dict(full=full, others=others, order_open=open_order, order_residual=residual, order_exposure=open_order + residual, label=label)
 
 
 def test_terms_replay(B, Q, OUT, order_id, before_fix=False):
@@ -292,8 +306,9 @@ def run_pre_nf_wrappers(B, Q, OUT, order_id, accepted, item):
 def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, first_receivable, credit_before):
     """Duas NFs de 9, corrida das duas últimas NFs, replay, H7 e pagamento canônico de 9."""
     assert float(accepted['final_amount_with_interest']) == 18.0, accepted['final_amount_with_interest']
-    first_credit = exposure(B, Q)
-    assert float(first_credit['saldo_em_aberto']) == 9 and float(first_credit['comprometido_nao_faturado']) == 9 and float(first_credit['exposicao_atual']) == 18, first_credit
+    base_open = float(credit_before['saldo_em_aberto'])
+    first_credit = assert_order_exposure(B, Q, order_id, base_open, 9, 9, label='after NF1: title 9 + residual 9 = 18')
+    assert abs(float(first_credit['full']['exposicao_atual']) - float(credit_before['exposicao_atual'])) < .001, (first_credit, credit_before)
 
     def bridge_race(_):
         return B.run_raw(f"SET ROLE service_role;SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{first_invoice}');")
@@ -329,8 +344,8 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
     loser_reason = B.run_raw(f"BEGIN;SET ROLE service_role;SELECT public.rpc_fiscal_invoice_apply_authorization_v1('{loser['invoice']}','{loser['access_key']}','{'LOCAL-INTEGRATED-PROTOCOL-2A' if loser is A else 'LOCAL-INTEGRATED-PROTOCOL-2Z'}',now(),'100','LOTE PROCESSADO; PROTOCOLO AUTORIZADO','{loser['tx']}');ROLLBACK;")
     forecast = forecast_row(B, order_id)
     assert forecast['state'] == 'faturado_total' and float(forecast['residual_amount']) == 0 and forecast['version'] == started['version'] + 1, forecast
-    second_credit = exposure(B, Q)
-    assert float(second_credit['saldo_em_aberto']) == 18 and float(second_credit['comprometido_nao_faturado']) == 0 and float(second_credit['exposicao_atual']) == 18, second_credit
+    second_credit = assert_order_exposure(B, Q, order_id, base_open, 18, 0, label='after NF2: titles 18 + residual 0 = 18')
+    assert abs(float(second_credit['full']['exposicao_atual']) - float(credit_before['exposicao_atual'])) < .001, (second_credit, credit_before)
     totals = json.loads(B.last(f"SELECT jsonb_build_object('titles',count(*),'total',sum(total_amount))::text FROM public.accounts_receivable WHERE origin_id='{order_id}' AND b2b_document_id IS NOT NULL;"))
     assert totals['titles'] == 2 and float(totals['total']) == 18, totals
     replay = authorize(B, winner, winner['tx'], 'LOCAL-INTEGRATED-PROTOCOL-2A' if winner is A else 'LOCAL-INTEGRATED-PROTOCOL-2Z')
@@ -352,8 +367,8 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
     paid = Q.as_user(Q.UFIN, f"SELECT public.rpc_register_receivable_payment('{installment}','{payment}'::jsonb);")
     assert paid.returncode == 0, paid.stderr
     paid_replay = Q.as_user(Q.UFIN, f"SELECT public.rpc_register_receivable_payment('{installment}','{payment}'::jsonb);")
-    paid_credit = exposure(B, Q)
-    assert float(paid_credit['saldo_em_aberto']) == 9 and float(paid_credit['comprometido_nao_faturado']) == 0 and float(paid_credit['exposicao_atual']) == 9, paid_credit
+    paid_credit = assert_order_exposure(B, Q, order_id, base_open, 9, 0, label='after payment 9: open 9 + residual 0 = 9')
+    assert abs(float(paid_credit['full']['exposicao_atual']) - (float(credit_before['exposicao_atual']) - 9)) < .001, (paid_credit, credit_before)
     forecast_after_payment = forecast_row(B, order_id)
     assert forecast_after_payment == forecast, (forecast_after_payment, forecast)
     result = dict(first_invoice=first_invoice, first_receivable=first_receivable, winner_invoice=winner['invoice'], loser_invoice=loser['invoice'], second_receivable=second_receivable,
@@ -379,6 +394,8 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
     company = order['internal_economic_snapshot']['origin']['company_settings_id']
     item_id = B.last(f"SELECT id FROM public.partner_order_items WHERE order_id='{pc_order}' ORDER BY created_at,id LIMIT 1;")
     total = float(forecast_row(B, pc_order)['residual_amount'])
+    pc_base_open = float(exposure(B, Q, partner=Q.PC)['saldo_em_aberto'])
+    pc_initial = assert_order_exposure(B, Q, pc_order, pc_base_open, 0, total, partner=Q.PC, label='PC before NF: residual only')
     half = round(total / 2, 2)
     # Same declared B4 customer seam as the main partner (partner_accounts.client_id).
     customer = Q.u(302)
@@ -401,8 +418,7 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
         assert got.returncode == 0 and _last(got)['reconciliationPending'] is False, (got.stdout, got.stderr)
         partial = forecast_row(B, pc_order)
         assert partial['state'] == 'faturado_parcial' and abs(float(partial['residual_amount']) - (total - half)) < .001, partial
-        exp_partial = exposure_for(B, Q.PC, Q.UADM)
-        assert abs(float(exp_partial['saldo_em_aberto']) - half) < .001 and abs(float(exp_partial['comprometido_nao_faturado']) - (total - half)) < .001, exp_partial
+        exp_partial = assert_order_exposure(B, Q, pc_order, pc_base_open, half, total - half, partner=Q.PC, label='PC after partial NF')
     else:
         reject(B, P1['tx'], '539', 'Rejeicao local sintetica PC')
         exp_partial = None
@@ -422,8 +438,7 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
     after_cancel = forecast_row(B, pc_order)
     assert float(after_cancel['residual_amount']) == 0, after_cancel
     cancel_replay = denied(cancel_raw(Q, Q.UFIN, pc_order, l_consulted['version'], 'repeticao'), 'B2B_FORECAST_')
-    exp_cancel = exposure_for(B, Q.PC, Q.UADM)
-    assert abs(float(exp_cancel['saldo_em_aberto']) - (half if dry_ok else 0)) < .001 and float(exp_cancel['comprometido_nao_faturado']) == 0, exp_cancel
+    exp_cancel = assert_order_exposure(B, Q, pc_order, pc_base_open, half if dry_ok else 0, 0, partner=Q.PC, label='PC after residual cancel: residual not counted')
     N = insert_invoice(B, Q, pc_order, Q.PC, company, item_id, half, 990, '2027-02-05')
     emission_denied = denied(sync_raw(Q, Q.UFIN, N['tx'], after_cancel['version']), 'B2B_FORECAST_FISCAL_AMOUNT_EXCEEDS_RESIDUAL')
     reject(B, N['tx'], '539', 'Rejeicao local sintetica residual cancelado')
@@ -440,11 +455,10 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
     assert titles['titles'] == (1 if dry_ok else 0), titles
     evidence = json.loads(B.last(f"SELECT jsonb_build_object('tx',(SELECT jsonb_build_object('outcome',outcome,'c_stat',c_stat,'n_prot',n_prot,'ch_nfe',ch_nfe) FROM public.fiscal_sefaz_transmissions WHERE id='{late}'),'invoice',(SELECT jsonb_build_object('normalized_status',normalized_status,'receivable_id',receivable_id) FROM public.fiscal_invoices WHERE id='{L['invoice']}'),'close_pending',(SELECT jsonb_build_object('error_code',error_code,'attempts',attempts) FROM platform_private.fiscal_close_pending WHERE transmission_id='{late}'))::text;"))
     assert evidence['tx']['n_prot'] == 'LOCAL-PC-LATE' and evidence['invoice']['receivable_id'] is None and evidence['close_pending']['error_code'] == 'FISCAL_AUTHORIZATION_CLOSE_PENDING', evidence
-    exp_final = exposure_for(B, Q.PC, Q.UADM)
-    assert exp_final['exposicao_atual'] == exp_cancel['exposicao_atual'], (exp_final, exp_cancel)
+    exp_final = assert_order_exposure(B, Q, pc_order, pc_base_open, half if dry_ok else 0, 0, partner=Q.PC, label='PC after late callback: unchanged, close pending explicit')
     blocked_after = denied(cancel_raw(Q, Q.UFIN, pc_order, final['version'], 'nova tentativa'), 'B2B_FORECAST_')
     result = dict(order_id=pc_order, path=path, dry_run=dict(exit=dry.returncode, stdout=dry.stdout.strip()[-400:], stderr=dry.stderr.strip()[-400:]),
-                  partial=partial, exposure_partial=exp_partial, canceled=canceled_data, cancel_replay=cancel_replay, exposure_after_cancel=exp_cancel,
+                  exposure_initial=pc_initial, partial=partial, exposure_partial=exp_partial, canceled=canceled_data, cancel_replay=cancel_replay, exposure_after_cancel=exp_cancel,
                   emission_after_cancel_denied=emission_denied, late_callback=late_data, late_close_code=late_data['reconciliationCode'],
                   late_reason=late_reason.stderr.strip()[-500:], evidence_preserved=evidence, forecast_final=final, titles=titles,
                   exposure_final=exp_final, cancel_after_late_denied=blocked_after, negatives=neg,
