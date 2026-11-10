@@ -1,0 +1,855 @@
+{
+  "hosted": false,
+  "synthetic_auth": true,
+  "checks": [
+    {
+      "case": "forecast_sync-installed-closed",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-installed-closed",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-feature-off-pedidos_b2b",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 12 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_FEATURE_DENIED"
+    },
+    {
+      "case": "forecast_cancel-feature-off-pedidos_b2b",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 10 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_FEATURE_DENIED"
+    },
+    {
+      "case": "forecast_sync-feature-off-contas_receber",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 12 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_FEATURE_DENIED"
+    },
+    {
+      "case": "forecast_cancel-feature-off-contas_receber",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 10 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_FEATURE_DENIED"
+    },
+    {
+      "case": "forecast_sync-gate-off",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-gate-off",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-logistics-open-lifecycle-off",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-logistics-open-lifecycle-off",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-logistics-open-no-lifecycle-grant",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-logistics-open-no-lifecycle-grant",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-other-operation-only",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-other-operation-only",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-revoked",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-revoked",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-expired",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-expired",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-wrong-order",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-wrong-order",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-wrong-actor",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-wrong-actor",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-wrong-tenant",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-wrong-tenant",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-wrong-partner",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-wrong-partner",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-exact-authorization-control",
+      "exit": 0,
+      "stdout": "{\"event\": \"EMISSION_STARTED\", \"state\": \"emissao_em_andamento\", \"version\": 2, \"replayed\": false, \"invoice_id\": \"00000000-0000-0000-0000-000000000960\", \"forecast_id\": \"f65d1ada-e10b-40cd-8077-dac2146a405b\", \"transmission_id\": \"00000000-0000-0000-0000-000000000962\"}\n",
+      "stderr": "",
+      "classification": "AUTHORIZATION_PASSED_SYNC_ROLLBACK",
+      "functional_cancel_success": false
+    },
+    {
+      "case": "forecast_cancel-exact-authorization-control",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: B2B_FORECAST_FISCAL_IN_FLIGHT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 39 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "classification": "AUTHORIZATION_PASSED_BUSINESS_IN_FLIGHT_DENIED_NOT_CANCEL_SUCCESS",
+      "functional_cancel_success": false
+    },
+    {
+      "case": "forecast_sync-revoked-after-wait-gate",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_PILOT_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 38 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "barrier": {
+        "holder_ready": {
+          "pid": 12524,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 12524,
+          "waiter_pid": 12530,
+          "blocking_pids": [
+            12524
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18118"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    },
+    {
+      "case": "forecast_sync-post-revocation-gate",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-revoked-after-wait-pilot",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_PILOT_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 38 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "barrier": {
+        "holder_ready": {
+          "pid": 12546,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 12546,
+          "waiter_pid": 12552,
+          "blocking_pids": [
+            12546
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18122"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    },
+    {
+      "case": "forecast_sync-post-revocation-pilot",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-revoked-after-wait-pedidos_b2b",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 42 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "barrier": {
+        "holder_ready": {
+          "pid": 12569,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 12569,
+          "waiter_pid": 12575,
+          "blocking_pids": [
+            12569
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18126"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    },
+    {
+      "case": "forecast_sync-post-revocation-pedidos_b2b",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 12 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-revoked-after-wait-contas_receber",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 42 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "barrier": {
+        "holder_ready": {
+          "pid": 12591,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 12591,
+          "waiter_pid": 12597,
+          "blocking_pids": [
+            12591
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18130"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    },
+    {
+      "case": "forecast_sync-post-revocation-contas_receber",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 12 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-revoked-after-wait-role",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 35 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "barrier": {
+        "holder_ready": {
+          "pid": 12613,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 12613,
+          "waiter_pid": 12619,
+          "blocking_pids": [
+            12613
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18134"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    },
+    {
+      "case": "forecast_sync-post-revocation-role",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 9 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-revoked-after-wait-tenant",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 35 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "barrier": {
+        "holder_ready": {
+          "pid": 12633,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 12633,
+          "waiter_pid": 12638,
+          "blocking_pids": [
+            12633
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18138"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    },
+    {
+      "case": "forecast_sync-post-revocation-tenant",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 9 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-revoked-after-wait-gate",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_PILOT_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 29 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "barrier": {
+        "holder_ready": {
+          "pid": 12655,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 12655,
+          "waiter_pid": 12661,
+          "blocking_pids": [
+            12655
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18142"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    },
+    {
+      "case": "forecast_cancel-post-revocation-gate",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-revoked-after-wait-pilot",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_PILOT_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 29 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "barrier": {
+        "holder_ready": {
+          "pid": 12675,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 12675,
+          "waiter_pid": 12680,
+          "blocking_pids": [
+            12675
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18146"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    },
+    {
+      "case": "forecast_cancel-post-revocation-pilot",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-revoked-after-wait-pedidos_b2b",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 32 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "barrier": {
+        "holder_ready": {
+          "pid": 12696,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 12696,
+          "waiter_pid": 12701,
+          "blocking_pids": [
+            12696
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18150"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    },
+    {
+      "case": "forecast_cancel-post-revocation-pedidos_b2b",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 10 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-revoked-after-wait-contas_receber",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 32 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "barrier": {
+        "holder_ready": {
+          "pid": 12717,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 12717,
+          "waiter_pid": 12724,
+          "blocking_pids": [
+            12717
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18154"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    },
+    {
+      "case": "forecast_cancel-post-revocation-contas_receber",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 10 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-revoked-after-wait-role",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 26 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "barrier": {
+        "holder_ready": {
+          "pid": 12738,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 12738,
+          "waiter_pid": 12743,
+          "blocking_pids": [
+            12738
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18158"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    },
+    {
+      "case": "forecast_cancel-post-revocation-role",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-revoked-after-wait-tenant",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 26 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "barrier": {
+        "holder_ready": {
+          "pid": 12758,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 12758,
+          "waiter_pid": 12764,
+          "blocking_pids": [
+            12758
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18162"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    },
+    {
+      "case": "forecast_cancel-post-revocation-tenant",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-wait-in-own-allowlist-gate-off",
+      "holder_lock": "SELECT id FROM platform_private.b2b_forecast_lifecycle_allowlist_v1 WHERE operation='forecast_sync' AND actor_id='00000000-0000-0000-0000-000000000029' FOR UPDATE;",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_PILOT_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 38 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "barrier": {
+        "holder_ready": {
+          "pid": 12778,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 12778,
+          "waiter_pid": 12784,
+          "blocking_pids": [
+            12778
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18166"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    },
+    {
+      "case": "forecast_sync-wait-in-own-allowlist-grant-revoked",
+      "holder_lock": "SELECT id FROM platform_private.b2b_forecast_lifecycle_allowlist_v1 WHERE operation='forecast_sync' AND actor_id='00000000-0000-0000-0000-000000000029' FOR UPDATE;",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_PILOT_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 38 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "barrier": {
+        "holder_ready": {
+          "pid": 12796,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 12796,
+          "waiter_pid": 12801,
+          "blocking_pids": [
+            12796
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18169"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    },
+    {
+      "case": "forecast_sync-wait-in-own-gate-gate-off",
+      "holder_lock": "SELECT singleton FROM platform_private.b2b_forecast_lifecycle_gate_v1 WHERE singleton FOR UPDATE;",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_PILOT_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 38 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "barrier": {
+        "holder_ready": {
+          "pid": 12814,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 12814,
+          "waiter_pid": 12820,
+          "blocking_pids": [
+            12814
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18172"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    },
+    {
+      "case": "forecast_cancel-wait-in-own-allowlist-gate-off",
+      "holder_lock": "SELECT id FROM platform_private.b2b_forecast_lifecycle_allowlist_v1 WHERE operation='forecast_cancel' AND actor_id='00000000-0000-0000-0000-000000000029' FOR UPDATE;",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_PILOT_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 29 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "barrier": {
+        "holder_ready": {
+          "pid": 12831,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 12831,
+          "waiter_pid": 12838,
+          "blocking_pids": [
+            12831
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18175"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    },
+    {
+      "case": "forecast_cancel-wait-in-own-allowlist-grant-revoked",
+      "holder_lock": "SELECT id FROM platform_private.b2b_forecast_lifecycle_allowlist_v1 WHERE operation='forecast_cancel' AND actor_id='00000000-0000-0000-0000-000000000029' FOR UPDATE;",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_PILOT_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 29 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "barrier": {
+        "holder_ready": {
+          "pid": 12849,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 12849,
+          "waiter_pid": 12855,
+          "blocking_pids": [
+            12849
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18178"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    },
+    {
+      "case": "forecast_cancel-wait-in-own-gate-gate-off",
+      "holder_lock": "SELECT singleton FROM platform_private.b2b_forecast_lifecycle_gate_v1 WHERE singleton FOR UPDATE;",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_PILOT_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 29 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "barrier": {
+        "holder_ready": {
+          "pid": 12867,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 12867,
+          "waiter_pid": 12872,
+          "blocking_pids": [
+            12867
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18181"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    }
+  ],
+  "logistics_gate_open_during_positive": false,
+  "positive_projection": "BLOCKED_NOT_REPLACED_BY_NEGATIVE",
+  "authorization_source": "canonical entitlement + OWN lifecycle gate/allowlist (decoupled from logistics), not forecast"
+}

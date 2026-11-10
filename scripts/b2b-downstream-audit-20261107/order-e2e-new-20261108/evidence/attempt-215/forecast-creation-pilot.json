@@ -1,0 +1,145 @@
+{
+  "results": [
+    {
+      "name": "out_of_pilot_differential_live_vs_candidate",
+      "status": "PASS",
+      "detail": {
+        "label": "out-of-pilot snapshot order, gate ENABLED, no grant",
+        "steps": [
+          {
+            "step": "credit",
+            "live_ok": false,
+            "candidate_ok": false,
+            "live_error": "b2b_phase1_scope_denied",
+            "candidate_error": "b2b_phase1_scope_denied",
+            "live_ret": null,
+            "candidate_ret": null
+          },
+          {
+            "step": "terms",
+            "live_ok": false,
+            "candidate_ok": false,
+            "live_error": "b2b_phase1_scope_denied",
+            "candidate_error": "B2B_PAYMENT_TERMS_APPROVAL_ROLLED_BACK",
+            "live_ret": null,
+            "candidate_ret": null
+          },
+          {
+            "step": "commercial",
+            "live_ok": true,
+            "candidate_ok": true,
+            "live_error": null,
+            "candidate_error": null,
+            "live_ret": "",
+            "candidate_ret": ""
+          }
+        ],
+        "same_step_outcomes": true,
+        "effects_equal": true,
+        "effect_diffs": {},
+        "live_forecasts": 0,
+        "candidate_forecasts": 0,
+        "rolled_back": true,
+        "committed_candidate": {
+          "steps": [
+            {
+              "ok": false,
+              "ord": 1,
+              "ret": null,
+              "step": "credit",
+              "message": "b2b_phase1_scope_denied",
+              "sqlstate": "42501"
+            },
+            {
+              "ok": false,
+              "ord": 2,
+              "ret": null,
+              "step": "terms",
+              "message": "B2B_PAYMENT_TERMS_APPROVAL_ROLLED_BACK",
+              "sqlstate": "42501"
+            },
+            {
+              "ok": true,
+              "ord": 3,
+              "ret": "",
+              "step": "commercial",
+              "message": null,
+              "sqlstate": null
+            }
+          ],
+          "forecasts": 0,
+          "status": "aprovado"
+        }
+      }
+    },
+    {
+      "name": "legacy_without_snapshot_differential",
+      "status": "PASS",
+      "detail": {
+        "label": "legacy order without internal_economic_snapshot, no grant",
+        "steps": [
+          {
+            "step": "credit",
+            "live_ok": false,
+            "candidate_ok": false,
+            "live_error": "b2b_phase1_scope_denied",
+            "candidate_error": "b2b_phase1_scope_denied",
+            "live_ret": null,
+            "candidate_ret": null
+          },
+          {
+            "step": "terms",
+            "live_ok": false,
+            "candidate_ok": false,
+            "live_error": "b2b_phase1_scope_denied",
+            "candidate_error": "B2B_PAYMENT_TERMS_APPROVAL_ROLLED_BACK",
+            "live_ret": null,
+            "candidate_ret": null
+          },
+          {
+            "step": "commercial",
+            "live_ok": true,
+            "candidate_ok": true,
+            "live_error": null,
+            "candidate_error": null,
+            "live_ret": "",
+            "candidate_ret": ""
+          }
+        ],
+        "same_step_outcomes": true,
+        "effects_equal": true,
+        "effect_diffs": {},
+        "live_forecasts": 0,
+        "candidate_forecasts": 0,
+        "rolled_back": true
+      }
+    },
+    {
+      "name": "pilot_exact_grant_creates_one_forecast",
+      "status": "FAIL",
+      "error": "AssertionError(('credit', 'ERROR:  42501: b2b_phase1_scope_denied\\nCONTEXT:  PL/pgSQL function approve_b2b_credit(uuid,text) line 9 at RAISE\\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\\n'))"
+    },
+    {
+      "name": "grant_revoked_during_proven_wait",
+      "status": "FAIL",
+      "error": "AssertionError(('credit', 'ERROR:  42501: b2b_phase1_scope_denied\\nCONTEXT:  PL/pgSQL function approve_b2b_credit(uuid,text) line 9 at RAISE\\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\\n'))"
+    },
+    {
+      "name": "gate_off_during_proven_wait",
+      "status": "FAIL",
+      "error": "AssertionError(('credit', 'ERROR:  42501: b2b_phase1_scope_denied\\nCONTEXT:  PL/pgSQL function approve_b2b_credit(uuid,text) line 9 at RAISE\\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\\n'))"
+    },
+    {
+      "name": "gate_closed_with_valid_grant",
+      "status": "FAIL",
+      "error": "AssertionError(('credit', 'ERROR:  42501: b2b_phase1_scope_denied\\nCONTEXT:  PL/pgSQL function approve_b2b_credit(uuid,text) line 9 at RAISE\\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\\n'))"
+    },
+    {
+      "name": "grant_scope_mismatch_and_acl",
+      "status": "FAIL",
+      "error": "AssertionError(('credit', 'ERROR:  42501: b2b_phase1_scope_denied\\nCONTEXT:  PL/pgSQL function approve_b2b_credit(uuid,text) line 9 at RAISE\\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\\n'))"
+    }
+  ],
+  "hosted": false,
+  "auth": "SYNTHETIC SQL-role authenticated; not JWT/RLS proof"
+}

@@ -1,0 +1,43 @@
+{
+  "order_id": "fb26ff1c-52b8-4ff6-bc64-7ce35715c506",
+  "invoice_id": "00000000-0000-0000-0000-000000000985",
+  "begin_stderr": "ERROR:  PT409: B2B_FORECAST_BEGIN_BLOCKED",
+  "barrier": {
+    "holder_ready": {
+      "pid": 13798,
+      "state": "idle in transaction",
+      "granted": true
+    },
+    "waiter_before_revocation": {
+      "holder_pid": 13798,
+      "waiter_pid": 13808,
+      "blocking_pids": [
+        13798
+      ],
+      "ungranted_locks": [
+        {
+          "mode": "ShareLock",
+          "granted": false,
+          "locktype": "transactionid",
+          "relation": null,
+          "transactionid": "18406"
+        }
+      ],
+      "wait_event_type": "Lock"
+    },
+    "mutation_sent_after_waiter": true,
+    "timing_only_proof": false
+  },
+  "transmissions_before": "6",
+  "transmissions_after": "6",
+  "forecast_after": {
+    "state": "cancelado_residual",
+    "version": 13,
+    "last_error_code": null,
+    "residual_amount": 0.0,
+    "fiscal_intent_id": "00000000-0000-0000-0000-000000000985"
+  },
+  "residual_after": 0,
+  "separate_from": "canonical-begin-cancel-race.json cancel-lock-first-rollback",
+  "hosted": false
+}
