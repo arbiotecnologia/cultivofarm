@@ -21,3 +21,9 @@ Correção (`reader.sql`, md5 corpo `d9a1c488067897ceaf216f2d1a0ebf3d`): impress
 Resultados com espera provada (pg_stat_activity Lock + pg_blocking_pids + advisory:ShareLock não concedido): NF2 antigo MIXED / novo POST; pagamento 9 antigo PRE / novo POST; cancelamento do residual antigo POST / novo POST. Novo nunca MIXED.
 Cadeia final `rebuild_current.py` attempt-224: exit 0, 57 checkpoints, 41/41 casos V2, 38 gatilhos íntegros; arquivos 01–04 byte a byte iguais a este diretório (ver SHA256SUMS). attempt-223 = executor errado (`rebuild.py`, falha na etapa OS anterior), preservada.
 Limites: sondas são cópias com 2 linhas alteradas (nome + `pg_advisory_xact_lock_shared`), registradas em `read-consistency-probes.json`; o corpo instalado não tem ponto de pausa determinístico. Esgotamento das 3 tentativas (40001) não foi exercitado; ABA por INSERT+DELETE físico de linha do escopo entre as leituras não é detectável (tabelas B4 append-only/imutáveis). Não prova JWT/RLS hospedado.
+
+## Revisão eceeb0e2 — esgotamento e limite ABA (sem SQL alterado; corpo segue d9a1c488…)
+- `concurrency/exhaustion_test.py` (PG17 descartável local, esquema mínimo declarado e stubs de autorização; corpo real conferido md5 d9a1c488; sonda = +1 linha `pg_advisory_xact_lock_shared(770010+attempt)`, um holder por tentativa, espera provada por pg_locks/pg_blocking_pids antes de cada COMMIT de mutação):
+  mudança nas tentativas 1,2,3 → `ERROR: 40001: B2B_REVENUE_FORECAST_CONCURRENT_CHANGE`, sem payload; mudança em 1,2 e estável na 3 → devolve o estado novo; sem mudança → 1 tentativa. Resultado em `concurrency/exhaustion-result.json`.
+- Frontend: `src/test/financeiro/revenueForecastConcurrentChange.test.tsx` (hook + escopo + painel reais): após sucesso, 40001 → "Previsão indisponível para esta sessão", sem R$, sem total anterior, sem retry automático.
+- Cobertura e limite ABA: `concurrency/ABA-LIMITE.md`. Cadeia completa não repetida (attempt-224 preservada).
