@@ -74,6 +74,9 @@ def apply(driver, load, root, out):
     # JSONB populate keeps native arrays/json/numeric casts intact.
     B.sql('SET session_replication_role=replica; INSERT INTO '+obj+' ('+','.join('"'+c+'"' for c in cols)+') SELECT '+','.join('"'+c+'"' for c in cols)+' FROM jsonb_populate_record(NULL::'+obj+','+lit(json.dumps(row))+'::jsonb) ON CONFLICT DO NOTHING; SET session_replication_role=origin;')
   B.sql(f"UPDATE public.profiles SET organization_id='{Q.A}',nome='LOCAL B3 ADMIN',ativo=true,senha_provisoria=false WHERE user_id='{Q.UADM}';")
+  # Auth lifecycle creates a default profile before fixture import; ON CONFLICT
+  # must not leave the financial actor with a null tenant or temporary password.
+  B.sql(f"UPDATE public.profiles SET organization_id='{Q.A}',nome='LOCAL B3 FINANCEIRO',ativo=true,senha_provisoria=false WHERE user_id='{Q.UFIN}';")
   # Entitlements reais: a tabela seam_entitlements do harness B3 não é lida
   # pelo resolvedor canônico mantido da base física. Concessões GRANT apenas
   # no tenant A; nenhuma versão publicada é alterada e F não recebe o grant.
