@@ -22,7 +22,14 @@ def run(B, Review, Q, A, choice, out):
     def err(r): return next((l for l in r.stderr.splitlines() if l.startswith("ERROR")), r.stderr[-200:])
 
     gates("false")
-    rows = G.build()
+    import hashlib
+    rows, final_sha = G.verify_on_disk()  # fontes finais == gerador (bytes), antes de qualquer execução
+    executed = {}
+    def exec_file(name, raw=False):
+        data = (H / name).read_bytes(); sha = hashlib.sha256(data).hexdigest()
+        assert sha == final_sha[name], ("EXECUTED_BYTES_DIFFER", name)
+        executed.setdefault(name, []).append(sha)
+        return B.run_raw(data.decode()) if raw else B.sql(data.decode())
     # ---- 1. Alinhar ao LIVE: instalar verbatim os corpos congelados de produção e exigir md5 LIVE ----
     align = {}
     for r in rows:
@@ -32,8 +39,8 @@ def run(B, Review, Q, A, choice, out):
     (out / "mirror-alignment.json").write_text(json.dumps(align, indent=1) + "\n")
     ok("6 consumers aligned verbatim to frozen production artifacts with LIVE md5 and ACL unchanged",
        all(v["live_md5_after"] == r["live_md5"] and v["acl_unchanged"] for r, v in zip(rows, align.values())), align)
-    (H / "acl-live.json").write_text(json.dumps({r["signature"]: acl(r["signature"]) for r in rows}, indent=1) + "\n")
-    G.main()  # escreve 01..04 e manifest a partir dos mesmos corpos + ACL medida (auditor reconfere no PRE hospedado)
+    measured_acl = {r["signature"]: acl(r["signature"]) for r in rows}
+    ok("mirror ACL equals pinned ACL (no rewrite of package)", measured_acl == G.ACL_PINNED, measured_acl)
 
     # ---- 2. Fixture canônica: pedido aprovado comercialmente + termos aprovados pelo financeiro ----
     R = Review(B, Q, A, choice, {}); R.sequence = int(time.time() * 1000) % 100000000 + 11
@@ -65,14 +72,15 @@ def run(B, Review, Q, A, choice, out):
     r = B.run_raw(create); ok("LIVE consumer denies OS creation for canonically approved order", r.returncode != 0 and "B2B_RESALE_ORDER_CONFLICT" in r.stderr, err(r))
 
     # ---- 3. Delta pelos arquivos entregues ----
-    ok("PRE PASS", "PRE_PASS" in B.sql((H / "01-pre.sql.readonly").read_text()))
-    B.sql((H / "02-install.sql.review").read_text())
-    post = (H / "03-post.sql.readonly").read_text(); cand = {}
-    for r_ in rows:
-        cand[r_["signature"]] = md5(r_["signature"]); post = post.replace(":" + r_["signature"].split("(")[0] + ":", cand[r_["signature"]])
-    ok("POST PASS", "POST_PASS" in B.sql(post), cand)
-    ok("install rerun refused by PRE pins", B.run_raw((H / "02-install.sql.review").read_text()).returncode != 0)
+    ok("PRE PASS (exact final bytes)", "PRE_PASS" in exec_file("01-pre.sql.readonly"))
+    exec_file("02-install.sql.review")
+    cand = {r_["signature"]: md5(r_["signature"]) for r_ in rows}
+    ok("installed candidate md5 equals pinned attempt-234 md5", cand == G.CANDIDATE_MD5, cand)
+    ok("POST PASS (exact final bytes, no substitution)", "POST_PASS" in exec_file("03-post.sql.readonly"), cand)
+    ok("install rerun refused by PRE pins", exec_file("02-install.sql.review", raw=True).returncode != 0)
     (out / "candidate-md5.json").write_text(json.dumps(cand, indent=1) + "\n")
+    (out / "candidate-bodies.sql").write_text("".join(f"-- {r_['signature']} md5={cand[r_['signature']]}\n" + B.last(f"SELECT pg_get_functiondef('{r_['signature']}'::regprocedure);") + "\n" for r_ in rows))
+    (out / "candidate-acl.json").write_text(json.dumps({r_["signature"]: acl(r_["signature"]) for r_ in rows}, indent=1) + "\n")
 
     created = json.loads(B.last(create)); ok("candidate: OS created from linked approved terms", created["ok"] and created["replay"] is False, created)
     os_id = created["os_id"]
@@ -87,6 +95,7 @@ def run(B, Review, Q, A, choice, out):
                f"(SELECT platform_private.b2b_resale_os_valid_v1(o) FROM public.ordens_servico o WHERE o.id='{os_id}')::text;ROLLBACK;")
         r = B.run_raw(sql); assert r.returncode == 0, r.stderr[-800:]
         return [l for l in r.stdout.splitlines() if "," in l and l.strip().replace(",", "").isalpha()][-1].strip()
+    other_org = B.last(f"SELECT id FROM public.organizations WHERE id<>'{Q.A}' ORDER BY created_at LIMIT 1;"); assert other_org
     T = f"UPDATE public.partner_order_payment_terms SET {{}} WHERE partner_order_id='{order}';"
     O = f"UPDATE public.partner_orders SET {{}} WHERE id='{order}';"
     cases = {"control_no_mutation": ("", "true,true"),
@@ -97,13 +106,39 @@ def run(B, Review, Q, A, choice, out):
              "link_divergent_other_order": (T.format(f"partner_order_id='{other}'"), "false,false"),
              "header_rejected": (O.format("financial_approval_status='rejected'"), "false,false"),
              "commercial_approval_absent": (O.format("approved_by=NULL"), "false,false"),
-             "credit_pair_inconsistent": (O.format("credit_approved_at=now(),credit_approved_by=NULL"), "false,false")}
+             "credit_pair_inconsistent": (O.format("credit_approved_at=now(),credit_approved_by=NULL"), "false,false"),
+             "terms_approved_without_date": (T.format("approved_at=NULL"), "false,false"),
+             "commercial_approval_without_date": (O.format("approved_at=NULL"), "false,false"),
+             "partner_owner_other_tenant": (f"UPDATE public.partner_accounts SET commercial_owner_organization_id='{other_org}' WHERE id='{Q.P}';", "false,false"),
+             # Dispensa: SOMENTE predicado em transação revertida (não é fixture canônica nem prova de aprovação).
+             "waived_not_required_no_terms": (O.format("requires_financial_approval=false,financial_approval_status='not_required',payment_terms_id=NULL"), "true,true"),
+             "waived_but_header_pending": (O.format("requires_financial_approval=false,financial_approval_status='pending',payment_terms_id=NULL"), "false,false"),
+             "waived_but_header_rejected": (O.format("requires_financial_approval=false,financial_approval_status='rejected',payment_terms_id=NULL"), "false,false"),
+             "waived_without_commercial_approver": (O.format("requires_financial_approval=false,financial_approval_status='not_required',payment_terms_id=NULL,approved_by=NULL"), "false,false")}
     got = {k: predicate_under(m) for k, (m, _) in cases.items()}
     (out / "negatives.json").write_text(json.dumps(got, indent=1) + "\n")
     ok("canonical predicate: control true; pending/rejected/no actor/absent/divergent link/header rejected/no commercial/credit inconsistent all false",
        all(got[k] == e for k, (_, e) in cases.items()), got)
     rf = B.run_raw(B.T.actor(Q.UB) + f"SELECT public.rpc_b2b_resale_os_availability_v1('{order}');")
     ok("buyer/foreign actor denied on availability reader", rf.returncode != 0, err(rf))
+
+    # ---- 4b. Termos EFETIVAMENTE rejeitados pelo writer canônico (sem mutação direta) ----
+    Q_ = Q; sim, e_ = Q_.sim(Q_.UB, Q_.P3, [Q_.S(2)], choice); assert sim is not None, e_
+    jr, e_ = Q_.call(Q_.UB, f"public.recover_partner_order_attempt_v1('{Q_.P}',NULL,NULL,false,NULL)")
+    if jr["state"] == "committed":
+        jr, e_ = Q_.call(Q_.UB, f"public.recover_partner_order_attempt_v1('{Q_.P}','{jr['key']}',{jr['generation']},true,'{jr['order_id']}')")
+    cr2, e_ = Q_.create(Q_.UB, Q_.P3, [Q_.S(2)], sim["cart_hash"], jr["key"], choice); assert cr2 is not None, e_
+    rej_order = cr2["id"]
+    assert Q_.as_user(Q_.UADM, f"SELECT public.approve_partner_order('{rej_order}',NULL,NULL);").returncode == 0
+    rj = Q_.as_user(Q_.UFIN, f"SELECT public.reject_b2b_payment_terms_secure('{rej_order}','LLA TERMOS REJEITADOS LOCAL');")
+    rej_state = json.loads(B.last(f"SELECT jsonb_build_object('header',o.financial_approval_status,'terms',t.approval_status,'same',t.partner_order_id=o.id)::text FROM public.partner_orders o JOIN public.partner_order_payment_terms t ON t.id=o.payment_terms_id WHERE o.id='{rej_order}';"))
+    ok("canonical writer rejected linked terms", rj.returncode == 0 and rej_state == {"header": "rejected", "terms": "rejected", "same": True}, rej_state)
+    rej_item = B.last(f"SELECT id FROM public.partner_order_items WHERE order_id='{rej_order}' ORDER BY id LIMIT 1;")
+    rej_prod = B.last(f"SELECT product_id FROM public.partner_order_items WHERE id='{rej_item}';")
+    grant("b2b_resale", "os_create", Q.P, rej_order, rej_item, rej_prod)
+    rr = B.run_raw(R.os_create_sql(rej_order, rej_item, B.last(f"SELECT updated_at FROM public.partner_orders WHERE id='{rej_order}';"), f"lla-rej-{rid}"))
+    ok("candidate denies OS for order with effectively rejected terms (even with exact os_create grant)", rr.returncode != 0 and "B2B_RESALE_ORDER_CONFLICT" in rr.stderr, err(rr))
+    ok("no OS created for rejected order", B.last(f"SELECT count(*) FROM public.ordens_servico WHERE partner_order_id='{rej_order}';") == "0")
 
     # ---- 5. Compra (2 lotes) → reserva por lote → entregas parciais → saldo final ----
     grant("finished_product", "purchase", product=product)
@@ -163,10 +198,14 @@ def run(B, Review, Q, A, choice, out):
 
     # ---- 6. Rollback restaura o predicado legado (mais restritivo), histórico preservado ----
     hist = B.last(f"SELECT count(*) FROM public.entregas WHERE ordem_servico_id='{os_id}';")
-    B.sql((H / "04-rollback-restore-legacy-strict.sql.review").read_text())
+    exec_file("04-rollback-restore-legacy-strict.sql.review")
+    ok("rollback ACL unchanged vs pinned", {r_["signature"]: acl(r_["signature"]) for r_ in rows} == G.ACL_PINNED)
     ok("rollback: LIVE md5 restored, deliveries kept", all(md5(r_["signature"]) == r_["live_md5"] for r_ in rows) and B.last(f"SELECT count(*) FROM public.entregas WHERE ordem_servico_id='{os_id}';") == hist)
     nr = B.run_raw(R.os_create_sql(order, fx["items"][0]["id"], B.last(f"SELECT updated_at FROM public.partner_orders WHERE id='{order}';"), f"lla-after-rb-{rid}"))
     ok("after rollback canonical-terms order is closed again (fail closed)", nr.returncode != 0, err(nr))
     gates("false")
+    rb_rerun = exec_file("04-rollback-restore-legacy-strict.sql.review", raw=True)
+    ok("rollback rerun is idempotent (LIVE pins still hold)", rb_rerun.returncode == 0 and all(md5(r_["signature"]) == r_["live_md5"] for r_ in rows), err(rb_rerun) if rb_rerun.returncode else None)
+    (out / "executed-sha256.json").write_text(json.dumps({"final_files": final_sha, "executed": executed}, indent=1) + "\n")
     (out / "checks.json").write_text(json.dumps(checks, indent=1) + "\n")
     return checks
