@@ -313,6 +313,19 @@ def test_wrapper_review(B,Q,OUT,order_id,doc,consult,v):
     claims=json.dumps({'sub':Q.UFIN,'role':'authenticated','iat':1,'exp':4102444800}).replace("'","''")
     ctx=f"SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{Q.UFIN}';SET LOCAL request.jwt.claims='{claims}';"
     before=forecast_row(B,order_id)
+    from pathlib import Path
+    root=Path(__file__).resolve().parents[5]
+    old_sql=(root/'scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/evidence').exists()
+    # Frozen 184 source, not a reconstructed stand-in. Rollback retains candidate.
+    source=root/'scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-184/source-manifest.json'
+    # Actual pre-review wrapper was frozen separately in the review package.
+    old_folder=Path(__file__).parent/'forecast-pre-nf-20261109'
+    old_source=old_folder/'wrappers-184.sql.capture'
+    old=old_source.read_text()
+    legacy=old[old.index('CREATE OR REPLACE FUNCTION public.rpc_b2b_forecast_fiscal_sync_v1'):old.index('$function$;',old.index('AS $function$'))+len('$function$;')]
+    repro=B.run_raw(f"BEGIN;{legacy}UPDATE public.fiscal_sefaz_transmissions SET state='SUCCEEDED',outcome='REJECTED',c_stat='215' WHERE id='{consult}';{ctx}SELECT public.rpc_b2b_forecast_fiscal_sync_v1('{consult}',{v});ROLLBACK;")
+    assert repro.returncode==0 and 'CONSULTATION_NOT_AUTHORIZED' in repro.stdout,repro.stderr
+    rows.append(dict(case='BEFORE-schema-rejection-clears-consultation',exit=repro.returncode,stdout=repro.stdout,stderr=repro.stderr,rollback=True))
     cases=[('schema-215',"c_stat='215'"),('receipt-106',"c_stat='106'"),('authorization-280',"c_stat='280'"),
            ('key-mismatch',"ch_nfe='"+_key(555)+"'"),('environment-mismatch',"ambiente_retorno='1'"),
            ('receipt-mismatch',"n_rec='DIVERGENT-RECEIPT'"),('document-mismatch',f"xml_run_id='{Q.u(961)}'"),
@@ -342,7 +355,6 @@ def test_wrapper_review(B,Q,OUT,order_id,doc,consult,v):
     assert '42501' in a.stderr and '42501' in b.stderr and 'lock timeout' not in a.stderr+b.stderr,(a.stderr,b.stderr)
     rows.append(dict(case='foreign-no-wait',sync=a.stderr,cancel=b.stderr,elapsed=elapsed))
     # ACL drift must fail actual generated POST, not just a source assertion.
-    from pathlib import Path
     folder=Path(__file__).parent/'forecast-pre-nf-20261109'
     for sig in ('platform_private.b2b_credit_balances(uuid,uuid)','platform_private.b2b_order_residual(uuid)'):
         post=(folder/'11-post-credit-composition.sql.readonly').read_text().replace('BEGIN READ ONLY;','').replace('ROLLBACK;','')
@@ -503,6 +515,12 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
     assert float(after_cancel['residual_amount']) == 0, after_cancel
     blocked_begin = B.run_raw(begin_statement(Q,L,'after-cancel'))
     assert blocked_begin.returncode!=0 and 'B2B_FORECAST_BEGIN_BLOCKED' in blocked_begin.stderr,blocked_begin.stderr
+    from pathlib import Path
+    root=Path(__file__).resolve().parents[5]
+    capture=json.loads((root/'scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-184/current-pre-physical.json').read_text())
+    old_begin=next(r['body'] for r in capture['functions'] if r['name']=='rpc_fiscal_sefaz_transmit_begin_v1')
+    old_started=B.run_raw('BEGIN;'+old_begin+';'+begin_statement(Q,L,'BEFORE-canceled-begin')+'ROLLBACK;')
+    assert old_started.returncode==0 and '"idempotentReplay": false' in old_started.stdout,old_started.stderr
     cancel_replay = denied(cancel_raw(Q, Q.UFIN, pc_order, l_consulted['version'], 'repeticao'), 'B2B_FORECAST_')
     exp_cancel = assert_order_exposure(B, Q, pc_order, pc_base_open, half if dry_ok else 0, 0, partner=Q.PC, label='PC after residual cancel: residual not counted')
     N = insert_invoice(B, Q, pc_order, Q.PC, company, item_id, half, 990, '2027-02-05')
@@ -529,7 +547,8 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
                   late_reason=late_reason.stderr.strip()[-500:], evidence_preserved=evidence, forecast_final=final, titles=titles,
                   exposure_final=exp_final, cancel_after_late_denied=blocked_after, negatives=neg,
                   seams=['partner_accounts.client_id for PC (same declared B4 customer seam)', 'fiscal document rows inserted as service_role; outcomes only via canonical callback'],
-                  begin_cancel_race=begin_race, canonical_begin_after_cancel=blocked_begin.stderr, hosted=False)
+                  begin_cancel_race=begin_race, canonical_begin_after_cancel=blocked_begin.stderr,
+                  before_canceled_begin=dict(exit=old_started.returncode,stdout=old_started.stdout,rollback=True), hosted=False)
     (OUT/'forecast-cancel-late-callback.json').write_text(json.dumps(result, indent=2)+'\n')
     return result
 
