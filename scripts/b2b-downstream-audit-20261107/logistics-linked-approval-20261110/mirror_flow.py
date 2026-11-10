@@ -143,11 +143,12 @@ def run(B, Review, Q, A, choice, out):
     d1, c1 = deliver(s1, 3, "p1")
     st_partial = R.status(order)
     ok("partial delivery 3/5 confirmed; order NOT concluded", st_partial != "entregue", st_partial)
+    mv_s1 = B.last(f"SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id='{s1}';")
     cr = B.run_raw(R.confirm_sql(d1, "lla-confirm-p1"))
-    ok("confirm replay same key: no double stock exit", cr.returncode == 0 and B.last(f"SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id='{s1}' AND tipo::text ILIKE '%saida%';") in ("0", "1"), err(cr))
+    ok("confirm replay same key: no new stock movement (no double exit)", B.last(f"SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id='{s1}';") == mv_s1, (cr.returncode, err(cr) if cr.returncode else "replay ok"))
     d2, c2 = deliver(s2, 2, "p2")
     final = json.loads(B.last(f"""SELECT jsonb_build_object('order_status',(SELECT status::text FROM public.partner_orders WHERE id='{order}'),
-      'delivered',(SELECT coalesce(sum(quantidade),0) FROM public.entregas WHERE ordem_servico_id='{os_id}' AND status::text='entregue'),
+      'delivered',(SELECT coalesce(sum(quantidade_entregue),0) FROM public.entregas WHERE ordem_servico_id='{os_id}' AND status::text='entregue'),
       'reserved_left',(SELECT coalesce(sum(quantidade_reservada),0) FROM public.estoque_produto WHERE reservado_para_os_id='{os_id}' AND status::text='reservado'),
       'receivables',(SELECT count(*) FROM public.accounts_receivable),
       'header_financial',(SELECT financial_approval_status FROM public.partner_orders WHERE id='{order}'))::text;"""))
