@@ -1,3 +1,7 @@
+## 10/11 02:55 — Contenção efetiva SYNC/CANCEL no mesmo review184
+- [ ] Acrescentar entitlement canônico e allowlist exata por operação antes/depois dos locks; instalar sem concessões lifecycle, testar feature/gate/piloto e revogação somente em PostgreSQL descartável.
+- [ ] Registrar constatação READONLY fornecida pelo auditor, hashes e limites; preservar recebíveis/histórico e NÃO GO.
+
 ## 10/11 02:33 — Revisão independente dos wrappers após 184
 - [ ] Restringir resultado conclusivo de consulta a prova fiscal canônica vinculada e atual; testar erros e divergências sem cancelar/reemitir.
 - [ ] Serializar cancelamento com o início canônico da transmissão, com escopo antes dos locks e reautorização depois; reproduzir corridas e estrangeiro sem espera.
