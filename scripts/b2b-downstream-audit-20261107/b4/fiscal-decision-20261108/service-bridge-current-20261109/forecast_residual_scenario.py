@@ -490,6 +490,7 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
     reject(B, consult, '217', 'NF-e nao consta na base de dados da SEFAZ')
     l_consulted = sync(Q, Q.UFIN, consult, l_timeout['version'])
     assert l_consulted['state'] == 'aguardando_fiscal', l_consulted
+    begin_race = test_begin_cancel_race(B,Q,OUT,pc_order,L,l_consulted['version'])
     canceled = cancel_raw(Q, Q.UFIN, pc_order, l_consulted['version'], 'Residual cancelado por decisao comercial local')
     assert canceled.returncode == 0, canceled.stderr
     canceled_data = _last(canceled)
@@ -497,6 +498,8 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
     assert canceled_data['state'] == expected_state, canceled_data
     after_cancel = forecast_row(B, pc_order)
     assert float(after_cancel['residual_amount']) == 0, after_cancel
+    blocked_begin = B.run_raw(begin_statement(Q,L,'after-cancel'))
+    assert blocked_begin.returncode!=0 and 'B2B_FORECAST_BEGIN_BLOCKED' in blocked_begin.stderr,blocked_begin.stderr
     cancel_replay = denied(cancel_raw(Q, Q.UFIN, pc_order, l_consulted['version'], 'repeticao'), 'B2B_FORECAST_')
     exp_cancel = assert_order_exposure(B, Q, pc_order, pc_base_open, half if dry_ok else 0, 0, partner=Q.PC, label='PC after residual cancel: residual not counted')
     N = insert_invoice(B, Q, pc_order, Q.PC, company, item_id, half, 990, '2027-02-05')
@@ -523,6 +526,42 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
                   late_reason=late_reason.stderr.strip()[-500:], evidence_preserved=evidence, forecast_final=final, titles=titles,
                   exposure_final=exp_final, cancel_after_late_denied=blocked_after, negatives=neg,
                   seams=['partner_accounts.client_id for PC (same declared B4 customer seam)', 'fiscal document rows inserted as service_role; outcomes only via canonical callback'],
-                  hosted=False)
+                  begin_cancel_race=begin_race, canonical_begin_after_cancel=blocked_begin.stderr, hosted=False)
     (OUT/'forecast-cancel-late-callback.json').write_text(json.dumps(result, indent=2)+'\n')
     return result
+
+
+def begin_statement(Q,doc,key):
+    return f"SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_begin_v1('NFeAutorizacao4','LOCAL-REVIEW-{key}','LOCAL-FINGERPRINT-{key}','{ENDPOINT}','{doc['invoice']}','{doc['xml_run']}','{Q.UADM}',NULL);"
+
+
+def test_begin_cancel_race(B,Q,OUT,order_id,doc,v):
+    """Canonical begin and cancel in two connections, both serial orders.
+    The holding transaction rolls back; no fiscal outcomes/state is manufactured."""
+    rows=[]
+    before=forecast_row(B,order_id)
+    claims=json.dumps({'sub':Q.UFIN,'role':'authenticated','iat':1,'exp':4102444800}).replace("'","''")
+    ctx=f"SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{Q.UFIN}';SET LOCAL request.jwt.claims='{claims}';"
+    # Begin owns the shared order lock. Cancel waits, then sees committed pending tx.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        holder=pool.submit(B.run_raw,'BEGIN;'+begin_statement(Q,doc,'begin-first')+'SELECT pg_sleep(.8);COMMIT;')
+        time.sleep(.2)
+        cancel=pool.submit(cancel_raw,Q,Q.UFIN,order_id,v,'race begin first')
+        held,called=holder.result(),cancel.result()
+    assert held.returncode==0 and called.returncode!=0 and 'B2B_FORECAST_FISCAL_IN_FLIGHT' in called.stderr,(held.stderr,called.stderr)
+    tx=_last(type('Proc',(),{'stdout':'\n'.join(x for x in held.stdout.splitlines() if x.startswith('{'))})())['transmissionId']
+    transport_error(B,tx,'LOCAL_RACE_FINISHED_NO_EMISSION')
+    rows.append(dict(case='begin-first',begin_stdout=held.stdout,cancel_stderr=called.stderr))
+    assert forecast_row(B,order_id)==before
+    # Cancel owns order+forecast and commits before begin; the writer itself denies.
+    # Rollback-only cancel serialization is tested here, permanent canceled path below.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        holder=pool.submit(B.run_raw,f"BEGIN;{ctx}SELECT public.rpc_b2b_forecast_cancel_residual_v1('{order_id}',{v},'race rollback cancel');SELECT pg_sleep(.8);ROLLBACK;")
+        time.sleep(.2)
+        started=time.monotonic();begin=pool.submit(B.run_raw,'BEGIN;'+begin_statement(Q,doc,'cancel-lock-first')+'ROLLBACK;')
+        held,called=holder.result(),begin.result();elapsed=time.monotonic()-started
+    assert held.returncode==0 and called.returncode==0 and elapsed>.35,(held.stderr,called.stderr,elapsed)
+    assert forecast_row(B,order_id)==before
+    rows.append(dict(case='cancel-lock-first-rollback',cancel_stdout=held.stdout,begin_stdout=called.stdout,elapsed=elapsed))
+    (OUT/'canonical-begin-cancel-race.json').write_text(json.dumps(rows,indent=2)+'\n')
+    return rows
