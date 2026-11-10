@@ -1,0 +1,56 @@
+{
+  "status": "REVIEW_ONLY_INACTIVE_NOT_APPROVED",
+  "attempts": [
+    {
+      "attempt": 167,
+      "exit": 1,
+      "hosted": false,
+      "integrated_pass": false,
+      "artifacts": {
+        "linked-terms-after.json": "71b25c879bcd4e9980a9d7603c8ca4b23dab57bee8e4d4e38af39fc86086ff33",
+        "linked-terms-before.json": "0bb3b4bd218d3832c58b8233a9f920afd8b62bc29660057fe6544393fc5a0016"
+      },
+      "review-70d08c.json": {
+        "passed": 8,
+        "total": 13
+      }
+    },
+    {
+      "attempt": 168,
+      "exit": 1,
+      "hosted": false,
+      "integrated_pass": false,
+      "artifacts": {
+        "linked-terms-after.json": "f2f1bb17b06f4cf81f4922c1ed6e017210958c73cb34c4da7f8badd78b654325",
+        "linked-terms-before.json": "50e3679b3d6869f695fabf6d570c71e0984088e568eb82a7151bd7ed7574c972"
+      },
+      "review-70d08c.json": {
+        "passed": 13,
+        "total": 13
+      },
+      "os-endpoint-tests.json": {
+        "passed": 15,
+        "total": 15
+      }
+    },
+    {
+      "attempt": 169,
+      "exit": 1,
+      "hosted": false,
+      "integrated_pass": false,
+      "artifacts": {
+        "linked-terms-after.json": "381651ffd85f14b4d258369e7f8d21edaa07ff888526b0d36508c16d697c045c",
+        "linked-terms-before.json": "3900615c33db62d038b10632e4c42152b3248c3638c12313fb77d8ae2a47cae2"
+      },
+      "review-70d08c.json": {
+        "passed": 13,
+        "total": 13
+      },
+      "os-endpoint-tests.json": {
+        "passed": 15,
+        "total": 15
+      }
+    }
+  ],
+  "remaining": "B4 credit-body composition, canonical fiscal callers, 18/9/9, payment, fiscal races and rollback"
+}
