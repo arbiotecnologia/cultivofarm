@@ -16,10 +16,11 @@ SRC = {
 CANON = """({a}.approved_by IS NOT NULL AND {a}.approved_at IS NOT NULL
     AND {a}.payment_condition_status IN ('defined','approved') AND {a}.financial_approval_status IS DISTINCT FROM 'rejected'
     AND (({a}.credit_approved_at IS NULL) = ({a}.credit_approved_by IS NULL))
-    AND (({a}.requires_financial_approval IS FALSE AND {a}.financial_approval_status NOT IN ('pending','rejected'))
-     OR EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
+    AND EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
        WHERE t.id={a}.payment_terms_id AND t.partner_order_id={a}.id
-        AND t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL)))"""
+        AND ((t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL)
+          OR ({a}.requires_financial_approval IS FALSE AND {a}.financial_approval_status NOT IN ('pending','rejected')
+              AND t.approval_status='not_required'))))"""
 # Fixados da attempt-234 (evidence/attempt-234/candidate-md5.json): md5(pg_get_functiondef) medido após instalar o candidato.
 CANDIDATE_MD5 = {
  "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)": "30d5e9dea53862e3c3ca0608e95deac4",
@@ -62,7 +63,7 @@ def build():
         n += body.count(old); body = body.replace(old, "NOT " + CANON.format(a="v_order"))
         assert n == expected, (sig, n)
         assert all(body.count(f) == live.count(f) for f in FENCES), sig
-        assert "financial_approval_status NOT IN ('pending','rejected'))\n     OR EXISTS" in body
+        assert "AND t.approval_status='not_required'))))" in body and "OR EXISTS(SELECT 1 FROM public.partner_order_payment_terms" not in body
         rows.append(dict(signature=sig, source=path, live_md5=live_md5, live=live, candidate=body, replaced=n))
     return rows
 
