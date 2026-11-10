@@ -127,9 +127,14 @@ def run(B, Review, Q, A, choice, out):
         waited = B.last("SELECT count(*)>=2 FROM pg_locks WHERE locktype='advisory' AND NOT granted;") == "t"; time.sleep(0.03)
     B.T.finish(holder, "COMMIT;"); res = [B.T.finish(x) for x in w]
     outs = [json.loads(o.strip().splitlines()[-1]) for o, e in res if not e]
-    ok("concurrent same-key reserve (2 real sessions, proven wait): one reservation + one exact replay",
-       waited and len(outs) == 2 and sorted(o["replay"] for o in outs) == [False, True] and outs[0]["itens"] == outs[1]["itens"], [o for o in outs])
-    s2 = outs[0]["itens"][0]
+    errs = [next((l for l in e.splitlines() if l.startswith("ERROR")), e[-200:]) for o, e in res if e]
+    after = json.loads(B.last(reserve_sql(lot2, 2, k2)))
+    rows_res = B.last(f"SELECT count(*) FROM public.estoque_produto WHERE reservado_para_os_id='{os_id}' AND status::text='reservado';")
+    (out / "concurrent-reserve.json").write_text(json.dumps({"waited": waited, "successes": outs, "errors": errs, "exact_replay_after": after, "reserved_rows_for_os": rows_res}, indent=1) + "\n")
+    first = [o for o in outs if o["replay"] is False]
+    ok("concurrent same-key reserve (2 real sessions, proven wait): exactly one reservation; loser is exact replay or explicit error; later exact replay returns same receipt",
+       waited and len(first) == 1 and all(o["itens"] == first[0]["itens"] for o in outs) and after["replay"] is True and after["itens"] == first[0]["itens"] and rows_res == "2", {"outs": outs, "errs": errs})
+    s2 = first[0]["itens"][0]
     rx = B.run_raw(reserve_sql(lot1, 1, f"lla-res-extra-{rid}"))
     ok("no over-reservation beyond purchased lot", rx.returncode != 0, err(rx))
     for gid, s in ((g1, s1), (g2, s2)): B.sql(f"UPDATE platform_private.resale_pilot_allowlist_v1 SET stock_id='{s}' WHERE id='{gid}';")
