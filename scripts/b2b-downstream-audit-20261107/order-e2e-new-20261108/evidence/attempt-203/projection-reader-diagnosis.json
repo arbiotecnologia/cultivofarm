@@ -1,0 +1,26 @@
+{
+  "metadata": {
+    "acl": "{postgres=X/postgres}",
+    "owner": "postgres",
+    "body_md5": "7c5d3fa0a4c9516ab1c40b058a529578",
+    "service_execute": false,
+    "authenticated_execute": false
+  },
+  "attempts": {
+    "financeiro": {
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_receivable_money_projection_v1\nLOCATION:  aclcheck_error, aclchk.c:2845"
+    },
+    "administrador": {
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_receivable_money_projection_v1\nLOCATION:  aclcheck_error, aclchk.c:2845"
+    }
+  },
+  "positive": "BLOCKED_OWNER_ONLY_CANDIDATE_ACL",
+  "source": "financial-price-generator-20261029/integration/origin.sql.review REVOKE includes authenticated",
+  "owner_read_is_not_positive": true,
+  "client_grants_added": false,
+  "hosted": false
+}
