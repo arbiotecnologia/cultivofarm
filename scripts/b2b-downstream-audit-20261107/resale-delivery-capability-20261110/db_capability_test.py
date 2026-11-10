@@ -43,6 +43,7 @@ CREATE FUNCTION platform_private.b2b_resale_os_operational_valid_v1(o public.ord
  SELECT o.origem='b2b' AND o.status='pronto_entrega' AND platform_private.resale_pilot_scope_v1('b2b_resale',NULL,auth.uid(),o.organization_id,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=o.partner_order_id),o.partner_order_id,o.partner_order_item_id,NULL,NULL,NULL) IS NOT NULL$$;
 CREATE FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb) RETURNS void LANGUAGE sql AS $$SELECT$$;
 REVOKE ALL ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb) FROM PUBLIC;
+REVOKE ALL ON FUNCTION platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION platform_private.delivery_actor_20261030(text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.fn_estoque_pode_operar(uuid,text) FROM PUBLIC;

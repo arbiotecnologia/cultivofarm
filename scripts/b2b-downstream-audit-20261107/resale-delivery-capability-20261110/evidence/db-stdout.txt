@@ -1,7 +1,9 @@
+PASS PRE_PASS 63f49feea167f6865fd7840cde7dc63b
+PASS POST_PASS ae4e259ddf5b4005a7be9320e29117ef
+PASS INSTALL_RERUN_REFUSED 
 Traceback (most recent call last):
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/resale-delivery-capability-20261110/db_capability_test.py", line 54, in <module>
-    q.execute(pre);check("PRE_PASS",q.fetchone()[0]=="PRE_PASS",scope_md5)
-    ~~~~~~~~~^^^^^
-psycopg2.errors.RaiseException: PRE_PRIVATE_ACL_DRIFT platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)
-CONTEXT:  PL/pgSQL function inline_code_block line 11 at RAISE
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/resale-delivery-capability-20261110/db_capability_test.py", line 66, in <module>
+    q.execute("INSERT INTO public.test_actor VALUES(%s,%s,true),(%s,%s,true),(%s,%s,false)",(actor,A,foreign_actor,F,noreserve,A))
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.InFailedSqlTransaction: current transaction is aborted, commands ignored until end of transaction block
 

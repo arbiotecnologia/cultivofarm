@@ -1,7 +1,7 @@
 DO $$
 DECLARE p regprocedure:='public.rpc_b2b_resale_delivery_capability_v1(uuid,uuid[])'::regprocedure;
 BEGIN
- IF md5(pg_get_functiondef(p)) IS DISTINCT FROM ':CAP_MD5:' THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;
+ IF md5(pg_get_functiondef(p)) IS DISTINCT FROM 'ae4e259ddf5b4005a7be9320e29117ef' THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;
  IF (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p)<>'postgres' OR (SELECT prosecdef FROM pg_proc WHERE oid=p) IS NOT TRUE OR (SELECT provolatile FROM pg_proc WHERE oid=p)<>'v' THEN RAISE EXCEPTION 'POST_META_DRIFT'; END IF;
  IF NOT has_function_privilege('authenticated',p,'EXECUTE') OR has_function_privilege('anon',p,'EXECUTE') THEN RAISE EXCEPTION 'POST_ACL_DRIFT'; END IF;
  IF EXISTS(SELECT 1 FROM pg_proc pr, aclexplode(pr.proacl) a WHERE pr.oid=p AND a.is_grantable) THEN RAISE EXCEPTION 'POST_GRANT_OPTION'; END IF;
