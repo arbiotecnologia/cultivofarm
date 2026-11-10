@@ -98,7 +98,7 @@ export function RevendaB2BPilotoPanel({ actorId, orgId }: { actorId: string | nu
     try {
       let attempt: RetrySnapshot | null = null;
       const out = await runAtomicResaleGroup(rpc, {
-        requestKey: crypto.randomUUID(), expectedOrg: orgId, osId: selected.id, osTipo: "padrao", osPartnerOrderId: selected.partner_order_id,
+        requestKey: crypto.randomUUID(), expectedOrg: orgId, osId: selected.id, osTipo: "padrao", osOrigem: selected.origem, osPartnerOrderId: selected.partner_order_id,
         osObservedUpdatedAt: selected.updated_at,
         itens: [{ itemId: r.id, quantidade: Number(r.quantidade_reservada), observedUpdatedAt: r.updated_at, status: r.status, reservadoParaOsId: r.reservado_para_os_id, quantidadeReservada: r.quantidade_reservada, quantidadeTotal: r.quantidade }],
         dados: {},
