@@ -10,4 +10,11 @@ describe('previsão separada e escopada', () => {
   it('não transforma vencimento estimado em definitivo', () => expect(() => parseB2BForecast({ ...base, due_dates_estimated: false }, 'order')).toThrow());
   it('não aceita residual superior ao total econômico', () => expect(() => parseB2BForecast({ ...base, residual_amount: 19 }, 'order')).toThrow());
   it('não inventa previsão para ausência confirmada', () => expect(parseB2BForecast(null, 'order')).toBeNull());
+  it('cancelamento residual mantém zero sem apagar o total original 18', () => {
+    const result = parseB2BForecast({ ...base, state: 'cancelado_residual', residual_amount: 0 }, 'order');
+    expect(result?.residual_amount).toBe(0);
+    expect(result?.total_amount).toBe(18);
+  });
+  it('rejeita previsão cancelada ressuscitada com residual 9', () => expect(() => parseB2BForecast({ ...base, state: 'cancelado_residual', residual_amount: 9 }, 'order')).toThrow());
+  it('rejeita cancelamento anterior à NF com residual 18', () => expect(() => parseB2BForecast({ ...base, state: 'cancelado_antes_nf' }, 'order')).toThrow());
 });
