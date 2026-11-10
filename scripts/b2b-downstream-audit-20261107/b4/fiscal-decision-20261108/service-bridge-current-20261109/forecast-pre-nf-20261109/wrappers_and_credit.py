@@ -1,0 +1,240 @@
+"""Wrappers canônicos fiscais da previsão e composição única B4+previsão do crédito.
+
+REVIEW_ONLY_INACTIVE_NOT_APPROVED. Somente gera SQL; nunca executa em banco hospedado.
+
+Ordem de instalação explícita (produção e ensaio):
+  previsão 01-04 (não toca crédito) -> B4 PRE/INSTALL/POST (crédito LIVE 213ac31f -> B4 44e8768f)
+  -> 09-12 composição de crédito (B4 44e8768f -> corpo único composto)
+  -> ponte/strict -> 05-08 reconciliação fiscal + wrappers -> bridge-audit -> H7.
+O instalador B4 nunca roda depois de 10: o PRE 09 exige o corpo B4 exato e o PRE B4
+exige o LIVE exato, logo uma inversão falha fechada em vez de sobrescrever a correção.
+"""
+import hashlib
+from pathlib import Path
+
+B4_CREDIT_MD5 = "44e8768ff53d7fe5ff3b9f0889258946"
+LIVE_CREDIT_MD5 = "213ac31f3a30816ead75365b0d1fed18"
+CREDIT_ACL_MD5 = "578c00048ab38c285e229e11ff6211ec"
+B4_BALANCES_MD5 = "9fbf08a16f6bcbec379945886c85c245"
+B4_RESIDUAL_MD5 = "93769163bfc7c72a4bbc722e62313179"
+SIG = "public.fn_b2b_credit_exposure(uuid,numeric,uuid)"
+APPROVED = "'aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue'"
+PENDING = "'pendente','solicitado','em_analise_comercial','aguardando_aprovacao_credito','aguardando_ajuste_comercial','aguardando_itens'"
+
+
+def md5(text):
+    return hashlib.md5(text.encode()).hexdigest()
+
+
+def sha(text):
+    return hashlib.sha256(text.encode()).hexdigest()
+
+
+# pg_get_functiondef canonical form: md5(body + "\n") is the pinned value.
+SYNC = """CREATE OR REPLACE FUNCTION public.rpc_b2b_forecast_fiscal_sync_v1(p_transmission_id uuid, p_expected_version integer)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE t public.fiscal_sefaz_transmissions;inv public.fiscal_invoices;f platform_private.b2b_financial_forecasts;
+ v_invoice uuid;org uuid;ev text;payload jsonb;att integer;result jsonb;
+BEGIN
+ -- Authority is derived server-side from the JWT actor; payload/IDs never attest it.
+ org:=platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]);
+ IF org IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_FISCAL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ IF p_transmission_id IS NULL OR p_expected_version IS NULL OR p_expected_version<1 THEN
+  RAISE EXCEPTION 'B2B_FORECAST_EVENT_INVALID' USING ERRCODE='22023';END IF;
+ SELECT fiscal_invoice_id INTO v_invoice FROM public.fiscal_sefaz_transmissions WHERE id=p_transmission_id;
+ IF v_invoice IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_FISCAL_SOURCE_UNPROVEN' USING ERRCODE='42501';END IF;
+ -- Canonical H13 order: fiscal invoice, transmission, then forecast (bridge: invoice, order, forecast).
+ SELECT * INTO inv FROM public.fiscal_invoices WHERE id=v_invoice FOR SHARE;
+ SELECT * INTO t FROM public.fiscal_sefaz_transmissions WHERE id=p_transmission_id FOR SHARE;
+ IF NOT FOUND OR t.fiscal_invoice_id IS DISTINCT FROM inv.id THEN
+  RAISE EXCEPTION 'FISCAL_TRANSMISSION_LINK_CHANGED' USING ERRCODE='PT409';END IF;
+ IF inv.partner_order_id IS NULL OR inv.organization_id IS DISTINCT FROM org OR inv.debtor_partner_id IS NULL THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FISCAL_SOURCE_UNPROVEN' USING ERRCODE='42501';END IF;
+ SELECT * INTO f FROM platform_private.b2b_financial_forecasts WHERE order_id=inv.partner_order_id FOR UPDATE;
+ IF NOT FOUND OR f.organization_id IS DISTINCT FROM inv.organization_id OR f.partner_id IS DISTINCT FROM inv.debtor_partner_id THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FISCAL_SOURCE_UNPROVEN' USING ERRCODE='42501';END IF;
+ -- Re-authorize after every wait: role, profile, tenant and seller scope may have been revoked.
+ IF platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]) IS DISTINCT FROM f.organization_id
+  OR NOT platform_private.c2p1_settings_allowed(f.partner_id,true) THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FISCAL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ IF t.outcome='AUTHORIZED' THEN
+  -- Definitive confirmation exists only through the H13 callback and fiscal bridge permit.
+  RETURN jsonb_build_object('forecast_id',f.id,'state',f.state,'version',f.version,'event',NULL,
+   'fiscal_confirmation','H13_BRIDGE_ONLY','transmission_id',t.id,'invoice_id',inv.id);
+ END IF;
+ IF t.service='NFeAutorizacao4' THEN
+  ev:=CASE WHEN t.state IN ('PENDING','SENT') AND coalesce(t.outcome,'PENDING') IN ('PENDING','PROCESSING') THEN 'EMISSION_STARTED'
+           WHEN t.state IN ('FAILED','BLOCKED') AND t.outcome='TRANSPORT_ERROR' THEN 'EMISSION_TIMEOUT'
+           WHEN t.state='SUCCEEDED' AND t.outcome='REJECTED' THEN 'EMISSION_REJECTED' END;
+ ELSIF t.service IN ('NFeRetAutorizacao4','NFeConsultaProtocolo4') THEN
+  ev:=CASE WHEN t.state='SUCCEEDED' AND t.outcome='REJECTED' THEN 'CONSULTATION_NOT_AUTHORIZED' END;
+ END IF;
+ IF ev IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE' USING ERRCODE='PT409';END IF;
+ IF ev='EMISSION_STARTED' AND (inv.total_amount IS NULL OR inv.total_amount<=0 OR inv.total_amount>f.residual_amount) THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FISCAL_AMOUNT_EXCEEDS_RESIDUAL' USING ERRCODE='PT409';END IF;
+ att:=coalesce(t.attempt,0)+1;
+ payload:=jsonb_build_object('attempt',att::text,'invoice_id',inv.id,'transmission_id',t.id,'service',t.service,'source','fiscal_sefaz_transmissions')
+  ||CASE WHEN ev='EMISSION_STARTED' THEN '{}'::jsonb
+         ELSE jsonb_build_object('error_code',coalesce(nullif(t.error_code,''),nullif(t.c_stat,''),t.outcome)) END;
+ result:=platform_private.b2b_financial_forecast_transition_v1(f.id,p_expected_version,ev,inv.id::text,payload);
+ RETURN result||jsonb_build_object('event',ev,'transmission_id',t.id,'invoice_id',inv.id);
+END
+$function$"""
+
+CANCEL = """CREATE OR REPLACE FUNCTION public.rpc_b2b_forecast_cancel_residual_v1(p_order uuid, p_expected_version integer, p_reason text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE po public.partner_orders;f platform_private.b2b_financial_forecasts;org uuid;
+BEGIN
+ org:=platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]);
+ IF org IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_CANCEL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ IF p_order IS NULL OR p_expected_version IS NULL OR nullif(btrim(coalesce(p_reason,'')),'') IS NULL THEN
+  RAISE EXCEPTION 'B2B_FORECAST_CANCEL_REASON_REQUIRED' USING ERRCODE='22023';END IF;
+ -- Canonical order: order row first, then forecast (same as approval and the bridge).
+ SELECT * INTO po FROM public.partner_orders WHERE id=p_order FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'B2B_FORECAST_CANCEL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ SELECT * INTO f FROM platform_private.b2b_financial_forecasts WHERE order_id=p_order FOR UPDATE;
+ IF NOT FOUND OR f.partner_id IS DISTINCT FROM po.partner_id THEN
+  RAISE EXCEPTION 'B2B_FORECAST_CAS_CONFLICT' USING ERRCODE='PT409';END IF;
+ IF platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]) IS DISTINCT FROM f.organization_id
+  OR NOT platform_private.c2p1_settings_allowed(f.partner_id,true) THEN
+  RAISE EXCEPTION 'B2B_FORECAST_CANCEL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ -- An emission/consultation still open or an authorized return awaiting close must settle first.
+ IF EXISTS(SELECT 1 FROM public.fiscal_invoices i JOIN public.fiscal_sefaz_transmissions t ON t.fiscal_invoice_id=i.id
+   WHERE i.partner_order_id=p_order AND t.state IN ('PENDING','SENT')) THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FISCAL_IN_FLIGHT' USING ERRCODE='PT409';END IF;
+ IF EXISTS(SELECT 1 FROM public.fiscal_invoices i JOIN platform_private.fiscal_close_pending cp ON cp.fiscal_invoice_id=i.id
+   WHERE i.partner_order_id=p_order) THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FISCAL_RECONCILIATION_PENDING' USING ERRCODE='PT409';END IF;
+ RETURN platform_private.b2b_financial_forecast_cancel_residual_v1(f.id,p_expected_version,p_reason)
+  ||jsonb_build_object('actor',auth.uid(),'order_id',p_order);
+END
+$function$"""
+
+
+def wrappers_sql():
+    sql = (SYNC + ";\n" + CANCEL + ";\n"
+           "REVOKE ALL ON FUNCTION public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer),public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) FROM PUBLIC,anon,service_role;\n"
+           "GRANT EXECUTE ON FUNCTION public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer),public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) TO authenticated;\n"
+           "-- Private transition/cancel/reconcile keep NO grant: only these owner wrappers and the bridge nest them.\n")
+    return sql, {"sync": md5(SYNC + "\n"), "cancel": md5(CANCEL + "\n")}
+
+
+def b4_credit_body(root):
+    stage = root / "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/stages/02-b4-install-post-composition.sql.review"
+    text = stage.read_text()
+    head = "CREATE OR REPLACE FUNCTION public.fn_b2b_credit_exposure("
+    assert text.count(head) == 1
+    i = text.index(head)
+    j = text.index("END $function$", i) + len("END $function$")
+    body = text[i:j]
+    assert md5(body + "\n") == B4_CREDIT_MD5, md5(body + "\n")
+    return body, sha(text)
+
+
+def composed_credit(b4_body):
+    decl = "  v_settings_json jsonb;\n"
+    anchor = "  v_pending:=(v_settings_json->>'comprometido_pendente')::numeric;\n"
+    assert b4_body.count(decl) == 1 and b4_body.count(anchor) == 1
+    block = f"""  -- B4+previsão (corpo único; ordem B4 -> 09-12): o residual B4 (total menos
+  -- alocações de NF autorizadas não estornadas) segue como única base e títulos
+  -- abertos entram só por saldo_em_aberto. A previsão nunca é aditiva: apenas zera
+  -- residual formalmente cancelado e, nos demais estados, precisa coincidir com o
+  -- residual B4. Divergência, tenant ou parceiro conflitante falham fechados.
+  SELECT pa.commercial_owner_organization_id INTO v_owner FROM public.partner_accounts pa WHERE pa.id=p_partner_id;
+  FOR v_fc IN SELECT f.order_id,f.state,f.residual_amount,f.organization_id,f.partner_id AS forecast_partner,
+      po.partner_id AS order_partner,po.status::text AS status
+    FROM platform_private.b2b_financial_forecasts f JOIN public.partner_orders po ON po.id=f.order_id
+    WHERE (po.partner_id=p_partner_id OR f.partner_id=p_partner_id)
+      AND po.id IS DISTINCT FROM p_exclude_order_id
+      AND po.status::text IN ({APPROVED},{PENDING})
+  LOOP
+    IF v_fc.forecast_partner IS DISTINCT FROM v_fc.order_partner OR v_fc.organization_id IS DISTINCT FROM v_owner THEN
+      RAISE EXCEPTION 'CREDIT_FORECAST_SCOPE_CONFLICT' USING ERRCODE='23514'; END IF;
+    v_b4_residual:=platform_private.b2b_order_residual(v_fc.order_id);
+    IF v_fc.state IN ('cancelado_antes_nf','cancelado_residual') THEN v_effective:=0;
+    ELSIF v_fc.residual_amount IS DISTINCT FROM v_b4_residual THEN
+      RAISE EXCEPTION 'CREDIT_FORECAST_RESIDUAL_DIVERGENCE' USING ERRCODE='23514';
+    ELSE v_effective:=v_b4_residual; END IF;
+    IF v_fc.status IN ({APPROVED}) THEN v_committed:=v_committed-v_b4_residual+v_effective;
+    ELSE v_pending:=v_pending-v_b4_residual+v_effective; END IF;
+  END LOOP;
+"""
+    out = b4_body.replace(decl, decl + "  v_fc record; v_b4_residual numeric; v_effective numeric; v_owner uuid;\n")
+    out = out.replace(anchor, anchor + block)
+    return out
+
+
+def acl_loop(prefix, rows):
+    values = ",".join(f"('{s}','{b}','postgres','{a}')" for s, b, a in rows)
+    return f"""DO $guard$ DECLARE d record; BEGIN
+ FOR d IN SELECT * FROM (VALUES {values}) x(sig,body_md5,owner,acl_md5) LOOP
+  IF to_regprocedure(d.sig) IS NULL THEN RAISE EXCEPTION '{prefix}_MISSING:%',d.sig USING ERRCODE='42501'; END IF;
+  IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN RAISE EXCEPTION '{prefix}_BODY:%',d.sig USING ERRCODE='42501'; END IF;
+  IF (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=d.sig::regprocedure) IS DISTINCT FROM d.owner THEN RAISE EXCEPTION '{prefix}_OWNER:%',d.sig USING ERRCODE='42501'; END IF;
+  IF d.acl_md5 IS NOT NULL AND (SELECT md5(string_agg(v.entry,'|' ORDER BY v.entry)) FROM (
+    SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END||'='||a.privilege_type||CASE WHEN a.is_grantable THEN '*' ELSE '' END||'/'||a.grantor::regrole::text entry
+    FROM pg_proc p,aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a WHERE p.oid=d.sig::regprocedure) v) IS DISTINCT FROM d.acl_md5
+  THEN RAISE EXCEPTION '{prefix}_ACL:%',d.sig USING ERRCODE='42501'; END IF;
+ END LOOP;
+END $guard$;"""
+
+
+def credit_composition(root, ref):
+    b4_body, b4_stage_sha = b4_credit_body(root)
+    composed = composed_credit(b4_body)
+    composed_md5 = md5(composed + "\n")
+    deps = [("platform_private.b2b_credit_balances(uuid,uuid)", B4_BALANCES_MD5, None),
+            ("platform_private.b2b_order_residual(uuid)", B4_RESIDUAL_MD5, None)]
+    ref_guard = f""" IF current_setting('b2b_forecast.review_project_ref',true) IS DISTINCT FROM '{ref}' THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_REF_NOT_VERIFIED';END IF;
+ IF to_regclass('platform_private.b2b_financial_forecasts') IS NULL THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_FORECAST_MISSING';END IF;
+ IF to_regclass('platform_private.b2b_document_allocations') IS NULL OR to_regclass('platform_private.b2b_allocation_reversals') IS NULL THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_B4_MISSING';END IF;"""
+    pre = f"""-- REVIEW ONLY READ ONLY. 09: composição de crédito exige B4 POST exato (nunca LIVE nem pré-B4 residual).
+BEGIN READ ONLY;
+DO $$ BEGIN
+{ref_guard}
+END$$;
+{acl_loop('B2B_CREDIT_COMPOSITION_PRE', [(SIG, B4_CREDIT_MD5, CREDIT_ACL_MD5)] + deps)}
+ROLLBACK;
+"""
+    install = f"""-- REVIEW_ONLY_INACTIVE_NOT_APPROVED. 10: corpo único B4+previsão; PostgreSQL descartável apenas.
+BEGIN;
+SET LOCAL lock_timeout='3s';
+DO $$ BEGIN
+{ref_guard}
+END$$;
+{acl_loop('B2B_CREDIT_COMPOSITION_INSTALL_PRE', [(SIG, B4_CREDIT_MD5, CREDIT_ACL_MD5)] + deps)}
+{composed};
+{acl_loop('B2B_CREDIT_COMPOSITION_INSTALL_POST', [(SIG, composed_md5, CREDIT_ACL_MD5)] + deps)}
+COMMIT;
+"""
+    post = f"""-- REVIEW ONLY READ ONLY. 11: corpo composto, mesmo dono/ACL B4, dependências B4 intactas.
+BEGIN READ ONLY;
+{acl_loop('B2B_CREDIT_COMPOSITION_POST', [(SIG, composed_md5, CREDIT_ACL_MD5)] + deps)}
+ROLLBACK;
+"""
+    rollback = f"""-- REVIEW ONLY. 12: rollback deny-only/retain. NÃO restaura B4 (ignoraria residual
+-- cancelado) nem LIVE (somaria pedido inteiro e título após NF parcial). A leitura
+-- composta permanece; writers fecham pelos rollbacks 08/04 e B4/ponte.
+BEGIN;
+SET LOCAL lock_timeout='3s';
+{acl_loop('B2B_CREDIT_COMPOSITION_ROLLBACK_RETAIN', [(SIG, composed_md5, CREDIT_ACL_MD5)] + deps)}
+COMMIT;
+"""
+    files = {"09-pre-credit-composition.sql.readonly": pre, "10-install-credit-composition.sql.review": install,
+             "11-post-credit-composition.sql.readonly": post, "12-rollback-credit-composition-retain.sql.review": rollback,
+             "credit-exposure.composed.sql": composed + "\n"}
+    manifest = {"order": ["forecast 01-04 (credit untouched, LIVE pin)", "B4 PRE/INSTALL/POST (LIVE->B4)", "credit 09-12 (B4->composed)",
+                          "bridge/strict", "forecast 05-08 reconcile+wrappers", "bridge-audit", "H7"],
+                "live_md5": LIVE_CREDIT_MD5, "b4_md5": B4_CREDIT_MD5, "composed_md5": composed_md5, "acl_md5": CREDIT_ACL_MD5,
+                "b4_stage_sha256": b4_stage_sha, "b4_dependencies": {s: b for s, b, _ in deps},
+                "rule": "exposure = open titles (B4 proven money) + B4 residual per order; forecast only zeroes canceled residual, must equal B4 residual otherwise",
+                "additive_forecast": False, "rollback": "RETAIN_COMPOSED_NO_BODY_RESTORE"}
+    return files, manifest
