@@ -3,3 +3,5 @@
 - Resultados de PostgreSQL descartável são prova de componente com atestações fiscais sintéticas, não prova de integração com fiscal_invoices, JWT/RLS/Storage ou homologação real.
 - Manter b2b_integration_dependencies always-deny, dez gatilhos/ACL, delivery_no_downstream, cinco títulos MANUAL teste4, snapshots e histórico preservados.
 - A ponte fiscal real permanece bloqueada até revisar origem/tenant, ator do callback service-only, idempotência, recuperação pós-autorização, parcialidade e cancelamento; não inventar ticket, autorização ou contabilidade.
+- fn_b2b_credit_exposure tem um único corpo composto, instalado só depois do B4 POST (estágio forecast 09–12, PRE pina o corpo B4); previsão nunca o redefine nem soma ao residual B4, e rollback retém o composto — impede que B4 sobrescreva a reconciliação ou que LIVE conte em dobro.
+- Eventos fiscais da previsão só entram pelos wrappers autenticados derivados de transmissões registradas pelo callback H13; nunca RESET ROLE/owner sobre helpers privados como prova de chamador — mantém autoridade server-side e helpers sem grant.
