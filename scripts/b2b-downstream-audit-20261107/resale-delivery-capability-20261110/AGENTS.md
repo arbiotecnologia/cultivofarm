@@ -1,0 +1,4 @@
+- Preparação local apenas: nunca aplicar 02/04 hospedado, publicar, criar concessões ou abrir gates daqui; o auditor revisa e instala — evita mudança não revisada.
+- Capability é somente leitura e nunca autoriza: deriva ator/empresa no servidor, reutiliza resale_pilot_scope_v1 exato (OS/item/estoque/operação) e fecha em qualquer ausência; writers bloqueados não recebem EXECUTE — evita ampliação global.
+- Reserva incerta só reconcilia lendo a mesma tentativa (delta exato reservado na OS); nunca redispara o writer — evita segunda reserva/baixa.
+- Banco descartável com seams declarados não prova JWT/RLS/Storage hospedado.
