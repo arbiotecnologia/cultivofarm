@@ -3,3 +3,4 @@
 - Residual de previsão (não exigível) e títulos confirmados ficam em blocos separados e nunca somados; legado sem previsão/título só como contagem — evita dupla contagem e valores inventados.
 - Rollback é deny-only (mantém corpo, revoga EXECUTE). Stubs do PG descartável não provam JWT/RLS hospedado nem corpos LIVE.
 - Painel usa só rpc_b2b_revenue_forecast_tenant_v2 (v2/); título confirmado exige alocação de documento autorizado via motor B4, nunca origin_type.
+- Leitor V2 só devolve resposta com impressão digital de escopo igual antes/depois (helpers B4 VOLATILE = snapshot por comando); retry limitado e 40001, nunca locks/escrita — evita totais mistos sob READ COMMITTED.

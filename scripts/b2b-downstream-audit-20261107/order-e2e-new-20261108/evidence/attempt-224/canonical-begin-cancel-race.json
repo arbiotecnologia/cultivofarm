@@ -1,0 +1,631 @@
+[
+  {
+    "case": "two-begins-before-sync",
+    "winner": "{\"state\": \"PENDING\", \"eventId\": null, \"outcome\": \"PENDING\", \"service\": \"NFeAutorizacao4\", \"invoiceId\": \"00000000-0000-0000-0000-000000000985\", \"correlationId\": \"a62c2146-50ef-4a2e-a563-abdc772777e8\", \"transmissionId\": \"52367a23-db4d-4d83-9977-e1c7066bfa9d\", \"idempotentReplay\": false}\n\n",
+    "loser": "ERROR:  PT409: B2B_FORECAST_BEGIN_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 204 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+    "repeatable": "ERROR:  42501: B2B_FORECAST_READ_COMMITTED_REQUIRED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 101 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "case": "replay-binding",
+    "checks": [
+      {
+        "case": "service-differs",
+        "exit": 3,
+        "expected": "FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+        "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+        "leaked_row": false
+      },
+      {
+        "case": "invoice-and-run-differ",
+        "exit": 3,
+        "expected": "FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+        "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+        "leaked_row": false
+      },
+      {
+        "case": "event-differs",
+        "exit": 3,
+        "expected": "FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+        "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+        "leaked_row": false
+      },
+      {
+        "case": "endpoint-differs",
+        "exit": 3,
+        "expected": "FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+        "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+        "leaked_row": false
+      },
+      {
+        "case": "caller-invoice-not-run",
+        "exit": 3,
+        "expected": "SEFAZ_INVOICE_RUN_MISMATCH",
+        "stderr": "ERROR:  P0001: SEFAZ_INVOICE_RUN_MISMATCH",
+        "leaked_row": false
+      },
+      {
+        "case": "foreign-or-unknown-actor",
+        "exit": 3,
+        "expected": "B2B_FORECAST_BEGIN_SCOPE_DENIED",
+        "stderr": "ERROR:  42501: B2B_FORECAST_BEGIN_SCOPE_DENIED",
+        "leaked_row": false
+      },
+      {
+        "case": "pilot-revoked-before",
+        "exit": 3,
+        "expected": "B2B_FORECAST_BEGIN_SCOPE_DENIED",
+        "stderr": "ERROR:  42501: B2B_FORECAST_BEGIN_SCOPE_DENIED",
+        "leaked_row": false
+      },
+      {
+        "case": "pilot-revoked-while-replay-waits-on-lock",
+        "exit": 3,
+        "stderr": "ERROR:  42501: B2B_FORECAST_BEGIN_SCOPE_DENIED",
+        "leaked_row": false,
+        "barrier": {
+          "holder_ready": {
+            "pid": 35501,
+            "state": "idle in transaction",
+            "granted": true
+          },
+          "waiter_before_revocation": {
+            "holder_pid": 35501,
+            "waiter_pid": 35506,
+            "blocking_pids": [
+              35501
+            ],
+            "ungranted_locks": [
+              {
+                "mode": "ShareLock",
+                "granted": false,
+                "locktype": "transactionid",
+                "relation": null,
+                "transactionid": "18384"
+              }
+            ],
+            "wait_event_type": "Lock"
+          },
+          "mutation_sent_after_waiter": true,
+          "timing_only_proof": false
+        }
+      },
+      {
+        "case": "exact-replay-after-restore",
+        "exit": 0,
+        "replay": true
+      }
+    ]
+  },
+  {
+    "case": "begin-first",
+    "begin_stdout": "{\"state\": \"PENDING\", \"eventId\": null, \"outcome\": \"PENDING\", \"service\": \"NFeAutorizacao4\", \"invoiceId\": \"00000000-0000-0000-0000-000000000985\", \"correlationId\": \"4400668b-e7d3-46b8-af62-dac194aa0c62\", \"transmissionId\": \"ad67835a-f3b9-41e5-85fa-fa0642799b78\", \"idempotentReplay\": false}\n\n",
+    "cancel_stderr": "ERROR:  PT409: B2B_FORECAST_FISCAL_IN_FLIGHT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 39 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "case": "post-wait-revalidation",
+    "checks": [
+      {
+        "case": "issuer-settings-env-1-during-wait",
+        "service": "NFeAutorizacao4",
+        "exit": 3,
+        "expected": "FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "leaked_row": false,
+        "barrier": {
+          "holder_ready": {
+            "pid": 35544,
+            "state": "idle in transaction",
+            "granted": true
+          },
+          "waiter_before_revocation": {
+            "holder_pid": 35544,
+            "waiter_pid": 35550,
+            "blocking_pids": [
+              35544
+            ],
+            "ungranted_locks": [
+              {
+                "mode": "ShareLock",
+                "granted": false,
+                "locktype": "transactionid",
+                "relation": null,
+                "transactionid": "18393"
+              }
+            ],
+            "wait_event_type": "Lock"
+          },
+          "mutation_sent_after_waiter": true,
+          "timing_only_proof": false
+        }
+      },
+      {
+        "case": "issuer-settings-inactive-during-wait",
+        "service": "NFeAutorizacao4",
+        "exit": 3,
+        "expected": "FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "leaked_row": false,
+        "barrier": {
+          "holder_ready": {
+            "pid": 35557,
+            "state": "idle in transaction",
+            "granted": true
+          },
+          "waiter_before_revocation": {
+            "holder_pid": 35557,
+            "waiter_pid": 35562,
+            "blocking_pids": [
+              35557
+            ],
+            "ungranted_locks": [
+              {
+                "mode": "ShareLock",
+                "granted": false,
+                "locktype": "transactionid",
+                "relation": null,
+                "transactionid": "18396"
+              }
+            ],
+            "wait_event_type": "Lock"
+          },
+          "mutation_sent_after_waiter": true,
+          "timing_only_proof": false
+        }
+      },
+      {
+        "case": "marker-revoked-during-wait",
+        "service": "NFeAutorizacao4",
+        "exit": 3,
+        "expected": "FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "leaked_row": false,
+        "barrier": {
+          "holder_ready": {
+            "pid": 35571,
+            "state": "idle in transaction",
+            "granted": true
+          },
+          "waiter_before_revocation": {
+            "holder_pid": 35571,
+            "waiter_pid": 35577,
+            "blocking_pids": [
+              35571
+            ],
+            "ungranted_locks": [
+              {
+                "mode": "ShareLock",
+                "granted": false,
+                "locktype": "transactionid",
+                "relation": null,
+                "transactionid": "18399"
+              }
+            ],
+            "wait_event_type": "Lock"
+          },
+          "mutation_sent_after_waiter": true,
+          "timing_only_proof": false
+        }
+      },
+      {
+        "case": "xml-run-unsigned-during-wait",
+        "service": "NFeAutorizacao4",
+        "exit": 3,
+        "expected": "SEFAZ_INVOICE_RUN_MISMATCH",
+        "stderr": "ERROR:  P0001: SEFAZ_INVOICE_RUN_MISMATCH",
+        "leaked_row": false,
+        "barrier": {
+          "holder_ready": {
+            "pid": 35586,
+            "state": "idle in transaction",
+            "granted": true
+          },
+          "waiter_before_revocation": {
+            "holder_pid": 35586,
+            "waiter_pid": 35591,
+            "blocking_pids": [
+              35586
+            ],
+            "ungranted_locks": [
+              {
+                "mode": "ShareLock",
+                "granted": false,
+                "locktype": "transactionid",
+                "relation": null,
+                "transactionid": "18402"
+              }
+            ],
+            "wait_event_type": "Lock"
+          },
+          "mutation_sent_after_waiter": true,
+          "timing_only_proof": false
+        }
+      },
+      {
+        "case": "actor-profile-inactive-during-wait",
+        "service": "NFeAutorizacao4",
+        "exit": 3,
+        "expected": "B2B_FORECAST_BEGIN_SCOPE_DENIED",
+        "stderr": "ERROR:  42501: B2B_FORECAST_BEGIN_SCOPE_DENIED",
+        "leaked_row": false,
+        "barrier": {
+          "holder_ready": {
+            "pid": 35600,
+            "state": "idle in transaction",
+            "granted": true
+          },
+          "waiter_before_revocation": {
+            "holder_pid": 35600,
+            "waiter_pid": 35605,
+            "blocking_pids": [
+              35600
+            ],
+            "ungranted_locks": [
+              {
+                "mode": "ShareLock",
+                "granted": false,
+                "locktype": "transactionid",
+                "relation": null,
+                "transactionid": "18405"
+              }
+            ],
+            "wait_event_type": "Lock"
+          },
+          "mutation_sent_after_waiter": true,
+          "timing_only_proof": false
+        }
+      },
+      {
+        "case": "pilot-revoked-during-wait-retautorizacao",
+        "service": "NFeRetAutorizacao4",
+        "exit": 3,
+        "expected": "B2B_FORECAST_BEGIN_SCOPE_DENIED",
+        "stderr": "ERROR:  42501: B2B_FORECAST_BEGIN_SCOPE_DENIED",
+        "leaked_row": false,
+        "barrier": {
+          "holder_ready": {
+            "pid": 35614,
+            "state": "idle in transaction",
+            "granted": true
+          },
+          "waiter_before_revocation": {
+            "holder_pid": 35614,
+            "waiter_pid": 35619,
+            "blocking_pids": [
+              35614
+            ],
+            "ungranted_locks": [
+              {
+                "mode": "ShareLock",
+                "granted": false,
+                "locktype": "transactionid",
+                "relation": null,
+                "transactionid": "18408"
+              }
+            ],
+            "wait_event_type": "Lock"
+          },
+          "mutation_sent_after_waiter": true,
+          "timing_only_proof": false
+        }
+      },
+      {
+        "case": "pilot-allowlist-wait-issuer-settings-env-1",
+        "service": "NFeAutorizacao4",
+        "holder_lock": "SELECT id FROM platform_private.b2b_forecast_lifecycle_allowlist_v1 WHERE operation='forecast_begin' AND actor_id='00000000-0000-0000-0000-000000000024' FOR UPDATE;",
+        "holder_locks_only": "b2b_forecast_lifecycle_allowlist_v1",
+        "exit": 3,
+        "expected": "FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "leaked_row": false,
+        "barrier": {
+          "holder_ready": {
+            "pid": 35629,
+            "state": "idle in transaction",
+            "granted": true
+          },
+          "waiter_before_revocation": {
+            "holder_pid": 35629,
+            "waiter_pid": 35636,
+            "blocking_pids": [
+              35629
+            ],
+            "ungranted_locks": [
+              {
+                "mode": "ShareLock",
+                "granted": false,
+                "locktype": "transactionid",
+                "relation": null,
+                "transactionid": "18411"
+              }
+            ],
+            "wait_event_type": "Lock"
+          },
+          "mutation_sent_after_waiter": true,
+          "timing_only_proof": false
+        }
+      },
+      {
+        "case": "pilot-allowlist-wait-issuer-settings-inactive",
+        "service": "NFeAutorizacao4",
+        "holder_lock": "SELECT id FROM platform_private.b2b_forecast_lifecycle_allowlist_v1 WHERE operation='forecast_begin' AND actor_id='00000000-0000-0000-0000-000000000024' FOR UPDATE;",
+        "holder_locks_only": "b2b_forecast_lifecycle_allowlist_v1",
+        "exit": 3,
+        "expected": "FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "leaked_row": false,
+        "barrier": {
+          "holder_ready": {
+            "pid": 35647,
+            "state": "idle in transaction",
+            "granted": true
+          },
+          "waiter_before_revocation": {
+            "holder_pid": 35647,
+            "waiter_pid": 35652,
+            "blocking_pids": [
+              35647
+            ],
+            "ungranted_locks": [
+              {
+                "mode": "ShareLock",
+                "granted": false,
+                "locktype": "transactionid",
+                "relation": null,
+                "transactionid": "18414"
+              }
+            ],
+            "wait_event_type": "Lock"
+          },
+          "mutation_sent_after_waiter": true,
+          "timing_only_proof": false
+        }
+      },
+      {
+        "case": "pilot-allowlist-wait-marker-revoked",
+        "service": "NFeAutorizacao4",
+        "holder_lock": "SELECT id FROM platform_private.b2b_forecast_lifecycle_allowlist_v1 WHERE operation='forecast_begin' AND actor_id='00000000-0000-0000-0000-000000000024' FOR UPDATE;",
+        "holder_locks_only": "b2b_forecast_lifecycle_allowlist_v1",
+        "exit": 3,
+        "expected": "FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "leaked_row": false,
+        "barrier": {
+          "holder_ready": {
+            "pid": 35666,
+            "state": "idle in transaction",
+            "granted": true
+          },
+          "waiter_before_revocation": {
+            "holder_pid": 35666,
+            "waiter_pid": 35670,
+            "blocking_pids": [
+              35666
+            ],
+            "ungranted_locks": [
+              {
+                "mode": "ShareLock",
+                "granted": false,
+                "locktype": "transactionid",
+                "relation": null,
+                "transactionid": "18417"
+              }
+            ],
+            "wait_event_type": "Lock"
+          },
+          "mutation_sent_after_waiter": true,
+          "timing_only_proof": false
+        }
+      },
+      {
+        "case": "pilot-allowlist-wait-xml-signature-removed",
+        "service": "NFeAutorizacao4",
+        "holder_lock": "SELECT id FROM platform_private.b2b_forecast_lifecycle_allowlist_v1 WHERE operation='forecast_begin' AND actor_id='00000000-0000-0000-0000-000000000024' FOR UPDATE;",
+        "holder_locks_only": "b2b_forecast_lifecycle_allowlist_v1",
+        "exit": 3,
+        "expected": "SEFAZ_INVOICE_RUN_MISMATCH",
+        "stderr": "ERROR:  P0001: SEFAZ_INVOICE_RUN_MISMATCH",
+        "leaked_row": false,
+        "barrier": {
+          "holder_ready": {
+            "pid": 35683,
+            "state": "idle in transaction",
+            "granted": true
+          },
+          "waiter_before_revocation": {
+            "holder_pid": 35683,
+            "waiter_pid": 35688,
+            "blocking_pids": [
+              35683
+            ],
+            "ungranted_locks": [
+              {
+                "mode": "ShareLock",
+                "granted": false,
+                "locktype": "transactionid",
+                "relation": null,
+                "transactionid": "18420"
+              }
+            ],
+            "wait_event_type": "Lock"
+          },
+          "mutation_sent_after_waiter": true,
+          "timing_only_proof": false
+        }
+      },
+      {
+        "case": "pilot-gate-wait-issuer-settings-env-1",
+        "service": "NFeAutorizacao4",
+        "holder_lock": "SELECT singleton FROM platform_private.b2b_forecast_lifecycle_gate_v1 WHERE singleton FOR UPDATE;",
+        "holder_locks_only": "b2b_forecast_lifecycle_gate_v1",
+        "exit": 3,
+        "expected": "FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "leaked_row": false,
+        "barrier": {
+          "holder_ready": {
+            "pid": 35702,
+            "state": "idle in transaction",
+            "granted": true
+          },
+          "waiter_before_revocation": {
+            "holder_pid": 35702,
+            "waiter_pid": 35708,
+            "blocking_pids": [
+              35702
+            ],
+            "ungranted_locks": [
+              {
+                "mode": "ShareLock",
+                "granted": false,
+                "locktype": "transactionid",
+                "relation": null,
+                "transactionid": "18423"
+              }
+            ],
+            "wait_event_type": "Lock"
+          },
+          "mutation_sent_after_waiter": true,
+          "timing_only_proof": false
+        }
+      },
+      {
+        "case": "pilot-gate-wait-issuer-settings-inactive",
+        "service": "NFeAutorizacao4",
+        "holder_lock": "SELECT singleton FROM platform_private.b2b_forecast_lifecycle_gate_v1 WHERE singleton FOR UPDATE;",
+        "holder_locks_only": "b2b_forecast_lifecycle_gate_v1",
+        "exit": 3,
+        "expected": "FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "leaked_row": false,
+        "barrier": {
+          "holder_ready": {
+            "pid": 35722,
+            "state": "idle in transaction",
+            "granted": true
+          },
+          "waiter_before_revocation": {
+            "holder_pid": 35722,
+            "waiter_pid": 35729,
+            "blocking_pids": [
+              35722
+            ],
+            "ungranted_locks": [
+              {
+                "mode": "ShareLock",
+                "granted": false,
+                "locktype": "transactionid",
+                "relation": null,
+                "transactionid": "18426"
+              }
+            ],
+            "wait_event_type": "Lock"
+          },
+          "mutation_sent_after_waiter": true,
+          "timing_only_proof": false
+        }
+      },
+      {
+        "case": "pilot-gate-wait-marker-revoked",
+        "service": "NFeAutorizacao4",
+        "holder_lock": "SELECT singleton FROM platform_private.b2b_forecast_lifecycle_gate_v1 WHERE singleton FOR UPDATE;",
+        "holder_locks_only": "b2b_forecast_lifecycle_gate_v1",
+        "exit": 3,
+        "expected": "FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "leaked_row": false,
+        "barrier": {
+          "holder_ready": {
+            "pid": 35741,
+            "state": "idle in transaction",
+            "granted": true
+          },
+          "waiter_before_revocation": {
+            "holder_pid": 35741,
+            "waiter_pid": 35747,
+            "blocking_pids": [
+              35741
+            ],
+            "ungranted_locks": [
+              {
+                "mode": "ShareLock",
+                "granted": false,
+                "locktype": "transactionid",
+                "relation": null,
+                "transactionid": "18429"
+              }
+            ],
+            "wait_event_type": "Lock"
+          },
+          "mutation_sent_after_waiter": true,
+          "timing_only_proof": false
+        }
+      },
+      {
+        "case": "pilot-gate-wait-xml-signature-removed",
+        "service": "NFeAutorizacao4",
+        "holder_lock": "SELECT singleton FROM platform_private.b2b_forecast_lifecycle_gate_v1 WHERE singleton FOR UPDATE;",
+        "holder_locks_only": "b2b_forecast_lifecycle_gate_v1",
+        "exit": 3,
+        "expected": "SEFAZ_INVOICE_RUN_MISMATCH",
+        "stderr": "ERROR:  P0001: SEFAZ_INVOICE_RUN_MISMATCH",
+        "leaked_row": false,
+        "barrier": {
+          "holder_ready": {
+            "pid": 35760,
+            "state": "idle in transaction",
+            "granted": true
+          },
+          "waiter_before_revocation": {
+            "holder_pid": 35760,
+            "waiter_pid": 35764,
+            "blocking_pids": [
+              35760
+            ],
+            "ungranted_locks": [
+              {
+                "mode": "ShareLock",
+                "granted": false,
+                "locktype": "transactionid",
+                "relation": null,
+                "transactionid": "18432"
+              }
+            ],
+            "wait_event_type": "Lock"
+          },
+          "mutation_sent_after_waiter": true,
+          "timing_only_proof": false
+        }
+      },
+      {
+        "case": "foreign-autorizacao-no-wait",
+        "exit": 3,
+        "stderr": "ERROR:  42501: B2B_FORECAST_BEGIN_SCOPE_DENIED",
+        "lock_timeout_hit": false
+      },
+      {
+        "case": "foreign-retautorizacao-no-wait",
+        "exit": 3,
+        "stderr": "ERROR:  42501: B2B_FORECAST_BEGIN_SCOPE_DENIED",
+        "lock_timeout_hit": false
+      },
+      {
+        "case": "transport-h15-invoice-access",
+        "result": {
+          "own": true,
+          "foreign": false
+        }
+      },
+      {
+        "case": "own-retautorizacao-positive-rollback",
+        "exit": 0,
+        "stderr": ""
+      }
+    ]
+  },
+  {
+    "case": "cancel-lock-first-rollback",
+    "cancel_stdout": "{\"actor\": \"00000000-0000-0000-0000-000000000029\", \"state\": \"cancelado_residual\", \"version\": 13, \"order_id\": \"d446d360-7961-4161-87eb-086552bd8ca7\", \"forecast_id\": \"166c1006-647d-48db-9f26-550de0584a76\"}\n\n",
+    "begin_stdout": "{\"state\": \"PENDING\", \"eventId\": null, \"outcome\": \"PENDING\", \"service\": \"NFeAutorizacao4\", \"invoiceId\": \"00000000-0000-0000-0000-000000000985\", \"correlationId\": \"86dc32ff-6e3c-4107-bd6b-18b6a98ef195\", \"transmissionId\": \"2d714fe5-fd1c-4210-b43b-dfd9476cda89\", \"idempotentReplay\": false}\n",
+    "elapsed": 0.7107946160001575
+  }
+]

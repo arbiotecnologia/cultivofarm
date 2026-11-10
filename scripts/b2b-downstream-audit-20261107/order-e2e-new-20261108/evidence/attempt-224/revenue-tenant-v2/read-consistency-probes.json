@@ -1,0 +1,18 @@
+{
+ "local_probe_rv2_old": {
+  "source": "b2b-revenue-forecast-tenant-20261110/v2/history-95e8c3b/reader.sql",
+  "source_sha256": "98c0910ebe1c8f2f359243c9b0db8c8a041f362f9285ecac7da24ea934ec4f60",
+  "injected_lines": [
+   "CREATE FUNCTION public.local_probe_rv2_old(p_partner_id uuid DEFAULT NULL)",
+   " PERFORM pg_advisory_xact_lock_shared(770011);"
+  ]
+ },
+ "local_probe_rv2_new": {
+  "source": "b2b-revenue-forecast-tenant-20261110/v2/reader.sql",
+  "source_sha256": "31783ae8435079efac1f4132d7ce33fb8dd1c1f31bb4ddc58db30cc113029079",
+  "injected_lines": [
+   "CREATE FUNCTION public.local_probe_rv2_new(p_partner_id uuid DEFAULT NULL)",
+   " PERFORM pg_advisory_xact_lock_shared(770011);"
+  ]
+ }
+}

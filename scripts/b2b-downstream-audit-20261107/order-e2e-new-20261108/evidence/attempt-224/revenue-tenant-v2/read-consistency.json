@@ -1,0 +1,443 @@
+[
+ {
+  "label": "nf2-partial-completion",
+  "waiter_proof": {
+   "local_probe_rv2_old": {
+    "pid": 35084,
+    "blocking": [
+     35075
+    ],
+    "ungranted": [
+     "advisory:ShareLock"
+    ],
+    "wait_event_type": "Lock"
+   },
+   "local_probe_rv2_new": {
+    "pid": 35083,
+    "blocking": [
+     35075
+    ],
+    "ungranted": [
+     "advisory:ShareLock"
+    ],
+    "wait_event_type": "Lock"
+   }
+  },
+  "holder": {
+   "pid": 35075,
+   "state": "idle in transaction"
+  },
+  "pre": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 9.0,
+    "vencido": 0,
+    "installments": 1,
+    "total_aberto": 9.0
+   },
+   "forecast_residual": {
+    "amount": 756.0,
+    "orders": 19,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  },
+  "post": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 18.0,
+    "vencido": 0,
+    "installments": 2,
+    "total_aberto": 18.0
+   },
+   "forecast_residual": {
+    "amount": 747.0,
+    "orders": 18,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  },
+  "old_probe": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 9.0,
+    "vencido": 0,
+    "installments": 1,
+    "total_aberto": 9.0
+   },
+   "forecast_residual": {
+    "amount": 747.0,
+    "orders": 18,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  },
+  "new_probe": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 18.0,
+    "vencido": 0,
+    "installments": 2,
+    "total_aberto": 18.0
+   },
+   "forecast_residual": {
+    "amount": 747.0,
+    "orders": 18,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  },
+  "old_classification": "MIXED",
+  "new_classification": "POST",
+  "changed": true,
+  "reference_reader": "rpc_b2b_revenue_forecast_tenant_v2",
+  "hosted": false,
+  "timing_only_proof": false
+ },
+ {
+  "label": "payment-9",
+  "waiter_proof": {
+   "local_probe_rv2_old": {
+    "pid": 35293,
+    "blocking": [
+     35286
+    ],
+    "ungranted": [
+     "advisory:ShareLock"
+    ],
+    "wait_event_type": "Lock"
+   },
+   "local_probe_rv2_new": {
+    "pid": 35294,
+    "blocking": [
+     35286
+    ],
+    "ungranted": [
+     "advisory:ShareLock"
+    ],
+    "wait_event_type": "Lock"
+   }
+  },
+  "holder": {
+   "pid": 35286,
+   "state": "idle in transaction"
+  },
+  "pre": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 18.0,
+    "vencido": 0,
+    "installments": 2,
+    "total_aberto": 18.0
+   },
+   "forecast_residual": {
+    "amount": 747.0,
+    "orders": 18,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  },
+  "post": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 9.0,
+    "vencido": 0,
+    "installments": 2,
+    "total_aberto": 9.0
+   },
+   "forecast_residual": {
+    "amount": 747.0,
+    "orders": 18,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  },
+  "old_probe": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 18.0,
+    "vencido": 0,
+    "installments": 2,
+    "total_aberto": 18.0
+   },
+   "forecast_residual": {
+    "amount": 747.0,
+    "orders": 18,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  },
+  "new_probe": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 9.0,
+    "vencido": 0,
+    "installments": 2,
+    "total_aberto": 9.0
+   },
+   "forecast_residual": {
+    "amount": 747.0,
+    "orders": 18,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  },
+  "old_classification": "PRE",
+  "new_classification": "POST",
+  "changed": true,
+  "reference_reader": "rpc_b2b_revenue_forecast_tenant_v2",
+  "hosted": false,
+  "timing_only_proof": false
+ },
+ {
+  "label": "residual-cancel-commit",
+  "waiter_proof": {
+   "local_probe_rv2_old": {
+    "pid": 35823,
+    "blocking": [
+     35814
+    ],
+    "ungranted": [
+     "advisory:ShareLock"
+    ],
+    "wait_event_type": "Lock"
+   },
+   "local_probe_rv2_new": {
+    "pid": 35821,
+    "blocking": [
+     35814
+    ],
+    "ungranted": [
+     "advisory:ShareLock"
+    ],
+    "wait_event_type": "Lock"
+   }
+  },
+  "holder": {
+   "pid": 35814,
+   "state": "idle in transaction"
+  },
+  "pre": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 18.0,
+    "vencido": 0,
+    "installments": 3,
+    "total_aberto": 18.0
+   },
+   "forecast_residual": {
+    "amount": 738.0,
+    "orders": 18,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  },
+  "post": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 18.0,
+    "vencido": 0,
+    "installments": 3,
+    "total_aberto": 18.0
+   },
+   "forecast_residual": {
+    "amount": 729.0,
+    "orders": 17,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  },
+  "old_probe": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 18.0,
+    "vencido": 0,
+    "installments": 3,
+    "total_aberto": 18.0
+   },
+   "forecast_residual": {
+    "amount": 729.0,
+    "orders": 17,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  },
+  "new_probe": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 18.0,
+    "vencido": 0,
+    "installments": 3,
+    "total_aberto": 18.0
+   },
+   "forecast_residual": {
+    "amount": 729.0,
+    "orders": 17,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  },
+  "old_classification": "POST",
+  "new_classification": "POST",
+  "changed": true,
+  "reference_reader": "local_probe_rv2_new",
+  "hosted": false,
+  "timing_only_proof": false
+ }
+]

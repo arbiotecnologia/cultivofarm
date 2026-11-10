@@ -1,0 +1,45 @@
+{
+ "reader_md5": "dfda2de5e3d220aa6d1b33571a4dcf49",
+ "pg": "PostgreSQL 17.11 on x86_64-pc-linux-gnu, compiled by clang version 21.1.8, 64-bit",
+ "pins_source": "forecast-pre-nf-20261109/projection-reader-pins.json",
+ "deps": {
+  "public.is_financial_staff(uuid)": {
+   "acl": "authenticated:EXECUTE:postgres:-,postgres:EXECUTE:postgres:-,service_role:EXECUTE:postgres:-",
+   "md5": "6e8f2fa7b92ca7e039d092353b3ebfe2",
+   "owner": "postgres"
+  },
+  "public.h15_actor_organization()": {
+   "acl": "authenticated:EXECUTE:postgres:-,postgres:EXECUTE:postgres:-,service_role:EXECUTE:postgres:-",
+   "md5": "55edafec08bcc84a00f1526c14334a2c",
+   "owner": "postgres"
+  },
+  "public._saas_user_has_feature(uuid,text)": {
+   "acl": "postgres:EXECUTE:postgres:-,service_role:EXECUTE:postgres:-",
+   "md5": "501dd958e117d2df8a4d38f6bcbeed04",
+   "owner": "postgres"
+  },
+  "platform_private.b2b_proven_money_row_internal(uuid,uuid)": {
+   "acl": "postgres:EXECUTE:postgres:-",
+   "md5": "b4cfcf65495322ce3c3b911a3597abe2",
+   "owner": "postgres"
+  },
+  "platform_private.b2b_allocation_money_row(uuid)": {
+   "acl": "postgres:EXECUTE:postgres:-",
+   "md5": "2c8e4c323d1625bd06b9756c5fc7891d",
+   "owner": "postgres"
+  },
+  "platform_private.b2b_legacy_money_row(uuid)": {
+   "acl": "postgres:EXECUTE:postgres:-",
+   "md5": "72d0b11083230fa663da46df31b7af22",
+   "owner": "postgres"
+  }
+ },
+ "sha256": {
+  "01-pre.sql.readonly": "08ba3a49fa0936b0bbd6ad21b970a358161d8dc813499793f95110028fbcc287",
+  "02-install.sql.review": "986e41f8026b115cde71bf4b536362b5bdefa5698bc6bac8c57b24b2adea3078",
+  "03-post.sql.readonly": "6dee5d75b9807186766f3ff54d4df788af04af262ef03db0a5661f277b4b1b84",
+  "04-rollback-deny.sql.review": "5403e2055c755a62c2cd1a8539cba827685aaaf6e6816d13c90f139e7f3f9f22",
+  "reader.sql": "98c0910ebe1c8f2f359243c9b0db8c8a041f362f9285ecac7da24ea934ec4f60",
+  "build.py": "b3ee8a7cacb5e4b4e7c86dc106ed8d77b06854b2eb3cfaf513358d330f580aaf"
+ }
+}
