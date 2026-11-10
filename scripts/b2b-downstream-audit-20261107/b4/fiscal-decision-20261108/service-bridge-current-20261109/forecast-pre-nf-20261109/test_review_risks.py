@@ -93,6 +93,7 @@ try:
         (OUT/'results.json').write_text(json.dumps(dict(kind='ISOLATED_COMPONENT_NOT_NF_OR_PAYMENT_WRITER',checks=checks,hosted=False),indent=2)+'\n')
         print('schedule-before: two divergences reproduced')
         sys.exit(0)
+    record('changed economic installment amount is rejected',raw(f"BEGIN;UPDATE public.partner_order_payment_schedule SET amount=19 WHERE partner_order_id='{O}';SELECT platform_private.b2b_financial_forecast_after_approval_v1('{O}','{{\"reason_code\":\"OK\"}}');ROLLBACK;"),lambda r:r.returncode!=0 and 'SCHEDULE_UNPROVEN' in r.stderr)
     v = int(pg.sql(f"SELECT version FROM platform_private.b2b_financial_forecasts WHERE id='{F}';"))
     record('first intent',raw(event(version=v)),lambda r:r.returncode==0)
     record('divergent replay',raw(event('{"error_code":"DIFFERENT"}',v)),lambda r:r.returncode==0 if before else 'PT409' in r.stderr and 'REPLAY_DIVERGENCE' in r.stderr)

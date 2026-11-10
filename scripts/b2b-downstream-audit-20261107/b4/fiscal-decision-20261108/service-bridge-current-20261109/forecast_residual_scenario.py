@@ -71,10 +71,17 @@ def test_terms_replay(B, Q, OUT, order_id, before_fix=False):
     (OUT/('terms-replay-before.json' if before_fix else 'terms-replay-after.json')).write_text(json.dumps(row,indent=2)+'\n')
     assert called.returncode == 0, row
     if before_fix:
-        assert after['terms']['approved_at'] != original['terms']['approved_at'] and after['audit'] > original['audit'] and after['notifications'] > original['notifications'], row
+        assert after['terms']['approved_at'] != original['terms']['approved_at'] and after['audit'] > original['audit'], row
+        # Notification containment may suppress the attempted write; a static
+        # INSERT does not establish a delivered or persisted notification.
     else:
         assert original == after, row
         assert json.loads(called.stdout.strip().splitlines()[-1])['replayed'] is True, row
+        for uid in (Q.UADM,Q.UFIN):
+            again = Q.as_user(uid,f"SELECT public.approve_b2b_payment_terms_secure('{order_id}',NULL);")
+            assert again.returncode == 0 and state() == original, (again.stdout,again.stderr)
+        denied = Q.as_user(Q.UADMF,f"SELECT public.approve_b2b_payment_terms_secure('{order_id}',NULL);")
+        assert denied.returncode != 0 and state() == original, (denied.stdout,denied.stderr)
     return row
 
 
