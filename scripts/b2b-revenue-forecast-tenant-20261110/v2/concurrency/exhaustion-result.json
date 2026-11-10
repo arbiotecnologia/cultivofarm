@@ -1,0 +1,188 @@
+{
+ "reader_md5_expected": "d9a1c488067897ceaf216f2d1a0ebf3d",
+ "probe_injected_line": "PERFORM pg_advisory_xact_lock_shared(770010+attempt);",
+ "hosted": false,
+ "cases": [
+  {
+   "case": "real-body-no-concurrency-returns",
+   "residual": 9
+  },
+  {
+   "case": "change-in-attempts-1-2-3-exhausts-40001",
+   "mutate_attempts": [
+    1,
+    2,
+    3
+   ],
+   "waits": [
+    {
+     "attempt": 1,
+     "waiter": {
+      "mode": "ShareLock",
+      "objid": "770011",
+      "holder": 45350,
+      "blocking": [
+       45350
+      ]
+     },
+     "mutation_committed": true
+    },
+    {
+     "attempt": 2,
+     "waiter": {
+      "mode": "ShareLock",
+      "objid": "770012",
+      "holder": 45349,
+      "blocking": [
+       45349
+      ]
+     },
+     "mutation_committed": true
+    },
+    {
+     "attempt": 3,
+     "waiter": {
+      "mode": "ShareLock",
+      "objid": "770013",
+      "holder": 45351,
+      "blocking": [
+       45351
+      ]
+     },
+     "mutation_committed": true
+    }
+   ],
+   "exit": 0,
+   "stderr": "ERROR:  40001: B2B_REVENUE_FORECAST_CONCURRENT_CHANGE\nCONTEXT:  PL/pgSQL function public.local_probe_rv2_exhaust(uuid) line 43 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+   "payload": null,
+   "residual_now": 12.0
+  },
+  {
+   "case": "change-in-attempts-1-2-then-stable-returns-post",
+   "mutate_attempts": [
+    1,
+    2
+   ],
+   "waits": [
+    {
+     "attempt": 1,
+     "waiter": {
+      "mode": "ShareLock",
+      "objid": "770011",
+      "holder": 45381,
+      "blocking": [
+       45381
+      ]
+     },
+     "mutation_committed": true
+    },
+    {
+     "attempt": 2,
+     "waiter": {
+      "mode": "ShareLock",
+      "objid": "770012",
+      "holder": 45382,
+      "blocking": [
+       45382
+      ]
+     },
+     "mutation_committed": true
+    },
+    {
+     "attempt": 3,
+     "waiter": {
+      "mode": "ShareLock",
+      "objid": "770013",
+      "holder": 45383,
+      "blocking": [
+       45383
+      ]
+     },
+     "mutation_committed": false
+    }
+   ],
+   "exit": 0,
+   "stderr": "",
+   "payload": {
+    "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+    "partner_id": null,
+    "organization_id": "00000000-0000-4000-8000-000000000001",
+    "confirmed_titles": {
+     "proof": "b2b_document_allocation_v1",
+     "ate_30": 0,
+     "ate_60": 0,
+     "ate_90": 0,
+     "apos_90": 0,
+     "vencido": 0,
+     "installments": 0,
+     "total_aberto": 0
+    },
+    "forecast_residual": {
+     "amount": 14,
+     "orders": 1,
+     "enforceable": false,
+     "inconsistent": 0,
+     "due_dates_estimated": true
+    },
+    "titles_unavailable": {
+     "legacy": 0,
+     "unproven": 0,
+     "inconsistent": 0
+    },
+    "legacy_unproven_orders": 0
+   },
+   "residual_now": 14.0
+  },
+  {
+   "case": "no-change-returns-first-attempt",
+   "mutate_attempts": [],
+   "waits": [
+    {
+     "attempt": 1,
+     "waiter": {
+      "mode": "ShareLock",
+      "objid": "770011",
+      "holder": 45413,
+      "blocking": [
+       45413
+      ]
+     },
+     "mutation_committed": false
+    }
+   ],
+   "exit": 0,
+   "stderr": "",
+   "payload": {
+    "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+    "partner_id": null,
+    "organization_id": "00000000-0000-4000-8000-000000000001",
+    "confirmed_titles": {
+     "proof": "b2b_document_allocation_v1",
+     "ate_30": 0,
+     "ate_60": 0,
+     "ate_90": 0,
+     "apos_90": 0,
+     "vencido": 0,
+     "installments": 0,
+     "total_aberto": 0
+    },
+    "forecast_residual": {
+     "amount": 14,
+     "orders": 1,
+     "enforceable": false,
+     "inconsistent": 0,
+     "due_dates_estimated": true
+    },
+    "titles_unavailable": {
+     "legacy": 0,
+     "unproven": 0,
+     "inconsistent": 0
+    },
+    "legacy_unproven_orders": 0
+   },
+   "residual_now": 14.0
+  }
+ ],
+ "reader_md5_installed": "d9a1c488067897ceaf216f2d1a0ebf3d",
+ "ok": true
+}

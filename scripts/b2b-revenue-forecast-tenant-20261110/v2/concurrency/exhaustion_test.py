@@ -74,7 +74,7 @@ def main():
                     time.sleep(.01)
                 else: raise AssertionError('HOLDER_NOT_READY')
             reader = subprocess.Popen(base, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
-            reader.stdin.write("SET application_name='rdr';" + ctx + "SELECT public.local_probe_rv2_exhaust(NULL);COMMIT;\n"); reader.stdin.close()
+            reader.stdin.write("\\set VERBOSITY verbose\nSET application_name='rdr';" + ctx + "SELECT public.local_probe_rv2_exhaust(NULL);COMMIT;\n"); reader.stdin.close()
             waits = []
             for k in (1, 2, 3):
                 for _ in range(1000):
@@ -82,7 +82,7 @@ def main():
                       'holder',(SELECT pid FROM pg_stat_activity WHERE application_name='h{k}'))::text
                       FROM pg_stat_activity a JOIN pg_locks l ON l.pid=a.pid AND NOT l.granted WHERE a.application_name='rdr' AND a.wait_event_type='Lock'),'{{}}');""")
                     w = json.loads(w)
-                    if w.get('objid') == 770010 + k and w['holder'] in w['blocking']: break
+                    if str(w.get('objid')) == str(770010 + k) and w['holder'] in w['blocking']: break
                     time.sleep(.01)
                 else: raise AssertionError(('READER_NOT_WAITING_ATTEMPT', k, w))
                 if k in mutate_attempts:  # writer independente, outra conexão, COMMIT durante a tentativa k
@@ -101,16 +101,11 @@ def main():
                        residual_now=float(last(f"SELECT residual_amount FROM platform_private.b2b_financial_forecasts WHERE order_id='{X}';")))
             out['cases'].append(res); return res
         a = run('change-in-attempts-1-2-3-exhausts-40001', {1, 2, 3})
-        assert 'ERROR:  B2B_REVENUE_FORECAST_CONCURRENT_CHANGE' in a['stderr'] and a['payload'] is None, a
-        sqlstate = q("\\set VERBOSITY verbose\n" + ctx + "DO $$BEGIN RAISE EXCEPTION 'x' USING ERRCODE='40001'; END$$;")  # referência do formato
+        assert 'ERROR:  40001: B2B_REVENUE_FORECAST_CONCURRENT_CHANGE' in a['stderr'] and a['payload'] is None and len(a['waits']) == 3, a
         b = run('change-in-attempts-1-2-then-stable-returns-post', {1, 2})
-        assert b['payload'] and float(b['payload']['forecast_residual']['amount']) == b['residual_now'], b
+        assert len(b['waits']) == 3 and b['payload'] and float(b['payload']['forecast_residual']['amount']) == b['residual_now'], b
         c = run('no-change-returns-first-attempt', set())
         assert c['payload'] and float(c['payload']['forecast_residual']['amount']) == c['residual_now'] and len(c['waits']) == 1, c
-        # SQLSTATE exato do esgotamento, com VERBOSITY verbose no mesmo cenário
-        out['exhaustion_sqlstate_check'] = 'see verbose case'
-        holders_note = None
-        v = run_verbose = None
         out['ok'] = True
     finally:
         sh(f"pg_ctl -D {data} stop -m fast >/dev/null")
