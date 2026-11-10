@@ -667,8 +667,6 @@ def main():
   h7_pre=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(h7_dir/'01-pre.sql.readonly').read_text())
   B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(h7_dir/'02-install.sql.review').read_text())
   h7_post=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(h7_dir/'03-post.sql.readonly').read_text())
-  pre_nf_wrappers=forecast_extra.run_pre_nf_wrappers(B,Q,OUT,order_id,accepted,item)
-  checks.append(dict(test='authenticated canonical wrappers derive rejection timeout and consultation from real fiscal callback; cancel blocked while consulting; foreign/buyer/service/private and revocation-after-lock denied',status='PASS'))
   legacy_denied=B.run_raw(B.T.actor(Q.UFIN)+f"SELECT public.generate_b2b_receivable_secure('{order_id}');")
   assert legacy_denied.returncode!=0 and 'B2B_AUTHORIZED_FISCAL_DOCUMENT_REQUIRED' in legacy_denied.stderr,legacy_denied.stderr
   assert B.last('SELECT count(*) FROM public.accounts_receivable;')==str(effect_baseline['receivables'])
@@ -709,6 +707,8 @@ CREATE TABLE IF NOT EXISTS public.fiscal_sefaz_transmissions(id uuid PRIMARY KEY
  state text,outcome text,c_stat text,x_motivo text,ch_nfe text,n_prot text,n_rec text,ambiente_retorno text,dh_recbto timestamptz,
  error_code text,response_summary jsonb,completed_at timestamptz);
 CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),table_name text,record_id uuid,action text,old_values jsonb,new_values jsonb,changed_by uuid);""")
+  pre_nf_wrappers=forecast_extra.run_pre_nf_wrappers(B,Q,OUT,order_id,accepted,item)
+  checks.append(dict(test='authenticated canonical wrappers derive rejection timeout and consultation from real fiscal callback; cancel blocked while consulting; foreign/buyer/service/private and revocation-after-lock denied',status='PASS'))
   invoice_id=Q.u(900);transmission_id=Q.u(901);xml_run_id=Q.u(902);access_key='35261111111111111111111111111111111111111111'
   company_settings_id=accepted['internal_economic_snapshot']['origin']['company_settings_id']
   partial_amount=round(float(accepted['final_amount_with_interest'])/2,2)
