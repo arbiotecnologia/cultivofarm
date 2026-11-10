@@ -1,22 +1,26 @@
+## 10/11 02:40 — Composição B4+previsão e cadeia integral local (172–184)
+- [x] Corpo único `fn_b2b_credit_exposure` 7d841856 após B4 44e8768f (estágio 09–12), elegibilidade por termos vinculados, wrappers autenticados emissão/consulta/cancelamento; tentativa 184 exit 0, 55/55: 18/9/9, pagamento 9, duas últimas NFs concorrentes, replay, H7, parcial+cancelamento+callback tardio e rollback composto. Falhas 172–183 preservadas em REVIEW-20261110.md.
+- [ ] Revisão independente do auditor antes de qualquer instalação (bloqueio: decisão externa). Hosted JWT/RLS/Storage, SEFAZ real e UI autenticada continuam não provados.
+
 ## 10/11 00:04 — Revisão estática previsão 02/06
 - [x] Complemento 00:54: sete checks/seis consumidores verificados; schedule normalizado e aprovação original/efeitos únicos corrigidos. Tentativa 170 falhou expectativa de aviso (0→0), mas reproduziu ator/data/audit alterados; 171 provou replay sem alteração e segue exit 1 no PRE B4. VínculoNF/pagamento por writers reais ainda pendente, componentes não são PASS integrado.
 - [x] Continuação 00:37: consumidor reproduzido antes/depois e delta de seis leitores/writers com termos vinculados, pins/ACL preservadas; tentativa 169 completou regressões operacionais/revogação/piloto locais. Evidências 167–169 separadas.
-- [ ] Continuação integrada: tentativa 169 bloqueou no PRE B4 do crédito; B4 também redefine o corpo residual, portanto requer composição sem regressão (não trocar pin isoladamente). Wrappers fiscais autorizados, 18/9/9, pagamento, corridas fiscais/cancelamento e rollback composto continuam não comprovados; sem hosted ou efeitos externos.
+- [x] (184) Continuação integrada: tentativa 169 bloqueou no PRE B4 do crédito; B4 também redefine o corpo residual, portanto requer composição sem regressão (não trocar pin isoladamente). Wrappers fiscais autorizados, 18/9/9, pagamento, corridas fiscais/cancelamento e rollback composto continuam não comprovados; sem hosted ou efeitos externos.
 - [x] Complemento 00:22 no mesmo review153: tentativa 166 provou termos antes/depois comercial, deferred sem previsão, revogação de perfil/tenant 42501 após espera e concorrência canônica PT409 com aprovação vencedora preservada; sem fixtures/stubs novos. Tentativas 164/165 separadas e falhas registradas; fluxo integral segue bloqueado operacionalmente.
 - [x] Caracterizar os quatro riscos nos corpos anteriores e corrigir candidatos; 21 verificações isoladas, sem tratar estado/residual sintéticos como NF real.
 - [x] Fechar grants privados sem chamador comprovado; reconciliador exige permit transacional exato e validador existente. Ponte protege cancelamento antes da alocação; rollback deny-only.
 - [x] Corrigir journal da fixture de override; termos pós-comercial/antes-comercial e crédito OK/override formal comprovados na tentativa 163, sem snapshot rewrite. UI/testes focados 27/27; build automático OK.
-- [ ] PASS integrado bloqueado: tentativa 163 parou em B2B_RESALE_ORDER_CONFLICT no caller operacional. 18/9/9, pagamento, segunda NF real, corridas fiscais positivas/revogação/matriz e rollback novo não comprovados; não contornar gates. Relatório REVIEW-20261110.md distingue 160–163 e componentes.
+- [x] (184) PASS integrado bloqueado: tentativa 163 parou em B2B_RESALE_ORDER_CONFLICT no caller operacional. 18/9/9, pagamento, segunda NF real, corridas fiscais positivas/revogação/matriz e rollback novo não comprovados; não contornar gates. Relatório REVIEW-20261110.md distingue 160–163 e componentes.
 
 ## 09/11 23:39 — Revisão previsão 3b7668cf
-- [ ] Reproduzir 153 com SQLSTATE/estado e corrigir ambos caminhos de aprovação sem mudar snapshots/gatilhos; tentativa 149 continua prova parcial.
-- [ ] Concluir 18/9/9, pagamento 9, cancelamento residual, concorrência/revogação e matriz de atores em banco descartável.
+- [x] (184) Reproduzir 153 com SQLSTATE/estado e corrigir ambos caminhos de aprovação sem mudar snapshots/gatilhos; tentativa 149 continua prova parcial.
+- [x] (184) Concluir 18/9/9, pagamento 9, cancelamento residual, concorrência/revogação e matriz de atores em banco descartável.
 - [ ] Concluir UI não exigível/definitivo sem Gerar AR antecipado; entregar PRE/POST/rollback deny, hashes e lacunas sem hosted/publicação/efeitos externos.
 
 ## 09/11 22:27 — Captura de cinco funções e reconciliação residual B4
 - [ ] Pinar as cinco funções capturadas; testar crédito OK sem override, override financeiro e escopo vendedor antes de qualquer correção de `approve_b2b_credit`.
-- [ ] Reconciliar `fn_b2b_credit_exposure` com residual de previsão B4, nunca soma aditiva; caso 18: NF 9 + residual 9, replay, segunda NF 9 e pagamentos sem reabrir residual.
-- [ ] Cobrir aprovação comercial/termos nos dois eixos, H7 imutável, parciais/replay/concorrência e rollback deny-only em PostgreSQL descartável; sem hosted/publicação/emissão/cobrança/envio.
+- [x] (184) Reconciliar `fn_b2b_credit_exposure` com residual de previsão B4, nunca soma aditiva; caso 18: NF 9 + residual 9, replay, segunda NF 9 e pagamentos sem reabrir residual.
+- [x] (184) Cobrir aprovação comercial/termos nos dois eixos, H7 imutável, parciais/replay/concorrência e rollback deny-only em PostgreSQL descartável; sem hosted/publicação/emissão/cobrança/envio.
 
 ## 09/11 21:39 — Decisão final aprovada: previsão separada + recebível por NF
 - [x] Implementar/testar somente localmente previsão não exigível após aprovação comercial E crédito/condição/preço válidos; nenhum título pré-NF e nenhuma previsão em simulação/cotação. Tentativa 149: 50/50 PASS.
