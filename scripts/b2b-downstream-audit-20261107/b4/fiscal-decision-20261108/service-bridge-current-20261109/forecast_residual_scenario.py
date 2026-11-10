@@ -40,7 +40,10 @@ def test_terms_waits(B, Q, OUT, order_id):
     # UPDATE of the child (its captured trigger itself locks the parent).
     before = snapshot()
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-        first = pool.submit(Q.as_user, Q.UFIN, f"BEGIN;SELECT id FROM public.partner_orders WHERE id='{order_id}' FOR UPDATE;SELECT pg_sleep(.8);SELECT public.approve_b2b_payment_terms_secure('{order_id}','CONCURRENT FIRST');COMMIT;")
+        # Owner connection acquires the physical row, then the real RPC runs
+        # as authenticated. A SELECT filtered to zero by RLS is not a lock.
+        claims = json.dumps({'sub':Q.UFIN,'role':'authenticated','iat':1,'exp':4102444800}).replace("'","''")
+        first = pool.submit(B.run_raw, f"BEGIN;SELECT id FROM public.partner_orders WHERE id='{order_id}' FOR UPDATE;SELECT pg_sleep(.8);SET ROLE authenticated;SET request.jwt.claim.sub='{Q.UFIN}';SET request.jwt.claims='{claims}';SELECT public.approve_b2b_payment_terms_secure('{order_id}','CONCURRENT FIRST');COMMIT;")
         time.sleep(.15)
         second = pool.submit(Q.as_user, Q.UFIN, f"SELECT public.approve_b2b_payment_terms_secure('{order_id}','CONCURRENT SECOND');")
         winner = first.result(); loser = second.result()
