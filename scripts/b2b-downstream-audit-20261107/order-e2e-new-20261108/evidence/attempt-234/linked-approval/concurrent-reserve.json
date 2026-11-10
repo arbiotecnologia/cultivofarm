@@ -1,0 +1,28 @@
+{
+ "waited": true,
+ "successes": [
+  {
+   "ok": true,
+   "itens": [
+    "98f40b01-2dda-4fab-83ec-30f3a78e6dc6"
+   ],
+   "replay": false
+  },
+  {
+   "ok": true,
+   "itens": [
+    "98f40b01-2dda-4fab-83ec-30f3a78e6dc6"
+   ],
+   "replay": true
+  }
+ ],
+ "errors": [],
+ "exact_replay_after": {
+  "ok": true,
+  "itens": [
+   "98f40b01-2dda-4fab-83ec-30f3a78e6dc6"
+  ],
+  "replay": true
+ },
+ "reserved_rows_for_os": "2"
+}
