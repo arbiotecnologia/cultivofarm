@@ -3,34 +3,116 @@
   "status": "REVIEW_ONLY_INACTIVE_NOT_APPROVED",
   "hosted_go": false,
   "validated_by": {
-    "attempt": "order-e2e-new-20261108/evidence/attempt-212",
+    "attempt": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-214",
     "exit": 0,
     "checkpoints": "56/56 PASS",
     "engine": "PostgreSQL 17.11 disposable",
-    "auth": "SYNTHETIC (SQL roles + synthetic profiles); not hosted JWT/RLS/Storage proof"
+    "auth": "SYNTHETIC; not hosted JWT/RLS/Storage proof"
   },
-  "stage_order": [
+  "executable_order": [
     {
       "n": 1,
-      "stage": "production PRE / plans install+POST (already reported installed by auditor; never reinstall)",
-      "kind": "LIVE"
+      "stage": "Planos comerciais por tenant (cc1f6cc)",
+      "kind": "ALREADY_PRESENT_VERIFY_ONLY",
+      "files": [
+        {
+          "path": "scripts/commercial-plans-tenant-20261108/01-pre.sql.readonly",
+          "sha256": "2708c69b6633745205d12d811d8d7b89022d535aee28614d94afe7d917f8d7f8"
+        }
+      ],
+      "note": "Reported installed by auditor; run PRE/diagnostic only, never reinstall 02."
     },
     {
       "n": 2,
-      "stage": "forecast 01 PRE -> 02 INSTALL -> 03 POST (credit untouched, LIVE pin)",
-      "rollback": "04 deny"
+      "stage": "Pacotes físicos/entrega/envase da linha de base do harness",
+      "kind": "PRE_EXISTING_OUT_OF_SCOPE",
+      "files": [],
+      "note": "Generated per run from LIVE capture inside evidence (delivery-confirmation/, delivery-send/, physical-finished-product/); not part of this package; never reinstall."
     },
     {
       "n": 3,
-      "stage": "B4 PRE/INSTALL/POST (fn_b2b_credit_exposure LIVE->B4)",
+      "stage": "Previsão 01→02→03 (crédito intocado)",
+      "kind": "NEW",
+      "files": [
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/01-pre.sql.readonly",
+          "sha256": "309955585401bde685aca773e94bf7ef675e0f5382e832a27e13c90ddae37b0d"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/02-install.sql.review",
+          "sha256": "a4f8881060bddb9902af7478003d65c46fa6e99937d5502098ffed5d668a7cf3"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/03-post.sql.readonly",
+          "sha256": "d93ef981086d5b96a627b306c4d507156e5bfe3d9426e5b577ec89f57ee80b09"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/04-rollback-deny.sql.review",
+          "sha256": "e0adf910aca0c0dfa8ee6ca019cbd4ba23c0c814e369de983e2ee51abea88a92"
+        }
+      ],
+      "note": "PRE pins LIVE capture capture-5-functions-20261109.json; rollback 04 deny-only.",
       "pins": {
-        "live_md5": "213ac31f3a30816ead75365b0d1fed18",
-        "b4_md5": "44e8768ff53d7fe5ff3b9f0889258946"
+        "live_approve_md5": "664f63441c92a6716f0117362255ec9e",
+        "live_payment_terms_md5": "a61daa8542058bdbf239903d655c2a1b",
+        "live_credit_approval_md5": "8127c7b697871fa1eecafa845a551eea"
       }
     },
     {
       "n": 4,
-      "stage": "credit 09 PRE -> 10 INSTALL -> 11 POST (B4->composed single body)",
+      "stage": "B4 composição (cria leitor financeiro intermediário via origin.sql.review)",
+      "kind": "NEW",
+      "files": [
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/stages/01-b4-pre-post-composition.sql.readonly",
+          "sha256": "f495866d7628858360fa409247f929862360939091b216f289af9cf4e39d5464"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/stages/02-b4-install-post-composition.sql.review",
+          "sha256": "6500bf54b5df05c753e75ada0f6ed12948e81f0e86f274222a2eae481a681f54"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/stages/03-b4-post.sql.readonly",
+          "sha256": "2b9e665765c85e3f9cc6ffb0fc9fcd59cb8272fcf60833bf257da33935af2ae4"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/04-rollback-deny.sql.review",
+          "sha256": "d51b80a5a8eec7fc6d873a4ba4c96bcc8d5e0e5534297daf021469db03a11f4f"
+        }
+      ],
+      "note": "Harness seam: local run replaces pin 4926a99c3fa3086b34ff25bb4b4038bb by 97bcdb9884b54adb3bd4aae4915e32d0 (respond_b2b_order_quote_secure current body). Hosted PRE must use the value proven by the READONLY diagnostic; any mismatch = STOP.",
+      "pins": {
+        "fn_b2b_credit_exposure": {
+          "live_md5": "213ac31f3a30816ead75365b0d1fed18",
+          "b4_md5": "44e8768ff53d7fe5ff3b9f0889258946"
+        },
+        "origin_source": "scripts/financial-price-generator-20261029/integration/origin.sql.review",
+        "origin_sha256": "b299cdc11abbc8b1cec2e658aa5463b29485152f0d77bae05748b7e75ded947e"
+      }
+    },
+    {
+      "n": 5,
+      "stage": "Composição de crédito 09→10→11 (B4→corpo único)",
+      "kind": "NEW",
+      "files": [
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/09-pre-credit-composition.sql.readonly",
+          "sha256": "761cfd8b9d11261734086b8de875f13b1c0e71212d8e6686c649eb0f79010f5c"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/10-install-credit-composition.sql.review",
+          "sha256": "8247a6beb20130b29d05cb69503aaa4d92cfe74982cb29acb3e02f2ff42693fc"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/11-post-credit-composition.sql.readonly",
+          "sha256": "ae4d927dcd5337a56538466144c9e54b4327168aa5fe5883e740f3ba38641dcb"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/12-rollback-credit-composition-retain.sql.review",
+          "sha256": "5160b5797a1f109cf17c5afe1fe676cf8829920264a1d573a1385b216ca3be29"
+        }
+      ],
+      "note": "PRE pins B4 body + B4 helper bodies/owner/ACL (INTERMEDIATE, after stage 4).",
       "pins": {
         "composed_md5": "7d841856ba1e2dd34b0fa6491c4914b5",
         "acl_md5": "578c00048ab38c285e229e11ff6211ec",
@@ -48,160 +130,260 @@
             "acl_source": "B4 OWNER_ONLY manifest; normalized aclexplode"
           }
         }
-      },
-      "rollback": "12 retain composed (no body restore)"
-    },
-    {
-      "n": 5,
-      "stage": "bridge/strict fiscal callback install+POST",
-      "kind": "existing reviewed package"
+      }
     },
     {
       "n": 6,
-      "stage": "forecast 05 PRE -> 06 INSTALL -> 07 POST (reconcile + SYNC/CANCEL wrappers + begin overlay)",
-      "pins": {
-        "sync": "938a4ffd146a930d4d7ebaed9ed35080",
-        "cancel": "43adec08e129910aab7bbdb5a7216f80",
-        "begin": "a4074519c0185b67bc0aad0303153fb1"
-      },
-      "rollback": "08 deny (revokes lifecycle grants, keeps history)"
+      "stage": "Ponte fiscal (bridge) PRE/INSTALL/POST + POST composto",
+      "kind": "NEW",
+      "files": [
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/01-pre.sql.readonly",
+          "sha256": "f8e790f4db66cb347630980610a1e3f87cea1fa86b778fcc76a40601c9b9a249"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/stages/04-bridge-install.sql.review",
+          "sha256": "5db2c160fd3a99bb847fe20a1d9764cbfed82d5cd80915be0eceb94eadfb9964"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/03-post.sql.readonly",
+          "sha256": "823dd23b590e29f9e4e46ce1e9bd243320328aca56b83770e250d9e482460e17"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/03-post.sql.readonly",
+          "sha256": "85b0736d03cc5b2a6a5347b2575e88241cfc40be0ba6be5808b77ea31957854d"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/04-rollback-deny.sql.review",
+          "sha256": "942e24a32b6169f6771e431a6fd68ca1ef78011f7e8c7718c96f3363213d8ad5"
+        }
+      ],
+      "note": "Uses the composed stage install; PRE pins the post-B4 state."
     },
     {
       "n": 7,
-      "stage": "bridge-audit + H7",
-      "kind": "existing reviewed package"
+      "stage": "Callback fiscal estrito",
+      "kind": "NEW",
+      "files": [
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/01-pre.sql.readonly",
+          "sha256": "e0aea61b8fadf63fcbd873b51a14c8a1f8aa1c43daf18b50be1a79a7728ca8eb"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/02-install.sql.review",
+          "sha256": "5a5de36036f8b1b1d4cff2dee0d71464eee4cec228b6a74b6ec40be37ca429a9"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/03-post.sql.readonly",
+          "sha256": "43900430739cacdba7dc2316e37e5dd027b5465743ed1804448969b1800f50d2"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/04-rollback-deny.sql.review",
+          "sha256": "5f932bba690d4cafb876853cc8485dea9bbe911377b3d8c26cb25458f4cfd925"
+        }
+      ],
+      "note": ""
     },
     {
       "n": 8,
-      "stage": "financial origin INTERMEDIATE scripts/financial-price-generator-20261029/integration/origin.sql.review",
-      "kind": "LOCAL_INTERMEDIATE_PROMOTED (reader absent in production)",
+      "stage": "Previsão 05→06→07: reconciliação, wrappers SYNC/CANCEL, overlay do início fiscal, gate próprio lifecycle",
+      "kind": "NEW",
+      "files": [
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/05-pre-fiscal-reconcile.sql.readonly",
+          "sha256": "f59ec3ea3e38be684c16349ace73750cc496b84ec5982e984ba507304570fff3"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/06-install-fiscal-reconcile.sql.review",
+          "sha256": "5909b731956a745d2b13d24c03559f48158aaad964b206ac4eed0da8c9571e22"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/07-post-fiscal-reconcile.sql.readonly",
+          "sha256": "f660acab134a7e958518feec62885f69b80267c3e1ddbf2c0b6c6d5844ea382a"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/08-rollback-fiscal-reconcile-deny.sql.review",
+          "sha256": "c92825936eb3873756bdfd22cce4317c23ce161cd12cbc71abd5fc81ddc4b15a"
+        }
+      ],
+      "note": "Installs b2b_forecast_lifecycle_gate_v1 enabled=false and ZERO allowlist rows; never alters resale_pilot_allowlist_v1 (constraint md5 pins 0fd27c10…/eded2fef…) or b2b_resale_logistics_gate_v1. Begin PRE pins LIVE 4d93bb04e4a18771ed9185d2f3c5d6dc.",
       "pins": {
-        "rpc_receivable_money_projection_v1": {
-          "acl": "postgres:EXECUTE:postgres",
-          "md5": "7c5d3fa0a4c9516ab1c40b058a529578",
-          "owner": "postgres"
+        "wrapper_md5": {
+          "sync": "b5108651a0c7cf32b72b9183482b0a9c",
+          "cancel": "9b930e51d8a95a1f516573d5dc64e937",
+          "begin": "e4ce0ffcd41c93acf8f51aa97044ea29"
         }
       }
     },
     {
       "n": 9,
-      "stage": "projection reader 13 PRE -> 14 INSTALL -> 15 POST",
+      "stage": "Auditoria da ponte",
+      "kind": "NEW",
+      "files": [
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/bridge-audit-action/01-pre.sql.readonly",
+          "sha256": "20e62965cd2c8ebe9d32406feadba5204680393032c2dc5878ae9b3daa8de8f9"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/bridge-audit-action/02-install.sql.review",
+          "sha256": "772511ecb7c493dba7486e394647fd401cf2659afe531a2d47311ebf7be74105"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/bridge-audit-action/03-post.sql.readonly",
+          "sha256": "fb3bec2716b1b12b5e0ea159d38de9c0f8fef8fb8843384e17ec18981c854342"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/bridge-audit-action/04-rollback-deny.sql.review",
+          "sha256": "66a499b1c830699ba753065d212b3899e98bc90b89980a1c72df0444c902a0b0"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "n": 10,
+      "stage": "H7 vínculo título↔NF",
+      "kind": "NEW",
+      "files": [
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/h7-receivable-link/01-pre.sql.readonly",
+          "sha256": "571af39b9d3a563f37a6240b7909d2c4bb6346279d4ab59111b3148d6cf55c02"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/h7-receivable-link/02-install.sql.review",
+          "sha256": "263595514da27d4c9b3369bdadca40ed34af1a28f4192044c0e95aa562408d6b"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/h7-receivable-link/03-post.sql.readonly",
+          "sha256": "7f16b8000db9b9486f5a27e641f1de91dadd396c08b03d57b273e5be2f2ec4fe"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/h7-receivable-link/04-rollback-deny.sql.review",
+          "sha256": "b9af668bc8fd4fd9a9d565ceb4fb29e87048ffe2bb6ec2f22b94b70e232e59ca"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "n": 11,
+      "stage": "Leitor financeiro 13→14→15",
+      "kind": "NEW",
+      "files": [
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/13-pre-projection-reader.sql.readonly",
+          "sha256": "c9cf80ea664adf1f047358107a0effc340c695f813f4eef77dc6a4a5f061efe6"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/14-install-projection-reader.sql.review",
+          "sha256": "5e18c7496cf637a3c2c70af9f41369291c198bdf8eb2755be617457693da25e3"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/15-post-projection-reader.sql.readonly",
+          "sha256": "a39db62f0511d149dbeec6246430ee0635f589c4e40d9436b92c05d9ccb7a52f"
+        },
+        {
+          "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/16-rollback-projection-reader-deny.sql.review",
+          "sha256": "9b2256829e891ad6b615375d755e8b1e1b50deb8f29a9bc237fe5f76ec021ec4"
+        }
+      ],
+      "note": "PRE pins INTERMEDIATE body from stage 4 and every dependency incl. b2b_proven_money_row(+_internal) with grant option; is_financial_staff LIVE.",
       "pins": {
         "pre_rpc": {
-          "acl": "postgres:EXECUTE:postgres",
+          "acl": "postgres:EXECUTE:postgres:-",
           "md5": "7c5d3fa0a4c9516ab1c40b058a529578",
           "owner": "postgres"
         },
         "deps": {
           "public.is_financial_staff(uuid)": {
-            "acl": "authenticated:EXECUTE:postgres,postgres:EXECUTE:postgres,service_role:EXECUTE:postgres",
+            "acl": "authenticated:EXECUTE:postgres:-,postgres:EXECUTE:postgres:-,service_role:EXECUTE:postgres:-",
             "md5": "6e8f2fa7b92ca7e039d092353b3ebfe2",
             "owner": "postgres"
           },
           "public.h15_actor_organization()": {
-            "acl": "authenticated:EXECUTE:postgres,postgres:EXECUTE:postgres,service_role:EXECUTE:postgres",
+            "acl": "authenticated:EXECUTE:postgres:-,postgres:EXECUTE:postgres:-,service_role:EXECUTE:postgres:-",
             "md5": "55edafec08bcc84a00f1526c14334a2c",
             "owner": "postgres"
           },
           "public._saas_user_has_feature(uuid,text)": {
-            "acl": "postgres:EXECUTE:postgres,service_role:EXECUTE:postgres",
+            "acl": "postgres:EXECUTE:postgres:-,service_role:EXECUTE:postgres:-",
             "md5": "501dd958e117d2df8a4d38f6bcbeed04",
             "owner": "postgres"
           },
           "platform_private.b2b_legacy_money_row(uuid)": {
-            "acl": "postgres:EXECUTE:postgres",
+            "acl": "postgres:EXECUTE:postgres:-",
             "md5": "72d0b11083230fa663da46df31b7af22",
             "owner": "postgres"
           },
           "platform_private.b2b_allocation_money_row(uuid)": {
-            "acl": "postgres:EXECUTE:postgres",
+            "acl": "postgres:EXECUTE:postgres:-",
             "md5": "2c8e4c323d1625bd06b9756c5fc7891d",
+            "owner": "postgres"
+          },
+          "platform_private.b2b_proven_money_row(uuid)": {
+            "acl": "postgres:EXECUTE:postgres:-",
+            "md5": "8966df7474276af347bfd40c474b52a8",
+            "owner": "postgres"
+          },
+          "platform_private.b2b_proven_money_row_internal(uuid,uuid)": {
+            "acl": "postgres:EXECUTE:postgres:-",
+            "md5": "b4cfcf65495322ce3c3b911a3597abe2",
             "owner": "postgres"
           }
         },
-        "candidate_rpc": {
-          "acl": "authenticated:EXECUTE:postgres,postgres:EXECUTE:postgres",
+        "cand_rpc": {
+          "acl": "authenticated:EXECUTE:postgres:-,postgres:EXECUTE:postgres:-",
           "md5": "725f5790298315b806ba805bc47f6f4a",
           "owner": "postgres"
         },
-        "candidate_helper": {
-          "acl": "postgres:EXECUTE:postgres",
+        "cand_helper": {
+          "acl": "postgres:EXECUTE:postgres:-",
+          "md5": "a7628d0002689bee089562416d299920",
+          "owner": "postgres"
+        },
+        "rb_rpc": {
+          "acl": "postgres:EXECUTE:postgres:-",
+          "md5": "725f5790298315b806ba805bc47f6f4a",
+          "owner": "postgres"
+        },
+        "rb_helper": {
+          "acl": "postgres:EXECUTE:postgres:-",
           "md5": "a7628d0002689bee089562416d299920",
           "owner": "postgres"
         }
-      },
-      "rollback": {
-        "file": "16 deny-only",
-        "after": {
-          "rpc": {
-            "acl": "postgres:EXECUTE:postgres",
-            "md5": "725f5790298315b806ba805bc47f6f4a",
-            "owner": "postgres"
-          },
-          "helper": {
-            "acl": "postgres:EXECUTE:postgres",
-            "md5": "a7628d0002689bee089562416d299920",
-            "owner": "postgres"
-          }
-        },
-        "note": "revokes authenticated, keeps hardened body and real helper (internal caller rpc_register_receivable_payment); never restores pre-candidate body"
       }
     }
   ],
-  "pin_classes": {
-    "is_financial_staff(uuid)": "LIVE_READONLY 6e8f2fa7b92ca7e039d092353b3ebfe2 (matched locally)",
-    "rpc_receivable_money_projection_v1 PRE": "LOCAL_INTERMEDIATE (not a LIVE capture)",
-    "other projection deps": "LOCAL_RESTORE_DERIVED; require READONLY confirmation before hosted",
-    "candidate/rollback": "LOCAL_PROBE_DERIVED"
+  "capture_classes": {
+    "LIVE": "exists in production today; READONLY diagnostic must match pin",
+    "INTERMEDIATE": "exists only after a preceding local stage; never request LIVE capture",
+    "LOCAL_ONLY": "created by this package; must be ABSENT before install"
   },
-  "files_sha256": {
-    "01-pre.sql.readonly": "309955585401bde685aca773e94bf7ef675e0f5382e832a27e13c90ddae37b0d",
-    "02-install.sql.review": "a4f8881060bddb9902af7478003d65c46fa6e99937d5502098ffed5d668a7cf3",
-    "03-post.sql.readonly": "d93ef981086d5b96a627b306c4d507156e5bfe3d9426e5b577ec89f57ee80b09",
-    "04-rollback-deny.sql.review": "e0adf910aca0c0dfa8ee6ca019cbd4ba23c0c814e369de983e2ee51abea88a92",
-    "05-pre-fiscal-reconcile.sql.readonly": "f59ec3ea3e38be684c16349ace73750cc496b84ec5982e984ba507304570fff3",
-    "06-install-fiscal-reconcile.sql.review": "673baa8476fcc94af50be45f4cb9dc031b8a6a4c26f0482c20ead4f1a3c91885",
-    "07-post-fiscal-reconcile.sql.readonly": "ab2ba352d9be88eca496c8c6bda59947632cbdb26031a70ef003dc4f0a9e68bd",
-    "08-rollback-fiscal-reconcile-deny.sql.review": "ee1dabe993948bcd2df160fcab573c1b80b8a0b5850b0de2c38860b5c7ca656e",
-    "09-pre-credit-composition.sql.readonly": "761cfd8b9d11261734086b8de875f13b1c0e71212d8e6686c649eb0f79010f5c",
-    "10-install-credit-composition.sql.review": "8247a6beb20130b29d05cb69503aaa4d92cfe74982cb29acb3e02f2ff42693fc",
-    "11-post-credit-composition.sql.readonly": "ae4d927dcd5337a56538466144c9e54b4327168aa5fe5883e740f3ba38641dcb",
-    "12-rollback-credit-composition-retain.sql.review": "5160b5797a1f109cf17c5afe1fe676cf8829920264a1d573a1385b216ca3be29",
-    "13-pre-projection-reader.sql.readonly": "3ffd92f9fb85cd3e22804505e32ef8cbe8d50b1033787e9480ac9b8cbe1a40c3",
-    "14-install-projection-reader.sql.review": "7d5bf789e2601eb837a12c2240f3def7bd96d363d80b7d247441b3bf8564e93a",
-    "15-post-projection-reader.sql.readonly": "97f5460ac13820bf7d9d16f163149273c039436f560ce7ba457cdc71e7cbad5b",
-    "16-rollback-projection-reader-deny.sql.review": "8fe4bf057577fa0e259c8d8e01e3c39dd1d788885ee8fbc4ff61408d916231eb"
+  "readonly_diagnostic": {
+    "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/hosted-live-pre-diagnostic.sql.readonly",
+    "sha256": "bd87c9935418e616fe903e48bbd2b6688bca2d2b134cbb4c66d9b3ec18271b89"
   },
-  "mirror_vs_repo": "12 forecast SQL byte-identical to attempt-212 mirror build; 13-16 byte-identical to SQL generated and executed in attempt-212 (mirror copy of 13-16 was the stale pre-run version)",
-  "hosted_prerequisites_not_satisfied": [
-    "independent review of this package",
-    "READONLY capture confirming every non-LIVE pin above (B4 deps, projection deps, begin/sync/cancel PRE bodies)",
-    "real hosted JWT/RLS/Storage postflight in sessions A/B",
-    "fiscal/accounting gate (fiscal positive, SEFAZ) — stays NOT VALIDATABLE",
-    "global logistics gate b2b_resale_logistics_gate_v1 MUST NOT be opened for lifecycle: resale_pilot_allowed_v1 couples lifecycle to it; a separate lifecycle gate or exact-scope decision is required first"
-  ],
-  "pilot_scope_required": {
-    "gate": "b2b_resale",
-    "operations": [
-      "forecast_begin",
-      "forecast_sync",
-      "forecast_cancel"
+  "ab_runbook": {
+    "path": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/ROTEIRO-AB-HOSPEDADO.md",
+    "sha256": "133e70c775ebc49bcc781c8d4079cddc70970f869e6735306b6072a7ae66a71b"
+  },
+  "lifecycle_gate": {
+    "gate": "platform_private.b2b_forecast_lifecycle_gate_v1 (installed enabled=false)",
+    "allowlist": "platform_private.b2b_forecast_lifecycle_allowlist_v1 (installed empty)",
+    "exact_scope": "operation+actor_id+organization_id+partner_id+order_id, synthetic=true, valid_from/valid_until, revoked_at NULL",
+    "lock_order": "grant row -> gate row; operators revoke grants without holding the gate",
+    "also_required": [
+      "features pedidos_b2b + contas_receber",
+      "roles administrador|financeiro (canonical c2p1_internal_actor)",
+      "seller scope c2p1_settings_allowed"
     ],
-    "exact": "actor_id+organization_id+partner_id+order_id, synthetic=true, valid_from/valid_until, revoked_at NULL",
-    "features": [
-      "pedidos_b2b",
-      "contas_receber"
-    ],
-    "roles_begin": [
-      "administrador",
-      "financeiro"
-    ]
+    "logistics_gate": "decoupled; open logistics never authorizes lifecycle (tested)"
   },
   "ui_consumers": {
-    "get_b2b_financial_forecast_secure": "mounted read-only (FinanceiroB2B -> B2BForecastCell); RPC absent in production => unavailable state",
-    "forecast SYNC/CANCEL wrappers": "no UI consumer",
-    "rpc_receivable_money_projection_v1": "deferred src/lib/financeiro/receivableOrigin.ts not mounted; internal caller rpc_register_receivable_payment",
-    "conclusion": "no real complete user flow exists; do not certify"
+    "mounted": "get_b2b_financial_forecast_secure read-only (FinanceiroB2B → B2BForecastCell)",
+    "not_mounted": [
+      "SYNC/CANCEL wrappers (no button by decision)",
+      "rpc_receivable_money_projection_v1 (deferred receivableOrigin.ts; internal caller rpc_register_receivable_payment)"
+    ],
+    "conclusion": "no real complete user flow; do not certify"
   },
   "blocked": [
     "hosted SQL",
@@ -209,6 +391,6 @@
     "emission/sending",
     "billing/charges",
     "communications",
-    "opening global logistics gate"
+    "opening any gate hosted"
   ]
 }
