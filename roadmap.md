@@ -1,4 +1,5 @@
 ## 10/11 00:04 — Revisão estática previsão 02/06
+- [ ] Continuação 00:37: reproduzir o consumidor com header congelado, reconciliar aprovação vinculada com pins/ACL preservadas e completar callers fiscais autorizados, 18/9/9, pagamento, corridas/revogação e rollback; sem hosted ou efeitos externos.
 - [x] Complemento 00:22 no mesmo review153: tentativa 166 provou termos antes/depois comercial, deferred sem previsão, revogação de perfil/tenant 42501 após espera e concorrência canônica PT409 com aprovação vencedora preservada; sem fixtures/stubs novos. Tentativas 164/165 separadas e falhas registradas; fluxo integral segue bloqueado operacionalmente.
 - [x] Caracterizar os quatro riscos nos corpos anteriores e corrigir candidatos; 21 verificações isoladas, sem tratar estado/residual sintéticos como NF real.
 - [x] Fechar grants privados sem chamador comprovado; reconciliador exige permit transacional exato e validador existente. Ponte protege cancelamento antes da alocação; rollback deny-only.

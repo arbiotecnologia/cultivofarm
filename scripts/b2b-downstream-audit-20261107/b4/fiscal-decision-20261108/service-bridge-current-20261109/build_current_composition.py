@@ -211,6 +211,15 @@ def main():
                 """  checks.append(dict(test='real H13 envelope 104 protocol 100 generates one receivable and replay preserves one document allocation snapshot and title without close pending',status='PASS',receivable_id=receivable_id))
   partial_completion=forecast_extra.run_partial_completion(B,Q,OUT,order_id,accepted,item,invoice_id,receivable_id,credit)
   checks.append(dict(test='two authorized NF 9 plus residual 9 preserve exposure 18; replay race H7 and payment 9 leave exposure 9 without reopening residual',status='PASS',second_receivable=partial_completion['second_receivable']))""")
+    s = edit(s, "  created=json.loads(B.last(resale_call(Q.UADM,'resale-os-create-0001')))", """  operational_before=B.run_raw(resale_call(Q.UADM,'resale-os-create-0001'))
+  (OUT/'linked-terms-before.json').write_text(json.dumps(dict(stdout=operational_before.stdout,stderr=operational_before.stderr,exit=operational_before.returncode,header_status=accepted['financial_approval_status'],linked_terms=terms_after['terms']),indent=2)+'\\n')
+  assert operational_before.returncode!=0 and 'B2B_RESALE_ORDER_CONFLICT' in operational_before.stderr,operational_before.stderr
+  linked=load('linked_terms_overlay',H/'linked_terms_overlay.py')
+  linked_out=linked.install(B,OUT)
+  operational_after=B.run_raw(resale_call(Q.UADM,'resale-os-create-0001'))
+  (OUT/'linked-terms-after.json').write_text(json.dumps(dict(stdout=operational_after.stdout,stderr=operational_after.stderr,exit=operational_after.returncode),indent=2)+'\\n')
+  assert operational_after.returncode==0,operational_after.stderr
+  created=json.loads(operational_after.stdout.strip().splitlines()[-1])""")
     s = edit(s, "  assert B.last(\"SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots;\")=='1'",
                 "  assert B.last(\"SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots;\")=='2'")
     OUT.write_text(s)
