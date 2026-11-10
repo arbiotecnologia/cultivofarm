@@ -1,0 +1,28 @@
+{
+  "kind": "ISOLATED_COMPONENT_NOT_NF_OR_PAYMENT_WRITER",
+  "checks": [
+    {
+      "name": "economic replay after mutable NF installment link",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: B2B_FORECAST_REPLAY_DIVERGENCE\nCONTEXT:  PL/pgSQL function platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb) line 35 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "state": {
+        "state": "aguardando_fiscal",
+        "version": 1,
+        "residual": 18.0
+      }
+    },
+    {
+      "name": "economic replay after mutable payment status",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: B2B_FORECAST_REPLAY_DIVERGENCE\nCONTEXT:  PL/pgSQL function platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb) line 35 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "state": {
+        "state": "aguardando_fiscal",
+        "version": 1,
+        "residual": 18.0
+      }
+    }
+  ],
+  "hosted": false
+}
