@@ -337,7 +337,11 @@ def test_wrapper_review(B,Q,OUT,order_id,doc,consult,v):
         sql=f"BEGIN;{worker}UPDATE public.fiscal_sefaz_transmissions SET "+','.join(k+'='+val for k,val in assignments.items())+f" WHERE id='{consult}';{ctx}SELECT public.rpc_b2b_forecast_fiscal_sync_v1('{consult}',{v});ROLLBACK;"
         got=B.run_raw(sql)
         rows.append(dict(case=name,exit=got.returncode,stderr=got.stderr,hosted=False))
-        assert got.returncode!=0 and 'B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE' in got.stderr,rows[-1]
+        # Immutable source identity is denied by the existing canonical guard
+        # before the wrapper; record that separately, never disable the trigger.
+        expected='FISCAL_TRANSMISSION_FIELDS_IMMUTABLE' if name in ('document-mismatch','return-batch-not-proof','stale-response') else 'B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE'
+        assert got.returncode!=0 and expected in got.stderr,rows[-1]
+        (OUT/'wrapper-review-affected.json').write_text(json.dumps(rows,indent=2)+'\n')
         assert forecast_row(B,order_id)==before
     # Foreign actor must not wait on an actual row lock of this tenant.
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
