@@ -48,7 +48,9 @@ def apply(driver, load, root, out):
   # Fixture load only, before the tested create; cannot certify this as provisioning.
   # Identidade exigida pelo FK do comprovante, SOMENTE no PG descartável. O
   # trigger real cria o perfil; a carga abaixo completa seus dados explícitos.
-  B.sql(f"INSERT INTO auth.users(id) VALUES('{Q.UADM}') ON CONFLICT DO NOTHING;")
+  for actor in (Q.UADM,Q.UFIN):
+   B.sql(f"INSERT INTO auth.users(id) VALUES('{actor}') ON CONFLICT DO NOTHING;")
+   assert B.last(f"SELECT EXISTS(SELECT 1 FROM auth.users WHERE id='{actor}');")=='t'
   fixture_tables=['organizations','profiles','user_roles','partner_accounts','partner_users','produtos','microrganismos','catalogo_volumes','product_sale_units','product_packagings','catalogo_precos_embalagem','commercial_payment_plans','commercial_payment_plan_assignments','commercial_price_rules','partner_financial_settings','payment_methods','financial_categories','seam_entitlements']
   B.sql('SET session_replication_role=replica;')
   for name in fixture_tables:
