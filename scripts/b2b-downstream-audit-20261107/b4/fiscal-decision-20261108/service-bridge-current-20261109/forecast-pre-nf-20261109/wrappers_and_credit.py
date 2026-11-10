@@ -172,6 +172,39 @@ def composed_credit(b4_body):
     return out
 
 
+ELIG_SIG = "public.fn_b2b_order_billing_eligibility(uuid)"
+ELIG_LIVE_MD5 = "db977875e15ea49ce10fb3e5388d7dfb"
+ELIG_SOURCE = "scripts/owner-orders-20261023/baseline-p1/public.fn_b2b_order_billing_eligibility.sql"
+
+
+def live_eligibility(root):
+    text = (root / ELIG_SOURCE).read_text()
+    head = "CREATE OR REPLACE FUNCTION public.fn_b2b_order_billing_eligibility("
+    assert text.count(head) == 1
+    i = text.index(head)
+    j = text.index("$function$", text.index("$function$", i) + 10) + len("$function$")
+    body = text[i:j]
+    assert md5(body + "\n") == ELIG_LIVE_MD5, md5(body + "\n")
+    return body, sha(text)
+
+
+def linked_terms_eligibility(live):
+    """Same class as linked_terms_overlay: the frozen header keeps 'pending' while the
+    approval of record is the exact linked child terms row (id + order, actor, time)."""
+    anchor = "  v_fin := COALESCE(v_order.financial_approval_status,'not_required');\n"
+    assert live.count(anchor) == 1 and live.count("IF v_fin = 'pending' THEN") == 1
+    delta = anchor + """  -- Approval of record lives in the exact linked child terms (id + order, approver
+  -- and time). The frozen header is never rewritten; 'rejected' still blocks.
+  IF v_fin = 'pending' AND v_order.payment_terms_id IS NOT NULL AND EXISTS (
+       SELECT 1 FROM public.partner_order_payment_terms t
+        WHERE t.id = v_order.payment_terms_id AND t.partner_order_id = p_partner_order_id
+          AND t.approval_status = 'approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL) THEN
+    v_fin := 'approved';
+  END IF;
+"""
+    return live.replace(anchor, delta)
+
+
 def acl_loop(prefix, rows):
     values = ",".join(f"('{s}','{b}','postgres',{('NULL' if a is None else repr(a))})" for s, b, a in rows)
     return f"""DO $guard$ DECLARE d record; BEGIN
@@ -191,6 +224,9 @@ def credit_composition(root, ref):
     b4_body, b4_stage_sha = b4_credit_body(root)
     composed = composed_credit(b4_body)
     composed_md5 = md5(composed + "\n")
+    elig_live, elig_source_sha = live_eligibility(root)
+    elig_new = linked_terms_eligibility(elig_live)
+    elig_md5 = md5(elig_new + "\n")
     deps = [("platform_private.b2b_credit_balances(uuid,uuid)", B4_BALANCES_MD5, None),
             ("platform_private.b2b_order_residual(uuid)", B4_RESIDUAL_MD5, None)]
     ref_guard = f""" IF current_setting('b2b_forecast.review_project_ref',true) IS DISTINCT FROM '{ref}' THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_REF_NOT_VERIFIED';END IF;
@@ -201,7 +237,7 @@ BEGIN READ ONLY;
 DO $$ BEGIN
 {ref_guard}
 END$$;
-{acl_loop('B2B_CREDIT_COMPOSITION_PRE', [(SIG, B4_CREDIT_MD5, CREDIT_ACL_MD5)] + deps)}
+{acl_loop('B2B_CREDIT_COMPOSITION_PRE', [(SIG, B4_CREDIT_MD5, CREDIT_ACL_MD5), (ELIG_SIG, ELIG_LIVE_MD5, CREDIT_ACL_MD5)] + deps)}
 ROLLBACK;
 """
     install = f"""-- REVIEW_ONLY_INACTIVE_NOT_APPROVED. 10: corpo único B4+previsão; PostgreSQL descartável apenas.
@@ -210,31 +246,39 @@ SET LOCAL lock_timeout='3s';
 DO $$ BEGIN
 {ref_guard}
 END$$;
-{acl_loop('B2B_CREDIT_COMPOSITION_INSTALL_PRE', [(SIG, B4_CREDIT_MD5, CREDIT_ACL_MD5)] + deps)}
+{acl_loop('B2B_CREDIT_COMPOSITION_INSTALL_PRE', [(SIG, B4_CREDIT_MD5, CREDIT_ACL_MD5), (ELIG_SIG, ELIG_LIVE_MD5, CREDIT_ACL_MD5)] + deps)}
 {composed};
-{acl_loop('B2B_CREDIT_COMPOSITION_INSTALL_POST', [(SIG, composed_md5, CREDIT_ACL_MD5)] + deps)}
+{elig_new};
+{acl_loop('B2B_CREDIT_COMPOSITION_INSTALL_POST', [(SIG, composed_md5, CREDIT_ACL_MD5), (ELIG_SIG, elig_md5, CREDIT_ACL_MD5)] + deps)}
 COMMIT;
 """
     post = f"""-- REVIEW ONLY READ ONLY. 11: corpo composto, mesmo dono/ACL B4, dependências B4 intactas.
 BEGIN READ ONLY;
-{acl_loop('B2B_CREDIT_COMPOSITION_POST', [(SIG, composed_md5, CREDIT_ACL_MD5)] + deps)}
+{acl_loop('B2B_CREDIT_COMPOSITION_POST', [(SIG, composed_md5, CREDIT_ACL_MD5), (ELIG_SIG, elig_md5, CREDIT_ACL_MD5)] + deps)}
 ROLLBACK;
 """
     rollback = f"""-- REVIEW ONLY. 12: rollback deny-only/retain. NÃO restaura B4 (ignoraria residual
 -- cancelado) nem LIVE (somaria pedido inteiro e título após NF parcial). A leitura
 -- composta permanece; writers fecham pelos rollbacks 08/04 e B4/ponte.
+-- Elegibilidade volta ao LIVE capturado, que é ESTRITAMENTE mais restritivo
+-- (exige header aprovado): fecha faturamento novo, nunca o amplia.
 BEGIN;
 SET LOCAL lock_timeout='3s';
-{acl_loop('B2B_CREDIT_COMPOSITION_ROLLBACK_RETAIN', [(SIG, composed_md5, CREDIT_ACL_MD5)] + deps)}
+{acl_loop('B2B_CREDIT_COMPOSITION_ROLLBACK_PRE', [(SIG, composed_md5, CREDIT_ACL_MD5), (ELIG_SIG, elig_md5, CREDIT_ACL_MD5)] + deps)}
+{elig_live};
+{acl_loop('B2B_CREDIT_COMPOSITION_ROLLBACK_RETAIN', [(SIG, composed_md5, CREDIT_ACL_MD5), (ELIG_SIG, ELIG_LIVE_MD5, CREDIT_ACL_MD5)] + deps)}
 COMMIT;
 """
     files = {"09-pre-credit-composition.sql.readonly": pre, "10-install-credit-composition.sql.review": install,
              "11-post-credit-composition.sql.readonly": post, "12-rollback-credit-composition-retain.sql.review": rollback,
-             "credit-exposure.composed.sql": composed + "\n"}
+             "credit-exposure.composed.sql": composed + "\n", "billing-eligibility.linked-terms.sql": elig_new + "\n"}
     manifest = {"order": ["forecast 01-04 (credit untouched, LIVE pin)", "B4 PRE/INSTALL/POST (LIVE->B4)", "credit 09-12 (B4->composed)",
                           "bridge/strict", "forecast 05-08 reconcile+wrappers", "bridge-audit", "H7"],
                 "live_md5": LIVE_CREDIT_MD5, "b4_md5": B4_CREDIT_MD5, "composed_md5": composed_md5, "acl_md5": CREDIT_ACL_MD5,
                 "b4_stage_sha256": b4_stage_sha, "b4_dependencies": {s: b for s, b, _ in deps},
                 "rule": "exposure = open titles (B4 proven money) + B4 residual per order; forecast only zeroes canceled residual, must equal B4 residual otherwise",
-                "additive_forecast": False, "rollback": "RETAIN_COMPOSED_NO_BODY_RESTORE"}
+                "additive_forecast": False,
+                "billing_eligibility": {"live_md5": ELIG_LIVE_MD5, "linked_terms_md5": elig_md5, "source": ELIG_SOURCE, "source_sha256": elig_source_sha,
+                                        "reason": "B4 allocation reproduced PT409 B2B_ORDER_NOT_BILLABLE:FINANCIAL_APPROVAL_PENDING (attempt 174) with frozen header pending and linked terms approved",
+                                        "rollback": "RESTORE_LIVE_STRICTER"}, "rollback": "RETAIN_COMPOSED_NO_BODY_RESTORE"}
     return files, manifest

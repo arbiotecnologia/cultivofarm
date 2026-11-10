@@ -1,10 +1,95 @@
 -- REVIEW ONLY. 12: rollback deny-only/retain. NÃO restaura B4 (ignoraria residual
 -- cancelado) nem LIVE (somaria pedido inteiro e título após NF parcial). A leitura
 -- composta permanece; writers fecham pelos rollbacks 08/04 e B4/ponte.
+-- Elegibilidade volta ao LIVE capturado, que é ESTRITAMENTE mais restritivo
+-- (exige header aprovado): fecha faturamento novo, nunca o amplia.
 BEGIN;
 SET LOCAL lock_timeout='3s';
 DO $guard$ DECLARE d record; BEGIN
- FOR d IN SELECT * FROM (VALUES ('public.fn_b2b_credit_exposure(uuid,numeric,uuid)','7d841856ba1e2dd34b0fa6491c4914b5','postgres','578c00048ab38c285e229e11ff6211ec'),('platform_private.b2b_credit_balances(uuid,uuid)','9fbf08a16f6bcbec379945886c85c245','postgres',NULL),('platform_private.b2b_order_residual(uuid)','93769163bfc7c72a4bbc722e62313179','postgres',NULL)) x(sig,body_md5,owner,acl_md5) LOOP
+ FOR d IN SELECT * FROM (VALUES ('public.fn_b2b_credit_exposure(uuid,numeric,uuid)','7d841856ba1e2dd34b0fa6491c4914b5','postgres','578c00048ab38c285e229e11ff6211ec'),('public.fn_b2b_order_billing_eligibility(uuid)','ad17b0ed8654353facb1ac2105363167','postgres','578c00048ab38c285e229e11ff6211ec'),('platform_private.b2b_credit_balances(uuid,uuid)','9fbf08a16f6bcbec379945886c85c245','postgres',NULL),('platform_private.b2b_order_residual(uuid)','93769163bfc7c72a4bbc722e62313179','postgres',NULL)) x(sig,body_md5,owner,acl_md5) LOOP
+  IF to_regprocedure(d.sig) IS NULL THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_ROLLBACK_PRE_MISSING:%',d.sig USING ERRCODE='42501'; END IF;
+  IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_ROLLBACK_PRE_BODY:%',d.sig USING ERRCODE='42501'; END IF;
+  IF (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=d.sig::regprocedure) IS DISTINCT FROM d.owner THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_ROLLBACK_PRE_OWNER:%',d.sig USING ERRCODE='42501'; END IF;
+  IF d.acl_md5 IS NOT NULL AND (SELECT md5(string_agg(v.entry,'|' ORDER BY v.entry)) FROM (
+    SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END||'='||a.privilege_type||CASE WHEN a.is_grantable THEN '*' ELSE '' END||'/'||a.grantor::regrole::text entry
+    FROM pg_proc p,aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a WHERE p.oid=d.sig::regprocedure) v) IS DISTINCT FROM d.acl_md5
+  THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_ROLLBACK_PRE_ACL:%',d.sig USING ERRCODE='42501'; END IF;
+ END LOOP;
+END $guard$;
+CREATE OR REPLACE FUNCTION public.fn_b2b_order_billing_eligibility(p_partner_order_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_order record; v_terms record; v_quote int; v_noprice int; v_ap text; v_fin text;
+BEGIN
+  SELECT * INTO v_order FROM public.partner_orders WHERE id = p_partner_order_id;
+  IF NOT FOUND THEN RETURN jsonb_build_object('eligible',false,'reason_code','ORDER_NOT_FOUND'); END IF;
+
+  IF v_order.status IN ('cancelado','reprovado','reprovado_sem_itens') THEN
+    RETURN jsonb_build_object('eligible',false,'reason_code','ORDER_CANCELED_OR_REJECTED','status',v_order.status);
+  END IF;
+  IF v_order.status IN ('rascunho','pendente','solicitado','em_analise_comercial',
+                        'aguardando_aprovacao_credito','aguardando_ajuste_comercial',
+                        'aguardando_itens','aguardando_cotacao') THEN
+    RETURN jsonb_build_object('eligible',false,'reason_code','ORDER_NOT_APPROVED','status',v_order.status);
+  END IF;
+
+  v_fin := COALESCE(v_order.financial_approval_status,'not_required');
+  IF v_fin = 'pending' THEN
+    RETURN jsonb_build_object('eligible',false,'reason_code','FINANCIAL_APPROVAL_PENDING');
+  END IF;
+  IF v_fin = 'rejected' THEN
+    RETURN jsonb_build_object('eligible',false,'reason_code','FINANCIAL_APPROVAL_REJECTED');
+  END IF;
+
+  SELECT count(*) FILTER (WHERE COALESCE(pricing_mode_snapshot,'') = 'quote_only'),
+         count(*) FILTER (WHERE COALESCE(preco_unitario_final_snapshot, preco_unitario, 0) <= 0)
+    INTO v_quote, v_noprice
+    FROM public.partner_order_items WHERE order_id = p_partner_order_id;
+  IF COALESCE(v_quote,0) > 0 THEN
+    RETURN jsonb_build_object('eligible',false,'reason_code','QUOTE_ONLY_ITEMS','count',v_quote);
+  END IF;
+  IF COALESCE(v_noprice,0) > 0 THEN
+    RETURN jsonb_build_object('eligible',false,'reason_code','ITEM_WITHOUT_FINAL_PRICE','count',v_noprice);
+  END IF;
+
+  -- H6C-001: condição canônica é a vinculada ao pedido; nunca "a mais recente".
+  IF v_order.payment_terms_id IS NULL THEN
+    IF EXISTS (SELECT 1 FROM public.partner_order_payment_terms t
+                WHERE t.partner_order_id = p_partner_order_id) THEN
+      RETURN jsonb_build_object('eligible',false,'reason_code','PAYMENT_TERMS_NOT_LINKED');
+    END IF;
+    RETURN jsonb_build_object('eligible',false,'reason_code','PAYMENT_TERMS_NOT_DEFINED');
+  END IF;
+
+  SELECT * INTO v_terms FROM public.partner_order_payment_terms
+   WHERE id = v_order.payment_terms_id AND partner_order_id = p_partner_order_id;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('eligible',false,'reason_code','PAYMENT_TERMS_INVALID',
+                              'payment_terms_id', v_order.payment_terms_id);
+  END IF;
+
+  v_ap := COALESCE(v_terms.approval_status,'pending');
+  IF NOT (v_ap = 'approved'
+          OR (v_ap = 'not_required' AND v_fin = 'not_required'
+              AND COALESCE(v_order.requires_financial_approval,false) = false)) THEN
+    RETURN jsonb_build_object('eligible',false,'reason_code','PAYMENT_TERMS_NOT_APPROVED',
+                              'approval_status', v_ap, 'payment_terms_id', v_terms.id);
+  END IF;
+
+  IF COALESCE(v_terms.final_amount,0) <= 0 THEN
+    RETURN jsonb_build_object('eligible',false,'reason_code','NO_FINAL_AMOUNT');
+  END IF;
+
+  RETURN jsonb_build_object('eligible',true,'reason_code','OK',
+    'final_amount',v_terms.final_amount,'payment_terms_id',v_terms.id,
+    'approval_status', v_ap, 'financial_approval_status', v_fin);
+END
+$function$;
+DO $guard$ DECLARE d record; BEGIN
+ FOR d IN SELECT * FROM (VALUES ('public.fn_b2b_credit_exposure(uuid,numeric,uuid)','7d841856ba1e2dd34b0fa6491c4914b5','postgres','578c00048ab38c285e229e11ff6211ec'),('public.fn_b2b_order_billing_eligibility(uuid)','db977875e15ea49ce10fb3e5388d7dfb','postgres','578c00048ab38c285e229e11ff6211ec'),('platform_private.b2b_credit_balances(uuid,uuid)','9fbf08a16f6bcbec379945886c85c245','postgres',NULL),('platform_private.b2b_order_residual(uuid)','93769163bfc7c72a4bbc722e62313179','postgres',NULL)) x(sig,body_md5,owner,acl_md5) LOOP
   IF to_regprocedure(d.sig) IS NULL THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_ROLLBACK_RETAIN_MISSING:%',d.sig USING ERRCODE='42501'; END IF;
   IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_ROLLBACK_RETAIN_BODY:%',d.sig USING ERRCODE='42501'; END IF;
   IF (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=d.sig::regprocedure) IS DISTINCT FROM d.owner THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_ROLLBACK_RETAIN_OWNER:%',d.sig USING ERRCODE='42501'; END IF;

@@ -34,6 +34,14 @@
     },
     "rule": "exposure = open titles (B4 proven money) + B4 residual per order; forecast only zeroes canceled residual, must equal B4 residual otherwise",
     "additive_forecast": false,
+    "billing_eligibility": {
+      "live_md5": "db977875e15ea49ce10fb3e5388d7dfb",
+      "linked_terms_md5": "ad17b0ed8654353facb1ac2105363167",
+      "source": "scripts/owner-orders-20261023/baseline-p1/public.fn_b2b_order_billing_eligibility.sql",
+      "source_sha256": "3eb4f2cba7f5d34097d58a6ca40e2dd0b120ce9d130bef2461779fecc9dbe02f",
+      "reason": "B4 allocation reproduced PT409 B2B_ORDER_NOT_BILLABLE:FINANCIAL_APPROVAL_PENDING (attempt 174) with frozen header pending and linked terms approved",
+      "rollback": "RESTORE_LIVE_STRICTER"
+    },
     "rollback": "RETAIN_COMPOSED_NO_BODY_RESTORE",
     "wrapper_md5": {
       "sync": "ac88b7fb8d7d792eb589f0c6cce348b9",
@@ -52,11 +60,12 @@
     "06-install-fiscal-reconcile.sql.review": "7414838d5424753e557c703fbfc87f09439613f145755a7aaab0ead0d210f75f",
     "07-post-fiscal-reconcile.sql.readonly": "ea9675d36753ef8ea6d3f0af55901de6ed4ed7373834a7c10c1c84bd0bf3c991",
     "08-rollback-fiscal-reconcile-deny.sql.review": "490e3993eddbd47303808ed4b367229e5e1cb95153e044ad00739b057d0c9788",
-    "09-pre-credit-composition.sql.readonly": "cb0fad46a799f898c47ab28b12c589f932913b46c018b873a6db1b90aa5503c3",
-    "10-install-credit-composition.sql.review": "0693f4bd5fb17850517d369c471579e5bb2a64c9326672c5329161a01f44cb0e",
-    "11-post-credit-composition.sql.readonly": "c40d38a2d8d475d8a2b82859bc818cba77ea5a420fedc1d1584f2662164ceab3",
-    "12-rollback-credit-composition-retain.sql.review": "6a2bd193a99542d863d02b5a5ab7936d9360ac746be55bc0b5dbf359c47325ed",
-    "credit-exposure.composed.sql": "ca710ae1d4d3159a9f740ba3e37ffc78e5ae216eb94725a3e0622af76a563375"
+    "09-pre-credit-composition.sql.readonly": "a17bb89d307c18cd2665cb6d965acfee6bfcc252891f09bf614946cc01c2e21a",
+    "10-install-credit-composition.sql.review": "97458f694377c0f439c11a95cd0e474d42b0ff52cc22071a5912475a09ded69b",
+    "11-post-credit-composition.sql.readonly": "fe89d4862d7e511d8ddaf22ef56667062c4894c9aa255d14671755ae90b10ef2",
+    "12-rollback-credit-composition-retain.sql.review": "0105b036b919a21a55bfe03b299aa8cd9bfd0760237fb9c8aef09270332621c6",
+    "credit-exposure.composed.sql": "ca710ae1d4d3159a9f740ba3e37ffc78e5ae216eb94725a3e0622af76a563375",
+    "billing-eligibility.linked-terms.sql": "9d58cc3b57c4dcf69172359417253ac092f6ed0a63e139d62de0e477cb703eba"
   },
   "hosted": false
 }
