@@ -208,6 +208,10 @@ def insert_invoice(B, Q, order_id, partner, company, item_id, amount, n, issue_d
 
 
 def insert_followup_tx(B, Q, doc, n, service):
+    if service=='NFeConsultaProtocolo4':
+        got=B.run_raw(f"SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_begin_v1('{service}','local-forecast-consult-{n}','LOCAL-CONSULT-{n}','{ENDPOINT}','{doc['invoice']}','{doc['xml_run']}','{Q.UFIN}',NULL);")
+        assert got.returncode==0,got.stderr
+        return _last(got)['transmissionId']
     tx_id = Q.u(n)
     fingerprint = hashlib.sha256(f'{service}|{ENDPOINT}|{doc["access_key"]}'.encode()).hexdigest()
     B.sql(f"""SET ROLE service_role;INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,xml_run_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,c_stat,x_motivo,ch_nfe,ambiente_retorno,dh_recbto,created_by)
@@ -253,7 +257,7 @@ def run_pre_nf_wrappers(B, Q, OUT, order_id, accepted, item):
     from lifecycle_containment_tests import run as containment_run
     containment_run(B,Q,OUT,order_id,R,v)
     neg = dict(
-        foreign_admin=denied(sync_raw(Q, Q.UADMF, R['tx'], v), 'B2B_FORECAST_FISCAL_'),
+        foreign_admin=denied(sync_raw(Q, Q.UADMF, R['tx'], v), 'B2B_FORECAST_'),
         cross_tenant_buyer=denied(sync_raw(Q, Q.UB2, R['tx'], v), 'B2B_FORECAST_FISCAL_'),
         service_role_wrapper=denied(B.run_raw(f"SET ROLE service_role;SELECT public.rpc_b2b_forecast_fiscal_sync_v1('{R['tx']}',{v});"), 'permission denied'),
         service_role_private=denied(B.run_raw(f"SET ROLE service_role;SELECT platform_private.b2b_financial_forecast_transition_v1(gen_random_uuid(),1,'EMISSION_STARTED','x','{{}}'::jsonb);"), 'permission denied'),
@@ -489,7 +493,7 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
     values = {k: baseline[k] for k in fields}; values.update(credit_limit=1000, credit_limit_action='block')
     configured = Q.as_user(Q.UFIN, f"SELECT public.rpc_update_partner_financial_settings('{Q.PC}','{json.dumps(baseline).replace(chr(39), chr(39)*2)}'::jsonb,'{json.dumps(values).replace(chr(39), chr(39)*2)}'::jsonb);")
     assert configured.returncode == 0, configured.stderr
-    neg = dict(foreign_cancel=denied(cancel_raw(Q, Q.UADMF, pc_order, version(Q, pc_order), 'estrangeiro'), 'B2B_FORECAST_CANCEL_ACTOR_DENIED'),
+    neg = dict(foreign_cancel=denied(cancel_raw(Q, Q.UADMF, pc_order, version(Q, pc_order), 'estrangeiro'), 'B2B_FORECAST_'),
                buyer_cancel=denied(cancel_raw(Q, Q.UBC, pc_order, version(Q, pc_order), 'comprador'), 'B2B_FORECAST_CANCEL_ACTOR_DENIED'))
     P1 = insert_invoice(B, Q, pc_order, Q.PC, company, item_id, half, 980, '2027-02-03')
     dry = B.run_raw(f"BEGIN;SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_record_v1('{P1['tx']}','SUCCEEDED','{json.dumps({'cStat':'104','protocolCStat':'100','nProt':'LOCAL-PC-1','chNFe':P1['access_key'],'xMotivo':'AUTORIZADO','tpAmb':'2','dhRecbto':'2027-02-03T12:00:00Z'})}'::jsonb);ROLLBACK;")

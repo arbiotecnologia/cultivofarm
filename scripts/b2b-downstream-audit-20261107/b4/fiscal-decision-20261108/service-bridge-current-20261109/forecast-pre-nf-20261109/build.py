@@ -414,7 +414,7 @@ ROLLBACK;
 BEGIN;
 -- Revocation shares the existing grant row lock; retain all historical rows.
 UPDATE platform_private.resale_pilot_allowlist_v1 SET revoked_at=clock_timestamp(),revoke_reason='FORECAST_REVIEW_ROLLBACK'
- WHERE operation IN ('forecast_sync','forecast_cancel') AND revoked_at IS NULL;
+ WHERE operation IN ('forecast_sync','forecast_cancel','forecast_begin') AND revoked_at IS NULL;
 REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
 -- Wrappers fecham por ACL; corpos, eventos, previsões e evidência fiscal permanecem.
 REVOKE ALL ON FUNCTION public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer),public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) FROM PUBLIC,anon,authenticated,service_role;
@@ -427,7 +427,7 @@ COMMIT;
     reconcile_install = reconcile_install.replace("SET LOCAL lock_timeout='3s';", "SET LOCAL lock_timeout='3s';\n"+pre_core)
     reconcile_install = reconcile_install.replace("{WRAPPERS}", wrap_sql)
     closed_post = """DO $$ BEGIN
- IF EXISTS(SELECT 1 FROM platform_private.resale_pilot_allowlist_v1 WHERE operation IN ('forecast_sync','forecast_cancel')) THEN
+ IF EXISTS(SELECT 1 FROM platform_private.resale_pilot_allowlist_v1 WHERE operation IN ('forecast_sync','forecast_cancel','forecast_begin')) THEN
   RAISE EXCEPTION 'B2B_FORECAST_PILOT_NOT_CLOSED' USING ERRCODE='42501';END IF;
  IF has_function_privilege('authenticated','platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)','EXECUTE')
   OR has_function_privilege('authenticated','platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)','EXECUTE') THEN
