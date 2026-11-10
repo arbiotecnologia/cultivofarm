@@ -1,0 +1,41 @@
+{
+  "status": "INACTIVE_REVIEW_ONLY",
+  "hosted": false,
+  "dependencies": [
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "6555396c4f8fe914177d2ccfc3891279",
+      "owner": "postgres",
+      "signature": "platform_private.b2b_internal_commercial_actor()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "0cd104409e779858b64316da91ccd518",
+      "owner": "postgres",
+      "signature": "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "369fd07cd9c659b87941b9a3bf972868",
+      "owner": "postgres",
+      "signature": "platform_private.c2_external_origin_contract_valid(jsonb)"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "6dfbaa7283b963cb78f19ccdf13ecd9f",
+      "owner": "postgres",
+      "signature": "platform_private.stock_motor_actor(text)"
+    }
+  ],
+  "endpoint": "public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)",
+  "reader": "public.rpc_b2b_resale_os_availability_v1(uuid)",
+  "helper_acl_unchanged": true,
+  "post_md5": "ff875e2afcf52dcf3f64b48135536f81",
+  "reader_post_md5": "de78e9ca6c11963669beb80d519e7c81",
+  "install_sha256": "617ee5279d9bcf3226c923b29767620707cb28a6c581cf01309db771960d00cb",
+  "acl_delta": {
+    "authenticated": "EXECUTE public reader and endpoint only",
+    "service_role": "none",
+    "helper": "unchanged deny"
+  }
+}

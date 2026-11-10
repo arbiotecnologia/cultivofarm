@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-pam598hb/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 687, in main
+    assert current_counts==effect_baseline,(current_counts,effect_baseline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ({'receivables': 1, 'fiscal_documents': 4}, {'receivables': 1, 'fiscal_documents': 1})
