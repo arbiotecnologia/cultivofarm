@@ -1076,7 +1076,7 @@ def revenue_v2_phase(B, Q, OUT, phase, order_id, receivable, state):
             rec(name, x['confirmed_titles']['installments'] == base - 1 and float(x['confirmed_titles']['total_aberto']) == round(float(d['confirmed_titles']['total_aberto']) - 9, 2)
                 and (expect == 'excluded' or u[expect] == d['titles_unavailable'][expect] + 1), result=x)
         fault('legacy-forged-no-allocation', f"DELETE FROM platform_private.b2b_allocation_reversals WHERE document_id IN (SELECT document_id FROM platform_private.b2b_document_allocations WHERE receivable_id='{receivable}');DELETE FROM platform_private.b2b_document_allocations WHERE receivable_id='{receivable}';", 'unproven')
-        fault('no-nf-document-digest-divergent', f"UPDATE platform_private.b2b_authorized_documents SET source_digest=source_digest||'-LOCAL-FAULT' WHERE id=(SELECT document_id FROM platform_private.b2b_document_allocations WHERE receivable_id='{receivable}');", 'unproven')
+        fault('no-nf-document-digest-divergent', f"UPDATE platform_private.b2b_authorized_documents SET source_digest=encode(sha256(convert_to('LOCAL-FAULT-'||source_digest,'UTF8')),'hex') WHERE id=(SELECT document_id FROM platform_private.b2b_document_allocations WHERE receivable_id='{receivable}');", 'unproven')
         fault('snapshot-due-divergent', f"UPDATE public.accounts_receivable_installments SET due_date=due_date+1 WHERE id={ref};", 'unproven')
         fault('received-exceeds-inconsistent', f"UPDATE public.accounts_receivable_installments SET received_amount=original_amount+1 WHERE id={ref};", 'inconsistent')
         fault('paid-with-balance-inconsistent', f"UPDATE public.accounts_receivable_installments SET status='PAID' WHERE id={ref};", 'inconsistent')
