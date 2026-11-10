@@ -50,7 +50,7 @@ try:
     pg.sql("""CREATE ROLE anon;CREATE ROLE authenticated;CREATE ROLE service_role;
       CREATE SCHEMA platform_private; CREATE SCHEMA auth;
       CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$SELECT NULL::uuid$$;
-      CREATE TABLE public.partner_orders(id uuid,partner_id uuid,status text,approved_by uuid,approved_at timestamptz,
+      CREATE TABLE public.partner_orders(id uuid PRIMARY KEY,partner_id uuid,status text,approved_by uuid,approved_at timestamptz,
         requires_financial_approval boolean,payment_terms_id uuid,payment_condition_status text,credit_approved_at timestamptz,
         credit_approved_by uuid,internal_economic_snapshot jsonb,final_amount_with_interest numeric,total numeric);
       CREATE TABLE public.partner_order_payment_terms(id uuid,partner_order_id uuid,approval_status text,approved_by uuid,approved_at timestamptz);
