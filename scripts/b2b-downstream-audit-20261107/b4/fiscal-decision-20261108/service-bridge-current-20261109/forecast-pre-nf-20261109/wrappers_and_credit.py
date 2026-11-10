@@ -264,8 +264,12 @@ def begin_overlay(root):
     IF v_forecast.organization_id IS DISTINCT FROM v_source.organization_id
       OR v_forecast.partner_id IS DISTINCT FROM v_source.debtor_partner_id THEN
       RAISE EXCEPTION 'B2B_FORECAST_BEGIN_SCOPE_DENIED' USING ERRCODE='42501';END IF;
-    -- Post-wait revalidation of everything read before the locks: marker,
-    -- XML identity/state and the issuer's exact active settings.
+    -- Pilot FIRST (it may wait on its allowlist/gate row locks). Every fiscal
+    -- revalidation below (marker, XML identity/signature, issuer settings) and
+    -- every profile/role/tenant/entitlement check runs AFTER that helper returns
+    -- and BEFORE replay/INSERT (review 209/584d530 item 1).
+    v_pilot := platform_private.resale_pilot_allowed_v1('b2b_resale','forecast_begin',_actor,
+          v_source.organization_id,v_source.debtor_partner_id,v_source.partner_order_id,NULL,NULL,NULL,NULL);
     SELECT project_ref, production_emission_allowed INTO v_ref, v_prod
       FROM public.fiscal_environment_marker LIMIT 1;
     IF v_ref IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' OR coalesce(v_prod, true) THEN
@@ -279,10 +283,6 @@ def begin_overlay(root):
         WHERE c.id=v_source.company_settings_id AND c.organization_id=v_source.organization_id
           AND c.is_active AND coalesce(c.nfe_environment_code,'')='2') THEN
       RAISE EXCEPTION 'FISCAL_PRODUCTION_ENDPOINT_BLOCKED';END IF;
-    -- Pilot first (it may wait on its own gate/allowlist locks); every profile,
-    -- role, tenant and entitlement check is evaluated AFTER that wait.
-    v_pilot := platform_private.resale_pilot_allowed_v1('b2b_resale','forecast_begin',_actor,
-          v_source.organization_id,v_source.debtor_partner_id,v_source.partner_order_id,NULL,NULL,NULL,NULL);
     IF _service IN ('NFeAutorizacao4','NFeConsultaProtocolo4','NFeRetAutorizacao4') THEN
       -- Worker actor argument is NOT sufficient: canonical active internal authority,
       -- tenant, entitlements and exact pilot are read from server records.
