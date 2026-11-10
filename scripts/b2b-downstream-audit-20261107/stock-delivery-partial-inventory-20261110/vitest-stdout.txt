@@ -1,0 +1,43 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/entregas/deliverySendFlow.test.ts (7 tests) 20ms
+ ✓ src/test/pedidos/resaleOsRequest.test.ts (10 tests) 28ms
+ ✓ src/test/estoque/stock-caller-compatibility.test.ts (12 tests) 25ms
+ ✓ src/test/entregas/deliveryOperationsFlow.test.ts (72 tests) 55ms
+stderr | src/test/entregas/deliverySendPersistMount.test.tsx > Enviar durable retention (mounted, real QueryClient) > reload after lost ACK: same key/payload, no automatic replay, exact record removed
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/entregas/deliveryAtomicPageMount.test.tsx > Entregas page with atomic adapter (mounted) > send timeout retains ownership until transport settles and never parallel-dispatches
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/entregas/registrarEntregaMetadataSubmit.test.tsx > RegistrarEntregaDialog -> atomic group with auto-filled recipient/address (real dialog) > submits successfully with every auto-filled field preserved, no clearing
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/entregas/registrarEntregaMetadataSubmit.test.tsx (1 test) 662ms
+   ✓ RegistrarEntregaDialog -> atomic group with auto-filled recipient/address (real dialog) > submits successfully with every auto-filled field preserved, no clearing  659ms
+ ✓ src/test/entregas/deliveryAtomicPageMount.test.tsx (32 tests) 5216ms
+   ✓ Entregas page with atomic adapter (mounted) > send timeout retains ownership until transport settles and never parallel-dispatches  473ms
+   ✓ Entregas page with atomic adapter (mounted) > preflight rejection then refresh uses a fresh observed revision and dispatches once  437ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: reconcile  708ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: terminal  455ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: tenant  504ms
+   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=false)  385ms
+   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=true)  388ms
+   ✓ Entregas page with atomic adapter (mounted) > cancel uses the revision seen when the dialog opened and refuses if it changed  396ms
+ ✓ src/test/entregas/deliverySendPersistMount.test.tsx (24 tests) 5700ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > reload after lost ACK: same key/payload, no automatic replay, exact record removed  803ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > retained attempt survives refused reconciliation preflight and role change  482ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > late ACK after reload (unmount) is not adopted; lock owned until settle; then same key reconciles  571ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > durable send barrier for group/cancel after reload > retained send record after reload blocks create and cancel writers; exact send reconciliation stays available  750ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > durable send barrier for group/cancel after reload > corrupt send record after reload blocks create and cancel writers; exact send reconciliation stays available  314ms
+
+ Test Files  7 passed (7)
+      Tests  158 passed (158)
+   Start at  20:14:47
+   Duration  11.59s (transform 2.10s, setup 1.90s, collect 6.84s, tests 11.71s, environment 15.27s, prepare 2.04s)
+
