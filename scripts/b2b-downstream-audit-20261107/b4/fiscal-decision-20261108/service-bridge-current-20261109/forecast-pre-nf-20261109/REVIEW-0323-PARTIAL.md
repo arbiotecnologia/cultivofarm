@@ -90,3 +90,26 @@ Evidência: `order-e2e-new-20261108/evidence/attempt-203/` (`run.exitcode`=0, `c
 - Leitor `rpc_receivable_money_projection_v1`: ACL `{postgres=X/postgres}`, financeiro/administrador `42501`; positivo **BLOCKED_OWNER_ONLY_CANDIDATE_ACL**, sem grant e sem usar leitura do owner como prova.
 
 **Promoção:** depois da 203, o gerador rodou no repositório; os 12 SQL candidatos ficaram byte a byte iguais aos validados no espelho (`review-1255-source-hashes.json`). Os SQL ficam **REVIEW_ONLY_INACTIVE_NOT_APPROVED**: nada de SQL hospedado, publicação, emissão, envio ou cobrança. Auth é SQL sintética (não JWT/RLS/Storage hospedado). Gate logístico global não foi aberto.
+
+## Complemento 14:25 — identidade da emitente antes do ambiente e repetição vinculada (tentativas 204/205, local)
+
+**Auditoria do corpo canônico (MD5 `4d93bb04…`):** a cláusula de ambiente (linhas 31–35) roda **antes** da derivação da nota pelo XML (45–63) e sem escopo de empresa, o que confirma a constatação independente. A repetição (79–94) era devolvida antes de qualquer autorização nova e comparava só o fingerprint. Para Consulta/RetAutorizacao, a nota era o parâmetro do chamador, sem derivação.
+
+**Overlay candidato final (MD5 `210f8b548ad4490da22f59551abaa220`), ordem:** identidade (Autorização pelo XML, como no canônico; Consulta/RetAutorização pelo XML **quando informado**, com `SEFAZ_INVOICE_RUN_MISMATCH`; sem XML, a nota autorizada por `h15_service_actor_invoice_access` no transporte) → ambiente da configuração ativa **exata** da emitente (`company_settings_id` + `organization_id` da nota) → locks nota→pedido→previsão + advisory → autoridade/escopo/features/piloto relidos → repetição → início. Sem documento, só decide a configuração ativa única da empresa do ator; sem ator ou sem configuração, bloqueia. Não existe mais `is_active LIMIT 1`, e o permitido fiscal não foi ampliado (marcador, host `hnfe` e XML `2` intactos).
+
+**Ambiguidade:** o índice único `ux_company_fiscal_settings_active_organization` já impede duas configurações ativas na mesma empresa (23505, comprovado). O `count(*)=1` no writer fica apenas como defesa.
+
+**Repetição:** além do fingerprint, agora exige o mesmo serviço, nota, XML, evento e endpoint (e a mesma empresa do autor, quando não há documento).
+
+**Tentativa 204:** exit 1. O caso de ambiguidade tentou criar uma segunda ativa e foi recusado pelo índice acima, não pelo writer; o caso foi reclassificado.
+
+**Tentativa 205:** exit 0, 55/55 (`order-e2e-new-20261108/evidence/attempt-205/`).
+- Repetição (`begin-replay-binding.json`): serviço, nota+XML, evento e endpoint divergentes → `FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH`; nota do chamador ≠ XML → `SEFAZ_INVOICE_RUN_MISMATCH`; ator estrangeiro/desconhecido e piloto revogado → `42501 B2B_FORECAST_BEGIN_SCOPE_DENIED`; **revogação do piloto depois de espera real comprovada no lock** → `42501`. Nenhuma linha devolvida nos casos negados; repetição exata depois da restauração = `idempotentReplay=true`; transmissões 5→5 (nenhum envio novo).
+- Ambiente (`begin-env-tenant-scope.json`): 8 negativas (própria configuração `1`/NULL/inativa com outra empresa `2`, Consulta sem XML ou com nota divergente, sem documento e sem ator, empresa do ator sem configuração, ambiguidade 23505).
+- Regressão: 18/18/9, parceiro 747→747→738, 48 controles de contenção, histórico idêntico (40 eventos) e dez gatilhos preservados.
+
+**Leitura de histórico:** os leitores auditáveis não mudaram. A repetição do início deixou de servir como leitura para quem não tem autoridade atual.
+
+**Tentativa 206 (substitui a 205):** a variante da 205 exigia XML na Consulta/RetAutorização, mas `supabase/functions/fiscal-sefaz-transport/index.ts` envia status/recibo/consulta com a nota obrigatória e `run_id` **opcional**. Isso quebraria o chamador real, então foi descartada. A 206 terminou com exit 0, 55/55: as mesmas 9 verificações de repetição e 8 de ambiente, com `status_invoice_only_issuer_env_1` (só a nota, emitente em `1`, outra empresa em `2`) → bloqueado. Nas previsões, a consulta sem XML continua barrada pela prova causal (`t.xml_run_id=_xml_run_id`).
+
+**Promoção:** 12/12 SQL iguais aos do espelho validado na **206** (`review-1425-source-hashes.json`). Pacote **REVIEW_ONLY_INACTIVE_NOT_APPROVED**; sem SQL hospedado, publicação, emissão, envio ou cobrança. Auth sintética.

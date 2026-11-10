@@ -1,0 +1,53 @@
+{
+  "cases": {
+    "own_settings_env_1": {
+      "exit": 3,
+      "blocked": true,
+      "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 93 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    "own_settings_env_null": {
+      "exit": 3,
+      "blocked": true,
+      "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 93 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    "own_settings_inactive_other_tenant_env_2": {
+      "exit": 3,
+      "blocked": true,
+      "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 93 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    "consulta_caller_invoice_differs_from_run": {
+      "exit": 3,
+      "expected": "SEFAZ_INVOICE_RUN_MISMATCH",
+      "blocked": true,
+      "stderr": "ERROR:  P0001: SEFAZ_INVOICE_RUN_MISMATCH\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 76 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    "consulta_without_run": {
+      "exit": 3,
+      "expected": "SEFAZ_RUN_REQUIRED",
+      "blocked": true,
+      "stderr": "ERROR:  P0001: SEFAZ_RUN_REQUIRED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 71 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    "no_document_without_actor": {
+      "exit": 3,
+      "expected": "FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+      "blocked": true,
+      "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 93 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    "no_document_actor_org_ambiguous_two_active": {
+      "exit": 3,
+      "expected": "ux_company_fiscal_settings_active_organization",
+      "blocked": true,
+      "stderr": "ERROR:  23505: duplicate key value violates unique constraint \"ux_company_fiscal_settings_active_organization\"\nDETAIL:  Key (organization_id)=(00000000-0000-0000-0000-000000000001) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  company_fiscal_settings\nCONSTRAINT NAME:  ux_company_fiscal_settings_active_organization\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n"
+    },
+    "no_document_actor_org_without_settings": {
+      "exit": 3,
+      "expected": "FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+      "blocked": true,
+      "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 93 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    "transmissions_created": "0"
+  },
+  "rolled_back": true,
+  "hosted": false,
+  "seam": "settings staged with replica role, writer called with origin role"
+}

@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "settings_direct_write": {
+    "returncode": 3,
+    "stderr": "ERROR:  42501: C2P1_SETTINGS_WRITE_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.c2p1_settings_fence() line 5 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  "delivery_receivable_denials": {
+    "UPDATE": {
+      "returncode": 3,
+      "stderr": "ERROR:  42501: DELIVERY_DOWNSTREAM_FORBIDDEN: public.accounts_receivable\nCONTEXT:  PL/pgSQL function platform_private.delivery_no_downstream_20261030() line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    "DELETE": {
+      "returncode": 3,
+      "stderr": "ERROR:  42501: DELIVERY_DOWNSTREAM_FORBIDDEN: public.accounts_receivable\nCONTEXT:  PL/pgSQL function platform_private.delivery_no_downstream_20261030() line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    "INSERT": {
+      "returncode": 3,
+      "stderr": "ERROR:  42501: DELIVERY_DOWNSTREAM_FORBIDDEN: public.accounts_receivable\nCONTEXT:  PL/pgSQL function platform_private.delivery_no_downstream_20261030() line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  },
+  "transaction_rollback": true,
+  "hosted": false
+}

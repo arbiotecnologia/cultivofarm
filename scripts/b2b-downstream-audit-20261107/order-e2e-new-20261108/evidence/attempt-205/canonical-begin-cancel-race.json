@@ -1,0 +1,110 @@
+[
+  {
+    "case": "two-begins-before-sync",
+    "winner": "{\"state\": \"PENDING\", \"eventId\": null, \"outcome\": \"PENDING\", \"service\": \"NFeAutorizacao4\", \"invoiceId\": \"00000000-0000-0000-0000-000000000985\", \"correlationId\": \"19a3a888-047c-43ab-92d8-9c16f29ecd7c\", \"transmissionId\": \"79499f9c-59be-4dd2-8f5d-a52a1431fb90\", \"idempotentReplay\": false}\n\n",
+    "loser": "ERROR:  PT409: B2B_FORECAST_BEGIN_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 178 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+    "repeatable": "ERROR:  42501: B2B_FORECAST_READ_COMMITTED_REQUIRED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 99 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "case": "replay-binding",
+    "checks": [
+      {
+        "case": "service-differs",
+        "exit": 3,
+        "expected": "FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+        "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+        "leaked_row": false
+      },
+      {
+        "case": "invoice-and-run-differ",
+        "exit": 3,
+        "expected": "FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+        "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+        "leaked_row": false
+      },
+      {
+        "case": "event-differs",
+        "exit": 3,
+        "expected": "FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+        "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+        "leaked_row": false
+      },
+      {
+        "case": "endpoint-differs",
+        "exit": 3,
+        "expected": "FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+        "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+        "leaked_row": false
+      },
+      {
+        "case": "caller-invoice-not-run",
+        "exit": 3,
+        "expected": "SEFAZ_INVOICE_RUN_MISMATCH",
+        "stderr": "ERROR:  P0001: SEFAZ_INVOICE_RUN_MISMATCH",
+        "leaked_row": false
+      },
+      {
+        "case": "foreign-or-unknown-actor",
+        "exit": 3,
+        "expected": "B2B_FORECAST_BEGIN_SCOPE_DENIED",
+        "stderr": "ERROR:  42501: B2B_FORECAST_BEGIN_SCOPE_DENIED",
+        "leaked_row": false
+      },
+      {
+        "case": "pilot-revoked-before",
+        "exit": 3,
+        "expected": "B2B_FORECAST_BEGIN_SCOPE_DENIED",
+        "stderr": "ERROR:  42501: B2B_FORECAST_BEGIN_SCOPE_DENIED",
+        "leaked_row": false
+      },
+      {
+        "case": "pilot-revoked-while-replay-waits-on-lock",
+        "exit": 3,
+        "stderr": "ERROR:  42501: B2B_FORECAST_BEGIN_SCOPE_DENIED",
+        "leaked_row": false,
+        "barrier": {
+          "holder_ready": {
+            "pid": 24582,
+            "state": "idle in transaction",
+            "granted": true
+          },
+          "waiter_before_revocation": {
+            "holder_pid": 24582,
+            "waiter_pid": 24586,
+            "blocking_pids": [
+              24582
+            ],
+            "ungranted_locks": [
+              {
+                "mode": "ShareLock",
+                "granted": false,
+                "locktype": "transactionid",
+                "relation": null,
+                "transactionid": "18271"
+              }
+            ],
+            "wait_event_type": "Lock"
+          },
+          "mutation_sent_after_waiter": true,
+          "timing_only_proof": false
+        }
+      },
+      {
+        "case": "exact-replay-after-restore",
+        "exit": 0,
+        "replay": true
+      }
+    ]
+  },
+  {
+    "case": "begin-first",
+    "begin_stdout": "{\"state\": \"PENDING\", \"eventId\": null, \"outcome\": \"PENDING\", \"service\": \"NFeAutorizacao4\", \"invoiceId\": \"00000000-0000-0000-0000-000000000985\", \"correlationId\": \"6f567b66-fb60-47c8-ba1c-edb7e7179938\", \"transmissionId\": \"c9aeda17-d276-4ac0-a7c5-e6f1e91813ce\", \"idempotentReplay\": false}\n\n",
+    "cancel_stderr": "ERROR:  PT409: B2B_FORECAST_FISCAL_IN_FLIGHT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 39 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "case": "cancel-lock-first-rollback",
+    "cancel_stdout": "{\"actor\": \"00000000-0000-0000-0000-000000000029\", \"state\": \"cancelado_residual\", \"version\": 13, \"order_id\": \"764aa4bc-d52f-41a8-ab97-95e0649abc4d\", \"forecast_id\": \"ea75aa87-67d6-480c-bd17-0d2d5ea0e629\"}\n\n",
+    "begin_stdout": "{\"state\": \"PENDING\", \"eventId\": null, \"outcome\": \"PENDING\", \"service\": \"NFeAutorizacao4\", \"invoiceId\": \"00000000-0000-0000-0000-000000000985\", \"correlationId\": \"58660cf6-585f-42b2-b2a8-66cff4f8deaa\", \"transmissionId\": \"5ad5305d-4c41-40f0-812f-e73952fcd9c7\", \"idempotentReplay\": false}\n",
+    "elapsed": 0.7207264690000557
+  }
+]

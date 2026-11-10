@@ -1,0 +1,361 @@
+{
+  "order_id": "e15dc3a7-978d-4bb8-baf9-ca3870f56e06",
+  "path": "PARTIAL_THEN_CANCEL",
+  "dry_run": {
+    "exit": 0,
+    "stdout": "{\"nRec\": null, \"cStat\": \"104\", \"chNFe\": \"35261111111111111111111111111111111111000980\", \"nProt\": \"LOCAL-PC-1\", \"state\": \"SUCCEEDED\", \"outcome\": \"AUTHORIZED\", \"xMotivo\": \"AUTORIZADO\", \"protocolCStat\": \"100\", \"transmissionId\": \"00000000-0000-0000-0000-000000000982\", \"reconciliationCode\": null, \"reconciliationPending\": false}",
+    "stderr": ""
+  },
+  "exposure_initial": {
+    "full": {
+      "partner_id": "00000000-0000-0000-0000-000000000085",
+      "novo_pedido": 0.0,
+      "reason_code": "LIMIT_EXCEEDED_APPROVAL",
+      "credit_limit": 1.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 18.0,
+      "saldo_em_aberto": 0.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 0.0,
+      "credit_limit_action": "approval_required",
+      "exposicao_projetada": 18.0,
+      "percentual_utilizado": 1800.0,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 18.0
+    },
+    "others": {
+      "partner_id": "00000000-0000-0000-0000-000000000085",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 0.0,
+      "saldo_em_aberto": 0.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 1.0,
+      "credit_limit_action": "approval_required",
+      "exposicao_projetada": 0.0,
+      "percentual_utilizado": 0.0,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 0.0
+    },
+    "order_open": 0,
+    "order_residual": 18.0,
+    "order_exposure": 18.0,
+    "label": "PC before NF: residual only"
+  },
+  "partial": {
+    "state": "faturado_parcial",
+    "version": 3,
+    "last_error_code": null,
+    "residual_amount": 9.0,
+    "fiscal_intent_id": null
+  },
+  "exposure_partial": {
+    "full": {
+      "partner_id": "00000000-0000-0000-0000-000000000085",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1000.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 18.0,
+      "saldo_em_aberto": 9.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 982.0,
+      "credit_limit_action": "block",
+      "exposicao_projetada": 18.0,
+      "percentual_utilizado": 1.8,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 9.0
+    },
+    "others": {
+      "partner_id": "00000000-0000-0000-0000-000000000085",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1000.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 9.0,
+      "saldo_em_aberto": 9.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 991.0,
+      "credit_limit_action": "block",
+      "exposicao_projetada": 9.0,
+      "percentual_utilizado": 0.9,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 0.0
+    },
+    "order_open": 9.0,
+    "order_residual": 9.0,
+    "order_exposure": 18.0,
+    "label": "PC after partial NF"
+  },
+  "canceled": {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "state": "cancelado_residual",
+    "version": 13,
+    "order_id": "e15dc3a7-978d-4bb8-baf9-ca3870f56e06",
+    "forecast_id": "61d0e159-70bc-48d1-8f4f-6190ad6f0a28"
+  },
+  "cancel_replay": "ERROR:  PT409: B2B_FORECAST_CAS_CONFLICT",
+  "exposure_after_cancel": {
+    "full": {
+      "partner_id": "00000000-0000-0000-0000-000000000085",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1000.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 9.0,
+      "saldo_em_aberto": 9.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 991.0,
+      "credit_limit_action": "block",
+      "exposicao_projetada": 9.0,
+      "percentual_utilizado": 0.9,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 0.0
+    },
+    "others": {
+      "partner_id": "00000000-0000-0000-0000-000000000085",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1000.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 9.0,
+      "saldo_em_aberto": 9.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 991.0,
+      "credit_limit_action": "block",
+      "exposicao_projetada": 9.0,
+      "percentual_utilizado": 0.9,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 0.0
+    },
+    "order_open": 9.0,
+    "order_residual": 0,
+    "order_exposure": 9.0,
+    "label": "PC after residual cancel: residual not counted"
+  },
+  "emission_after_cancel_denied": "ERROR:  PT409: B2B_FORECAST_FISCAL_AMOUNT_EXCEEDS_RESIDUAL",
+  "late_callback": {
+    "nRec": null,
+    "cStat": "104",
+    "chNFe": "35261111111111111111111111111111111111000985",
+    "nProt": "LOCAL-PC-LATE",
+    "state": "SUCCEEDED",
+    "outcome": "AUTHORIZED",
+    "xMotivo": "LOTE PROCESSADO; PROTOCOLO AUTORIZADO",
+    "protocolCStat": "100",
+    "transmissionId": "00000000-0000-0000-0000-000000000993",
+    "reconciliationCode": "FISCAL_AUTHORIZATION_CLOSE_PENDING",
+    "reconciliationPending": true
+  },
+  "late_close_code": "FISCAL_AUTHORIZATION_CLOSE_PENDING",
+  "late_reason": "ERROR:  PT409: B2B_FORECAST_RESIDUAL_CANCELED\nCONTEXT:  PL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 93 at RAISE\nPL/pgSQL function rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid) line 76 at assignment\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+  "evidence_preserved": {
+    "tx": {
+      "c_stat": "104",
+      "ch_nfe": "35261111111111111111111111111111111111000985",
+      "n_prot": "LOCAL-PC-LATE",
+      "outcome": "AUTHORIZED"
+    },
+    "invoice": {
+      "receivable_id": null,
+      "normalized_status": "DRAFT"
+    },
+    "close_pending": {
+      "attempts": 1,
+      "error_code": "FISCAL_AUTHORIZATION_CLOSE_PENDING"
+    }
+  },
+  "forecast_final": {
+    "state": "cancelado_residual",
+    "version": 13,
+    "last_error_code": null,
+    "residual_amount": 0.0,
+    "fiscal_intent_id": "00000000-0000-0000-0000-000000000985"
+  },
+  "titles": {
+    "total": 9.0,
+    "titles": 1
+  },
+  "exposure_final": {
+    "full": {
+      "partner_id": "00000000-0000-0000-0000-000000000085",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1000.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 9.0,
+      "saldo_em_aberto": 9.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 991.0,
+      "credit_limit_action": "block",
+      "exposicao_projetada": 9.0,
+      "percentual_utilizado": 0.9,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 0.0
+    },
+    "others": {
+      "partner_id": "00000000-0000-0000-0000-000000000085",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1000.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 9.0,
+      "saldo_em_aberto": 9.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 991.0,
+      "credit_limit_action": "block",
+      "exposicao_projetada": 9.0,
+      "percentual_utilizado": 0.9,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 0.0
+    },
+    "order_open": 9.0,
+    "order_residual": 0,
+    "order_exposure": 9.0,
+    "label": "PC after late callback: unchanged, close pending explicit"
+  },
+  "cancel_after_late_denied": "ERROR:  PT409: B2B_FORECAST_FISCAL_RECONCILIATION_PENDING",
+  "negatives": {
+    "foreign_cancel": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED",
+    "buyer_cancel": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED"
+  },
+  "seams": [
+    "partner_accounts.client_id for PC (same declared B4 customer seam)",
+    "fiscal document rows inserted as service_role; outcomes only via canonical callback"
+  ],
+  "begin_cancel_race": [
+    {
+      "case": "two-begins-before-sync",
+      "winner": "{\"state\": \"PENDING\", \"eventId\": null, \"outcome\": \"PENDING\", \"service\": \"NFeAutorizacao4\", \"invoiceId\": \"00000000-0000-0000-0000-000000000985\", \"correlationId\": \"7553a1f3-b7e1-407d-8466-4d2c47bd69e3\", \"transmissionId\": \"cfc6f2cb-a310-4db3-9ca5-23ef8786f284\", \"idempotentReplay\": false}\n\n",
+      "loser": "ERROR:  PT409: B2B_FORECAST_BEGIN_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 179 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "repeatable": "ERROR:  42501: B2B_FORECAST_READ_COMMITTED_REQUIRED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 100 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "replay-binding",
+      "checks": [
+        {
+          "case": "service-differs",
+          "exit": 3,
+          "expected": "FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+          "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+          "leaked_row": false
+        },
+        {
+          "case": "invoice-and-run-differ",
+          "exit": 3,
+          "expected": "FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+          "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+          "leaked_row": false
+        },
+        {
+          "case": "event-differs",
+          "exit": 3,
+          "expected": "FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+          "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+          "leaked_row": false
+        },
+        {
+          "case": "endpoint-differs",
+          "exit": 3,
+          "expected": "FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+          "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+          "leaked_row": false
+        },
+        {
+          "case": "caller-invoice-not-run",
+          "exit": 3,
+          "expected": "SEFAZ_INVOICE_RUN_MISMATCH",
+          "stderr": "ERROR:  P0001: SEFAZ_INVOICE_RUN_MISMATCH",
+          "leaked_row": false
+        },
+        {
+          "case": "foreign-or-unknown-actor",
+          "exit": 3,
+          "expected": "B2B_FORECAST_BEGIN_SCOPE_DENIED",
+          "stderr": "ERROR:  42501: B2B_FORECAST_BEGIN_SCOPE_DENIED",
+          "leaked_row": false
+        },
+        {
+          "case": "pilot-revoked-before",
+          "exit": 3,
+          "expected": "B2B_FORECAST_BEGIN_SCOPE_DENIED",
+          "stderr": "ERROR:  42501: B2B_FORECAST_BEGIN_SCOPE_DENIED",
+          "leaked_row": false
+        },
+        {
+          "case": "pilot-revoked-while-replay-waits-on-lock",
+          "exit": 3,
+          "stderr": "ERROR:  42501: B2B_FORECAST_BEGIN_SCOPE_DENIED",
+          "leaked_row": false,
+          "barrier": {
+            "holder_ready": {
+              "pid": 56082,
+              "state": "idle in transaction",
+              "granted": true
+            },
+            "waiter_before_revocation": {
+              "holder_pid": 56082,
+              "waiter_pid": 56088,
+              "blocking_pids": [
+                56082
+              ],
+              "ungranted_locks": [
+                {
+                  "mode": "ShareLock",
+                  "granted": false,
+                  "locktype": "transactionid",
+                  "relation": null,
+                  "transactionid": "18277"
+                }
+              ],
+              "wait_event_type": "Lock"
+            },
+            "mutation_sent_after_waiter": true,
+            "timing_only_proof": false
+          }
+        },
+        {
+          "case": "exact-replay-after-restore",
+          "exit": 0,
+          "replay": true
+        }
+      ]
+    },
+    {
+      "case": "begin-first",
+      "begin_stdout": "{\"state\": \"PENDING\", \"eventId\": null, \"outcome\": \"PENDING\", \"service\": \"NFeAutorizacao4\", \"invoiceId\": \"00000000-0000-0000-0000-000000000985\", \"correlationId\": \"e713fb9e-4e71-4d6f-92c8-b380b369d167\", \"transmissionId\": \"d70be414-fd14-431f-b789-82ae5b0d2cd7\", \"idempotentReplay\": false}\n\n",
+      "cancel_stderr": "ERROR:  PT409: B2B_FORECAST_FISCAL_IN_FLIGHT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 39 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "cancel-lock-first-rollback",
+      "cancel_stdout": "{\"actor\": \"00000000-0000-0000-0000-000000000029\", \"state\": \"cancelado_residual\", \"version\": 13, \"order_id\": \"e15dc3a7-978d-4bb8-baf9-ca3870f56e06\", \"forecast_id\": \"61d0e159-70bc-48d1-8f4f-6190ad6f0a28\"}\n\n",
+      "begin_stdout": "{\"state\": \"PENDING\", \"eventId\": null, \"outcome\": \"PENDING\", \"service\": \"NFeAutorizacao4\", \"invoiceId\": \"00000000-0000-0000-0000-000000000985\", \"correlationId\": \"cfdc89c4-ee75-4354-b90d-903fb8b45105\", \"transmissionId\": \"2bc806c8-19a2-4ad2-af54-48d50ed7764c\", \"idempotentReplay\": false}\n",
+      "elapsed": 0.7810308060002171
+    }
+  ],
+  "canonical_begin_after_cancel": "ERROR:  PT409: B2B_FORECAST_BEGIN_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 179 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+  "before_canceled_begin": {
+    "exit": 0,
+    "stdout": "{\"state\": \"PENDING\", \"eventId\": null, \"outcome\": \"PENDING\", \"service\": \"NFeAutorizacao4\", \"invoiceId\": \"00000000-0000-0000-0000-000000000985\", \"correlationId\": \"6aa520e0-b0fc-4f63-a351-69de72494d74\", \"transmissionId\": \"33750f00-a759-4ee7-acfe-233496ede099\", \"idempotentReplay\": false}\n",
+    "rollback": true
+  },
+  "hosted": false
+}

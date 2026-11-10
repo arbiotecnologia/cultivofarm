@@ -1,0 +1,50 @@
+{
+  "id": "0ac5d405-24f4-4bf3-809a-6b23a5c6f0e0",
+  "total": 18.0,
+  "numero": "PB-001001",
+  "status": "em_analise_comercial",
+  "schedule": [
+    {
+      "amount": 18.0,
+      "due_date": "2026-12-10",
+      "estimated": true,
+      "interest_amount": 0.0,
+      "nominal_due_date": "2026-12-10",
+      "principal_amount": 18.0,
+      "installment_number": 1,
+      "business_day_adjusted": false
+    }
+  ],
+  "subtotal": 20.0,
+  "cart_hash": "38c8ce0f53b880cf195fab2d1f6c0abd34c17a5c4bddd3466ca680481dd25c3b",
+  "final_amount": 18.0,
+  "pricing_mode": "discount_from_base",
+  "table_amount": 20.0,
+  "desconto_total": 2.0,
+  "first_due_date": "2026-12-10",
+  "payment_choice": {
+    "payment_method": "boleto",
+    "payment_deadline_days": 30,
+    "payment_condition_version": 2
+  },
+  "quote_required": false,
+  "discount_amount": 2.0,
+  "idempotency_key": "85eedde6-b4b0-41e3-aa7f-fd8d80f040ac",
+  "payment_terms_id": "fdc3f66f-f163-4a4b-8fa5-a67a46155431",
+  "installment_count": 1,
+  "payment_condition": {
+    "due_basis": "nf_issue",
+    "estimated": true,
+    "monthly_rate": 0,
+    "deadline_days": 30,
+    "installment_count": 1,
+    "payment_method_name": "Boleto TESTE"
+  },
+  "credit_reason_code": "OK",
+  "credit_block_reason": null,
+  "financial_approval_status": "pending",
+  "financial_interest_amount": 0.0,
+  "net_amount_after_discount": 18.0,
+  "payment_condition_contract": "B2B_PAYMENT_CONDITION_V1",
+  "requires_financial_approval": true
+}
