@@ -1,3 +1,8 @@
+## 10/11 00:04 — Revisão estática previsão 02/06
+- [ ] Reproduzir e corrigir replay sob lock/payload, segunda emissão parcial, cancelamento versus reconciliação e replay econômico após NF.
+- [ ] Fechar grants privados sem chamador comprovado; justificar fonte fiscal/tenant e distinguir prova sintética de produção.
+- [ ] Continuar tentativa 153/159 pelo journal canônico; reexecutar UI/testes e evidências separadas, sem hosted/publicação/efeitos.
+
 ## 09/11 23:39 — Revisão previsão 3b7668cf
 - [ ] Reproduzir 153 com SQLSTATE/estado e corrigir ambos caminhos de aprovação sem mudar snapshots/gatilhos; tentativa 149 continua prova parcial.
 - [ ] Concluir 18/9/9, pagamento 9, cancelamento residual, concorrência/revogação e matriz de atores em banco descartável.
