@@ -636,8 +636,23 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
     root=Path(__file__).resolve().parents[5]
     capture=json.loads((root/'scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-184/current-pre-physical.json').read_text())
     old_begin=next(r['body'] for r in capture['functions'] if r['name']=='rpc_fiscal_sefaz_transmit_begin_v1')
-    old_started=B.run_raw('BEGIN;'+old_begin+';'+begin_statement(Q,L,'BEFORE-canceled-begin')+'ROLLBACK;')
+    # Exact canonical body first: its tenant-blind env clause (other tenant's NULL
+    # sentinel) blocks before the residual question; recorded, not hidden.
+    exact=B.run_raw('BEGIN;'+old_begin+';'+begin_statement(Q,L,'BEFORE-canceled-begin-exact')+'ROLLBACK;')
+    assert exact.returncode!=0 and 'FISCAL_PRODUCTION_ENDPOINT_BLOCKED' in exact.stderr,exact.stderr
+    # Same canonical body with ONLY the env clause scoped to the document, to show the
+    # pre-review residual gap: it would start emission of a canceled residual.
+    blind="""  SELECT coalesce(nfe_environment_code, '') INTO v_tpamb
+    FROM public.company_fiscal_settings WHERE is_active LIMIT 1;"""
+    assert old_begin.count(blind)==1
+    scoped_old=old_begin.replace(blind,"""  SELECT coalesce(c.nfe_environment_code, '') INTO v_tpamb
+    FROM public.fiscal_invoices i JOIN public.company_fiscal_settings c
+      ON c.id=i.company_settings_id AND c.organization_id=i.organization_id AND c.is_active
+   WHERE i.id=_invoice_id;""")
+    old_started=B.run_raw('BEGIN;'+scoped_old+';'+begin_statement(Q,L,'BEFORE-canceled-begin')+'ROLLBACK;')
     assert old_started.returncode==0 and '"idempotentReplay": false' in old_started.stdout,old_started.stderr
+    (OUT/'before-canceled-begin.json').write_text(json.dumps(dict(exact_canonical=exact.stderr.strip().splitlines()[0],
+      env_scoped_only=dict(exit=old_started.returncode,started=True),rolled_back=True,hosted=False),indent=2)+'\n')
     cancel_replay = denied(cancel_raw(Q, Q.UFIN, pc_order, l_consulted['version'], 'repeticao'), 'B2B_FORECAST_')
     exp_cancel = assert_order_exposure(B, Q, pc_order, pc_base_open, half if dry_ok else 0, 0, partner=Q.PC, label='PC after residual cancel: residual not counted')
     N = insert_invoice(B, Q, pc_order, Q.PC, company, item_id, half, 990, '2027-02-05')
