@@ -187,7 +187,7 @@ def cancel_raw(Q, uid, order_id, expected, reason):
     return Q.as_user(uid, f"SELECT public.rpc_b2b_forecast_cancel_residual_v1('{order_id}',{expected},'{reason}');")
 
 
-def insert_invoice(B, Q, order_id, partner, company, item_id, amount, n, issue_date='2027-02-01'):
+def insert_invoice(B, Q, order_id, partner, company, item_id, amount, n, issue_date='2027-02-01', with_tx=True):
     """Declared synthetic fiscal seam (same as the integrated fixture): document rows only.
     Outcomes are recorded exclusively by the canonical H13 callback, never by UPDATE."""
     invoice_id, xml_run_id, tx_id = Q.u(n), Q.u(n + 1), Q.u(n + 2)
@@ -202,9 +202,9 @@ def insert_invoice(B, Q, order_id, partner, company, item_id, amount, n, issue_d
   VALUES('{invoice_id}','{item_id}',1,'PRODUCT',1,'UN',25,'KG',{amount});
  INSERT INTO public.fiscal_xml_runs(id,fiscal_invoice_id,idempotency_key,run_version,schema_version,environment_code,access_key,state,payload,payload_sha256,signed_sha256,signed_path,signed_at,validation,signature_metadata,created_by,updated_at)
   VALUES('{xml_run_id}','{invoice_id}','local-forecast-xml:{invoice_id}',1,'LOCAL-NFE-4.00','2','{access_key}','SIGNED','{{}}'::jsonb,'{xml_sha}','{xml_sha}','local/{invoice_id}.xml',now(),'{{"synthetic":true,"network":false}}'::jsonb,'{{"synthetic":true,"adapter":"LOCAL_FIXTURE_ONLY"}}'::jsonb,'{Q.UADM}',now());
- INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,xml_run_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,c_stat,x_motivo,ch_nfe,n_prot,ambiente_retorno,dh_recbto,completed_at,created_by)
-  VALUES('{tx_id}','{invoice_id}','{xml_run_id}','NFeAutorizacao4','2','hnfe.fazenda.mg.gov.br','{ENDPOINT}','local-forecast-tx:{tx_id}','{fingerprint}','SENT','PENDING','103','PROCESSANDO','{access_key}',NULL,'2',now(),NULL,'{Q.UADM}');""")
-    return dict(invoice=invoice_id, xml_run=xml_run_id, tx=tx_id, access_key=access_key)
+""" + (f"""INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,xml_run_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,c_stat,x_motivo,ch_nfe,n_prot,ambiente_retorno,dh_recbto,completed_at,created_by)
+  VALUES('{tx_id}','{invoice_id}','{xml_run_id}','NFeAutorizacao4','2','hnfe.fazenda.mg.gov.br','{ENDPOINT}','local-forecast-tx:{tx_id}','{fingerprint}','SENT','PENDING','103','PROCESSANDO','{access_key}',NULL,'2',now(),NULL,'{Q.UADM}');""" if with_tx else ''))
+    return dict(invoice=invoice_id, xml_run=xml_run_id, tx=tx_id if with_tx else None, access_key=access_key)
 
 
 FISCAL_BEGIN_PREFLIGHT_SQL = """BEGIN READ ONLY;
@@ -686,7 +686,7 @@ def test_begin_cancel_race(B,Q,OUT,order_id,doc,v):
     # Two independent invoice intentions for the same residual, before any SYNC.
     extra=insert_invoice(B,Q,order_id,Q.PC,
       B.last(f"SELECT company_settings_id FROM public.fiscal_invoices WHERE id='{doc['invoice']}';"),
-      B.last(f"SELECT partner_order_item_id FROM public.fiscal_invoice_items WHERE fiscal_invoice_id='{doc['invoice']}' LIMIT 1;"),9,1005)
+      B.last(f"SELECT partner_order_item_id FROM public.fiscal_invoice_items WHERE fiscal_invoice_id='{doc['invoice']}' LIMIT 1;"),9,1005,with_tx=False)  # second intention has NO fixture transmission: only the canonical begin may create one
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
         winner=pool.submit(B.run_raw,'BEGIN;'+begin_statement(Q,doc,'intent-first')+'SELECT pg_sleep(.8);COMMIT;')
         time.sleep(.2)
