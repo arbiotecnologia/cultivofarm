@@ -268,8 +268,8 @@ def main():
   assert after_denied==before,'approval denied before accounting changed order'
   checks.append(dict(test='accounting pending approval denied atomically before synthetic promotion',status='PASS'))
   B.sql(f"""SET session_replication_role=replica;
-   INSERT INTO public.company_fiscal_settings(organization_id,is_active,configuration_status,accounting_validated_at,legal_name,cnpj,configuration_version)
-    SELECT '{Q.A}',true,'VALIDATED',now(),'ARBIO FIXTURE LOCAL SEM VALIDADE EXTERNA','00000000000191',1
+   INSERT INTO public.company_fiscal_settings(organization_id,is_active,configuration_status,accounting_validated_at,legal_name,cnpj,configuration_version,nfe_environment_code)
+    SELECT '{Q.A}',true,'VALIDATED',now(),'ARBIO FIXTURE LOCAL SEM VALIDADE EXTERNA','00000000000191',1,'2'
     WHERE NOT EXISTS(SELECT 1 FROM public.company_fiscal_settings WHERE organization_id='{Q.A}' AND is_active);
    SET session_replication_role=origin;""")
   promoted,promote_error=Q.call(Q.UADM,f"public.c2_promote_accounting_pending_order_v1('{order_id}','{before['updated_at']}'::timestamptz)")
