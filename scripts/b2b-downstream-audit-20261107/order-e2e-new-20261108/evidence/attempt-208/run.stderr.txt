@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-a6j1xt9m/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 816, in main
+    cancel_late=forecast_extra.run_cancel_late_callback(B,Q,OUT,override['order_id'],accepted)
+  File "/tmp/new-order-e2e-a6j1xt9m/project/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast_residual_scenario.py", line 624, in run_cancel_late_callback
+    begin_race = test_begin_cancel_race(B,Q,OUT,pc_order,L,l_consulted['version'])
+  File "/tmp/new-order-e2e-a6j1xt9m/project/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast_residual_scenario.py", line 930, in test_begin_cancel_race
+    rows.append(dict(case='post-wait-revalidation',checks=test_begin_post_wait(B,Q,OUT,order_id,doc)))
+                                                          ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-a6j1xt9m/project/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast_residual_scenario.py", line 848, in test_begin_post_wait
+    called,barrier=revoke_after_proven_wait(B,lock,call(svc,name),mut)
+                   ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-a6j1xt9m/project/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/lifecycle_lock_barrier.py", line 54, in revoke_after_proven_wait
+    assert not stderr, {'holder_stderr': stderr, 'holder_stdout': stdout}
+           ^^^^^^^^^^
+AssertionError: {'holder_stderr': 'ERROR:  new row for relation "fiscal_xml_runs" violates check constraint "fiscal_xml_runs_env_chk"\nDETAIL:  Failing row contains (00000000-0000-0000-0000-000000000986, 00000000-0000-0000-0000-000000000985, null, local-forecast-xml:00000000-0000-0000-0000-000000000985, 1, null, F4.1, LOCAL-NFE-4.00, 1, 35261111111111111111111111111111111111000985, SIGNED, {}, 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a, null, null, null, 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a, null, local/00000000-0000-0000-0000-000000000985.xml, fiscal-xml, {"network": false, "synthetic": true}, {"adapter": "LOCAL_FIXTURE_ONLY", "synthetic": true}, null, null, null, 2026-11-10 15:28:08.50073+00, null, null, 2026-11-10 15:28:08.50073+00, null, 00000000-0000-0000-0000-000000000024, 2026-11-10 15:28:08.50073+00).\n', 'holder_stdout': '4bafde8d-1ebe-42b4-99f1-4ec097f789bc\n'}
