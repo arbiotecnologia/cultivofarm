@@ -889,6 +889,36 @@ def test_begin_post_wait(B,Q,OUT,order_id,doc):
                  leaked_row='transmissionId' in called.stdout,barrier=barrier)
         out.append(row)
         assert called.returncode!=0 and token in called.stderr and not row['leaked_row'],row
+    # Review 209/584d530 item 1: the waiter blocks SPECIFICALLY inside
+    # resale_pilot_allowed_v1 (holder locks only the allowlist row or only the
+    # gate row, never invoice/order/forecast). Fiscal state revoked meanwhile must
+    # be re-read after the helper returns and deny before replay/INSERT.
+    signed=B.last(f"SELECT coalesce(signed_path,'') FROM public.fiscal_xml_runs WHERE id='{doc['xml_run']}';")
+    pilot_locks=[('allowlist',"SELECT id FROM platform_private.resale_pilot_allowlist_v1 WHERE gate='b2b_resale' AND operation='forecast_begin' FOR UPDATE;"),
+                 ('gate',"SELECT singleton FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton FOR UPDATE;")]
+    pilot_cases=[
+      ('issuer-settings-env-1',rep+f"UPDATE public.company_fiscal_settings SET nfe_environment_code='1' WHERE id='{settings}';"+org,
+       rep+f"UPDATE public.company_fiscal_settings SET nfe_environment_code='2' WHERE id='{settings}';"+org,'FISCAL_PRODUCTION_ENDPOINT_BLOCKED'),
+      ('issuer-settings-inactive',rep+f"UPDATE public.company_fiscal_settings SET is_active=false WHERE id='{settings}';"+org,
+       rep+f"UPDATE public.company_fiscal_settings SET is_active=true WHERE id='{settings}';"+org,'FISCAL_PRODUCTION_ENDPOINT_BLOCKED'),
+      ('marker-revoked',rep+"UPDATE public.fiscal_environment_marker SET production_emission_allowed=true;"+org,
+       rep+"UPDATE public.fiscal_environment_marker SET production_emission_allowed=false;"+org,'FISCAL_PRODUCTION_ENDPOINT_BLOCKED'),
+      ('xml-signature-removed',rep+f"UPDATE public.fiscal_xml_runs SET signed_path='' WHERE id='{doc['xml_run']}';"+org,
+       rep+f"UPDATE public.fiscal_xml_runs SET signed_path='{signed}' WHERE id='{doc['xml_run']}';"+org,'SEFAZ_INVOICE_RUN_MISMATCH'),
+    ]
+    for lk,lock_sql in pilot_locks:
+        for name,mut,restore,token in pilot_cases:
+            try:
+                called,barrier=revoke_after_proven_wait(B,lock_sql,call('NFeAutorizacao4',f'pilot-{lk}-{name}'),mut)
+            finally:
+                B.sql(restore)
+            row=dict(case=f'pilot-{lk}-wait-{name}',service='NFeAutorizacao4',holder_lock=lock_sql,
+                     holder_locks_only='resale_pilot_allowlist_v1' if lk=='allowlist' else 'b2b_resale_logistics_gate_v1',
+                     exit=called.returncode,expected=token,stderr=_first_err(called),
+                     leaked_row='transmissionId' in called.stdout,barrier=barrier)
+            out.append(row)
+            assert called.returncode!=0 and token in called.stderr and not row['leaked_row'],row
+            assert B.last(count_sql)==before and forecast_row(B,order_id)==state_before,row
     # Item 3: foreign actor is rejected BEFORE waiting on another tenant's rows.
     holder=B.T.session("SET application_name='forecast_foreign_holder';BEGIN;"+lock)
     try:
