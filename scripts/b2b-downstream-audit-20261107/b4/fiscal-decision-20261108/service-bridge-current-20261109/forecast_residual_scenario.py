@@ -474,6 +474,8 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
     base_open = float(credit_before['saldo_em_aberto'])
     first_credit = assert_order_exposure(B, Q, order_id, base_open, 9, 9, label='after NF1: title 9 + residual 9 = 18')
     assert abs(float(first_credit['full']['exposicao_atual']) - float(credit_before['exposicao_atual'])) < .001, (first_credit, credit_before)
+    rv2 = {}
+    revenue_v2_phase(B, Q, OUT, 'A', order_id, first_receivable, rv2)
 
     # Replay race only through the canonical H13 callback (the bridge itself has no
     # service grant); identical authorized returns must keep one document and title.
@@ -534,6 +536,7 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
 
     # Projection reader: minimal authorized contract candidate (review 890bfa4 item 5),
     # installed only in this disposable PG, exercised, then rolled back deny-only.
+    revenue_v2_phase(B, Q, OUT, 'B', order_id, first_receivable, rv2)
     projection_result=test_projection_reader_contract(B,Q,OUT,first_receivable)
     installment = B.last(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{first_receivable}' ORDER BY installment_number LIMIT 1;")
     assert B.last(f"SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id='{first_receivable}';") == '1'
@@ -544,6 +547,7 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
     paid_credit = assert_order_exposure(B, Q, order_id, base_open, 9, 0, label='after payment 9: open 9 + residual 0 = 9')
     assert abs(float(paid_credit['full']['exposicao_atual']) - (float(credit_before['exposicao_atual']) - 9)) < .001, (paid_credit, credit_before)
     forecast_after_payment = forecast_row(B, order_id)
+    revenue_v2_phase(B, Q, OUT, 'C', order_id, first_receivable, rv2)
     assert forecast_after_payment == forecast, (forecast_after_payment, forecast)
     result = dict(first_invoice=first_invoice, first_receivable=first_receivable, replay_race=[_last(r) for r in races], direct_bridge_service_denied=direct_bridge, winner_invoice=winner['invoice'], loser_invoice=loser['invoice'], second_receivable=second_receivable,
                   second_intent_denied=second_intent_denied, concurrent_callbacks=dict(a=da, z=dz), loser_state=loser_state,
@@ -1020,3 +1024,92 @@ def test_begin_cancel_race(B,Q,OUT,order_id,doc,v):
     rows.append(dict(case='cancel-lock-first-rollback',cancel_stdout=held.stdout,begin_stdout=called.stdout,elapsed=elapsed))
     (OUT/'canonical-begin-cancel-race.json').write_text(json.dumps(rows,indent=2)+'\n')
     return rows
+
+
+# ---- Revisão 2c1034c: leitor tenant V2 (scripts/b2b-revenue-forecast-tenant-20261110/v2) ----
+def _rv2_files():
+    from pathlib import Path
+    d = Path(__file__).resolve().parents[4] / 'b2b-revenue-forecast-tenant-20261110' / 'v2'
+    return {k: (d / k).read_text() for k in ('01-pre.sql.readonly', '02-install.sql.review', '03-post.sql.readonly', '04-rollback-deny.sql.review')}
+
+def _rv2_ctx(uid):
+    claims = json.dumps({'sub': uid, 'role': 'authenticated', 'iat': 1, 'exp': 4102444800}).replace("'", "''")
+    return f"SELECT set_config('request.jwt.claim.sub','{uid}',true);SELECT set_config('request.jwt.claims','{claims}',true);SET LOCAL ROLE authenticated;"
+
+def _rv2_call(B, uid, partner='NULL', mutation=''):
+    r = B.run_raw(f"BEGIN;{mutation}{_rv2_ctx(uid)}SELECT public.rpc_b2b_revenue_forecast_tenant_v2({partner});ROLLBACK;")
+    return r, (json.loads(_last_line(r)) if r.returncode == 0 else None)
+
+def _rv2_tot(d): return round(float(d['confirmed_titles']['total_aberto']) + float(d['forecast_residual']['amount']), 2)
+
+def revenue_v2_phase(B, Q, OUT, phase, order_id, receivable, state):
+    out = OUT / 'revenue-tenant-v2'; out.mkdir(exist_ok=True)
+    files = _rv2_files(); cases = state.setdefault('cases', [])
+    def rec(name, ok, **detail):
+        cases.append(dict(phase=phase, case=name, ok=bool(ok), **detail)); assert ok, cases[-1]
+    if phase == 'A':
+        for k, v in files.items(): (out / k).write_text(v)
+        r, _ = _rv2_call(B, Q.UFIN); rec('before-install-absent', r.returncode != 0 and 'does not exist' in r.stderr)
+        B.sql("GRANT EXECUTE ON FUNCTION platform_private.b2b_allocation_money_row(uuid) TO authenticated WITH GRANT OPTION;")
+        try: r = B.run_raw(files['01-pre.sql.readonly']); rec('pre-dep-grant-option-drift', r.returncode != 0 and 'REVENUE_V2_DEP_DRIFT' in r.stderr and 'b2b_allocation_money_row' in r.stderr)
+        finally: B.sql("REVOKE ALL ON FUNCTION platform_private.b2b_allocation_money_row(uuid) FROM authenticated CASCADE;")
+        r = B.run_raw(files['01-pre.sql.readonly']); rec('pre', r.returncode == 0 and 'REVENUE_V2_PRE_OK' in r.stderr, stderr=r.stderr.strip()[-300:])
+        r = B.run_raw(files['02-install.sql.review']); rec('install', r.returncode == 0, stderr=r.stderr.strip()[-300:])
+        r = B.run_raw(files['03-post.sql.readonly']); rec('post', r.returncode == 0 and 'REVENUE_V2_POST_OK' in r.stderr, stderr=r.stderr.strip()[-300:])
+        r = B.run_raw(files['02-install.sql.review']); rec('reinstall-denied', r.returncode != 0 and 'REVENUE_V2_TARGET_PREEXISTS' in r.stderr)
+    r, d = _rv2_call(B, Q.UFIN); rec('financeiro-positive', d is not None and d['contract'] == 'B2B_REVENUE_FORECAST_TENANT_V2', result=d)
+    r2, d2 = _rv2_call(B, Q.UFIN); rec('replay-stable', d2 == d)
+    f = forecast_row(B, order_id)
+    state[phase] = d
+    if phase == 'A':
+        rec('residual-order-9-live', float(f['residual_amount']) == 9)
+        base = d['confirmed_titles']['installments']
+        ref = f"(SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{receivable}' ORDER BY installment_number LIMIT 1)"
+        rep = "SET LOCAL session_replication_role=replica;"  # injeção de falha declarada, só em transação revertida
+        def fault(name, mutation, expect):
+            r, x = _rv2_call(B, Q.UFIN, mutation=rep + mutation + "SET LOCAL session_replication_role=origin;")
+            if r.returncode != 0:
+                rec(name, expect == 'denied_by_schema' or ('violates' in r.stderr), stderr=r.stderr.strip()[-300:]); return
+            u = x['titles_unavailable']
+            rec(name, x['confirmed_titles']['installments'] == base - 1 and float(x['confirmed_titles']['total_aberto']) == round(float(d['confirmed_titles']['total_aberto']) - 9, 2)
+                and (expect == 'excluded' or u[expect] == d['titles_unavailable'][expect] + 1), result=x)
+        fault('legacy-forged-no-allocation', f"DELETE FROM platform_private.b2b_allocation_reversals WHERE document_id IN (SELECT document_id FROM platform_private.b2b_document_allocations WHERE receivable_id='{receivable}');DELETE FROM platform_private.b2b_document_allocations WHERE receivable_id='{receivable}';", 'unproven')
+        fault('no-nf-document-not-authorized', f"UPDATE platform_private.b2b_authorized_documents SET state='CANCELED_LOCAL_FAULT' WHERE id=(SELECT document_id FROM platform_private.b2b_document_allocations WHERE receivable_id='{receivable}');", 'unproven')
+        fault('snapshot-due-divergent', f"UPDATE public.accounts_receivable_installments SET due_date=due_date+1 WHERE id={ref};", 'unproven')
+        fault('received-exceeds-inconsistent', f"UPDATE public.accounts_receivable_installments SET received_amount=original_amount+1 WHERE id={ref};", 'inconsistent')
+        fault('paid-with-balance-inconsistent', f"UPDATE public.accounts_receivable_installments SET status='PAID' WHERE id={ref};", 'inconsistent')
+        fault('allocation-reversed-inconsistent', f"INSERT INTO platform_private.b2b_allocation_reversals(document_id,source_digest) SELECT document_id,'LOCAL-FAULT' FROM platform_private.b2b_document_allocations WHERE receivable_id='{receivable}';", 'inconsistent')
+        fault('unknown-status-inconsistent', f"ALTER TABLE public.accounts_receivable_installments DROP CONSTRAINT accounts_receivable_installments_status_check;UPDATE public.accounts_receivable_installments SET status='LOCAL_UNKNOWN' WHERE id={ref};", 'inconsistent')
+        fault('null-due-not-confirmed', f"ALTER TABLE public.accounts_receivable_installments ALTER COLUMN due_date DROP NOT NULL;UPDATE public.accounts_receivable_installments SET due_date=NULL WHERE id={ref};", 'unproven')
+        fault('title-canceled-excluded', f"UPDATE public.accounts_receivable SET status='CANCELED' WHERE id='{receivable}';", 'excluded')
+        fault('forecast-partner-divergent', f"UPDATE platform_private.b2b_financial_forecasts SET partner_id=(SELECT id FROM public.partner_accounts WHERE id<>'{Q.P}' AND commercial_owner_organization_id IS DISTINCT FROM (SELECT commercial_owner_organization_id FROM public.partner_accounts WHERE id='{Q.P}') LIMIT 1) WHERE order_id='{order_id}';", 'inconsistent')
+        r, x = _rv2_call(B, Q.UFIN, mutation=rep + f"UPDATE platform_private.b2b_financial_forecasts SET organization_id=gen_random_uuid() WHERE order_id='{order_id}';SET LOCAL session_replication_role=origin;")
+        rec('forecast-issuer-divergent-not-summed', x is not None and round(float(x['forecast_residual']['amount']), 2) == round(float(d['forecast_residual']['amount']) - 9, 2) and x['forecast_residual']['inconsistent'] == d['forecast_residual']['inconsistent'] + 1, result=x)
+        r, x = _rv2_call(B, Q.UADMF); rec('foreign-admin-isolated', x is not None and x['organization_id'] != d['organization_id'], result=x); state['foreign'] = x
+        r, _ = _rv2_call(B, Q.UADMF, partner=f"'{Q.P}'"); rec('foreign-partner-filter-denied', r.returncode != 0 and 'B2B_REVENUE_FORECAST_DENIED' in r.stderr)
+        r, _ = _rv2_call(B, Q.UBC); rec('buyer-denied', r.returncode != 0 and 'B2B_REVENUE_FORECAST_DENIED' in r.stderr)
+        r, x = _rv2_call(B, Q.UFIN, partner=f"'{Q.P}'"); rec('own-partner-filter', x is not None and x['partner_id'] == Q.P)
+        r, _ = _rv2_call(B, Q.UFIN, mutation=f"UPDATE public.saas_features SET active=false WHERE key='contas_receber';"); rec('feature-revoked-denied', r.returncode != 0 and 'B2B_REVENUE_FORECAST_DENIED' in r.stderr)
+        r, _ = _rv2_call(B, Q.UFIN, mutation=rep + f"UPDATE public.profiles SET ativo=false WHERE user_id='{Q.UFIN}';SET LOCAL session_replication_role=origin;"); rec('inactive-profile-denied', r.returncode != 0)
+        r, x = _rv2_call(B, Q.UFIN, mutation=rep + f"DELETE FROM public.user_roles WHERE user_id='{Q.UFIN}' AND role='financeiro';INSERT INTO public.user_roles(user_id,role) VALUES('{Q.UFIN}','gestor');SET LOCAL session_replication_role=origin;")
+        rec('gestor-own-positive', x is not None and x['confirmed_titles'] == d['confirmed_titles'])
+        for role in ('anon', 'service_role'):
+            r = B.run_raw(f"SET ROLE {role};SELECT public.rpc_b2b_revenue_forecast_tenant_v2(NULL);"); rec(role + '-no-execute', r.returncode != 0 and 'permission denied' in r.stderr)
+        r = B.run_raw(f"BEGIN;{_rv2_ctx(Q.UFIN)}SELECT platform_private.b2b_proven_money_row_internal(gen_random_uuid(),gen_random_uuid());ROLLBACK;"); rec('private-helper-direct-denied', r.returncode != 0 and 'permission denied' in r.stderr)
+    elif phase == 'B':
+        a = state['A']; rec('nf2-invariant-no-double-count', _rv2_tot(d) == _rv2_tot(a) and round(float(d['confirmed_titles']['total_aberto']) - float(a['confirmed_titles']['total_aberto']), 2) == 9
+            and round(float(a['forecast_residual']['amount']) - float(d['forecast_residual']['amount']), 2) == 9, a=a, b=d)
+        r, x = _rv2_call(B, Q.UADMF); rec('foreign-unchanged-by-arbio-nf', x == state['foreign'])
+    elif phase == 'C':
+        b = state['B']; rec('payment-9-reduces-titles-only', round(float(b['confirmed_titles']['total_aberto']) - float(d['confirmed_titles']['total_aberto']), 2) == 9
+            and d['forecast_residual'] == b['forecast_residual'] and d['titles_unavailable'] == b['titles_unavailable'], b=b, c=d)
+        r = B.run_raw(files['04-rollback-deny.sql.review']); rec('rollback-deny', r.returncode == 0, stderr=r.stderr.strip()[-300:])
+        r, _ = _rv2_call(B, Q.UFIN); rec('after-rollback-denied', r.returncode != 0 and 'permission denied' in r.stderr)
+        m = B.last("SELECT md5(pg_get_functiondef('public.rpc_b2b_revenue_forecast_tenant_v2(uuid)'::regprocedure));")
+        from pathlib import Path as _P
+        expected = json.loads((_P(__file__).resolve().parents[4] / 'b2b-revenue-forecast-tenant-20261110' / 'v2' / 'build-manifest.json').read_text())['reader_md5']
+        rec('body-retained-after-rollback', m == expected, md5=m)
+        r = B.run_raw(files['04-rollback-deny.sql.review']); rec('rollback-rerun-fails-closed', r.returncode != 0)
+        (out / 'cases.json').write_text(json.dumps(dict(cases=cases, passed=sum(c['ok'] for c in cases), total=len(cases), synthetic_auth=True, hosted=False,
+            fault_injection='session_replication_role=replica e DDL apenas dentro de transações revertidas, para simular dados corrompidos; nunca para aprovar caminho positivo'), indent=1, default=str) + '\n')
+    return d
