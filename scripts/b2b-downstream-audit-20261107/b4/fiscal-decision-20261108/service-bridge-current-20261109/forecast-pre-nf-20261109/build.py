@@ -233,13 +233,17 @@ BEGIN
  IF NOT FOUND THEN RAISE EXCEPTION 'B2B_FORECAST_FISCAL_ALLOCATION_UNPROVEN' USING ERRCODE='42501';END IF;
  SELECT * INTO f FROM platform_private.b2b_financial_forecasts WHERE order_id=a.order_id FOR UPDATE;
  IF NOT FOUND THEN RETURN jsonb_build_object('forecast_found',false,'legacy_order',true);END IF;
- IF f.state IN ('cancelado_antes_nf','cancelado_residual') THEN
-  RAISE EXCEPTION 'B2B_FORECAST_RESIDUAL_CANCELED' USING ERRCODE='PT409';END IF;
  -- Only the existing fiscal bridge owns this transaction permit. Payloads,
  -- service_role and caller-supplied IDs cannot attest authorization or tenant.
+ IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_fiscal_service_permits p
+  WHERE p.transaction_id=txid_current() AND p.document_id=p_document AND p.invoice_id=p_document
+   AND p.order_id=a.order_id AND p.order_id=f.order_id AND p.organization_id=f.organization_id AND p.partner_id=f.partner_id) THEN
+  RAISE EXCEPTION 'B2B_FISCAL_SERVICE_PERMIT_REQUIRED' USING ERRCODE='42501';END IF;
  PERFORM platform_private.b2b_integration_dependencies();
  IF EXISTS(SELECT 1 FROM platform_private.b2b_financial_forecast_events WHERE forecast_id=f.id AND event_type='FISCAL_CONFIRMED' AND event_reference=p_document::text) THEN
   RETURN jsonb_build_object('forecast_id',f.id,'state',f.state,'version',f.version,'replayed',true);END IF;
+ IF f.state IN ('cancelado_antes_nf','cancelado_residual') THEN
+  RAISE EXCEPTION 'B2B_FORECAST_RESIDUAL_CANCELED' USING ERRCODE='PT409';END IF;
  residual:=platform_private.b2b_order_residual(a.order_id);new_state:=CASE WHEN residual=0 THEN 'faturado_total' ELSE 'faturado_parcial' END;
  UPDATE platform_private.b2b_financial_forecasts SET residual_amount=residual,state=new_state,fiscal_intent_id=NULL,last_error_code=NULL,version=version+1,updated_at=now() WHERE id=f.id;
  INSERT INTO platform_private.b2b_financial_forecast_events(forecast_id,event_type,event_reference,payload)

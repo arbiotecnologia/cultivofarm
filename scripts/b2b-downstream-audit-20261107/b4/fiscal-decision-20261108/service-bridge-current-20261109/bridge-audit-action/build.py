@@ -32,6 +32,22 @@ def main():
     assert md5(original) == "8905212e276f6bb43be32423ee48abc8"
     assert original.count(OLD) == 1
     candidate = original.replace(OLD, NEW)
+    # The canonical bridge already locks the invoice/transmission. Serialize the
+    # order and its forecast before B4 allocation; cancellation never creates a
+    # new title, while an already-confirmed NF may replay without losing history.
+    order_lock = " SELECT * INTO po FROM public.partner_orders WHERE id=inv.partner_order_id;"
+    assert candidate.count(order_lock) == 1
+    candidate = candidate.replace(order_lock, order_lock[:-1] + " FOR UPDATE;")
+    allocation_guard = """ PERFORM 1 FROM platform_private.b2b_financial_forecasts WHERE order_id=po.id FOR UPDATE;
+ IF EXISTS(SELECT 1 FROM platform_private.b2b_financial_forecasts f WHERE f.order_id=po.id
+  AND f.state IN ('cancelado_antes_nf','cancelado_residual')
+  AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_financial_forecast_events e
+    WHERE e.forecast_id=f.id AND e.event_type='FISCAL_CONFIRMED' AND e.event_reference=inv.id::text)) THEN
+  RAISE EXCEPTION 'B2B_FORECAST_RESIDUAL_CANCELED' USING ERRCODE='PT409';END IF;
+"""
+    permit_anchor = " INSERT INTO platform_private.b2b_fiscal_service_permits(transaction_id,invoice_id,document_id,organization_id,order_id,partner_id)"
+    assert candidate.count(permit_anchor) == 1
+    candidate = candidate.replace(permit_anchor, allocation_guard + permit_anchor)
     allocation_anchor = " result:=platform_private.b2b_allocate_document(inv.id);\n UPDATE public.fiscal_invoices"
     allocation_replacement = " result:=platform_private.b2b_allocate_document(inv.id);\n PERFORM platform_private.b2b_financial_forecast_reconcile_fiscal_v1(inv.id,(result->>'receivable_id')::uuid);\n UPDATE public.fiscal_invoices"
     assert candidate.count(allocation_anchor) == 1
