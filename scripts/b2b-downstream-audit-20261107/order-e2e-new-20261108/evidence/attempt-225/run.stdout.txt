@@ -1,0 +1,190 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.1s
+CHECKPOINT sql_calls=100 elapsed=3.8s
+CHECKPOINT sql_calls=200 elapsed=5.4s
+CHECKPOINT sql_calls=300 elapsed=7.1s
+CHECKPOINT sql_calls=400 elapsed=8.8s
+CHECKPOINT sql_calls=500 elapsed=10.8s
+CHECKPOINT sql_calls=600 elapsed=12.7s
+CHECKPOINT sql_calls=700 elapsed=14.4s
+CHECKPOINT sql_calls=800 elapsed=16.1s
+CHECKPOINT sql_calls=900 elapsed=17.9s
+CHECKPOINT sql_calls=1000 elapsed=19.8s
+CHECKPOINT sql_calls=1100 elapsed=21.5s
+CHECKPOINT sql_calls=1200 elapsed=23.2s
+CHECKPOINT sql_calls=1300 elapsed=25.1s
+CHECKPOINT sql_calls=1400 elapsed=27.0s
+CHECKPOINT sql_calls=1500 elapsed=29.2s
+CHECKPOINT sql_calls=1600 elapsed=31.1s
+CHECKPOINT sql_calls=1700 elapsed=32.8s
+CHECKPOINT sql_calls=1800 elapsed=34.5s
+CHECKPOINT sql_calls=1900 elapsed=35.9s
+CHECKPOINT sql_calls=2000 elapsed=37.5s
+CHECKPOINT sql_calls=2100 elapsed=38.9s
+CHECKPOINT sql_calls=2200 elapsed=40.4s
+CHECKPOINT sql_calls=2300 elapsed=41.8s
+CHECKPOINT sql_calls=2400 elapsed=43.3s
+CHECKPOINT sql_calls=2500 elapsed=44.9s
+CHECKPOINT sql_calls=2600 elapsed=46.4s
+CHECKPOINT sql_calls=2700 elapsed=47.9s
+CHECKPOINT sql_calls=2800 elapsed=49.4s
+CHECKPOINT sql_calls=2900 elapsed=50.9s
+CHECKPOINT sql_calls=3000 elapsed=52.4s
+CHECKPOINT sql_calls=3100 elapsed=54.1s
+CHECKPOINT sql_calls=3200 elapsed=55.8s
+CHECKPOINT sql_calls=3300 elapsed=57.5s
+CHECKPOINT sql_calls=3400 elapsed=59.2s
+CHECKPOINT sql_calls=3500 elapsed=61.0s
+CHECKPOINT sql_calls=3600 elapsed=63.0s
+CHECKPOINT sql_calls=3700 elapsed=65.1s
+CHECKPOINT sql_calls=3800 elapsed=66.9s
+CHECKPOINT sql_calls=3900 elapsed=68.7s
+CHECKPOINT sql_calls=4000 elapsed=70.7s
+CHECKPOINT sql_calls=4100 elapsed=72.5s
+CHECKPOINT sql_calls=4200 elapsed=74.4s
+CHECKPOINT sql_calls=4300 elapsed=76.4s
+CHECKPOINT sql_calls=4400 elapsed=78.3s
+CHECKPOINT sql_calls=4500 elapsed=80.1s
+CHECKPOINT sql_calls=4600 elapsed=81.8s
+CHECKPOINT sql_calls=4700 elapsed=83.5s
+CHECKPOINT sql_calls=4800 elapsed=85.2s
+CHECKPOINT sql_calls=4900 elapsed=87.0s
+CHECKPOINT sql_calls=5000 elapsed=88.5s
+CHECKPOINT sql_calls=5100 elapsed=90.1s
+CHECKPOINT sql_calls=5200 elapsed=91.7s
+CHECKPOINT sql_calls=5300 elapsed=93.4s
+CHECKPOINT sql_calls=5400 elapsed=95.4s
+CHECKPOINT sql_calls=5500 elapsed=97.3s
+CHECKPOINT sql_calls=5600 elapsed=99.6s
+CHECKPOINT sql_calls=5700 elapsed=102.1s
+CHECKPOINT sql_calls=5800 elapsed=104.0s
+CHECKPOINT sql_calls=5900 elapsed=106.0s
+CHECKPOINT sql_calls=6000 elapsed=108.3s
+CHECKPOINT sql_calls=6100 elapsed=110.1s
+CHECKPOINT sql_calls=6200 elapsed=111.9s
+CHECKPOINT sql_calls=6300 elapsed=113.8s
+CHECKPOINT sql_calls=6400 elapsed=115.5s
+CHECKPOINT sql_calls=6500 elapsed=117.4s
+CHECKPOINT sql_calls=6600 elapsed=119.6s
+CHECKPOINT sql_calls=6700 elapsed=122.1s
+CHECKPOINT sql_calls=6800 elapsed=124.6s
+CHECKPOINT sql_calls=6900 elapsed=126.5s
+CHECKPOINT sql_calls=7000 elapsed=128.4s
+CHECKPOINT sql_calls=7100 elapsed=130.1s
+CHECKPOINT sql_calls=7200 elapsed=131.8s
+CHECKPOINT sql_calls=7300 elapsed=133.6s
+CHECKPOINT sql_calls=7400 elapsed=135.7s
+CHECKPOINT sql_calls=7500 elapsed=137.7s
+CHECKPOINT sql_calls=7600 elapsed=139.5s
+CHECKPOINT sql_calls=7700 elapsed=141.1s
+CHECKPOINT sql_calls=7800 elapsed=143.0s
+CHECKPOINT sql_calls=7900 elapsed=144.7s
+CHECKPOINT sql_calls=8000 elapsed=146.5s
+CHECKPOINT sql_calls=8100 elapsed=148.2s
+CHECKPOINT sql_calls=8200 elapsed=149.8s
+CHECKPOINT sql_calls=8300 elapsed=151.5s
+CHECKPOINT sql_calls=8400 elapsed=153.2s
+CHECKPOINT sql_calls=8500 elapsed=155.2s
+CHECKPOINT sql_calls=8600 elapsed=157.2s
+CHECKPOINT sql_calls=8700 elapsed=159.0s
+CHECKPOINT sql_calls=8800 elapsed=160.9s
+CHECKPOINT sql_calls=8900 elapsed=162.7s
+CHECKPOINT sql_calls=9000 elapsed=164.6s
+CHECKPOINT sql_calls=9100 elapsed=166.3s
+CHECKPOINT sql_calls=9200 elapsed=168.2s
+CHECKPOINT sql_calls=9300 elapsed=170.0s
+CHECKPOINT sql_calls=9400 elapsed=171.8s
+CHECKPOINT sql_calls=9500 elapsed=173.6s
+CHECKPOINT sql_calls=9600 elapsed=175.4s
+CHECKPOINT sql_calls=9700 elapsed=177.2s
+CHECKPOINT sql_calls=9800 elapsed=179.3s
+CHECKPOINT sql_calls=9900 elapsed=181.7s
+CHECKPOINT sql_calls=10000 elapsed=183.4s
+CHECKPOINT sql_calls=10100 elapsed=185.2s
+CHECKPOINT sql_calls=10200 elapsed=187.1s
+CHECKPOINT sql_calls=10300 elapsed=189.2s
+CHECKPOINT sql_calls=10400 elapsed=190.9s
+CHECKPOINT sql_calls=10500 elapsed=192.7s
+CHECKPOINT sql_calls=10600 elapsed=194.6s
+PASS reported applied composition including isolated install closure release restored without regeneration
+PASS all ten real downstream tables have EXISTING nonempty sentinels before envase
+PASS existing full-row downstream sentinels seeded in disposable fixture only
+NEW_PHYSICAL_BOOT_OK
+PASS baseline LIVE integral: 20 corpos, 120 triggers, 17 ACLs e 4 dependências medidas
+CHECKPOINT sql_calls=10700 elapsed=201.3s
+{"candidate_sha256": "93aa96092d2e7210bfc8ae7e6741db41bd439c1ac737fc8301248ce1ff9dabbf", "functions": 11, "enabled_by_default": false}
+{"candidate_sha256": "93aa96092d2e7210bfc8ae7e6741db41bd439c1ac737fc8301248ce1ff9dabbf", "functions": 11, "enabled_by_default": false}
+PASS quimico kg: compra/entrada canônica cria lote e 3 UN sem bioreator, CQ ou envase
+PASS B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)
+PASS B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)
+PASS B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)
+PASS B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)
+PASS B3 corpo atual pinado: platform_private.h15_actor_organization()
+PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+PASS B3 01-pre.sql.readonly
+PASS B3 02-install.sql.review
+PASS B3 03-post.sql.readonly
+CHECKPOINT sql_calls=10800 elapsed=209.2s
+CHECKPOINT sql_calls=10900 elapsed=211.9s
+CHECKPOINT sql_calls=11000 elapsed=214.6s
+CHECKPOINT sql_calls=11100 elapsed=217.1s
+CHECKPOINT sql_calls=11200 elapsed=219.9s
+CHECKPOINT sql_calls=11300 elapsed=222.2s
+CHECKPOINT sql_calls=11400 elapsed=224.8s
+CHECKPOINT sql_calls=11500 elapsed=226.7s
+CHECKPOINT sql_calls=11600 elapsed=228.7s
+CHECKPOINT sql_calls=11700 elapsed=238.1s
+REVIEW70 PASS two_items_only_one_os_and_delivery
+CHECKPOINT sql_calls=11800 elapsed=249.9s
+REVIEW70 PASS quantity_three_delivery_one_remainder_unreserved
+REVIEW70 PASS cancelled_partial_does_not_complete
+CHECKPOINT sql_calls=11900 elapsed=261.3s
+REVIEW70 PASS overdelivery_cannot_complete_or_rewrite_snapshots
+REVIEW70 PASS last_two_deliveries_concurrent
+REVIEW70 PASS create_wait_revocation_role
+REVIEW70 PASS create_wait_revocation_profile
+REVIEW70 PASS create_wait_revocation_tenant
+CHECKPOINT sql_calls=12000 elapsed=273.7s
+REVIEW70 PASS create_wait_revocation_gate
+REVIEW70 PASS replay_wait_revocation_role
+REVIEW70 PASS replay_wait_revocation_profile
+REVIEW70 PASS replay_wait_revocation_tenant
+REVIEW70 PASS replay_wait_revocation_gate
+PASS quimico kg: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
+PILOT_PASS ARBio real actor valid role outside allowlist cannot read
+PILOT_PASS ARBio real actor outside allowlist cannot create OS
+PILOT_PASS ARBio real actor outside allowlist cannot purchase finished product
+PILOT_PASS other organization feature ON role valid remains denied
+PILOT_PASS other organization cannot purchase using ARBio product
+PILOT_PASS authenticated cannot write server allowlist
+PILOT_PASS client GUC cannot substitute allowlist authority
+PILOT_PASS allowlisted ARBio synthetic order can be read
+PILOT_PASS read grant alone cannot create OS
+PILOT_PASS allowlisted OS create and exact replay succeed without duplicate
+PILOT_PASS allowlisted physical purchase uses existing receipt and real stock motor
+PILOT_PASS reserve uses exact allowlisted references and canonical returned split stock
+PILOT_PASS delivery create requires its own operation grant
+CHECKPOINT sql_calls=12100 elapsed=284.6s
+PILOT_PASS allowlisted delivery create succeeds
+PILOT_PASS proof before proof grant is denied
+PILOT_PASS send before send grant is denied
+PILOT_PASS exact delivery send grant succeeds
+PILOT_PASS revoked send grant blocks exact replay
+PILOT_PASS proof grant is distinct and succeeds after explicit provisioning
+PILOT_PASS confirm before confirm grant is denied
+PILOT_PASS full scoped synthetic ARBio flow confirms physically
+PILOT_PASS expired OS grant blocks exact replay
+PILOT_PASS revoked OS grant blocks exact replay after expiry restored
+PILOT_PASS new explicit valid grant restores replay without changing history
+PILOT_PASS revoked confirm grant blocks terminal exact replay
+PILOT_PASS expired read grant denies reader
+PILOT_PASS two concurrent connections produce one OS and one idempotent receipt
+PILOT_PASS transaction begun before expiry and unlocked after expiry is denied at final authorization
+PILOT_PASS concurrent revoke confirmed before final authorization denies writer without effects
+CHECKPOINT sql_calls=12200 elapsed=295.1s
+PILOT_PASS gate OFF confirmed while writer waits on grant lock denies final authorization without effects
+PILOT_PASS revoke waits on the same allowlist row after final authorization and confirms after writer commit
+PILOT_PASS gate OFF waits for an already authorized writer and confirms only after its commit
+PILOT_PASS master switch OFF remains fail closed even with valid grants
+PILOT_PASS allowlist and receipts retained after gates OFF
+PILOT_PASS no financial fiscal or communication downstream effects

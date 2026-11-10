@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-b34beqd9/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 512, in main
+    rc=RC.run(B,Review70.Review,Q,A,choice,OUT,manual)
+  File "/tmp/new-order-e2e-b34beqd9/project/scripts/b2b-downstream-audit-20261107/resale-delivery-capability-20261110/mirror_tests.py", line 120, in run
+    rep = json.loads(B.last(reserve_sql(k1))); ok("CANDIDATE valid grant: same receipt, no new movement", rep["replay"] is True and rep["itens"] == first["itens"] and moves() == m1, rep)
+                     ~~~~~~^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-b34beqd9/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 60, in last
+    return sql(statement).splitlines()[-1]
+           ~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-b34beqd9/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 56, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-b34beqd9/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  RESALE_PILOT_SCOPE_DENIED
+CONTEXT:  PL/pgSQL function public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) line 50 at RAISE
+

@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-9nqlu2su/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 512, in main
+    rc=RC.run(B,Review70.Review,Q,A,choice,OUT,manual)
+  File "/tmp/new-order-e2e-9nqlu2su/project/scripts/b2b-downstream-audit-20261107/resale-delivery-capability-20261110/mirror_tests.py", line 103, in run
+    r = B.run_raw(reserve_sql(k1)); ok("REPRODUCED: LIVE returns receipt with gates closed", r.returncode == 0 and '"replay": true' in r.stdout, r.stderr[-300:])
+                                    ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-9nqlu2su/project/scripts/b2b-downstream-audit-20261107/resale-delivery-capability-20261110/mirror_tests.py", line 18, in ok
+    assert cond, (name, detail)
+           ^^^^
+AssertionError: ('REPRODUCED: LIVE returns receipt with gates closed', 'unction platform_private.stock_motor_item(uuid,text,jsonb) line 13 at PERFORM\nSQL statement "SELECT platform_private.stock_motor_item(v_id,\'reserva\',v_payload)"\nPL/pgSQL function public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) line 27 at PERFORM\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n')

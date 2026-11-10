@@ -49,7 +49,8 @@ BEGIN
   FOR v_item IN SELECT value FROM jsonb_array_elements(v_items) LOOP
    v_id:=(v_item->>'item_id')::uuid;
    PERFORM platform_private.stock_motor_item(v_id,'reserva',v_payload);
-   IF NOT EXISTS(SELECT 1 FROM public.estoque_produto s WHERE s.id=v_id AND s.organization_id=v_org) THEN RAISE EXCEPTION 'ESTQ_REPLAY_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+   -- Tenant real do estoque = lote (estoque_produto não tem organization_id).
+   IF NOT EXISTS(SELECT 1 FROM public.estoque_produto s JOIN public.lotes l ON l.id=s.lote_id AND l.organization_id=v_org WHERE s.id=v_id) THEN RAISE EXCEPTION 'ESTQ_REPLAY_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
    IF EXISTS(SELECT 1 FROM public.estoque_produto s WHERE s.id=v_id AND s.origem_estoque IS NOT NULL
      AND (CASE v_tipo
        WHEN 'b2b' THEN platform_private.resale_pilot_scope_v1('b2b_resale','reserve',v_actor,v_org,v_partner,v_order,(SELECT os.partner_order_item_id FROM public.ordens_servico os WHERE os.id=p_os_id AND os.organization_id=v_org),s.produto_id,s.id,NULL)

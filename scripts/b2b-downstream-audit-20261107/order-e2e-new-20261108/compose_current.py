@@ -506,6 +506,14 @@ def main():
   pilot_out=Pilot.install(B,OUT)
   PilotTests=load('pilot_containment_tests',H/'test_pilot_containment.py')
   pilot_results=PilotTests.run(B,Review70.Review,Q,A,choice,pilot_out)
+  if os.environ.get('NEW_E2E_RESALE_CAP')=='1':
+   # Focused branch: capability v2 + reserve-receipt revalidation on the real composed mirror, then stop.
+   RC=load('resale_cap_mirror',ROOT/'scripts/b2b-downstream-audit-20261107/resale-delivery-capability-20261110/mirror_tests.py')
+   rc=RC.run(B,Review70.Review,Q,A,choice,OUT,manual)
+   checks.append(dict(test='resale capability v2 and reserve receipt post-wait revalidation on composed mirror',status='PASS' if all(x['status'] in ('PASS','NOT_RUN') for x in rc) else 'FAIL',checks=len(rc),not_run=[x['test'] for x in rc if x['status']=='NOT_RUN']))
+   triggers38.assert_and_write(B,ROOT,OUT,'after-resale-cap')
+   checks.append(dict(test='38 captured real triggers unchanged after resale capability branch',status='PASS'))
+   return 0
   checks.append(dict(test='mandatory ARBio actor org exact synthetic references scoped pilot with cross tenant denial expiry revocation replay and real concurrency',status='PASS',checks=len(pilot_results),hosted=False))
   B.sql((endpoint_out/'04-rollback-deny.sql.review').read_text())
   after_rollback=B.run_raw(resale_call(Q.UADM,'resale-after-rollback-0001'))

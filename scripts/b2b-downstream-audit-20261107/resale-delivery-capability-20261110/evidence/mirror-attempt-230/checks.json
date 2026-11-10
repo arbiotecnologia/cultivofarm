@@ -1,0 +1,310 @@
+[
+ {
+  "test": "os_operational aligned to frozen production 61 artifact with ACL unchanged",
+  "status": "PASS",
+  "detail": "21110263f68c54278e0874d677cd0418"
+ },
+ {
+  "test": "mirror bodies equal LIVE pins (delivery_actor/fn_estoque_pode_operar/os_operational/scope/reservar)",
+  "status": "PASS",
+  "detail": {
+   "platform_private.delivery_actor_20261030(text)": "c6da1f5d9581a0c290e5e27e4605682c",
+   "public.fn_estoque_pode_operar(uuid,text)": "d0d1e37b39e6f9f814c832ec63a540dd",
+   "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)": "7cd8ee22794bf57e6592867259c9397e",
+   "platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)": "63f49feea167f6865fd7840cde7dc63b",
+   "public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb)": "3e0dc7c48ab28f4402699b234476aa8a"
+  }
+ },
+ {
+  "test": "real estoque_produto has no organization_id; lotes has it",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "LIVE first reserve receipt",
+  "status": "PASS",
+  "detail": {
+   "ok": true,
+   "itens": [
+    "fe4844c1-96d6-43c6-a581-f977d4a2c544"
+   ],
+   "replay": false
+  }
+ },
+ {
+  "test": "REPRODUCED: LIVE returns receipt after revocation during proven wait",
+  "status": "PASS",
+  "detail": [
+   "{\"ok\": true, \"itens\": [\"fe4844c1-96d6-43c6-a581-f977d4a2c544\"], \"replay\": true}\n",
+   ""
+  ]
+ },
+ {
+  "test": "OBSERVED: LIVE with gates closed already denies BEFORE the receipt lock (real motor pre-check); gap is post-wait only",
+  "status": "PASS",
+  "detail": "ERROR:  42501: ESTQ_REFERENCE_FORBIDDEN"
+ },
+ {
+  "test": "reserve PRE PASS",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "reserve POST PASS",
+  "status": "PASS",
+  "detail": "41dd61276165e341c79353ad00f0d54d"
+ },
+ {
+  "test": "reserve install rerun refused",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "CANDIDATE gate closed: receipt denied 42501",
+  "status": "PASS",
+  "detail": "atement \"SELECT platform_private.stock_motor_refs(p_item,v_item.lote_id,v_org,p_payload)\"\nPL/pgSQL function platform_private.stock_motor_item(uuid,text,jsonb) line 13 at PERFORM\nSQL statement \"SELECT platform_private.stock_motor_item(v_id,'reserva',v_payload)\"\nPL/pgSQL function public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) line 27 at PERFORM\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+ },
+ {
+  "test": "CANDIDATE revoked grant: receipt denied",
+  "status": "PASS",
+  "detail": "ERROR:  42501: RESALE_PILOT_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) line 50 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+ },
+ {
+  "test": "CANDIDATE valid grant: same receipt, no new movement",
+  "status": "PASS",
+  "detail": {
+   "ok": true,
+   "itens": [
+    "fe4844c1-96d6-43c6-a581-f977d4a2c544"
+   ],
+   "replay": true
+  }
+ },
+ {
+  "test": "CANDIDATE revocation during proven wait: receipt denied",
+  "status": "PASS",
+  "detail": "ERROR:  RESALE_PILOT_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) line 50 at RAISE\n"
+ },
+ {
+  "test": "CANDIDATE expired grant: receipt denied",
+  "status": "PASS",
+  "detail": "ERROR:  42501: RESALE_PILOT_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) line 50 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+ },
+ {
+  "test": "CANDIDATE foreign tenant same key denied",
+  "status": "PASS",
+  "detail": "ERROR:  42501: ESTQ_TENANT_FORBIDDEN\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_item(uuid,text,jsonb) line 8 at RAISE\nSQL statement \"SELECT platform_private.stock_motor_item(v_id,'reserva',v_payload)\"\nPL/pgSQL function public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) line 27 at PERFORM\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+ },
+ {
+  "test": "CANDIDATE new reservation path unchanged (split target id returned)",
+  "status": "PASS",
+  "detail": {
+   "ok": true,
+   "itens": [
+    "8f3e47ef-ab42-45c8-8926-1fe59bbcd6b8"
+   ],
+   "replay": false
+  }
+ },
+ {
+  "test": "no extra movement from any replay: second NEW reservation adds exactly the per-reservation count of the first",
+  "status": "PASS",
+  "detail": [
+   "2",
+   "4"
+  ]
+ },
+ {
+  "test": "biological (non finished) receipt preserved with gates closed",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "test": "cap PRE PASS",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "cap POST PASS",
+  "status": "PASS",
+  "detail": "662e9b916d9afa2a5f23f35baf76a5ba"
+ },
+ {
+  "test": "gate closed + valid grant: closed envelope without ids/org/os",
+  "status": "PASS",
+  "detail": {
+   "os_id": null,
+   "allowed": false,
+   "operation": "reserve",
+   "stock_ids": [],
+   "capability": "b2b_resale_delivery_v2",
+   "organization_id": null
+  }
+ },
+ {
+  "test": "PRODUCTION body: OS validity uses frozen header; linked-terms-approved synthetic order stays CLOSED (fail closed, no forcing)",
+  "status": "PASS",
+  "detail": "{\"payment_condition_status\": \"defined\", \"financial_approval_status\": \"pending\", \"requires_financial_approval\": true}"
+ },
+ {
+  "test": "phase B uses mirror linked-terms os_operational (INTERMEDIATE, NOT LIVE)",
+  "status": "PASS",
+  "detail": "21110263f68c54278e0874d677cd0418"
+ },
+ {
+  "test": "exact reserve grant: allowed with only requested ids",
+  "status": "PASS",
+  "detail": {
+   "os_id": "8c49e5a9-74de-4be1-a7e9-bd528b8923c8",
+   "allowed": true,
+   "operation": "reserve",
+   "stock_ids": [
+    "a27492aa-5ad4-494d-8a55-e0bdfc5ae133"
+   ],
+   "capability": "b2b_resale_delivery_v2",
+   "organization_id": "00000000-0000-0000-0000-000000000001"
+  }
+ },
+ {
+  "test": "no delivery_create grant: closed",
+  "status": "PASS",
+  "detail": {
+   "os_id": null,
+   "allowed": false,
+   "operation": "delivery_create",
+   "stock_ids": [],
+   "capability": "b2b_resale_delivery_v2",
+   "organization_id": null
+  }
+ },
+ {
+  "test": "foreign tenant admin: closed without ids",
+  "status": "PASS",
+  "detail": {
+   "os_id": null,
+   "allowed": false,
+   "operation": "reserve",
+   "stock_ids": [],
+   "capability": "b2b_resale_delivery_v2",
+   "organization_id": null
+  }
+ },
+ {
+  "test": "buyer: closed",
+  "status": "PASS",
+  "detail": {
+   "os_id": null,
+   "allowed": false,
+   "operation": "reserve",
+   "stock_ids": [],
+   "capability": "b2b_resale_delivery_v2",
+   "organization_id": null
+  }
+ },
+ {
+  "test": "unknown extra stock: closed, nothing echoed",
+  "status": "PASS",
+  "detail": {
+   "os_id": null,
+   "allowed": false,
+   "operation": "reserve",
+   "stock_ids": [],
+   "capability": "b2b_resale_delivery_v2",
+   "organization_id": null
+  }
+ },
+ {
+  "test": "biological stock not resale: closed",
+  "status": "PASS",
+  "detail": {
+   "os_id": null,
+   "allowed": false,
+   "operation": "reserve",
+   "stock_ids": [],
+   "capability": "b2b_resale_delivery_v2",
+   "organization_id": null
+  }
+ },
+ {
+  "test": "non-B2B OS: closed",
+  "status": "PASS",
+  "detail": {
+   "os_id": null,
+   "allowed": false,
+   "operation": "reserve",
+   "stock_ids": [],
+   "capability": "b2b_resale_delivery_v2",
+   "organization_id": null
+  }
+ },
+ {
+  "test": "duplicate ids: closed",
+  "status": "PASS",
+  "detail": {
+   "os_id": null,
+   "allowed": false,
+   "operation": "reserve",
+   "stock_ids": [],
+   "capability": "b2b_resale_delivery_v2",
+   "organization_id": null
+  }
+ },
+ {
+  "test": "revoked: closed",
+  "status": "PASS",
+  "detail": {
+   "os_id": null,
+   "allowed": false,
+   "operation": "reserve",
+   "stock_ids": [],
+   "capability": "b2b_resale_delivery_v2",
+   "organization_id": null
+  }
+ },
+ {
+  "test": "expired: closed",
+  "status": "PASS",
+  "detail": {
+   "os_id": null,
+   "allowed": false,
+   "operation": "reserve",
+   "stock_ids": [],
+   "capability": "b2b_resale_delivery_v2",
+   "organization_id": null
+  }
+ },
+ {
+  "test": "exact delivery_create grant: allowed",
+  "status": "PASS",
+  "detail": {
+   "os_id": "8c49e5a9-74de-4be1-a7e9-bd528b8923c8",
+   "allowed": true,
+   "operation": "delivery_create",
+   "stock_ids": [
+    "a27492aa-5ad4-494d-8a55-e0bdfc5ae133"
+   ],
+   "capability": "b2b_resale_delivery_v2",
+   "organization_id": "00000000-0000-0000-0000-000000000001"
+  }
+ },
+ {
+  "test": "capability writes nothing",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "anon/writers/helpers closed",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "cap rollback deny-only",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "reserve rollback deny-only keeps receipts and never restores vulnerable body",
+  "status": "PASS",
+  "detail": null
+ }
+]

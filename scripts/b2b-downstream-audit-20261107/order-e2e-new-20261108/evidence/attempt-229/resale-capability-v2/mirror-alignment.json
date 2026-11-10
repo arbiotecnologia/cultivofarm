@@ -1,0 +1,7 @@
+{
+ "function": "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)",
+ "mirror_generated_md5": "21110263f68c54278e0874d677cd0418",
+ "after_frozen_61_md5": "7cd8ee22794bf57e6592867259c9397e",
+ "acl_before": "{postgres=X/postgres}",
+ "acl_after": "{postgres=X/postgres}"
+}
