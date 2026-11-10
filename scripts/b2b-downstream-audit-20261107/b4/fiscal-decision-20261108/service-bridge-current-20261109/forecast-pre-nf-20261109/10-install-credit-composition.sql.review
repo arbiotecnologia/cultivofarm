@@ -7,7 +7,7 @@ DO $$ BEGIN
  IF to_regclass('platform_private.b2b_document_allocations') IS NULL OR to_regclass('platform_private.b2b_allocation_reversals') IS NULL THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_B4_MISSING';END IF;
 END$$;
 DO $guard$ DECLARE d record; BEGIN
- FOR d IN SELECT * FROM (VALUES ('public.fn_b2b_credit_exposure(uuid,numeric,uuid)','44e8768ff53d7fe5ff3b9f0889258946','postgres','578c00048ab38c285e229e11ff6211ec'),('platform_private.b2b_credit_balances(uuid,uuid)','9fbf08a16f6bcbec379945886c85c245','postgres','None'),('platform_private.b2b_order_residual(uuid)','93769163bfc7c72a4bbc722e62313179','postgres','None')) x(sig,body_md5,owner,acl_md5) LOOP
+ FOR d IN SELECT * FROM (VALUES ('public.fn_b2b_credit_exposure(uuid,numeric,uuid)','44e8768ff53d7fe5ff3b9f0889258946','postgres','578c00048ab38c285e229e11ff6211ec'),('platform_private.b2b_credit_balances(uuid,uuid)','9fbf08a16f6bcbec379945886c85c245','postgres',NULL),('platform_private.b2b_order_residual(uuid)','93769163bfc7c72a4bbc722e62313179','postgres',NULL)) x(sig,body_md5,owner,acl_md5) LOOP
   IF to_regprocedure(d.sig) IS NULL THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_INSTALL_PRE_MISSING:%',d.sig USING ERRCODE='42501'; END IF;
   IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_INSTALL_PRE_BODY:%',d.sig USING ERRCODE='42501'; END IF;
   IF (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=d.sig::regprocedure) IS DISTINCT FROM d.owner THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_INSTALL_PRE_OWNER:%',d.sig USING ERRCODE='42501'; END IF;
@@ -100,7 +100,7 @@ BEGIN
   );
 END $function$;
 DO $guard$ DECLARE d record; BEGIN
- FOR d IN SELECT * FROM (VALUES ('public.fn_b2b_credit_exposure(uuid,numeric,uuid)','7d841856ba1e2dd34b0fa6491c4914b5','postgres','578c00048ab38c285e229e11ff6211ec'),('platform_private.b2b_credit_balances(uuid,uuid)','9fbf08a16f6bcbec379945886c85c245','postgres','None'),('platform_private.b2b_order_residual(uuid)','93769163bfc7c72a4bbc722e62313179','postgres','None')) x(sig,body_md5,owner,acl_md5) LOOP
+ FOR d IN SELECT * FROM (VALUES ('public.fn_b2b_credit_exposure(uuid,numeric,uuid)','7d841856ba1e2dd34b0fa6491c4914b5','postgres','578c00048ab38c285e229e11ff6211ec'),('platform_private.b2b_credit_balances(uuid,uuid)','9fbf08a16f6bcbec379945886c85c245','postgres',NULL),('platform_private.b2b_order_residual(uuid)','93769163bfc7c72a4bbc722e62313179','postgres',NULL)) x(sig,body_md5,owner,acl_md5) LOOP
   IF to_regprocedure(d.sig) IS NULL THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_INSTALL_POST_MISSING:%',d.sig USING ERRCODE='42501'; END IF;
   IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_INSTALL_POST_BODY:%',d.sig USING ERRCODE='42501'; END IF;
   IF (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=d.sig::regprocedure) IS DISTINCT FROM d.owner THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_INSTALL_POST_OWNER:%',d.sig USING ERRCODE='42501'; END IF;

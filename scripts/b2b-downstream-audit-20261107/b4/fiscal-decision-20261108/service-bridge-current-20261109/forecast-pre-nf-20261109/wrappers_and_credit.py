@@ -173,7 +173,7 @@ def composed_credit(b4_body):
 
 
 def acl_loop(prefix, rows):
-    values = ",".join(f"('{s}','{b}','postgres','{a}')" for s, b, a in rows)
+    values = ",".join(f"('{s}','{b}','postgres',{('NULL' if a is None else repr(a))})" for s, b, a in rows)
     return f"""DO $guard$ DECLARE d record; BEGIN
  FOR d IN SELECT * FROM (VALUES {values}) x(sig,body_md5,owner,acl_md5) LOOP
   IF to_regprocedure(d.sig) IS NULL THEN RAISE EXCEPTION '{prefix}_MISSING:%',d.sig USING ERRCODE='42501'; END IF;

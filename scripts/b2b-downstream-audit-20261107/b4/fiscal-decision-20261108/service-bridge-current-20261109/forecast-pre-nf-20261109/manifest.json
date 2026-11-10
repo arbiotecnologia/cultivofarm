@@ -52,10 +52,10 @@
     "06-install-fiscal-reconcile.sql.review": "7414838d5424753e557c703fbfc87f09439613f145755a7aaab0ead0d210f75f",
     "07-post-fiscal-reconcile.sql.readonly": "ea9675d36753ef8ea6d3f0af55901de6ed4ed7373834a7c10c1c84bd0bf3c991",
     "08-rollback-fiscal-reconcile-deny.sql.review": "490e3993eddbd47303808ed4b367229e5e1cb95153e044ad00739b057d0c9788",
-    "09-pre-credit-composition.sql.readonly": "96c647f2befd9774b3d2a3c033e783e6686c0e55c5a3f0400372b520e5e2fc76",
-    "10-install-credit-composition.sql.review": "ddb6922b656549c34716aa408203801c47b5a311fd6b95d8eb5b8c067cf74986",
-    "11-post-credit-composition.sql.readonly": "94beb70adedcf5fbbd8986f7c1febab30e15e8810aa3ed68be5a60740d010e3b",
-    "12-rollback-credit-composition-retain.sql.review": "c5087c1d0a2d56dfb9bdee627b93296852ba65216391a4f99b064ac4df17e662",
+    "09-pre-credit-composition.sql.readonly": "cb0fad46a799f898c47ab28b12c589f932913b46c018b873a6db1b90aa5503c3",
+    "10-install-credit-composition.sql.review": "0693f4bd5fb17850517d369c471579e5bb2a64c9326672c5329161a01f44cb0e",
+    "11-post-credit-composition.sql.readonly": "c40d38a2d8d475d8a2b82859bc818cba77ea5a420fedc1d1584f2662164ceab3",
+    "12-rollback-credit-composition-retain.sql.review": "6a2bd193a99542d863d02b5a5ab7936d9360ac746be55bc0b5dbf359c47325ed",
     "credit-exposure.composed.sql": "ca710ae1d4d3159a9f740ba3e37ffc78e5ae216eb94725a3e0622af76a563375"
   },
   "hosted": false
