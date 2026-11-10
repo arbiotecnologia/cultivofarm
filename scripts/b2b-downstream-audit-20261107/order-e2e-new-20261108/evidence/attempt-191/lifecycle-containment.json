@@ -1,0 +1,316 @@
+{
+  "hosted": false,
+  "synthetic_auth": true,
+  "checks": [
+    {
+      "case": "forecast_sync-installed-closed",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-installed-closed",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-feature-off-pedidos_b2b",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 12 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_FEATURE_DENIED"
+    },
+    {
+      "case": "forecast_cancel-feature-off-pedidos_b2b",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 10 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_FEATURE_DENIED"
+    },
+    {
+      "case": "forecast_sync-feature-off-contas_receber",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 12 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_FEATURE_DENIED"
+    },
+    {
+      "case": "forecast_cancel-feature-off-contas_receber",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 10 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_FEATURE_DENIED"
+    },
+    {
+      "case": "forecast_sync-gate-off",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-gate-off",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-revoked",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-revoked",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-expired",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-expired",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-wrong-order",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-wrong-order",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-wrong-actor",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-wrong-actor",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-wrong-tenant",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-wrong-tenant",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-wrong-partner",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-wrong-partner",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-read-not-lifecycle",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-read-not-lifecycle",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-exact-synthetic-control-rollback",
+      "exit": 0,
+      "stdout": "{\"event\": \"EMISSION_STARTED\", \"state\": \"emissao_em_andamento\", \"version\": 2, \"replayed\": false, \"invoice_id\": \"00000000-0000-0000-0000-000000000960\", \"forecast_id\": \"aa1fef42-6afa-41f4-822c-31c07177e59c\", \"transmission_id\": \"00000000-0000-0000-0000-000000000962\"}\n"
+    },
+    {
+      "case": "forecast_cancel-exact-synthetic-control-rollback",
+      "exit": 0,
+      "stdout": "{\"nRec\": null, \"cStat\": \"539\", \"chNFe\": \"35261111111111111111111111111111111111000960\", \"nProt\": null, \"state\": \"SUCCEEDED\", \"outcome\": \"REJECTED\", \"xMotivo\": \"PROCESSANDO\", \"protocolCStat\": \"539\", \"transmissionId\": \"00000000-0000-0000-0000-000000000962\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"actor\": \"00000000-0000-0000-0000-000000000029\", \"state\": \"cancelado_antes_nf\", \"version\": 2, \"order_id\": \"8744a3da-4af2-40d1-ac00-ebb39ebc61c2\", \"forecast_id\": \"aa1fef42-6afa-41f4-822c-31c07177e59c\"}\n"
+    },
+    {
+      "case": "forecast_sync-revoked-after-wait-gate",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_PILOT_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 38 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "forecast_sync-post-revocation-gate",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-revoked-after-wait-pilot",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_PILOT_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 38 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "forecast_sync-post-revocation-pilot",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-revoked-after-wait-pedidos_b2b",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 42 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "forecast_sync-post-revocation-pedidos_b2b",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 12 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-revoked-after-wait-contas_receber",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 42 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "forecast_sync-post-revocation-contas_receber",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 12 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-revoked-after-wait-role",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 35 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "forecast_sync-post-revocation-role",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 9 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_sync-revoked-after-wait-tenant",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 35 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "forecast_sync-post-revocation-tenant",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FISCAL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 9 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-revoked-after-wait-gate",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_PILOT_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 29 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "forecast_cancel-post-revocation-gate",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-revoked-after-wait-pilot",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_PILOT_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 29 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "forecast_cancel-post-revocation-pilot",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-revoked-after-wait-pedidos_b2b",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 32 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "forecast_cancel-post-revocation-pedidos_b2b",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 10 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-revoked-after-wait-contas_receber",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 32 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "forecast_cancel-post-revocation-contas_receber",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_FEATURE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 10 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-revoked-after-wait-role",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 26 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "forecast_cancel-post-revocation-role",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    },
+    {
+      "case": "forecast_cancel-revoked-after-wait-tenant",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 26 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "forecast_cancel-post-revocation-tenant",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "expected": "B2B_FORECAST_"
+    }
+  ],
+  "positive_projection": "BLOCKED_NOT_REPLACED_BY_NEGATIVE",
+  "authorization_source": "canonical entitlement + existing exact revocable pilot, not forecast"
+}
