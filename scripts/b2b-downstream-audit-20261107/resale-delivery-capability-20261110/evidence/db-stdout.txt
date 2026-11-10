@@ -1,9 +1,30 @@
 PASS PRE_PASS 63f49feea167f6865fd7840cde7dc63b
 PASS POST_PASS ae4e259ddf5b4005a7be9320e29117ef
 PASS INSTALL_RERUN_REFUSED 
+PASS PILOT_ABSENT_GATE_CLOSED {"items": [{"reserve": false, "stock_id": "22e8c9f9-f604-439d-afb8-ebd4a9eaf9f6", "delivery_create": false, "reserved_for_os": 0}], "os_id": "8310208c-983e-499b-94f0-57603e49b93a", "capability": "b2b_resale_delivery_v1", "organization_id": "61458356-0b88-49d4-83e0-844e2e581b10"}
+PASS GATE_OPEN_NO_GRANT_CLOSED 
+PASS EXACT_GRANT_RESERVE_ONLY {"22e8c9f9-f604-439d-afb8-ebd4a9eaf9f6": {"reserve": true, "stock_id": "22e8c9f9-f604-439d-afb8-ebd4a9eaf9f6", "delivery_create": false, "reserved_for_os": 0}, "44a7cb4e-17e1-47e5-bbcc-755c5f0aa30b": {"reserve": false, "stock_id": "44a7cb4e-17e1-47e5-bbcc-755c5f0aa30b", "delivery_create": false, "reserved_for_os": 0}}
+PASS ACTOR_WITHOUT_STOCK_PERMISSION 
+PASS FOREIGN_ACTOR_CLOSED_ENVELOPE 
+PASS FOREIGN_OS_CLOSED 
+PASS FOREIGN_STOCK_CLOSED 
+PASS NO_AUTH_CLOSED 
+PASS DUPLICATE_STOCK_CLOSED 
+PASS DELIVERY_CREATE_EXACT 
+PASS REVOKED_DELIVERY_CLOSED 
+PASS EXPIRED_RESERVE_CLOSED 
+PASS GATE_OFF_OVERRIDES_GRANT 
+PASS BASELINE_ZERO 
+PASS IN_FLIGHT_NOT_ADOPTED ainda incerto: sem nova reserva
+PASS WRITER_TX_OPEN 
+PASS RECONCILE_DELTA_EQUALS_REQUEST 3
+PASS PARTIAL_SECOND_RESERVATION_ACCUMULATES 
+PASS CAPABILITY_WRITES_NOTHING 
+PASS ACL_ANON_HELPER_WRITER_CLOSED 
+PASS ROLLBACK_REVOKES 
 Traceback (most recent call last):
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/resale-delivery-capability-20261110/db_capability_test.py", line 66, in <module>
-    q.execute("INSERT INTO public.test_actor VALUES(%s,%s,true),(%s,%s,true),(%s,%s,false)",(actor,A,foreign_actor,F,noreserve,A))
-    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/resale-delivery-capability-20261110/db_capability_test.py", line 116, in <module>
+    q=c.cursor();q.execute("SELECT count(*) FROM platform_private.resale_pilot_allowlist_v1");check("ROLLBACK_PRESERVES_HISTORY",q.fetchone()[0]==4)
+                 ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 psycopg2.errors.InFailedSqlTransaction: current transaction is aborted, commands ignored until end of transaction block
 

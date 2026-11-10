@@ -59,7 +59,7 @@ GRANT USAGE ON SCHEMA auth,platform_private TO authenticated,anon;
     if ":CAP_MD5:" in post: post=post.replace(":CAP_MD5:",cap_md5);(HERE/"03-post.sql.readonly").write_text(post)
     q.execute(post);check("POST_PASS",q.fetchone()[0]=="POST_PASS",cap_md5)
     try: q.execute(install);check("INSTALL_RERUN_REFUSED",False)
-    except psycopg2.Error as e: check("INSTALL_RERUN_REFUSED","ALREADY_INSTALLED" in str(e))
+    except psycopg2.Error as e: q.execute("ROLLBACK");check("INSTALL_RERUN_REFUSED","ALREADY_INSTALLED" in str(e))
     U=lambda:str(uuid.uuid4())
     A,F,actor,foreign_actor,noreserve=U(),U(),U(),U(),U()
     pa,po,item,prod,os_,st,st2,fst,fos=U(),U(),U(),U(),U(),U(),U(),U(),U()
