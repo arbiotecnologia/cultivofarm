@@ -1,0 +1,39 @@
+{
+  "forecast": {
+    "state": "aguardando_fiscal",
+    "version": 8,
+    "order_id": "1f42421e-959b-4dbc-80b9-89e6ef844430",
+    "schedule": [
+      {
+        "id": "6b4baf62-ffd1-4fc2-a338-487a69b32a67",
+        "amount": 18.0,
+        "status": "planned",
+        "due_date": "2026-12-10",
+        "created_at": "2026-11-10T00:36:38.81558+00:00",
+        "interest_amount": 0.0,
+        "partner_order_id": "1f42421e-959b-4dbc-80b9-89e6ef844430",
+        "payment_terms_id": "810233c8-9c47-4245-80fb-1730cd88981f",
+        "principal_amount": 18.0,
+        "installment_number": 1,
+        "receivable_installment_id": null
+      }
+    ],
+    "created_at": "2026-11-10T00:36:39.604609+00:00",
+    "partner_id": "00000000-0000-0000-0000-000000000011",
+    "updated_at": "2026-11-10T00:36:40.015943+00:00",
+    "forecast_id": "92503763-7472-45b3-9232-abb7a2ee61d8",
+    "total_amount": 18.0,
+    "last_error_code": "LOCAL_RETRY_CLOSED",
+    "organization_id": "00000000-0000-0000-0000-000000000001",
+    "residual_amount": 18.0,
+    "fiscal_intent_id": "00000000-0000-0000-0000-000000000950",
+    "due_dates_estimated": true
+  },
+  "replay": {
+    "state": "aguardando_fiscal",
+    "replayed": true,
+    "forecast_id": "92503763-7472-45b3-9232-abb7a2ee61d8"
+  },
+  "cross_tenant_denied": "ERROR:  42501: B2B_FORECAST_READ_DENIED\nCONTEXT:  PL/pgSQL function public.get_b2b_financial_forecast_secure(uuid) line 11 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+  "receivables_before_nf": 0
+}

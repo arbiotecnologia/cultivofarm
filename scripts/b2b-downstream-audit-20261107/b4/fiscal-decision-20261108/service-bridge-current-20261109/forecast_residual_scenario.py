@@ -3,6 +3,57 @@
 import concurrent.futures
 import hashlib
 import json
+import time
+
+
+def test_terms_waits(B, Q, OUT, order_id):
+    """Real captured guards and RPC, no trigger disable or authorization stub."""
+    results = []
+    terms_id = B.last(f"SELECT payment_terms_id FROM public.partner_orders WHERE id='{order_id}';")
+    def snapshot():
+        return json.loads(B.last(f"SELECT jsonb_build_object('order',to_jsonb(po),'terms',(SELECT to_jsonb(t) FROM public.partner_order_payment_terms t WHERE t.id=po.payment_terms_id),'forecasts',(SELECT count(*) FROM platform_private.b2b_financial_forecasts WHERE order_id=po.id),'audit',(SELECT count(*) FROM public.partner_order_audit_logs WHERE order_id=po.id)) FROM public.partner_orders po WHERE id='{order_id}';"))
+    def race(name, mutation, restore, token):
+        before = snapshot()
+        # Hold the existing child row, then mutate actual authorization or its
+        # mutable notes. The RPC must first lock the order and wait for this row.
+        sql = f"BEGIN;SELECT id FROM public.partner_order_payment_terms WHERE id='{terms_id}' FOR UPDATE;SELECT pg_sleep(.8);{mutation};COMMIT;"
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            holder = pool.submit(B.run_raw, sql)
+            time.sleep(.15)
+            caller = pool.submit(Q.as_user, Q.UFIN, f"SELECT public.approve_b2b_payment_terms_secure('{order_id}','WAIT-{name}');")
+            held = holder.result(); called = caller.result()
+        after = snapshot()
+        row = dict(name=name, before=before, after=after, holder_exit=held.returncode, holder_stderr=held.stderr, caller_exit=called.returncode, stdout=called.stdout, stderr=called.stderr, hosted=False)
+        results.append(row)
+        (OUT/'terms-wait-real-guards.json').write_text(json.dumps(results,indent=2)+'\n')
+        assert held.returncode == 0, row
+        assert called.returncode != 0 and token in called.stderr, row
+        assert before['order'] == after['order'] and before['audit'] == after['audit'] and after['forecasts'] == 0, row
+        if name != 'child-cas':
+            assert before['terms'] == after['terms'], row
+        if restore:
+            restored = B.run_raw(restore)
+            assert restored.returncode == 0, restored.stderr
+    race('actor-revoked', f"UPDATE public.profiles SET ativo=false WHERE user_id='{Q.UFIN}'", f"UPDATE public.profiles SET ativo=true WHERE user_id='{Q.UFIN}';", '42501')
+    race('tenant-revoked', f"UPDATE public.organizations SET ativo=false WHERE id='{Q.A}'", f"UPDATE public.organizations SET ativo=true WHERE id='{Q.A}';", '42501')
+    # A second real approval writer holds order THEN child; no reverse-lock
+    # UPDATE of the child (its captured trigger itself locks the parent).
+    before = snapshot()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        # Owner connection acquires the physical row, then the real RPC runs
+        # as authenticated. A SELECT filtered to zero by RLS is not a lock.
+        claims = json.dumps({'sub':Q.UFIN,'role':'authenticated','iat':1,'exp':4102444800}).replace("'","''")
+        first = pool.submit(B.run_raw, f"BEGIN;SELECT id FROM public.partner_orders WHERE id='{order_id}' FOR UPDATE;SELECT pg_sleep(.8);SET ROLE authenticated;SET request.jwt.claim.sub='{Q.UFIN}';SET request.jwt.claims='{claims}';SELECT public.approve_b2b_payment_terms_secure('{order_id}','CONCURRENT FIRST');COMMIT;")
+        time.sleep(.15)
+        second = pool.submit(Q.as_user, Q.UFIN, f"SELECT public.approve_b2b_payment_terms_secure('{order_id}','CONCURRENT SECOND');")
+        winner = first.result(); loser = second.result()
+    after = snapshot()
+    row = dict(name='canonical-terms-cas',before=before,after=after,winner_exit=winner.returncode,winner_stdout=winner.stdout,winner_stderr=winner.stderr,caller_exit=loser.returncode,stdout=loser.stdout,stderr=loser.stderr,hosted=False)
+    results.append(row)
+    (OUT/'terms-wait-real-guards.json').write_text(json.dumps(results,indent=2)+'\n')
+    assert winner.returncode == 0 and loser.returncode != 0 and 'B2B_PAYMENT_TERMS_CAS_CONFLICT' in loser.stderr, row
+    assert after['terms']['approval_notes'] == 'CONCURRENT FIRST' and after['terms']['approval_status'] == 'approved' and after['forecasts'] == 0, row
+    return results
 
 
 def exposure(B, Q):
@@ -42,8 +93,11 @@ def run_override(B, Q, OUT):
     assert unchanged == before, unchanged
     approved_credit = Q.as_user(Q.UFIN, f"SELECT public.approve_b2b_credit('{order_id}','LOCAL MANUAL OVERRIDE');")
     assert approved_credit.returncode == 0, approved_credit.stderr
+    test_terms_waits(B, Q, OUT, order_id)
     terms = Q.as_user(Q.UFIN, f"SELECT public.approve_b2b_payment_terms_secure('{order_id}','LOCAL TERMS BEFORE COMMERCIAL');")
     assert terms.returncode == 0, terms.stderr
+    child = json.loads(B.last(f"SELECT to_jsonb(t) FROM public.partner_order_payment_terms t JOIN public.partner_orders po ON po.payment_terms_id=t.id WHERE po.id='{order_id}';"))
+    assert child['approval_status'] == 'approved' and child['approved_by'] == Q.UFIN, child
     assert B.last(f"SELECT count(*) FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}';") == '0'
     approved = Q.as_user(Q.UADM, f"SELECT public.approve_partner_order('{order_id}',NULL,NULL);")
     assert approved.returncode == 0, approved.stderr

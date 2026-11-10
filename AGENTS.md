@@ -24,6 +24,7 @@
 - Fixtures need Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
+- Payment-term approval captures the observed linked child revision, locks order before child, and revalidates canonical active actor/scope after waits; missing commercial approval defers forecast without undoing valid terms — prevents stale approval and premature financial creation.
 - Forecast event replay serializes on the aggregate and compares immutable JSON intent; economic replay excludes residual/dynamic exposure. Private lifecycle helpers stay owner-only until canonical authority is proven, and fiscal reconciliation reuses the existing transaction permit — prevents replay races and service-payload authorization.
 - B2B forecast readers use the scoped canonical endpoint and strict order-bound parsing; pre-install absence remains unavailable. Internal financial approval uses linked child approval evidence without mutating sealed economic headers — preserves snapshots and prevents premature receivables.
 - Resale OS UI mounts only behind the exact scoped server availability reader; private helper ACL stays closed, and retained session attempts reconcile without automatic resend. Production POSPLANOS rollout remains review-only with gates OFF — prevents grant shortcuts and unreviewed activation.

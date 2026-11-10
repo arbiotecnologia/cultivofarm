@@ -262,6 +262,9 @@ AS $function$
 DECLARE
   v_uid uuid := auth.uid();
   v_terms_id uuid;
+  v_observed_terms uuid;
+  v_observed_updated_at timestamptz;
+  v_locked_updated_at timestamptz;
   v_created_by uuid;
   v_numero text;
 BEGIN
@@ -276,18 +279,27 @@ BEGIN
     RAISE EXCEPTION 'unauthorized';
   END IF;
 
+  SELECT po.payment_terms_id,t.updated_at INTO v_observed_terms,v_observed_updated_at
+    FROM public.partner_orders po LEFT JOIN public.partner_order_payment_terms t ON t.id=po.payment_terms_id AND t.partner_order_id=po.id WHERE po.id=p_partner_order_id;
   SELECT po.payment_terms_id, po.created_by, po.numero
     INTO v_terms_id, v_created_by, v_numero
   FROM public.partner_orders po
   WHERE po.id = p_partner_order_id FOR UPDATE;
-IF NOT (public.b2b_phase1_order_visible(p_partner_order_id) OR EXISTS (SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
-  IF NOT (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'financeiro') OR public.has_role(v_uid,'gestor_comercial')) THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='42501'; END IF;
+  IF NOT (public.b2b_phase1_order_visible(p_partner_order_id) OR EXISTS (SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro','gestor_comercial']::public.app_role[]) IS NULL THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='42501'; END IF;
+  IF v_terms_id IS DISTINCT FROM v_observed_terms THEN RAISE EXCEPTION 'B2B_PAYMENT_TERMS_CAS_CONFLICT' USING ERRCODE='PT409'; END IF;
   IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND (status IN ('cancelado','reprovado') OR c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1')) THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVAL_UNAVAILABLE' USING ERRCODE='42501'; END IF;
 
   IF v_terms_id IS NULL THEN
     RAISE EXCEPTION 'payment_terms_not_defined';
   END IF;
 
+  SELECT updated_at INTO v_locked_updated_at FROM public.partner_order_payment_terms
+    WHERE id=v_terms_id AND partner_order_id=p_partner_order_id FOR UPDATE;
+  IF NOT FOUND OR v_locked_updated_at IS DISTINCT FROM v_observed_updated_at THEN
+    RAISE EXCEPTION 'B2B_PAYMENT_TERMS_CAS_CONFLICT' USING ERRCODE='PT409'; END IF;
+  IF NOT (public.b2b_phase1_order_visible(p_partner_order_id) OR EXISTS (SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro','gestor_comercial']::public.app_role[]) IS NULL THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='42501'; END IF;
   UPDATE public.partner_order_payment_terms
      SET approval_status = 'approved',
          approved_by = v_uid,
@@ -297,6 +309,8 @@ IF NOT (public.b2b_phase1_order_visible(p_partner_order_id) OR EXISTS (SELECT 1 
    WHERE id = v_terms_id AND partner_order_id = p_partner_order_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'payment_terms_not_defined' USING ERRCODE='42501'; END IF;
 
+  IF NOT (public.b2b_phase1_order_visible(p_partner_order_id) OR EXISTS (SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro','gestor_comercial']::public.app_role[]) IS NULL THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='42501'; END IF;
   UPDATE public.partner_orders
      SET financial_approval_status = 'approved',
          payment_condition_status = 'approved',
@@ -316,8 +330,10 @@ IF NOT (public.b2b_phase1_order_visible(p_partner_order_id) OR EXISTS (SELECT 1 
             '/comercial/pedidos-b2b');
   END IF;
 
-  PERFORM platform_private.b2b_financial_forecast_after_approval_v1(p_partner_order_id,
-    public.fn_b2b_credit_exposure((SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_partner_order_id),0,NULL));
+  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND status='aprovado' AND approved_by IS NOT NULL AND approved_at IS NOT NULL) THEN
+    PERFORM platform_private.b2b_financial_forecast_after_approval_v1(p_partner_order_id,
+      public.fn_b2b_credit_exposure((SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_partner_order_id),0,NULL));
+  END IF;
   RETURN jsonb_build_object('success', true, 'status', 'approved');
 END;
 $function$
@@ -533,7 +549,7 @@ $function$
 ;
 DO $$ BEGIN
  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '0d3b85049e3b3b799ba81b4cb95be0da' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_INSTALL_POST_DRIFT';END IF;
- IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM 'c86f0994a94a41c84b0dac7d4e039534' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_INSTALL_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '3455ffaf7010771654aee107c2996e46' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_INSTALL_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '26c77e55dfcb2b48fdb63cbc5b2819ed' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_INSTALL_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '028894275a3b98a3abdc4e01e3fd03bf' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_INSTALL_POST_DRIFT';END IF;
 END$$;
