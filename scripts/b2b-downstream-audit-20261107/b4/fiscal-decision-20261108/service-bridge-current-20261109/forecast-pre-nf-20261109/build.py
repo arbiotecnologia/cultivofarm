@@ -80,7 +80,7 @@ def main():
     scoped_terms = scoped_terms.replace("   WHERE id = p_partner_order_id;", "   WHERE id = p_partner_order_id AND internal_origin_snapshot IS NULL AND c2_external_origin_snapshot IS NULL AND internal_economic_snapshot IS NULL;")
     terms_anchor = "  RETURN jsonb_build_object('success', true, 'status', 'approved');"
     assert scoped_terms.count(terms_anchor) == 1
-    candidate_terms = scoped_terms.replace(terms_anchor, "  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND status='aprovado' AND approved_by IS NOT NULL AND approved_at IS NOT NULL) THEN\n    PERFORM platform_private.b2b_financial_forecast_after_approval_v1(p_partner_order_id,\n      public.fn_b2b_credit_exposure((SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_partner_order_id),0,NULL));\n  END IF;\n" + terms_anchor)
+    candidate_terms = scoped_terms.replace(terms_anchor, "  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND status='aprovado' AND approved_by IS NOT NULL AND approved_at IS NOT NULL) THEN\n    -- Credit is evaluated inside the helper only after the creation grant/gate.\n    PERFORM platform_private.b2b_financial_forecast_after_approval_v1(p_partner_order_id,NULL);\n  END IF;\n" + terms_anchor)
     new_terms_md5 = md5(candidate_terms)
 
     credit = current["fn_b2b_credit_exposure"]["definition"]
@@ -253,7 +253,7 @@ BEGIN
  END IF;
  INSERT INTO platform_private.b2b_financial_forecasts(order_id,organization_id,partner_id,total_amount,residual_amount,state,
   economic_snapshot,schedule_snapshot,items_snapshot,credit_decision_snapshot,commercial_approved_by,commercial_approved_at,credit_approved_by,credit_approved_at)
- VALUES(po.id,org,po.partner_id,total,total,'aguardando_fiscal',po.internal_economic_snapshot,schedule,items,p_credit,
+ VALUES(po.id,org,po.partner_id,total,total,'aguardando_fiscal',po.internal_economic_snapshot,schedule,items,v_credit,
   po.approved_by,po.approved_at,po.credit_approved_by,po.credit_approved_at) RETURNING * INTO f;
  INSERT INTO platform_private.b2b_financial_forecast_events(forecast_id,event_type,event_reference,payload,actor_id)
  VALUES(f.id,'PREVISION_CREATED',f.id::text,jsonb_build_object('total',total,'estimated',true),po.approved_by);
@@ -380,6 +380,7 @@ DO $$ BEGIN
  IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '{current["approve_b2b_credit"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_PRE_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '{current["fn_b2b_credit_exposure"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_PRE_DRIFT';END IF;
  IF to_regclass('platform_private.b2b_financial_forecasts') IS NOT NULL OR to_regclass('platform_private.b2b_financial_forecast_events') IS NOT NULL THEN RAISE EXCEPTION 'B2B_FORECAST_ALREADY_INSTALLED';END IF;
+ IF to_regclass('platform_private.b2b_forecast_creation_gate_v1') IS NOT NULL OR to_regclass('platform_private.b2b_forecast_creation_allowlist_v1') IS NOT NULL OR to_regprocedure('platform_private.b2b_forecast_creation_allowed_v1(uuid,uuid,uuid,uuid)') IS NOT NULL OR to_regprocedure('platform_private.b2b_forecast_creation_scope_v1(uuid,uuid,uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B2B_FORECAST_CREATION_GATE_PREEXISTS';END IF;
 END$$;
 ROLLBACK;
 """
@@ -417,6 +418,21 @@ DO $$ BEGIN
 END$$;
 COMMIT;
 """
+    creation_closed = """DO $$ BEGIN
+ IF EXISTS(SELECT 1 FROM platform_private.b2b_forecast_creation_allowlist_v1)
+  OR (SELECT enabled FROM platform_private.b2b_forecast_creation_gate_v1 WHERE singleton) IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'B2B_FORECAST_CREATION_NOT_CLOSED' USING ERRCODE='42501';END IF;
+ IF has_function_privilege('authenticated','platform_private.b2b_forecast_creation_allowed_v1(uuid,uuid,uuid,uuid)','EXECUTE')
+  OR has_function_privilege('service_role','platform_private.b2b_forecast_creation_allowed_v1(uuid,uuid,uuid,uuid)','EXECUTE')
+  OR has_function_privilege('authenticated','platform_private.b2b_forecast_creation_scope_v1(uuid,uuid,uuid,uuid)','EXECUTE')
+  OR has_function_privilege('service_role','platform_private.b2b_forecast_creation_scope_v1(uuid,uuid,uuid,uuid)','EXECUTE')
+  OR has_table_privilege('authenticated','platform_private.b2b_forecast_creation_allowlist_v1','SELECT,INSERT,UPDATE,DELETE')
+  OR has_table_privilege('authenticated','platform_private.b2b_forecast_creation_gate_v1','SELECT,INSERT,UPDATE,DELETE') THEN
+  RAISE EXCEPTION 'B2B_FORECAST_CREATION_ACL_INVALID' USING ERRCODE='42501';END IF;
+END$$;
+"""
+    post = post.replace("ROLLBACK;\n", creation_closed + "ROLLBACK;\n")
+    install = install.replace("COMMIT;\n", creation_closed + "COMMIT;\n")
     # Attempt 182 executed this rollback for the first time: `terms` had already been
     # rewritten above, so the old "restore" pinned the LIVE md5 but installed a modified
     # body (B2B_FORECAST_TERMS_ROLLBACK_POST_DRIFT). Restoring LIVE would also reopen the
@@ -432,6 +448,9 @@ SET LOCAL lock_timeout='3s';
 {approve};
 {credit_approval};
 {terms_denied};
+-- Creation pilot closed deny-only; grant rows and forecasts retained as history.
+UPDATE platform_private.b2b_forecast_creation_gate_v1 SET enabled=false,updated_at=clock_timestamp(),reason='FORECAST_REVIEW_ROLLBACK' WHERE singleton;
+UPDATE platform_private.b2b_forecast_creation_allowlist_v1 SET revoked_at=clock_timestamp(),revoke_reason='FORECAST_REVIEW_ROLLBACK' WHERE revoked_at IS NULL;
 -- Exposição de crédito NÃO é tocada aqui: o corpo composto B4+previsão (09-12)
 -- permanece; restaurar LIVE/B4 reabriria dupla contagem ou residual cancelado.
 REVOKE ALL ON FUNCTION public.get_b2b_financial_forecast_secure(uuid) FROM PUBLIC,anon,authenticated,service_role;
