@@ -9,6 +9,8 @@ DECLARE
  v_item jsonb; v_qty numeric; v_id uuid; v_payload jsonb; v_items jsonb; v_fp text; v_key text;
  v_prev platform_private.stock_batch_requests%ROWTYPE; v_result jsonb; v_call jsonb; v_ids uuid[]:=ARRAY[]::uuid[];
 BEGIN
+ PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'STOCK_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;
  v_org:=platform_private.stock_motor_actor('reserva');
  PERFORM platform_private.stock_motor_context_set(NULL);
  IF p_os_id IS NULL THEN RAISE EXCEPTION 'ESTQ_OS_OBRIGATORIA' USING ERRCODE='23514'; END IF;
@@ -62,4 +64,4 @@ BEGIN
  INSERT INTO platform_private.stock_batch_requests(request_key,actor,organization_id,fingerprint,result) VALUES(p_idempotency_key,v_actor,v_org,v_fp,v_result);
  PERFORM platform_private.stock_motor_context_set(NULL);
  RETURN v_result;
-END $function$
+END $function$;
