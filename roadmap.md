@@ -1,4 +1,5 @@
 ## 10/11 03:23 — Complemento 8dd6e29b, mesma revisão inativa
+- [ ] Complemento 03:42: separar autorização CANCEL→PT409 in-flight de sucesso funcional em referência PC reconciliada; revogações exigem holder/waiter provados por pg_stat_activity/pg_locks antes da mutação. Avaliar acoplamento lifecycle/logística antes de piloto hosted, sem abrir gate global.
 - [ ] Exigir READ COMMITTED, provar revogação papel/tenant/features/piloto após espera e escopo estrangeiro sem lock.
 - [ ] Reservar intenção no início canônico e provar concorrência/replay/begin×cancel; consulta 217 exige causalidade explícita, não timestamps/UUID.
 - [ ] Restauração integral, drift ACL, 18/9/9, 747→738, pagamento 9, 38 triggers e rollback; diagnosticar leitor financeiro permitido com evidência.

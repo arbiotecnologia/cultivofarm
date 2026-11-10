@@ -1,7 +1,6 @@
 """Local canonical wrapper containment; never hosted or a release certificate."""
-import concurrent.futures
 import json
-import time
+from lifecycle_lock_barrier import assert_authorization_control, revoke_after_proven_wait
 
 
 def grant_sql(Q, order, partner):
@@ -60,12 +59,14 @@ def run(B, Q, OUT, order, doc, version):
     # Permission checks must still pass when exact local grants are enabled.
     B.sql(grant+gate_on)
     for op, call in calls.items():
-        # CANCEL's positive control must settle the actual in-flight transmission
-        # through its canonical callback; do not force transmission/forecast UPDATE.
-        settle = (f"SET LOCAL ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_record_v1('{doc['tx']}','SUCCEEDED','{{\"cStat\":\"539\",\"tpAmb\":\"2\",\"chNFe\":\"{doc['access_key']}\"}}'::jsonb);" if op=='forecast_cancel' else '')
-        r=B.run_raw('BEGIN;'+settle+ctx+call+'ROLLBACK;')
-        assert r.returncode==0, (op, r.stderr)
-        rows.append(dict(case=op+'-exact-synthetic-control-rollback',exit=0,stdout=r.stdout))
+        # Same live transmission remains in flight: passing authority must NOT
+        # imply cancellation success, and must not relax the business guard.
+        r=B.run_raw('BEGIN;'+ctx+call+'ROLLBACK;')
+        classification=assert_authorization_control(op,r)
+        rows.append(dict(case=op+'-exact-authorization-control',exit=r.returncode,
+                         stdout=r.stdout,stderr=r.stderr,classification=classification,
+                         functional_cancel_success=False))
+        assert forecast_row(B,order)==before
     # Revoke during aggregate wait. No trigger/body/role alteration or forecast UPDATE.
     for op, call in calls.items():
         mutations = {
@@ -77,15 +78,12 @@ def run(B, Q, OUT, order, doc, version):
             'tenant': (f"UPDATE public.organizations SET ativo=false WHERE id='{Q.A}';",f"UPDATE public.organizations SET ativo=true WHERE id='{Q.A}';"),
         }
         for name, (change, restore) in mutations.items():
-            # For CANCEL hold the order; its locking SELECT itself re-evaluates pilot.
+            # Hold the shared aggregate without a timed release; dispatch only
+            # after holder readiness, then revoke only after proven caller wait.
             lock = f"SELECT id FROM platform_private.b2b_financial_forecasts WHERE order_id='{order}' FOR UPDATE;"
-            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-                holder=pool.submit(B.run_raw,'BEGIN;'+lock+'SELECT pg_sleep(.8);'+change+'COMMIT;')
-                time.sleep(.2)
-                caller=pool.submit(B.run_raw,'BEGIN;'+ctx+call+'COMMIT;')
-                held, called=holder.result(),caller.result()
-            assert held.returncode==0, held.stderr
-            rows.append(dict(case=op+'-revoked-after-wait-'+name,exit=called.returncode,stderr=called.stderr))
+            called,barrier=revoke_after_proven_wait(B,lock,'BEGIN;'+ctx+call+'COMMIT;',change)
+            rows.append(dict(case=op+'-revoked-after-wait-'+name,exit=called.returncode,
+                             stderr=called.stderr,barrier=barrier))
             assert called.returncode!=0 and '42501' in called.stderr and 'B2B_FORECAST_' in called.stderr,rows[-1]
             assert forecast_row(B,order)==before
             B.sql(restore)
