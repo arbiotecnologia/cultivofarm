@@ -291,7 +291,6 @@ def begin_overlay(root):
 """
     replay_anchor = "  SELECT * INTO v_existing FROM public.fiscal_sefaz_transmissions\n   WHERE idempotency_key = _idempotency_key;"
     reserve = """  IF v_forecast.id IS NOT NULL AND _service IN ('NFeAutorizacao4','NFeConsultaProtocolo4','NFeRetAutorizacao4') THEN
-    reserve = """  IF v_forecast.id IS NOT NULL AND _service IN ('NFeAutorizacao4','NFeConsultaProtocolo4','NFeRetAutorizacao4') THEN
     IF _service='NFeAutorizacao4' AND
       (v_forecast.state NOT IN ('aguardando_fiscal','faturado_parcial')
        OR v_source.total_amount IS NULL OR v_source.total_amount<=0 OR v_source.total_amount>v_forecast.residual_amount) THEN
