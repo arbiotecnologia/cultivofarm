@@ -1,3 +1,9 @@
+## 10/11 03:23 — Complemento 8dd6e29b, mesma revisão inativa
+- [ ] Exigir READ COMMITTED, provar revogação papel/tenant/features/piloto após espera e escopo estrangeiro sem lock.
+- [ ] Reservar intenção no início canônico e provar concorrência/replay/begin×cancel; consulta 217 exige causalidade explícita, não timestamps/UUID.
+- [ ] Restauração integral, drift ACL, 18/9/9, 747→738, pagamento 9, 38 triggers e rollback; diagnosticar leitor financeiro permitido com evidência.
+- [ ] Documentar todas tentativas e artefatos exatos, sem hosted/publicação/efeitos externos ou GO.
+
 ## 10/11 02:55 — Contenção efetiva SYNC/CANCEL no mesmo review184
 - [ ] Acrescentar entitlement canônico e allowlist exata por operação antes/depois dos locks; instalar sem concessões lifecycle, testar feature/gate/piloto e revogação somente em PostgreSQL descartável.
 - [ ] Registrar constatação READONLY fornecida pelo auditor, hashes e limites; preservar recebíveis/histórico e NÃO GO.
