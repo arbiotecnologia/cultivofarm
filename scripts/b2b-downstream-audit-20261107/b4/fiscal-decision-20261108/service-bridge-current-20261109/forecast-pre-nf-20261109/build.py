@@ -3,6 +3,8 @@
 from pathlib import Path
 import hashlib
 import json
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 H = Path(__file__).resolve().parent
 ROOT = H.parents[5]
@@ -384,7 +386,7 @@ SET LOCAL lock_timeout='3s';
 {reconcile_sql}
 REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
 -- Owner-only nested invocation from the existing fiscal bridge; no service grant.
-{WRAPPERS}
+{{WRAPPERS}}
 COMMIT;
 """
     reconcile_post = """-- REVIEW ONLY READ ONLY POST fase 2.
