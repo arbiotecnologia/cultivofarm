@@ -394,8 +394,12 @@ export function useB2BAgingDetalhado(filters: { from?: string; to?: string; part
  */
 export function useB2BRevenueForecast(partner_id?: string | null) {
   const partner = partner_id ?? null;
+  const { profile } = useAuth();
+  const sessionOrg = profile?.organization_id ?? null;
   return useScopedB2BFinancialQuery({
-    queryKey: ["b2b-forecast-tenant-v1", partner],
+    // Prefixo "b2b-forecast" está no conjunto limpo a cada troca de escopo; empresa da sessão também na chave.
+    queryKey: ["b2b-forecast", "tenant-v2", sessionOrg, partner],
+    enabled: !!sessionOrg,
     queryFn: async (): Promise<B2BRevenueForecastTenant | null> => {
       const { data, error } = await sb.rpc(REVENUE_FORECAST_TENANT_RPC, { p_partner_id: partner });
       if (error) {
@@ -403,7 +407,7 @@ export function useB2BRevenueForecast(partner_id?: string | null) {
             error.message.includes(`public.${REVENUE_FORECAST_TENANT_RPC}(p_partner_id)`)) return null;
         throw error;
       }
-      return parseRevenueForecastTenant(data, partner);
+      return parseRevenueForecastTenant(data, partner, sessionOrg);
     },
   });
 }
