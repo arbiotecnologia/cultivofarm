@@ -820,6 +820,8 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
    effect_baseline=effect_baseline,current_counts=current_counts,credit=credit,h13_confirmed=blocked,
    positive_fiscal_receivable=receivable_id,always_allow_substitution=False,credit_composition_pre=credit_comp_pre,credit_composition_post=credit_comp_post,credit_composed_md5=credit_composed),indent=2)+'\n')
   checks.append(dict(test='same fresh DB executes Seller91 buyer seller logistics B4 strict bridge and positive confirmed fiscal receivable',status='PASS'))
+  history_before_rollback=json.loads(B.last("SELECT jsonb_build_object('snapshots',(SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots),'documents',(SELECT count(*) FROM platform_private.b2b_authorized_documents),'allocations',(SELECT count(*) FROM platform_private.b2b_document_allocations),'b2b_titles',(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id IS NOT NULL),'close_pending',(SELECT count(*) FROM platform_private.fiscal_close_pending),'forecast_events',(SELECT count(*) FROM platform_private.b2b_financial_forecast_events))::text;"))
+  assert history_before_rollback['snapshots']==history_before_rollback['documents']==history_before_rollback['allocations']==history_before_rollback['b2b_titles'],history_before_rollback
   B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(h7_dir/'04-rollback-deny.sql.review').read_text())
   B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(audit_dir/'04-rollback-deny.sql.review').read_text())
   B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(strict_dir/'04-rollback-deny.sql.review').read_text())
@@ -848,7 +850,9 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   assert B.last("SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND tablename='commercial_payment_plans' AND indexname='uq_cpp_tenant_code';")=='1'
   current=R.snapshot(B);after_triggers={x['name']:x for x in current['receivable']['triggers']}
   for trigger in original: assert after_triggers.get(trigger['name'])==trigger,trigger['name']
-  assert B.last("SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots;")=='2'
+  history_after_rollback=json.loads(B.last("SELECT jsonb_build_object('snapshots',(SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots),'documents',(SELECT count(*) FROM platform_private.b2b_authorized_documents),'allocations',(SELECT count(*) FROM platform_private.b2b_document_allocations),'b2b_titles',(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id IS NOT NULL),'close_pending',(SELECT count(*) FROM platform_private.fiscal_close_pending),'forecast_events',(SELECT count(*) FROM platform_private.b2b_financial_forecast_events))::text;"))
+  assert history_after_rollback==history_before_rollback,(history_before_rollback,history_after_rollback)
+  (OUT/'rollback-history-preserved.json').write_text(json.dumps(dict(before=history_before_rollback,after=history_after_rollback,hosted=False),indent=2)+'\n')
   assert B.last(f"SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_id}';")=='AUTHORIZED'
   assert B.last(f"SELECT receivable_id FROM public.fiscal_invoices WHERE id='{invoice_id}';")==receivable_id
   assert B.last(f"SELECT count(*) FROM public.accounts_receivable WHERE id='{receivable_id}' AND b2b_document_id='{invoice_id}';")=='1'
