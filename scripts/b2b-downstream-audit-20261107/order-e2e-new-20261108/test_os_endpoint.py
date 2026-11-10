@@ -64,7 +64,7 @@ def run(B,Q,order,item,expected,out):
     results.append(dict(name='fsf_own_positive_control_feature_on',status='PASS',ack=own_ack,fixture_rollback=True,zero_delta=True))
     variants=[
       ('not_approved',f"UPDATE public.partner_orders SET status='pendente' WHERE id='{order}';",'B2B_RESALE_ORDER_CONFLICT'),
-      ('accounting_pending',f"UPDATE public.partner_orders SET financial_approval_status='pending' WHERE id='{order}';",'B2B_RESALE_ORDER_CONFLICT'),
+      ('linked_terms_pending',f"UPDATE public.partner_order_payment_terms SET approval_status='pending',approved_by=NULL,approved_at=NULL WHERE id=(SELECT payment_terms_id FROM public.partner_orders WHERE id='{order}');",'B2B_RESALE_ORDER_CONFLICT'),
       ('revoked',f"UPDATE public.profiles SET ativo=false WHERE user_id='{Q.UADM}';",'B2B_RESALE_ACTOR_DENIED'),
       ('feature_closed',"UPDATE public.saas_plan_version_features SET enabled=false WHERE feature_id IN (SELECT id FROM public.saas_features WHERE key='estoque_embalagens');",'ESTQ_FEATURE_REQUIRED'),
     ]

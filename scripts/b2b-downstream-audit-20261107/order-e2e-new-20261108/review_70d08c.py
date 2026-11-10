@@ -69,6 +69,16 @@ class Review:
         assert approved.returncode == 0, (label, approved.stdout, approved.stderr)
         accepted = json.loads(Q.psql(f"SELECT to_jsonb(o)::text FROM public.partner_orders o WHERE id='{order_id}'").stdout.strip())
         assert accepted["status"] == "aprovado" and accepted["ready_for_production"] is False, accepted
+        if accepted['requires_financial_approval']:
+            observed = self.B.last(f"SELECT updated_at FROM public.partner_orders WHERE id='{order_id}';")
+            first_item = self.B.last(f"SELECT id FROM public.partner_order_items WHERE order_id='{order_id}' ORDER BY id LIMIT 1;")
+            denied = self.B.run_raw(self.os_create_sql(order_id, first_item, observed, self.key('missing-terms')))
+            assert denied.returncode != 0 and any(code in denied.stderr for code in ('B2B_RESALE_ORDER_CONFLICT','RESALE_PILOT_SCOPE_DENIED')), (label, denied.stdout, denied.stderr)
+            terms = Q.as_user(Q.UFIN, f"SELECT public.approve_b2b_payment_terms_secure('{order_id}','REVIEW70 CANONICAL TERMS');")
+            assert terms.returncode == 0, (label, terms.stdout, terms.stderr)
+            after = json.loads(self.B.last(f"SELECT to_jsonb(po) FROM public.partner_orders po WHERE id='{order_id}';"))
+            assert after['internal_economic_snapshot'] == accepted['internal_economic_snapshot'], label
+            accepted = after
         items = json.loads(self.B.last(f"SELECT coalesce(jsonb_agg(to_jsonb(i) ORDER BY i.created_at,i.id),'[]'::jsonb)::text FROM public.partner_order_items i WHERE i.order_id='{order_id}';"))
         assert len(items) == len(specs), (label, len(items), len(specs))
         return {"id": order_id, "accepted": accepted, "items": items, "journal": journal, "label": label}

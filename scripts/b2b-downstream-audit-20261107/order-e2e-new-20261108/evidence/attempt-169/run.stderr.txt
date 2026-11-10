@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-hfjp1kkt/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 632, in main
+    b4_pre=B.sql(b4_pre_text)
+  File "/tmp/new-order-e2e-hfjp1kkt/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 56, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-hfjp1kkt/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  B4_PRE_DRIFT:public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+CONTEXT:  PL/pgSQL function inline_code_block line 8 at RAISE
+

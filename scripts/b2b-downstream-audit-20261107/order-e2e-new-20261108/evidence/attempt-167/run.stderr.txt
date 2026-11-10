@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 476, in main
+    EndpointTests.run(B,Q,endpoint_fixture['id'],endpoint_fixture['items'][0]['id'],endpoint_fixture['accepted']['updated_at'],OUT)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_os_endpoint.py", line 29, in run
+    assert initial['items'][0]['order_item_id']==item and initial['items'][0]['create_available'] is True,initial
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'items': [{'os_id': None, 'order_item_id': '789047de-d38f-4ba9-a3f8-da39029d9c72', 'create_available': False}], 'actor_id': '00000000-0000-0000-0000-000000000024', 'contract': 'B2B_RESALE_OS_AVAILABILITY_V1', 'order_id': '477e74ab-93be-4794-bc7e-b497642db88d', 'available': True, 'organization_id': '00000000-0000-0000-0000-000000000001', 'observed_updated_at': '2026-11-10T00:42:57.066581+00:00'}
