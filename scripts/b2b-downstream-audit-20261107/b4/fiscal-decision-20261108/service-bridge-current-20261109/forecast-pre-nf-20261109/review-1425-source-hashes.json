@@ -1,11 +1,12 @@
 {
-  "b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast_residual_scenario.py": "7d3fc6508dd4ebff554653b7cec83998164d96100c021f8763100e1d3df3f64b",
-  "b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/wrappers_and_credit.py": "4c5db8e4f12654b99e233b17406d36b7b12c6c0c0d48d0d6c91eac538236fd8b",
+  "b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast_residual_scenario.py": "6a02b8c2e1ddce5adb9a9df9e4ec29cd2cd6482846cd3043aa4581f7c8771577",
+  "b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/wrappers_and_credit.py": "5dc1e486d0458fbcbb8ebb894ac574e143dd35b209041d4764527ae9f6af2231",
   "b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/build.py": "438a0fd0764df7c79f22c864eddbc02ba5127d681178a590e8e39533bab07a8a",
   "order-e2e-new-20261108/compose_current.py": "a4fac886470976658b43c4318bc6aa5a4d9e11c3dcd189cf4b4bda729ac6fdb4",
   "order-e2e-new-20261108/rebuild_current.py": "bddda443900120958f87ea236fa459fd037921371104c02f0c7c7a7684b5acba",
-  "validated_by": "order-e2e-new-20261108/evidence/attempt-205 (exit 0, 55/55)",
-  "begin_overlay_md5": "70742ae2cd62c71b7bb1a85311c89739",
+  "validated_by": "order-e2e-new-20261108/evidence/attempt-206 (exit 0, 55/55)",
+  "begin_overlay_md5": "210f8b548ad4490da22f59551abaa220",
   "promoted_artifacts": "12/12 identical",
-  "hosted": false
+  "hosted": false,
+  "supersedes": "attempt-205 (run-required variant rejected: breaks real transport)"
 }
