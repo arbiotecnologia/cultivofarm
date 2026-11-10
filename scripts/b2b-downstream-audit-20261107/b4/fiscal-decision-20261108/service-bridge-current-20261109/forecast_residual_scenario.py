@@ -529,9 +529,16 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
     l_consulted = sync(Q, Q.UFIN, consult, l_timeout['version'])
     assert l_consulted['state'] == 'aguardando_fiscal', l_consulted
     begin_race = test_begin_cancel_race(B,Q,OUT,pc_order,L,l_consulted['version'])
-    canceled = cancel_raw(Q, Q.UFIN, pc_order, l_consulted['version'], 'Residual cancelado por decisao comercial local')
+    # Permanent cancel wins against canonical begin, not only rollback serialization.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        claims=json.dumps({'sub':Q.UFIN,'role':'authenticated','iat':1,'exp':4102444800})
+        held_cancel=pool.submit(B.run_raw,f"BEGIN;SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{Q.UFIN}';SET LOCAL request.jwt.claims='{claims}';SELECT public.rpc_b2b_forecast_cancel_residual_v1('{pc_order}',{version(Q,pc_order)},'Residual cancelado por decisao comercial local');SELECT pg_sleep(.8);COMMIT;")
+        time.sleep(.2)
+        losing_begin=pool.submit(B.run_raw,begin_statement(Q,L,'permanent-cancel-wins'))
+        canceled,begin_lost=held_cancel.result(),losing_begin.result()
+    assert begin_lost.returncode!=0 and 'B2B_FORECAST_BEGIN_BLOCKED' in begin_lost.stderr,begin_lost.stderr
     assert canceled.returncode == 0, canceled.stderr
-    canceled_data = _last(canceled)
+    canceled_data = json.loads(next(x for x in canceled.stdout.splitlines() if x.startswith('{')))
     expected_state = 'cancelado_residual' if dry_ok else 'cancelado_antes_nf'
     assert canceled_data['state'] == expected_state, canceled_data
     after_cancel = forecast_row(B, pc_order)
@@ -587,6 +594,27 @@ def test_begin_cancel_race(B,Q,OUT,order_id,doc,v):
     before=forecast_row(B,order_id)
     claims=json.dumps({'sub':Q.UFIN,'role':'authenticated','iat':1,'exp':4102444800}).replace("'","''")
     ctx=f"SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{Q.UFIN}';SET LOCAL request.jwt.claims='{claims}';"
+    repeatable=B.run_raw('BEGIN ISOLATION LEVEL REPEATABLE READ;'+begin_statement(Q,doc,'repeatable-denied')+'ROLLBACK;')
+    assert repeatable.returncode!=0 and 'READ_COMMITTED_REQUIRED' in repeatable.stderr,repeatable.stderr
+    # Two independent invoice intentions for the same residual, before any SYNC.
+    extra=insert_invoice(B,Q,order_id,Q.PC,
+      B.last(f"SELECT company_settings_id FROM public.fiscal_invoices WHERE id='{doc['invoice']}';"),
+      B.last(f"SELECT partner_order_item_id FROM public.fiscal_invoice_items WHERE fiscal_invoice_id='{doc['invoice']}' LIMIT 1;"),9,1005)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        winner=pool.submit(B.run_raw,'BEGIN;'+begin_statement(Q,doc,'intent-first')+'SELECT pg_sleep(.8);COMMIT;')
+        time.sleep(.2)
+        loser=pool.submit(B.run_raw,begin_statement(Q,extra,'intent-second'))
+        won,lost=winner.result(),loser.result()
+    assert won.returncode==0 and lost.returncode!=0 and 'B2B_FORECAST_BEGIN_BLOCKED' in lost.stderr,(won.stderr,lost.stderr)
+    reserved_tx=json.loads(next(x for x in won.stdout.splitlines() if x.startswith('{')))['transmissionId']
+    assert forecast_row(B,order_id)['state']=='emissao_em_andamento'
+    assert B.last(f"SELECT count(*) FROM public.fiscal_sefaz_transmissions WHERE idempotency_key='LOCAL-REVIEW-intent-second';")=='0'
+    # Settle through canonical timeout + current consultation, not UPDATE.
+    transport_error(B,reserved_tx,'LOCAL_TWO_INTENT_TIMEOUT')
+    timed=sync(Q,Q.UFIN,reserved_tx,version(Q,order_id))
+    c=insert_followup_tx(B,Q,doc,1008,'NFeConsultaProtocolo4');reject(B,c,'217','LOCAL TWO INTENT ABSENCE')
+    clear=sync(Q,Q.UFIN,c,timed['version']);v=clear['version'];before=forecast_row(B,order_id)
+    rows.append(dict(case='two-begins-before-sync',winner=won.stdout,loser=lost.stderr,repeatable=repeatable.stderr))
     # Begin owns the shared order lock. Cancel waits, then sees committed pending tx.
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
         holder=pool.submit(B.run_raw,'BEGIN;'+begin_statement(Q,doc,'begin-first')+'SELECT pg_sleep(.8);COMMIT;')
