@@ -50,11 +50,12 @@ CLOSED_HELPER = (f"CREATE OR REPLACE FUNCTION {HELPER} RETURNS boolean LANGUAGE 
 
 def acl_expr(oid_sql):
     """Normalized ACL: sorted grantee:privilege:grantor (PUBLIC=0) over aclexplode, owner default included."""
-    return (f"(SELECT coalesce(string_agg(x.grantee::regrole::text||':'||x.privilege_type||':'||x.grantor::regrole::text,"
+    # Fully parenthesized: PL/pgSQL IF scans to the first THEN outside parentheses.
+    return (f"((SELECT coalesce(string_agg(x.grantee::regrole::text||':'||x.privilege_type||':'||x.grantor::regrole::text,"
             f"',' ORDER BY x.grantee::regrole::text,x.privilege_type),'') FROM pg_proc pp, "
             f"aclexplode(coalesce(pp.proacl,acldefault('f',pp.proowner))) x WHERE pp.oid={oid_sql} AND x.grantee<>0)"
             f"||CASE WHEN EXISTS(SELECT 1 FROM pg_proc pp,aclexplode(coalesce(pp.proacl,acldefault('f',pp.proowner))) x "
-            f"WHERE pp.oid={oid_sql} AND x.grantee=0) THEN ',PUBLIC' ELSE '' END")
+            f"WHERE pp.oid={oid_sql} AND x.grantee=0) THEN ',PUBLIC' ELSE '' END)")
 
 
 def meta_sql(sig):
