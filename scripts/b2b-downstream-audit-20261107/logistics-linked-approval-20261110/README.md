@@ -7,7 +7,7 @@ Com os 6 corpos LIVE instalados verbatim, todas as condições não financeiras 
 
 ## Delta (6 funções, só o predicado financeiro)
 `b2b_resale_os_valid_v1`, `b2b_resale_os_operational_valid_v1`, `b2b_resale_delivery_order_valid_v1`, `platform_private.b2b_resale_os_create_v1` (2 pontos), `rpc_b2b_resale_os_availability_v1`, `rpc_b2b_resale_os_create_v1`.
-Ordem: `01-pre.sql.readonly` → `02-install.sql.review` → `03-post.sql.readonly` (substituir `:<função>:` pelos md5 de `evidence/attempt-234/candidate-md5.json`). Rollback: `04-rollback-restore-legacy-strict.sql.review`.
+Ordem: `01-pre.sql.readonly` → `02-install.sql.review` → `03-post.sql.readonly`; rollback `04-rollback-restore-legacy-strict.sql.review`. Arquivos finais diretamente executáveis, sem interpolação: md5 dos candidatos (attempt-234) e ACL fixados em `generate.py`; o INSTALL confere os md5 candidatos antes do COMMIT; o ROLLBACK confere ACL e md5 LIVE.
 LIVE: 804e2a33 / 7cd8ee22 / bd76345c / c5b1da90 / e9767fcb / 6a249b41. ACL de `acl-live.json` medida no espelho alinhado — o auditor reconfere no PRE hospedado.
 
 ## Espelho (rebuild_current, NEW_E2E_LINKED_APPROVAL=1) — attempt-234, exit 0, 20/20 + 38 gatilhos
@@ -20,3 +20,9 @@ Tentativas 231–233 interrompidas por defeitos do teste (colunas `accounts_rece
 
 ## Limites
 Claims SQL sintéticas; não prova JWT/RLS/Storage. Fiscal/contabilidade pendentes.
+
+## Pacote final verificado — espelho attempt-237 (exit 0, 26 PASS + 1 BLOCKED + 38 gatilhos)
+Bytes executados = bytes no disco = saída do gerador (`evidence/final-attempt-237/executed-sha256.json`):
+01 `a0c2d1ea…48d01`, 02 `a42cd20a…82ca6f`, 03 `eba7d65d…15addd`, 04 `5ad7eb3b…8f6551`. md5 instalados = attempt-234; corpos em `candidate-bodies.sql`, ACL em `candidate-acl.json`. Reinstalação recusada; rollback reexecutado é idempotente.
+Novos casos do predicado (transação revertida): dispensa `requires_financial_approval=false`/`not_required` sem termos → permite; dispensa com cabeçalho pendente/rejeitado ou sem aprovador comercial → nega; termos e cabeçalho rejeitados como o writer faz → nega; termos/aprovação comercial sem data → nega; parceiro de outra empresa → nega.
+BLOCKED: a rejeição pelo writer canônico não foi alcançável no espelho (`reject_b2b_payment_terms_secure` 40777d0c exige `b2b_phase1_order_visible`; o financeiro vendedor é negado). Não contornado; o pedido real com termos pendentes e concessão `os_create` exata foi negado pelo candidato. O caso de dispensa é só predicado, não fixture canônica.

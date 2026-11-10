@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-p2y0dab9/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 511, in main
+    lr=LLA.run(B,Review70.Review,Q,A,choice,OUT)
+  File "/tmp/new-order-e2e-p2y0dab9/project/scripts/b2b-downstream-audit-20261107/logistics-linked-approval-20261110/mirror_flow.py", line 135, in run
+    ok("canonical writer rejected linked terms", rj.returncode == 0 and rej_state == {"header": "rejected", "terms": "rejected", "same": True}, rej_state)
+    ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-p2y0dab9/project/scripts/b2b-downstream-audit-20261107/logistics-linked-approval-20261110/mirror_flow.py", line 13, in ok
+    assert cond, (name, detail)
+           ^^^^
+AssertionError: ('canonical writer rejected linked terms', {'same': True, 'terms': 'pending', 'header': 'pending'})

@@ -1,0 +1,8 @@
+{
+ "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)": "{postgres=X/postgres}",
+ "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)": "{postgres=X/postgres}",
+ "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)": "{postgres=X/postgres}",
+ "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "{postgres=X/postgres}",
+ "public.rpc_b2b_resale_os_availability_v1(uuid)": "{postgres=X/postgres,authenticated=X/postgres}",
+ "public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "{postgres=X/postgres,authenticated=X/postgres}"
+}

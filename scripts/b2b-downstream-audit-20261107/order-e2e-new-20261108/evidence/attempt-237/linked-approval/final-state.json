@@ -1,0 +1,7 @@
+{
+ "delivered": 5,
+ "receivables": 1,
+ "order_status": "entregue",
+ "reserved_left": 0,
+ "header_financial": "pending"
+}

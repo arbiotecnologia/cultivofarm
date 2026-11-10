@@ -1,0 +1,19 @@
+{
+ "control_no_mutation": "true,true",
+ "terms_pending_real": "false,false",
+ "terms_rejected": "false,false",
+ "terms_approved_without_actor": "false,false",
+ "link_absent": "false,false",
+ "link_divergent_other_order": "false,false",
+ "header_rejected": "false,false",
+ "commercial_approval_absent": "false,false",
+ "credit_pair_inconsistent": "false,false",
+ "terms_approved_without_date": "false,false",
+ "commercial_approval_without_date": "false,false",
+ "partner_owner_other_tenant": "false,false",
+ "terms_and_header_rejected_as_writer_does": "false,false",
+ "waived_not_required_no_terms": "true,true",
+ "waived_but_header_pending": "false,false",
+ "waived_but_header_rejected": "false,false",
+ "waived_without_commercial_approver": "false,false"
+}
