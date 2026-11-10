@@ -112,7 +112,7 @@ GRANT USAGE ON SCHEMA auth,platform_private TO authenticated,anon;
     q.execute("UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false")
     q.execute((HERE/"04-rollback-deny.sql.review").read_text())
     try: cap(actor,os_,[st]);check("ROLLBACK_REVOKES",False)
-    except psycopg2.Error as e: check("ROLLBACK_REVOKES","permission denied" in str(e)); c.rollback() if not c.autocommit else None
+    except psycopg2.Error as e: check("ROLLBACK_REVOKES","permission denied" in str(e)); c.cursor().execute("ROLLBACK")
     q=c.cursor();q.execute("SELECT count(*) FROM platform_private.resale_pilot_allowlist_v1");check("ROLLBACK_PRESERVES_HISTORY",q.fetchone()[0]==4)
 finally:
     sh("pg_ctl","-D",str(d/"db"),"-m","fast","stop");shutil.rmtree(d,ignore_errors=True)

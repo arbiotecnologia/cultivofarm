@@ -1,0 +1,144 @@
+{
+ "seams": [
+  "auth.uid() lê GUC test.uid",
+  "delivery_actor_20261030 lê tabela test_actor (seam)",
+  "fn_estoque_pode_operar lê test_actor.reserve",
+  "b2b_resale_os_operational_valid_v1 reduzido a origem/status/escopo (seam)",
+  "tabelas com colunas mínimas",
+  "reserva simulada por UPDATE direto como superusuário (seam do writer real)"
+ ],
+ "results": [
+  {
+   "case": "PRE_PASS",
+   "pass": true,
+   "detail": "63f49feea167f6865fd7840cde7dc63b"
+  },
+  {
+   "case": "POST_PASS",
+   "pass": true,
+   "detail": "ae4e259ddf5b4005a7be9320e29117ef"
+  },
+  {
+   "case": "INSTALL_RERUN_REFUSED",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "PILOT_ABSENT_GATE_CLOSED",
+   "pass": true,
+   "detail": "{\"items\": [{\"reserve\": false, \"stock_id\": \"48eaf10c-4ac5-41de-8e45-148ebf40c9c2\", \"delivery_create\": false, \"reserved_for_os\": 0}], \"os_id\": \"0276c438-3802-4c4a-8e80-8ee9e794ca5c\", \"capability\": \"b2b_resale_delivery_v1\", \"organization_id\": \"5e623eca-7698-404d-b5c2-af1b5e37bde6\"}"
+  },
+  {
+   "case": "GATE_OPEN_NO_GRANT_CLOSED",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "EXACT_GRANT_RESERVE_ONLY",
+   "pass": true,
+   "detail": "{\"48eaf10c-4ac5-41de-8e45-148ebf40c9c2\": {\"reserve\": true, \"stock_id\": \"48eaf10c-4ac5-41de-8e45-148ebf40c9c2\", \"delivery_create\": false, \"reserved_for_os\": 0}, \"bbab3e14-7075-41eb-8a4a-37cfec530af8\": {\"reserve\": false, \"stock_id\": \"bbab3e14-7075-41eb-8a4a-37cfec530af8\", \"delivery_create\": false, \"reserved_for_os\": 0}}"
+  },
+  {
+   "case": "ACTOR_WITHOUT_STOCK_PERMISSION",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "FOREIGN_ACTOR_CLOSED_ENVELOPE",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "FOREIGN_OS_CLOSED",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "FOREIGN_STOCK_CLOSED",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "NO_AUTH_CLOSED",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "DUPLICATE_STOCK_CLOSED",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "DELIVERY_CREATE_EXACT",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "REVOKED_DELIVERY_CLOSED",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "EXPIRED_RESERVE_CLOSED",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "GATE_OFF_OVERRIDES_GRANT",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "BASELINE_ZERO",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "IN_FLIGHT_NOT_ADOPTED",
+   "pass": true,
+   "detail": "ainda incerto: sem nova reserva"
+  },
+  {
+   "case": "WRITER_TX_OPEN",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "RECONCILE_DELTA_EQUALS_REQUEST",
+   "pass": true,
+   "detail": "3"
+  },
+  {
+   "case": "PARTIAL_SECOND_RESERVATION_ACCUMULATES",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "CAPABILITY_WRITES_NOTHING",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "ACL_ANON_HELPER_WRITER_CLOSED",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "ROLLBACK_REVOKES",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "ROLLBACK_PRESERVES_HISTORY",
+   "pass": false,
+   "detail": ""
+  }
+ ],
+ "failed": 1,
+ "files": {
+  "01-pre.sql.readonly": "2e94c371a76d85130832aafce6a89581d926c2c1302dc57baccccb3fb58627bb",
+  "02-install.sql.review": "e38ebb9daffcb2a6dccdae5ccacb0f76d73c8aab281522626df45ac02658def2",
+  "03-post.sql.readonly": "2eee4fc4da8c9f59afad5a6d1a4ace9cef9f58e78283264a58cc108c37b0cfb6",
+  "04-rollback-deny.sql.review": "d00556b0cc6e152c5514433ddbb0fe7114cf7ab56757ec0ee388e9b0859649a1"
+ }
+}
