@@ -279,7 +279,8 @@ BEGIN
     RAISE EXCEPTION 'unauthorized';
   END IF;
 
-  SELECT payment_terms_id INTO v_observed_terms FROM public.partner_orders WHERE id=p_partner_order_id;
+  SELECT po.payment_terms_id,t.updated_at INTO v_observed_terms,v_observed_updated_at
+    FROM public.partner_orders po LEFT JOIN public.partner_order_payment_terms t ON t.id=po.payment_terms_id AND t.partner_order_id=po.id WHERE po.id=p_partner_order_id;
   SELECT po.payment_terms_id, po.created_by, po.numero
     INTO v_terms_id, v_created_by, v_numero
   FROM public.partner_orders po
@@ -293,9 +294,6 @@ BEGIN
     RAISE EXCEPTION 'payment_terms_not_defined';
   END IF;
 
-  SELECT updated_at INTO v_observed_updated_at FROM public.partner_order_payment_terms
-    WHERE id=v_terms_id AND partner_order_id=p_partner_order_id;
-  IF NOT FOUND THEN RAISE EXCEPTION 'payment_terms_not_defined' USING ERRCODE='42501'; END IF;
   SELECT updated_at INTO v_locked_updated_at FROM public.partner_order_payment_terms
     WHERE id=v_terms_id AND partner_order_id=p_partner_order_id FOR UPDATE;
   IF NOT FOUND OR v_locked_updated_at IS DISTINCT FROM v_observed_updated_at THEN
@@ -551,7 +549,7 @@ $function$
 ;
 DO $$ BEGIN
  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '0d3b85049e3b3b799ba81b4cb95be0da' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_INSTALL_POST_DRIFT';END IF;
- IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM 'd0cd6d48530e48c3371b49c935fa2d30' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_INSTALL_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '3455ffaf7010771654aee107c2996e46' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_INSTALL_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '26c77e55dfcb2b48fdb63cbc5b2819ed' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_INSTALL_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '028894275a3b98a3abdc4e01e3fd03bf' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_INSTALL_POST_DRIFT';END IF;
 END$$;
