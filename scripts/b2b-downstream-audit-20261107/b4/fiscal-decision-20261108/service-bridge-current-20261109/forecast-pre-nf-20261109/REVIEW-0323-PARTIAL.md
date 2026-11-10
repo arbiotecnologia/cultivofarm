@@ -140,3 +140,14 @@ Tentativas: 210 exit 1 (PL/pgSQL `IF` cortado no `THEN` do `CASE` do ACL normali
 4. UI: só `get_b2b_financial_forecast_secure` está montado (somente leitura); SYNC/CANCEL e leitor não têm tela. Não há fluxo real completo.
 
 Manifesto: `final-manifest-20261110.json`; hashes: `review-1539-source-hashes.json`. Pacote `REVIEW_ONLY_INACTIVE_NOT_APPROVED`; sem GO hospedado.
+
+## Revisão 212/09537e49 — gate próprio, pins ACL completos, ordem executável (10/11/2026)
+
+Tentativas: 213 exit 1 (teste segurava a linha do gate e revogava a concessão, invertendo a ordem concessão→gate → `40P01`, negado sem sucesso; caso inválido removido, só "gate OFF" com holder no gate). Uma 214 foi interrompida pela reinicialização do sandbox, sem exit code (diretório parcial em `/tmp/attempt-214-aborted-incomplete`, não é evidência). **214 exit 0, 56/56 PASS** (PostgreSQL 17.11 descartável, Auth sintética).
+
+A. Gate próprio `b2b_forecast_lifecycle_gate_v1` (instalado `enabled=false`) + `b2b_forecast_lifecycle_allowlist_v1` (vazia; operação+ator+org+parceiro+pedido exatos, validade/revogação). A instalação não altera mais `resale_pilot_allowlist_v1` (só pina as constraints) nem o gate logístico. 58 verificações: logística aberta com lifecycle fechado ou sem concessão → negado; outra operação → negado; o positivo de autorização roda com logística FECHADA; revogação/gate OFF com waiter comprovado dentro do helper próprio → `42501 B2B_FORECAST_PILOT_DENIED`, previsão inalterada. Os 18 casos pós-espera do início usam o gate próprio; transmissões 6→6. MD5 sync `b5108651…`, cancel `9b930e51…`, begin `e4ce0ffc…`.
+B. ACL normalizada inclui grantor e opção de concessão (`G`/`-`) sobre a ACL efetiva. Pinadas também `b2b_proven_money_row(uuid)` e `_internal(uuid,uuid)`. Drift `WITH GRANT OPTION` em `is_financial_staff` e grant extra em `b2b_proven_money_row` → `DEP_DRIFT`. Gestor próprio positivo, estrangeiro negado.
+C. `final-manifest-20261110.json`: 11 estágios com caminhos/SHA256, classes LIVE/INTERMEDIÁRIO/LOCAL, fases já presentes só para verificação e a costura de pin B4 declarada.
+D. UI sem botões novos. `ROTEIRO-AB-HOSPEDADO.md` e `hosted-live-pre-diagnostic.sql.readonly` (somente leitura) preparados; não foram executados hospedados.
+
+Regressão: 747→738, aberto 9→18→9, residual 0, 38 gatilhos íntegros (antes dos cenários, antes do rollback, fim). Hashes: `review-1609-source-hashes.json`. Pacote `REVIEW_ONLY_INACTIVE_NOT_APPROVED`.
