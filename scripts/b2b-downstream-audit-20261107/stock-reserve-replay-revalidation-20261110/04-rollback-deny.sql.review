@@ -1,0 +1,7 @@
+-- Rollback deny-only: NUNCA restaura o corpo 3e0dc7c4 (recibo sem revalidação). Em emergência,
+-- fecha a reserva em lote para clientes; histórico (stock_batch_requests/ledger) preservado.
+BEGIN;
+REVOKE EXECUTE ON FUNCTION public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) FROM authenticated;
+DO $$BEGIN IF has_function_privilege('authenticated','public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb)','EXECUTE') THEN RAISE EXCEPTION 'ROLLBACK_FAILED'; END IF;
+ IF md5(pg_get_functiondef('public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb)'::regprocedure))='3e0dc7c48ab28f4402699b234476aa8a' THEN RAISE EXCEPTION 'ROLLBACK_VULNERABLE_BODY_PRESENT'; END IF; END$$;
+COMMIT;

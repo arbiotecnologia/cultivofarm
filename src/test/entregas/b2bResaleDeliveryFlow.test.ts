@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { parseResaleCapability, runAtomicResaleGroup, replayResaleGroup, runResaleReservation, reconcileResaleReservation, loadReserveAttempt, reserveSlot, RESALE_CAP_RPC, RESERVE_RPC } from "@/lib/entregas/b2bResaleDeliveryFlow";
+import { replayResaleReservation, parseReserveAck, parseResaleCapability, runAtomicResaleGroup, replayResaleGroup, runResaleReservation, reconcileResaleReservation, loadReserveAttempt, reserveSlot, RESALE_CAP_RPC, RESERVE_RPC } from "@/lib/entregas/b2bResaleDeliveryFlow";
 import { buildGroupArgs, CAPABILITY_RPC, GROUP_RPC, type Rpc } from "@/lib/entregas/deliveryOperationsFlow";
 
 const ORG = "11111111-1111-4111-8111-111111111111", OTHER = "99999999-9999-4999-8999-999999999999";
@@ -120,10 +120,34 @@ describe("reserva B2B com timeout incerto", () => {
   });
   it("troca de sessão durante o envio: resultado não é adotado", async () => {
     const s = mem(); let stale = false;
-    const { rpc } = rpcWith({ [RESALE_CAP_RPC]: () => ({ data: env([it1({ reserve: true })]), error: null }), [RESERVE_RPC]: () => { stale = true; return { data: ST, error: null }; } });
+    const { rpc } = rpcWith({ [RESALE_CAP_RPC]: () => ({ data: env([it1({ reserve: true })]), error: null }), [RESERVE_RPC]: () => { stale = true; return { data: { ok: true, replay: false, itens: [ST] }, error: null }; } });
     const out = await runResaleReservation(rpc, s, base, () => { if (stale) throw new Error("stale"); });
     expect(out.status).toBe("stale");
     expect(s.getItem(reserveSlot(ACTOR, ORG, OS))).not.toBeNull();
+  });
+});
+describe("replay exato da reserva", () => {
+  const base = { key: "reserve-key-9", actor: ACTOR, org: ORG, osId: OS, stockId: ST, qty: 2, partnerId: PA, partnerOrderId: PO };
+  it("timeout -> replay com mesma chave e mesmos args; recusa do replay (revogação) mantém tentativa", async () => {
+    const s = mem(); let n = 0;
+    const { rpc, calls } = rpcWith({
+      [RESALE_CAP_RPC]: () => ({ data: env([it1({ reserve: true })]), error: null }),
+      [RESERVE_RPC]: () => { n++; if (n === 1) return Promise.reject(new Error("timeout")); if (n === 2) return { data: null, error: { code: "42501", message: "RESALE_PILOT_SCOPE_DENIED" } }; return { data: { ok: true, replay: true, itens: [ST2] }, error: null }; },
+    });
+    const out = await runResaleReservation(rpc, s, base, fence);
+    if (out.status !== "uncertain") throw new Error("esperado incerto");
+    expect((await replayResaleReservation(rpc, s, out.attempt, fence)).status).toBe("uncertain");
+    expect(s.getItem(reserveSlot(ACTOR, ORG, OS))).not.toBeNull();
+    expect(await replayResaleReservation(rpc, s, out.attempt, fence)).toEqual({ status: "confirmed", reservedId: ST2, reconciled: false });
+    const w = calls.filter(c => c.fn === RESERVE_RPC);
+    expect(w).toHaveLength(3);
+    expect(w.every(c => JSON.stringify(c.args) === JSON.stringify(w[0].args))).toBe(true);
+    expect(w[0].args?.p_idempotency_key).toBe("reserve-key-9");
+    expect(s.getItem(reserveSlot(ACTOR, ORG, OS))).toBeNull();
+  });
+  it("recibo com chave extra ou dois itens não é adotado", () => {
+    expect(parseReserveAck({ ok: true, replay: false, itens: [ST], x: 1 })).toBeNull();
+    expect(parseReserveAck({ ok: true, replay: false, itens: [ST, ST2] })).toBeNull();
   });
 });
 void vi;

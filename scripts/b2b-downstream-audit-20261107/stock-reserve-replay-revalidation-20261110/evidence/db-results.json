@@ -1,0 +1,191 @@
+{
+ "live_md5": "3e0dc7c48ab28f4402699b234476aa8a",
+ "candidate_md5": "e75a69c29fb6c0716c89706db0ca1076",
+ "failed": 0,
+ "results": [
+  {
+   "case": "LIVE:LIVE_BODY_MD5_EQUALS_PRODUCTION",
+   "pass": true,
+   "detail": "3e0dc7c48ab28f4402699b234476aa8a"
+  },
+  {
+   "case": "LIVE:PRE_PASS",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "LIVE:FIRST_SPLIT_RESERVE",
+   "pass": true,
+   "detail": "{\"ok\": true, \"itens\": [\"0f48e2c0-458f-4b2e-a1a4-a2f9bb986761\"], \"replay\": false}"
+  },
+  {
+   "case": "LIVE:REPLAY_SAME_RECEIPT_NO_NEW_MOVE",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "LIVE:FOREIGN_ACTOR_DENIED",
+   "pass": true,
+   "detail": "('42501', 'ESTQ_ITEM_FORA_ESCOPO')"
+  },
+  {
+   "case": "LIVE:BIO_FIRST",
+   "pass": true,
+   "detail": "('ok', {'ok': True, 'itens': ['452363ad-c50d-4387-8730-7d24c86904c6'], 'replay': False})"
+  },
+  {
+   "case": "LIVE:BIO_REPLAY_PRESERVED",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "LIVE:GATE_OFF_REPLAY",
+   "pass": true,
+   "detail": "REPRODUZ: recibo devolvido com gate fechado ok"
+  },
+  {
+   "case": "LIVE:WAITER_PROVEN",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "LIVE:REVOKED_DURING_WAIT",
+   "pass": true,
+   "detail": "REPRODUZ: recibo após revogação ok"
+  },
+  {
+   "case": "LIVE:REGRANT_REPLAY_OK",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "LIVE:WAITER2_PROVEN",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "LIVE:ACTOR_REMOVED_DURING_WAIT",
+   "pass": true,
+   "detail": "ok"
+  },
+  {
+   "case": "LIVE:EXPIRED_REPLAY",
+   "pass": true,
+   "detail": "ok"
+  },
+  {
+   "case": "LIVE:NO_EXTRA_MOVEMENT",
+   "pass": true,
+   "detail": "2"
+  },
+  {
+   "case": "LIVE:RECEIPTS_PRESERVED",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "CANDIDATE:LIVE_BODY_MD5_EQUALS_PRODUCTION",
+   "pass": true,
+   "detail": "3e0dc7c48ab28f4402699b234476aa8a"
+  },
+  {
+   "case": "CANDIDATE:PRE_PASS",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "CANDIDATE:POST_PASS",
+   "pass": true,
+   "detail": "e75a69c29fb6c0716c89706db0ca1076"
+  },
+  {
+   "case": "CANDIDATE:RERUN_REFUSED",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "CANDIDATE:FIRST_SPLIT_RESERVE",
+   "pass": true,
+   "detail": "{\"ok\": true, \"itens\": [\"1b0e3a92-b907-461b-b3a4-e9efa75d2870\"], \"replay\": false}"
+  },
+  {
+   "case": "CANDIDATE:REPLAY_SAME_RECEIPT_NO_NEW_MOVE",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "CANDIDATE:FOREIGN_ACTOR_DENIED",
+   "pass": true,
+   "detail": "('42501', 'ESTQ_ITEM_FORA_ESCOPO')"
+  },
+  {
+   "case": "CANDIDATE:BIO_FIRST",
+   "pass": true,
+   "detail": "('ok', {'ok': True, 'itens': ['c7ac0270-3f89-43a1-b0fc-e89c20d4196a'], 'replay': False})"
+  },
+  {
+   "case": "CANDIDATE:BIO_REPLAY_PRESERVED",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "CANDIDATE:GATE_OFF_REPLAY",
+   "pass": true,
+   "detail": "negado 42501"
+  },
+  {
+   "case": "CANDIDATE:WAITER_PROVEN",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "CANDIDATE:REVOKED_DURING_WAIT",
+   "pass": true,
+   "detail": "negado pós-espera 42501"
+  },
+  {
+   "case": "CANDIDATE:REGRANT_REPLAY_OK",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "CANDIDATE:WAITER2_PROVEN",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "CANDIDATE:ACTOR_REMOVED_DURING_WAIT",
+   "pass": true,
+   "detail": "42501"
+  },
+  {
+   "case": "CANDIDATE:EXPIRED_REPLAY",
+   "pass": true,
+   "detail": "42501"
+  },
+  {
+   "case": "CANDIDATE:NO_EXTRA_MOVEMENT",
+   "pass": true,
+   "detail": "2"
+  },
+  {
+   "case": "CANDIDATE:RECEIPTS_PRESERVED",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "case": "CANDIDATE:ROLLBACK_DENY",
+   "pass": true,
+   "detail": ""
+  }
+ ],
+ "sha256": {
+  "01-pre.sql.readonly": "ce83ca6965ea1cb91b8e36ce2aea611e4ef7c72f3859429b4c887a65d70bef7a",
+  "02-install.sql.review": "e290b462fc8c54e10777f7d11044237d1d53bf8f638fb7e7278a2142d222c308",
+  "03-post.sql.readonly": "b89c1712177d7c4dadc9066f6e689297dc8b14859b2c516e1b8c6638eb111bf0",
+  "04-rollback-deny.sql.review": "3241f02bb19c61ab42e8ffa41264b8bc46a89cdb81447a913ac4f3e4b372ff20",
+  "live-v2-body.sql": "83c327c6e20cdf74dd4f960fa2e5200d5a1be1642e5df16689a8332d19c6fdca",
+  "generate.py": "48f8f480534680e9ec81fcfb5094dc5403dea3c6d8099f00ee13221e93e91a48",
+  "db_replay_test.py": "4f3ae778954bba05fb7f6a5bcd1477cce9465659fab2a9a576ba1d3c3ad9eae3"
+ }
+}

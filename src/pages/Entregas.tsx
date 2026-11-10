@@ -60,7 +60,7 @@ import { RegistrarEntregaDialog, type RegistrarEntregaSubmit } from "@/component
 import { PreviewDocumentoEntrega } from "@/components/entregas/PreviewDocumentoEntrega";
 import { labelModalidade, labelResponsavelCurto } from "@/lib/entregas/modalidade";
 import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
-import { replayResaleGroup, runAtomicResaleGroup } from "@/lib/entregas/b2bResaleDeliveryFlow";
+import { replayResaleGroup } from "@/lib/entregas/b2bResaleDeliveryFlow";
 import { clearPending, loadPending, markReplayRejected, parserFor, replayUncertain, runAtomicCancel, runAtomicGroup, savePending, type Outcome, type RetrySnapshot, type Rpc } from "@/lib/entregas/deliveryOperationsFlow";
 import { dispatchSend, type SendAttempt } from "@/lib/entregas/deliverySendFlow";
 import { loadSends, persistBeforeDispatch, removeExactSend, SEND_PERSIST_PREFIX, toAttempt, withSendLock, type LockManagerLike } from "@/lib/entregas/deliverySendPersistence";
@@ -631,7 +631,7 @@ export default function Entregas() {
         || ids.some(id => (rows.get(id) as any).updated_at !== observed.itens[id].updated_at || (rows.get(id) as any).status !== observed.itens[id].status);
       if (changed) throw new Error("A OS ou um lote mudou desde a seleção. Feche, revise os dados atualizados e confirme novamente. Nenhuma alteração foi enviada.");
       let attempt: RetrySnapshot | null = null;
-      const outcome = await (observed.os.origem === "b2b" ? runAtomicResaleGroup : runAtomicGroup)(supabase.rpc.bind(supabase) as unknown as Rpc, {
+      const outcome = await runAtomicGroup(supabase.rpc.bind(supabase) as unknown as Rpc, {
         requestKey: grupoId, expectedOrg: orgId, osId, osTipo, osOrigem: observed.os.origem, osPartnerOrderId: observed.os.partner_order_id,
         osObservedUpdatedAt: observed.os.updated_at,
         itens: itens.map(({ item, quantidade }) => ({ itemId: item.id, quantidade, observedUpdatedAt: observed.itens[item.id].updated_at as string, status: observed.itens[item.id].status as string, reservadoParaOsId: item.reservado_para_os_id ?? null, quantidadeReservada: item.quantidade_reservada ?? null, quantidadeTotal: item.quantidade ?? null })),
