@@ -1,0 +1,9 @@
+{
+  "exact_canonical": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+  "env_scoped_only": {
+    "exit": 0,
+    "started": true
+  },
+  "rolled_back": true,
+  "hosted": false
+}
