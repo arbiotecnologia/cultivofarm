@@ -1,0 +1,19 @@
+{
+  "before": {
+    "documents": 3,
+    "snapshots": 3,
+    "b2b_titles": 3,
+    "allocations": 3,
+    "close_pending": 2,
+    "forecast_events": 40
+  },
+  "after": {
+    "documents": 3,
+    "snapshots": 3,
+    "b2b_titles": 3,
+    "allocations": 3,
+    "close_pending": 2,
+    "forecast_events": 40
+  },
+  "hosted": false
+}

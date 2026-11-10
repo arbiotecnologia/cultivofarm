@@ -46,10 +46,6 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
 $$;
 REVOKE ALL ON FUNCTION {HELPER} FROM PUBLIC,anon,authenticated,service_role;
 """
-CLOSED_HELPER = (f"CREATE OR REPLACE FUNCTION {HELPER} RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER "
-                 "SET search_path='' AS $$ SELECT false $$;\n"
-                 f"REVOKE ALL ON FUNCTION {HELPER} FROM PUBLIC,anon,authenticated,service_role;\n")
-
 
 def acl_expr(oid_sql):
     """Normalized ACL: sorted grantee:privilege:grantor (PUBLIC=0) over aclexplode, owner default included."""
