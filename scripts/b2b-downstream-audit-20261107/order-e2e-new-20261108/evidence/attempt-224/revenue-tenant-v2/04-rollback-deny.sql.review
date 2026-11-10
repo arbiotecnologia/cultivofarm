@@ -1,0 +1,6 @@
+-- REVIEW_ONLY_INACTIVE_NOT_APPROVED. project_ref swzpzcwiasxmjutrmvkm. Ordem: B4 composição + estágio 13–15 (pins LOCAL_INTERMEDIATE/LIVE em projection-reader-pins.json) -> 01 -> 02 -> 03; rollback 04.
+-- Deny-only: mantém corpo, revoga EXECUTE de clientes; não restaura legado nem v1.
+BEGIN;
+DO $$ BEGIN IF to_regprocedure('public.rpc_b2b_revenue_forecast_tenant_v2(uuid)') IS NULL OR md5(pg_get_functiondef('public.rpc_b2b_revenue_forecast_tenant_v2(uuid)'::regprocedure))<>'d9a1c488067897ceaf216f2d1a0ebf3d' OR ((SELECT coalesce(string_agg(CASE WHEN x.grantee=0 THEN 'PUBLIC' ELSE x.grantee::regrole::text END||':'||x.privilege_type||':'||x.grantor::regrole::text||':'||CASE WHEN x.is_grantable THEN 'G' ELSE '-' END,',' ORDER BY CASE WHEN x.grantee=0 THEN 'PUBLIC' ELSE x.grantee::regrole::text END||':'||x.privilege_type||':'||x.grantor::regrole::text||':'||CASE WHEN x.is_grantable THEN 'G' ELSE '-' END),'') FROM pg_proc pp, aclexplode(coalesce(pp.proacl,acldefault('f',pp.proowner))) x WHERE pp.oid='public.rpc_b2b_revenue_forecast_tenant_v2(uuid)'::regprocedure))<>'authenticated:EXECUTE:postgres:-,postgres:EXECUTE:postgres:-' THEN RAISE EXCEPTION 'REVENUE_V2_ROLLBACK_TARGET_DRIFT'; END IF; END $$;
+REVOKE ALL ON FUNCTION public.rpc_b2b_revenue_forecast_tenant_v2(uuid) FROM PUBLIC,anon,authenticated,service_role;
+COMMIT;
