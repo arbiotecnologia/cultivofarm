@@ -41,6 +41,8 @@ AS $function$
 DECLARE t public.fiscal_sefaz_transmissions;inv public.fiscal_invoices;f platform_private.b2b_financial_forecasts;
  v_invoice uuid;org uuid;ev text;payload jsonb;att integer;result jsonb;
 BEGIN
+ IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed' THEN
+  RAISE EXCEPTION 'B2B_FORECAST_READ_COMMITTED_REQUIRED' USING ERRCODE='42501';END IF;
  -- Authority is derived server-side from the JWT actor; payload/IDs never attest it.
  org:=platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]);
  IF org IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_FISCAL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
@@ -102,10 +104,17 @@ BEGIN
      WHERE r.id=t.xml_run_id AND r.fiscal_invoice_id=inv.id AND r.access_key=inv.access_key AND r.environment_code='2')
    AND t.n_prot IS NULL AND t.n_rec IS NULL
    AND f.fiscal_intent_id=inv.id
-   AND NOT EXISTS(SELECT 1 FROM public.fiscal_sefaz_transmissions newer
-     JOIN public.fiscal_invoices ni ON ni.id=newer.fiscal_invoice_id
-     WHERE ni.partner_order_id=inv.partner_order_id AND newer.id<>t.id
-      AND (newer.created_at,newer.id)>(t.created_at,t.id)) THEN
+   -- Causality is recorded by the canonical begin while holding the aggregate:
+   -- exact timeout event/revision/emission, never timestamp+UUID ordering.
+   AND EXISTS(SELECT 1 FROM platform_private.b2b_forecast_consultation_links_v1 l
+     JOIN platform_private.b2b_financial_forecast_events e ON e.id=l.timeout_event_id
+     WHERE l.transmission_id=t.id AND l.forecast_id=f.id AND l.forecast_version=f.version
+       AND l.invoice_id=inv.id AND l.xml_run_id=t.xml_run_id
+       AND e.forecast_id=f.id AND e.event_type='EMISSION_TIMEOUT'
+       AND e.payload->>'transmission_id'=l.emission_transmission_id::text
+       AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_financial_forecast_events later
+         WHERE later.forecast_id=f.id AND later.id>e.id
+          AND later.event_type IN ('EMISSION_STARTED','EMISSION_TIMEOUT','FISCAL_CONFIRMED'))) THEN
     ev:='CONSULTATION_NOT_AUTHORIZED';
   END IF;
  END IF;
@@ -129,6 +138,8 @@ CANCEL = """CREATE OR REPLACE FUNCTION public.rpc_b2b_forecast_cancel_residual_v
 AS $function$
 DECLARE po public.partner_orders;f platform_private.b2b_financial_forecasts;org uuid;
 BEGIN
+ IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed' THEN
+  RAISE EXCEPTION 'B2B_FORECAST_READ_COMMITTED_REQUIRED' USING ERRCODE='42501';END IF;
  org:=platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]);
  IF org IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_CANCEL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
  IF public._saas_user_has_feature(auth.uid(),'pedidos_b2b') IS NOT TRUE
@@ -181,23 +192,81 @@ def begin_overlay(root):
     guard = """  -- Shared serialization with cancel: invoice -> order -> forecast, as H13.
   -- Runs in the canonical worker writer, before any transmission insert/replay.
   IF v_invoice IS NOT NULL AND _service IN ('NFeAutorizacao4','NFeRetAutorizacao4','NFeConsultaProtocolo4') THEN
+    IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed' THEN
+      RAISE EXCEPTION 'B2B_FORECAST_READ_COMMITTED_REQUIRED' USING ERRCODE='42501';END IF;
     PERFORM i.id FROM public.fiscal_invoices i WHERE i.id=v_invoice FOR SHARE;
     PERFORM po.id FROM public.partner_orders po JOIN public.fiscal_invoices i ON i.partner_order_id=po.id
       WHERE i.id=v_invoice FOR UPDATE OF po;
     PERFORM f.id FROM platform_private.b2b_financial_forecasts f JOIN public.fiscal_invoices i ON i.partner_order_id=f.order_id
       WHERE i.id=v_invoice FOR UPDATE OF f;
-    IF _service='NFeAutorizacao4' AND EXISTS(SELECT 1 FROM platform_private.b2b_financial_forecasts f
-      JOIN public.fiscal_invoices i ON i.partner_order_id=f.order_id WHERE i.id=v_invoice
-      AND (f.organization_id IS DISTINCT FROM i.organization_id OR f.partner_id IS DISTINCT FROM i.debtor_partner_id
-       OR f.state IN ('cancelado_antes_nf','cancelado_residual','consulta_fiscal_obrigatoria','faturado_total')
-       OR (f.state='emissao_em_andamento' AND f.fiscal_intent_id IS DISTINCT FROM i.id)
-       OR i.total_amount>f.residual_amount OR i.total_amount<=0)) THEN
-      RAISE EXCEPTION 'B2B_FORECAST_BEGIN_BLOCKED' USING ERRCODE='PT409';
-    END IF;
   END IF;
 """
     assert row['body'].count(anchor)==1
     body=row['body'].replace(anchor,guard+anchor)
+    # Only new dispatches reserve; exact replay above retains original transmission.
+    insert_anchor = '  INSERT INTO public.fiscal_sefaz_transmissions ('
+    reserve = """  SELECT f.* INTO v_forecast FROM platform_private.b2b_financial_forecasts f
+    JOIN public.fiscal_invoices i ON i.partner_order_id=f.order_id WHERE i.id=v_invoice;
+  IF FOUND AND _service IN ('NFeAutorizacao4','NFeConsultaProtocolo4','NFeRetAutorizacao4') THEN
+    SELECT i.* INTO v_source FROM public.fiscal_invoices i WHERE i.id=v_invoice;
+    IF v_forecast.organization_id IS DISTINCT FROM v_source.organization_id
+      OR v_forecast.partner_id IS DISTINCT FROM v_source.debtor_partner_id THEN
+      RAISE EXCEPTION 'B2B_FORECAST_BEGIN_SCOPE_DENIED' USING ERRCODE='42501';END IF;
+    IF _service IN ('NFeAutorizacao4','NFeConsultaProtocolo4') THEN
+      -- Worker actor argument is NOT sufficient: canonical active internal authority,
+      -- tenant, entitlements and exact pilot are read from server records.
+      IF _actor IS NULL OR NOT EXISTS(SELECT 1 FROM public.profiles p
+        JOIN public.organizations o ON o.id=p.organization_id
+        WHERE p.user_id=_actor AND p.ativo IS TRUE AND o.ativo IS TRUE
+         AND p.organization_id=v_source.organization_id)
+        OR NOT (public.has_role(_actor,'administrador') OR public.has_role(_actor,'financeiro'))
+        OR public._saas_user_has_feature(_actor,'pedidos_b2b') IS NOT TRUE
+        OR public._saas_user_has_feature(_actor,'contas_receber') IS NOT TRUE
+        OR platform_private.resale_pilot_allowed_v1('b2b_resale','forecast_begin',_actor,
+          v_source.organization_id,v_source.debtor_partner_id,v_source.partner_order_id,NULL,NULL,NULL,NULL) IS NOT TRUE THEN
+        RAISE EXCEPTION 'B2B_FORECAST_BEGIN_SCOPE_DENIED' USING ERRCODE='42501';END IF;
+      IF public._saas_user_has_feature(_actor,'pedidos_b2b') IS NOT TRUE
+        OR public._saas_user_has_feature(_actor,'contas_receber') IS NOT TRUE
+        OR NOT EXISTS(SELECT 1 FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id
+          WHERE p.user_id=_actor AND p.ativo IS TRUE AND o.ativo IS TRUE AND p.organization_id=v_source.organization_id)
+        OR NOT (public.has_role(_actor,'administrador') OR public.has_role(_actor,'financeiro')) THEN
+        RAISE EXCEPTION 'B2B_FORECAST_BEGIN_SCOPE_DENIED' USING ERRCODE='42501';END IF;
+    END IF;
+    IF _service='NFeAutorizacao4' AND
+      (v_forecast.state NOT IN ('aguardando_fiscal','faturado_parcial')
+       OR v_source.total_amount IS NULL OR v_source.total_amount<=0 OR v_source.total_amount>v_forecast.residual_amount) THEN
+      RAISE EXCEPTION 'B2B_FORECAST_BEGIN_BLOCKED' USING ERRCODE='PT409';END IF;
+    IF _service='NFeConsultaProtocolo4' THEN
+      SELECT e.* INTO v_timeout FROM platform_private.b2b_financial_forecast_events e
+       WHERE e.forecast_id=v_forecast.id AND e.event_type='EMISSION_TIMEOUT' ORDER BY e.id DESC LIMIT 1;
+      IF v_forecast.state<>'consulta_fiscal_obrigatoria' OR v_forecast.fiscal_intent_id IS DISTINCT FROM v_invoice
+        OR v_timeout.id IS NULL OR v_timeout.payload->>'invoice_id' IS DISTINCT FROM v_invoice::text
+        OR NOT EXISTS(SELECT 1 FROM public.fiscal_sefaz_transmissions t
+         WHERE t.id=(v_timeout.payload->>'transmission_id')::uuid AND t.fiscal_invoice_id=v_invoice
+          AND t.xml_run_id=_xml_run_id AND t.service='NFeAutorizacao4' AND t.outcome='TRANSPORT_ERROR') THEN
+        RAISE EXCEPTION 'B2B_FORECAST_CONSULTATION_CAUSE_UNPROVEN' USING ERRCODE='PT409';END IF;
+    END IF;
+  END IF;
+"""
+    assert body.count(insert_anchor)==1
+    body=body.replace('  v_row       public.fiscal_sefaz_transmissions;', '''  v_row       public.fiscal_sefaz_transmissions;
+  v_forecast platform_private.b2b_financial_forecasts;
+  v_source public.fiscal_invoices;
+  v_timeout platform_private.b2b_financial_forecast_events;''').replace(insert_anchor,reserve+insert_anchor)
+    after_insert='  RETURNING * INTO v_row;'
+    assert body.count(after_insert)==1
+    body=body.replace(after_insert,after_insert+"""
+  IF v_forecast.id IS NOT NULL AND _service='NFeAutorizacao4' THEN
+    PERFORM platform_private.b2b_financial_forecast_transition_v1(v_forecast.id,v_forecast.version,
+      'EMISSION_STARTED',v_invoice::text,jsonb_build_object('attempt',(v_row.attempt+1)::text,
+       'invoice_id',v_invoice,'transmission_id',v_row.id,'service',_service,'source','fiscal_sefaz_transmissions'));
+  ELSIF v_forecast.id IS NOT NULL AND _service='NFeConsultaProtocolo4' THEN
+    INSERT INTO platform_private.b2b_forecast_consultation_links_v1
+      (transmission_id,forecast_id,forecast_version,invoice_id,xml_run_id,timeout_event_id,emission_transmission_id)
+    VALUES(v_row.id,v_forecast.id,v_forecast.version,v_invoice,_xml_run_id,v_timeout.id,
+      (v_timeout.payload->>'transmission_id')::uuid);
+  END IF;
+""")
     sig='public.rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid)'
     acl=md5('postgres=EXECUTE/postgres|service_role=EXECUTE/postgres')
     return body, sig, row['md5'], md5(body), acl
@@ -226,11 +295,22 @@ def lifecycle_pilot_sql():
  ALTER TABLE platform_private.resale_pilot_allowlist_v1 DROP CONSTRAINT resale_pilot_allowlist_v1_operation_check;
  ALTER TABLE platform_private.resale_pilot_allowlist_v1 DROP CONSTRAINT resale_pilot_allowlist_v1_check2;
  EXECUTE 'ALTER TABLE platform_private.resale_pilot_allowlist_v1 ADD CONSTRAINT resale_pilot_allowlist_v1_operation_check CHECK ('
-  ||substr(op,8,length(op)-8)||' OR operation IN (''forecast_sync'',''forecast_cancel''))';
+  ||substr(op,8,length(op)-8)||' OR operation IN (''forecast_sync'',''forecast_cancel'',''forecast_begin''))';
  EXECUTE 'ALTER TABLE platform_private.resale_pilot_allowlist_v1 ADD CONSTRAINT resale_pilot_allowlist_v1_check2 CHECK ('
-  ||substr(shape,8,length(shape)-8)||' OR (operation IN (''forecast_sync'',''forecast_cancel'') AND gate=''b2b_resale''
+  ||substr(shape,8,length(shape)-8)||' OR (operation IN (''forecast_sync'',''forecast_cancel'',''forecast_begin'') AND gate=''b2b_resale''
    AND partner_id IS NOT NULL AND order_id IS NOT NULL AND order_item_id IS NULL AND product_id IS NULL AND stock_id IS NULL AND delivery_id IS NULL))';
 END $pilot$;
+CREATE TABLE platform_private.b2b_forecast_consultation_links_v1(
+ transmission_id uuid PRIMARY KEY REFERENCES public.fiscal_sefaz_transmissions(id),
+ forecast_id uuid NOT NULL REFERENCES platform_private.b2b_financial_forecasts(id),
+ forecast_version integer NOT NULL CHECK(forecast_version>0),invoice_id uuid NOT NULL,
+ xml_run_id uuid NOT NULL,timeout_event_id bigint NOT NULL REFERENCES platform_private.b2b_financial_forecast_events(id),
+ emission_transmission_id uuid NOT NULL REFERENCES public.fiscal_sefaz_transmissions(id));
+ALTER TABLE platform_private.b2b_forecast_consultation_links_v1 ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON platform_private.b2b_forecast_consultation_links_v1 FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER b2b_forecast_consultation_links_immutable BEFORE UPDATE OR DELETE
+ ON platform_private.b2b_forecast_consultation_links_v1 FOR EACH ROW
+ EXECUTE FUNCTION platform_private.b2b_financial_forecast_events_immutable();
 """
 
 
