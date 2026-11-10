@@ -1,0 +1,242 @@
+{
+  "events": [
+    {
+      "event": "EMISSION_STARTED",
+      "state": "emissao_em_andamento",
+      "version": 2,
+      "replayed": false,
+      "invoice_id": "00000000-0000-0000-0000-000000000960",
+      "forecast_id": "78421e61-f027-4c99-bb64-a7ee989da1d9",
+      "transmission_id": "00000000-0000-0000-0000-000000000962"
+    },
+    {
+      "event": "EMISSION_STARTED",
+      "state": "emissao_em_andamento",
+      "version": 2,
+      "replayed": true,
+      "invoice_id": "00000000-0000-0000-0000-000000000960",
+      "forecast_id": "78421e61-f027-4c99-bb64-a7ee989da1d9",
+      "transmission_id": "00000000-0000-0000-0000-000000000962"
+    },
+    {
+      "event": "EMISSION_REJECTED",
+      "state": "aguardando_fiscal",
+      "version": 3,
+      "replayed": false,
+      "invoice_id": "00000000-0000-0000-0000-000000000960",
+      "forecast_id": "78421e61-f027-4c99-bb64-a7ee989da1d9",
+      "transmission_id": "00000000-0000-0000-0000-000000000962"
+    },
+    {
+      "event": "EMISSION_STARTED",
+      "state": "emissao_em_andamento",
+      "version": 4,
+      "replayed": false,
+      "invoice_id": "00000000-0000-0000-0000-000000000965",
+      "forecast_id": "78421e61-f027-4c99-bb64-a7ee989da1d9",
+      "transmission_id": "00000000-0000-0000-0000-000000000967"
+    },
+    {
+      "event": "EMISSION_TIMEOUT",
+      "state": "consulta_fiscal_obrigatoria",
+      "version": 5,
+      "replayed": false,
+      "invoice_id": "00000000-0000-0000-0000-000000000965",
+      "forecast_id": "78421e61-f027-4c99-bb64-a7ee989da1d9",
+      "transmission_id": "00000000-0000-0000-0000-000000000967"
+    },
+    {
+      "event": "CONSULTATION_NOT_AUTHORIZED",
+      "state": "aguardando_fiscal",
+      "version": 6,
+      "replayed": false,
+      "invoice_id": "00000000-0000-0000-0000-000000000965",
+      "forecast_id": "78421e61-f027-4c99-bb64-a7ee989da1d9",
+      "transmission_id": "0bdf2ad5-b544-467f-b59f-0fb553e8388a"
+    }
+  ],
+  "negatives": {
+    "foreign_admin": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN",
+    "cross_tenant_buyer": "ERROR:  42501: B2B_FORECAST_FISCAL_ACTOR_DENIED",
+    "service_role_wrapper": "ERROR:  42501: permission denied for function rpc_b2b_forecast_fiscal_sync_v1",
+    "service_role_private": "ERROR:  42501: permission denied for schema platform_private",
+    "authenticated_private_cancel": "ERROR:  42501: permission denied for function b2b_financial_forecast_cancel_residual_v1",
+    "stale_version": "ERROR:  PT409: B2B_FORECAST_CAS_CONFLICT",
+    "cancel_while_consultation_required": "ERROR:  PT409: B2B_FORECAST_STATE_CONFLICT",
+    "begin_env_tenant_scope": {
+      "own_settings_env_1": {
+        "exit": 3,
+        "blocked": true,
+        "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 95 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      },
+      "own_settings_env_null": {
+        "exit": 3,
+        "blocked": true,
+        "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 95 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      },
+      "own_settings_inactive_other_tenant_env_2": {
+        "exit": 3,
+        "blocked": true,
+        "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 95 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      },
+      "consulta_caller_invoice_differs_from_run": {
+        "exit": 3,
+        "expected": "SEFAZ_INVOICE_RUN_MISMATCH",
+        "blocked": true,
+        "stderr": "ERROR:  P0001: SEFAZ_INVOICE_RUN_MISMATCH\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 78 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      },
+      "status_invoice_only_issuer_env_1": {
+        "exit": 3,
+        "expected": "FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "blocked": true,
+        "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 95 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      },
+      "no_document_without_actor": {
+        "exit": 3,
+        "expected": "FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "blocked": true,
+        "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 95 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      },
+      "no_document_actor_org_ambiguous_two_active": {
+        "exit": 3,
+        "expected": "ux_company_fiscal_settings_active_organization",
+        "blocked": true,
+        "stderr": "ERROR:  23505: duplicate key value violates unique constraint \"ux_company_fiscal_settings_active_organization\"\nDETAIL:  Key (organization_id)=(00000000-0000-0000-0000-000000000001) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  company_fiscal_settings\nCONSTRAINT NAME:  ux_company_fiscal_settings_active_organization\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n"
+      },
+      "no_document_actor_org_without_settings": {
+        "exit": 3,
+        "expected": "FISCAL_PRODUCTION_ENDPOINT_BLOCKED",
+        "blocked": true,
+        "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 95 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      },
+      "transmissions_created": "0"
+    },
+    "consultation_not_terminal": "ERROR:  PT409: B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE",
+    "cancel_with_consultation_in_flight": "ERROR:  PT409: B2B_FORECAST_FISCAL_IN_FLIGHT",
+    "revoked_profile_after_lock": "ERROR:  42501: B2B_FORECAST_FISCAL_ACTOR_DENIED"
+  },
+  "review": [
+    {
+      "case": "BEFORE-schema-rejection-clears-consultation",
+      "exit": 0,
+      "stdout": "{\"event\": \"CONSULTATION_NOT_AUTHORIZED\", \"state\": \"aguardando_fiscal\", \"version\": 6, \"replayed\": false, \"invoice_id\": \"00000000-0000-0000-0000-000000000965\", \"forecast_id\": \"78421e61-f027-4c99-bb64-a7ee989da1d9\", \"transmission_id\": \"0bdf2ad5-b544-467f-b59f-0fb553e8388a\"}\n",
+      "stderr": "",
+      "rollback": true
+    },
+    {
+      "case": "schema-215",
+      "exit": 3,
+      "stderr": "ERROR:  PT409: B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 82 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "hosted": false
+    },
+    {
+      "case": "receipt-106",
+      "exit": 3,
+      "stderr": "ERROR:  PT409: B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 82 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "hosted": false
+    },
+    {
+      "case": "authorization-280",
+      "exit": 3,
+      "stderr": "ERROR:  PT409: B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 82 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "hosted": false
+    },
+    {
+      "case": "key-mismatch",
+      "exit": 3,
+      "stderr": "ERROR:  PT409: B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 82 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "hosted": false
+    },
+    {
+      "case": "environment-mismatch",
+      "exit": 3,
+      "stderr": "ERROR:  PT409: B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 82 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "hosted": false
+    },
+    {
+      "case": "receipt-mismatch",
+      "exit": 3,
+      "stderr": "ERROR:  PT409: B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 82 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "hosted": false
+    },
+    {
+      "case": "document-mismatch",
+      "exit": 3,
+      "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_FIELDS_IMMUTABLE\nCONTEXT:  PL/pgSQL function fn_fiscal_sefaz_tx_guard() line 22 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "hosted": false
+    },
+    {
+      "case": "return-batch-not-proof",
+      "exit": 3,
+      "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_FIELDS_IMMUTABLE\nCONTEXT:  PL/pgSQL function fn_fiscal_sefaz_tx_guard() line 22 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "hosted": false
+    },
+    {
+      "case": "stale-response",
+      "exit": 3,
+      "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_FIELDS_IMMUTABLE\nCONTEXT:  PL/pgSQL function fn_fiscal_sefaz_tx_guard() line 22 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "hosted": false
+    },
+    {
+      "case": "missing-returned-proof",
+      "exit": 3,
+      "stderr": "ERROR:  PT409: B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 82 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "hosted": false
+    },
+    {
+      "case": "returned-key-mismatch",
+      "exit": 3,
+      "stderr": "ERROR:  PT409: B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 82 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "hosted": false
+    },
+    {
+      "case": "foreign-no-wait",
+      "sync": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "cancel": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "elapsed": 0.09003319800012832
+    },
+    {
+      "case": "helper-acl-drift",
+      "signature": "platform_private.b2b_credit_balances(uuid,uuid)",
+      "stderr": "ERROR:  42501: B2B_CREDIT_COMPOSITION_POST_ACL:platform_private.b2b_credit_balances(uuid,uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 9 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "helper-acl-drift",
+      "signature": "platform_private.b2b_order_residual(uuid)",
+      "stderr": "ERROR:  42501: B2B_CREDIT_COMPOSITION_POST_ACL:platform_private.b2b_order_residual(uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 9 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  ],
+  "final": {
+    "state": "aguardando_fiscal",
+    "version": 6,
+    "last_error_code": null,
+    "residual_amount": 18.0,
+    "fiscal_intent_id": "00000000-0000-0000-0000-000000000965"
+  },
+  "receivables": 0,
+  "invoices": {
+    "rejected": {
+      "invoice": "00000000-0000-0000-0000-000000000960",
+      "xml_run": "00000000-0000-0000-0000-000000000961",
+      "tx": "00000000-0000-0000-0000-000000000962",
+      "access_key": "35261111111111111111111111111111111111000960"
+    },
+    "timeout": {
+      "invoice": "00000000-0000-0000-0000-000000000965",
+      "xml_run": "00000000-0000-0000-0000-000000000966",
+      "tx": "00000000-0000-0000-0000-000000000967",
+      "access_key": "35261111111111111111111111111111111111000965"
+    },
+    "consultation_tx": "0bdf2ad5-b544-467f-b59f-0fb553e8388a",
+    "revocation": {
+      "invoice": "00000000-0000-0000-0000-000000000970",
+      "xml_run": "00000000-0000-0000-0000-000000000971",
+      "tx": "00000000-0000-0000-0000-000000000972",
+      "access_key": "35261111111111111111111111111111111111000970"
+    }
+  },
+  "callbacks": "public.rpc_fiscal_sefaz_transmit_record_v1 as service_role (canonical H13 worker)",
+  "wrappers_as": "authenticated SQL role with JWT claims (local, not hosted JWT)",
+  "reset_role_used": false,
+  "hosted": false
+}
