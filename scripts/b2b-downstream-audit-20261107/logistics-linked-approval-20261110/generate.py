@@ -16,18 +16,19 @@ SRC = {
 CANON = """({a}.approved_by IS NOT NULL AND {a}.approved_at IS NOT NULL
     AND {a}.payment_condition_status IN ('defined','approved') AND {a}.financial_approval_status IS DISTINCT FROM 'rejected'
     AND (({a}.credit_approved_at IS NULL) = ({a}.credit_approved_by IS NULL))
-    AND (({a}.requires_financial_approval IS FALSE AND {a}.financial_approval_status NOT IN ('pending','rejected'))
-     OR EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
+    AND EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
        WHERE t.id={a}.payment_terms_id AND t.partner_order_id={a}.id
-        AND t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL)))"""
-# Fixados da attempt-234 (evidence/attempt-234/candidate-md5.json): md5(pg_get_functiondef) medido após instalar o candidato.
+        AND ((t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL)
+          OR ({a}.requires_financial_approval IS FALSE AND {a}.financial_approval_status NOT IN ('pending','rejected')
+              AND t.approval_status='not_required'))))"""
+# Fixados da revisão pós-234 (dispensa respeita termos rejeitados; medidos no espelho): md5(pg_get_functiondef) medido após instalar o candidato.
 CANDIDATE_MD5 = {
- "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)": "30d5e9dea53862e3c3ca0608e95deac4",
- "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)": "cfb3bc9dd157f4325c23deb285f91531",
- "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)": "b23b40e68ff5772e0523cc858741766a",
- "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "befa8844838dcfb0d4c2d069f2500e37",
- "public.rpc_b2b_resale_os_availability_v1(uuid)": "a3705949d107538151777e119b8a906a",
- "public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "99758ab06ead6f225d0fe3376db9efe9",
+ "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)": "b37a9d5555f82fb4c5bf922d5cc8bc3f",
+ "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)": "5900213e18ecdf01c5d0cf53bcb91892",
+ "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)": "8c2cc49c13c18a172c882f6d58c3529f",
+ "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "7ed7bfeb8fea7e912d8aa051cfd773ec",
+ "public.rpc_b2b_resale_os_availability_v1(uuid)": "eb1809572a26bcfad39e2e080c3c06e2",
+ "public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "61c35d679563f96b9dc2a8af7e6d3d95"
 }
 # ACL fixada (medida no espelho alinhado; PRE hospedado somente leitura deu PRE_PASS com ela).
 ACL_PINNED = {
@@ -62,7 +63,7 @@ def build():
         n += body.count(old); body = body.replace(old, "NOT " + CANON.format(a="v_order"))
         assert n == expected, (sig, n)
         assert all(body.count(f) == live.count(f) for f in FENCES), sig
-        assert "financial_approval_status NOT IN ('pending','rejected'))\n     OR EXISTS" in body
+        assert "AND t.approval_status='not_required'))))" in body and "OR EXISTS(SELECT 1 FROM public.partner_order_payment_terms" not in body
         rows.append(dict(signature=sig, source=path, live_md5=live_md5, live=live, candidate=body, replaced=n))
     return rows
 

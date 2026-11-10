@@ -72,6 +72,11 @@ def run(B, Review, Q, A, choice, out):
     r = B.run_raw(create); ok("LIVE consumer denies OS creation for canonically approved order", r.returncode != 0 and "B2B_RESALE_ORDER_CONFLICT" in r.stderr, err(r))
 
     # ---- 3. Delta pelos arquivos entregues ----
+    import os
+    if os.environ.get("LLA_MEASURE") == "1":  # só mede md5 dos candidatos para fixá-los; nunca é prova
+        B.sql("BEGIN;" + ";\n".join(r_["candidate"] for r_ in rows) + ";COMMIT;")
+        Path("/dev-server/scripts/b2b-downstream-audit-20261107/logistics-linked-approval-20261110/.measured.json").write_text(json.dumps({r_["signature"]: md5(r_["signature"]) for r_ in rows}, indent=1))
+        raise SystemExit("LLA_MEASURE_ONLY")
     ok("PRE PASS (exact final bytes)", "PRE_PASS" in exec_file("01-pre.sql.readonly"))
     exec_file("02-install.sql.review")
     cand = {r_["signature"]: md5(r_["signature"]) for r_ in rows}
@@ -112,10 +117,16 @@ def run(B, Review, Q, A, choice, out):
              "partner_owner_other_tenant": (f"UPDATE public.partner_accounts SET commercial_owner_organization_id='{other_org}' WHERE id='{Q.P}';", "false,false"),
              # Dispensa: SOMENTE predicado em transação revertida (não é fixture canônica nem prova de aprovação).
              "terms_and_header_rejected_as_writer_does": (T.format("approval_status='rejected'") + O.format("financial_approval_status='rejected',payment_condition_status='rejected'"), "false,false"),
-             "waived_not_required_no_terms": (O.format("requires_financial_approval=false,financial_approval_status='not_required',payment_terms_id=NULL"), "true,true"),
-             "waived_but_header_pending": (O.format("requires_financial_approval=false,financial_approval_status='pending',payment_terms_id=NULL"), "false,false"),
-             "waived_but_header_rejected": (O.format("requires_financial_approval=false,financial_approval_status='rejected',payment_terms_id=NULL"), "false,false"),
-             "waived_without_commercial_approver": (O.format("requires_financial_approval=false,financial_approval_status='not_required',payment_terms_id=NULL,approved_by=NULL"), "false,false")}
+             # Pós-dispensa no MESMO pedido (transação revertida): dispensa válida só com termos vinculados not_required.
+             "waived_terms_not_required": (O.format("requires_financial_approval=false,financial_approval_status='not_required'") + T.format("approval_status='not_required',approved_by=NULL,approved_at=NULL"), "true,true"),
+             "waived_terms_rejected": (O.format("requires_financial_approval=false,financial_approval_status='not_required'") + T.format("approval_status='rejected'"), "false,false"),
+             "waived_terms_pending_adjustment": (O.format("requires_financial_approval=false,financial_approval_status='not_required'") + T.format("approval_status='pending',approved_by=NULL,approved_at=NULL"), "false,false"),
+             "waived_terms_absent": (O.format("requires_financial_approval=false,financial_approval_status='not_required',payment_terms_id=NULL"), "false,false"),
+             "waived_terms_link_other_order": (O.format("requires_financial_approval=false,financial_approval_status='not_required'") + T.format(f"approval_status='not_required',partner_order_id='{other}'"), "false,false"),
+             "required_terms_not_required": (T.format("approval_status='not_required',approved_by=NULL,approved_at=NULL"), "false,false"),
+             "waived_but_header_pending": (O.format("requires_financial_approval=false,financial_approval_status='pending'") + T.format("approval_status='not_required'"), "false,false"),
+             "waived_but_header_rejected": (O.format("requires_financial_approval=false,financial_approval_status='rejected'") + T.format("approval_status='not_required'"), "false,false"),
+             "waived_without_commercial_approver": (O.format("requires_financial_approval=false,financial_approval_status='not_required',approved_by=NULL") + T.format("approval_status='not_required'"), "false,false")}
     got = {k: predicate_under(m) for k, (m, _) in cases.items()}
     (out / "negatives.json").write_text(json.dumps(got, indent=1) + "\n")
     ok("canonical predicate: control true; pending/rejected/no actor/absent/divergent link/header rejected/no commercial/credit inconsistent all false",
