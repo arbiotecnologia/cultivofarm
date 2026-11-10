@@ -1,0 +1,41 @@
+-- Candidato INATIVO revisável. Somente leitura: não concede EXECUTE a nenhum writer,
+-- não altera gates/concessões e não escreve linhas. Revisor: agente Codex.
+BEGIN;
+DO $$BEGIN IF to_regprocedure('public.rpc_b2b_resale_delivery_capability_v1(uuid,uuid[])') IS NOT NULL THEN RAISE EXCEPTION 'RESALE_DELIVERY_CAP_ALREADY_INSTALLED'; END IF; END$$;
+
+CREATE FUNCTION public.rpc_b2b_resale_delivery_capability_v1(p_os_id uuid, p_stock_ids uuid[])
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE
+ v_uid uuid:=auth.uid(); v_org uuid; v_os public.ordens_servico%ROWTYPE; v_partner uuid;
+ v_reserve_actor boolean:=false; v_os_ok boolean:=false; v_items jsonb:='[]'::jsonb; v_s record; v_n int;
+ v_closed jsonb:=jsonb_build_object('capability','b2b_resale_delivery_v1','organization_id',NULL,'os_id',p_os_id,'items','[]'::jsonb);
+BEGIN
+ -- Fail closed: qualquer ausência/erro devolve envelope sem empresa (o cliente trata como fechado).
+ v_n:=coalesce(array_length(p_stock_ids,1),0);
+ IF v_uid IS NULL OR p_os_id IS NULL OR v_n<1 OR v_n>100 OR array_position(p_stock_ids,NULL) IS NOT NULL
+    OR (SELECT count(DISTINCT x) FROM unnest(p_stock_ids) x)<>v_n THEN RETURN v_closed; END IF;
+ BEGIN v_org:=platform_private.delivery_actor_20261030('group'); EXCEPTION WHEN OTHERS THEN RETURN v_closed; END;
+ IF v_org IS NULL THEN RETURN v_closed; END IF;
+ -- Escopo conhecido ANTES de ler linhas: nunca lê OS de outra empresa; sem FOR UPDATE.
+ SELECT * INTO v_os FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org;
+ IF NOT FOUND OR v_os.origem IS DISTINCT FROM 'b2b' OR v_os.partner_order_id IS NULL OR v_os.partner_order_item_id IS NULL THEN RETURN v_closed; END IF;
+ SELECT po.partner_id INTO v_partner FROM public.partner_orders po WHERE po.id=v_os.partner_order_id AND po.organization_id=v_org;
+ IF v_partner IS NULL THEN RETURN v_closed; END IF;
+ BEGIN v_os_ok:=coalesce(platform_private.b2b_resale_os_operational_valid_v1(v_os),false); EXCEPTION WHEN OTHERS THEN v_os_ok:=false; END;
+ BEGIN v_reserve_actor:=coalesce(public.fn_estoque_pode_operar(v_uid,'reserva'),false); EXCEPTION WHEN OTHERS THEN v_reserve_actor:=false; END;
+ FOR v_s IN SELECT s.id,s.produto_id,s.origem_estoque FROM unnest(p_stock_ids) x JOIN public.estoque_produto s ON s.id=x AND s.organization_id=v_org ORDER BY s.id LOOP
+  v_items:=v_items||jsonb_build_array(jsonb_build_object(
+   'stock_id',v_s.id,
+   'reserve',(v_reserve_actor AND v_s.origem_estoque IS NOT NULL AND platform_private.resale_pilot_scope_v1('b2b_resale','reserve',v_uid,v_org,v_partner,v_os.partner_order_id,v_os.partner_order_item_id,v_s.produto_id,v_s.id,NULL)) IS TRUE,
+   'delivery_create',(v_os_ok AND v_s.origem_estoque IS NOT NULL AND platform_private.resale_pilot_scope_v1('b2b_resale','delivery_create',v_uid,v_org,v_partner,v_os.partner_order_id,v_os.partner_order_item_id,v_s.produto_id,v_s.id,NULL)) IS TRUE,
+   -- Total reservado para ESTA OS no mesmo produto (inclui linhas divididas): base da reconciliação de timeout.
+   'reserved_for_os',(SELECT coalesce(sum(r.quantidade_reservada),0) FROM public.estoque_produto r WHERE r.organization_id=v_org AND r.produto_id=v_s.produto_id AND r.reservado_para_os_id=p_os_id AND r.status::text='reservado')));
+ END LOOP;
+ -- Item ausente/estrangeiro: lista incompleta => cliente fecha (nunca revela qual).
+ IF jsonb_array_length(v_items)<>v_n THEN RETURN v_closed; END IF;
+ RETURN jsonb_build_object('capability','b2b_resale_delivery_v1','organization_id',v_org,'os_id',p_os_id,'items',v_items);
+END $$;
+ALTER FUNCTION public.rpc_b2b_resale_delivery_capability_v1(uuid,uuid[]) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.rpc_b2b_resale_delivery_capability_v1(uuid,uuid[]) FROM PUBLIC,anon,service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_b2b_resale_delivery_capability_v1(uuid,uuid[]) TO authenticated;
+COMMIT;
