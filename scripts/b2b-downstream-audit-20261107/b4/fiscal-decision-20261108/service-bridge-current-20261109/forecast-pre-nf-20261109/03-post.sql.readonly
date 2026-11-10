@@ -2,10 +2,22 @@
 BEGIN READ ONLY;
 DO $$ BEGIN
  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '0d3b85049e3b3b799ba81b4cb95be0da' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_POST_DRIFT';END IF;
- IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM 'c918d938031123434153d97765f92b68' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '28e65625e0a481b93af85cc37cb0af5f' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '26c77e55dfcb2b48fdb63cbc5b2819ed' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '213ac31f3a30816ead75365b0d1fed18' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_POST_DRIFT';END IF;
  IF (SELECT count(*) FROM pg_class WHERE oid IN ('platform_private.b2b_financial_forecasts'::regclass,'platform_private.b2b_financial_forecast_events'::regclass) AND NOT relrowsecurity)<>0 THEN RAISE EXCEPTION 'B2B_FORECAST_RLS_MISSING';END IF;
  IF has_function_privilege('anon','public.get_b2b_financial_forecast_secure(uuid)','EXECUTE') OR NOT has_function_privilege('authenticated','public.get_b2b_financial_forecast_secure(uuid)','EXECUTE') THEN RAISE EXCEPTION 'B2B_FORECAST_READER_ACL_INVALID';END IF;
+END$$;
+DO $$ BEGIN
+ IF EXISTS(SELECT 1 FROM platform_private.b2b_forecast_creation_allowlist_v1)
+  OR (SELECT enabled FROM platform_private.b2b_forecast_creation_gate_v1 WHERE singleton) IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'B2B_FORECAST_CREATION_NOT_CLOSED' USING ERRCODE='42501';END IF;
+ IF has_function_privilege('authenticated','platform_private.b2b_forecast_creation_allowed_v1(uuid,uuid,uuid,uuid)','EXECUTE')
+  OR has_function_privilege('service_role','platform_private.b2b_forecast_creation_allowed_v1(uuid,uuid,uuid,uuid)','EXECUTE')
+  OR has_function_privilege('authenticated','platform_private.b2b_forecast_creation_scope_v1(uuid,uuid,uuid,uuid)','EXECUTE')
+  OR has_function_privilege('service_role','platform_private.b2b_forecast_creation_scope_v1(uuid,uuid,uuid,uuid)','EXECUTE')
+  OR has_table_privilege('authenticated','platform_private.b2b_forecast_creation_allowlist_v1','SELECT,INSERT,UPDATE,DELETE')
+  OR has_table_privilege('authenticated','platform_private.b2b_forecast_creation_gate_v1','SELECT,INSERT,UPDATE,DELETE') THEN
+  RAISE EXCEPTION 'B2B_FORECAST_CREATION_ACL_INVALID' USING ERRCODE='42501';END IF;
 END$$;
 ROLLBACK;

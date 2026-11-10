@@ -1,0 +1,225 @@
+{
+  "results": [
+    {
+      "name": "out_of_pilot_differential_live_vs_candidate",
+      "status": "PASS",
+      "detail": {
+        "label": "out-of-pilot snapshot order, gate ENABLED, no grant",
+        "steps": [
+          {
+            "step": "credit",
+            "live_ok": false,
+            "candidate_ok": false,
+            "live_error": "b2b_phase1_scope_denied",
+            "candidate_error": "already_released: cr\u00e9dito j\u00e1 liberado, pedido em an\u00e1lise comercial",
+            "live_ret": null,
+            "candidate_ret": null
+          },
+          {
+            "step": "terms",
+            "live_ok": false,
+            "candidate_ok": true,
+            "live_error": "b2b_phase1_scope_denied",
+            "candidate_error": null,
+            "live_ret": null,
+            "candidate_ret": "{\"status\": \"approved\", \"success\": true}"
+          },
+          {
+            "step": "commercial",
+            "live_ok": true,
+            "candidate_ok": true,
+            "live_error": null,
+            "candidate_error": null,
+            "live_ret": "",
+            "candidate_ret": ""
+          }
+        ],
+        "same_step_outcomes": false,
+        "effects_equal": false,
+        "effect_diffs": {
+          "order": {},
+          "terms": {
+            "approval_notes": [
+              null,
+              "FC TERMS"
+            ],
+            "approval_status": [
+              "pending",
+              "approved"
+            ],
+            "approved_by": [
+              null,
+              "00000000-0000-0000-0000-000000000029"
+            ]
+          },
+          "audit": [
+            [
+              "created_via_rpc",
+              "order_created",
+              "order_updated",
+              "order_updated",
+              "payment_terms_created",
+              "payment_terms_defined",
+              "approved",
+              "status_changed"
+            ],
+            [
+              "created_via_rpc",
+              "order_created",
+              "order_updated",
+              "order_updated",
+              "payment_terms_created",
+              "payment_terms_defined",
+              "approved",
+              "payment_terms_approved",
+              "payment_terms_updated",
+              "status_changed"
+            ]
+          ]
+        },
+        "live_forecasts": 0,
+        "candidate_forecasts": 0,
+        "rolled_back": true,
+        "committed_candidate": {
+          "steps": [
+            {
+              "ok": false,
+              "ord": 1,
+              "ret": null,
+              "step": "credit",
+              "message": "already_released: cr\u00e9dito j\u00e1 liberado, pedido em an\u00e1lise comercial",
+              "sqlstate": "P0001"
+            },
+            {
+              "ok": true,
+              "ord": 2,
+              "ret": "{\"status\": \"approved\", \"success\": true}",
+              "step": "terms",
+              "message": null,
+              "sqlstate": null
+            },
+            {
+              "ok": true,
+              "ord": 3,
+              "ret": "",
+              "step": "commercial",
+              "message": null,
+              "sqlstate": null
+            }
+          ],
+          "forecasts": 0,
+          "status": "aprovado"
+        }
+      }
+    },
+    {
+      "name": "legacy_without_snapshot_differential",
+      "status": "PASS",
+      "detail": {
+        "label": "legacy order without internal_economic_snapshot, no grant",
+        "steps": [
+          {
+            "step": "credit",
+            "live_ok": false,
+            "candidate_ok": false,
+            "live_error": "b2b_phase1_scope_denied",
+            "candidate_error": "already_released: cr\u00e9dito j\u00e1 liberado, pedido em an\u00e1lise comercial",
+            "live_ret": null,
+            "candidate_ret": null
+          },
+          {
+            "step": "terms",
+            "live_ok": false,
+            "candidate_ok": true,
+            "live_error": "b2b_phase1_scope_denied",
+            "candidate_error": null,
+            "live_ret": null,
+            "candidate_ret": "{\"status\": \"approved\", \"success\": true}"
+          },
+          {
+            "step": "commercial",
+            "live_ok": true,
+            "candidate_ok": true,
+            "live_error": null,
+            "candidate_error": null,
+            "live_ret": "",
+            "candidate_ret": ""
+          }
+        ],
+        "same_step_outcomes": false,
+        "effects_equal": false,
+        "effect_diffs": {
+          "order": {},
+          "terms": {
+            "approval_notes": [
+              null,
+              "FC TERMS"
+            ],
+            "approval_status": [
+              "pending",
+              "approved"
+            ],
+            "approved_by": [
+              null,
+              "00000000-0000-0000-0000-000000000029"
+            ]
+          },
+          "audit": [
+            [
+              "created_via_rpc",
+              "order_created",
+              "order_updated",
+              "order_updated",
+              "payment_terms_created",
+              "payment_terms_defined",
+              "approved",
+              "status_changed"
+            ],
+            [
+              "created_via_rpc",
+              "order_created",
+              "order_updated",
+              "order_updated",
+              "payment_terms_created",
+              "payment_terms_defined",
+              "approved",
+              "payment_terms_approved",
+              "payment_terms_updated",
+              "status_changed"
+            ]
+          ]
+        },
+        "live_forecasts": 0,
+        "candidate_forecasts": 0,
+        "rolled_back": true
+      }
+    },
+    {
+      "name": "pilot_exact_grant_creates_one_forecast",
+      "status": "FAIL",
+      "error": "AssertionError(('credit', 'ERROR:  P0001: already_released: cr\u00e9dito j\u00e1 liberado, pedido em an\u00e1lise comercial\\nCONTEXT:  PL/pgSQL function approve_b2b_credit(uuid,text) line 32 at RAISE\\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\\n'))"
+    },
+    {
+      "name": "grant_revoked_during_proven_wait",
+      "status": "FAIL",
+      "error": "AssertionError(('credit', 'ERROR:  P0001: already_released: cr\u00e9dito j\u00e1 liberado, pedido em an\u00e1lise comercial\\nCONTEXT:  PL/pgSQL function approve_b2b_credit(uuid,text) line 32 at RAISE\\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\\n'))"
+    },
+    {
+      "name": "gate_off_during_proven_wait",
+      "status": "FAIL",
+      "error": "AssertionError(('credit', 'ERROR:  P0001: already_released: cr\u00e9dito j\u00e1 liberado, pedido em an\u00e1lise comercial\\nCONTEXT:  PL/pgSQL function approve_b2b_credit(uuid,text) line 32 at RAISE\\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\\n'))"
+    },
+    {
+      "name": "gate_closed_with_valid_grant",
+      "status": "FAIL",
+      "error": "AssertionError(('credit', 'ERROR:  P0001: already_released: cr\u00e9dito j\u00e1 liberado, pedido em an\u00e1lise comercial\\nCONTEXT:  PL/pgSQL function approve_b2b_credit(uuid,text) line 32 at RAISE\\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\\n'))"
+    },
+    {
+      "name": "grant_scope_mismatch_and_acl",
+      "status": "FAIL",
+      "error": "AssertionError(('credit', 'ERROR:  P0001: already_released: cr\u00e9dito j\u00e1 liberado, pedido em an\u00e1lise comercial\\nCONTEXT:  PL/pgSQL function approve_b2b_credit(uuid,text) line 32 at RAISE\\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\\n'))"
+    }
+  ],
+  "hosted": false,
+  "auth": "SYNTHETIC SQL-role authenticated; not JWT/RLS proof"
+}

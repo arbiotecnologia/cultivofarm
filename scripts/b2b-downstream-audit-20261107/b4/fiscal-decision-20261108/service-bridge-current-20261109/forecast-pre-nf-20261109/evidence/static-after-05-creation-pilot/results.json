@@ -1,0 +1,293 @@
+{
+  "kind": "ISOLATED_COMPONENT_NOT_FISCAL_AUTHORITY",
+  "phase": "after",
+  "checks": [
+    {
+      "name": "no grant: creation deferred, no forecast",
+      "exit": 0,
+      "stdout": "{\"reason\": \"FORECAST_CREATION_NOT_GRANTED\", \"deferred\": true}\n0\n",
+      "stderr": ""
+    },
+    {
+      "name": "grant but gate closed: deferred",
+      "exit": 0,
+      "stdout": "{\"reason\": \"FORECAST_CREATION_NOT_GRANTED\", \"deferred\": true}\n",
+      "stderr": ""
+    },
+    {
+      "name": "other actor with gate open: deferred",
+      "exit": 0,
+      "stdout": "{\"reason\": \"FORECAST_CREATION_NOT_GRANTED\", \"deferred\": true}\n",
+      "stderr": ""
+    },
+    {
+      "name": "economic replay after mutable NF installment link",
+      "exit": 0,
+      "stdout": "{\"state\": \"aguardando_fiscal\", \"replayed\": true, \"forecast_id\": \"322a9dac-6634-4f1e-a2ce-fe3e9a9b76b0\"}\n",
+      "stderr": "",
+      "state": {
+        "state": "aguardando_fiscal",
+        "version": 1,
+        "residual": 18.0
+      }
+    },
+    {
+      "name": "economic replay after mutable payment status",
+      "exit": 0,
+      "stdout": "{\"state\": \"aguardando_fiscal\", \"replayed\": true, \"forecast_id\": \"322a9dac-6634-4f1e-a2ce-fe3e9a9b76b0\"}\n",
+      "stderr": "",
+      "state": {
+        "state": "aguardando_fiscal",
+        "version": 1,
+        "residual": 18.0
+      }
+    },
+    {
+      "name": "changed economic installment amount is rejected",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  23514: B2B_FORECAST_SCHEDULE_UNPROVEN\nCONTEXT:  PL/pgSQL function platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb) line 47 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "state": {
+        "state": "aguardando_fiscal",
+        "version": 1,
+        "residual": 18.0
+      }
+    },
+    {
+      "name": "first intent",
+      "exit": 0,
+      "stdout": "{\"state\": \"emissao_em_andamento\", \"version\": 2, \"replayed\": false, \"forecast_id\": \"322a9dac-6634-4f1e-a2ce-fe3e9a9b76b0\"}\n",
+      "stderr": "",
+      "state": {
+        "state": "emissao_em_andamento",
+        "version": 2,
+        "residual": 18.0
+      }
+    },
+    {
+      "name": "divergent replay",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: B2B_FORECAST_REPLAY_DIVERGENCE\nCONTEXT:  PL/pgSQL function platform_private.b2b_financial_forecast_transition_v1(uuid,integer,text,text,jsonb) line 14 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "state": {
+        "state": "emissao_em_andamento",
+        "version": 2,
+        "residual": 18.0
+      }
+    },
+    {
+      "name": "concurrent same intent 0",
+      "exit": 0,
+      "stdout": "{\"state\": \"emissao_em_andamento\", \"version\": 4, \"replayed\": true, \"forecast_id\": \"322a9dac-6634-4f1e-a2ce-fe3e9a9b76b0\"}\n",
+      "stderr": "",
+      "state": {
+        "state": "emissao_em_andamento",
+        "version": 4,
+        "residual": 18.0
+      }
+    },
+    {
+      "name": "concurrent same intent 1",
+      "exit": 0,
+      "stdout": "{\"state\": \"emissao_em_andamento\", \"version\": 4, \"replayed\": false, \"forecast_id\": \"322a9dac-6634-4f1e-a2ce-fe3e9a9b76b0\"}\n",
+      "stderr": "",
+      "state": {
+        "state": "emissao_em_andamento",
+        "version": 4,
+        "residual": 18.0
+      }
+    },
+    {
+      "name": "second emission from partial",
+      "exit": 0,
+      "stdout": "{\"state\": \"emissao_em_andamento\", \"version\": 6, \"replayed\": false, \"forecast_id\": \"322a9dac-6634-4f1e-a2ce-fe3e9a9b76b0\"}\n",
+      "stderr": "",
+      "state": {
+        "state": "emissao_em_andamento",
+        "version": 6,
+        "residual": 9.0
+      }
+    },
+    {
+      "name": "economic replay after NF with dynamic credit",
+      "exit": 0,
+      "stdout": "{\"state\": \"faturado_parcial\", \"replayed\": true, \"forecast_id\": \"322a9dac-6634-4f1e-a2ce-fe3e9a9b76b0\"}\n",
+      "stderr": "",
+      "state": {
+        "state": "faturado_parcial",
+        "version": 7,
+        "residual": 9.0
+      }
+    },
+    {
+      "name": "cancel residual",
+      "exit": 0,
+      "stdout": "{\"state\": \"cancelado_residual\", \"version\": 8, \"forecast_id\": \"322a9dac-6634-4f1e-a2ce-fe3e9a9b76b0\"}\n",
+      "stderr": "",
+      "state": {
+        "state": "cancelado_residual",
+        "version": 8,
+        "residual": 0.0
+      }
+    },
+    {
+      "name": "reconcile canceled residual",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FISCAL_SERVICE_PERMIT_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid) line 13 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "state": {
+        "state": "cancelado_residual",
+        "version": 8,
+        "residual": 0.0
+      }
+    },
+    {
+      "name": "cancel race committed",
+      "exit": 0,
+      "stdout": "{\"state\": \"cancelado_residual\", \"version\": 10, \"forecast_id\": \"322a9dac-6634-4f1e-a2ce-fe3e9a9b76b0\"}\n\n",
+      "stderr": "",
+      "state": {
+        "state": "cancelado_residual",
+        "version": 10,
+        "residual": 0.0
+      }
+    },
+    {
+      "name": "unattested confirmation waits and stays denied after cancellation",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FISCAL_SERVICE_PERMIT_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid) line 13 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "state": {
+        "state": "cancelado_residual",
+        "version": 10,
+        "residual": 0.0
+      }
+    },
+    {
+      "name": "canceled residual cannot emit",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: B2B_FORECAST_STATE_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.b2b_financial_forecast_transition_v1(uuid,integer,text,text,jsonb) line 18 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "state": {
+        "state": "cancelado_residual",
+        "version": 10,
+        "residual": 0.0
+      }
+    },
+    {
+      "name": "allocation alone is not fiscal evidence",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: B2B_FISCAL_SERVICE_PERMIT_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid) line 13 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "state": {
+        "state": "faturado_parcial",
+        "version": 11,
+        "residual": 9.0
+      }
+    },
+    {
+      "name": "private caller denied anon",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for schema platform_private\nLINE 1: SELECT platform_private.b2b_financial_forecast_transition_v1...\n               ^\nLOCATION:  aclcheck_error, aclchk.c:2845\n",
+      "state": {
+        "state": "faturado_parcial",
+        "version": 11,
+        "residual": 9.0
+      }
+    },
+    {
+      "name": "private caller denied anon",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for schema platform_private\nLINE 1: SELECT platform_private.b2b_financial_forecast_cancel_residu...\n               ^\nLOCATION:  aclcheck_error, aclchk.c:2845\n",
+      "state": {
+        "state": "faturado_parcial",
+        "version": 11,
+        "residual": 9.0
+      }
+    },
+    {
+      "name": "private caller denied anon",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for schema platform_private\nLINE 1: SELECT platform_private.b2b_financial_forecast_reconcile_fis...\n               ^\nLOCATION:  aclcheck_error, aclchk.c:2845\n",
+      "state": {
+        "state": "faturado_parcial",
+        "version": 11,
+        "residual": 9.0
+      }
+    },
+    {
+      "name": "private caller denied authenticated",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for schema platform_private\nLINE 1: SELECT platform_private.b2b_financial_forecast_transition_v1...\n               ^\nLOCATION:  aclcheck_error, aclchk.c:2845\n",
+      "state": {
+        "state": "faturado_parcial",
+        "version": 11,
+        "residual": 9.0
+      }
+    },
+    {
+      "name": "private caller denied authenticated",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for schema platform_private\nLINE 1: SELECT platform_private.b2b_financial_forecast_cancel_residu...\n               ^\nLOCATION:  aclcheck_error, aclchk.c:2845\n",
+      "state": {
+        "state": "faturado_parcial",
+        "version": 11,
+        "residual": 9.0
+      }
+    },
+    {
+      "name": "private caller denied authenticated",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for schema platform_private\nLINE 1: SELECT platform_private.b2b_financial_forecast_reconcile_fis...\n               ^\nLOCATION:  aclcheck_error, aclchk.c:2845\n",
+      "state": {
+        "state": "faturado_parcial",
+        "version": 11,
+        "residual": 9.0
+      }
+    },
+    {
+      "name": "private caller denied service_role",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for schema platform_private\nLINE 1: SELECT platform_private.b2b_financial_forecast_transition_v1...\n               ^\nLOCATION:  aclcheck_error, aclchk.c:2845\n",
+      "state": {
+        "state": "faturado_parcial",
+        "version": 11,
+        "residual": 9.0
+      }
+    },
+    {
+      "name": "private caller denied service_role",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for schema platform_private\nLINE 1: SELECT platform_private.b2b_financial_forecast_cancel_residu...\n               ^\nLOCATION:  aclcheck_error, aclchk.c:2845\n",
+      "state": {
+        "state": "faturado_parcial",
+        "version": 11,
+        "residual": 9.0
+      }
+    },
+    {
+      "name": "private caller denied service_role",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for schema platform_private\nLINE 1: SELECT platform_private.b2b_financial_forecast_reconcile_fis...\n               ^\nLOCATION:  aclcheck_error, aclchk.c:2845\n",
+      "state": {
+        "state": "faturado_parcial",
+        "version": 11,
+        "residual": 9.0
+      }
+    }
+  ],
+  "hosted": false,
+  "source_sha256": "84c9561d65508c1e40b1158ef9cb0470fe80787f7f034875a0891555bed1e788",
+  "reconcile_sha256": "5909b731956a745d2b13d24c03559f48158aaad964b206ac4eed0da8c9571e22",
+  "fiscal_provenance_positive": "NOT_PROVEN",
+  "synthetic_residual": true
+}

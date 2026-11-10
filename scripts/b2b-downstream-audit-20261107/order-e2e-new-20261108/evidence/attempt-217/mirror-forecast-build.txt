@@ -1,0 +1,48 @@
+exit=0
+posed-post-seller91-live.sql.readonly",
+        "output_sha256": "257a0a00bf33d105ab007ff43d408d17633e1e5f65d197d9d37d1abb3dbbea21",
+        "changed_lines": 1,
+        "only_change": "4926a99c3fa3086b34ff25bb4b4038bb -> 97bcdb9884b54adb3bd4aae4915e32d0 in public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) md5 guard"
+      }
+    ],
+    "unchanged": [
+      {
+        "path": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/stages/03-b4-post.sql.readonly",
+        "sha256": "2b9e665765c85e3f9cc6ffb0fc9fcd59cb8272fcf60833bf257da33935af2ae4"
+      },
+      {
+        "path": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/stages/04-bridge-install.sql.review",
+        "sha256": "5db2c160fd3a99bb847fe20a1d9764cbfed82d5cd80915be0eceb94eadfb9964"
+      },
+      {
+        "path": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/04-rollback-deny.sql.review",
+        "sha256": "d51b80a5a8eec7fc6d873a4ba4c96bcc8d5e0e5534297daf021469db03a11f4f"
+      }
+    ]
+  },
+  "creation_pilot": {
+    "gate": "platform_private.b2b_forecast_creation_gate_v1",
+    "allowlist": "platform_private.b2b_forecast_creation_allowlist_v1",
+    "installed": "enabled=false, zero grants",
+    "max_grant_validity": "4 hours",
+    "out_of_pilot": "helper returns deferred FORECAST_CREATION_NOT_GRANTED before any snapshot/schedule/credit check; no forecast row"
+  },
+  "files": {
+    "01-pre.sql.readonly": "5ddbdbc0ca86de629d46d792fbb8a5fb9e0658c000ec5bbcdf6fe996d1569339",
+    "02-install.sql.review": "84c9561d65508c1e40b1158ef9cb0470fe80787f7f034875a0891555bed1e788",
+    "03-post.sql.readonly": "aea9a773b7943cad4e9e2f570c8a4808882d617583825892f9a404ab79e9f608",
+    "04-rollback-deny.sql.review": "83b89793ed006c357d249f912374f20aa13a10d83174e880994d685b6a516e83",
+    "05-pre-fiscal-reconcile.sql.readonly": "f59ec3ea3e38be684c16349ace73750cc496b84ec5982e984ba507304570fff3",
+    "06-install-fiscal-reconcile.sql.review": "5909b731956a745d2b13d24c03559f48158aaad964b206ac4eed0da8c9571e22",
+    "07-post-fiscal-reconcile.sql.readonly": "f660acab134a7e958518feec62885f69b80267c3e1ddbf2c0b6c6d5844ea382a",
+    "08-rollback-fiscal-reconcile-deny.sql.review": "c92825936eb3873756bdfd22cce4317c23ce161cd12cbc71abd5fc81ddc4b15a",
+    "09-pre-credit-composition.sql.readonly": "761cfd8b9d11261734086b8de875f13b1c0e71212d8e6686c649eb0f79010f5c",
+    "10-install-credit-composition.sql.review": "8247a6beb20130b29d05cb69503aaa4d92cfe74982cb29acb3e02f2ff42693fc",
+    "11-post-credit-composition.sql.readonly": "ae4d927dcd5337a56538466144c9e54b4327168aa5fe5883e740f3ba38641dcb",
+    "12-rollback-credit-composition-retain.sql.review": "5160b5797a1f109cf17c5afe1fe676cf8829920264a1d573a1385b216ca3be29",
+    "credit-exposure.composed.sql": "ca710ae1d4d3159a9f740ba3e37ffc78e5ae216eb94725a3e0622af76a563375",
+    "billing-eligibility.linked-terms.sql": "9d58cc3b57c4dcf69172359417253ac092f6ed0a63e139d62de0e477cb703eba"
+  },
+  "hosted": false
+}
+

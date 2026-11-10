@@ -39,6 +39,10 @@ Usar contas já existentes criadas pelos fluxos normais da interface. Sem criar 
 
 Evidência: capturas de tela sanitizadas e IDs com hash. Nunca coletar senha, token, cookie ou JWT.
 
+## 3b. Previsão fora do piloto (cf7d5fb/214)
+
+Depois do estágio 3, `b2b_forecast_creation_gate_v1` deve estar `enabled=false` e a allowlist vazia (o POST verifica). Aprovações reais nas sessões A/B não devem criar previsão. Uma concessão de criação só vale para um pedido sintético AR Bio, com autorização própria. A guarda B4 `respond` espera `97bcdb98…`; se vier `4926a99c…` ou qualquer outro valor, PARE.
+
 ## 4. Piloto restrito ARBio (fase separada, só com nova autorização)
 - Inserir allowlist apenas por processo administrativo revisado: ator, organização ARBio, parceiro, pedido e operação exatos, `synthetic=true`, com validade curta. Ligar o gate lifecycle só na janela de teste.
 - Outros tenants não mudam: as linhas da allowlist exigem `organization_id` exato e o gate não concede nada sem linha.

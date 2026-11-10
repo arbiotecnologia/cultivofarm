@@ -1,0 +1,44 @@
+{
+  "generate": {
+    "action": "generate",
+    "reused": false,
+    "success": true,
+    "entrega_id": "9cfed570-5de5-444d-b9b9-cec83c6dd273",
+    "object_path": null,
+    "comprovante_id": "af276cf8-d356-4b85-b6ff-09128853e4f9",
+    "validation_token": "360c2573-4402-4cc4-9fc1-ca5c1a90d9cc",
+    "numero_formulario": "AR-ENT-000002"
+  },
+  "generate_replay": {
+    "action": "generate",
+    "reused": false,
+    "success": true,
+    "replayed": true,
+    "entrega_id": "9cfed570-5de5-444d-b9b9-cec83c6dd273",
+    "object_path": null,
+    "comprovante_id": "af276cf8-d356-4b85-b6ff-09128853e4f9",
+    "validation_token": "360c2573-4402-4cc4-9fc1-ca5c1a90d9cc",
+    "numero_formulario": "AR-ENT-000002"
+  },
+  "attach": {
+    "action": "attach",
+    "reused": true,
+    "success": true,
+    "entrega_id": "9cfed570-5de5-444d-b9b9-cec83c6dd273",
+    "object_path": "entregas/9cfed570-5de5-444d-b9b9-cec83c6dd273/comprovantes/0d16e99c-c5d1-4132-8171-bc63c5815d0a.pdf",
+    "comprovante_id": "af276cf8-d356-4b85-b6ff-09128853e4f9",
+    "validation_token": "360c2573-4402-4cc4-9fc1-ca5c1a90d9cc",
+    "numero_formulario": "AR-ENT-000002"
+  },
+  "attach_replay": {
+    "action": "attach",
+    "reused": true,
+    "success": true,
+    "replayed": true,
+    "entrega_id": "9cfed570-5de5-444d-b9b9-cec83c6dd273",
+    "object_path": "entregas/9cfed570-5de5-444d-b9b9-cec83c6dd273/comprovantes/0d16e99c-c5d1-4132-8171-bc63c5815d0a.pdf",
+    "comprovante_id": "af276cf8-d356-4b85-b6ff-09128853e4f9",
+    "validation_token": "360c2573-4402-4cc4-9fc1-ca5c1a90d9cc",
+    "numero_formulario": "AR-ENT-000002"
+  }
+}

@@ -1,0 +1,65 @@
+-- READONLY POST final; não certifica JWT/RLS/Storage/provedor.
+SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';
+SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';
+-- READONLY POST: estrutura e corpos candidatos; não certifica JWT/RLS hosted.
+DO $$
+BEGIN
+  IF current_setting('commercial_plans.review_project_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_REF_NOT_VERIFIED'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_payment_plans' AND column_name='organization_id') THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_TENANT_COLUMN_MISSING'; END IF;
+  IF (SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='commercial_payment_plans' AND indexname='uq_cpp_single_default') IS DISTINCT FROM 'CREATE UNIQUE INDEX uq_cpp_single_default ON public.commercial_payment_plans USING btree (organization_id) NULLS NOT DISTINCT WHERE is_default' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_TENANT_DEFAULT_INDEX_MISSING'; END IF;
+  IF (SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='commercial_payment_plans' AND indexname='uq_cpp_tenant_code') IS DISTINCT FROM 'CREATE UNIQUE INDEX uq_cpp_tenant_code ON public.commercial_payment_plans USING btree (organization_id, code) WHERE (organization_id IS NOT NULL)' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_TENANT_CODE_INDEX_MISSING'; END IF;
+  IF EXISTS(SELECT 1 FROM pg_constraint c WHERE c.conrelid='public.commercial_payment_plans'::regclass AND c.conname='commercial_payment_plans_code_key') THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_GLOBAL_CODE_CONSTRAINT_REMAINS'; END IF;
+  IF EXISTS(SELECT 1 FROM public.commercial_payment_plans p LEFT JOIN public.organizations o ON o.id=p.organization_id WHERE p.organization_id IS NOT NULL AND o.id IS NULL) THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_ORPHAN_TENANT'; END IF;
+  IF md5(pg_get_functiondef('public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)'::regprocedure)) IS DISTINCT FROM 'f0d3ff51f5a4164da41db1a6ef262c8f' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)'; END IF;
+  IF md5(pg_get_functiondef('public.b2b_payment_condition_config_list()'::regprocedure)) IS DISTINCT FROM '728b3b92bc4848873f6df85779585295' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.b2b_payment_condition_config_list()'; END IF;
+  IF md5(pg_get_functiondef('public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)'::regprocedure)) IS DISTINCT FROM 'c6fbe15906c5d893ab80e962ee162b3c' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)'; END IF;
+  IF md5(pg_get_functiondef('public.b2b_payment_condition_retire(uuid,text,integer)'::regprocedure)) IS DISTINCT FROM 'a049478a9e2b74f315d6c5baf204efa1' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.b2b_payment_condition_retire(uuid,text,integer)'; END IF;
+  IF md5(pg_get_functiondef('public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)'::regprocedure)) IS DISTINCT FROM 'cb179ec0c999b6a566b9431a11ad0212' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)'; END IF;
+  IF md5(pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure)) IS DISTINCT FROM 'fe82f5381d426136f2627803f3b0005d' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'; END IF;
+  IF md5(pg_get_functiondef('platform_private.b2b_resolve_condition(uuid,uuid,jsonb,boolean)'::regprocedure)) IS DISTINCT FROM 'abbffddb1a3062fd7dabbf14c5af8822' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: platform_private.b2b_resolve_condition(uuid,uuid,jsonb,boolean)'; END IF;
+  IF md5(pg_get_functiondef('platform_private.c2p1_assignment_fence()'::regprocedure)) IS DISTINCT FROM 'fe958e7d52fb36faa77881933a808434' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: platform_private.c2p1_assignment_fence()'; END IF;
+  IF md5(pg_get_functiondef('platform_private.c2p1_history_allowed(text,uuid,jsonb,jsonb)'::regprocedure)) IS DISTINCT FROM '775c1540b15842d3ce0696e4a5d27f3b' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: platform_private.c2p1_history_allowed(text,uuid,jsonb,jsonb)'; END IF;
+  IF md5(pg_get_functiondef('platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid)'::regprocedure)) IS DISTINCT FROM '8212432313c52b2a12a1398ec40c814e' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid)'; END IF;
+  IF md5(pg_get_functiondef('platform_private.c2p1_item_fence()'::regprocedure)) IS DISTINCT FROM 'c1c88697a57168ba49c30692e7a85046' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: platform_private.c2p1_item_fence()'; END IF;
+  IF md5(pg_get_functiondef('platform_private.c2p1_rule_fence()'::regprocedure)) IS DISTINCT FROM '4337496c5ece403ad072adcaee88faf2' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: platform_private.c2p1_rule_fence()'; END IF;
+  IF md5(pg_get_functiondef('public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'::regprocedure)) IS DISTINCT FROM '97bcdb9884b54adb3bd4aae4915e32d0' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_admin_create_commercial_plan(jsonb)'::regprocedure)) IS DISTINCT FROM '6136f97079a2b445c949b047aac62108' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.rpc_admin_create_commercial_plan(jsonb)'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_admin_list_commercial_plans(text,text,integer,integer)'::regprocedure)) IS DISTINCT FROM 'c6672029349b7a312066341defb625ab' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.rpc_admin_list_commercial_plans(text,text,integer,integer)'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_admin_reorder_commercial_plans(jsonb)'::regprocedure)) IS DISTINCT FROM '0c6825b70cdc5650855784e4b39585d7' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.rpc_admin_reorder_commercial_plans(jsonb)'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_admin_set_commercial_plan_active(uuid,boolean,text)'::regprocedure)) IS DISTINCT FROM 'bf83cf4a8a35861b723bdcb278112697' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.rpc_admin_set_commercial_plan_active(uuid,boolean,text)'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_admin_set_default_commercial_plan(uuid)'::regprocedure)) IS DISTINCT FROM '0bf1ce6d0a62f06d962c5dcb8657f760' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.rpc_admin_set_default_commercial_plan(uuid)'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer)'::regprocedure)) IS DISTINCT FROM '7bbfe461fdcc5da0d9fbaff3793d730d' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer)'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_admin_version_commercial_plan(uuid,jsonb,text)'::regprocedure)) IS DISTINCT FROM '8e2cf62e686d9f0aa5d181a18f33df65' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.rpc_admin_version_commercial_plan(uuid,jsonb,text)'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_b2b_list_selectable_payment_plans()'::regprocedure)) IS DISTINCT FROM '5bceeda188eee7525172eadeed17f7c0' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.rpc_b2b_list_selectable_payment_plans()'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_cc_list_assignments(text)'::regprocedure)) IS DISTINCT FROM '72af313fcbdd40436e45a36ecf854ac9' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.rpc_cc_list_assignments(text)'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)'::regprocedure)) IS DISTINCT FROM '3aa53f85f13a3a1d9322673c40d262bd' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_cc_validate_matrix(uuid,text,uuid,uuid)'::regprocedure)) IS DISTINCT FROM 'b4f0ff6f4f0856c90faef8654e0c4980' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.rpc_cc_validate_matrix(uuid,text,uuid,uuid)'; END IF;
+  IF md5(pg_get_functiondef('public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'::regprocedure)) IS DISTINCT FROM '6e81e29397a9bd633f2fe6ec364d8cf3' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'; END IF;
+END $$;
+SELECT count(*) AS plans,count(organization_id) AS owned,count(*)-count(organization_id) AS denied_unresolved FROM public.commercial_payment_plans;
+
+-- READONLY POST da ponte; não certifica provedor/JWT/RLS hosted.
+DO $$ BEGIN
+ IF current_setting('b2b_fiscal_bridge.review_project_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'B2B_FISCAL_REF_NOT_VERIFIED'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_integration_actor(uuid,boolean)'::regprocedure)) IS DISTINCT FROM 'd75b9aff1d4c01c08869dfc24033f7af' THEN RAISE EXCEPTION 'B2B_FISCAL_ACTOR_POST_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_title_insert_fence()'::regprocedure)) IS DISTINCT FROM '1c52d40031b79294adb6fa7f72bcdc61' THEN RAISE EXCEPTION 'B2B_FISCAL_FENCE_POST_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid)'::regprocedure)) IS DISTINCT FROM '766fb81a3c7dafa71de7806e559f0730' THEN RAISE EXCEPTION 'B2B_FISCAL_AUTH_POST_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb)'::regprocedure)) IS DISTINCT FROM '766034ca6a25074dd5aeb6e57300c1d4' THEN RAISE EXCEPTION 'B2B_FISCAL_H13_POST_DRIFT'; END IF;
+ IF has_function_privilege('authenticated','platform_private.b2b_fiscal_invoice_bridge_v1(uuid)','EXECUTE') OR has_function_privilege('anon','platform_private.b2b_fiscal_invoice_bridge_v1(uuid)','EXECUTE') OR NOT has_function_privilege('service_role','platform_private.b2b_fiscal_invoice_bridge_v1(uuid)','EXECUTE') THEN RAISE EXCEPTION 'B2B_FISCAL_BRIDGE_ACL_INVALID'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable' AND column_name='created_by' AND is_nullable='YES') THEN RAISE EXCEPTION 'B2B_FISCAL_CREATED_BY_POST_DRIFT'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='b2b_fiscal_created_by_guard' AND tgrelid='public.accounts_receivable'::regclass AND tgenabled='O') THEN RAISE EXCEPTION 'B2B_FISCAL_CREATED_BY_GUARD_MISSING'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.b2b_fiscal_invoice_snapshots'::regclass AND relrowsecurity) THEN RAISE EXCEPTION 'B2B_FISCAL_SNAPSHOT_RLS_MISSING'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.fiscal_close_pending'::regclass AND relrowsecurity) THEN RAISE EXCEPTION 'FISCAL_CLOSE_PENDING_RLS_MISSING'; END IF;
+ IF md5(pg_get_functiondef('public.fn_fiscal_sefaz_tx_guard()'::regprocedure)) IS DISTINCT FROM '1661123d056217810d8fb175b46fdd8b' THEN RAISE EXCEPTION 'FISCAL_TX_GUARD_POST_DRIFT'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='trg_fiscal_sefaz_tx_guard' AND tgrelid='public.fiscal_sefaz_transmissions'::regclass AND tgenabled='O') THEN RAISE EXCEPTION 'FISCAL_TX_GUARD_POST_DISABLED'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='fiscal_sefaz_transmissions' AND column_name='protocol_c_stat' AND is_nullable='YES') THEN RAISE EXCEPTION 'B2B_FISCAL_PROTOCOL_CSTAT_POST_DRIFT'; END IF;
+END $$;
+
+DO $guard$ BEGIN
+ IF md5(pg_get_functiondef('platform_private.b2b_integration_dependencies()'::regprocedure)) IS DISTINCT FROM '605e722506de23bfd69c890c4123d4b6'
+ THEN RAISE EXCEPTION 'COMPOSED_ALWAYS_DENY_DRIFT' USING ERRCODE='42501'; END IF;
+ IF has_function_privilege('authenticated','platform_private.b2b_allocate_document(uuid)','EXECUTE')
+   OR has_function_privilege('service_role','platform_private.b2b_allocate_document(uuid)','EXECUTE')
+ THEN RAISE EXCEPTION 'COMPOSED_ALLOCATOR_GRANT_OPEN' USING ERRCODE='42501'; END IF;
+END $guard$;
+SELECT 'COMPOSED_POST_OK' AS status;

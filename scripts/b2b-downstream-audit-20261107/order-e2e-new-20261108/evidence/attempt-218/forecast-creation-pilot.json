@@ -1,0 +1,318 @@
+{
+  "results": [
+    {
+      "name": "out_of_pilot_differential_live_vs_candidate",
+      "status": "PASS",
+      "detail": {
+        "label": "out-of-pilot snapshot order, gate ENABLED, no grant",
+        "steps": [
+          {
+            "step": "credit",
+            "live_ok": false,
+            "candidate_ok": false,
+            "live_error": "b2b_phase1_scope_denied",
+            "candidate_error": "already_released: cr\u00e9dito j\u00e1 liberado, pedido em an\u00e1lise comercial",
+            "live_ret": null,
+            "candidate_ret": null
+          },
+          {
+            "step": "terms",
+            "live_ok": false,
+            "candidate_ok": true,
+            "live_error": "b2b_phase1_scope_denied",
+            "candidate_error": null,
+            "live_ret": null,
+            "candidate_ret": "{\"status\": \"approved\", \"success\": true}"
+          },
+          {
+            "step": "commercial",
+            "live_ok": true,
+            "candidate_ok": true,
+            "live_error": null,
+            "candidate_error": null,
+            "live_ret": "",
+            "candidate_ret": ""
+          }
+        ],
+        "same_step_outcomes": false,
+        "effects_equal": false,
+        "effect_diffs": {
+          "order": {},
+          "terms": {
+            "approved_by": [
+              null,
+              "00000000-0000-0000-0000-000000000029"
+            ],
+            "approval_status": [
+              "pending",
+              "approved"
+            ],
+            "approval_notes": [
+              null,
+              "FC TERMS"
+            ]
+          },
+          "audit": [
+            [
+              "created_via_rpc",
+              "order_created",
+              "order_updated",
+              "order_updated",
+              "payment_terms_created",
+              "payment_terms_defined",
+              "approved",
+              "status_changed"
+            ],
+            [
+              "created_via_rpc",
+              "order_created",
+              "order_updated",
+              "order_updated",
+              "payment_terms_created",
+              "payment_terms_defined",
+              "approved",
+              "payment_terms_approved",
+              "payment_terms_updated",
+              "status_changed"
+            ]
+          ]
+        },
+        "live_forecasts": 0,
+        "candidate_forecasts": 0,
+        "rolled_back": true,
+        "committed_candidate": {
+          "steps": [
+            {
+              "ok": false,
+              "ord": 1,
+              "ret": null,
+              "step": "credit",
+              "message": "already_released: cr\u00e9dito j\u00e1 liberado, pedido em an\u00e1lise comercial",
+              "sqlstate": "P0001"
+            },
+            {
+              "ok": true,
+              "ord": 2,
+              "ret": "{\"status\": \"approved\", \"success\": true}",
+              "step": "terms",
+              "message": null,
+              "sqlstate": null
+            },
+            {
+              "ok": true,
+              "ord": 3,
+              "ret": "",
+              "step": "commercial",
+              "message": null,
+              "sqlstate": null
+            }
+          ],
+          "forecasts": 0,
+          "status": "aprovado"
+        }
+      }
+    },
+    {
+      "name": "legacy_without_snapshot_differential",
+      "status": "PASS",
+      "detail": {
+        "label": "legacy order without internal_economic_snapshot, no grant",
+        "steps": [
+          {
+            "step": "credit",
+            "live_ok": false,
+            "candidate_ok": false,
+            "live_error": "b2b_phase1_scope_denied",
+            "candidate_error": "already_released: cr\u00e9dito j\u00e1 liberado, pedido em an\u00e1lise comercial",
+            "live_ret": null,
+            "candidate_ret": null
+          },
+          {
+            "step": "terms",
+            "live_ok": false,
+            "candidate_ok": true,
+            "live_error": "b2b_phase1_scope_denied",
+            "candidate_error": null,
+            "live_ret": null,
+            "candidate_ret": "{\"status\": \"approved\", \"success\": true}"
+          },
+          {
+            "step": "commercial",
+            "live_ok": true,
+            "candidate_ok": true,
+            "live_error": null,
+            "candidate_error": null,
+            "live_ret": "",
+            "candidate_ret": ""
+          }
+        ],
+        "same_step_outcomes": false,
+        "effects_equal": false,
+        "effect_diffs": {
+          "order": {},
+          "terms": {
+            "approved_by": [
+              null,
+              "00000000-0000-0000-0000-000000000029"
+            ],
+            "approval_status": [
+              "pending",
+              "approved"
+            ],
+            "approval_notes": [
+              null,
+              "FC TERMS"
+            ]
+          },
+          "audit": [
+            [
+              "created_via_rpc",
+              "order_created",
+              "order_updated",
+              "order_updated",
+              "payment_terms_created",
+              "payment_terms_defined",
+              "approved",
+              "status_changed"
+            ],
+            [
+              "created_via_rpc",
+              "order_created",
+              "order_updated",
+              "order_updated",
+              "payment_terms_created",
+              "payment_terms_defined",
+              "approved",
+              "payment_terms_approved",
+              "payment_terms_updated",
+              "status_changed"
+            ]
+          ]
+        },
+        "live_forecasts": 0,
+        "candidate_forecasts": 0,
+        "rolled_back": true
+      }
+    },
+    {
+      "name": "pilot_exact_grant_creates_one_forecast",
+      "status": "PASS",
+      "detail": {
+        "order": "84e98b19-0a32-4ae7-8d1b-8b9d0ee5d844",
+        "grant": "d3a11ae2-3f83-444d-a915-d48599facfa3",
+        "forecast": {
+          "n": 1,
+          "state": "aguardando_fiscal",
+          "total": 18.0,
+          "credit": true,
+          "residual": 18.0
+        }
+      }
+    },
+    {
+      "name": "grant_revoked_during_proven_wait",
+      "status": "PASS",
+      "detail": {
+        "order": "dda1013b-653f-4b08-bf76-4a26b01e6589",
+        "approval_status": "aprovado",
+        "forecasts": 0,
+        "barrier": {
+          "holder_ready": {
+            "pid": 41452,
+            "state": "idle in transaction",
+            "granted": true
+          },
+          "waiter_before_revocation": {
+            "holder_pid": 41452,
+            "waiter_pid": 41458,
+            "blocking_pids": [
+              41452
+            ],
+            "ungranted_locks": [
+              {
+                "mode": "ShareLock",
+                "granted": false,
+                "locktype": "transactionid",
+                "relation": null,
+                "transactionid": "18463"
+              }
+            ],
+            "wait_event_type": "Lock"
+          },
+          "mutation_sent_after_waiter": true,
+          "timing_only_proof": false
+        }
+      }
+    },
+    {
+      "name": "gate_off_during_proven_wait",
+      "status": "PASS",
+      "detail": {
+        "order": "3c7c912c-4082-413b-8193-f0d0809d7e3e",
+        "approval_status": "aprovado",
+        "forecasts": 0,
+        "barrier": {
+          "holder_ready": {
+            "pid": 41499,
+            "state": "idle in transaction",
+            "granted": true
+          },
+          "waiter_before_revocation": {
+            "holder_pid": 41499,
+            "waiter_pid": 41504,
+            "blocking_pids": [
+              41499
+            ],
+            "ungranted_locks": [
+              {
+                "mode": "ShareLock",
+                "granted": false,
+                "locktype": "transactionid",
+                "relation": null,
+                "transactionid": "18469"
+              }
+            ],
+            "wait_event_type": "Lock"
+          },
+          "mutation_sent_after_waiter": true,
+          "timing_only_proof": false
+        }
+      }
+    },
+    {
+      "name": "gate_closed_with_valid_grant",
+      "status": "PASS",
+      "detail": {
+        "order": "e01cad9a-d42f-4f56-be0e-08492f312dca",
+        "forecasts": 0
+      }
+    },
+    {
+      "name": "grant_scope_mismatch_and_acl",
+      "status": "PASS",
+      "detail": {
+        "other_actor": {
+          "order": "050aebcf-63e8-42af-bf09-0fe549decf2a",
+          "forecasts": 0
+        },
+        "other_org": {
+          "order": "f39ce45e-8cdd-4da9-a2cc-1d8f20ce6722",
+          "forecasts": 0
+        },
+        "other_partner": {
+          "order": "7c5c8062-e7db-4655-81e9-b82ba74f0edb",
+          "forecasts": 0
+        },
+        "expired": {
+          "order": "0dd55401-f50e-4595-ab76-e4e8203a142d",
+          "forecasts": 0
+        },
+        "grant_over_4h_rejected": "23514",
+        "authenticated_table_denied": true,
+        "service_role_table_denied": true
+      }
+    }
+  ],
+  "hosted": false,
+  "auth": "SYNTHETIC SQL-role authenticated; not JWT/RLS proof"
+}

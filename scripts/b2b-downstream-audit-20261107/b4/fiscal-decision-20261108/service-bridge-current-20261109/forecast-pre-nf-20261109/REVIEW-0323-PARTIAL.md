@@ -151,3 +151,18 @@ C. `final-manifest-20261110.json`: 11 estágios com caminhos/SHA256, classes LIV
 D. UI sem botões novos. `ROTEIRO-AB-HOSPEDADO.md` e `hosted-live-pre-diagnostic.sql.readonly` (somente leitura) preparados; não foram executados hospedados.
 
 Regressão: 747→738, aberto 9→18→9, residual 0, 38 gatilhos íntegros (antes dos cenários, antes do rollback, fim). Hashes: `review-1609-source-hashes.json`. Pacote `REVIEW_ONLY_INACTIVE_NOT_APPROVED`.
+
+## Revisão cf7d5fb/214 — pin Seller91 e previsão fechada fora do piloto (10/11/2026)
+
+Somente PostgreSQL 17.11 descartável, Auth sintética. Sem SQL hospedado, publicação, emissão, envio ou cobrança. Status `REVIEW_ONLY_INACTIVE_NOT_APPROVED`.
+
+Tentativas: 215 exit 1 (testes novos rodaram depois do rollback 04 e compararam corpos já revertidos; movidos para antes do rollback); 216 exit 1 (`LOCAL_SQL_PROCESS_TIMEOUT` de 40 s numa consulta de espera do cenário antigo de início fiscal, já aprovado na 215; repetido sem mudança de código); 217 exit 1 (pedidos novos do parceiro PC já tinham crédito liberado; preparo passou a pular a aprovação de crédito nesse caso); **218 exit 0, 57/57 PASS**.
+
+1. **Pin `respond_b2b_order_quote_secure`.** `seller91_b4_stages.py` gera `b4-seller91-current/` a partir das fontes congeladas (SHA256 conferidos), trocando só a guarda md5 `4926a99c…` → `97bcdb98…` (uma linha por arquivo; o corpo `respond.seller91.sql` tem md5 `97bcdb98…`). A cadeia executa esses arquivos byte a byte, sem `replace`. A guarda continua sendo de igualdade exata. md5 antes e depois do B4 = `97bcdb98…` (`seller91-b4-reconciliation.json`); reinstalar B4 sobre a composição continua falhando fechado.
+2. **Previsão fora do piloto.** O estágio 02 instala `b2b_forecast_creation_gate_v1` (`enabled=false`) e `b2b_forecast_creation_allowlist_v1` vazia (concessão exata, ≤4h, revogável), sem grants. Sem concessão o helper devolve `deferred FORECAST_CREATION_NOT_GRANTED` antes de qualquer checagem de snapshot/cronograma/crédito. A aprovação de termos não calcula mais crédito fora do piloto. Depois da espera, pedido, empresa dona, estado e ator são relidos.
+   - Comparação LIVE × candidato em transações desfeitas (`forecast-creation-pilot.json`), pedido com snapshot e pedido legado sem snapshot: nenhum passo que dá certo no LIVE falha no candidato; zero previsão. Única diferença: a aprovação de termos por financeiro do fornecedor, que no LIVE dá `b2b_phase1_scope_denied` (defeito CCR2 já revisado) e no candidato funciona. É delta revisado e não depende da previsão.
+   - Piloto exato: uma previsão de 18, `aguardando_fiscal`, nenhum título. Revogação e gate OFF com espera comprovada (`pg_blocking_pids`): aprovação conclui, previsão 0. Gate fechado com concessão válida, outro ator/empresa/parceiro e concessão vencida: previsão 0. Concessão >4h → `23514`. authenticated/service_role sem acesso às tabelas.
+   - Rollback: gate OFF, 0 concessões abertas, 46 concessões e 20 previsões retidas.
+3. Regressões preservadas na 218: parceiro 747→738, 18/9/9, pagamento 9, CANCEL COMMIT→BEGIN, parcial/replay/callback tardio, rollback e 38 gatilhos (quatro marcos).
+
+Artefatos: 16 SQL do repositório iguais aos do espelho da 218. `final-manifest-20261110.json` foi regenerado por `final_manifest.py`, com caminhos executáveis, SHA256 recalculados e efeitos fora do piloto listados. Hashes em `review-1720-source-hashes.json`. Teste focado `test_review_risks.py`: 27/27 (`evidence/static-after-05-creation-pilot`).
