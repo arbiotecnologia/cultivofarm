@@ -233,6 +233,8 @@ export function parserFor(retry: RetrySnapshot): (d: unknown) => unknown {
 /** Fresh capability probe, then one dispatch. `fence` must throw if scope/session changed. */
 export async function runAtomicGroup(rpc: Rpc, input: GroupInput, fence: () => void, onDispatch: (r: RetrySnapshot) => void = () => {}): Promise<Outcome<GroupAck>> {
   if (input.osOrigem === "b2b") {
+    // Structural refusal BEFORE any RPC: B2B needs its partner order and never the OnFarm type.
+    if (input.osTipo === "onfarm" || input.osPartnerOrderId === null || !UUID.test(input.osPartnerOrderId)) buildGroupArgs({ ...input, resale: undefined });
     // B2B resale: generic group capability AND the exact resale capability for this OS/items, probed now.
     const ids = input.itens.map(i => i.itemId);
     const [cap, resale] = await Promise.all([probeDeliveryCapability(rpc), probeResaleCapability(rpc, input.osId, ids, input.expectedOrg)]);
