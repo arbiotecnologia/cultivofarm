@@ -73,3 +73,20 @@ Cláusulas: (1) marcador `project_ref`/`production_emission_allowed` — passava
 - `missing-returned-proof`: `response_summary` é NOT NULL (padrão `'{}'`); o caso passou a usar retorno 217 sem `chNFe`.
 
 **Perda de evidência:** dois reinícios do sandbox apagaram os diretórios 195–199 e o primeiro 201. Os resultados acima foram observados durante a execução, mas os arquivos **não estão preservados**; foram renumerados e nada é declarado PASS com base neles. A tentativa 200 está preservada.
+
+### Tentativa 203 — cadeia integral local, exit 0, 55/55 (PostgreSQL 17.11 descartável)
+
+Evidência: `order-e2e-new-20261108/evidence/attempt-203/` (`run.exitcode`=0, `checks.json`, `mirror-forecast-artifacts.json`). Tentativas 200 (22P02 por referência não-UUID, alternativa revertida), 201b (caminho `parents[4]` da captura 184, corrigido para `[5]`) e 202 (início canônico exato bloqueado pela cláusula tenant-blind na reprodução histórica) preservadas com exit 1.
+
+- Preflight: `after-fixture-settings-insert` com cláusula canônica = BLOCK (seleciona sentinela de outra empresa) e cláusula por empresa = `'2'`; consultas com marcador STAGING/false.
+- Negativas de ambiente: `begin-env-tenant-scope.json` — 3/3 `FISCAL_PRODUCTION_ENDPOINT_BLOCKED`, 0 transmissões.
+- Duas intenções antes do SYNC: vencedora PENDING; perdedora `PT409 B2B_FORECAST_BEGIN_BLOCKED`, sem transmissão (`canonical-begin-cancel-race.json`). begin-first: cancelamento `PT409 B2B_FORECAST_FISCAL_IN_FLIGHT`; replay do início idempotente. cancel-first: início espera e conclui após o rollback do cancelamento.
+- 217/negativas: 215/106/280, chave/ambiente/recibo/documento divergentes, RetAutorizacao, resposta antiga, prova ausente/sem chave negados (`wrapper-review-affected.json`); documento/serviço/created_at alterados barrados por `FISCAL_TRANSMISSION_FIELDS_IMMUTABLE`, sem desligar guard. A causalidade usa vínculo begin→timeout, não created_at+UUID.
+- Drift de ACL: `B2B_CREDIT_COMPOSITION_POST_ACL` para `b2b_credit_balances(uuid,uuid)` e `b2b_order_residual(uuid)`.
+- Contenção: 48 controles, **12 esperas comprovadas** (holder/waiter/`pg_blocking_pids`/locks não concedidos) antes de cada revogação.
+- Financeiro: após NF1 título 9 + residual 9 = 18; após NF2 títulos 18 + residual 0 = 18, parceiro 747; após pagamento 9: 9, parceiro **738**. NFs concorrentes: um título e um `FISCAL_AUTHORIZATION_CLOSE_PENDING` (`FISCAL_QUANTITY_OVERALLOCATED` na perdedora).
+- Cancelamento + callback tardio: residual cancelado não emitido nem reaberto; callback autorizado preserva protocolo como close-pending sem título. Reprodução histórica: corpo canônico exato bloqueado pelo ambiente; com só a cláusula de ambiente corrigida, iniciaria a emissão do residual cancelado (`before-canceled-begin.json`, revertido).
+- Rollback: histórico idêntico antes/depois (3 documentos, 3 snapshots, 3 títulos, 2 close-pending, 40 eventos); dez gatilhos de recebíveis e pins de 120 gatilhos LIVE preservados. **A contagem específica de 38 gatilhos do terms-wait não foi verificada separadamente nesta cadeia.**
+- Leitor `rpc_receivable_money_projection_v1`: ACL `{postgres=X/postgres}`, financeiro/administrador `42501`; positivo **BLOCKED_OWNER_ONLY_CANDIDATE_ACL**, sem grant e sem usar leitura do owner como prova.
+
+**Promoção:** depois da 203, o gerador rodou no repositório; os 12 SQL candidatos ficaram byte a byte iguais aos validados no espelho (`review-1255-source-hashes.json`). Os SQL ficam **REVIEW_ONLY_INACTIVE_NOT_APPROVED**: nada de SQL hospedado, publicação, emissão, envio ou cobrança. Auth é SQL sintética (não JWT/RLS/Storage hospedado). Gate logístico global não foi aberto.
