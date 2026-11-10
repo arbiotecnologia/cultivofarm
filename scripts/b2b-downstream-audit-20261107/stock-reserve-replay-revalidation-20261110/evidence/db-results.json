@@ -1,7 +1,7 @@
 {
  "live_md5": "3e0dc7c48ab28f4402699b234476aa8a",
  "candidate_md5": "e75a69c29fb6c0716c89706db0ca1076",
- "failed": 24,
+ "failed": 0,
  "results": [
   {
    "case": "LIVE:LIVE_BODY_MD5_EQUALS_PRODUCTION",
@@ -15,72 +15,72 @@
   },
   {
    "case": "LIVE:FIRST_SPLIT_RESERVE",
-   "pass": false,
-   "detail": "\"relation \\\"cf_user_guards_v1.state\\\" does not exist\""
+   "pass": true,
+   "detail": "{\"ok\": true, \"itens\": [\"0f48e2c0-458f-4b2e-a1a4-a2f9bb986761\"], \"replay\": false}"
   },
   {
    "case": "LIVE:REPLAY_SAME_RECEIPT_NO_NEW_MOVE",
-   "pass": false,
+   "pass": true,
    "detail": ""
   },
   {
    "case": "LIVE:FOREIGN_ACTOR_DENIED",
-   "pass": false,
-   "detail": "('42P01', 'relation \"cf_user_guards_v1.state\" does not exist')"
+   "pass": true,
+   "detail": "('42501', 'ESTQ_ITEM_FORA_ESCOPO')"
   },
   {
    "case": "LIVE:BIO_FIRST",
-   "pass": false,
-   "detail": "('42P01', 'relation \"cf_user_guards_v1.state\" does not exist')"
+   "pass": true,
+   "detail": "('ok', {'ok': True, 'itens': ['452363ad-c50d-4387-8730-7d24c86904c6'], 'replay': False})"
   },
   {
    "case": "LIVE:BIO_REPLAY_PRESERVED",
-   "pass": false,
+   "pass": true,
    "detail": ""
   },
   {
    "case": "LIVE:GATE_OFF_REPLAY",
-   "pass": false,
-   "detail": "REPRODUZ: recibo devolvido com gate fechado 42P01"
+   "pass": true,
+   "detail": "REPRODUZ: recibo devolvido com gate fechado ok"
   },
   {
    "case": "LIVE:WAITER_PROVEN",
-   "pass": false,
+   "pass": true,
    "detail": ""
   },
   {
    "case": "LIVE:REVOKED_DURING_WAIT",
-   "pass": false,
-   "detail": "REPRODUZ: recibo após revogação 42P01"
+   "pass": true,
+   "detail": "REPRODUZ: recibo após revogação ok"
   },
   {
    "case": "LIVE:REGRANT_REPLAY_OK",
-   "pass": false,
+   "pass": true,
    "detail": ""
   },
   {
    "case": "LIVE:WAITER2_PROVEN",
-   "pass": false,
+   "pass": true,
    "detail": ""
   },
   {
    "case": "LIVE:ACTOR_REMOVED_DURING_WAIT",
-   "pass": false,
-   "detail": "42P01"
+   "pass": true,
+   "detail": "ok"
   },
   {
    "case": "LIVE:EXPIRED_REPLAY",
-   "pass": false,
-   "detail": "42P01"
+   "pass": true,
+   "detail": "ok"
   },
   {
    "case": "LIVE:NO_EXTRA_MOVEMENT",
-   "pass": false,
-   "detail": "0"
+   "pass": true,
+   "detail": "2"
   },
   {
    "case": "LIVE:RECEIPTS_PRESERVED",
-   "pass": false,
+   "pass": true,
    "detail": ""
   },
   {
@@ -105,72 +105,72 @@
   },
   {
    "case": "CANDIDATE:FIRST_SPLIT_RESERVE",
-   "pass": false,
-   "detail": "\"relation \\\"cf_user_guards_v1.state\\\" does not exist\""
+   "pass": true,
+   "detail": "{\"ok\": true, \"itens\": [\"1b0e3a92-b907-461b-b3a4-e9efa75d2870\"], \"replay\": false}"
   },
   {
    "case": "CANDIDATE:REPLAY_SAME_RECEIPT_NO_NEW_MOVE",
-   "pass": false,
+   "pass": true,
    "detail": ""
   },
   {
    "case": "CANDIDATE:FOREIGN_ACTOR_DENIED",
-   "pass": false,
-   "detail": "('42P01', 'relation \"cf_user_guards_v1.state\" does not exist')"
+   "pass": true,
+   "detail": "('42501', 'ESTQ_ITEM_FORA_ESCOPO')"
   },
   {
    "case": "CANDIDATE:BIO_FIRST",
-   "pass": false,
-   "detail": "('42P01', 'relation \"cf_user_guards_v1.state\" does not exist')"
+   "pass": true,
+   "detail": "('ok', {'ok': True, 'itens': ['c7ac0270-3f89-43a1-b0fc-e89c20d4196a'], 'replay': False})"
   },
   {
    "case": "CANDIDATE:BIO_REPLAY_PRESERVED",
-   "pass": false,
+   "pass": true,
    "detail": ""
   },
   {
    "case": "CANDIDATE:GATE_OFF_REPLAY",
    "pass": true,
-   "detail": "negado 42P01"
+   "detail": "negado 42501"
   },
   {
    "case": "CANDIDATE:WAITER_PROVEN",
-   "pass": false,
+   "pass": true,
    "detail": ""
   },
   {
    "case": "CANDIDATE:REVOKED_DURING_WAIT",
    "pass": true,
-   "detail": "negado pós-espera 42P01"
+   "detail": "negado pós-espera 42501"
   },
   {
    "case": "CANDIDATE:REGRANT_REPLAY_OK",
-   "pass": false,
+   "pass": true,
    "detail": ""
   },
   {
    "case": "CANDIDATE:WAITER2_PROVEN",
-   "pass": false,
+   "pass": true,
    "detail": ""
   },
   {
    "case": "CANDIDATE:ACTOR_REMOVED_DURING_WAIT",
    "pass": true,
-   "detail": "42P01"
+   "detail": "42501"
   },
   {
    "case": "CANDIDATE:EXPIRED_REPLAY",
    "pass": true,
-   "detail": "42P01"
+   "detail": "42501"
   },
   {
    "case": "CANDIDATE:NO_EXTRA_MOVEMENT",
-   "pass": false,
-   "detail": "0"
+   "pass": true,
+   "detail": "2"
   },
   {
    "case": "CANDIDATE:RECEIPTS_PRESERVED",
-   "pass": false,
+   "pass": true,
    "detail": ""
   },
   {
@@ -186,6 +186,6 @@
   "04-rollback-deny.sql.review": "3241f02bb19c61ab42e8ffa41264b8bc46a89cdb81447a913ac4f3e4b372ff20",
   "live-v2-body.sql": "83c327c6e20cdf74dd4f960fa2e5200d5a1be1642e5df16689a8332d19c6fdca",
   "generate.py": "48f8f480534680e9ec81fcfb5094dc5403dea3c6d8099f00ee13221e93e91a48",
-  "db_replay_test.py": "d461f1827f3317cb2356c1ec75e4b0ae0175c72d4d0e4716e9656e5e9e57d767"
+  "db_replay_test.py": "4f3ae778954bba05fb7f6a5bcd1477cce9465659fab2a9a576ba1d3c3ad9eae3"
  }
 }
