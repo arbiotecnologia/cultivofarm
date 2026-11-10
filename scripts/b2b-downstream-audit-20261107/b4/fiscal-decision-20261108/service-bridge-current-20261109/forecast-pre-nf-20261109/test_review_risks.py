@@ -59,6 +59,7 @@ try:
       CREATE TABLE public.partner_order_payment_schedule(partner_order_id uuid,installment_number integer,amount numeric);
       CREATE TABLE public.partner_order_items(id uuid,order_id uuid);
       CREATE TABLE platform_private.b2b_document_allocations(document_id uuid,receivable_id uuid,order_id uuid);
+      CREATE TABLE platform_private.b2b_fiscal_service_permits(transaction_id bigint,document_id uuid,invoice_id uuid,order_id uuid,organization_id uuid,partner_id uuid);
       CREATE FUNCTION platform_private.b2b_order_residual(uuid) RETURNS numeric LANGUAGE sql AS $$SELECT 9::numeric$$;
       CREATE FUNCTION platform_private.b2b_integration_dependencies() RETURNS void LANGUAGE plpgsql AS $$BEGIN
         RAISE EXCEPTION 'B2B_FISCAL_SERVICE_PERMIT_REQUIRED' USING ERRCODE='42501';END$$;
@@ -117,7 +118,7 @@ try:
             reconcile_future=pool.submit(raw,f"SELECT platform_private.b2b_financial_forecast_reconcile_fiscal_v1('{D}','{R}');")
             cancellation=cancel_future.result();confirmation=reconcile_future.result()
         record('cancel race committed',cancellation,lambda r:r.returncode==0)
-        record('confirmation observes canceled state after wait',confirmation,lambda r:'PT409' in r.stderr and 'RESIDUAL_CANCELED' in r.stderr)
+        record('unattested confirmation waits and stays denied after cancellation',confirmation,lambda r:'42501' in r.stderr and 'SERVICE_PERMIT_REQUIRED' in r.stderr)
         record('canceled residual cannot emit',raw(event(version=v+1)),lambda r:'STATE_CONFLICT' in r.stderr)
         v=reset('faturado_parcial',9)
         record('allocation alone is not fiscal evidence',raw(f"SELECT platform_private.b2b_financial_forecast_reconcile_fiscal_v1('{D}','{R}');"),lambda r:'42501' in r.stderr and 'SERVICE_PERMIT_REQUIRED' in r.stderr)
