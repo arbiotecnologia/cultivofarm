@@ -447,6 +447,16 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
     for label, uid in (('financeiro', Q.UFIN), ('administrador', Q.UADM)):
         got = Q.as_user(uid, f"SELECT public.rpc_receivable_money_projection_v1('{first_receivable}',0,1000);")
         projection_attempts[label] = dict(exit=got.returncode, stdout=got.stdout.strip()[-300:], stderr=got.stderr.strip()[:200])
+    projection_meta=json.loads(B.last("""SELECT jsonb_build_object('body_md5',md5(pg_get_functiondef(p.oid)),
+      'owner',pg_get_userbyid(p.proowner),'acl',p.proacl::text,
+      'authenticated_execute',has_function_privilege('authenticated',p.oid,'EXECUTE'),
+      'service_execute',has_function_privilege('service_role',p.oid,'EXECUTE'))::text
+      FROM pg_proc p WHERE p.oid='public.rpc_receivable_money_projection_v1(uuid,integer,integer)'::regprocedure;"""))
+    assert projection_meta['authenticated_execute'] is False,projection_meta
+    (OUT/'projection-reader-diagnosis.json').write_text(json.dumps(dict(metadata=projection_meta,
+      attempts=projection_attempts,positive='BLOCKED_OWNER_ONLY_CANDIDATE_ACL',
+      source='financial-price-generator-20261029/integration/origin.sql.review REVOKE includes authenticated',
+      owner_read_is_not_positive=True,client_grants_added=False,hosted=False),indent=2)+'\n')
     installment = B.last(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{first_receivable}' ORDER BY installment_number LIMIT 1;")
     assert B.last(f"SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id='{first_receivable}';") == '1'
     payment = json.dumps({'amount_received':9,'payment_method_id':Q.M_BOL,'idempotency_key':'LOCAL-FORECAST-PAY-9'}).replace("'", "''")
@@ -585,9 +595,18 @@ def test_begin_cancel_race(B,Q,OUT,order_id,doc,v):
         held,called=holder.result(),cancel.result()
     assert held.returncode==0 and called.returncode!=0 and 'B2B_FORECAST_FISCAL_IN_FLIGHT' in called.stderr,(held.stderr,called.stderr)
     tx=json.loads(next(x for x in held.stdout.splitlines() if x.startswith('{')))['transmissionId']
+    # BEGIN now reserves EMISSION_STARTED atomically. SYNC is an exact replay.
+    reserved=forecast_row(B,order_id)
+    assert reserved['state']=='emissao_em_andamento' and reserved['version']==v+1,reserved
+    replay_begin=B.run_raw(begin_statement(Q,doc,'begin-first'))
+    assert replay_begin.returncode==0 and _last(replay_begin)['idempotentReplay'] is True,replay_begin.stderr
     transport_error(B,tx,'LOCAL_RACE_FINISHED_NO_EMISSION')
     rows.append(dict(case='begin-first',begin_stdout=held.stdout,cancel_stderr=called.stderr))
-    assert forecast_row(B,order_id)==before
+    timed=sync(Q,Q.UFIN,tx,reserved['version'])
+    consult=insert_followup_tx(B,Q,doc,997,'NFeConsultaProtocolo4')
+    reject(B,consult,'217','LOCAL RACE PROTOCOL ABSENCE')
+    cleared=sync(Q,Q.UFIN,consult,timed['version'])
+    v=cleared['version'];before=forecast_row(B,order_id)
     # Cancel owns order+forecast and commits before begin; the writer itself denies.
     # Rollback-only cancel serialization is tested here, permanent canceled path below.
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
