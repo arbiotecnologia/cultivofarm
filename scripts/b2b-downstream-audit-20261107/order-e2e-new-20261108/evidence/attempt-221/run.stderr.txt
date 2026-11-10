@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-83dffl4e/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 841, in main
+    partial_completion=forecast_extra.run_partial_completion(B,Q,OUT,order_id,accepted,item,invoice_id,receivable_id,credit)
+  File "/tmp/new-order-e2e-83dffl4e/project/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast_residual_scenario.py", line 478, in run_partial_completion
+    revenue_v2_phase(B, Q, OUT, 'A', order_id, first_receivable, rv2)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-83dffl4e/project/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast_residual_scenario.py", line 1079, in revenue_v2_phase
+    fault('no-nf-document-digest-divergent', f"UPDATE platform_private.b2b_authorized_documents SET source_digest=source_digest||'-LOCAL-FAULT' WHERE id=(SELECT document_id FROM platform_private.b2b_document_allocations WHERE receivable_id='{receivable}');", 'unproven')
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-83dffl4e/project/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast_residual_scenario.py", line 1074, in fault
+    rec(name, expect == 'denied_by_schema', stderr=r.stderr.strip()[-300:]); return
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-83dffl4e/project/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast_residual_scenario.py", line 1051, in rec
+    assert ok, cases[-1]
+           ^^
+AssertionError: {'phase': 'A', 'case': 'no-nf-document-digest-divergent', 'ok': False, 'stderr': '08f32c17adebc41c052941962cb0ff777dfc20..., [{"item_id": "dd91bbf2-7915-4e7f-967e-7083857a4f83", "quantity":..., AUTHORIZED).\nSCHEMA NAME:  platform_private\nTABLE NAME:  b2b_authorized_documents\nCONSTRAINT NAME:  b2b_authorized_documents_source_digest_check\nLOCATION:  ExecConstraints, execMain.c:2079'}

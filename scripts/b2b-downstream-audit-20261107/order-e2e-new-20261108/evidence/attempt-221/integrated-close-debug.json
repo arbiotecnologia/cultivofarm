@@ -1,0 +1,19 @@
+{
+  "callback": {
+    "nRec": null,
+    "cStat": "104",
+    "chNFe": "35261111111111111111111111111111111111111111",
+    "nProt": "LOCAL-INTEGRATED-PROTOCOL",
+    "state": "SUCCEEDED",
+    "outcome": "AUTHORIZED",
+    "xMotivo": "LOTE PROCESSADO; PROTOCOLO AUTORIZADO",
+    "protocolCStat": "100",
+    "transmissionId": "00000000-0000-0000-0000-000000000901",
+    "reconciliationCode": null,
+    "reconciliationPending": false
+  },
+  "close_pending": [],
+  "direct_close_stdout": "{\"applied\": false, \"b2bReason\": null, \"b2bReplay\": \"true\", \"invoiceId\": \"00000000-0000-0000-0000-000000000900\", \"b2bSkipped\": \"false\", \"receivableId\": \"c8aa3110-0cce-49f8-b476-ec4abacb1f86\", \"normalizedStatus\": \"AUTHORIZED\", \"reconciliationStatus\": \"PENDING\"}\n",
+  "direct_close_stderr": "",
+  "direct_close_returncode": 0
+}

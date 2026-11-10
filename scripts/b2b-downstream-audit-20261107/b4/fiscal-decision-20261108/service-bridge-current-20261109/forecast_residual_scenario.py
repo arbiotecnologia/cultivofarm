@@ -1038,7 +1038,7 @@ def _rv2_ctx(uid):
 
 def _rv2_call(B, uid, partner='NULL', mutation=''):
     r = B.run_raw(f"BEGIN;{mutation}{_rv2_ctx(uid)}SELECT public.rpc_b2b_revenue_forecast_tenant_v2({partner});ROLLBACK;")
-    return r, (json.loads(_last_line(r)) if r.returncode == 0 else None)
+    return r, (json.loads(next(x for x in reversed(r.stdout.strip().splitlines()) if x.strip().startswith('{'))) if r.returncode == 0 else None)
 
 def _rv2_tot(d): return round(float(d['confirmed_titles']['total_aberto']) + float(d['forecast_residual']['amount']), 2)
 
@@ -1046,7 +1046,9 @@ def revenue_v2_phase(B, Q, OUT, phase, order_id, receivable, state):
     out = OUT / 'revenue-tenant-v2'; out.mkdir(exist_ok=True)
     files = _rv2_files(); cases = state.setdefault('cases', [])
     def rec(name, ok, **detail):
-        cases.append(dict(phase=phase, case=name, ok=bool(ok), **detail)); assert ok, cases[-1]
+        cases.append(dict(phase=phase, case=name, ok=bool(ok), **detail))
+        (out / 'cases-progress.json').write_text(json.dumps(cases, indent=1, default=str) + '\n')
+        assert ok, cases[-1]
     if phase == 'A':
         for k, v in files.items(): (out / k).write_text(v)
         r, _ = _rv2_call(B, Q.UFIN); rec('before-install-absent', r.returncode != 0 and 'does not exist' in r.stderr)
