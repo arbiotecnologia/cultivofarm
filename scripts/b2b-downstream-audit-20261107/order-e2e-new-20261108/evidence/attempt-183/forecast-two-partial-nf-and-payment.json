@@ -1,0 +1,269 @@
+{
+  "first_invoice": "00000000-0000-0000-0000-000000000900",
+  "first_receivable": "f96232fc-56af-41b5-9f93-57c0fc0ee1cd",
+  "replay_race": [
+    {
+      "nRec": null,
+      "cStat": "104",
+      "chNFe": "35261111111111111111111111111111111111111111",
+      "nProt": "LOCAL-INTEGRATED-PROTOCOL",
+      "state": "SUCCEEDED",
+      "outcome": "AUTHORIZED",
+      "xMotivo": "LOTE PROCESSADO; PROTOCOLO AUTORIZADO",
+      "protocolCStat": "100",
+      "transmissionId": "00000000-0000-0000-0000-000000000901",
+      "reconciliationCode": null,
+      "reconciliationPending": false
+    },
+    {
+      "nRec": null,
+      "cStat": "104",
+      "chNFe": "35261111111111111111111111111111111111111111",
+      "nProt": "LOCAL-INTEGRATED-PROTOCOL",
+      "state": "SUCCEEDED",
+      "outcome": "AUTHORIZED",
+      "xMotivo": "LOTE PROCESSADO; PROTOCOLO AUTORIZADO",
+      "protocolCStat": "100",
+      "transmissionId": "00000000-0000-0000-0000-000000000901",
+      "reconciliationCode": null,
+      "reconciliationPending": false
+    }
+  ],
+  "direct_bridge_service_denied": "ERROR:  42501: permission denied for schema platform_private",
+  "winner_invoice": "00000000-0000-0000-0000-000000000910",
+  "loser_invoice": "00000000-0000-0000-0000-000000000920",
+  "second_receivable": "176c4783-ec25-4203-bb36-329beae6bb9d",
+  "second_intent_denied": "ERROR:  PT409: B2B_FORECAST_INTENT_CONFLICT",
+  "concurrent_callbacks": {
+    "a": {
+      "nRec": null,
+      "cStat": "104",
+      "chNFe": "35261111111111111111111111111111111111000910",
+      "nProt": "LOCAL-INTEGRATED-PROTOCOL-2A",
+      "state": "SUCCEEDED",
+      "outcome": "AUTHORIZED",
+      "xMotivo": "LOTE PROCESSADO; PROTOCOLO AUTORIZADO",
+      "protocolCStat": "100",
+      "transmissionId": "00000000-0000-0000-0000-000000000912",
+      "reconciliationCode": null,
+      "reconciliationPending": false
+    },
+    "z": {
+      "nRec": null,
+      "cStat": "104",
+      "chNFe": "35261111111111111111111111111111111111000920",
+      "nProt": "LOCAL-INTEGRATED-PROTOCOL-2Z",
+      "state": "SUCCEEDED",
+      "outcome": "AUTHORIZED",
+      "xMotivo": "LOTE PROCESSADO; PROTOCOLO AUTORIZADO",
+      "protocolCStat": "100",
+      "transmissionId": "00000000-0000-0000-0000-000000000922",
+      "reconciliationCode": "FISCAL_AUTHORIZATION_CLOSE_PENDING",
+      "reconciliationPending": true
+    }
+  },
+  "loser_state": {
+    "tx_nprot": "LOCAL-INTEGRATED-PROTOCOL-2Z",
+    "tx_outcome": "AUTHORIZED",
+    "close_pending": "FISCAL_AUTHORIZATION_CLOSE_PENDING",
+    "receivable_id": null,
+    "invoice_status": "DRAFT"
+  },
+  "loser_reason": {
+    "exit": 3,
+    "stderr": "ERROR:  PT409: FISCAL_QUANTITY_OVERALLOCATED\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 91 at RAISE\nPL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 96 at assignment\nPL/pgSQL function rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid) line 76 at assignment\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+  },
+  "credit_before": {
+    "partner_id": "00000000-0000-0000-0000-000000000011",
+    "novo_pedido": 0.0,
+    "reason_code": "OK",
+    "credit_limit": 1000000.0,
+    "tem_vencidos": false,
+    "saldo_vencido": 0.0,
+    "exposicao_atual": 747.0,
+    "saldo_em_aberto": 0.0,
+    "block_if_overdue": false,
+    "credito_disponivel": 999253.0,
+    "credit_limit_action": "block",
+    "exposicao_projetada": 747.0,
+    "percentual_utilizado": 0.07,
+    "comprometido_pendente": 0.0,
+    "overdue_tolerance_days": 0,
+    "comprometido_nao_faturado": 747.0
+  },
+  "credit_after_first": {
+    "full": {
+      "partner_id": "00000000-0000-0000-0000-000000000011",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1000000.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 747.0,
+      "saldo_em_aberto": 9.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 999253.0,
+      "credit_limit_action": "block",
+      "exposicao_projetada": 747.0,
+      "percentual_utilizado": 0.07,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 738.0
+    },
+    "others": {
+      "partner_id": "00000000-0000-0000-0000-000000000011",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1000000.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 738.0,
+      "saldo_em_aberto": 9.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 999262.0,
+      "credit_limit_action": "block",
+      "exposicao_projetada": 738.0,
+      "percentual_utilizado": 0.07,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 729.0
+    },
+    "order_open": 9,
+    "order_residual": 9,
+    "order_exposure": 18,
+    "label": "after NF1: title 9 + residual 9 = 18"
+  },
+  "credit_after_second": {
+    "full": {
+      "partner_id": "00000000-0000-0000-0000-000000000011",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1000000.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 747.0,
+      "saldo_em_aberto": 18.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 999253.0,
+      "credit_limit_action": "block",
+      "exposicao_projetada": 747.0,
+      "percentual_utilizado": 0.07,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 729.0
+    },
+    "others": {
+      "partner_id": "00000000-0000-0000-0000-000000000011",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1000000.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 747.0,
+      "saldo_em_aberto": 18.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 999253.0,
+      "credit_limit_action": "block",
+      "exposicao_projetada": 747.0,
+      "percentual_utilizado": 0.07,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 729.0
+    },
+    "order_open": 18,
+    "order_residual": 0,
+    "order_exposure": 18,
+    "label": "after NF2: titles 18 + residual 0 = 18"
+  },
+  "credit_after_payment": {
+    "full": {
+      "partner_id": "00000000-0000-0000-0000-000000000011",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1000000.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 738.0,
+      "saldo_em_aberto": 9.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 999262.0,
+      "credit_limit_action": "block",
+      "exposicao_projetada": 738.0,
+      "percentual_utilizado": 0.07,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 729.0
+    },
+    "others": {
+      "partner_id": "00000000-0000-0000-0000-000000000011",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1000000.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 738.0,
+      "saldo_em_aberto": 9.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 999262.0,
+      "credit_limit_action": "block",
+      "exposicao_projetada": 738.0,
+      "percentual_utilizado": 0.07,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 729.0
+    },
+    "order_open": 9,
+    "order_residual": 0,
+    "order_exposure": 9,
+    "label": "after payment 9: open 9 + residual 0 = 9"
+  },
+  "forecast_after_second": {
+    "state": "faturado_total",
+    "version": 10,
+    "last_error_code": null,
+    "residual_amount": 0.0,
+    "fiscal_intent_id": null
+  },
+  "forecast_after_payment": {
+    "state": "faturado_total",
+    "version": 10,
+    "last_error_code": null,
+    "residual_amount": 0.0,
+    "fiscal_intent_id": null
+  },
+  "titles": {
+    "total": 18.0,
+    "titles": 2
+  },
+  "payment_amount": 9,
+  "payment_replay": {
+    "exit": 0,
+    "stdout": "79556b4e-0448-4025-9b4d-bfddf6fbd40a",
+    "stderr": ""
+  },
+  "projection_reader_attempts": {
+    "financeiro": {
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_receivable_money_projection_v1\nLOCATION:  aclcheck_error, aclchk.c:2845"
+    },
+    "administrador": {
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_receivable_money_projection_v1\nLOCATION:  aclcheck_error, aclchk.c:2845"
+    }
+  },
+  "installment_id": "c93b66ca-5570-4edb-aff0-ceb552a6a3c1",
+  "concurrent_replay_one_title": true,
+  "h7_receivable_id_immutable": true,
+  "h7": {
+    "change": "ERROR:  P0001: FISCAL_DOCUMENT_LOCKED: documento em estado AUTHORIZED nao aceita alteracao economica/fiscal informal.\nCONTEXT:  PL/pgSQL function tg_h7_fiscal_invoice_immutable_v1() line 37 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+    "same_value": {
+      "exit": 0,
+      "stderr": ""
+    },
+    "without_claims": "ERROR:  42501: H15_COMPANY_FORBIDDEN\nCONTEXT:  PL/pgSQL function h15_require_company(uuid) line 2 at RAISE\nSQL statement \"SELECT public.h15_require_company(c.id)\"\nPL/pgSQL function h15_invoice_integrity() line 10 at PERFORM\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+  },
+  "synthetic_fiscal_documents": true,
+  "hosted": false
+}

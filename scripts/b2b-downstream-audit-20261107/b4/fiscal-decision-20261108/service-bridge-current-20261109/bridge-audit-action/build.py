@@ -82,10 +82,17 @@ DO $$ BEGIN
 END $$;
 COMMIT;
 """
+    # pg_get_functiondef canonical form: the POST pin must equal md5(definition+"\n").
+    # Attempt 181 executed this rollback for the first time and reproduced
+    # BRIDGE_AUDIT_ROLLBACK_POST_DRIFT with the non-canonical source text pin.
     denied = """CREATE OR REPLACE FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1(p_invoice uuid)
-RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $function$
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
 BEGIN RAISE EXCEPTION 'B2B_FISCAL_BRIDGE_ROLLED_BACK' USING ERRCODE='42501';END $function$"""
-    denied_md5 = md5(denied)
+    denied_md5 = md5(denied + "\n")
     rollback = f"""-- REVIEW ONLY deny-only; não restaura a ponte sem proteção de cancelamento.
 BEGIN;
 SET LOCAL lock_timeout='3s';

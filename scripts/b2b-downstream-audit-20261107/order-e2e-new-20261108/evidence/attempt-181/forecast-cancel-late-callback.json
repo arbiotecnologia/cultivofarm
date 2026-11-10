@@ -1,0 +1,245 @@
+{
+  "order_id": "b83dd8cb-c080-4837-ae4f-eb6082b4df66",
+  "path": "PARTIAL_THEN_CANCEL",
+  "dry_run": {
+    "exit": 0,
+    "stdout": "{\"nRec\": null, \"cStat\": \"104\", \"chNFe\": \"35261111111111111111111111111111111111000980\", \"nProt\": \"LOCAL-PC-1\", \"state\": \"SUCCEEDED\", \"outcome\": \"AUTHORIZED\", \"xMotivo\": \"AUTORIZADO\", \"protocolCStat\": \"100\", \"transmissionId\": \"00000000-0000-0000-0000-000000000982\", \"reconciliationCode\": null, \"reconciliationPending\": false}",
+    "stderr": ""
+  },
+  "exposure_initial": {
+    "full": {
+      "partner_id": "00000000-0000-0000-0000-000000000085",
+      "novo_pedido": 0.0,
+      "reason_code": "LIMIT_EXCEEDED_APPROVAL",
+      "credit_limit": 1.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 18.0,
+      "saldo_em_aberto": 0.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 0.0,
+      "credit_limit_action": "approval_required",
+      "exposicao_projetada": 18.0,
+      "percentual_utilizado": 1800.0,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 18.0
+    },
+    "others": {
+      "partner_id": "00000000-0000-0000-0000-000000000085",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 0.0,
+      "saldo_em_aberto": 0.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 1.0,
+      "credit_limit_action": "approval_required",
+      "exposicao_projetada": 0.0,
+      "percentual_utilizado": 0.0,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 0.0
+    },
+    "order_open": 0,
+    "order_residual": 18.0,
+    "order_exposure": 18.0,
+    "label": "PC before NF: residual only"
+  },
+  "partial": {
+    "state": "faturado_parcial",
+    "version": 3,
+    "last_error_code": null,
+    "residual_amount": 9.0,
+    "fiscal_intent_id": null
+  },
+  "exposure_partial": {
+    "full": {
+      "partner_id": "00000000-0000-0000-0000-000000000085",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1000.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 18.0,
+      "saldo_em_aberto": 9.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 982.0,
+      "credit_limit_action": "block",
+      "exposicao_projetada": 18.0,
+      "percentual_utilizado": 1.8,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 9.0
+    },
+    "others": {
+      "partner_id": "00000000-0000-0000-0000-000000000085",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1000.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 9.0,
+      "saldo_em_aberto": 9.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 991.0,
+      "credit_limit_action": "block",
+      "exposicao_projetada": 9.0,
+      "percentual_utilizado": 0.9,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 0.0
+    },
+    "order_open": 9.0,
+    "order_residual": 9.0,
+    "order_exposure": 18.0,
+    "label": "PC after partial NF"
+  },
+  "canceled": {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "state": "cancelado_residual",
+    "version": 7,
+    "order_id": "b83dd8cb-c080-4837-ae4f-eb6082b4df66",
+    "forecast_id": "9b5292d6-3fc3-42f8-9b35-d93f34b2ec84"
+  },
+  "cancel_replay": "ERROR:  PT409: B2B_FORECAST_CAS_CONFLICT",
+  "exposure_after_cancel": {
+    "full": {
+      "partner_id": "00000000-0000-0000-0000-000000000085",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1000.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 9.0,
+      "saldo_em_aberto": 9.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 991.0,
+      "credit_limit_action": "block",
+      "exposicao_projetada": 9.0,
+      "percentual_utilizado": 0.9,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 0.0
+    },
+    "others": {
+      "partner_id": "00000000-0000-0000-0000-000000000085",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1000.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 9.0,
+      "saldo_em_aberto": 9.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 991.0,
+      "credit_limit_action": "block",
+      "exposicao_projetada": 9.0,
+      "percentual_utilizado": 0.9,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 0.0
+    },
+    "order_open": 9.0,
+    "order_residual": 0,
+    "order_exposure": 9.0,
+    "label": "PC after residual cancel: residual not counted"
+  },
+  "emission_after_cancel_denied": "ERROR:  PT409: B2B_FORECAST_FISCAL_AMOUNT_EXCEEDS_RESIDUAL",
+  "late_callback": {
+    "nRec": null,
+    "cStat": "104",
+    "chNFe": "35261111111111111111111111111111111111000985",
+    "nProt": "LOCAL-PC-LATE",
+    "state": "SUCCEEDED",
+    "outcome": "AUTHORIZED",
+    "xMotivo": "LOTE PROCESSADO; PROTOCOLO AUTORIZADO",
+    "protocolCStat": "100",
+    "transmissionId": "00000000-0000-0000-0000-000000000993",
+    "reconciliationCode": "FISCAL_AUTHORIZATION_CLOSE_PENDING",
+    "reconciliationPending": true
+  },
+  "late_close_code": "FISCAL_AUTHORIZATION_CLOSE_PENDING",
+  "late_reason": "ERROR:  PT409: B2B_FORECAST_RESIDUAL_CANCELED\nCONTEXT:  PL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 93 at RAISE\nPL/pgSQL function rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid) line 76 at assignment\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+  "evidence_preserved": {
+    "tx": {
+      "c_stat": "104",
+      "ch_nfe": "35261111111111111111111111111111111111000985",
+      "n_prot": "LOCAL-PC-LATE",
+      "outcome": "AUTHORIZED"
+    },
+    "invoice": {
+      "receivable_id": null,
+      "normalized_status": "DRAFT"
+    },
+    "close_pending": {
+      "attempts": 1,
+      "error_code": "FISCAL_AUTHORIZATION_CLOSE_PENDING"
+    }
+  },
+  "forecast_final": {
+    "state": "cancelado_residual",
+    "version": 7,
+    "last_error_code": null,
+    "residual_amount": 0.0,
+    "fiscal_intent_id": "00000000-0000-0000-0000-000000000985"
+  },
+  "titles": {
+    "total": 9.0,
+    "titles": 1
+  },
+  "exposure_final": {
+    "full": {
+      "partner_id": "00000000-0000-0000-0000-000000000085",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1000.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 9.0,
+      "saldo_em_aberto": 9.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 991.0,
+      "credit_limit_action": "block",
+      "exposicao_projetada": 9.0,
+      "percentual_utilizado": 0.9,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 0.0
+    },
+    "others": {
+      "partner_id": "00000000-0000-0000-0000-000000000085",
+      "novo_pedido": 0.0,
+      "reason_code": "OK",
+      "credit_limit": 1000.0,
+      "tem_vencidos": false,
+      "saldo_vencido": 0.0,
+      "exposicao_atual": 9.0,
+      "saldo_em_aberto": 9.0,
+      "block_if_overdue": false,
+      "credito_disponivel": 991.0,
+      "credit_limit_action": "block",
+      "exposicao_projetada": 9.0,
+      "percentual_utilizado": 0.9,
+      "comprometido_pendente": 0.0,
+      "overdue_tolerance_days": 0,
+      "comprometido_nao_faturado": 0.0
+    },
+    "order_open": 9.0,
+    "order_residual": 0,
+    "order_exposure": 9.0,
+    "label": "PC after late callback: unchanged, close pending explicit"
+  },
+  "cancel_after_late_denied": "ERROR:  PT409: B2B_FORECAST_FISCAL_RECONCILIATION_PENDING",
+  "negatives": {
+    "foreign_cancel": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED",
+    "buyer_cancel": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED"
+  },
+  "seams": [
+    "partner_accounts.client_id for PC (same declared B4 customer seam)",
+    "fiscal document rows inserted as service_role; outcomes only via canonical callback"
+  ],
+  "hosted": false
+}

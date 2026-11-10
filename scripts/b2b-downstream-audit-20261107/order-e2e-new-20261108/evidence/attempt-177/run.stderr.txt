@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-s5ba2f62/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 809, in main
+    partial_completion=forecast_extra.run_partial_completion(B,Q,OUT,order_id,accepted,item,invoice_id,receivable_id,credit)
+  File "/tmp/new-order-e2e-s5ba2f62/project/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast_residual_scenario.py", line 360, in run_partial_completion
+    assert h7.returncode != 0 and 'FISCAL_DOCUMENT_LOCKED' in h7.stderr, h7.stderr
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ERROR:  42501: H15_COMPANY_FORBIDDEN
+CONTEXT:  PL/pgSQL function h15_require_company(uuid) line 2 at RAISE
+SQL statement "SELECT public.h15_require_company(c.id)"
+PL/pgSQL function h15_invoice_integrity() line 10 at PERFORM
+LOCATION:  exec_stmt_raise, pl_exec.c:3911
+

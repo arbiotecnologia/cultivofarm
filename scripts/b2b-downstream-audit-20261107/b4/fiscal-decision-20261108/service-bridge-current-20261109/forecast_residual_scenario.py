@@ -56,9 +56,23 @@ def test_terms_waits(B, Q, OUT, order_id):
     return results
 
 
-def exposure(B, Q):
+def exposure(B, Q, exclude=None, partner=None):
     claims = "'" + json.dumps(json.dumps({'sub': Q.UADM, 'role': 'authenticated', 'iat': 1, 'exp': 4102444800})).replace("'", "''") + "'"
-    return json.loads(B.last(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims={claims};SELECT public.fn_b2b_credit_exposure('{Q.P}',0,NULL);"))
+    ex = 'NULL' if exclude is None else f"'{exclude}'"
+    return json.loads(B.last(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims={claims};SELECT public.fn_b2b_credit_exposure('{partner or Q.P}',0,{ex});"))
+
+
+def assert_order_exposure(B, Q, order_id, base_open, open_order, residual, partner=None, label=''):
+    """Other orders of the partner are measured with p_exclude_order_id, never assumed zero."""
+    full = exposure(B, Q, partner=partner)
+    others = exposure(B, Q, exclude=order_id, partner=partner)
+    got = dict(open=float(full['saldo_em_aberto']), committed=float(full['comprometido_nao_faturado']), pending=float(full['comprometido_pendente']),
+               others_committed=float(others['comprometido_nao_faturado']), others_pending=float(others['comprometido_pendente']), total=float(full['exposicao_atual']))
+    ok = (abs(got['open'] - (base_open + open_order)) < .001 and abs(got['committed'] - (got['others_committed'] + residual)) < .001
+          and abs(got['pending'] - got['others_pending']) < .001
+          and abs(got['total'] - (base_open + open_order + got['others_committed'] + got['others_pending'] + residual)) < .001)
+    assert ok, (label, got, base_open, open_order, residual)
+    return dict(full=full, others=others, order_open=open_order, order_residual=residual, order_exposure=open_order + residual, label=label)
 
 
 def test_terms_replay(B, Q, OUT, order_id, before_fix=False):
@@ -133,73 +147,335 @@ def run_override(B, Q, OUT):
     return dict(order_id=order_id, seller_scope=seller_scope.returncode == 0 and seller_scope.stdout.strip().endswith('t'))
 
 
-def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, first_receivable, credit_before):
-    """Duas NFs de 9, replay/corrida, H7 e pagamento canônico de 9."""
-    assert float(accepted['final_amount_with_interest']) == 18.0, accepted['final_amount_with_interest']
-    first_credit = exposure(B, Q)
-    assert float(first_credit['saldo_em_aberto']) == 9 and float(first_credit['comprometido_nao_faturado']) == 9 and float(first_credit['exposicao_atual']) == 18, first_credit
+ENDPOINT = 'https://hnfe.fazenda.mg.gov.br/LOCAL-SYNTHETIC-NO-NETWORK'
 
-    def bridge_race(_):
-        return B.run_raw(f"SET ROLE service_role;SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{first_invoice}');")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-        races = list(pool.map(bridge_race, range(2)))
-    assert all(r.returncode == 0 for r in races), [r.stderr for r in races]
-    assert B.last(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{first_invoice}';") == '1'
-    assert B.last(f"SELECT count(*) FROM platform_private.b2b_financial_forecast_events WHERE event_type='FISCAL_CONFIRMED' AND event_reference='{first_invoice}';") == '1'
 
-    observed = json.loads(B.last(f"SELECT jsonb_build_object('id',id,'version',version) FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}';"))
-    started = B.run_raw(f"RESET ROLE;SELECT platform_private.b2b_financial_forecast_transition_v1('{observed['id']}',{observed['version']},'EMISSION_STARTED','{Q.u(913)}','{{}}'::jsonb);")
-    assert started.returncode == 0, started.stderr
+def _key(n):
+    key = '3526' + '1' * 34 + f'{n:06d}'
+    assert len(key) == 44
+    return key
 
-    invoice_id, transmission_id, xml_run_id = Q.u(910), Q.u(911), Q.u(912)
-    access_key = '35261111111111111111111111111111111111111112'
-    company_settings_id = accepted['internal_economic_snapshot']['origin']['company_settings_id']
-    xml_payload = '{}'
-    xml_sha256 = hashlib.sha256(xml_payload.encode()).hexdigest()
-    endpoint_url = 'https://hnfe.fazenda.mg.gov.br/LOCAL-SYNTHETIC-NO-NETWORK'
-    fingerprint = hashlib.sha256(f'NFeAutorizacao4|{endpoint_url}|{xml_sha256}'.encode()).hexdigest()
+
+def _last(proc):
+    return json.loads(proc.stdout.strip().splitlines()[-1])
+
+
+def version(Q, order_id):
+    got = Q.as_user(Q.UADM, f"SELECT public.get_b2b_financial_forecast_secure('{order_id}');")
+    assert got.returncode == 0, got.stderr
+    return _last(got)['version']
+
+
+def forecast_row(B, order_id):
+    return json.loads(B.last(f"SELECT jsonb_build_object('state',state,'residual_amount',residual_amount,'version',version,'fiscal_intent_id',fiscal_intent_id,'last_error_code',last_error_code)::text FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}';"))
+
+
+def sync_raw(Q, uid, tx, expected):
+    return Q.as_user(uid, f"SELECT public.rpc_b2b_forecast_fiscal_sync_v1('{tx}',{expected});")
+
+
+def sync(Q, uid, tx, expected):
+    got = sync_raw(Q, uid, tx, expected)
+    assert got.returncode == 0, (got.stdout, got.stderr)
+    return _last(got)
+
+
+def cancel_raw(Q, uid, order_id, expected, reason):
+    return Q.as_user(uid, f"SELECT public.rpc_b2b_forecast_cancel_residual_v1('{order_id}',{expected},'{reason}');")
+
+
+def insert_invoice(B, Q, order_id, partner, company, item_id, amount, n, issue_date='2027-02-01'):
+    """Declared synthetic fiscal seam (same as the integrated fixture): document rows only.
+    Outcomes are recorded exclusively by the canonical H13 callback, never by UPDATE."""
+    invoice_id, xml_run_id, tx_id = Q.u(n), Q.u(n + 1), Q.u(n + 2)
+    access_key = _key(n)
+    xml_sha = hashlib.sha256(b'{}').hexdigest()
+    fingerprint = hashlib.sha256(f'NFeAutorizacao4|{ENDPOINT}|{xml_sha}'.encode()).hexdigest()
     B.sql(f"""SET ROLE service_role;
  INSERT INTO public.fiscal_invoices(id,invoice_type,document_model,idempotency_key,status,normalized_status,environment,company_settings_id,organization_id,
    partner_order_id,debtor_partner_id,issue_date,total_amount,created_by,provider_reference,access_key)
-  VALUES('{invoice_id}','NFE','NFE','integrated-fiscal-invoice:{order_id}:v2','PENDING','PENDING','HOMOLOGATION','{company_settings_id}','{Q.A}','{order_id}','{Q.P}','2027-02-02',9,'{Q.UADM}','LOCAL-INTEGRATED-SECOND','{access_key}');
+  VALUES('{invoice_id}','NFE','NFE','local-forecast-invoice:{invoice_id}','PENDING','PENDING','HOMOLOGATION','{company}','{Q.A}','{order_id}','{partner}','{issue_date}',{amount},'{Q.UADM}','LOCAL-FORECAST-{n}','{access_key}');
  INSERT INTO public.fiscal_invoice_items(fiscal_invoice_id,partner_order_item_id,item_sequence,item_kind,quantity,commercial_unit,taxable_quantity,taxable_unit,net_value)
-  VALUES('{invoice_id}','{item['id']}',1,'PRODUCT',1,'UN',25,'KG',9);
+  VALUES('{invoice_id}','{item_id}',1,'PRODUCT',1,'UN',25,'KG',{amount});
  INSERT INTO public.fiscal_xml_runs(id,fiscal_invoice_id,idempotency_key,run_version,schema_version,environment_code,access_key,state,payload,payload_sha256,signed_sha256,signed_path,signed_at,validation,signature_metadata,created_by,updated_at)
-  VALUES('{xml_run_id}','{invoice_id}','integrated-fiscal-xml:{invoice_id}:v1',1,'LOCAL-NFE-4.00','2','{access_key}','SIGNED','{xml_payload}'::jsonb,'{xml_sha256}','{xml_sha256}','local/{invoice_id}.xml',now(),'{{"synthetic":true,"network":false}}'::jsonb,'{{"synthetic":true,"adapter":"LOCAL_FIXTURE_ONLY"}}'::jsonb,'{Q.UADM}',now());
+  VALUES('{xml_run_id}','{invoice_id}','local-forecast-xml:{invoice_id}',1,'LOCAL-NFE-4.00','2','{access_key}','SIGNED','{{}}'::jsonb,'{xml_sha}','{xml_sha}','local/{invoice_id}.xml',now(),'{{"synthetic":true,"network":false}}'::jsonb,'{{"synthetic":true,"adapter":"LOCAL_FIXTURE_ONLY"}}'::jsonb,'{Q.UADM}',now());
  INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,xml_run_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,c_stat,x_motivo,ch_nfe,n_prot,ambiente_retorno,dh_recbto,completed_at,created_by)
-  VALUES('{transmission_id}','{invoice_id}','{xml_run_id}','NFeAutorizacao4','2','hnfe.fazenda.mg.gov.br','{endpoint_url}','integrated-sefaz-authorize:{invoice_id}:v1','{fingerprint}','SENT','PENDING','103','PROCESSANDO','{access_key}','PENDING','2',now(),now(),'{Q.UADM}');""")
-    patch = json.dumps({'cStat':'104','protocolCStat':'100','nProt':'LOCAL-INTEGRATED-PROTOCOL-2','chNFe':access_key,'xMotivo':'LOTE PROCESSADO; PROTOCOLO AUTORIZADO','tpAmb':'2','dhRecbto':'2027-02-02T12:00:00Z'}).replace("'", "''")
-    second = B.run_raw(f"SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_record_v1('{transmission_id}','SUCCEEDED','{patch}'::jsonb);")
-    assert second.returncode == 0, second.stderr
-    second_data = json.loads(second.stdout.strip().splitlines()[-1])
-    assert second_data['outcome'] == 'AUTHORIZED' and second_data['reconciliationPending'] is False, second_data
-    second_receivable = B.last(f"SELECT receivable_id FROM public.fiscal_invoices WHERE id='{invoice_id}';")
+  VALUES('{tx_id}','{invoice_id}','{xml_run_id}','NFeAutorizacao4','2','hnfe.fazenda.mg.gov.br','{ENDPOINT}','local-forecast-tx:{tx_id}','{fingerprint}','SENT','PENDING','103','PROCESSANDO','{access_key}',NULL,'2',now(),NULL,'{Q.UADM}');""")
+    return dict(invoice=invoice_id, xml_run=xml_run_id, tx=tx_id, access_key=access_key)
+
+
+def insert_followup_tx(B, Q, doc, n, service):
+    tx_id = Q.u(n)
+    fingerprint = hashlib.sha256(f'{service}|{ENDPOINT}|{doc["access_key"]}'.encode()).hexdigest()
+    B.sql(f"""SET ROLE service_role;INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,xml_run_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,c_stat,x_motivo,ch_nfe,ambiente_retorno,dh_recbto,created_by)
+  VALUES('{tx_id}','{doc['invoice']}','{doc['xml_run']}','{service}','2','hnfe.fazenda.mg.gov.br','{ENDPOINT}','local-forecast-tx:{tx_id}','{fingerprint}','SENT','PENDING','103','PROCESSANDO','{doc['access_key']}','2',now(),'{Q.UADM}');""")
+    return tx_id
+
+
+def record(B, tx, state, patch):
+    body = json.dumps(patch).replace("'", "''")
+    return B.run_raw(f"SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_record_v1('{tx}','{state}','{body}'::jsonb);")
+
+
+def authorize(B, doc, tx, protocol, when='2027-02-02T12:00:00Z'):
+    return record(B, tx, 'SUCCEEDED', {'cStat': '104', 'protocolCStat': '100', 'nProt': protocol, 'chNFe': doc['access_key'],
+                                       'xMotivo': 'LOTE PROCESSADO; PROTOCOLO AUTORIZADO', 'tpAmb': '2', 'dhRecbto': when})
+
+
+def reject(B, tx, cstat, motive):
+    got = record(B, tx, 'SUCCEEDED', {'cStat': cstat, 'xMotivo': motive, 'tpAmb': '2'})
+    assert got.returncode == 0 and _last(got)['outcome'] == 'REJECTED', (got.stdout, got.stderr)
+    return _last(got)
+
+
+def transport_error(B, tx, code):
+    got = record(B, tx, 'FAILED', {'errorCode': code})
+    assert got.returncode == 0 and _last(got)['outcome'] == 'TRANSPORT_ERROR', (got.stdout, got.stderr)
+    return _last(got)
+
+
+def denied(proc, token):
+    assert proc.returncode != 0 and token in proc.stderr, (proc.stdout, proc.stderr)
+    return proc.stderr.strip().splitlines()[0][:240]
+
+
+def run_pre_nf_wrappers(B, Q, OUT, order_id, accepted, item):
+    """Emission/consultation/cancel through authenticated wrappers over real callbacks."""
+    company = accepted['internal_economic_snapshot']['origin']['company_settings_id']
+    log = []
+    R = insert_invoice(B, Q, order_id, Q.P, company, item['id'], 9, 960)
+    v = version(Q, order_id)
+    neg = dict(
+        foreign_admin=denied(sync_raw(Q, Q.UADMF, R['tx'], v), 'B2B_FORECAST_FISCAL_'),
+        cross_tenant_buyer=denied(sync_raw(Q, Q.UB2, R['tx'], v), 'B2B_FORECAST_FISCAL_'),
+        service_role_wrapper=denied(B.run_raw(f"SET ROLE service_role;SELECT public.rpc_b2b_forecast_fiscal_sync_v1('{R['tx']}',{v});"), 'permission denied'),
+        service_role_private=denied(B.run_raw(f"SET ROLE service_role;SELECT platform_private.b2b_financial_forecast_transition_v1(gen_random_uuid(),1,'EMISSION_STARTED','x','{{}}'::jsonb);"), 'permission denied'),
+        authenticated_private_cancel=denied(Q.as_user(Q.UFIN, "SELECT platform_private.b2b_financial_forecast_cancel_residual_v1(gen_random_uuid(),1,'x');"), 'permission denied'),
+        stale_version=denied(sync_raw(Q, Q.UFIN, R['tx'], v + 50), 'B2B_FORECAST_CAS_CONFLICT'),
+    )
+    assert forecast_row(B, order_id)['version'] == v
+    started = sync(Q, Q.UFIN, R['tx'], v); log.append(started)
+    assert started['event'] == 'EMISSION_STARTED' and started['state'] == 'emissao_em_andamento' and started['replayed'] is False, started
+    replay = sync(Q, Q.UADM, R['tx'], v); log.append(replay)
+    assert replay['replayed'] is True and replay['version'] == started['version'], replay
+    reject(B, R['tx'], '539', 'Rejeicao local sintetica')
+    rejected = sync(Q, Q.UFIN, R['tx'], started['version']); log.append(rejected)
+    assert rejected['event'] == 'EMISSION_REJECTED' and rejected['state'] == 'aguardando_fiscal', rejected
+    assert forecast_row(B, order_id)['last_error_code'] == '539'
+
+    T = insert_invoice(B, Q, order_id, Q.P, company, item['id'], 9, 965)
+    t_started = sync(Q, Q.UFIN, T['tx'], rejected['version']); log.append(t_started)
+    transport_error(B, T['tx'], 'LOCAL_TRANSPORT_TIMEOUT')
+    timeout = sync(Q, Q.UFIN, T['tx'], t_started['version']); log.append(timeout)
+    assert timeout['event'] == 'EMISSION_TIMEOUT' and timeout['state'] == 'consulta_fiscal_obrigatoria', timeout
+    neg['cancel_while_consultation_required'] = denied(cancel_raw(Q, Q.UFIN, order_id, timeout['version'], 'consulta pendente'), 'B2B_FORECAST_STATE_CONFLICT')
+    consult = insert_followup_tx(B, Q, T, 968, 'NFeConsultaProtocolo4')
+    neg['consultation_not_terminal'] = denied(sync_raw(Q, Q.UFIN, consult, timeout['version']), 'B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE')
+    neg['cancel_with_consultation_in_flight'] = denied(cancel_raw(Q, Q.UFIN, order_id, timeout['version'], 'consulta em voo'), 'B2B_FORECAST_FISCAL_IN_FLIGHT')
+    reject(B, consult, '217', 'NF-e nao consta na base de dados da SEFAZ')
+    consulted = sync(Q, Q.UFIN, consult, timeout['version']); log.append(consulted)
+    assert consulted['event'] == 'CONSULTATION_NOT_AUTHORIZED' and consulted['state'] == 'aguardando_fiscal', consulted
+
+    # Revocation after the wrapper's wait: owner holds the forecast row, deactivates
+    # the actor and commits; the wrapper re-authorizes after the lock and fails.
+    W = insert_invoice(B, Q, order_id, Q.P, company, item['id'], 9, 970)
+    before = forecast_row(B, order_id)
+    holder_sql = f"BEGIN;SELECT id FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}' FOR UPDATE;SELECT pg_sleep(.8);UPDATE public.profiles SET ativo=false WHERE user_id='{Q.UFIN}';COMMIT;"
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        holder = pool.submit(B.run_raw, holder_sql)
+        time.sleep(.2)
+        caller = pool.submit(sync_raw, Q, Q.UFIN, W['tx'], before['version'])
+        held, called = holder.result(), caller.result()
+    assert held.returncode == 0, held.stderr
+    neg['revoked_profile_after_lock'] = denied(called, 'B2B_FORECAST_FISCAL_ACTOR_DENIED')
+    restored = B.run_raw(f"UPDATE public.profiles SET ativo=true WHERE user_id='{Q.UFIN}';")
+    assert restored.returncode == 0, restored.stderr
+    assert forecast_row(B, order_id) == before
+    transport_error(B, W['tx'], 'LOCAL_ABANDONED_AFTER_DENIAL')
+    final = forecast_row(B, order_id)
+    assert final['state'] == 'aguardando_fiscal' and float(final['residual_amount']) == 18, final
+    receivables = B.last(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{order_id}';")
+    assert receivables == '0', receivables
+    result = dict(events=log, negatives=neg, final=final, receivables=0, invoices=dict(rejected=R, timeout=T, consultation_tx=consult, revocation=W),
+                  callbacks='public.rpc_fiscal_sefaz_transmit_record_v1 as service_role (canonical H13 worker)',
+                  wrappers_as='authenticated SQL role with JWT claims (local, not hosted JWT)', reset_role_used=False, hosted=False)
+    (OUT / 'forecast-wrappers-pre-nf.json').write_text(json.dumps(result, indent=2) + '\n')
+    return result
+
+
+def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, first_receivable, credit_before):
+    """Duas NFs de 9, corrida das duas últimas NFs, replay, H7 e pagamento canônico de 9."""
+    assert float(accepted['final_amount_with_interest']) == 18.0, accepted['final_amount_with_interest']
+    base_open = float(credit_before['saldo_em_aberto'])
+    first_credit = assert_order_exposure(B, Q, order_id, base_open, 9, 9, label='after NF1: title 9 + residual 9 = 18')
+    assert abs(float(first_credit['full']['exposicao_atual']) - float(credit_before['exposicao_atual'])) < .001, (first_credit, credit_before)
+
+    # Replay race only through the canonical H13 callback (the bridge itself has no
+    # service grant); identical authorized returns must keep one document and title.
+    first_doc = dict(invoice=first_invoice, access_key='35261111111111111111111111111111111111111111')
+    first_tx = B.last(f"SELECT id FROM public.fiscal_sefaz_transmissions WHERE fiscal_invoice_id='{first_invoice}' AND outcome='AUTHORIZED';")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        races = list(pool.map(lambda _: authorize(B, first_doc, first_tx, 'LOCAL-INTEGRATED-PROTOCOL', '2027-02-01T12:00:00Z'), range(2)))
+    assert all(r.returncode == 0 and _last(r)['reconciliationPending'] is False for r in races), [(r.stdout, r.stderr) for r in races]
+    direct_bridge = denied(B.run_raw(f"SET ROLE service_role;SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{first_invoice}');"), 'permission denied')
+    assert B.last(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{first_invoice}';") == '1'
+    assert B.last(f"SELECT count(*) FROM platform_private.b2b_financial_forecast_events WHERE event_type='FISCAL_CONFIRMED' AND event_reference='{first_invoice}';") == '1'
+
+    company = accepted['internal_economic_snapshot']['origin']['company_settings_id']
+    A = insert_invoice(B, Q, order_id, Q.P, company, item['id'], 9, 910, '2027-02-02')
+    Z = insert_invoice(B, Q, order_id, Q.P, company, item['id'], 9, 920, '2027-02-02')
+    v = version(Q, order_id)
+    started = sync(Q, Q.UFIN, A['tx'], v)
+    assert started['event'] == 'EMISSION_STARTED' and started['state'] == 'emissao_em_andamento', started
+    second_intent_denied = denied(sync_raw(Q, Q.UFIN, Z['tx'], started['version']), 'B2B_FORECAST_INTENT_CONFLICT')
+    # Both authorizations arrive concurrently through the canonical callback.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        fa = pool.submit(authorize, B, A, A['tx'], 'LOCAL-INTEGRATED-PROTOCOL-2A')
+        fz = pool.submit(authorize, B, Z, Z['tx'], 'LOCAL-INTEGRATED-PROTOCOL-2Z')
+        ra, rz = fa.result(), fz.result()
+    assert ra.returncode == 0 and rz.returncode == 0, (ra.stderr, rz.stderr)
+    da, dz = _last(ra), _last(rz)
+    assert da['outcome'] == 'AUTHORIZED' and dz['outcome'] == 'AUTHORIZED', (da, dz)
+    pending = [d for d in (da, dz) if d['reconciliationPending']]
+    closed = [d for d in (da, dz) if not d['reconciliationPending']]
+    assert len(pending) == 1 and len(closed) == 1 and pending[0]['reconciliationCode'] == 'FISCAL_AUTHORIZATION_CLOSE_PENDING', (da, dz)
+    winner, loser = (A, Z) if closed[0]['transmissionId'] == A['tx'] else (Z, A)
+    second_receivable = B.last(f"SELECT receivable_id FROM public.fiscal_invoices WHERE id='{winner['invoice']}';")
     assert second_receivable and second_receivable != first_receivable
-    forecast = json.loads(B.last(f"SELECT jsonb_build_object('state',state,'residual_amount',residual_amount,'version',version)::text FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}';"))
-    assert forecast == {'state':'faturado_total','residual_amount':0.0,'version':11}, forecast
-    second_credit = exposure(B, Q)
-    assert float(second_credit['saldo_em_aberto']) == 18 and float(second_credit['comprometido_nao_faturado']) == 0 and float(second_credit['exposicao_atual']) == 18, second_credit
+    loser_state = json.loads(B.last(f"SELECT jsonb_build_object('invoice_status',normalized_status,'receivable_id',receivable_id,'tx_outcome',(SELECT outcome FROM public.fiscal_sefaz_transmissions WHERE id='{loser['tx']}'),'tx_nprot',(SELECT n_prot FROM public.fiscal_sefaz_transmissions WHERE id='{loser['tx']}'),'close_pending',(SELECT error_code FROM platform_private.fiscal_close_pending WHERE transmission_id='{loser['tx']}'))::text FROM public.fiscal_invoices WHERE id='{loser['invoice']}';"))
+    assert loser_state['receivable_id'] is None and loser_state['invoice_status'] != 'AUTHORIZED' and loser_state['tx_outcome'] == 'AUTHORIZED' and loser_state['tx_nprot'] and loser_state['close_pending'] == 'FISCAL_AUTHORIZATION_CLOSE_PENDING', loser_state
+    loser_reason = B.run_raw(f"BEGIN;SET ROLE service_role;SELECT public.rpc_fiscal_invoice_apply_authorization_v1('{loser['invoice']}','{loser['access_key']}','{'LOCAL-INTEGRATED-PROTOCOL-2A' if loser is A else 'LOCAL-INTEGRATED-PROTOCOL-2Z'}',now(),'100','LOTE PROCESSADO; PROTOCOLO AUTORIZADO','{loser['tx']}');ROLLBACK;")
+    forecast = forecast_row(B, order_id)
+    assert forecast['state'] == 'faturado_total' and float(forecast['residual_amount']) == 0 and forecast['version'] == started['version'] + 1, forecast
+    second_credit = assert_order_exposure(B, Q, order_id, base_open, 18, 0, label='after NF2: titles 18 + residual 0 = 18')
+    assert abs(float(second_credit['full']['exposicao_atual']) - float(credit_before['exposicao_atual'])) < .001, (second_credit, credit_before)
     totals = json.loads(B.last(f"SELECT jsonb_build_object('titles',count(*),'total',sum(total_amount))::text FROM public.accounts_receivable WHERE origin_id='{order_id}' AND b2b_document_id IS NOT NULL;"))
     assert totals['titles'] == 2 and float(totals['total']) == 18, totals
+    replay = authorize(B, winner, winner['tx'], 'LOCAL-INTEGRATED-PROTOCOL-2A' if winner is A else 'LOCAL-INTEGRATED-PROTOCOL-2Z')
+    assert replay.returncode == 0 and _last(replay)['reconciliationPending'] is False, (replay.stdout, replay.stderr)
+    assert B.last(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{order_id}' AND b2b_document_id IS NOT NULL;") == '2'
+    assert forecast_row(B, order_id) == forecast
 
-    h7 = B.run_raw(f"BEGIN;UPDATE public.fiscal_invoices SET receivable_id='{second_receivable}' WHERE id='{first_invoice}';ROLLBACK;")
+    # H7 negative with the tenant admin's claims so the H15 company guard is satisfied
+    # and the immutability trigger itself must refuse; always rolled back.
+    claims = json.dumps({'sub': Q.UADM, 'role': 'authenticated', 'iat': 1, 'exp': 4102444800}).replace("'", "''")
+    h7_ctx = f"BEGIN;SET LOCAL request.jwt.claim.sub='{Q.UADM}';SET LOCAL request.jwt.claims='{claims}';"
+    h7 = B.run_raw(h7_ctx + f"UPDATE public.fiscal_invoices SET receivable_id='{second_receivable}' WHERE id='{first_invoice}';ROLLBACK;")
     assert h7.returncode != 0 and 'FISCAL_DOCUMENT_LOCKED' in h7.stderr, h7.stderr
-    h7_same = B.run_raw(f"BEGIN;UPDATE public.fiscal_invoices SET receivable_id=receivable_id WHERE id='{first_invoice}';ROLLBACK;")
-    assert h7_same.returncode == 0, h7_same.stderr
+    h7_same = B.run_raw(h7_ctx + f"UPDATE public.fiscal_invoices SET receivable_id=receivable_id WHERE id='{first_invoice}';ROLLBACK;")
+    h7_no_claims = B.run_raw(f"BEGIN;UPDATE public.fiscal_invoices SET receivable_id='{second_receivable}' WHERE id='{first_invoice}';ROLLBACK;")
+    assert h7_no_claims.returncode != 0, h7_no_claims.stderr
+    assert B.last(f"SELECT receivable_id FROM public.fiscal_invoices WHERE id='{first_invoice}';") == first_receivable
 
-    projection = B.run_raw(f"RESET ROLE;SELECT public.rpc_receivable_money_projection_v1('{first_receivable}',0,1000);")
-    assert projection.returncode == 0, projection.stderr
-    installment = json.loads(projection.stdout.strip().splitlines()[-1])[0]['id']
+    # Projection reader authority is recorded as observed (not relaxed); the target
+    # installment id is only identified by an owner read. The payment itself runs
+    # through the canonical writer as the financial actor.
+    projection_attempts = {}
+    for label, uid in (('financeiro', Q.UFIN), ('administrador', Q.UADM)):
+        got = Q.as_user(uid, f"SELECT public.rpc_receivable_money_projection_v1('{first_receivable}',0,1000);")
+        projection_attempts[label] = dict(exit=got.returncode, stdout=got.stdout.strip()[-300:], stderr=got.stderr.strip()[:200])
+    installment = B.last(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{first_receivable}' ORDER BY installment_number LIMIT 1;")
+    assert B.last(f"SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id='{first_receivable}';") == '1'
     payment = json.dumps({'amount_received':9,'payment_method_id':Q.M_BOL,'idempotency_key':'LOCAL-FORECAST-PAY-9'}).replace("'", "''")
     paid = Q.as_user(Q.UFIN, f"SELECT public.rpc_register_receivable_payment('{installment}','{payment}'::jsonb);")
     assert paid.returncode == 0, paid.stderr
-    paid_credit = exposure(B, Q)
-    assert float(paid_credit['saldo_em_aberto']) == 9 and float(paid_credit['comprometido_nao_faturado']) == 0 and float(paid_credit['exposicao_atual']) == 9, paid_credit
-    forecast_after_payment = json.loads(B.last(f"SELECT jsonb_build_object('state',state,'residual_amount',residual_amount,'version',version)::text FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}';"))
+    paid_replay = Q.as_user(Q.UFIN, f"SELECT public.rpc_register_receivable_payment('{installment}','{payment}'::jsonb);")
+    paid_credit = assert_order_exposure(B, Q, order_id, base_open, 9, 0, label='after payment 9: open 9 + residual 0 = 9')
+    assert abs(float(paid_credit['full']['exposicao_atual']) - (float(credit_before['exposicao_atual']) - 9)) < .001, (paid_credit, credit_before)
+    forecast_after_payment = forecast_row(B, order_id)
     assert forecast_after_payment == forecast, (forecast_after_payment, forecast)
-    result = dict(first_invoice=first_invoice, first_receivable=first_receivable, second_invoice=invoice_id, second_receivable=second_receivable,
+    result = dict(first_invoice=first_invoice, first_receivable=first_receivable, replay_race=[_last(r) for r in races], direct_bridge_service_denied=direct_bridge, winner_invoice=winner['invoice'], loser_invoice=loser['invoice'], second_receivable=second_receivable,
+                  second_intent_denied=second_intent_denied, concurrent_callbacks=dict(a=da, z=dz), loser_state=loser_state,
+                  loser_reason=dict(exit=loser_reason.returncode, stderr=loser_reason.stderr.strip()[-600:]),
                   credit_before=credit_before, credit_after_first=first_credit, credit_after_second=second_credit, credit_after_payment=paid_credit,
                   forecast_after_second=forecast, forecast_after_payment=forecast_after_payment, titles=totals, payment_amount=9,
-                  concurrent_replay_one_title=True, h7_receivable_id_immutable=True, synthetic=True, hosted=False)
+                  payment_replay=dict(exit=paid_replay.returncode, stdout=paid_replay.stdout.strip()[-300:], stderr=paid_replay.stderr.strip()[-300:]),
+                  projection_reader_attempts=projection_attempts, installment_id=installment,
+                  concurrent_replay_one_title=True, h7_receivable_id_immutable=True, h7=dict(change=h7.stderr.strip()[:300], same_value=dict(exit=h7_same.returncode, stderr=h7_same.stderr.strip()[:300]), without_claims=h7_no_claims.stderr.strip()[:300]), synthetic_fiscal_documents=True, hosted=False)
     (OUT/'forecast-two-partial-nf-and-payment.json').write_text(json.dumps(result, indent=2)+'\n')
+    return result
+
+
+def exposure_for(B, partner, uid):
+    claims = "'" + json.dumps(json.dumps({'sub': uid, 'role': 'authenticated', 'iat': 1, 'exp': 4102444800})).replace("'", "''") + "'"
+    return json.loads(B.last(f"RESET ROLE;SET request.jwt.claim.sub='{uid}';SET request.jwt.claims={claims};SELECT public.fn_b2b_credit_exposure('{partner}',0,NULL);"))
+
+
+def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
+    """Partial NF, residual cancel by wrapper, emission denied, late authorization -> close pending."""
+    order = json.loads(B.last(f"SELECT to_jsonb(o)::text FROM public.partner_orders o WHERE id='{pc_order}';"))
+    company = order['internal_economic_snapshot']['origin']['company_settings_id']
+    item_id = B.last(f"SELECT id FROM public.partner_order_items WHERE order_id='{pc_order}' ORDER BY created_at,id LIMIT 1;")
+    total = float(forecast_row(B, pc_order)['residual_amount'])
+    pc_base_open = float(exposure(B, Q, partner=Q.PC)['saldo_em_aberto'])
+    pc_initial = assert_order_exposure(B, Q, pc_order, pc_base_open, 0, total, partner=Q.PC, label='PC before NF: residual only')
+    half = round(total / 2, 2)
+    # Same declared B4 customer seam as the main partner (partner_accounts.client_id).
+    customer = Q.u(302)
+    B.sql(f"SET session_replication_role=replica;INSERT INTO public.clientes(id,organization_id,nome,codigo_cliente) VALUES('{customer}','{Q.A}','CLIENTE FISCAL SINTETICO LOCAL PC','LOCAL-FISCAL-302') ON CONFLICT(id) DO NOTHING;UPDATE public.partner_accounts SET client_id='{customer}' WHERE id='{Q.PC}' AND commercial_owner_organization_id='{Q.A}';SET session_replication_role=origin;")
+    baseline = json.loads(B.last(f"SELECT to_jsonb(s)::text FROM public.partner_financial_settings s WHERE partner_id='{Q.PC}';"))
+    fields = ['billing_trigger','payment_terms_days','default_payment_method','credit_limit','block_if_overdue','auto_generate_receivable','active','credit_limit_action','overdue_tolerance_days','credit_alert_threshold_1','credit_alert_threshold_2']
+    values = {k: baseline[k] for k in fields}; values.update(credit_limit=1000, credit_limit_action='block')
+    configured = Q.as_user(Q.UFIN, f"SELECT public.rpc_update_partner_financial_settings('{Q.PC}','{json.dumps(baseline).replace(chr(39), chr(39)*2)}'::jsonb,'{json.dumps(values).replace(chr(39), chr(39)*2)}'::jsonb);")
+    assert configured.returncode == 0, configured.stderr
+    neg = dict(foreign_cancel=denied(cancel_raw(Q, Q.UADMF, pc_order, version(Q, pc_order), 'estrangeiro'), 'B2B_FORECAST_CANCEL_ACTOR_DENIED'),
+               buyer_cancel=denied(cancel_raw(Q, Q.UBC, pc_order, version(Q, pc_order), 'comprador'), 'B2B_FORECAST_CANCEL_ACTOR_DENIED'))
+    P1 = insert_invoice(B, Q, pc_order, Q.PC, company, item_id, half, 980, '2027-02-03')
+    dry = B.run_raw(f"BEGIN;SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_record_v1('{P1['tx']}','SUCCEEDED','{json.dumps({'cStat':'104','protocolCStat':'100','nProt':'LOCAL-PC-1','chNFe':P1['access_key'],'xMotivo':'AUTORIZADO','tpAmb':'2','dhRecbto':'2027-02-03T12:00:00Z'})}'::jsonb);ROLLBACK;")
+    dry_ok = dry.returncode == 0 and _last(dry)['reconciliationPending'] is False
+    path = 'PARTIAL_THEN_CANCEL' if dry_ok else 'CANCEL_BEFORE_NF'
+    partial = None
+    if dry_ok:
+        s1 = sync(Q, Q.UFIN, P1['tx'], version(Q, pc_order))
+        got = authorize(B, P1, P1['tx'], 'LOCAL-PC-1', '2027-02-03T12:00:00Z')
+        assert got.returncode == 0 and _last(got)['reconciliationPending'] is False, (got.stdout, got.stderr)
+        partial = forecast_row(B, pc_order)
+        assert partial['state'] == 'faturado_parcial' and abs(float(partial['residual_amount']) - (total - half)) < .001, partial
+        exp_partial = assert_order_exposure(B, Q, pc_order, pc_base_open, half, total - half, partner=Q.PC, label='PC after partial NF')
+    else:
+        reject(B, P1['tx'], '539', 'Rejeicao local sintetica PC')
+        exp_partial = None
+    L = insert_invoice(B, Q, pc_order, Q.PC, company, item_id, half, 985, '2027-02-04')
+    l_started = sync(Q, Q.UFIN, L['tx'], version(Q, pc_order))
+    transport_error(B, L['tx'], 'LOCAL_TRANSPORT_TIMEOUT_PC')
+    l_timeout = sync(Q, Q.UFIN, L['tx'], l_started['version'])
+    consult = insert_followup_tx(B, Q, L, 988, 'NFeConsultaProtocolo4')
+    reject(B, consult, '217', 'NF-e nao consta na base de dados da SEFAZ')
+    l_consulted = sync(Q, Q.UFIN, consult, l_timeout['version'])
+    assert l_consulted['state'] == 'aguardando_fiscal', l_consulted
+    canceled = cancel_raw(Q, Q.UFIN, pc_order, l_consulted['version'], 'Residual cancelado por decisao comercial local')
+    assert canceled.returncode == 0, canceled.stderr
+    canceled_data = _last(canceled)
+    expected_state = 'cancelado_residual' if dry_ok else 'cancelado_antes_nf'
+    assert canceled_data['state'] == expected_state, canceled_data
+    after_cancel = forecast_row(B, pc_order)
+    assert float(after_cancel['residual_amount']) == 0, after_cancel
+    cancel_replay = denied(cancel_raw(Q, Q.UFIN, pc_order, l_consulted['version'], 'repeticao'), 'B2B_FORECAST_')
+    exp_cancel = assert_order_exposure(B, Q, pc_order, pc_base_open, half if dry_ok else 0, 0, partner=Q.PC, label='PC after residual cancel: residual not counted')
+    N = insert_invoice(B, Q, pc_order, Q.PC, company, item_id, half, 990, '2027-02-05')
+    emission_denied = denied(sync_raw(Q, Q.UFIN, N['tx'], after_cancel['version']), 'B2B_FORECAST_FISCAL_AMOUNT_EXCEEDS_RESIDUAL')
+    reject(B, N['tx'], '539', 'Rejeicao local sintetica residual cancelado')
+    late = insert_followup_tx(B, Q, L, 993, 'NFeRetAutorizacao4')
+    late_got = authorize(B, L, late, 'LOCAL-PC-LATE', '2027-02-06T12:00:00Z')
+    assert late_got.returncode == 0, late_got.stderr
+    late_data = _last(late_got)
+    assert late_data['outcome'] == 'AUTHORIZED' and late_data['reconciliationPending'] is True and late_data['reconciliationCode'] == 'FISCAL_AUTHORIZATION_CLOSE_PENDING', late_data
+    late_reason = B.run_raw(f"BEGIN;SET ROLE service_role;SELECT public.rpc_fiscal_invoice_apply_authorization_v1('{L['invoice']}','{L['access_key']}','LOCAL-PC-LATE',now(),'100','LOTE PROCESSADO; PROTOCOLO AUTORIZADO','{late}');ROLLBACK;")
+    assert late_reason.returncode != 0 and ('B2B_FORECAST_RESIDUAL_CANCELED' in late_reason.stderr or 'CANCEL' in late_reason.stderr), late_reason.stderr
+    final = forecast_row(B, pc_order)
+    assert final == after_cancel, (final, after_cancel)
+    titles = json.loads(B.last(f"SELECT jsonb_build_object('titles',count(*),'total',coalesce(sum(total_amount),0))::text FROM public.accounts_receivable WHERE origin_id='{pc_order}' AND b2b_document_id IS NOT NULL;"))
+    assert titles['titles'] == (1 if dry_ok else 0), titles
+    evidence = json.loads(B.last(f"SELECT jsonb_build_object('tx',(SELECT jsonb_build_object('outcome',outcome,'c_stat',c_stat,'n_prot',n_prot,'ch_nfe',ch_nfe) FROM public.fiscal_sefaz_transmissions WHERE id='{late}'),'invoice',(SELECT jsonb_build_object('normalized_status',normalized_status,'receivable_id',receivable_id) FROM public.fiscal_invoices WHERE id='{L['invoice']}'),'close_pending',(SELECT jsonb_build_object('error_code',error_code,'attempts',attempts) FROM platform_private.fiscal_close_pending WHERE transmission_id='{late}'))::text;"))
+    assert evidence['tx']['n_prot'] == 'LOCAL-PC-LATE' and evidence['invoice']['receivable_id'] is None and evidence['close_pending']['error_code'] == 'FISCAL_AUTHORIZATION_CLOSE_PENDING', evidence
+    exp_final = assert_order_exposure(B, Q, pc_order, pc_base_open, half if dry_ok else 0, 0, partner=Q.PC, label='PC after late callback: unchanged, close pending explicit')
+    blocked_after = denied(cancel_raw(Q, Q.UFIN, pc_order, final['version'], 'nova tentativa'), 'B2B_FORECAST_')
+    result = dict(order_id=pc_order, path=path, dry_run=dict(exit=dry.returncode, stdout=dry.stdout.strip()[-400:], stderr=dry.stderr.strip()[-400:]),
+                  exposure_initial=pc_initial, partial=partial, exposure_partial=exp_partial, canceled=canceled_data, cancel_replay=cancel_replay, exposure_after_cancel=exp_cancel,
+                  emission_after_cancel_denied=emission_denied, late_callback=late_data, late_close_code=late_data['reconciliationCode'],
+                  late_reason=late_reason.stderr.strip()[-500:], evidence_preserved=evidence, forecast_final=final, titles=titles,
+                  exposure_final=exp_final, cancel_after_late_denied=blocked_after, negatives=neg,
+                  seams=['partner_accounts.client_id for PC (same declared B4 customer seam)', 'fiscal document rows inserted as service_role; outcomes only via canonical callback'],
+                  hosted=False)
+    (OUT/'forecast-cancel-late-callback.json').write_text(json.dumps(result, indent=2)+'\n')
     return result

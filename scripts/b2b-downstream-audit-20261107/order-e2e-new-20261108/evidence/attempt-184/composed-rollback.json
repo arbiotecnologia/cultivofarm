@@ -1,0 +1,14 @@
+{
+  "credit_retained_md5": "7d841856ba1e2dd34b0fa6491c4914b5",
+  "wrappers_denied": [
+    "ERROR:  42501: permission denied for function rpc_b2b_forecast_cancel_residual_v1\nLOCATION:  aclcheck_error, aclchk.c:2845",
+    "ERROR:  42501: permission denied for function rpc_b2b_forecast_fiscal_sync_v1\nLOCATION:  aclcheck_error, aclchk.c:2845"
+  ],
+  "history": {
+    "events": 34,
+    "forecasts": 19,
+    "close_pending": 2
+  },
+  "body_restored": false,
+  "hosted": false
+}

@@ -1,0 +1,128 @@
+[
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "71d8237bb37c69f0d9995d09e704e327",
+    "owner": "postgres",
+    "signature": "private.guard_os_separate_approval()"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "a05f979cb43473ebd0ccd9eb8f7a5e22",
+    "owner": "postgres",
+    "signature": "platform_private.trg_lab_os_biological_only()"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "0f4ae9965e993f506a64d56fa6ea03d7",
+    "owner": "postgres",
+    "signature": "platform_private.stock_motor_refs(uuid,uuid,uuid,jsonb)"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "1c2bc33e8d3d3e56de7756bd730f5e25",
+    "owner": "postgres",
+    "signature": "platform_private.stock_p1_guard()"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "aed46e3226264e59ea0d5f508a10d10f",
+    "owner": "postgres",
+    "signature": "platform_private.delivery_mutation_guard_20261030()"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "b9a837e8a40d21c1f05984d8271367dc",
+    "owner": "postgres",
+    "signature": "platform_private.delivery_proof_row_ok_20261030(public.entregas,uuid,text)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "15c0128e87fce4b311f6848477ddad56",
+    "owner": "postgres",
+    "signature": "platform_private.delivery_confirm_recheck_v1(uuid,uuid)"
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "md5": "5e654bae21adc0f05b60d8dbaf4d6b2a",
+    "owner": "postgres",
+    "signature": "public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)"
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "md5": "25cd07ec1e4d16c0cd16380cebe04a9f",
+    "owner": "postgres",
+    "signature": "public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "d9621ef705e6585125087c84057b8230",
+    "owner": "postgres",
+    "signature": "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "b6ec03379e43338fe57f1f2cc7795ac5",
+    "owner": "postgres",
+    "signature": "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "d8c6a53bb7d204ea5503cfa637157ea7",
+    "owner": "postgres",
+    "signature": "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "a24295a3fe797bdbd87c33deffb57589",
+    "owner": "postgres",
+    "signature": "public.trg_entrega_sync_partner_order_fn()"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "aa01b7e77b9eca76ce52eea8a79c4bab",
+    "owner": "postgres",
+    "signature": "platform_private.delivery_order_transition_guard_20261030()"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "1c342be2cdaf7bf458a3cd1aa15e7ba5",
+    "owner": "postgres",
+    "signature": "platform_private.b2b_internal_order_snapshot_guard()"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "4a94e2ab1530f1e23fc42ea8cf5ed469",
+    "owner": "postgres",
+    "signature": "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "b6ef4eb89711b5bebde8351a682459ab",
+    "owner": "postgres",
+    "signature": "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "37bee7e08a21f673c5adbe9b331a115a",
+    "owner": "postgres",
+    "signature": "platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "592f6f6d740e6a5234844e3f4db57245",
+    "owner": "postgres",
+    "signature": "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "72d5d18157ffd837b89245bad19fc17e",
+    "owner": "postgres",
+    "signature": "platform_private.b2b_resale_delivery_status_transition_valid_v1(public.partner_orders,public.partner_orders)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "a87c17acd179748ad9774c959d184856",
+    "owner": "postgres",
+    "signature": "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)"
+  }
+]

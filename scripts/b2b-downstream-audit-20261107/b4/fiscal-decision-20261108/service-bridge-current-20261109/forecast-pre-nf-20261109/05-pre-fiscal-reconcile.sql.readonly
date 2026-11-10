@@ -4,5 +4,8 @@ DO $$ BEGIN
  IF current_setting('b2b_forecast.review_project_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'B2B_FORECAST_REF_NOT_VERIFIED';END IF;
  IF to_regclass('platform_private.b2b_document_allocations') IS NULL OR to_regclass('platform_private.b2b_financial_forecasts') IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_RECONCILE_DEPENDENCY_MISSING';END IF;
  IF to_regprocedure('platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B2B_FORECAST_RECONCILE_ALREADY_INSTALLED';END IF;
+ IF to_regprocedure('public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer)') IS NOT NULL OR to_regprocedure('public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text)') IS NOT NULL THEN RAISE EXCEPTION 'B2B_FORECAST_WRAPPERS_ALREADY_INSTALLED';END IF;
+ IF to_regprocedure('platform_private.c2p1_internal_actor(public.app_role[])') IS NULL OR to_regprocedure('platform_private.c2p1_settings_allowed(uuid,boolean)') IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_AUTHORITY_DEPENDENCY_MISSING';END IF;
+ IF to_regprocedure('public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb)') IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_FISCAL_CALLBACK_MISSING';END IF;
 END$$;
 ROLLBACK;

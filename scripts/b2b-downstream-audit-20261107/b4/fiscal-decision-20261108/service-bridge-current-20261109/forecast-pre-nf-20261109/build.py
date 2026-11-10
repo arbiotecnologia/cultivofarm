@@ -3,6 +3,8 @@
 from pathlib import Path
 import hashlib
 import json
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 H = Path(__file__).resolve().parent
 ROOT = H.parents[5]
@@ -321,7 +323,7 @@ DO $$ BEGIN
  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{new_approve_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '{new_terms_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '{new_credit_approval_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_POST_DRIFT';END IF;
- IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '{new_credit_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '{current["fn_b2b_credit_exposure"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_POST_DRIFT';END IF;
  IF (SELECT count(*) FROM pg_class WHERE oid IN ('platform_private.b2b_financial_forecasts'::regclass,'platform_private.b2b_financial_forecast_events'::regclass) AND NOT relrowsecurity)<>0 THEN RAISE EXCEPTION 'B2B_FORECAST_RLS_MISSING';END IF;
  IF has_function_privilege('anon','public.get_b2b_financial_forecast_secure(uuid)','EXECUTE') OR NOT has_function_privilege('authenticated','public.get_b2b_financial_forecast_secure(uuid)','EXECUTE') THEN RAISE EXCEPTION 'B2B_FORECAST_READER_ACL_INVALID';END IF;
 END$$;
@@ -340,36 +342,38 @@ END$$;
 {schema}
 {candidate_credit_approval};
 {candidate_terms};
-{candidate_credit};
 {candidate_approve};
 DO $$ BEGIN
  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{new_approve_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_INSTALL_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '{new_terms_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_INSTALL_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '{new_credit_approval_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_INSTALL_POST_DRIFT';END IF;
- IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '{new_credit_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_INSTALL_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '{current["fn_b2b_credit_exposure"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_INSTALL_POST_DRIFT';END IF;
 END$$;
 COMMIT;
 """
-    credit_rollback = """CREATE OR REPLACE FUNCTION public.fn_b2b_credit_exposure(p_partner_id uuid, p_new_order_amount numeric DEFAULT 0, p_exclude_order_id uuid DEFAULT NULL::uuid)
-RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO 'public'
-AS $$BEGIN RAISE EXCEPTION 'B2B_CREDIT_RECONCILIATION_ROLLED_BACK' USING ERRCODE='42501';END$$"""
-    credit_rollback_md5 = md5(credit_rollback)
+    # Attempt 182 executed this rollback for the first time: `terms` had already been
+    # rewritten above, so the old "restore" pinned the LIVE md5 but installed a modified
+    # body (B2B_FORECAST_TERMS_ROLLBACK_POST_DRIFT). Restoring LIVE would also reopen the
+    # replay that rewrites approver/time and the unlocked read reproduced in 170/164.
+    # Deny-only instead: keep LIVE header/ACL, replace only the body with a closed raise.
+    live_terms = current["approve_b2b_payment_terms_secure"]["definition"]
+    terms_head = live_terms[:live_terms.index("AS $function$") + len("AS $function$")]
+    terms_denied = terms_head + "\nBEGIN RAISE EXCEPTION 'B2B_PAYMENT_TERMS_APPROVAL_ROLLED_BACK' USING ERRCODE='42501';END\n$function$"
+    terms_denied_md5 = md5(terms_denied + "\n")
     rollback = f"""-- REVIEW ONLY deny-only; preserva previsões/eventos e não reabre crédito legado subestimado.
 BEGIN;
 SET LOCAL lock_timeout='3s';
 {approve};
 {credit_approval};
-{terms};
-{credit_rollback};
-REVOKE ALL ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) FROM PUBLIC,anon,authenticated,service_role;
-GRANT EXECUTE ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) TO service_role;
+{terms_denied};
+-- Exposição de crédito NÃO é tocada aqui: o corpo composto B4+previsão (09-12)
+-- permanece; restaurar LIVE/B4 reabriria dupla contagem ou residual cancelado.
 REVOKE ALL ON FUNCTION public.get_b2b_financial_forecast_secure(uuid) FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb),platform_private.b2b_financial_forecast_transition_v1(uuid,integer,text,text,jsonb),platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text) FROM PUBLIC,anon,authenticated,service_role;
 DO $$ BEGIN
  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{OLD_APPROVE_MD5}' THEN RAISE EXCEPTION 'B2B_FORECAST_ROLLBACK_POST_DRIFT';END IF;
- IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '{current["approve_b2b_payment_terms_secure"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_ROLLBACK_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '{terms_denied_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_ROLLBACK_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '{current["approve_b2b_credit"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_ROLLBACK_POST_DRIFT';END IF;
- IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '{credit_rollback_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_ROLLBACK_POST_DRIFT';END IF;
 END$$;
 COMMIT;
 """
@@ -379,6 +383,9 @@ DO $$ BEGIN
  IF current_setting('b2b_forecast.review_project_ref',true) IS DISTINCT FROM '{REF}' THEN RAISE EXCEPTION 'B2B_FORECAST_REF_NOT_VERIFIED';END IF;
  IF to_regclass('platform_private.b2b_document_allocations') IS NULL OR to_regclass('platform_private.b2b_financial_forecasts') IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_RECONCILE_DEPENDENCY_MISSING';END IF;
  IF to_regprocedure('platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B2B_FORECAST_RECONCILE_ALREADY_INSTALLED';END IF;
+ IF to_regprocedure('public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer)') IS NOT NULL OR to_regprocedure('public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text)') IS NOT NULL THEN RAISE EXCEPTION 'B2B_FORECAST_WRAPPERS_ALREADY_INSTALLED';END IF;
+ IF to_regprocedure('platform_private.c2p1_internal_actor(public.app_role[])') IS NULL OR to_regprocedure('platform_private.c2p1_settings_allowed(uuid,boolean)') IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_AUTHORITY_DEPENDENCY_MISSING';END IF;
+ IF to_regprocedure('public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb)') IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_FISCAL_CALLBACK_MISSING';END IF;
 END$$;
 ROLLBACK;
 """
@@ -388,29 +395,43 @@ SET LOCAL lock_timeout='3s';
 {reconcile_sql}
 REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
 -- Owner-only nested invocation from the existing fiscal bridge; no service grant.
+{{WRAPPERS}}
 COMMIT;
 """
     reconcile_post = """-- REVIEW ONLY READ ONLY POST fase 2.
 BEGIN READ ONLY;
 DO $$ BEGIN
  IF has_function_privilege('authenticated','platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid)','EXECUTE') OR has_function_privilege('service_role','platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid)','EXECUTE') THEN RAISE EXCEPTION 'B2B_FORECAST_RECONCILE_ACL_INVALID';END IF;
+ IF NOT has_function_privilege('authenticated','public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer)','EXECUTE') OR has_function_privilege('anon','public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer)','EXECUTE') OR has_function_privilege('service_role','public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer)','EXECUTE')
+  OR NOT has_function_privilege('authenticated','public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text)','EXECUTE') OR has_function_privilege('anon','public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text)','EXECUTE') OR has_function_privilege('service_role','public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text)','EXECUTE') THEN RAISE EXCEPTION 'B2B_FORECAST_WRAPPER_ACL_INVALID';END IF;
+ IF has_function_privilege('authenticated','platform_private.b2b_financial_forecast_transition_v1(uuid,integer,text,text,jsonb)','EXECUTE') OR has_function_privilege('service_role','platform_private.b2b_financial_forecast_transition_v1(uuid,integer,text,text,jsonb)','EXECUTE')
+  OR has_function_privilege('authenticated','platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text)','EXECUTE') OR has_function_privilege('service_role','platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text)','EXECUTE') THEN RAISE EXCEPTION 'B2B_FORECAST_PRIVATE_ACL_INVALID';END IF;
+ IF md5(pg_get_functiondef('public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer)'::regprocedure)) IS DISTINCT FROM '{WRAP_SYNC_MD5}' OR md5(pg_get_functiondef('public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text)'::regprocedure)) IS DISTINCT FROM '{WRAP_CANCEL_MD5}' THEN RAISE EXCEPTION 'B2B_FORECAST_WRAPPER_BODY_DRIFT';END IF;
 END$$;
 ROLLBACK;
 """
     reconcile_rollback = """-- REVIEW ONLY deny-only fase 2; preserva previsões, títulos e eventos.
 BEGIN;
 REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+-- Wrappers fecham por ACL; corpos, eventos, previsões e evidência fiscal permanecem.
+REVOKE ALL ON FUNCTION public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer),public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) FROM PUBLIC,anon,authenticated,service_role;
 COMMIT;
 """
+    from wrappers_and_credit import wrappers_sql, credit_composition
+    wrap_sql, wrap_md5 = wrappers_sql()
+    reconcile_install = reconcile_install.replace("{WRAPPERS}", wrap_sql)
+    reconcile_post = reconcile_post.replace("{WRAP_SYNC_MD5}", wrap_md5["sync"]).replace("{WRAP_CANCEL_MD5}", wrap_md5["cancel"])
+    credit_files, credit_manifest = credit_composition(ROOT, REF)
+    credit_manifest["wrapper_md5"] = wrap_md5
     files = {"01-pre.sql.readonly": pre, "02-install.sql.review": install, "03-post.sql.readonly": post, "04-rollback-deny.sql.review": rollback,
              "05-pre-fiscal-reconcile.sql.readonly": reconcile_pre, "06-install-fiscal-reconcile.sql.review": reconcile_install,
-             "07-post-fiscal-reconcile.sql.readonly": reconcile_post, "08-rollback-fiscal-reconcile-deny.sql.review": reconcile_rollback}
+             "07-post-fiscal-reconcile.sql.readonly": reconcile_post, "08-rollback-fiscal-reconcile-deny.sql.review": reconcile_rollback, **credit_files}
     for name, text in files.items(): (H/name).write_text(text)
     manifest = {"project_ref":REF,"status":"REVIEW_ONLY_INACTIVE_NOT_APPROVED","phase":"FORECAST_AFTER_COMMERCIAL_AND_CREDIT_BEFORE_NF",
       "capture":str(CAPTURE5.relative_to(ROOT)),"capture_sha256":sha(CAPTURE5.read_text()),"live_approve_md5":OLD_APPROVE_MD5,
       "live_payment_terms_md5":current["approve_b2b_payment_terms_secure"]["md5"],"live_credit_approval_md5":current["approve_b2b_credit"]["md5"],"live_credit_exposure_md5":current["fn_b2b_credit_exposure"]["md5"],
-      "after_forecast_approve_md5":new_approve_md5,"after_forecast_payment_terms_md5":new_terms_md5,"after_seller_scope_credit_approval_md5":new_credit_approval_md5,"after_residual_credit_exposure_md5":new_credit_md5,
-      "rollback_credit_exposure_md5":credit_rollback_md5,"accounts_receivable_before_nf":False,"definitive_cardinality":"ONE_PER_AUTHORIZED_FISCAL_DOCUMENT",
+      "after_forecast_approve_md5":new_approve_md5,"after_forecast_payment_terms_md5":new_terms_md5,"after_seller_scope_credit_approval_md5":new_credit_approval_md5,"rollback_terms_denied_md5":terms_denied_md5,"forecast_stage_credit_exposure_md5":current["fn_b2b_credit_exposure"]["md5"],
+      "superseded_pre_b4_residual_credit_md5":new_credit_md5,"credit_composition":credit_manifest,"accounts_receivable_before_nf":False,"definitive_cardinality":"ONE_PER_AUTHORIZED_FISCAL_DOCUMENT",
       "forecast_additive_to_credit":False,"files":{n:sha(t) for n,t in files.items()},"hosted":False}
     (H/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
     print(json.dumps(manifest,indent=2))

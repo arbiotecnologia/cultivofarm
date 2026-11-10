@@ -206,7 +206,7 @@ def main():
     )::text;""").stdout.strip().splitlines()[-1]
   scope=json.loads(diagnostic)
   assert scope['seller_org_partner_is_null'] is True and scope['valid_partner_user'] is True and scope['owner_order_allowed'] is True,scope
-  assert {x['feature_key'] for x in scope['entitlements'] or []}=={'pedidos_b2b','catalogo_precos','estoque_embalagens','ordens_producao','lotes_qualidade'},scope
+  assert {x['feature_key'] for x in scope['entitlements'] or []}=={'pedidos_b2b','catalogo_precos','estoque_embalagens','ordens_producao','lotes_qualidade','contas_receber'},scope
   assert B.last("SELECT md5(pg_get_functiondef('platform_private.assert_b2b_partner_scope(uuid,uuid)'::regprocedure));")=='f86f43f9d9ad3ed97b840fcc02c79476'
   assert B.last("SELECT md5(pg_get_functiondef('platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure));")=='54c4327d63f48e39f598129ff9dd8f09'
   (OUT/'buyer-scope-diagnostic.json').write_text(json.dumps(scope,indent=2)+'\n')
@@ -303,24 +303,14 @@ def main():
   assert forecast_denied.returncode!=0 and 'B2B_FORECAST_READ_DENIED' in forecast_denied.stderr,forecast_denied.stderr
   forecast_private_denied=Q.as_user(Q.UADM,f"SELECT platform_private.b2b_financial_forecast_transition_v1('{forecast['forecast_id']}',1,'EMISSION_STARTED','{Q.u(950)}','{{}}'::jsonb);")
   assert forecast_private_denied.returncode!=0 and 'permission denied' in forecast_private_denied.stderr,forecast_private_denied.stderr
-  intent_id=Q.u(950)
-  def forecast_event(event,version,attempt,error_code=None):
-   payload=json.dumps({'attempt':str(attempt),'error_code':error_code} if error_code else {'attempt':str(attempt)}).replace("'","''")
-   return B.run_raw(f"RESET ROLE;SELECT platform_private.b2b_financial_forecast_transition_v1('{forecast['forecast_id']}',{version},'{event}','{intent_id}','{payload}'::jsonb);")
-  started=forecast_event('EMISSION_STARTED',1,1);assert started.returncode==0,started.stderr
-  started_replay=forecast_event('EMISSION_STARTED',1,1);assert started_replay.returncode==0 and 'true' in started_replay.stdout,started_replay.stdout
-  failed=forecast_event('EMISSION_FAILED',2,1,'LOCAL_REJECT');assert failed.returncode==0,failed.stderr
-  restarted=forecast_event('EMISSION_STARTED',3,2);assert restarted.returncode==0,restarted.stderr
-  timeout=forecast_event('EMISSION_TIMEOUT',4,2,'LOCAL_TIMEOUT');assert timeout.returncode==0,timeout.stderr
-  premature=forecast_event('EMISSION_STARTED',5,3);assert premature.returncode!=0 and 'B2B_FORECAST_STATE_CONFLICT' in premature.stderr,premature.stderr
-  consulted=forecast_event('CONSULTATION_NOT_AUTHORIZED',5,2);assert consulted.returncode==0,consulted.stderr
-  restarted=forecast_event('EMISSION_STARTED',6,3);assert restarted.returncode==0,restarted.stderr
-  failed=forecast_event('EMISSION_FAILED',7,3,'LOCAL_RETRY_CLOSED');assert failed.returncode==0,failed.stderr
+  # 172: nenhuma transição privada por RESET ROLE. Emissão/consulta/cancelamento
+  # ocorrem depois, pelos wrappers autenticados sobre retornos fiscais reais (05-08).
   forecast_final=json.loads(Q.as_user(Q.UADM,f"SELECT public.get_b2b_financial_forecast_secure('{order_id}');").stdout.strip())
-  assert forecast_final['state']=='aguardando_fiscal' and forecast_final['version']==8,forecast_final
+  assert forecast_final['state']=='aguardando_fiscal' and forecast_final['version']==1,forecast_final
+  assert B.last(f"SELECT count(*) FROM platform_private.b2b_financial_forecast_events e JOIN platform_private.b2b_financial_forecasts f ON f.id=e.forecast_id WHERE f.order_id='{order_id}' AND e.event_type<>'PREVISION_CREATED';")=='0'
   assert B.last(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{order_id}';")=='0'
   (OUT/'forecast-pre-nf.json').write_text(json.dumps(dict(forecast=forecast_final,replay=forecast_replay,cross_tenant_denied=forecast_denied.stderr,receivables_before_nf=0),indent=2)+'\n')
-  checks.append(dict(test='forecast separate after commercial and valid credit; idempotent scoped no receivable and failure retry timeout consultation preserve one forecast',status='PASS',forecast_id=forecast['forecast_id']))
+  checks.append(dict(test='forecast separate after commercial and valid credit; idempotent scoped no receivable; private transition denied to authenticated',status='PASS',forecast_id=forecast['forecast_id']))
   (OUT/'seller-acceptance.json').write_text(json.dumps(dict(promotion=promoted,order=accepted),indent=2)+'\n')
   checks.append(dict(test='synthetic accounting CAS promotion and canonical seller acceptance; biological production stays closed',status='PASS'))
   override=forecast_extra.run_override(B,Q,OUT)
@@ -633,6 +623,23 @@ def main():
   b4_pre=B.sql(b4_pre_text)
   B.sql(b4_install_text)
   b4_post=B.sql((composed_dir/'stages/03-b4-post.sql.readonly').read_text())
+  # 172: ordem explícita B4 -> composição de crédito. O PRE 09 exige o corpo B4
+  # exato; o corpo composto é o único que segue para ponte/strict/NF.
+  credit_live_before_b4='213ac31f3a30816ead75365b0d1fed18'
+  credit_b4=B.last("SELECT md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure));")
+  assert credit_b4=='44e8768ff53d7fe5ff3b9f0889258946',credit_b4
+  credit_comp_pre=B.sql("SET b2b_forecast.review_project_ref='swzpzcwiasxmjutrmvkm';"+(forecast_dir/'09-pre-credit-composition.sql.readonly').read_text())
+  B.sql("SET b2b_forecast.review_project_ref='swzpzcwiasxmjutrmvkm';"+(forecast_dir/'10-install-credit-composition.sql.review').read_text())
+  credit_comp_post=B.sql((forecast_dir/'11-post-credit-composition.sql.readonly').read_text())
+  credit_composed=B.last("SELECT md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure));")
+  forecast_manifest=json.loads((forecast_dir/'manifest.json').read_text())
+  assert credit_composed==forecast_manifest['credit_composition']['composed_md5'],credit_composed
+  reinstall_b4=B.run_raw((composed_dir/'stages/02-b4-install-post-composition.sql.review').read_text().replace('4926a99c3fa3086b34ff25bb4b4038bb','97bcdb9884b54adb3bd4aae4915e32d0'))
+  assert reinstall_b4.returncode!=0 and 'B4_PRE_DRIFT' in reinstall_b4.stderr,reinstall_b4.stderr[-800:]
+  assert B.last("SELECT md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure));")==credit_composed
+  (OUT/'credit-composition.json').write_text(json.dumps(dict(order=forecast_manifest['credit_composition']['order'],live_md5=credit_live_before_b4,b4_md5=credit_b4,composed_md5=credit_composed,
+   pre=credit_comp_pre,post=credit_comp_post,b4_reinstall_after_composition_denied=reinstall_b4.stderr.strip().splitlines()[-2:],b4_reinstall_exit=reinstall_b4.returncode,hosted=False),indent=2)+'\n')
+  checks.append(dict(test='explicit order B4 POST then single composed credit body; a later B4 reinstall fails closed instead of overwriting the composition',status='PASS',composed_md5=credit_composed))
   bridge_pre=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(bridge_dir/'01-pre.sql.readonly').read_text())
   B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(composed_dir/'stages/04-bridge-install.sql.review').read_text())
   bridge_post=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(bridge_dir/'03-post.sql.readonly').read_text())
@@ -700,6 +707,8 @@ CREATE TABLE IF NOT EXISTS public.fiscal_sefaz_transmissions(id uuid PRIMARY KEY
  state text,outcome text,c_stat text,x_motivo text,ch_nfe text,n_prot text,n_rec text,ambiente_retorno text,dh_recbto timestamptz,
  error_code text,response_summary jsonb,completed_at timestamptz);
 CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),table_name text,record_id uuid,action text,old_values jsonb,new_values jsonb,changed_by uuid);""")
+  pre_nf_wrappers=forecast_extra.run_pre_nf_wrappers(B,Q,OUT,order_id,accepted,item)
+  checks.append(dict(test='authenticated canonical wrappers derive rejection timeout and consultation from real fiscal callback; cancel blocked while consulting; foreign/buyer/service/private and revocation-after-lock denied',status='PASS'))
   invoice_id=Q.u(900);transmission_id=Q.u(901);xml_run_id=Q.u(902);access_key='35261111111111111111111111111111111111111111'
   company_settings_id=accepted['internal_economic_snapshot']['origin']['company_settings_id']
   partial_amount=round(float(accepted['final_amount_with_interest'])/2,2)
@@ -744,6 +753,9 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   (OUT/'fiscal-fixture-contract.json').write_text(json.dumps(dict(status='PREFLIGHT_ROLLBACK_OK',tables=fixture_contract,invoice_id=invoice_id,xml_run_id=xml_run_id,transmission_id=transmission_id,invoice_idempotency_key=invoice_idem,xml_idempotency_key=xml_idem,transmission_idempotency_key=transmission_idem,xml_payload_sha256=xml_sha256,transmission_request_fingerprint=transmission_fingerprint,network=False,provider_called=False),indent=2)+'\n')
   checks.append(dict(test='fiscal fixture satisfies every required column and passes real NOT NULL CHECK FK trigger preflight in rolled back transaction',status='PASS'))
   B.sql(fixture_sql)
+  first_sync=forecast_extra.sync(Q,Q.UFIN,transmission_id,forecast_extra.version(Q,order_id))
+  assert first_sync['event']=='EMISSION_STARTED' and first_sync['state']=='emissao_em_andamento',first_sync
+  version_before_first_nf=first_sync['version']
   invoice_initial=json.loads(B.last(f"SELECT jsonb_build_object('status',status,'normalized_status',normalized_status,'receivable_id',receivable_id)::text FROM public.fiscal_invoices WHERE id='{invoice_id}';"))
   assert invoice_initial=={'status':'PENDING','normalized_status':'DRAFT','receivable_id':None},invoice_initial
   (OUT/'fiscal-invoice-before-callback.json').write_text(json.dumps(invoice_initial,indent=2)+'\n')
@@ -786,7 +798,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   assert blocked['transmission_idempotency']==transmission_idem and blocked['transmission_fingerprint']==transmission_fingerprint,blocked
   receivable_id=blocked['invoice_receivable']
   forecast_after=json.loads(B.last(f"SELECT jsonb_build_object('state',state,'residual_amount',residual_amount,'version',version)::text FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}';"))
-  assert forecast_after['state']=='faturado_parcial' and float(forecast_after['residual_amount'])==9 and forecast_after['version']==9,forecast_after
+  assert forecast_after['state']=='faturado_parcial' and float(forecast_after['residual_amount'])==9 and forecast_after['version']==version_before_first_nf+1,forecast_after
   credit_claims="'"+json.dumps(json.dumps({'sub':Q.UADM,'role':'authenticated','iat':1,'exp':4102444800})).replace("'","''")+"'"
   credit_after=json.loads(B.last(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims={credit_claims};SELECT public.fn_b2b_credit_exposure('{Q.P}',0,NULL);"))
   assert abs(float(credit_after['exposicao_atual'])-float(credit['exposicao_atual']))<0.01,(credit,credit_after)
@@ -795,7 +807,9 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   (OUT/'integrated-strict-fiscal-callback.json').write_text(json.dumps(dict(callback=callback_data,replay=replay_data,confirmed=blocked,schema_and_fiscal_events_synthetic=True,always_allow_substitution=False,strict_permit_required=True),indent=2)+'\n')
   checks.append(dict(test='real H13 envelope 104 protocol 100 generates one receivable and replay preserves one document allocation snapshot and title without close pending',status='PASS',receivable_id=receivable_id))
   partial_completion=forecast_extra.run_partial_completion(B,Q,OUT,order_id,accepted,item,invoice_id,receivable_id,credit)
-  checks.append(dict(test='two authorized NF 9 plus residual 9 preserve exposure 18; replay race H7 and payment 9 leave exposure 9 without reopening residual',status='PASS',second_receivable=partial_completion['second_receivable']))
+  checks.append(dict(test='two authorized NF 9 plus residual 9 preserve exposure 18; concurrent last NFs create one title and one explicit close-pending; replay race H7 and payment 9 leave exposure 9 without reopening residual',status='PASS',second_receivable=partial_completion['second_receivable']))
+  cancel_late=forecast_extra.run_cancel_late_callback(B,Q,OUT,override['order_id'],accepted)
+  checks.append(dict(test='partial NF then residual cancel by wrapper; canceled residual not emitted; late authorized callback preserves fiscal evidence as close-pending without title or residual reopening',status='PASS',**{k:cancel_late[k] for k in ('order_id','late_close_code')}))
 
   (OUT/'integrated-b4-fiscal-bridge.json').write_text(json.dumps(dict(
    status='STRICT_FISCAL_CONFIRMED_TO_ONE_RECEIVABLE_REVIEW_ONLY',hosted=False,
@@ -804,8 +818,10 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
    old_dependency_denial=dependency.stderr,legacy_writer_denial=legacy_denied.stderr,client_bridge_denial=client_bridge.stderr,
    original_ten_triggers_preserved=True,current_trigger_count=len(current_triggers),
    effect_baseline=effect_baseline,current_counts=current_counts,credit=credit,h13_confirmed=blocked,
-   positive_fiscal_receivable=receivable_id,always_allow_substitution=False),indent=2)+'\n')
+   positive_fiscal_receivable=receivable_id,always_allow_substitution=False,credit_composition_pre=credit_comp_pre,credit_composition_post=credit_comp_post,credit_composed_md5=credit_composed),indent=2)+'\n')
   checks.append(dict(test='same fresh DB executes Seller91 buyer seller logistics B4 strict bridge and positive confirmed fiscal receivable',status='PASS'))
+  history_before_rollback=json.loads(B.last("SELECT jsonb_build_object('snapshots',(SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots),'documents',(SELECT count(*) FROM platform_private.b2b_authorized_documents),'allocations',(SELECT count(*) FROM platform_private.b2b_document_allocations),'b2b_titles',(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id IS NOT NULL),'close_pending',(SELECT count(*) FROM platform_private.fiscal_close_pending),'forecast_events',(SELECT count(*) FROM platform_private.b2b_financial_forecast_events))::text;"))
+  assert history_before_rollback['snapshots']==history_before_rollback['documents']==history_before_rollback['allocations']==history_before_rollback['b2b_titles'],history_before_rollback
   B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(h7_dir/'04-rollback-deny.sql.review').read_text())
   B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(audit_dir/'04-rollback-deny.sql.review').read_text())
   B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(strict_dir/'04-rollback-deny.sql.review').read_text())
@@ -813,6 +829,14 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   B.sql("SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(composed_dir/'04-rollback-deny.sql.review').read_text())
   B.sql("SET b2b_forecast.review_project_ref='swzpzcwiasxmjutrmvkm';"+(forecast_dir/'08-rollback-fiscal-reconcile-deny.sql.review').read_text())
   B.sql("SET b2b_forecast.review_project_ref='swzpzcwiasxmjutrmvkm';"+(forecast_dir/'04-rollback-deny.sql.review').read_text())
+  B.sql("SET b2b_forecast.review_project_ref='swzpzcwiasxmjutrmvkm';"+(forecast_dir/'12-rollback-credit-composition-retain.sql.review').read_text())
+  assert B.last("SELECT md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure));")==credit_composed
+  wrapper_after=Q.as_user(Q.UFIN,f"SELECT public.rpc_b2b_forecast_cancel_residual_v1('{order_id}',1,'post rollback');")
+  assert wrapper_after.returncode!=0 and 'permission denied' in wrapper_after.stderr,wrapper_after.stderr
+  sync_after=Q.as_user(Q.UFIN,f"SELECT public.rpc_b2b_forecast_fiscal_sync_v1('{transmission_id}',1);")
+  assert sync_after.returncode!=0 and 'permission denied' in sync_after.stderr,sync_after.stderr
+  forecast_rows_after_rollback=json.loads(B.last("SELECT jsonb_build_object('forecasts',(SELECT count(*) FROM platform_private.b2b_financial_forecasts),'events',(SELECT count(*) FROM platform_private.b2b_financial_forecast_events),'close_pending',(SELECT count(*) FROM platform_private.fiscal_close_pending))::text;"))
+  (OUT/'composed-rollback.json').write_text(json.dumps(dict(credit_retained_md5=credit_composed,wrappers_denied=[wrapper_after.stderr.strip()[-200:],sync_after.stderr.strip()[-200:]],history=forecast_rows_after_rollback,body_restored=False,hosted=False),indent=2)+'\n')
   # O proprietário local é superusuário: RESET ROLE não mede revogação. A ACL
   # precisa ser exercida como o papel que efetivamente perdeu EXECUTE.
   denied_after_bridge=B.run_raw("RESET ROLE;SET ROLE service_role;SELECT platform_private.b2b_fiscal_invoice_bridge_v1(NULL);")
@@ -826,7 +850,9 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   assert B.last("SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND tablename='commercial_payment_plans' AND indexname='uq_cpp_tenant_code';")=='1'
   current=R.snapshot(B);after_triggers={x['name']:x for x in current['receivable']['triggers']}
   for trigger in original: assert after_triggers.get(trigger['name'])==trigger,trigger['name']
-  assert B.last("SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots;")=='2'
+  history_after_rollback=json.loads(B.last("SELECT jsonb_build_object('snapshots',(SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots),'documents',(SELECT count(*) FROM platform_private.b2b_authorized_documents),'allocations',(SELECT count(*) FROM platform_private.b2b_document_allocations),'b2b_titles',(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id IS NOT NULL),'close_pending',(SELECT count(*) FROM platform_private.fiscal_close_pending),'forecast_events',(SELECT count(*) FROM platform_private.b2b_financial_forecast_events))::text;"))
+  assert history_after_rollback==history_before_rollback,(history_before_rollback,history_after_rollback)
+  (OUT/'rollback-history-preserved.json').write_text(json.dumps(dict(before=history_before_rollback,after=history_after_rollback,hosted=False),indent=2)+'\n')
   assert B.last(f"SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_id}';")=='AUTHORIZED'
   assert B.last(f"SELECT receivable_id FROM public.fiscal_invoices WHERE id='{invoice_id}';")==receivable_id
   assert B.last(f"SELECT count(*) FROM public.accounts_receivable WHERE id='{receivable_id}' AND b2b_document_id='{invoice_id}';")=='1'

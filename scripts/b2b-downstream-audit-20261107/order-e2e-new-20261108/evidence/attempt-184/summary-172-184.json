@@ -1,0 +1,164 @@
+{
+  "status": "LOCAL_DISPOSABLE_PASS_REVIEW_ONLY_INACTIVE_NOT_APPROVED",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "hosted": false,
+  "base_commit": "381db4974775a76b16ca750d1fcaaaf2684e627e",
+  "attempts": {
+    "172": {
+      "exit": 1,
+      "first_error": "AssertionError: ERROR:  B2B_CREDIT_COMPOSITION_PRE_ACL:platform_private.b2b_credit_balances(uuid,uuid)",
+      "stderr_sha256": "935b27fc51abdb3b619afbd67ade661310f1adada031b741830f831372b0b563",
+      "cause_and_fix": "generator wrote None as ACL pin in PRE 09 (B2B_CREDIT_COMPOSITION_PRE_ACL)"
+    },
+    "173": {
+      "exit": 1,
+      "first_error": "AssertionError: ({'receivables': 1, 'fiscal_documents': 4}, {'receivables': 1, 'fiscal_documents': 1})",
+      "stderr_sha256": "2c65945ec1edd4d6e5249b158a096b6b569e501db0ba95ce40f8a6e7511ce403",
+      "cause_and_fix": "wrapper scenario ran before fiscal effect baseline check"
+    },
+    "174": {
+      "exit": 1,
+      "first_error": "AssertionError: ({'nRec': None, 'cStat': '104', 'chNFe': '35261111111111111111111111111111111111111111', 'nProt': 'LOCAL-INTEGRATED-PROTOCOL', 'state': 'SUCCEEDED', 'outcome': 'AUTHORIZED', 'xMotivo': 'LOTE PROCESSADO; PROTOCOLO AUTORIZADO', 'protocolCStat': '100', 'transmissionId': '00000000-0000-0",
+      "stderr_sha256": "81d6f4b744a3b57d20ad748c58925f859ce1796480c879c5ce55a8df6898e3f4",
+      "cause_and_fix": "PT409 B2B_ORDER_NOT_BILLABLE:FINANCIAL_APPROVAL_PENDING from LIVE billing eligibility reading frozen header -> linked-terms overlay"
+    },
+    "175": {
+      "exit": 1,
+      "first_error": "AssertionError: {'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 747.0, 'saldo_em_aberto': 9.0, 'block_if_overdue': False, 'credito_disponivel': 999253.0, 'credit",
+      "stderr_sha256": "ea0c2bd016b7ee9ef318deb115cbe364ac3aa5db89f61f132c27fc2c1400deed",
+      "cause_and_fix": "assertion assumed partner had no other orders (747 total, 729 others)"
+    },
+    "176": {
+      "exit": 1,
+      "first_error": "AssertionError: [\"ERROR:  42501: permission denied for schema platform_private\\nLINE 1: SELECT platform_private.b2b_fiscal_invoice_bridge_v1('000000...\\n               ^\\nLOCATION:  aclcheck_error, aclchk.c:2845\\n\", \"ERROR:  42501: permission denied for schema platform_private\\nLINE 1: SELECT platfo",
+      "stderr_sha256": "34d6a24b3739cf6f5666f257bff4b71dda681cf078a31cec1a5fb741fe383fb9",
+      "cause_and_fix": "42501 permission denied for schema platform_private: direct service_role bridge call -> replay through H13 callback"
+    },
+    "177": {
+      "exit": 1,
+      "first_error": "AssertionError: ERROR:  42501: H15_COMPANY_FORBIDDEN",
+      "stderr_sha256": "23840719b2aa77dea457bdff4378d174552171f21d28b4d5d0c920695da62ff6",
+      "cause_and_fix": "42501 H15_COMPANY_FORBIDDEN in H7 negative without claims"
+    },
+    "178": {
+      "exit": 1,
+      "first_error": "AssertionError: ERROR:  42501: MONEY_ORIGIN_ACCESS_DENIED",
+      "stderr_sha256": "33a2291317d58546674db02a964d7ab2c18f0a11ec77732717f65652b2b65b32",
+      "cause_and_fix": "42501 MONEY_ORIGIN_ACCESS_DENIED projection reader (owner fallback); authenticated also denied -> recorded, not relaxed"
+    },
+    "179": {
+      "exit": 1,
+      "first_error": "AssertionError: ERROR:  42501: saas_feature_not_entitled: funcionalidade n\u00e3o contratada ou assinatura indispon\u00edvel",
+      "stderr_sha256": "9438f7b43149706cedc009649db54e00cf87d705ae9c1904ac87029001a32240",
+      "cause_and_fix": "42501 saas_feature_not_entitled: synthetic plan lacked contas_receber"
+    },
+    "180": {
+      "exit": 1,
+      "first_error": "AssertionError: {'versions': [{'id': '00000000-0000-0000-0000-000000000806', 'status': 'PUBLISHED', 'plan_id': '00000000-0000-0000-0000-000000000805', 'currency': 'BRL', 'revision': 1, 'draft_key': None, 'created_at': '2026-11-10T02:09:09.022091+00:00', 'created_by': None, 'trial_days': 1, 'updated_",
+      "stderr_sha256": "e551eecd22bd3b5322f17e2a75abca591589ad54af41efed043eeabaec33762b",
+      "cause_and_fix": "fixture entitlement set assertion"
+    },
+    "181": {
+      "exit": 1,
+      "first_error": "AssertionError: ERROR:  BRIDGE_AUDIT_ROLLBACK_POST_DRIFT",
+      "stderr_sha256": "0c1fe0852cec8ba4343c03aefccd27b7c37221591315764ddf6811d827a7150e",
+      "cause_and_fix": "BRIDGE_AUDIT_ROLLBACK_POST_DRIFT non-canonical pin"
+    },
+    "182": {
+      "exit": 1,
+      "first_error": "AssertionError: ERROR:  B2B_FORECAST_TERMS_ROLLBACK_POST_DRIFT",
+      "stderr_sha256": "1bdf9b7f48b397fe08f27ed767d0561ba5979e90993b1d2f6dfe0726a6db9f3c",
+      "cause_and_fix": "B2B_FORECAST_TERMS_ROLLBACK_POST_DRIFT rollback installed modified terms body -> deny-only"
+    },
+    "183": {
+      "exit": 1,
+      "first_error": "AssertionError",
+      "stderr_sha256": "58887bd46c37eb46238b0bb82f43811da3e9fff8579ef34d83169ea13702fc4b",
+      "cause_and_fix": "hard-coded snapshot count 2 -> measured preservation"
+    },
+    "184": {
+      "exit": 0,
+      "first_error": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "cause_and_fix": "PASS 55/55"
+    }
+  },
+  "checks_total": 55,
+  "checks_pass": 55,
+  "credit": {
+    "live": "213ac31f3a30816ead75365b0d1fed18",
+    "b4": "44e8768ff53d7fe5ff3b9f0889258946",
+    "composed": "7d841856ba1e2dd34b0fa6491c4914b5",
+    "acl": "578c00048ab38c285e229e11ff6211ec"
+  },
+  "eligibility": {
+    "live": "db977875e15ea49ce10fb3e5388d7dfb",
+    "linked_terms": "ad17b0ed8654353facb1ac2105363167"
+  },
+  "evidence_files": [
+    "accounting-pending-promotion-denial.json",
+    "acl-normalization.json",
+    "b4-pre-acl-diagnostic.json",
+    "bridge-before-audit-md5.json",
+    "buyer-attempt.json",
+    "buyer-order.json",
+    "buyer-scope-diagnostic.json",
+    "buyer-scope-negatives.json",
+    "canonical-composition-manifest.json",
+    "checks.json",
+    "composed-rollback.json",
+    "credit-composition.json",
+    "current-catalog-baseline.json",
+    "current-catalog-posplans.json",
+    "current-live-trigger-bodies.json",
+    "current-physical-baseline.json",
+    "current-pre-physical.json",
+    "financial-customer-fixture.json",
+    "fiscal-fixture-contract.json",
+    "fiscal-invoice-before-callback.json",
+    "forecast-cancel-late-callback.json",
+    "forecast-manual-credit-override.json",
+    "forecast-post-nf.json",
+    "forecast-pre-nf.json",
+    "forecast-two-partial-nf-and-payment.json",
+    "forecast-wrappers-pre-nf.json",
+    "full-logistics-rollback.json",
+    "harness-baseline-repairs.json",
+    "integrated-b4-fiscal-bridge.json",
+    "integrated-close-debug.json",
+    "integrated-credit-without-receivable.json",
+    "integrated-strict-fiscal-callback.json",
+    "legacy-writer-closed.json",
+    "linked-terms-after.json",
+    "linked-terms-before.json",
+    "new-b3-metadata.json",
+    "os-endpoint-tests.json",
+    "pilot-targeting.json",
+    "plan-isolation-composition.json",
+    "real-baseline-negatives.json",
+    "real-baselines-post-full-rollback-integrated.json",
+    "real-baselines-post-logistics-rollback.json",
+    "real-baselines.json",
+    "resale-cancel.json",
+    "resale-delivery.json",
+    "resale-direct-status-denial.json",
+    "resale-os.json",
+    "resale-proof.json",
+    "restore-results.json",
+    "review-70d08c.json",
+    "rollback-history-preserved.json",
+    "seller-acceptance.json",
+    "seller91-current.json",
+    "source-manifest.json",
+    "terms-post-commercial-state.json",
+    "terms-replay-after.json",
+    "terms-wait-real-guards.json",
+    "workspace.json"
+  ],
+  "limits": [
+    "synthetic fiscal documents and SQL-claims Auth; not hosted JWT/RLS/Storage",
+    "no SEFAZ, provider, emission, billing, payment or message",
+    "UI not changed or re-tested in this round",
+    "auditor review required before any installation"
+  ]
+}
