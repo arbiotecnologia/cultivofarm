@@ -204,8 +204,9 @@ def begin_overlay(root):
     # active settings decide tpamb. Without a document, only the actor's own
     # organization with exactly one active settings row may decide; absence or
     # ambiguity blocks. Another tenant's settings are never read as authority.
-    scoped_env = """  IF _service IN ('NFeConsultaProtocolo4','NFeRetAutorizacao4') THEN
-    IF _xml_run_id IS NULL THEN RAISE EXCEPTION 'SEFAZ_RUN_REQUIRED'; END IF;
+    scoped_env = """  -- Real transport sends receipt/consult/status with an h15-authorized invoice and
+  -- optional run; when a run is given it is authority and must match.
+  IF _service IN ('NFeConsultaProtocolo4','NFeRetAutorizacao4') AND _xml_run_id IS NOT NULL THEN
     SELECT * INTO v_run FROM public.fiscal_xml_runs WHERE id = _xml_run_id;
     IF NOT FOUND THEN RAISE EXCEPTION 'SEFAZ_RUN_NOT_FOUND'; END IF;
     IF v_run.fiscal_invoice_id IS NULL THEN RAISE EXCEPTION 'SEFAZ_RUN_INVOICE_MISSING'; END IF;

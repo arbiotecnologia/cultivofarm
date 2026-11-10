@@ -273,7 +273,8 @@ def test_begin_env_tenant_scope(B, Q, OUT, doc, n):
     other_inv = B.last(f"SELECT id FROM public.fiscal_invoices WHERE id<>'{doc['invoice']}' LIMIT 1;")
     extra = [
       ('consulta_caller_invoice_differs_from_run', '', raw('NFeConsultaProtocolo4', other_inv, doc['xml_run'], Q.UFIN, 'a'), 'SEFAZ_INVOICE_RUN_MISMATCH'),
-      ('consulta_without_run', '', raw('NFeConsultaProtocolo4', doc['invoice'], None, Q.UFIN, 'b'), 'SEFAZ_RUN_REQUIRED'),
+      ('status_invoice_only_issuer_env_1', f"UPDATE public.company_fiscal_settings SET nfe_environment_code='1' WHERE id='{company}';UPDATE public.company_fiscal_settings SET nfe_environment_code='2' WHERE id<>'{company}';",
+         raw('NFeStatusServico4', doc['invoice'], None, Q.UFIN, 'b'), 'FISCAL_PRODUCTION_ENDPOINT_BLOCKED'),
       ('no_document_without_actor', '', raw('NFeStatusServico4', None, None, None, 'c'), 'FISCAL_PRODUCTION_ENDPOINT_BLOCKED'),
       ('no_document_actor_org_ambiguous_two_active', f"UPDATE public.company_fiscal_settings SET organization_id='{own_org}',nfe_environment_code='2',is_active=true WHERE id<>'{company}';",
          raw('NFeStatusServico4', None, None, Q.UFIN, 'd'), 'ux_company_fiscal_settings_active_organization'),  # ambiguity structurally refused (23505); count(*)=1 in writer stays as defense
