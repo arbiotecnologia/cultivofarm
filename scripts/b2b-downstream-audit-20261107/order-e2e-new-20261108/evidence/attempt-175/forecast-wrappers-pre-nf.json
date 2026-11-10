@@ -1,0 +1,103 @@
+{
+  "events": [
+    {
+      "event": "EMISSION_STARTED",
+      "state": "emissao_em_andamento",
+      "version": 2,
+      "replayed": false,
+      "invoice_id": "00000000-0000-0000-0000-000000000960",
+      "forecast_id": "aa07ed53-3195-4b39-9748-48b1eb951088",
+      "transmission_id": "00000000-0000-0000-0000-000000000962"
+    },
+    {
+      "event": "EMISSION_STARTED",
+      "state": "emissao_em_andamento",
+      "version": 2,
+      "replayed": true,
+      "invoice_id": "00000000-0000-0000-0000-000000000960",
+      "forecast_id": "aa07ed53-3195-4b39-9748-48b1eb951088",
+      "transmission_id": "00000000-0000-0000-0000-000000000962"
+    },
+    {
+      "event": "EMISSION_REJECTED",
+      "state": "aguardando_fiscal",
+      "version": 3,
+      "replayed": false,
+      "invoice_id": "00000000-0000-0000-0000-000000000960",
+      "forecast_id": "aa07ed53-3195-4b39-9748-48b1eb951088",
+      "transmission_id": "00000000-0000-0000-0000-000000000962"
+    },
+    {
+      "event": "EMISSION_STARTED",
+      "state": "emissao_em_andamento",
+      "version": 4,
+      "replayed": false,
+      "invoice_id": "00000000-0000-0000-0000-000000000965",
+      "forecast_id": "aa07ed53-3195-4b39-9748-48b1eb951088",
+      "transmission_id": "00000000-0000-0000-0000-000000000967"
+    },
+    {
+      "event": "EMISSION_TIMEOUT",
+      "state": "consulta_fiscal_obrigatoria",
+      "version": 5,
+      "replayed": false,
+      "invoice_id": "00000000-0000-0000-0000-000000000965",
+      "forecast_id": "aa07ed53-3195-4b39-9748-48b1eb951088",
+      "transmission_id": "00000000-0000-0000-0000-000000000967"
+    },
+    {
+      "event": "CONSULTATION_NOT_AUTHORIZED",
+      "state": "aguardando_fiscal",
+      "version": 6,
+      "replayed": false,
+      "invoice_id": "00000000-0000-0000-0000-000000000965",
+      "forecast_id": "aa07ed53-3195-4b39-9748-48b1eb951088",
+      "transmission_id": "00000000-0000-0000-0000-000000000968"
+    }
+  ],
+  "negatives": {
+    "foreign_admin": "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN",
+    "cross_tenant_buyer": "ERROR:  42501: B2B_FORECAST_FISCAL_ACTOR_DENIED",
+    "service_role_wrapper": "ERROR:  42501: permission denied for function rpc_b2b_forecast_fiscal_sync_v1",
+    "service_role_private": "ERROR:  42501: permission denied for schema platform_private",
+    "authenticated_private_cancel": "ERROR:  42501: permission denied for function b2b_financial_forecast_cancel_residual_v1",
+    "stale_version": "ERROR:  PT409: B2B_FORECAST_CAS_CONFLICT",
+    "cancel_while_consultation_required": "ERROR:  PT409: B2B_FORECAST_STATE_CONFLICT",
+    "consultation_not_terminal": "ERROR:  PT409: B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE",
+    "cancel_with_consultation_in_flight": "ERROR:  PT409: B2B_FORECAST_FISCAL_IN_FLIGHT",
+    "revoked_profile_after_lock": "ERROR:  42501: B2B_FORECAST_FISCAL_ACTOR_DENIED"
+  },
+  "final": {
+    "state": "aguardando_fiscal",
+    "version": 6,
+    "last_error_code": null,
+    "residual_amount": 18.0,
+    "fiscal_intent_id": "00000000-0000-0000-0000-000000000965"
+  },
+  "receivables": 0,
+  "invoices": {
+    "rejected": {
+      "invoice": "00000000-0000-0000-0000-000000000960",
+      "xml_run": "00000000-0000-0000-0000-000000000961",
+      "tx": "00000000-0000-0000-0000-000000000962",
+      "access_key": "35261111111111111111111111111111111111000960"
+    },
+    "timeout": {
+      "invoice": "00000000-0000-0000-0000-000000000965",
+      "xml_run": "00000000-0000-0000-0000-000000000966",
+      "tx": "00000000-0000-0000-0000-000000000967",
+      "access_key": "35261111111111111111111111111111111111000965"
+    },
+    "consultation_tx": "00000000-0000-0000-0000-000000000968",
+    "revocation": {
+      "invoice": "00000000-0000-0000-0000-000000000970",
+      "xml_run": "00000000-0000-0000-0000-000000000971",
+      "tx": "00000000-0000-0000-0000-000000000972",
+      "access_key": "35261111111111111111111111111111111111000970"
+    }
+  },
+  "callbacks": "public.rpc_fiscal_sefaz_transmit_record_v1 as service_role (canonical H13 worker)",
+  "wrappers_as": "authenticated SQL role with JWT claims (local, not hosted JWT)",
+  "reset_role_used": false,
+  "hosted": false
+}
