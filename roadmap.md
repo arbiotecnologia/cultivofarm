@@ -2,7 +2,7 @@
 - [ ] Restringir resultado conclusivo de consulta a prova fiscal canônica vinculada e atual; testar erros e divergências sem cancelar/reemitir.
 - [ ] Serializar cancelamento com o início canônico da transmissão, com escopo antes dos locks e reautorização depois; reproduzir corridas e estrangeiro sem espera.
 - [ ] Pinar ACL normalizada dos dois auxiliares B4 e testar drift; revalidar 747→738 e pedido 18→9, 38 gatilhos ativos e rollback.
-- [x] Entregar relatório parcial com 31/31 estáticos e tentativas 185/186/187 exit 1 separadas; leitor positivo autenticado pendente, pacote inativo, sem hosted/efeitos externos. Correções candidatas prontas; corrida/ACL executados e cadeia final ainda sem nova prova após correção do ensaio de identidade documental.
+- [x] Entregar relatório parcial com 31/31 estáticos e tentativas 185/186/187 exit 1 separadas; leitor positivo autenticado pendente, pacote inativo, sem hosted/efeitos externos. Correções candidatas prontas; testes executados de corrida/ACL e cadeia final ainda pendentes após correção do ensaio de identidade documental.
 
 ## 10/11 02:40 — Composição B4+previsão e cadeia integral local (172–184)
 - [x] Corpo único `fn_b2b_credit_exposure` 7d841856 após B4 44e8768f (estágio 09–12), elegibilidade por termos vinculados, wrappers autenticados emissão/consulta/cancelamento; tentativa 184 exit 0, 55/55: 18/9/9, pagamento 9, duas últimas NFs concorrentes, replay, H7, parcial+cancelamento+callback tardio e rollback composto. Falhas 172–183 preservadas em REVIEW-20261110.md.
