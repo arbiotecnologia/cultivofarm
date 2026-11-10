@@ -367,11 +367,15 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
     assert h7_no_claims.returncode != 0, h7_no_claims.stderr
     assert B.last(f"SELECT receivable_id FROM public.fiscal_invoices WHERE id='{first_invoice}';") == first_receivable
 
-    projection = Q.as_user(Q.UFIN, f"SELECT public.rpc_receivable_money_projection_v1('{first_receivable}',0,1000);")
-    if projection.returncode != 0:
-        projection = B.run_raw(f"RESET ROLE;SELECT public.rpc_receivable_money_projection_v1('{first_receivable}',0,1000);")
-    assert projection.returncode == 0, projection.stderr
-    installment = _last(projection)[0]['id']
+    # Projection reader authority is recorded as observed (not relaxed); the target
+    # installment id is only identified by an owner read. The payment itself runs
+    # through the canonical writer as the financial actor.
+    projection_attempts = {}
+    for label, uid in (('financeiro', Q.UFIN), ('administrador', Q.UADM)):
+        got = Q.as_user(uid, f"SELECT public.rpc_receivable_money_projection_v1('{first_receivable}',0,1000);")
+        projection_attempts[label] = dict(exit=got.returncode, stdout=got.stdout.strip()[-300:], stderr=got.stderr.strip()[:200])
+    installment = B.last(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{first_receivable}' ORDER BY installment_number LIMIT 1;")
+    assert B.last(f"SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id='{first_receivable}';") == '1'
     payment = json.dumps({'amount_received':9,'payment_method_id':Q.M_BOL,'idempotency_key':'LOCAL-FORECAST-PAY-9'}).replace("'", "''")
     paid = Q.as_user(Q.UFIN, f"SELECT public.rpc_register_receivable_payment('{installment}','{payment}'::jsonb);")
     assert paid.returncode == 0, paid.stderr
@@ -386,7 +390,7 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
                   credit_before=credit_before, credit_after_first=first_credit, credit_after_second=second_credit, credit_after_payment=paid_credit,
                   forecast_after_second=forecast, forecast_after_payment=forecast_after_payment, titles=totals, payment_amount=9,
                   payment_replay=dict(exit=paid_replay.returncode, stdout=paid_replay.stdout.strip()[-300:], stderr=paid_replay.stderr.strip()[-300:]),
-                  projection_caller='authenticated' if 'RESET ROLE' not in str(projection.args) else 'owner-read-only',
+                  projection_reader_attempts=projection_attempts, installment_id=installment,
                   concurrent_replay_one_title=True, h7_receivable_id_immutable=True, h7=dict(change=h7.stderr.strip()[:300], same_value=dict(exit=h7_same.returncode, stderr=h7_same.stderr.strip()[:300]), without_claims=h7_no_claims.stderr.strip()[:300]), synthetic_fiscal_documents=True, hosted=False)
     (OUT/'forecast-two-partial-nf-and-payment.json').write_text(json.dumps(result, indent=2)+'\n')
     return result
