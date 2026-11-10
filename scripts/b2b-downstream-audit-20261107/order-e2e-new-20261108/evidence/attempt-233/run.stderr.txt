@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-antazk_k/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 511, in main
+    lr=LLA.run(B,Review70.Review,Q,A,choice,OUT)
+  File "/tmp/new-order-e2e-antazk_k/project/scripts/b2b-downstream-audit-20261107/logistics-linked-approval-20261110/mirror_flow.py", line 135, in run
+    ok("concurrent same-key reserve (2 real sessions, proven wait): exactly one reservation; loser is exact replay or explicit error; later exact replay returns same receipt",
+    ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       waited and len(first) == 1 and all(o["itens"] == first[0]["itens"] for o in outs) and after["replay"] is True and after["itens"] == first[0]["itens"] and rows_res == "2", {"outs": outs, "errs": errs})
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-antazk_k/project/scripts/b2b-downstream-audit-20261107/logistics-linked-approval-20261110/mirror_flow.py", line 13, in ok
+    assert cond, (name, detail)
+           ^^^^
+AssertionError: ('concurrent same-key reserve (2 real sessions, proven wait): exactly one reservation; loser is exact replay or explicit error; later exact replay returns same receipt', {'outs': [{'ok': True, 'itens': ['ea213656-badf-4b3f-8116-a85d5d636284'], 'replay': False}], 'errs': ['ERROR:  canceling statement due to lock timeout']})
