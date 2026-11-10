@@ -26,7 +26,8 @@ def extract(path, head):
     lines = (R / path).read_text().splitlines(keepends=True)
     st = [i for i, l in enumerate(lines) if l.startswith("CREATE OR REPLACE FUNCTION " + head)]
     assert len(st) == 1, (path, head, len(st))
-    en = next(i for i in range(st[0] + 1, len(lines)) if "$function$" in lines[i])
+    a = next(i for i in range(st[0], len(lines)) if lines[i].rstrip("\n").endswith("AS $function$"))
+    en = next(i for i in range(a + 1, len(lines)) if "$function$" in lines[i])
     last = lines[en][:lines[en].index("$function$")] + "$function$"
     return "".join(lines[st[0]:en]) + last
 
