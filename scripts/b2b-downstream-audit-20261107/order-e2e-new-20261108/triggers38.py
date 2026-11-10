@@ -47,3 +47,10 @@ def assert_and_write(B, root, out, label):
     (Path(out) / f'triggers38-{label}.json').write_text(json.dumps(snap, indent=2) + '\n')
     assert snap['all_present_enabled_identical'], snap['failures']
     return snap
+
+
+def write(B, root, out, label):
+    """Record-only snapshot (e.g. before packaging packages are composed)."""
+    snap = snapshot(B, root, label)
+    (Path(out) / f'triggers38-{label}.json').write_text(json.dumps(snap, indent=2) + '\n')
+    return snap
