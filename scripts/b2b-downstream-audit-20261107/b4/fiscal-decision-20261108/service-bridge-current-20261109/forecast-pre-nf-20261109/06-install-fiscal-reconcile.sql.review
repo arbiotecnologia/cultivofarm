@@ -30,4 +30,93 @@ END$$;
 
 REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
 -- Owner-only nested invocation from the existing fiscal bridge; no service grant.
+CREATE OR REPLACE FUNCTION public.rpc_b2b_forecast_fiscal_sync_v1(p_transmission_id uuid, p_expected_version integer)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE t public.fiscal_sefaz_transmissions;inv public.fiscal_invoices;f platform_private.b2b_financial_forecasts;
+ v_invoice uuid;org uuid;ev text;payload jsonb;att integer;result jsonb;
+BEGIN
+ -- Authority is derived server-side from the JWT actor; payload/IDs never attest it.
+ org:=platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]);
+ IF org IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_FISCAL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ IF p_transmission_id IS NULL OR p_expected_version IS NULL OR p_expected_version<1 THEN
+  RAISE EXCEPTION 'B2B_FORECAST_EVENT_INVALID' USING ERRCODE='22023';END IF;
+ SELECT fiscal_invoice_id INTO v_invoice FROM public.fiscal_sefaz_transmissions WHERE id=p_transmission_id;
+ IF v_invoice IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_FISCAL_SOURCE_UNPROVEN' USING ERRCODE='42501';END IF;
+ -- Canonical H13 order: fiscal invoice, transmission, then forecast (bridge: invoice, order, forecast).
+ SELECT * INTO inv FROM public.fiscal_invoices WHERE id=v_invoice FOR SHARE;
+ SELECT * INTO t FROM public.fiscal_sefaz_transmissions WHERE id=p_transmission_id FOR SHARE;
+ IF NOT FOUND OR t.fiscal_invoice_id IS DISTINCT FROM inv.id THEN
+  RAISE EXCEPTION 'FISCAL_TRANSMISSION_LINK_CHANGED' USING ERRCODE='PT409';END IF;
+ IF inv.partner_order_id IS NULL OR inv.organization_id IS DISTINCT FROM org OR inv.debtor_partner_id IS NULL THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FISCAL_SOURCE_UNPROVEN' USING ERRCODE='42501';END IF;
+ SELECT * INTO f FROM platform_private.b2b_financial_forecasts WHERE order_id=inv.partner_order_id FOR UPDATE;
+ IF NOT FOUND OR f.organization_id IS DISTINCT FROM inv.organization_id OR f.partner_id IS DISTINCT FROM inv.debtor_partner_id THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FISCAL_SOURCE_UNPROVEN' USING ERRCODE='42501';END IF;
+ -- Re-authorize after every wait: role, profile, tenant and seller scope may have been revoked.
+ IF platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]) IS DISTINCT FROM f.organization_id
+  OR NOT platform_private.c2p1_settings_allowed(f.partner_id,true) THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FISCAL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ IF t.outcome='AUTHORIZED' THEN
+  -- Definitive confirmation exists only through the H13 callback and fiscal bridge permit.
+  RETURN jsonb_build_object('forecast_id',f.id,'state',f.state,'version',f.version,'event',NULL,
+   'fiscal_confirmation','H13_BRIDGE_ONLY','transmission_id',t.id,'invoice_id',inv.id);
+ END IF;
+ IF t.service='NFeAutorizacao4' THEN
+  ev:=CASE WHEN t.state IN ('PENDING','SENT') AND coalesce(t.outcome,'PENDING') IN ('PENDING','PROCESSING') THEN 'EMISSION_STARTED'
+           WHEN t.state IN ('FAILED','BLOCKED') AND t.outcome='TRANSPORT_ERROR' THEN 'EMISSION_TIMEOUT'
+           WHEN t.state='SUCCEEDED' AND t.outcome='REJECTED' THEN 'EMISSION_REJECTED' END;
+ ELSIF t.service IN ('NFeRetAutorizacao4','NFeConsultaProtocolo4') THEN
+  ev:=CASE WHEN t.state='SUCCEEDED' AND t.outcome='REJECTED' THEN 'CONSULTATION_NOT_AUTHORIZED' END;
+ END IF;
+ IF ev IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE' USING ERRCODE='PT409';END IF;
+ IF ev='EMISSION_STARTED' AND (inv.total_amount IS NULL OR inv.total_amount<=0 OR inv.total_amount>f.residual_amount) THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FISCAL_AMOUNT_EXCEEDS_RESIDUAL' USING ERRCODE='PT409';END IF;
+ att:=coalesce(t.attempt,0)+1;
+ payload:=jsonb_build_object('attempt',att::text,'invoice_id',inv.id,'transmission_id',t.id,'service',t.service,'source','fiscal_sefaz_transmissions')
+  ||CASE WHEN ev='EMISSION_STARTED' THEN '{}'::jsonb
+         ELSE jsonb_build_object('error_code',coalesce(nullif(t.error_code,''),nullif(t.c_stat,''),t.outcome)) END;
+ result:=platform_private.b2b_financial_forecast_transition_v1(f.id,p_expected_version,ev,inv.id::text,payload);
+ RETURN result||jsonb_build_object('event',ev,'transmission_id',t.id,'invoice_id',inv.id);
+END
+$function$;
+CREATE OR REPLACE FUNCTION public.rpc_b2b_forecast_cancel_residual_v1(p_order uuid, p_expected_version integer, p_reason text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE po public.partner_orders;f platform_private.b2b_financial_forecasts;org uuid;
+BEGIN
+ org:=platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]);
+ IF org IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_CANCEL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ IF p_order IS NULL OR p_expected_version IS NULL OR nullif(btrim(coalesce(p_reason,'')),'') IS NULL THEN
+  RAISE EXCEPTION 'B2B_FORECAST_CANCEL_REASON_REQUIRED' USING ERRCODE='22023';END IF;
+ -- Canonical order: order row first, then forecast (same as approval and the bridge).
+ SELECT * INTO po FROM public.partner_orders WHERE id=p_order FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'B2B_FORECAST_CANCEL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ SELECT * INTO f FROM platform_private.b2b_financial_forecasts WHERE order_id=p_order FOR UPDATE;
+ IF NOT FOUND OR f.partner_id IS DISTINCT FROM po.partner_id THEN
+  RAISE EXCEPTION 'B2B_FORECAST_CAS_CONFLICT' USING ERRCODE='PT409';END IF;
+ IF platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]) IS DISTINCT FROM f.organization_id
+  OR NOT platform_private.c2p1_settings_allowed(f.partner_id,true) THEN
+  RAISE EXCEPTION 'B2B_FORECAST_CANCEL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ -- An emission/consultation still open or an authorized return awaiting close must settle first.
+ IF EXISTS(SELECT 1 FROM public.fiscal_invoices i JOIN public.fiscal_sefaz_transmissions t ON t.fiscal_invoice_id=i.id
+   WHERE i.partner_order_id=p_order AND t.state IN ('PENDING','SENT')) THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FISCAL_IN_FLIGHT' USING ERRCODE='PT409';END IF;
+ IF EXISTS(SELECT 1 FROM public.fiscal_invoices i JOIN platform_private.fiscal_close_pending cp ON cp.fiscal_invoice_id=i.id
+   WHERE i.partner_order_id=p_order) THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FISCAL_RECONCILIATION_PENDING' USING ERRCODE='PT409';END IF;
+ RETURN platform_private.b2b_financial_forecast_cancel_residual_v1(f.id,p_expected_version,p_reason)
+  ||jsonb_build_object('actor',auth.uid(),'order_id',p_order);
+END
+$function$;
+REVOKE ALL ON FUNCTION public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer),public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) FROM PUBLIC,anon,service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer),public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) TO authenticated;
+-- Private transition/cancel/reconcile keep NO grant: only these owner wrappers and the bridge nest them.
+
 COMMIT;

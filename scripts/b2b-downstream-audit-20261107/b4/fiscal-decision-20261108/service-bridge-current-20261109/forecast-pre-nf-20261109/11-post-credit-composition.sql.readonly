@@ -1,0 +1,14 @@
+-- REVIEW ONLY READ ONLY. 11: corpo composto, mesmo dono/ACL B4, dependências B4 intactas.
+BEGIN READ ONLY;
+DO $guard$ DECLARE d record; BEGIN
+ FOR d IN SELECT * FROM (VALUES ('public.fn_b2b_credit_exposure(uuid,numeric,uuid)','7d841856ba1e2dd34b0fa6491c4914b5','postgres','578c00048ab38c285e229e11ff6211ec'),('platform_private.b2b_credit_balances(uuid,uuid)','9fbf08a16f6bcbec379945886c85c245','postgres','None'),('platform_private.b2b_order_residual(uuid)','93769163bfc7c72a4bbc722e62313179','postgres','None')) x(sig,body_md5,owner,acl_md5) LOOP
+  IF to_regprocedure(d.sig) IS NULL THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_POST_MISSING:%',d.sig USING ERRCODE='42501'; END IF;
+  IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_POST_BODY:%',d.sig USING ERRCODE='42501'; END IF;
+  IF (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=d.sig::regprocedure) IS DISTINCT FROM d.owner THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_POST_OWNER:%',d.sig USING ERRCODE='42501'; END IF;
+  IF d.acl_md5 IS NOT NULL AND (SELECT md5(string_agg(v.entry,'|' ORDER BY v.entry)) FROM (
+    SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END||'='||a.privilege_type||CASE WHEN a.is_grantable THEN '*' ELSE '' END||'/'||a.grantor::regrole::text entry
+    FROM pg_proc p,aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a WHERE p.oid=d.sig::regprocedure) v) IS DISTINCT FROM d.acl_md5
+  THEN RAISE EXCEPTION 'B2B_CREDIT_COMPOSITION_POST_ACL:%',d.sig USING ERRCODE='42501'; END IF;
+ END LOOP;
+END $guard$;
+ROLLBACK;

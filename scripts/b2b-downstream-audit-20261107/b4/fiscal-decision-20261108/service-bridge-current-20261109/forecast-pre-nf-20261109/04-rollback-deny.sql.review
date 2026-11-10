@@ -261,17 +261,13 @@ BEGIN
 END;
 $function$
 ;
-CREATE OR REPLACE FUNCTION public.fn_b2b_credit_exposure(p_partner_id uuid, p_new_order_amount numeric DEFAULT 0, p_exclude_order_id uuid DEFAULT NULL::uuid)
-RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO 'public'
-AS $$BEGIN RAISE EXCEPTION 'B2B_CREDIT_RECONCILIATION_ROLLED_BACK' USING ERRCODE='42501';END$$;
-REVOKE ALL ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) FROM PUBLIC,anon,authenticated,service_role;
-GRANT EXECUTE ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) TO service_role;
+-- Exposição de crédito NÃO é tocada aqui: o corpo composto B4+previsão (09-12)
+-- permanece; restaurar LIVE/B4 reabriria dupla contagem ou residual cancelado.
 REVOKE ALL ON FUNCTION public.get_b2b_financial_forecast_secure(uuid) FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb),platform_private.b2b_financial_forecast_transition_v1(uuid,integer,text,text,jsonb),platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text) FROM PUBLIC,anon,authenticated,service_role;
 DO $$ BEGIN
  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '664f63441c92a6716f0117362255ec9e' THEN RAISE EXCEPTION 'B2B_FORECAST_ROLLBACK_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM 'a61daa8542058bdbf239903d655c2a1b' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_ROLLBACK_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '8127c7b697871fa1eecafa845a551eea' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_ROLLBACK_POST_DRIFT';END IF;
- IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM 'fe625e6ba823caad73696da0ff4a008c' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_ROLLBACK_POST_DRIFT';END IF;
 END$$;
 COMMIT;

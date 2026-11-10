@@ -1,4 +1,6 @@
 -- REVIEW ONLY deny-only fase 2; preserva previsões, títulos e eventos.
 BEGIN;
 REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+-- Wrappers fecham por ACL; corpos, eventos, previsões e evidência fiscal permanecem.
+REVOKE ALL ON FUNCTION public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer),public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) FROM PUBLIC,anon,authenticated,service_role;
 COMMIT;

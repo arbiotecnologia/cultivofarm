@@ -11,20 +11,52 @@
   "after_forecast_approve_md5": "0d3b85049e3b3b799ba81b4cb95be0da",
   "after_forecast_payment_terms_md5": "c918d938031123434153d97765f92b68",
   "after_seller_scope_credit_approval_md5": "26c77e55dfcb2b48fdb63cbc5b2819ed",
-  "after_residual_credit_exposure_md5": "028894275a3b98a3abdc4e01e3fd03bf",
-  "rollback_credit_exposure_md5": "fe625e6ba823caad73696da0ff4a008c",
+  "forecast_stage_credit_exposure_md5": "213ac31f3a30816ead75365b0d1fed18",
+  "superseded_pre_b4_residual_credit_md5": "028894275a3b98a3abdc4e01e3fd03bf",
+  "credit_composition": {
+    "order": [
+      "forecast 01-04 (credit untouched, LIVE pin)",
+      "B4 PRE/INSTALL/POST (LIVE->B4)",
+      "credit 09-12 (B4->composed)",
+      "bridge/strict",
+      "forecast 05-08 reconcile+wrappers",
+      "bridge-audit",
+      "H7"
+    ],
+    "live_md5": "213ac31f3a30816ead75365b0d1fed18",
+    "b4_md5": "44e8768ff53d7fe5ff3b9f0889258946",
+    "composed_md5": "7d841856ba1e2dd34b0fa6491c4914b5",
+    "acl_md5": "578c00048ab38c285e229e11ff6211ec",
+    "b4_stage_sha256": "6500bf54b5df05c753e75ada0f6ed12948e81f0e86f274222a2eae481a681f54",
+    "b4_dependencies": {
+      "platform_private.b2b_credit_balances(uuid,uuid)": "9fbf08a16f6bcbec379945886c85c245",
+      "platform_private.b2b_order_residual(uuid)": "93769163bfc7c72a4bbc722e62313179"
+    },
+    "rule": "exposure = open titles (B4 proven money) + B4 residual per order; forecast only zeroes canceled residual, must equal B4 residual otherwise",
+    "additive_forecast": false,
+    "rollback": "RETAIN_COMPOSED_NO_BODY_RESTORE",
+    "wrapper_md5": {
+      "sync": "ac88b7fb8d7d792eb589f0c6cce348b9",
+      "cancel": "00cb8bcda7716bb4fa15a93acc4c1c5f"
+    }
+  },
   "accounts_receivable_before_nf": false,
   "definitive_cardinality": "ONE_PER_AUTHORIZED_FISCAL_DOCUMENT",
   "forecast_additive_to_credit": false,
   "files": {
     "01-pre.sql.readonly": "309955585401bde685aca773e94bf7ef675e0f5382e832a27e13c90ddae37b0d",
-    "02-install.sql.review": "eacdcf7cbccfe3394692a6dacbb0fd62ec798670d0c6d25e6dd8ae98844bc21c",
-    "03-post.sql.readonly": "dc101916a8ca3c98b8c89a44a76dac9f47b18736fa8db14226fa68c10fb9d0e3",
-    "04-rollback-deny.sql.review": "51b6b2d94b6c5dab7e9bf1f4d099673563ac16bc751435cac873a006b1178ec7",
-    "05-pre-fiscal-reconcile.sql.readonly": "a823a96b3a28589e6c32006bf5f01dec7deb446b4ab5ae43afb273a6ed21bdaf",
-    "06-install-fiscal-reconcile.sql.review": "871f88aff159027e08e55d1c5bba552f723eb274a230a1b32a241935130c9f75",
-    "07-post-fiscal-reconcile.sql.readonly": "c8d3683db4cd5084cf43e38f04039689e2476e1cc246c7c3c187d10e61b3ce0f",
-    "08-rollback-fiscal-reconcile-deny.sql.review": "cf9e41718558af5ae6df474b48285b0222519f8eac45449684743ed437f169d7"
+    "02-install.sql.review": "3189be3938ff5587d2c849d1da996c3594de3870206419b560bb455dfab73c8f",
+    "03-post.sql.readonly": "d93ef981086d5b96a627b306c4d507156e5bfe3d9426e5b577ec89f57ee80b09",
+    "04-rollback-deny.sql.review": "4b626c17f6e96c1352699f8c3765739704581140831a01e853bfcf3fb28c4d4c",
+    "05-pre-fiscal-reconcile.sql.readonly": "f59ec3ea3e38be684c16349ace73750cc496b84ec5982e984ba507304570fff3",
+    "06-install-fiscal-reconcile.sql.review": "7414838d5424753e557c703fbfc87f09439613f145755a7aaab0ead0d210f75f",
+    "07-post-fiscal-reconcile.sql.readonly": "ea9675d36753ef8ea6d3f0af55901de6ed4ed7373834a7c10c1c84bd0bf3c991",
+    "08-rollback-fiscal-reconcile-deny.sql.review": "490e3993eddbd47303808ed4b367229e5e1cb95153e044ad00739b057d0c9788",
+    "09-pre-credit-composition.sql.readonly": "96c647f2befd9774b3d2a3c033e783e6686c0e55c5a3f0400372b520e5e2fc76",
+    "10-install-credit-composition.sql.review": "ddb6922b656549c34716aa408203801c47b5a311fd6b95d8eb5b8c067cf74986",
+    "11-post-credit-composition.sql.readonly": "94beb70adedcf5fbbd8986f7c1febab30e15e8810aa3ed68be5a60740d010e3b",
+    "12-rollback-credit-composition-retain.sql.review": "c5087c1d0a2d56dfb9bdee627b93296852ba65216391a4f99b064ac4df17e662",
+    "credit-exposure.composed.sql": "ca710ae1d4d3159a9f740ba3e37ffc78e5ae216eb94725a3e0622af76a563375"
   },
   "hosted": false
 }
