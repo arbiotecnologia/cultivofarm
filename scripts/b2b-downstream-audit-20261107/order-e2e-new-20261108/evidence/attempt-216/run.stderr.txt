@@ -1,0 +1,49 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-spj_mho7/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 15, in sql
+    r=subprocess.run(pg.psql(),input="SET lock_timeout='2s'; SET statement_timeout='30s';\n"+statement,capture_output=True,text=True,timeout=40)
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/subprocess.py", line 556, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/subprocess.py", line 1222, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/subprocess.py", line 2155, in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/subprocess.py", line 1269, in _check_timeout
+    raise TimeoutExpired(
+    ...<2 lines>...
+            stderr=b''.join(stderr_seq) if stderr_seq else None)
+subprocess.TimeoutExpired: Command '['psql', '-X', '-h', '/tmp/c2-integral-wa_lg8no', '-p', '55511', '-U', 'postgres', '-qAt', '-v', 'ON_ERROR_STOP=1', 'postgres']' timed out after 40 seconds
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-spj_mho7/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 844, in main
+    cancel_late=forecast_extra.run_cancel_late_callback(B,Q,OUT,override['order_id'],accepted)
+  File "/tmp/new-order-e2e-spj_mho7/project/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast_residual_scenario.py", line 624, in run_cancel_late_callback
+    begin_race = test_begin_cancel_race(B,Q,OUT,pc_order,L,l_consulted['version'])
+  File "/tmp/new-order-e2e-spj_mho7/project/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast_residual_scenario.py", line 1009, in test_begin_cancel_race
+    rows.append(dict(case='post-wait-revalidation',checks=test_begin_post_wait(B,Q,OUT,order_id,doc)))
+                                                          ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-spj_mho7/project/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast_residual_scenario.py", line 924, in test_begin_post_wait
+    called,barrier=revoke_after_proven_wait(B,lock_sql,call('NFeAutorizacao4',f'pilot-{lk}-{name}'),mut)
+                   ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-spj_mho7/project/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/lifecycle_lock_barrier.py", line 39, in revoke_after_proven_wait
+    evidence = poll(B, f"""SELECT coalesce((SELECT jsonb_build_object(
+      'waiter_pid',a.pid,'holder_pid',{holder_pid},'wait_event_type',a.wait_event_type,
+    ...<6 lines>...
+                    and holder_pid in r.get('blocking_pids', [])
+                    and len(r.get('ungranted_locks', [])) > 0)
+  File "/tmp/new-order-e2e-spj_mho7/project/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/lifecycle_lock_barrier.py", line 12, in poll
+    last = json.loads(B.last(query))
+                      ~~~~~~^^^^^^^
+  File "/tmp/new-order-e2e-spj_mho7/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 60, in last
+    return sql(statement).splitlines()[-1]
+           ~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-spj_mho7/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 56, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-spj_mho7/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 17, in sql
+    raise AssertionError(f'LOCAL_SQL_PROCESS_TIMEOUT call={calls} limit=40s') from e
+AssertionError: LOCAL_SQL_PROCESS_TIMEOUT call=12634 limit=40s
