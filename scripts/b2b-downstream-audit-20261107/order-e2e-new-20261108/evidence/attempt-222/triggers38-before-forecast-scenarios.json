@@ -1,0 +1,313 @@
+{
+  "label": "before-forecast-scenarios",
+  "expected": 38,
+  "mapped": 38,
+  "all_present_enabled_identical": true,
+  "failures": [],
+  "triggers": [
+    {
+      "name": "cpe_guard",
+      "table": "public.catalogo_precos_embalagem",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "09ff39a718184a2e62b9549148ad5377"
+    },
+    {
+      "name": "cpe_no_truncate",
+      "table": "public.catalogo_precos_embalagem",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "8ee8bf3b4e0905adb9687f91ef7c3593"
+    },
+    {
+      "name": "c2_attempt_closure_guard",
+      "table": "public.partner_order_idempotency",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "0fa31cfce5bfdcad6bd88dc4357554ff"
+    },
+    {
+      "name": "c2_attempt_journal_guard",
+      "table": "public.partner_order_idempotency",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "60414fb06895ad0674473c9df908a24d"
+    },
+    {
+      "name": "trg_partner_order_idempotency_updated_at",
+      "table": "public.partner_order_idempotency",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "db979be8cb115d83a29b110c3daf2fc8"
+    },
+    {
+      "name": "a000_partner_order_items_catalog_tenant_guard",
+      "table": "public.partner_order_items",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "eaaed641b86245fd1e6c1eb9c67ea142"
+    },
+    {
+      "name": "trg_00_b2b_internal_snapshot",
+      "table": "public.partner_order_items",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "93c45b5db641bd96b8a04c06d7a3d2b5"
+    },
+    {
+      "name": "trg_b2b_order_items_immutable",
+      "table": "public.partner_order_items",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "3260d5f35d955cdc2049473395c7e579"
+    },
+    {
+      "name": "trg_block_partner_order_items_after_op",
+      "table": "public.partner_order_items",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "eb530fbe262c718e14818348da409474"
+    },
+    {
+      "name": "trg_partner_order_items_resolve_pending",
+      "table": "public.partner_order_items",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "0ca62cfbba207b5208af185ec9a76f1b"
+    },
+    {
+      "name": "trg_00_b2b_internal_snapshot",
+      "table": "public.partner_order_payment_terms",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "3de3ceed6db8aea3ddd43b5aef1b2ba0"
+    },
+    {
+      "name": "trg_b2b_plan_selectable_terms",
+      "table": "public.partner_order_payment_terms",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "a7bdc18b342c4960b6fef700e543ec8e"
+    },
+    {
+      "name": "trg_h6c_set_canonical_payment_terms",
+      "table": "public.partner_order_payment_terms",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "7e72a01a5964073be78530acc753df19"
+    },
+    {
+      "name": "trg_popt_audit",
+      "table": "public.partner_order_payment_terms",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "f9c42ccb74be1167a2c42410f088ba09"
+    },
+    {
+      "name": "trg_popt_updated_at",
+      "table": "public.partner_order_payment_terms",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "96c91f98b25ffbe3bdef44e445d4bc9f"
+    },
+    {
+      "name": "a00_delivery_order_transition_closed",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "209395bff1265a1fd637cd6a8f494a12"
+    },
+    {
+      "name": "partner_order_timeline_ins",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "ba897aaec6b052b91376fc106a4e0441"
+    },
+    {
+      "name": "partner_order_timeline_upd",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "4ba97fcaacca24c99590f20fd673bbf3"
+    },
+    {
+      "name": "trg_00_b2b_internal_snapshot",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "2ad7f93ad57ffe4099cd1ab11ba9751f"
+    },
+    {
+      "name": "trg_audit_po_commercial",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "ed82a2de7ef95dcf70c7e00241f91ab1"
+    },
+    {
+      "name": "trg_auto_b2b_receivable",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "4602de0119018783b7649782d733a086"
+    },
+    {
+      "name": "trg_b2b_guard_credit_approval_fields",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "c4af7d845678356b1fe0391e8321f9b8"
+    },
+    {
+      "name": "trg_b2b_plan_selectable_orders",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "622ee97f421c73b8ae0d0fabe5e3d96c"
+    },
+    {
+      "name": "trg_block_partner_order_delete",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "086ee51f1dc7cf4a15c3968bafa70bdd"
+    },
+    {
+      "name": "trg_block_partner_order_edit_after_op",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "28da9d386c40c1404871ad53252dc7a2"
+    },
+    {
+      "name": "trg_notify_payment_terms_pending",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "4e415fb061d8660a2bd1c1069f62e8d9"
+    },
+    {
+      "name": "trg_partner_order_to_planning",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "698579db26006d69c1fab6cd8427f715"
+    },
+    {
+      "name": "trg_partner_orders_audit",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "f6b5971be239eb52d9098eae7e517056"
+    },
+    {
+      "name": "trg_partner_orders_credit_guard",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "b088cc0e076c94d4e404cb31a5844e59"
+    },
+    {
+      "name": "trg_partner_orders_require_items",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "f7516b81b4ac133a19186aeab3d732c6"
+    },
+    {
+      "name": "trg_partner_orders_updated_at",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "78fec39a97fd6a3c5a134b4c42c10850"
+    },
+    {
+      "name": "trg_refresh_engagement",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "4f1b977cc90a011d83723daf372f1382"
+    },
+    {
+      "name": "trg_saas_gate",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "81779c5e7c0b08178f0fd8e4c7e5fa8c"
+    },
+    {
+      "name": "zz_c2_accounting_pending",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "0ca0cf37e03d5ba1ad802343b97b2018"
+    },
+    {
+      "name": "zz_c2_external_final_state",
+      "table": "public.partner_orders",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "1ba53306fdd5693772c629f33bb24e3b"
+    },
+    {
+      "name": "pp_guard",
+      "table": "public.product_packagings",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "dc28fc742a37a9302e3b7e0c334a8340"
+    },
+    {
+      "name": "pp_no_truncate",
+      "table": "public.product_packagings",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "dee31c2b48269e62b25abe7375d32fed"
+    },
+    {
+      "name": "pp_presentation_link",
+      "table": "public.product_packagings",
+      "present": true,
+      "enabled": "O",
+      "definition_equal": true,
+      "captured_md5": "413827da1c7226b6bd2d336de933ea8b"
+    }
+  ]
+}

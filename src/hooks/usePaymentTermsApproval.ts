@@ -73,6 +73,31 @@ export function usePartnerOrderPaymentCondition(orderId: string) {
   });
 }
 
+export type PaymentConditionRead =
+  | { state: "present"; condition: OrderPaymentCondition }
+  | { state: "absent" }
+  /** Leitor não instalado (PGRST202 exato): nunca equivale a "sem condição". */
+  | { state: "reader_unavailable" };
+
+/** Leitura discriminada para listas: separa ausência confirmada pelo servidor de leitor indisponível. */
+export function usePartnerOrderPaymentConditionRead(orderId: string) {
+  return useScopedPortalQuery<PaymentConditionRead>({
+    queryKey: ["partner-order-payment-condition-read", orderId],
+    enabled: !!orderId,
+    queryFn: async (signal) => {
+      const endpoint = "get_partner_order_payment_condition_secure";
+      const { data, error } = await (supabase.rpc as any)(endpoint, { p_order_id: orderId }).abortSignal(signal);
+      if (error) {
+        if (error.code === "PGRST202" && typeof error.message === "string" &&
+            error.message.includes(`public.${endpoint}(p_order_id)`)) return { state: "reader_unavailable" };
+        throw error;
+      }
+      const c = parseOrderPaymentCondition(data, orderId);
+      return c ? { state: "present", condition: c } : { state: "absent" };
+    },
+  });
+}
+
 const READER = "get_partner_order_payment_terms_secure";
 const CONTRACT = "B2B_ORDER_PAYMENT_TERMS_READ_V1";
 

@@ -1,0 +1,744 @@
+[
+ {
+  "phase": "A",
+  "case": "before-install-absent",
+  "ok": true
+ },
+ {
+  "phase": "A",
+  "case": "pre-dep-grant-option-drift",
+  "ok": true
+ },
+ {
+  "phase": "A",
+  "case": "pre",
+  "ok": true,
+  "stderr": "NOTICE:  00000: REVENUE_V2_PRE_OK\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+ },
+ {
+  "phase": "A",
+  "case": "install",
+  "ok": true,
+  "stderr": ""
+ },
+ {
+  "phase": "A",
+  "case": "post",
+  "ok": true,
+  "stderr": "NOTICE:  00000: REVENUE_V2_POST_OK\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+ },
+ {
+  "phase": "A",
+  "case": "reinstall-denied",
+  "ok": true
+ },
+ {
+  "phase": "A",
+  "case": "financeiro-positive",
+  "ok": true,
+  "result": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 9.0,
+    "vencido": 0,
+    "installments": 1,
+    "total_aberto": 9.0
+   },
+   "forecast_residual": {
+    "amount": 756.0,
+    "orders": 19,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "A",
+  "case": "replay-stable",
+  "ok": true
+ },
+ {
+  "phase": "A",
+  "case": "residual-order-9-live",
+  "ok": true
+ },
+ {
+  "phase": "A",
+  "case": "legacy-forged-no-allocation",
+  "ok": true,
+  "result": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 0,
+    "vencido": 0,
+    "installments": 0,
+    "total_aberto": 0
+   },
+   "forecast_residual": {
+    "amount": 756.0,
+    "orders": 19,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 1,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "A",
+  "case": "no-nf-document-digest-divergent",
+  "ok": true,
+  "result": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 0,
+    "vencido": 0,
+    "installments": 0,
+    "total_aberto": 0
+   },
+   "forecast_residual": {
+    "amount": 756.0,
+    "orders": 19,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 1,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "A",
+  "case": "snapshot-due-divergent",
+  "ok": true,
+  "result": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 0,
+    "vencido": 0,
+    "installments": 0,
+    "total_aberto": 0
+   },
+   "forecast_residual": {
+    "amount": 756.0,
+    "orders": 19,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 1,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "A",
+  "case": "received-exceeds-inconsistent",
+  "ok": true,
+  "result": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 0,
+    "vencido": 0,
+    "installments": 0,
+    "total_aberto": 0
+   },
+   "forecast_residual": {
+    "amount": 756.0,
+    "orders": 19,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 1
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "A",
+  "case": "paid-with-balance-inconsistent",
+  "ok": true,
+  "result": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 0,
+    "vencido": 0,
+    "installments": 0,
+    "total_aberto": 0
+   },
+   "forecast_residual": {
+    "amount": 756.0,
+    "orders": 19,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 1
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "A",
+  "case": "allocation-reversed-inconsistent",
+  "ok": true,
+  "result": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 0,
+    "vencido": 0,
+    "installments": 0,
+    "total_aberto": 0
+   },
+   "forecast_residual": {
+    "amount": 756.0,
+    "orders": 19,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 1
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "A",
+  "case": "unknown-status-inconsistent",
+  "ok": true,
+  "result": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 0,
+    "vencido": 0,
+    "installments": 0,
+    "total_aberto": 0
+   },
+   "forecast_residual": {
+    "amount": 756.0,
+    "orders": 19,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 1
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "A",
+  "case": "null-due-not-confirmed",
+  "ok": true,
+  "result": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 0,
+    "vencido": 0,
+    "installments": 0,
+    "total_aberto": 0
+   },
+   "forecast_residual": {
+    "amount": 756.0,
+    "orders": 19,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 1,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "A",
+  "case": "title-canceled-excluded",
+  "ok": true,
+  "result": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 0,
+    "vencido": 0,
+    "installments": 0,
+    "total_aberto": 0
+   },
+   "forecast_residual": {
+    "amount": 756.0,
+    "orders": 19,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "A",
+  "case": "forecast-partner-divergent",
+  "ok": true,
+  "result": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 0,
+    "vencido": 0,
+    "installments": 0,
+    "total_aberto": 0
+   },
+   "forecast_residual": {
+    "amount": 747.0,
+    "orders": 18,
+    "enforceable": false,
+    "inconsistent": 1,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 1
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "A",
+  "case": "forecast-issuer-divergent-not-summed",
+  "ok": true,
+  "result": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 0,
+    "vencido": 0,
+    "installments": 0,
+    "total_aberto": 0
+   },
+   "forecast_residual": {
+    "amount": 747.0,
+    "orders": 18,
+    "enforceable": false,
+    "inconsistent": 1,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 1
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "A",
+  "case": "foreign-admin-isolated",
+  "ok": true,
+  "result": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000002",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 0,
+    "vencido": 0,
+    "installments": 0,
+    "total_aberto": 0
+   },
+   "forecast_residual": {
+    "amount": 0,
+    "orders": 0,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "A",
+  "case": "foreign-partner-filter-denied",
+  "ok": true
+ },
+ {
+  "phase": "A",
+  "case": "buyer-denied",
+  "ok": true
+ },
+ {
+  "phase": "A",
+  "case": "own-partner-filter",
+  "ok": true
+ },
+ {
+  "phase": "A",
+  "case": "feature-revoked-denied",
+  "ok": true
+ },
+ {
+  "phase": "A",
+  "case": "inactive-profile-denied",
+  "ok": true
+ },
+ {
+  "phase": "A",
+  "case": "gestor-own-positive",
+  "ok": true
+ },
+ {
+  "phase": "A",
+  "case": "anon-no-execute",
+  "ok": true
+ },
+ {
+  "phase": "A",
+  "case": "service_role-no-execute",
+  "ok": true
+ },
+ {
+  "phase": "A",
+  "case": "private-helper-direct-denied",
+  "ok": true
+ },
+ {
+  "phase": "B",
+  "case": "financeiro-positive",
+  "ok": true,
+  "result": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 18.0,
+    "vencido": 0,
+    "installments": 2,
+    "total_aberto": 18.0
+   },
+   "forecast_residual": {
+    "amount": 747.0,
+    "orders": 18,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "B",
+  "case": "replay-stable",
+  "ok": true
+ },
+ {
+  "phase": "B",
+  "case": "nf2-invariant-no-double-count",
+  "ok": true,
+  "a": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 9.0,
+    "vencido": 0,
+    "installments": 1,
+    "total_aberto": 9.0
+   },
+   "forecast_residual": {
+    "amount": 756.0,
+    "orders": 19,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  },
+  "b": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 18.0,
+    "vencido": 0,
+    "installments": 2,
+    "total_aberto": 18.0
+   },
+   "forecast_residual": {
+    "amount": 747.0,
+    "orders": 18,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "B",
+  "case": "foreign-unchanged-by-arbio-nf",
+  "ok": true
+ },
+ {
+  "phase": "C",
+  "case": "financeiro-positive",
+  "ok": true,
+  "result": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 9.0,
+    "vencido": 0,
+    "installments": 2,
+    "total_aberto": 9.0
+   },
+   "forecast_residual": {
+    "amount": 747.0,
+    "orders": 18,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "C",
+  "case": "replay-stable",
+  "ok": true
+ },
+ {
+  "phase": "C",
+  "case": "payment-9-reduces-titles-only",
+  "ok": true,
+  "b": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 18.0,
+    "vencido": 0,
+    "installments": 2,
+    "total_aberto": 18.0
+   },
+   "forecast_residual": {
+    "amount": 747.0,
+    "orders": 18,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  },
+  "c": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 9.0,
+    "vencido": 0,
+    "installments": 2,
+    "total_aberto": 9.0
+   },
+   "forecast_residual": {
+    "amount": 747.0,
+    "orders": 18,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "C",
+  "case": "rollback-deny",
+  "ok": true,
+  "stderr": ""
+ },
+ {
+  "phase": "C",
+  "case": "after-rollback-denied",
+  "ok": true
+ },
+ {
+  "phase": "C",
+  "case": "body-retained-after-rollback",
+  "ok": true,
+  "md5": "dfda2de5e3d220aa6d1b33571a4dcf49"
+ },
+ {
+  "phase": "C",
+  "case": "rollback-rerun-fails-closed",
+  "ok": true
+ }
+]

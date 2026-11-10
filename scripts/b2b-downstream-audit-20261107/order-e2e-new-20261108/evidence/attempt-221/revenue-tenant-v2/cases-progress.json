@@ -1,0 +1,117 @@
+[
+ {
+  "phase": "A",
+  "case": "before-install-absent",
+  "ok": true
+ },
+ {
+  "phase": "A",
+  "case": "pre-dep-grant-option-drift",
+  "ok": true
+ },
+ {
+  "phase": "A",
+  "case": "pre",
+  "ok": true,
+  "stderr": "NOTICE:  00000: REVENUE_V2_PRE_OK\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+ },
+ {
+  "phase": "A",
+  "case": "install",
+  "ok": true,
+  "stderr": ""
+ },
+ {
+  "phase": "A",
+  "case": "post",
+  "ok": true,
+  "stderr": "NOTICE:  00000: REVENUE_V2_POST_OK\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+ },
+ {
+  "phase": "A",
+  "case": "reinstall-denied",
+  "ok": true
+ },
+ {
+  "phase": "A",
+  "case": "financeiro-positive",
+  "ok": true,
+  "result": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 9.0,
+    "vencido": 0,
+    "installments": 1,
+    "total_aberto": 9.0
+   },
+   "forecast_residual": {
+    "amount": 756.0,
+    "orders": 19,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 0,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "A",
+  "case": "replay-stable",
+  "ok": true
+ },
+ {
+  "phase": "A",
+  "case": "residual-order-9-live",
+  "ok": true
+ },
+ {
+  "phase": "A",
+  "case": "legacy-forged-no-allocation",
+  "ok": true,
+  "result": {
+   "contract": "B2B_REVENUE_FORECAST_TENANT_V2",
+   "partner_id": null,
+   "organization_id": "00000000-0000-0000-0000-000000000001",
+   "confirmed_titles": {
+    "proof": "b2b_document_allocation_v1",
+    "ate_30": 0,
+    "ate_60": 0,
+    "ate_90": 0,
+    "apos_90": 0,
+    "vencido": 0,
+    "installments": 0,
+    "total_aberto": 0
+   },
+   "forecast_residual": {
+    "amount": 756.0,
+    "orders": 19,
+    "enforceable": false,
+    "inconsistent": 0,
+    "due_dates_estimated": true
+   },
+   "titles_unavailable": {
+    "legacy": 0,
+    "unproven": 1,
+    "inconsistent": 0
+   },
+   "legacy_unproven_orders": 0
+  }
+ },
+ {
+  "phase": "A",
+  "case": "no-nf-document-digest-divergent",
+  "ok": false,
+  "stderr": "08f32c17adebc41c052941962cb0ff777dfc20..., [{\"item_id\": \"dd91bbf2-7915-4e7f-967e-7083857a4f83\", \"quantity\":..., AUTHORIZED).\nSCHEMA NAME:  platform_private\nTABLE NAME:  b2b_authorized_documents\nCONSTRAINT NAME:  b2b_authorized_documents_source_digest_check\nLOCATION:  ExecConstraints, execMain.c:2079"
+ }
+]

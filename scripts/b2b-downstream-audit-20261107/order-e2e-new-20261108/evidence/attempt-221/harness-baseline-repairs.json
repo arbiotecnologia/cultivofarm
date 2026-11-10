@@ -1,0 +1,8 @@
+[
+  {
+    "signature": "public.tg_auto_b2b_receivable()",
+    "before": "{postgres=X/postgres}",
+    "after": "{postgres=X/postgres,service_role=X/postgres}",
+    "candidate_install_changed": false
+  }
+]
