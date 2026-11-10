@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-qxd4puko/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 40, in main
+    import triggers38;triggers38.assert_and_write(B,ROOT,OUT,'start')
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-qxd4puko/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/triggers38.py", line 48, in assert_and_write
+    assert snap['all_present_enabled_identical'], snap['failures']
+           ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: [{'name': 'cpe_guard', 'table': 'public.catalogo_precos_embalagem', 'present': False, 'enabled': None, 'definition_equal': False, 'captured_md5': '09ff39a718184a2e62b9549148ad5377'}, {'name': 'cpe_no_truncate', 'table': 'public.catalogo_precos_embalagem', 'present': False, 'enabled': None, 'definition_equal': False, 'captured_md5': '8ee8bf3b4e0905adb9687f91ef7c3593'}, {'name': 'a000_partner_order_items_catalog_tenant_guard', 'table': 'public.partner_order_items', 'present': False, 'enabled': None, 'definition_equal': False, 'captured_md5': 'eaaed641b86245fd1e6c1eb9c67ea142'}, {'name': 'pp_guard', 'table': 'public.product_packagings', 'present': False, 'enabled': None, 'definition_equal': False, 'captured_md5': 'dc28fc742a37a9302e3b7e0c334a8340'}, {'name': 'pp_no_truncate', 'table': 'public.product_packagings', 'present': False, 'enabled': None, 'definition_equal': False, 'captured_md5': 'dee31c2b48269e62b25abe7375d32fed'}, {'name': 'pp_presentation_link', 'table': 'public.product_packagings', 'present': False, 'enabled': None, 'definition_equal': False, 'captured_md5': '413827da1c7226b6bd2d336de933ea8b'}]

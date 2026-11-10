@@ -237,6 +237,13 @@ def begin_overlay(root):
   IF v_invoice IS NOT NULL AND _service IN ('NFeAutorizacao4','NFeRetAutorizacao4','NFeConsultaProtocolo4') THEN
     IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed' THEN
       RAISE EXCEPTION 'B2B_FORECAST_READ_COMMITTED_REQUIRED' USING ERRCODE='42501';END IF;
+    -- Pre-lock tenant fence (unlocked read): a foreign/unknown actor never waits
+    -- on another tenant's invoice/order/forecast rows. Re-checked after locks.
+    IF EXISTS(SELECT 1 FROM platform_private.b2b_financial_forecasts f
+        JOIN public.fiscal_invoices i ON i.partner_order_id=f.order_id WHERE i.id=v_invoice)
+      AND (_actor IS NULL OR NOT EXISTS(SELECT 1 FROM public.profiles p JOIN public.fiscal_invoices i
+        ON i.organization_id=p.organization_id WHERE i.id=v_invoice AND p.user_id=_actor AND p.ativo IS TRUE)) THEN
+      RAISE EXCEPTION 'B2B_FORECAST_BEGIN_SCOPE_DENIED' USING ERRCODE='42501';END IF;
     PERFORM i.id FROM public.fiscal_invoices i WHERE i.id=v_invoice FOR SHARE;
     PERFORM po.id FROM public.partner_orders po JOIN public.fiscal_invoices i ON i.partner_order_id=po.id
       WHERE i.id=v_invoice FOR UPDATE OF po;
@@ -257,18 +264,35 @@ def begin_overlay(root):
     IF v_forecast.organization_id IS DISTINCT FROM v_source.organization_id
       OR v_forecast.partner_id IS DISTINCT FROM v_source.debtor_partner_id THEN
       RAISE EXCEPTION 'B2B_FORECAST_BEGIN_SCOPE_DENIED' USING ERRCODE='42501';END IF;
-    IF _service IN ('NFeAutorizacao4','NFeConsultaProtocolo4') THEN
+    -- Post-wait revalidation of everything read before the locks: marker,
+    -- XML identity/state and the issuer's exact active settings.
+    SELECT project_ref, production_emission_allowed INTO v_ref, v_prod
+      FROM public.fiscal_environment_marker LIMIT 1;
+    IF v_ref IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' OR coalesce(v_prod, true) THEN
+      RAISE EXCEPTION 'FISCAL_PRODUCTION_ENDPOINT_BLOCKED';END IF;
+    IF _xml_run_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.fiscal_xml_runs r
+        WHERE r.id=_xml_run_id AND r.fiscal_invoice_id=v_invoice
+          AND (_service<>'NFeAutorizacao4' OR (r.state='SIGNED' AND coalesce(r.signed_path,'')<>''
+            AND coalesce(r.environment_code,'')='2' AND r.access_key IS NOT DISTINCT FROM v_run.access_key))) THEN
+      RAISE EXCEPTION 'SEFAZ_INVOICE_RUN_MISMATCH';END IF;
+    IF NOT EXISTS(SELECT 1 FROM public.company_fiscal_settings c
+        WHERE c.id=v_source.company_settings_id AND c.organization_id=v_source.organization_id
+          AND c.is_active AND coalesce(c.nfe_environment_code,'')='2') THEN
+      RAISE EXCEPTION 'FISCAL_PRODUCTION_ENDPOINT_BLOCKED';END IF;
+    -- Pilot first (it may wait on its own gate/allowlist locks); every profile,
+    -- role, tenant and entitlement check is evaluated AFTER that wait.
+    v_pilot := platform_private.resale_pilot_allowed_v1('b2b_resale','forecast_begin',_actor,
+          v_source.organization_id,v_source.debtor_partner_id,v_source.partner_order_id,NULL,NULL,NULL,NULL);
+    IF _service IN ('NFeAutorizacao4','NFeConsultaProtocolo4','NFeRetAutorizacao4') THEN
       -- Worker actor argument is NOT sufficient: canonical active internal authority,
       -- tenant, entitlements and exact pilot are read from server records.
-      IF _actor IS NULL OR NOT EXISTS(SELECT 1 FROM public.profiles p
+      IF v_pilot IS NOT TRUE OR _actor IS NULL OR NOT EXISTS(SELECT 1 FROM public.profiles p
         JOIN public.organizations o ON o.id=p.organization_id
         WHERE p.user_id=_actor AND p.ativo IS TRUE AND o.ativo IS TRUE
          AND p.organization_id=v_source.organization_id)
         OR NOT (public.has_role(_actor,'administrador') OR public.has_role(_actor,'financeiro'))
         OR public._saas_user_has_feature(_actor,'pedidos_b2b') IS NOT TRUE
-        OR public._saas_user_has_feature(_actor,'contas_receber') IS NOT TRUE
-        OR platform_private.resale_pilot_allowed_v1('b2b_resale','forecast_begin',_actor,
-          v_source.organization_id,v_source.debtor_partner_id,v_source.partner_order_id,NULL,NULL,NULL,NULL) IS NOT TRUE THEN
+        OR public._saas_user_has_feature(_actor,'contas_receber') IS NOT TRUE THEN
         RAISE EXCEPTION 'B2B_FORECAST_BEGIN_SCOPE_DENIED' USING ERRCODE='42501';END IF;
     END IF;
   END IF;
@@ -314,7 +338,8 @@ def begin_overlay(root):
     body=body.replace('  v_row       public.fiscal_sefaz_transmissions;', '''  v_row       public.fiscal_sefaz_transmissions;
   v_forecast platform_private.b2b_financial_forecasts;
   v_source public.fiscal_invoices;
-  v_timeout platform_private.b2b_financial_forecast_events;''').replace(insert_anchor,reserve+insert_anchor)
+  v_timeout platform_private.b2b_financial_forecast_events;
+  v_pilot boolean;''').replace(insert_anchor,reserve+insert_anchor)
     after_insert='  RETURNING * INTO v_row;'
     assert body.count(after_insert)==1
     body=body.replace(after_insert,after_insert+"""

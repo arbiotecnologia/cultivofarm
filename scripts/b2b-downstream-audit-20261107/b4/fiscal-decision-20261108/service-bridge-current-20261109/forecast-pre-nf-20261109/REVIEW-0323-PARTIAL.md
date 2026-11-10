@@ -113,3 +113,19 @@ Evidência: `order-e2e-new-20261108/evidence/attempt-203/` (`run.exitcode`=0, `c
 **Tentativa 206 (substitui a 205):** a variante da 205 exigia XML na Consulta/RetAutorização, mas `supabase/functions/fiscal-sefaz-transport/index.ts` envia status/recibo/consulta com a nota obrigatória e `run_id` **opcional**. Isso quebraria o chamador real, então foi descartada. A 206 terminou com exit 0, 55/55: as mesmas 9 verificações de repetição e 8 de ambiente, com `status_invoice_only_issuer_env_1` (só a nota, emitente em `1`, outra empresa em `2`) → bloqueado. Nas previsões, a consulta sem XML continua barrada pela prova causal (`t.xml_run_id=_xml_run_id`).
 
 **Promoção:** 12/12 SQL iguais aos do espelho validado na **206** (`review-1425-source-hashes.json`). Pacote **REVIEW_ONLY_INACTIVE_NOT_APPROVED**; sem SQL hospedado, publicação, emissão, envio ou cobrança. Auth sintética.
+
+## Complemento 15:11 UTC 10/11/2026 — revisão 890bfa4/206
+
+Somente PostgreSQL 17.11 descartável; Auth sintética (SQL-role authenticated/service_role, perfis sintéticos). Não é prova JWT/RLS/Storage hospedada nem SEFAZ. Sem SQL hospedado, publicação, emissão, envio ou cobrança. Status: `REVIEW_ONLY_INACTIVE_NOT_APPROVED`.
+
+Tentativas: 207 exit 1 (mapa dos 38 medido antes de os pacotes de embalagem/catálogo serem compostos: 6 ausentes; passou a ser só registro nesse ponto); 208 exit 1 (`fiscal_xml_runs_env_chk` fixa ambiente 2; caso trocado para perda de assinatura); **209 exit 0, 56/56**.
+
+1. CANCEL COMMIT→BEGIN: `cancel-commit-then-begin-denied.json` — waiter comprovado (pg_blocking_pids), `PT409 B2B_FORECAST_BEGIN_BLOCKED`, transmissões 6→6, `cancelado_residual`, residual 0. O caso rollback continua separado em `canonical-begin-cancel-race.json`.
+2. Revalidação pós-espera (`begin-post-wait-revalidation.json`, 6 casos com waiter): configuração da emitente em 1 e inativa, marcador revogado → `FISCAL_PRODUCTION_ENDPOINT_BLOCKED`; XML perde assinatura → `SEFAZ_INVOICE_RUN_MISMATCH`; perfil inativo e piloto revogado (RetAutorização) → `42501`. O piloto é avaliado antes dos demais checks, todos após as esperas. Nenhuma linha devolvida; transmissões e previsão inalteradas.
+3. Ator estrangeiro (Autorização e RetAutorização) negado `42501` sob `lock_timeout=400ms` sem `55P03`: não esperou linhas alheias.
+4. RetAutorização entra no bloco de autoridade; o pré-check do transporte (`h15_service_actor_invoice_access`, corpo capturado) dá foreign=false/own=true; positivo próprio passou em rollback. A edge function não foi executada.
+5. Leitor `rpc_receivable_money_projection_v1`: consumidor é `receivableOrigin.ts` diferido (não montado no src atual). Candidato 13–16 (`projection_reader.py`): helper privado sem grants (h15 org ativa + `is_financial_staff` + `contas_receber`), EXECUTE só para authenticated. Positivos financeiro/admin próprios; negativos estrangeiro, comprador, anon, service_role, helper direto, feature revogada e perfil inativo; rollback restaurou MD5 `7c5d3fa0…` e ACL `{postgres=X/postgres}`. Pin PRE é derivado localmente e precisa de captura somente leitura. Gestor é aceito pela regra canônica `is_financial_staff`.
+6. 38 gatilhos mapeados por nome/tabela/definição/habilitação: `triggers38-before-forecast-scenarios`, `-before-final-rollback`, `-end` todos íntegros.
+7. Gate logístico global não aberto.
+
+Regressão: parceiro 747→738 após pagamento 9; títulos 9→18, residual 9→0; rollback com histórico e dez gatilhos preservados. Início fiscal candidato MD5 `38bc13e60350f7117af798c3630d0aef`. 16 SQL do repositório idênticos ao espelho validado: `review-1511-source-hashes.json`. Evidência: `scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-209/`.

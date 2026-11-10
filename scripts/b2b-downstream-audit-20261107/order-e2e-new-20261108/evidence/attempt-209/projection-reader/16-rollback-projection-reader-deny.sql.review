@@ -1,0 +1,18 @@
+BEGIN;
+CREATE OR REPLACE FUNCTION public.rpc_receivable_money_projection_v1(p_receivable_id uuid DEFAULT NULL,p_offset int DEFAULT 0,p_limit int DEFAULT 1000)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid:=public.h15_actor_organization(); i record; row jsonb; r jsonb; result jsonb:='[]';
+BEGIN
+ IF auth.uid() IS NULL OR org IS NULL OR public.is_financial_staff(auth.uid()) IS NOT TRUE THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;
+ IF p_offset IS NULL OR p_offset<0 OR p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 1000 THEN RAISE EXCEPTION 'MONEY_ORIGIN_PAGE_INVALID' USING ERRCODE='23514'; END IF;
+ IF p_receivable_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.accounts_receivable a WHERE a.id=p_receivable_id AND a.organization_id=org) THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;
+ FOR i IN SELECT s.* FROM public.accounts_receivable_installments s JOIN public.accounts_receivable a ON a.id=s.receivable_id WHERE s.organization_id=org AND a.organization_id=org AND (p_receivable_id IS NULL OR a.id=p_receivable_id) ORDER BY s.id OFFSET p_offset LIMIT p_limit LOOP
+  row:=platform_private.b2b_proven_money_row(i.id);
+  result:=result||jsonb_build_array(row);
+ END LOOP;
+ RETURN result;
+END $$;
+REVOKE ALL ON FUNCTION public.rpc_receivable_money_projection_v1(uuid,integer,integer) FROM PUBLIC,anon,authenticated,service_role;
+CREATE OR REPLACE FUNCTION platform_private.receivable_money_reader_allowed_v1() RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT false $$;
+REVOKE ALL ON FUNCTION platform_private.receivable_money_reader_allowed_v1() FROM PUBLIC,anon,authenticated,service_role;
+COMMIT;

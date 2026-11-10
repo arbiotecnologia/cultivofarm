@@ -1,0 +1,94 @@
+{
+  "cases": [
+    {
+      "case": "service-differs",
+      "exit": 3,
+      "expected": "FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+      "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+      "leaked_row": false
+    },
+    {
+      "case": "invoice-and-run-differ",
+      "exit": 3,
+      "expected": "FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+      "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+      "leaked_row": false
+    },
+    {
+      "case": "event-differs",
+      "exit": 3,
+      "expected": "FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+      "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+      "leaked_row": false
+    },
+    {
+      "case": "endpoint-differs",
+      "exit": 3,
+      "expected": "FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+      "stderr": "ERROR:  P0001: FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH",
+      "leaked_row": false
+    },
+    {
+      "case": "caller-invoice-not-run",
+      "exit": 3,
+      "expected": "SEFAZ_INVOICE_RUN_MISMATCH",
+      "stderr": "ERROR:  P0001: SEFAZ_INVOICE_RUN_MISMATCH",
+      "leaked_row": false
+    },
+    {
+      "case": "foreign-or-unknown-actor",
+      "exit": 3,
+      "expected": "B2B_FORECAST_BEGIN_SCOPE_DENIED",
+      "stderr": "ERROR:  42501: B2B_FORECAST_BEGIN_SCOPE_DENIED",
+      "leaked_row": false
+    },
+    {
+      "case": "pilot-revoked-before",
+      "exit": 3,
+      "expected": "B2B_FORECAST_BEGIN_SCOPE_DENIED",
+      "stderr": "ERROR:  42501: B2B_FORECAST_BEGIN_SCOPE_DENIED",
+      "leaked_row": false
+    },
+    {
+      "case": "pilot-revoked-while-replay-waits-on-lock",
+      "exit": 3,
+      "stderr": "ERROR:  42501: B2B_FORECAST_BEGIN_SCOPE_DENIED",
+      "leaked_row": false,
+      "barrier": {
+        "holder_ready": {
+          "pid": 25275,
+          "state": "idle in transaction",
+          "granted": true
+        },
+        "waiter_before_revocation": {
+          "holder_pid": 25275,
+          "waiter_pid": 25281,
+          "blocking_pids": [
+            25275
+          ],
+          "ungranted_locks": [
+            {
+              "mode": "ShareLock",
+              "granted": false,
+              "locktype": "transactionid",
+              "relation": null,
+              "transactionid": "18278"
+            }
+          ],
+          "wait_event_type": "Lock"
+        },
+        "mutation_sent_after_waiter": true,
+        "timing_only_proof": false
+      }
+    },
+    {
+      "case": "exact-replay-after-restore",
+      "exit": 0,
+      "replay": true
+    }
+  ],
+  "transmissions_before": "5",
+  "transmissions_after": "5",
+  "hosted": false,
+  "synthetic_auth": true
+}

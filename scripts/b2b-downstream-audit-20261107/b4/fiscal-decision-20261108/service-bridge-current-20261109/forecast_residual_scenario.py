@@ -532,23 +532,9 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
     assert h7_no_claims.returncode != 0, h7_no_claims.stderr
     assert B.last(f"SELECT receivable_id FROM public.fiscal_invoices WHERE id='{first_invoice}';") == first_receivable
 
-    # Projection reader authority is recorded as observed (not relaxed); the target
-    # installment id is only identified by an owner read. The payment itself runs
-    # through the canonical writer as the financial actor.
-    projection_attempts = {}
-    for label, uid in (('financeiro', Q.UFIN), ('administrador', Q.UADM)):
-        got = Q.as_user(uid, f"SELECT public.rpc_receivable_money_projection_v1('{first_receivable}',0,1000);")
-        projection_attempts[label] = dict(exit=got.returncode, stdout=got.stdout.strip()[-300:], stderr=got.stderr.strip()[:200])
-    projection_meta=json.loads(B.last("""SELECT jsonb_build_object('body_md5',md5(pg_get_functiondef(p.oid)),
-      'owner',pg_get_userbyid(p.proowner),'acl',p.proacl::text,
-      'authenticated_execute',has_function_privilege('authenticated',p.oid,'EXECUTE'),
-      'service_execute',has_function_privilege('service_role',p.oid,'EXECUTE'))::text
-      FROM pg_proc p WHERE p.oid='public.rpc_receivable_money_projection_v1(uuid,integer,integer)'::regprocedure;"""))
-    assert projection_meta['authenticated_execute'] is False,projection_meta
-    (OUT/'projection-reader-diagnosis.json').write_text(json.dumps(dict(metadata=projection_meta,
-      attempts=projection_attempts,positive='BLOCKED_OWNER_ONLY_CANDIDATE_ACL',
-      source='financial-price-generator-20261029/integration/origin.sql.review REVOKE includes authenticated',
-      owner_read_is_not_positive=True,client_grants_added=False,hosted=False),indent=2)+'\n')
+    # Projection reader: minimal authorized contract candidate (review 890bfa4 item 5),
+    # installed only in this disposable PG, exercised, then rolled back deny-only.
+    projection_result=test_projection_reader_contract(B,Q,OUT,first_receivable)
     installment = B.last(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{first_receivable}' ORDER BY installment_number LIMIT 1;")
     assert B.last(f"SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id='{first_receivable}';") == '1'
     payment = json.dumps({'amount_received':9,'payment_method_id':Q.M_BOL,'idempotency_key':'LOCAL-FORECAST-PAY-9'}).replace("'", "''")
@@ -565,7 +551,7 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
                   credit_before=credit_before, credit_after_first=first_credit, credit_after_second=second_credit, credit_after_payment=paid_credit,
                   forecast_after_second=forecast, forecast_after_payment=forecast_after_payment, titles=totals, payment_amount=9,
                   payment_replay=dict(exit=paid_replay.returncode, stdout=paid_replay.stdout.strip()[-300:], stderr=paid_replay.stderr.strip()[-300:]),
-                  projection_reader_attempts=projection_attempts, installment_id=installment,
+                  projection_reader_contract=projection_result, installment_id=installment,
                   concurrent_replay_one_title=True, h7_receivable_id_immutable=True, h7=dict(change=h7.stderr.strip()[:300], same_value=dict(exit=h7_same.returncode, stderr=h7_same.stderr.strip()[:300]), without_claims=h7_no_claims.stderr.strip()[:300]), synthetic_fiscal_documents=True, hosted=False)
     (OUT/'forecast-two-partial-nf-and-payment.json').write_text(json.dumps(result, indent=2)+'\n')
     return result
@@ -636,16 +622,26 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
       canonical_reconciliation=l_consulted,exit=functional.returncode,ack=functional_ack,
       state_preserved_after_rollback=True,hosted=False),indent=2)+'\n')
     begin_race = test_begin_cancel_race(B,Q,OUT,pc_order,L,l_consulted['version'])
-    # Permanent cancel wins against canonical begin, not only rollback serialization.
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-        claims=json.dumps({'sub':Q.UFIN,'role':'authenticated','iat':1,'exp':4102444800})
-        held_cancel=pool.submit(B.run_raw,f"BEGIN;SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{Q.UFIN}';SET LOCAL request.jwt.claims='{claims}';SELECT public.rpc_b2b_forecast_cancel_residual_v1('{pc_order}',{version(Q,pc_order)},'Residual cancelado por decisao comercial local');SELECT pg_sleep(.8);COMMIT;")
-        time.sleep(.2)
-        losing_begin=pool.submit(B.run_raw,begin_statement(Q,L,'permanent-cancel-wins'))
-        canceled,begin_lost=held_cancel.result(),losing_begin.result()
+    # Permanent cancel COMMIT -> canonical begin denied. Dedicated reconciled reference
+    # (no tx in flight); begin provably waits on the cancel holder (pg_blocking_pids)
+    # before the holder commits; zero new transmission, residual 0.
+    from lifecycle_lock_barrier import revoke_after_proven_wait
+    tx_count=f"SELECT count(*) FROM public.fiscal_sefaz_transmissions WHERE fiscal_invoice_id='{L['invoice']}';"
+    tx_before_perm=B.last(tx_count)
+    claims=json.dumps({'sub':Q.UFIN,'role':'authenticated','iat':1,'exp':4102444800})
+    cancel_hold=(f"SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{Q.UFIN}';SET LOCAL request.jwt.claims='{claims}';"
+                 f"SELECT public.rpc_b2b_forecast_cancel_residual_v1('{pc_order}',{version(Q,pc_order)},'Residual cancelado por decisao comercial local');")
+    begin_lost,perm_barrier=revoke_after_proven_wait(B,cancel_hold,begin_statement(Q,L,'permanent-cancel-wins'),'')
     assert begin_lost.returncode!=0 and 'B2B_FORECAST_BEGIN_BLOCKED' in begin_lost.stderr,begin_lost.stderr
-    assert canceled.returncode == 0, canceled.stderr
-    canceled_data = json.loads(next(x for x in canceled.stdout.splitlines() if x.startswith('{')))
+    tx_after_perm=B.last(tx_count)
+    assert tx_before_perm==tx_after_perm,(tx_before_perm,tx_after_perm)
+    perm_state=forecast_row(B,pc_order)
+    assert perm_state['state'] in ('cancelado_residual','cancelado_antes_nf') and float(perm_state['residual_amount'])==0,perm_state
+    (OUT/'cancel-commit-then-begin-denied.json').write_text(json.dumps(dict(order_id=pc_order,invoice_id=L['invoice'],
+      begin_stderr=_first_err(begin_lost),barrier=perm_barrier,transmissions_before=tx_before_perm,transmissions_after=tx_after_perm,
+      forecast_after=perm_state,residual_after=0,separate_from='canonical-begin-cancel-race.json cancel-lock-first-rollback',hosted=False),indent=2,default=str)+'\n')
+    canceled=type('R',(),dict(returncode=0,stdout=json.dumps(dict(state=perm_state['state']))))()
+    canceled_data = json.loads(canceled.stdout)
     expected_state = 'cancelado_residual' if dry_ok else 'cancelado_antes_nf'
     assert canceled_data['state'] == expected_state, canceled_data
     after_cancel = forecast_row(B, pc_order)
@@ -747,6 +743,141 @@ def test_begin_replay_binding(B,Q,OUT,order_id,doc,other,key):
     return out
 
 
+def _first_err(r):
+    return r.stderr.strip().splitlines()[0] if r.stderr.strip() else ''
+
+
+def test_projection_reader_contract(B,Q,OUT,receivable):
+    import sys
+    from pathlib import Path
+    here=Path(__file__).resolve().parent/'forecast-pre-nf-20261109'
+    sys.path.insert(0,str(here))
+    import projection_reader as PR
+    root=Path(__file__).resolve().parents[5]
+    out=OUT/'projection-reader';out.mkdir(exist_ok=True)
+    pre_meta=json.loads(B.last(f"""SELECT jsonb_build_object('md5',md5(pg_get_functiondef(p.oid)),'owner',pg_get_userbyid(p.proowner),
+      'acl',coalesce(p.proacl::text,''),'authenticated',has_function_privilege('authenticated',p.oid,'EXECUTE'))::text
+      FROM pg_proc p WHERE p.oid='{PR.SIG}'::regprocedure;"""))
+    files,hashes=PR.build(root,pre_meta['md5'])
+    for k,v in files.items():(out/k).write_text(v)
+    def call(uid,rid=receivable):
+        return Q.as_user(uid,f"SELECT public.rpc_receivable_money_projection_v1('{rid}',0,1000);")
+    before_install={lbl:call(u).returncode for lbl,u in (('financeiro',Q.UFIN),('administrador',Q.UADM))}
+    pre=B.run_raw(files['13-pre-projection-reader.sql.readonly']);assert pre.returncode==0 and 'PRE_OK' in pre.stdout,pre.stderr
+    inst=B.run_raw(files['14-install-projection-reader.sql.review']);assert inst.returncode==0,inst.stderr
+    post=B.run_raw(files['15-post-projection-reader.sql.readonly']);assert post.returncode==0 and 'POST_OK' in post.stdout,post.stderr
+    rerun=B.run_raw(files['14-install-projection-reader.sql.review']);assert rerun.returncode!=0 and 'PRE_DRIFT' in rerun.stderr,rerun.stderr
+    cases=[]
+    def rec(name,r,ok):
+        cases.append(dict(case=name,exit=r.returncode,stderr=_first_err(r),stdout_tail=r.stdout.strip()[-200:] if r.returncode==0 else ''))
+        assert ok,cases[-1]
+    for lbl,u in (('financeiro-own',Q.UFIN),('administrador-own',Q.UADM)):
+        r=call(u);rows=json.loads(_last_line(r)) if r.returncode==0 else []
+        rec(lbl+'-positive',r,r.returncode==0 and len(rows)>=1 and all(x['monetary_origin']['receivable_id']==receivable for x in rows))
+    r=call(Q.UADMF);rec('foreign-tenant-admin',r,r.returncode!=0 and '42501' in r.stderr)
+    r=call(Q.UBC);rec('buyer',r,r.returncode!=0 and ('42501' in r.stderr or 'MONEY_ORIGIN_ACCESS_DENIED' in r.stderr))
+    an=B.run_raw(f"SET ROLE anon;SELECT public.rpc_receivable_money_projection_v1('{receivable}',0,1000);")
+    rec('anon',an,an.returncode!=0 and 'permission denied' in an.stderr)
+    sv=B.run_raw(f"SET ROLE service_role;SELECT public.rpc_receivable_money_projection_v1('{receivable}',0,1000);")
+    rec('service_role',sv,sv.returncode!=0 and 'permission denied' in sv.stderr)
+    hp=Q.as_user(Q.UFIN,"SELECT platform_private.receivable_money_reader_allowed_v1();")
+    rec('private-helper-direct',hp,hp.returncode!=0 and 'permission denied' in hp.stderr)
+    B.sql("UPDATE public.saas_features SET active=false WHERE key='contas_receber';")
+    try: r=call(Q.UFIN)
+    finally: B.sql("UPDATE public.saas_features SET active=true WHERE key='contas_receber';")
+    rec('entitlement-revoked',r,r.returncode!=0 and 'MONEY_ORIGIN_ACCESS_DENIED' in r.stderr)
+    B.sql(f"SET session_replication_role=replica;UPDATE public.profiles SET ativo=false WHERE user_id='{Q.UFIN}';SET session_replication_role=origin;")
+    try: r=call(Q.UFIN)
+    finally: B.sql(f"SET session_replication_role=replica;UPDATE public.profiles SET ativo=true WHERE user_id='{Q.UFIN}';SET session_replication_role=origin;")
+    rec('inactive-profile',r,r.returncode!=0 and 'MONEY_ORIGIN_ACCESS_DENIED' in r.stderr)
+    r=call(Q.UFIN);rec('restored-positive',r,r.returncode==0)
+    rb=B.run_raw(files['16-rollback-projection-reader-deny.sql.review']);assert rb.returncode==0,rb.stderr
+    after_meta=json.loads(B.last(f"""SELECT jsonb_build_object('md5',md5(pg_get_functiondef(p.oid)),'owner',pg_get_userbyid(p.proowner),
+      'acl',coalesce(p.proacl::text,''),'authenticated',has_function_privilege('authenticated',p.oid,'EXECUTE'))::text
+      FROM pg_proc p WHERE p.oid='{PR.SIG}'::regprocedure;"""))
+    r=call(Q.UFIN);rec('after-rollback-denied',r,r.returncode!=0 and 'permission denied' in r.stderr)
+    assert after_meta==pre_meta,(pre_meta,after_meta)
+    result=dict(consumer='deferred src/lib/financeiro/receivableOrigin.ts (not mounted in live src)',pre=pre_meta,after_rollback=after_meta,
+      before_install_exit=before_install,cases=cases,sql_sha256=hashes,pre_pin='LOCAL_DERIVED_REQUIRES_READONLY_CAPTURE',
+      roles_accepted='is_financial_staff (administrador/gestor/financeiro) + contas_receber + h15 active org',
+      grants='authenticated only on public RPC; helper zero grants',hosted=False,synthetic_auth=True)
+    (OUT/'projection-reader-contract.json').write_text(json.dumps(result,indent=2)+'\n')
+    return result
+
+
+def _last_line(r):
+    return next(x for x in reversed(r.stdout.strip().splitlines()) if x.strip().startswith('['))
+
+
+def test_begin_post_wait(B,Q,OUT,order_id,doc):
+    """Review 890bfa4 items 2-4. Every case: caller provably waits on the forecast
+    lock (pg_blocking_pids), the mutation is committed by the holder, the caller is
+    denied before replay/INSERT. Callers ROLLBACK so an unexpected success never
+    persists; mutations are restored afterwards. Disposable PG, synthetic Auth."""
+    from lifecycle_lock_barrier import revoke_after_proven_wait
+    inv=doc['invoice']
+    settings=B.last(f"SELECT company_settings_id FROM public.fiscal_invoices WHERE id='{inv}';")
+    count_sql=f"SELECT count(*) FROM public.fiscal_sefaz_transmissions WHERE fiscal_invoice_id='{inv}';"
+    before=B.last(count_sql);state_before=forecast_row(B,order_id)
+    lock=f"SELECT id FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}' FOR UPDATE;"
+    rep="SET session_replication_role=replica;"
+    org="SET session_replication_role=origin;"
+    run_state=B.last(f"SELECT state FROM public.fiscal_xml_runs WHERE id='{doc['xml_run']}';")
+    def call(svc,key,actor=None):
+        actor=actor or Q.UADM
+        return (f"BEGIN;SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_begin_v1('{svc}','LOCAL-POSTWAIT-{key}',"
+                f"'LOCAL-POSTWAIT-FP-{key}','{ENDPOINT}','{inv}','{doc['xml_run']}','{actor}',NULL);ROLLBACK;")
+    cases=[
+      ('issuer-settings-env-1-during-wait',rep+f"UPDATE public.company_fiscal_settings SET nfe_environment_code='1' WHERE id='{settings}';"+org,
+       rep+f"UPDATE public.company_fiscal_settings SET nfe_environment_code='2' WHERE id='{settings}';"+org,'FISCAL_PRODUCTION_ENDPOINT_BLOCKED'),
+      ('issuer-settings-inactive-during-wait',rep+f"UPDATE public.company_fiscal_settings SET is_active=false WHERE id='{settings}';"+org,
+       rep+f"UPDATE public.company_fiscal_settings SET is_active=true WHERE id='{settings}';"+org,'FISCAL_PRODUCTION_ENDPOINT_BLOCKED'),
+      ('marker-revoked-during-wait',rep+"UPDATE public.fiscal_environment_marker SET production_emission_allowed=true;"+org,
+       rep+"UPDATE public.fiscal_environment_marker SET production_emission_allowed=false;"+org,'FISCAL_PRODUCTION_ENDPOINT_BLOCKED'),
+      ('xml-run-unsigned-during-wait',rep+f"UPDATE public.fiscal_xml_runs SET state='FAILED' WHERE id='{doc['xml_run']}';"+org,
+       rep+f"UPDATE public.fiscal_xml_runs SET state='{run_state}' WHERE id='{doc['xml_run']}';"+org,'SEFAZ_INVOICE_RUN_MISMATCH'),
+      ('actor-profile-inactive-during-wait',rep+f"UPDATE public.profiles SET ativo=false WHERE user_id='{Q.UADM}';"+org,
+       rep+f"UPDATE public.profiles SET ativo=true WHERE user_id='{Q.UADM}';"+org,'B2B_FORECAST_BEGIN_SCOPE_DENIED'),
+      ('pilot-revoked-during-wait-retautorizacao',"UPDATE platform_private.resale_pilot_allowlist_v1 SET revoked_at=clock_timestamp() WHERE operation='forecast_begin';",
+       "UPDATE platform_private.resale_pilot_allowlist_v1 SET revoked_at=NULL WHERE operation='forecast_begin';",'B2B_FORECAST_BEGIN_SCOPE_DENIED'),
+    ]
+    out=[]
+    for name,mut,restore,token in cases:
+        svc='NFeRetAutorizacao4' if 'retautorizacao' in name else 'NFeAutorizacao4'
+        try:
+            called,barrier=revoke_after_proven_wait(B,lock,call(svc,name),mut)
+        finally:
+            B.sql(restore)
+        row=dict(case=name,service=svc,exit=called.returncode,expected=token,stderr=_first_err(called),
+                 leaked_row='transmissionId' in called.stdout,barrier=barrier)
+        out.append(row)
+        assert called.returncode!=0 and token in called.stderr and not row['leaked_row'],row
+    # Item 3: foreign actor is rejected BEFORE waiting on another tenant's rows.
+    holder=B.T.session("SET application_name='forecast_foreign_holder';BEGIN;"+lock)
+    try:
+        foreign=B.run_raw("SET lock_timeout='400ms';"+call('NFeAutorizacao4','foreign-no-wait',Q.UADMF).replace('ROLLBACK;','ROLLBACK;'))
+        foreign_ret=B.run_raw("SET lock_timeout='400ms';"+call('NFeRetAutorizacao4','foreign-no-wait-ret',Q.UADMF))
+    finally:
+        B.T.finish(holder,'ROLLBACK;')
+    for nm,r in (('foreign-autorizacao-no-wait',foreign),('foreign-retautorizacao-no-wait',foreign_ret)):
+        row=dict(case=nm,exit=r.returncode,stderr=_first_err(r),lock_timeout_hit='55P03' in r.stderr or 'lock timeout' in r.stderr)
+        out.append(row)
+        assert r.returncode!=0 and 'B2B_FORECAST_BEGIN_SCOPE_DENIED' in r.stderr and not row['lock_timeout_hit'],row
+    # Item 4: transport pre-check (captured h15_service_actor_invoice_access) and writer agree.
+    transport=json.loads(B.last(f"SELECT jsonb_build_object('foreign',public.h15_service_actor_invoice_access('{Q.UADMF}','{inv}'),'own',public.h15_service_actor_invoice_access('{Q.UADM}','{inv}'))::text;"))
+    out.append(dict(case='transport-h15-invoice-access',result=transport))
+    assert transport=={'foreign':False,'own':True},transport
+    ret_ok=B.run_raw(call('NFeRetAutorizacao4','own-ret-positive'))
+    out.append(dict(case='own-retautorizacao-positive-rollback',exit=ret_ok.returncode,stderr=_first_err(ret_ok)))
+    assert ret_ok.returncode==0,ret_ok.stderr
+    after=B.last(count_sql)
+    assert before==after and forecast_row(B,order_id)==state_before,(before,after)
+    (OUT/'begin-post-wait-revalidation.json').write_text(json.dumps(dict(cases=out,transmissions_before=before,
+      transmissions_after=after,forecast_unchanged=True,hosted=False,synthetic_auth=True,
+      limits='SQL-role authenticated/service_role and synthetic profiles; not hosted JWT/RLS/Storage; transport edge not executed, only its captured SQL pre-check'),indent=2)+'\n')
+    return out
+
+
 def test_begin_cancel_race(B,Q,OUT,order_id,doc,v):
     """Canonical begin and cancel in two connections, both serial orders.
     The holding transaction rolls back; no fiscal outcomes/state is manufactured."""
@@ -796,6 +927,8 @@ def test_begin_cancel_race(B,Q,OUT,order_id,doc,v):
     reject(B,consult,'217','LOCAL RACE PROTOCOL ABSENCE')
     cleared=sync(Q,Q.UFIN,consult,timed['version'])
     v=cleared['version'];before=forecast_row(B,order_id)
+    rows.append(dict(case='post-wait-revalidation',checks=test_begin_post_wait(B,Q,OUT,order_id,doc)))
+    assert forecast_row(B,order_id)==before
     # Cancel owns order+forecast and commits before begin; the writer itself denies.
     # Rollback-only cancel serialization is tested here, permanent canceled path below.
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:

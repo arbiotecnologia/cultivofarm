@@ -1,0 +1,12 @@
+BEGIN READ ONLY;
+DO $$ BEGIN
+ IF NOT has_function_privilege('authenticated','public.rpc_receivable_money_projection_v1(uuid,integer,integer)','EXECUTE')
+   OR has_function_privilege('anon','public.rpc_receivable_money_projection_v1(uuid,integer,integer)','EXECUTE')
+   OR has_function_privilege('service_role','public.rpc_receivable_money_projection_v1(uuid,integer,integer)','EXECUTE')
+   OR has_function_privilege('authenticated','platform_private.receivable_money_reader_allowed_v1()','EXECUTE')
+   OR has_function_privilege('anon','platform_private.receivable_money_reader_allowed_v1()','EXECUTE')
+   OR has_function_privilege('service_role','platform_private.receivable_money_reader_allowed_v1()','EXECUTE')
+   OR position('receivable_money_reader_allowed_v1' in pg_get_functiondef('public.rpc_receivable_money_projection_v1(uuid,integer,integer)'::regprocedure))=0 THEN
+  RAISE EXCEPTION 'PROJECTION_READER_POST_FAILED'; END IF; END $$;
+SELECT 'POST_OK';
+ROLLBACK;
