@@ -377,7 +377,7 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
     """Partial NF, residual cancel by wrapper, emission denied, late authorization -> close pending."""
     order = json.loads(B.last(f"SELECT to_jsonb(o)::text FROM public.partner_orders o WHERE id='{pc_order}';"))
     company = order['internal_economic_snapshot']['origin']['company_settings_id']
-    item_id = B.last(f"SELECT id FROM public.partner_order_items WHERE partner_order_id='{pc_order}' ORDER BY id LIMIT 1;")
+    item_id = B.last(f"SELECT id FROM public.partner_order_items WHERE order_id='{pc_order}' ORDER BY created_at,id LIMIT 1;")
     total = float(forecast_row(B, pc_order)['residual_amount'])
     half = round(total / 2, 2)
     # Same declared B4 customer seam as the main partner (partner_accounts.client_id).
