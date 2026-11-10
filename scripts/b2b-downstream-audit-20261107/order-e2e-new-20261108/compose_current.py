@@ -120,6 +120,24 @@ def main():
   B.sql("SET b2b_forecast.review_project_ref='swzpzcwiasxmjutrmvkm';"+(forecast_dir/'02-install.sql.review').read_text())
   forecast_post=B.sql("SET b2b_forecast.review_project_ref='swzpzcwiasxmjutrmvkm';"+(forecast_dir/'03-post.sql.readonly').read_text())
   forecast_extra=load('forecast_residual_scenario',forecast_dir.parent/'forecast_residual_scenario.py')
+  # cf7d5fb/214: creation installed CLOSED and empty (03 POST proved it). Local owner action only:
+  # open the creation gate and grant each synthetic AR Bio order exactly (actor/org/partner/order, 2h).
+  assert B.last("SELECT enabled::text||':'||(SELECT count(*) FROM platform_private.b2b_forecast_creation_allowlist_v1) FROM platform_private.b2b_forecast_creation_gate_v1 WHERE singleton;")=='false:0'
+  B.sql("UPDATE platform_private.b2b_forecast_creation_gate_v1 SET enabled=true,reason='LOCAL_DISPOSABLE_PILOT' WHERE singleton;")
+  creation_grants=[]
+  _orig_create=Q.create
+  Q._forecast_auto_grant=True
+  def _granting_create(*a,**k):
+   data,error=_orig_create(*a,**k)
+   if data is not None and getattr(Q,'_forecast_auto_grant',True):
+    row=json.loads(B.last(f"SELECT jsonb_build_object('partner',po.partner_id,'org',pa.commercial_owner_organization_id)::text FROM public.partner_orders po JOIN public.partner_accounts pa ON pa.id=po.partner_id WHERE po.id='{data['id']}';"))
+    assert row['org']==Q.A,('PILOT_ONLY_ARBIO',row)
+    for actor in (Q.UADM,Q.UFIN):
+     if B.last(f"SELECT count(*) FROM platform_private.b2b_forecast_creation_allowlist_v1 WHERE order_id='{data['id']}' AND actor_id='{actor}';")=='0':
+      B.sql(f"INSERT INTO platform_private.b2b_forecast_creation_allowlist_v1(actor_id,organization_id,partner_id,order_id,valid_until,created_by) VALUES('{actor}','{row['org']}','{row['partner']}','{data['id']}',now()+interval '2 hours','{Q.UADM}');")
+      creation_grants.append(dict(order=data['id'],actor=actor,org=row['org'],partner=row['partner'],validity='2 hours',synthetic=True))
+   return data,error
+  Q.create=_granting_create
   checks.append(dict(test='new B3 captured economic composition merged without dropped physical guards',status='PASS'))
   # f32c4f3: o candidato de planos é instalado no MESMO banco da B3/logística.
   # PRE/POST permanecem integrais; divergência de pin aborta sem stub ou bypass.
@@ -620,13 +638,23 @@ def main():
    row['expected_body_md5']=expected_diagnostic.get(row['signature'])
    row['body_matches']=row['expected_body_md5'] is None or row['body_md5']==row['expected_body_md5']
   (OUT/'b4-pre-acl-diagnostic.json').write_text(json.dumps(acl_diagnostic,indent=2)+'\n')
-  b4_pre_text=(composed_dir/'stages/01-b4-pre-post-composition.sql.readonly').read_text().replace('4926a99c3fa3086b34ff25bb4b4038bb','97bcdb9884b54adb3bd4aae4915e32d0')
-  b4_install_text=(composed_dir/'stages/02-b4-install-post-composition.sql.review').read_text().replace('4926a99c3fa3086b34ff25bb4b4038bb','97bcdb9884b54adb3bd4aae4915e32d0')
+  # cf7d5fb/214: generated reconciled stages (seller91_b4_stages.py), executed byte-for-byte; no run-time replace.
+  seller91_dir=forecast_dir/'b4-seller91-current'
+  seller91_rec=json.loads((seller91_dir/'reconciliation.json').read_text())
+  respond_before_b4=B.last("SELECT md5(pg_get_functiondef('public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'::regprocedure));")
+  assert respond_before_b4==seller91_rec['live_pin'],respond_before_b4
+  b4_pre_text=(seller91_dir/'01-b4-pre-seller91-live.sql.readonly').read_text()
+  b4_install_text=(seller91_dir/'02-b4-install-seller91-live.sql.review').read_text()
   (OUT/'current-b4-pre.sql.readonly').write_text(b4_pre_text)
   (OUT/'current-b4-install.sql.review').write_text(b4_install_text)
   b4_pre=B.sql(b4_pre_text)
   B.sql(b4_install_text)
   b4_post=B.sql((composed_dir/'stages/03-b4-post.sql.readonly').read_text())
+  respond_after_b4=B.last("SELECT md5(pg_get_functiondef('public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'::regprocedure));")
+  assert respond_after_b4==respond_before_b4,('B4_CHANGED_RESPOND',respond_after_b4)
+  for f in seller91_rec['files']:
+   assert hashlib.sha256((ROOT/f['output']).read_bytes()).hexdigest()==f['output_sha256'],f
+  (OUT/'seller91-b4-reconciliation.json').write_text(json.dumps(dict(seller91_rec,respond_md5_before_b4=respond_before_b4,respond_md5_after_b4=respond_after_b4,body_preserved=True,runtime_replace=False),indent=2)+'\n')
   # 172: ordem explícita B4 -> composição de crédito. O PRE 09 exige o corpo B4
   # exato; o corpo composto é o único que segue para ponte/strict/NF.
   credit_live_before_b4='213ac31f3a30816ead75365b0d1fed18'
@@ -638,7 +666,7 @@ def main():
   credit_composed=B.last("SELECT md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure));")
   forecast_manifest=json.loads((forecast_dir/'manifest.json').read_text())
   assert credit_composed==forecast_manifest['credit_composition']['composed_md5'],credit_composed
-  reinstall_b4=B.run_raw((composed_dir/'stages/02-b4-install-post-composition.sql.review').read_text().replace('4926a99c3fa3086b34ff25bb4b4038bb','97bcdb9884b54adb3bd4aae4915e32d0'))
+  reinstall_b4=B.run_raw((seller91_dir/'02-b4-install-seller91-live.sql.review').read_text())
   assert reinstall_b4.returncode!=0 and 'B4_PRE_DRIFT' in reinstall_b4.stderr,reinstall_b4.stderr[-800:]
   assert B.last("SELECT md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure));")==credit_composed
   (OUT/'credit-composition.json').write_text(json.dumps(dict(order=forecast_manifest['credit_composition']['order'],live_md5=credit_live_before_b4,b4_md5=credit_b4,composed_md5=credit_composed,
@@ -647,8 +675,8 @@ def main():
   bridge_pre=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(bridge_dir/'01-pre.sql.readonly').read_text())
   B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(composed_dir/'stages/04-bridge-install.sql.review').read_text())
   bridge_post=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(bridge_dir/'03-post.sql.readonly').read_text())
-  composed_post=B.sql("SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(composed_dir/'03-post.sql.readonly').read_text().replace('4926a99c3fa3086b34ff25bb4b4038bb','97bcdb9884b54adb3bd4aae4915e32d0'))
-  composed_manifest['current_seller91_reconciliation']={'old_md5':'4926a99c3fa3086b34ff25bb4b4038bb','executed_md5':'97bcdb9884b54adb3bd4aae4915e32d0','frozen_sources_modified':False,'stage_pin_reconciled_in_output_only':True}
+  composed_post=B.sql("SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(seller91_dir/'03-composed-post-seller91-live.sql.readonly').read_text())
+  composed_manifest['current_seller91_reconciliation']={'old_md5':seller91_rec['frozen_pin'],'executed_md5':seller91_rec['live_pin'],'frozen_sources_modified':False,'generated_stage_files':[f['output'] for f in seller91_rec['files']],'runtime_replace':False}
   (OUT/'canonical-composition-manifest.json').write_text(json.dumps(composed_manifest,indent=2)+'\n')
   checks.append(dict(test='composed PRE reconciles Seller91 and five dependencies then B4 bridge POST pass before strict fiscal stage',status='PASS'))
   dependency=B.run_raw("RESET ROLE;SELECT platform_private.b2b_integration_dependencies();")
@@ -867,6 +895,11 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   checks.append(dict(test='strict then composed deny-only rollback closes writers; preserves confirmed NF snapshot title idempotency and all original ten receivable triggers',status='PASS'))
   # Cadeia reversa completa: inclusive contenção e os dois geradores compostos,
   # exatamente como no ramo logistics-only; nenhum POST intermediário é reutilizado.
+  creation_barrier=load('forecast_creation_barrier',forecast_dir.parent/'lifecycle_lock_barrier.py')
+  creation_tests=load('forecast_creation_gate_tests',forecast_dir.parent/'forecast_creation_gate_tests.py')
+  creation_tests.run(B,Q,OUT,creation_barrier)
+  (OUT/'forecast-creation-grants.json').write_text(json.dumps(creation_grants,indent=2)+'\n')
+  checks.append(dict(test='forecast creation pilot: out-of-pilot LIVE differential and legacy no-snapshot keep approvals without forecast; exact grant; revocation and gate OFF after proven wait; gate closed; scope mismatch',status='PASS'))
   triggers38.assert_and_write(B,ROOT,OUT,'before-final-rollback')
   run_final_delivery_rollback('integrated')
   triggers38.assert_and_write(B,ROOT,OUT,'end')
