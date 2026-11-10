@@ -1,0 +1,38 @@
+[
+  {
+    "markers": [],
+    "active_settings": [
+      {
+        "id": "10000000-0000-4000-8000-000000000707",
+        "ctid": "(0,1)",
+        "legal_name": null,
+        "organization_id": "10000000-0000-4000-8000-000000000001",
+        "nfe_environment_code": null
+      },
+      {
+        "id": "7977618b-605f-4e8c-b202-c97760b50a6a",
+        "ctid": "(0,2)",
+        "legal_name": "ARBIO FIXTURE LOCAL SEM VALIDADE EXTERNA",
+        "organization_id": "00000000-0000-0000-0000-000000000001",
+        "nfe_environment_code": "2"
+      }
+    ],
+    "clause2_picked_row": {
+      "id": "10000000-0000-4000-8000-000000000707",
+      "ctid": "(0,1)",
+      "legal_name": null,
+      "organization_id": "10000000-0000-4000-8000-000000000001",
+      "nfe_environment_code": null
+    },
+    "clause1_marker_first": null,
+    "clause2_tpamb_canonical_pick": "",
+    "canonical_pick_is_other_tenant": true,
+    "scoped_tpamb": "2",
+    "label": "after-fixture-settings-insert",
+    "failing_predicates": [],
+    "readonly": true,
+    "hosted": false,
+    "canonical_clause2_result": "BLOCK",
+    "endpoint_host_clause": "static ENDPOINT hnfe.fazenda.mg.gov.br (clause3) not data dependent"
+  }
+]

@@ -1,0 +1,32 @@
+BEGIN READ ONLY;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_os_valid_v1(public.ordens_servico)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '4a94e2ab1530f1e23fc42ea8cf5ed469'
+ OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p) IS DISTINCT FROM 'postgres'
+ OR (SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid=p) IS DISTINCT FROM '{postgres=X/postgres}'
+ THEN RAISE EXCEPTION 'LINKED_TERMS_CONSUMER_DRIFT';END IF;END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'b6ef4eb89711b5bebde8351a682459ab'
+ OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p) IS DISTINCT FROM 'postgres'
+ OR (SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid=p) IS DISTINCT FROM '{postgres=X/postgres}'
+ THEN RAISE EXCEPTION 'LINKED_TERMS_CONSUMER_DRIFT';END IF;END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '592f6f6d740e6a5234844e3f4db57245'
+ OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p) IS DISTINCT FROM 'postgres'
+ OR (SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid=p) IS DISTINCT FROM '{postgres=X/postgres}'
+ THEN RAISE EXCEPTION 'LINKED_TERMS_CONSUMER_DRIFT';END IF;END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'a87c17acd179748ad9774c959d184856'
+ OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p) IS DISTINCT FROM 'postgres'
+ OR (SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid=p) IS DISTINCT FROM '{postgres=X/postgres}'
+ THEN RAISE EXCEPTION 'LINKED_TERMS_CONSUMER_DRIFT';END IF;END$$;
+DO $$DECLARE p oid:=to_regprocedure('public.rpc_b2b_resale_os_availability_v1(uuid)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'd20825f007548bee192ee57a42f63886'
+ OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p) IS DISTINCT FROM 'postgres'
+ OR (SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid=p) IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}'
+ THEN RAISE EXCEPTION 'LINKED_TERMS_CONSUMER_DRIFT';END IF;END$$;
+DO $$DECLARE p oid:=to_regprocedure('public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '11960c7fce89a51a93c1cef9a44fc3e2'
+ OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p) IS DISTINCT FROM 'postgres'
+ OR (SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid=p) IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}'
+ THEN RAISE EXCEPTION 'LINKED_TERMS_CONSUMER_DRIFT';END IF;END$$;
+ROLLBACK;

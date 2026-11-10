@@ -1,0 +1,8 @@
+{
+ "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)": "30d5e9dea53862e3c3ca0608e95deac4",
+ "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)": "cfb3bc9dd157f4325c23deb285f91531",
+ "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)": "b23b40e68ff5772e0523cc858741766a",
+ "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "befa8844838dcfb0d4c2d069f2500e37",
+ "public.rpc_b2b_resale_os_availability_v1(uuid)": "a3705949d107538151777e119b8a906a",
+ "public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "99758ab06ead6f225d0fe3376db9efe9"
+}
