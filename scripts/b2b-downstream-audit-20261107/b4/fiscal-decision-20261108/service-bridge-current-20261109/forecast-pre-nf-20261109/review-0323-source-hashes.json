@@ -1,0 +1,12 @@
+{
+  "status": "INCOMPLETE_NOT_PROMOTED_NO_GO",
+  "hosted": false,
+  "sha256": {
+    "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/wrappers_and_credit.py": "6e558961e57f94906e5e2268931917605f77643fa00134b877072b5a3977fe39",
+    "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/build.py": "f91354643c12754771c1f15535ecdd67a5fc1b206b1c5409e993589834bf5cdd",
+    "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/test_credit_composition.py": "a66b5c1768ad26a826f014e28f825b2d510c0c208a8a295a2e213767521cc0a4",
+    "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/REVIEW-0323-PARTIAL.md": "b7a7618ef3b65c8f04c07dbe17ad9f62b901d59e3e22dad2e30396492f986817",
+    "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast_residual_scenario.py": "afc43a48e4c4f00d2c8186fa38550742753bdd43f0029b53b657c4b3412cecf2",
+    "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/lifecycle_containment_tests.py": "75ee9b011f88b12a640fd4bb05d51fe25b34f4fa3b1a033bd08c51ef372adbc3"
+  }
+}
