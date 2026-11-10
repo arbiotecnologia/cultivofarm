@@ -6,7 +6,7 @@ BEGIN
  IF NOT has_function_privilege('authenticated',p,'EXECUTE') OR has_function_privilege('anon',p,'EXECUTE') THEN RAISE EXCEPTION 'POST_ACL_DRIFT'; END IF;
  IF EXISTS(SELECT 1 FROM pg_proc pr, aclexplode(pr.proacl) a WHERE pr.oid=p AND a.is_grantable) THEN RAISE EXCEPTION 'POST_GRANT_OPTION'; END IF;
  -- Writers bloqueados continuam sem EXECUTE para o cliente.
- IF has_function_privilege('authenticated','public.rpc_entrega_confirmar_manual_v1(uuid,jsonb,text,timestamptz)','EXECUTE') THEN RAISE EXCEPTION 'POST_WRITER_OPENED'; END IF;
+ IF has_function_privilege('authenticated','public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb)','EXECUTE') THEN RAISE EXCEPTION 'POST_WRITER_OPENED'; END IF;
  IF EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE enabled) THEN RAISE EXCEPTION 'POST_GATE_OPENED'; END IF;
 END$$;
 SELECT 'POST_PASS' AS result;
