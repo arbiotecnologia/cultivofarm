@@ -201,6 +201,9 @@ AS $function$
 DECLARE
   v_uid uuid := auth.uid();
   v_terms_id uuid;
+  v_observed_terms uuid;
+  v_observed_updated_at timestamptz;
+  v_locked_updated_at timestamptz;
   v_created_by uuid;
   v_numero text;
 BEGIN
