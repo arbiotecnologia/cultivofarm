@@ -110,7 +110,7 @@ def run(B, Review, Q, A, choice, out):
     lot1 = json.loads(B.last(A.purchase({"product": product, "packaging": item["packaging_id_snapshot"]}, 3, f"lla-buy1-{rid}", actor=Q.UADM)))["estoque_produto_id"]
     lot2 = json.loads(B.last(A.purchase({"product": product, "packaging": item["packaging_id_snapshot"]}, 2, f"lla-buy2-{rid}", actor=Q.UADM)))["estoque_produto_id"]
     ok("two distinct purchased lots", B.last(f"SELECT count(DISTINCT lote_id) FROM public.estoque_produto WHERE id IN ('{lot1}','{lot2}');") == "2")
-    ar0 = B.last(f"SELECT count(*) FROM public.accounts_receivable WHERE partner_order_id='{order}';")
+    ar0 = B.last(f"SELECT count(*) FROM public.accounts_receivable;")
     def mv(): return B.last(f"SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id IN (SELECT id FROM public.estoque_produto WHERE lote_id IN (SELECT lote_id FROM public.estoque_produto WHERE id IN ('{lot1}','{lot2}')));")
     def reserve_sql(stock, qty, key):
         items = json.dumps([{"item_id": stock, "quantidade": qty}]); data = json.dumps({"partner_id": Q.P, "partner_order_id": order})
@@ -149,7 +149,7 @@ def run(B, Review, Q, A, choice, out):
     final = json.loads(B.last(f"""SELECT jsonb_build_object('order_status',(SELECT status::text FROM public.partner_orders WHERE id='{order}'),
       'delivered',(SELECT coalesce(sum(quantidade),0) FROM public.entregas WHERE ordem_servico_id='{os_id}' AND status::text='entregue'),
       'reserved_left',(SELECT coalesce(sum(quantidade_reservada),0) FROM public.estoque_produto WHERE reservado_para_os_id='{os_id}' AND status::text='reservado'),
-      'receivables',(SELECT count(*) FROM public.accounts_receivable WHERE partner_order_id='{order}'),
+      'receivables',(SELECT count(*) FROM public.accounts_receivable),
       'header_financial',(SELECT financial_approval_status FROM public.partner_orders WHERE id='{order}'))::text;"""))
     (out / "final-state.json").write_text(json.dumps(final, indent=1) + "\n")
     ok("final: 5/5 delivered over two lots, zero reserved left, no receivable created, header untouched (pending)",
