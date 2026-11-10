@@ -37,6 +37,8 @@ def main():
    assert not any(result.values()),result
    B.C.prepare_checkpoint(checkpoint)
   checks.append(dict(test='fresh full physical catalog restoration and reviewed upstream composition',status='PASS'))
+  import triggers38;triggers38.assert_and_write(B,ROOT,OUT,'start')
+  checks.append(dict(test='38 captured real triggers mapped by name/table/definition and enabled at start',status='PASS'))
   # Capture the new checkpoint under the path used by existing local helper.
   # Subsequent composition is continued in this same database; no source evidence reused.
   print('NEW_PHYSICAL_BOOT_OK',flush=True)
@@ -865,7 +867,10 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   checks.append(dict(test='strict then composed deny-only rollback closes writers; preserves confirmed NF snapshot title idempotency and all original ten receivable triggers',status='PASS'))
   # Cadeia reversa completa: inclusive contenção e os dois geradores compostos,
   # exatamente como no ramo logistics-only; nenhum POST intermediário é reutilizado.
+  triggers38.assert_and_write(B,ROOT,OUT,'before-final-rollback')
   run_final_delivery_rollback('integrated')
+  triggers38.assert_and_write(B,ROOT,OUT,'end')
+  checks.append(dict(test='38 captured real triggers mapped by name/table/definition and enabled before and after final rollback',status='PASS'))
  except Exception:
   traceback.print_exc();checks.append(dict(test='new composition',status='FAIL'))
  finally:
