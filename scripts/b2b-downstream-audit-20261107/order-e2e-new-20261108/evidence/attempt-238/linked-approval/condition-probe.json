@@ -1,0 +1,34 @@
+{
+ "item": {
+  "qty": 5.0,
+  "pack": true,
+  "integer": true,
+  "peso_kg": 25.0,
+  "unidade": "unidade",
+  "conteudo": "kg",
+  "pack_version": 1,
+  "peso_rule_ok": true,
+  "product_family": "fertilizante_adubo",
+  "product_owner_ok": true
+ },
+ "status": "aprovado",
+ "approved_at": true,
+ "approved_by": true,
+ "terms_linked": {
+  "same_order": true,
+  "approved_at": true,
+  "approved_by": true,
+  "approval_status": "approved"
+ },
+ "c2_origin_valid": true,
+ "os_create_grant": 1,
+ "partner_owner_ok": true,
+ "economic_snapshot": true,
+ "credit_approved_pair": true,
+ "internal_origin_null": true,
+ "ready_for_production": false,
+ "receivable_generated": false,
+ "payment_condition_status": "defined",
+ "financial_approval_status": "pending",
+ "requires_financial_approval": true
+}
