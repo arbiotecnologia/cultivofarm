@@ -100,7 +100,7 @@ describe("painel montado de revenda B2B (piloto)", () => {
   it("dois lotes com mesma quantidade são distinguíveis e reservam o lote escolhido", async () => {
     t.stock = [{ id: ST, ...lot("L-A1"), quantidade: 3, status: "disponivel", updated_at: "u", reservado_para_os_id: null, quantidade_reservada: 0 },
       { id: SPLIT, ...lot("L-A2"), quantidade: 3, status: "disponivel", updated_at: "u", reservado_para_os_id: null, quantidade_reservada: 0 }];
-    t.rpc.mockImplementation(async (fn: string, a: any) => fn === RESALE_CAP_RPC ? { data: allowed(a.p_operation, a.p_stock_ids), error: null } : fn === RESERVE_RPC ? { data: { ok: true, itens: [a.p_itens[0].item_id] }, error: null } : { data: null, error: { code: "X" } });
+    t.rpc.mockImplementation(async (fn: string, a: any) => fn === RESALE_CAP_RPC ? { data: allowed(a.p_operation, a.p_stock_ids), error: null } : fn === RESERVE_RPC ? { data: { ok: true, replay: false, itens: [a.p_itens[0].item_id] }, error: null } : { data: null, error: { code: "X" } });
     render(<RevendaB2BPilotoPanel actorId={ACTOR} orgId={ORG} />);
     fireEvent.click(await screen.findByRole("button", { name: "OS OS-RV-1" }));
     const row = within(await screen.findByLabelText("Lote L-A2"));
