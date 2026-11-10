@@ -11,7 +11,7 @@ import {
 } from "@/lib/entregas/b2bResaleDeliveryFlow";
 
 type OsRow = { id: string; numero_os: string | null; status: string; updated_at: string; origem: string | null; partner_order_id: string | null; produto_id: string | null; partner_orders?: { partner_id: string } | null };
-type StockRow = { id: string; quantidade: number | null; status: string; updated_at: string; reservado_para_os_id: string | null; quantidade_reservada: number | null };
+type StockRow = { id: string; lote_id: string; lotes?: { codigo_lote: string | null; organization_id: string; produto_id: string } | null; quantidade: number | null; status: string; updated_at: string; reservado_para_os_id: string | null; quantidade_reservada: number | null };
 const CLOSED_MSG = "Operação de revenda indisponível para esta sessão.";
 
 /**
@@ -33,40 +33,48 @@ export function RevendaB2BPilotoPanel({ actorId, orgId }: { actorId: string | nu
   const [pendingReserve, setPendingReserve] = useState<ReserveAttempt | "corrupt" | null>(null);
   const [pendingGroup, setPendingGroup] = useState<RetrySnapshot | "corrupt" | null>(null);
 
+  // Revisão de seleção: toda resposta tardia de outra OS (ou de seleção anterior) é descartada.
+  const selRev = useRef(0);
   const fenceFor = (captured: string) => () => { if (sessionRef.current !== captured) throw new Error("stale"); };
   const store = typeof localStorage !== "undefined" ? localStorage : null;
 
   useEffect(() => {
-    setOsList([]); setSelected(null); setStock([]); setCaps({}); setNotice(null);
+    selRev.current++; setOsList([]); setSelected(null); setStock([]); setCaps({}); setNotice(null); setPendingReserve(null);
+    setPendingGroup(actorId && orgId && typeof localStorage !== "undefined" ? loadPending(localStorage, actorId, orgId) : null);
     if (!actorId || !orgId) return;
     const captured = session; let alive = true;
     (supabase as any).from("ordens_servico")
       .select("id, numero_os, status, updated_at, origem, partner_order_id, produto_id, partner_orders(partner_id)")
-      .eq("origem", "b2b").eq("status", "pronto_entrega").order("updated_at", { ascending: false }).limit(50)
+      .eq("organization_id", orgId).eq("origem", "b2b").eq("status", "pronto_entrega").order("updated_at", { ascending: false }).limit(50)
       .then(({ data, error }: any) => { if (!alive || sessionRef.current !== captured) return; if (error) { setNotice("Não foi possível listar as OS de revenda."); return; } setOsList((data ?? []) as OsRow[]); });
     return () => { alive = false; };
   }, [actorId, orgId, session]);
 
   const loadOs = useCallback(async (os: OsRow) => {
     if (!actorId || !orgId || !os.produto_id) return;
-    const captured = session; setSelected(os); setCaps({}); setNotice(null);
+    const captured = session; const rev = ++selRev.current;
+    const current = () => sessionRef.current === captured && selRev.current === rev;
+    setSelected(os); setStock([]); setCaps({}); setQty({}); setNotice(null);
     setPendingReserve(store ? loadReserveAttempt(store, actorId, orgId, os.id) : "corrupt");
-    const pg = store ? loadPending(store, actorId, orgId) : "corrupt";
-    setPendingGroup(pg && pg !== "corrupt" && pg.osId !== os.id ? null : pg);
+    // Lote autorizado pelo vínculo real lote→produto→empresa (estoque_produto não tem organization_id).
     const { data, error } = await (supabase as any).from("estoque_produto")
-      .select("id, quantidade, status, updated_at, reservado_para_os_id, quantidade_reservada")
-      .eq("produto_id", os.produto_id).not("origem_estoque", "is", null).in("status", ["disponivel", "reservado"]).limit(100);
-    if (sessionRef.current !== captured) return;
+      .select("id, lote_id, quantidade, status, updated_at, reservado_para_os_id, quantidade_reservada, lotes!inner(codigo_lote, organization_id, produto_id)")
+      .eq("produto_id", os.produto_id).eq("lotes.organization_id", orgId).eq("lotes.produto_id", os.produto_id)
+      .not("origem_estoque", "is", null).in("status", ["disponivel", "reservado"]).limit(100);
+    if (!current()) return;
     if (error) { setNotice("Não foi possível listar o estoque."); return; }
-    const rows = ((data ?? []) as StockRow[]).filter(r => r.status === "disponivel" || r.reservado_para_os_id === os.id);
+    const rows = ((data ?? []) as StockRow[]).filter(r =>
+      r.lotes?.organization_id === orgId && r.lotes?.produto_id === os.produto_id &&
+      (r.status === "disponivel" || r.reservado_para_os_id === os.id));
     setStock(rows);
     const next: Record<string, { reserve: boolean; deliver: boolean }> = {};
     for (const r of rows) {
       const reserve = r.status === "disponivel" ? !!(await probeResaleCapability(rpc, os.id, [r.id], orgId, "reserve")) : false;
       const deliver = r.status === "reservado" ? !!(await probeResaleCapability(rpc, os.id, [r.id], orgId, "delivery_create")) : false;
+      if (!current()) return;
       next[r.id] = { reserve, deliver };
     }
-    if (sessionRef.current === captured) setCaps(next);
+    if (current()) setCaps(next);
   }, [actorId, orgId, session]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const reserve = async (r: StockRow) => {
