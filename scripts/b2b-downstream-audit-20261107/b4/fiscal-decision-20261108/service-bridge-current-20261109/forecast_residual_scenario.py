@@ -265,6 +265,25 @@ def test_begin_env_tenant_scope(B, Q, OUT, doc, n):
         got = B.run_raw(f"BEGIN;SET LOCAL session_replication_role=replica;{mutate}SET LOCAL session_replication_role=origin;{call}ROLLBACK;")
         out[name] = dict(exit=got.returncode, blocked='FISCAL_PRODUCTION_ENDPOINT_BLOCKED' in got.stderr, stderr=got.stderr[-400:])
         assert got.returncode != 0 and out[name]['blocked'], out[name]
+    own_org = B.last(f"SELECT organization_id FROM public.fiscal_invoices WHERE id='{doc['invoice']}';")
+    def raw(svc, inv, run, actor, k):
+        inv = f"'{inv}'" if inv else 'NULL'; run = f"'{run}'" if run else 'NULL'; actor = f"'{actor}'" if actor else 'NULL'
+        return (f"SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_begin_v1('{svc}','local-env-scope-{n}-{k}',"
+                f"'LOCAL-ENV-SCOPE-{n}-{k}','{ENDPOINT}',{inv},{run},{actor},NULL);")
+    other_inv = B.last(f"SELECT id FROM public.fiscal_invoices WHERE id<>'{doc['invoice']}' LIMIT 1;")
+    extra = [
+      ('consulta_caller_invoice_differs_from_run', '', raw('NFeConsultaProtocolo4', other_inv, doc['xml_run'], Q.UFIN, 'a'), 'SEFAZ_INVOICE_RUN_MISMATCH'),
+      ('consulta_without_run', '', raw('NFeConsultaProtocolo4', doc['invoice'], None, Q.UFIN, 'b'), 'SEFAZ_RUN_REQUIRED'),
+      ('no_document_without_actor', '', raw('NFeStatusServico4', None, None, None, 'c'), 'FISCAL_PRODUCTION_ENDPOINT_BLOCKED'),
+      ('no_document_actor_org_ambiguous_two_active', f"UPDATE public.company_fiscal_settings SET organization_id='{own_org}',nfe_environment_code='2',is_active=true WHERE id<>'{company}';",
+         raw('NFeStatusServico4', None, None, Q.UFIN, 'd'), 'FISCAL_PRODUCTION_ENDPOINT_BLOCKED'),
+      ('no_document_actor_org_without_settings', f"UPDATE public.company_fiscal_settings SET is_active=false WHERE organization_id='{own_org}';UPDATE public.company_fiscal_settings SET nfe_environment_code='2',is_active=true WHERE organization_id<>'{own_org}';",
+         raw('NFeStatusServico4', None, None, Q.UFIN, 'e'), 'FISCAL_PRODUCTION_ENDPOINT_BLOCKED'),
+    ]
+    for name, mutate, sql, token in extra:
+        got = B.run_raw(f"BEGIN;SET LOCAL session_replication_role=replica;{mutate}SET LOCAL session_replication_role=origin;{sql}ROLLBACK;")
+        out[name] = dict(exit=got.returncode, expected=token, blocked=token in got.stderr, stderr=got.stderr[-400:])
+        assert got.returncode != 0 and out[name]['blocked'], out[name]
     out['transmissions_created'] = B.last(f"SELECT count(*) FROM public.fiscal_sefaz_transmissions WHERE idempotency_key LIKE 'local-env-scope-{n}%';")
     assert out['transmissions_created'] == '0', out
     (OUT/'begin-env-tenant-scope.json').write_text(json.dumps(dict(cases=out, rolled_back=True, hosted=False, seam='settings staged with replica role, writer called with origin role'), indent=2)+'\n')
@@ -689,6 +708,44 @@ def begin_statement(Q,doc,key):
     return f"SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_begin_v1('NFeAutorizacao4','LOCAL-REVIEW-{key}','LOCAL-FINGERPRINT-{key}','{ENDPOINT}','{doc['invoice']}','{doc['xml_run']}','{Q.UADM}',NULL);"
 
 
+def test_begin_replay_binding(B,Q,OUT,order_id,doc,other,key):
+    """A begin replay is bound to service/invoice/XML run/event/endpoint and is
+    reached only after authority is re-read post-lock: never a new send, never
+    another tenant's or a revoked caller's view. Rolled back; history untouched."""
+    from lifecycle_lock_barrier import revoke_after_proven_wait
+    before=B.last(f"SELECT count(*) FROM public.fiscal_sefaz_transmissions WHERE fiscal_invoice_id IN ('{doc['invoice']}','{other['invoice']}');")
+    def call(svc='NFeAutorizacao4',inv=None,run=None,actor=None,event='NULL',endpoint=ENDPOINT):
+        inv=inv or doc['invoice'];run=run or doc['xml_run'];actor=actor or Q.UADM
+        return (f"SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_begin_v1('{svc}','LOCAL-REVIEW-{key}',"
+                f"'LOCAL-FINGERPRINT-{key}','{endpoint}','{inv}','{run}','{actor}',{event});")
+    cases=[('service-differs',call(svc='NFeRetAutorizacao4'),'FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH'),
+           ('invoice-and-run-differ',call(inv=other['invoice'],run=other['xml_run']),'FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH'),
+           ('event-differs',call(event="'00000000-0000-4000-8000-0000000e0e0e'"),'FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH'),
+           ('endpoint-differs',call(endpoint=ENDPOINT+'-OTHER'),'FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH'),
+           ('caller-invoice-not-run',call(inv=other['invoice']),'SEFAZ_INVOICE_RUN_MISMATCH'),
+           ('foreign-or-unknown-actor',call(actor='00000000-0000-4000-8000-0000000f0f0f'),'B2B_FORECAST_BEGIN_SCOPE_DENIED'),
+           ('pilot-revoked-before',"BEGIN;UPDATE platform_private.resale_pilot_allowlist_v1 SET revoked_at=clock_timestamp() WHERE operation='forecast_begin';"+call()+'ROLLBACK;','B2B_FORECAST_BEGIN_SCOPE_DENIED')]
+    out=[]
+    for name,sql,token in cases:
+        r=B.run_raw(sql)
+        leaked='transmissionId' in r.stdout
+        out.append(dict(case=name,exit=r.returncode,expected=token,stderr=r.stderr.strip().splitlines()[0] if r.stderr.strip() else '',leaked_row=leaked))
+        assert r.returncode!=0 and token in r.stderr and not leaked,out[-1]
+    lock=f"SELECT id FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}' FOR UPDATE;"
+    called,barrier=revoke_after_proven_wait(B,lock,'BEGIN;'+call()+'COMMIT;',
+      "UPDATE platform_private.resale_pilot_allowlist_v1 SET revoked_at=clock_timestamp() WHERE operation='forecast_begin';")
+    B.sql("UPDATE platform_private.resale_pilot_allowlist_v1 SET revoked_at=NULL WHERE operation='forecast_begin';")
+    out.append(dict(case='pilot-revoked-while-replay-waits-on-lock',exit=called.returncode,stderr=called.stderr.strip().splitlines()[0] if called.stderr.strip() else '',
+                    leaked_row='transmissionId' in called.stdout,barrier=barrier))
+    assert called.returncode!=0 and 'B2B_FORECAST_BEGIN_SCOPE_DENIED' in called.stderr and 'transmissionId' not in called.stdout,out[-1]
+    ok=B.run_raw(call());out.append(dict(case='exact-replay-after-restore',exit=ok.returncode,replay=_last(ok).get('idempotentReplay') if ok.returncode==0 else None))
+    assert ok.returncode==0 and _last(ok)['idempotentReplay'] is True,ok.stderr
+    after=B.last(f"SELECT count(*) FROM public.fiscal_sefaz_transmissions WHERE fiscal_invoice_id IN ('{doc['invoice']}','{other['invoice']}');")
+    assert before==after,(before,after)
+    (OUT/'begin-replay-binding.json').write_text(json.dumps(dict(cases=out,transmissions_before=before,transmissions_after=after,hosted=False,synthetic_auth=True),indent=2)+'\n')
+    return out
+
+
 def test_begin_cancel_race(B,Q,OUT,order_id,doc,v):
     """Canonical begin and cancel in two connections, both serial orders.
     The holding transaction rolls back; no fiscal outcomes/state is manufactured."""
@@ -730,6 +787,7 @@ def test_begin_cancel_race(B,Q,OUT,order_id,doc,v):
     assert reserved['state']=='emissao_em_andamento' and reserved['version']==v+1,reserved
     replay_begin=B.run_raw(begin_statement(Q,doc,'begin-first'))
     assert replay_begin.returncode==0 and _last(replay_begin)['idempotentReplay'] is True,replay_begin.stderr
+    rows.append(dict(case='replay-binding',checks=test_begin_replay_binding(B,Q,OUT,order_id,doc,extra,'begin-first')))
     transport_error(B,tx,'LOCAL_RACE_FINISHED_NO_EMISSION')
     rows.append(dict(case='begin-first',begin_stdout=held.stdout,cancel_stderr=called.stderr))
     timed=sync(Q,Q.UFIN,tx,reserved['version'])
