@@ -49,6 +49,9 @@ def run(B, Q, OUT, order, doc, version):
         'read-not-lifecycle': "UPDATE platform_private.resale_pilot_allowlist_v1 SET operation='read' WHERE operation IN ('forecast_sync','forecast_cancel');",
     }
     for name, change in variants.items():
+        # Mutate only lifecycle grants, never legacy physical/read grant shapes.
+        if change.startswith('UPDATE platform_private.resale_pilot_allowlist_v1') and ' WHERE ' not in change:
+            change=change.rstrip(';')+" WHERE operation IN ('forecast_sync','forecast_cancel');"
         for op, call in calls.items():
             expect(op+'-'+name, 'BEGIN;'+grant+gate_on+change+ctx+call+'ROLLBACK;', 'B2B_FORECAST_')
     # Permission checks must still pass when exact local grants are enabled.
