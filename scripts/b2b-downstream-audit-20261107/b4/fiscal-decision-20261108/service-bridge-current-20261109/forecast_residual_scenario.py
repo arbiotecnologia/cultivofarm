@@ -276,7 +276,7 @@ def test_begin_env_tenant_scope(B, Q, OUT, doc, n):
       ('consulta_without_run', '', raw('NFeConsultaProtocolo4', doc['invoice'], None, Q.UFIN, 'b'), 'SEFAZ_RUN_REQUIRED'),
       ('no_document_without_actor', '', raw('NFeStatusServico4', None, None, None, 'c'), 'FISCAL_PRODUCTION_ENDPOINT_BLOCKED'),
       ('no_document_actor_org_ambiguous_two_active', f"UPDATE public.company_fiscal_settings SET organization_id='{own_org}',nfe_environment_code='2',is_active=true WHERE id<>'{company}';",
-         raw('NFeStatusServico4', None, None, Q.UFIN, 'd'), 'FISCAL_PRODUCTION_ENDPOINT_BLOCKED'),
+         raw('NFeStatusServico4', None, None, Q.UFIN, 'd'), 'ux_company_fiscal_settings_active_organization'),  # ambiguity structurally refused (23505); count(*)=1 in writer stays as defense
       ('no_document_actor_org_without_settings', f"UPDATE public.company_fiscal_settings SET is_active=false WHERE organization_id='{own_org}';UPDATE public.company_fiscal_settings SET nfe_environment_code='2',is_active=true WHERE organization_id<>'{own_org}';",
          raw('NFeStatusServico4', None, None, Q.UFIN, 'e'), 'FISCAL_PRODUCTION_ENDPOINT_BLOCKED'),
     ]
