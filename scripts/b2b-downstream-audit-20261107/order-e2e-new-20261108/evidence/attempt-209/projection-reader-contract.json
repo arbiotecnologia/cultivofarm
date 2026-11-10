@@ -1,0 +1,98 @@
+{
+  "consumer": "deferred src/lib/financeiro/receivableOrigin.ts (not mounted in live src)",
+  "pre": {
+    "acl": "{postgres=X/postgres}",
+    "md5": "7c5d3fa0a4c9516ab1c40b058a529578",
+    "owner": "postgres",
+    "authenticated": false
+  },
+  "after_rollback": {
+    "acl": "{postgres=X/postgres}",
+    "md5": "7c5d3fa0a4c9516ab1c40b058a529578",
+    "owner": "postgres",
+    "authenticated": false
+  },
+  "before_install_exit": {
+    "financeiro": 3,
+    "administrador": 3
+  },
+  "cases": [
+    {
+      "case": "financeiro-own-positive",
+      "exit": 0,
+      "stderr": "",
+      "stdout_tail": "ation_id\": \"00000000-0000-0000-0000-000000000001\", \"original_amount\": 9.00, \"received_amount\": 0.00, \"installment_number\": 1, \"monetary_semantics\": \"financed_total_v1\", \"financed_interest_amount\": 0}]"
+    },
+    {
+      "case": "administrador-own-positive",
+      "exit": 0,
+      "stderr": "",
+      "stdout_tail": "ation_id\": \"00000000-0000-0000-0000-000000000001\", \"original_amount\": 9.00, \"received_amount\": 0.00, \"installment_number\": 1, \"monetary_semantics\": \"financed_total_v1\", \"financed_interest_amount\": 0}]"
+    },
+    {
+      "case": "foreign-tenant-admin",
+      "exit": 3,
+      "stderr": "ERROR:  42501: MONEY_ORIGIN_ACCESS_DENIED",
+      "stdout_tail": ""
+    },
+    {
+      "case": "buyer",
+      "exit": 3,
+      "stderr": "ERROR:  42501: MONEY_ORIGIN_ACCESS_DENIED",
+      "stdout_tail": ""
+    },
+    {
+      "case": "anon",
+      "exit": 3,
+      "stderr": "ERROR:  42501: permission denied for function rpc_receivable_money_projection_v1",
+      "stdout_tail": ""
+    },
+    {
+      "case": "service_role",
+      "exit": 3,
+      "stderr": "ERROR:  42501: permission denied for function rpc_receivable_money_projection_v1",
+      "stdout_tail": ""
+    },
+    {
+      "case": "private-helper-direct",
+      "exit": 3,
+      "stderr": "ERROR:  42501: permission denied for function receivable_money_reader_allowed_v1",
+      "stdout_tail": ""
+    },
+    {
+      "case": "entitlement-revoked",
+      "exit": 3,
+      "stderr": "ERROR:  42501: MONEY_ORIGIN_ACCESS_DENIED",
+      "stdout_tail": ""
+    },
+    {
+      "case": "inactive-profile",
+      "exit": 3,
+      "stderr": "ERROR:  42501: MONEY_ORIGIN_ACCESS_DENIED",
+      "stdout_tail": ""
+    },
+    {
+      "case": "restored-positive",
+      "exit": 0,
+      "stderr": "",
+      "stdout_tail": "ation_id\": \"00000000-0000-0000-0000-000000000001\", \"original_amount\": 9.00, \"received_amount\": 0.00, \"installment_number\": 1, \"monetary_semantics\": \"financed_total_v1\", \"financed_interest_amount\": 0}]"
+    },
+    {
+      "case": "after-rollback-denied",
+      "exit": 3,
+      "stderr": "ERROR:  42501: permission denied for function rpc_receivable_money_projection_v1",
+      "stdout_tail": ""
+    }
+  ],
+  "sql_sha256": {
+    "13-pre-projection-reader.sql.readonly": "bc99f87e84ee51039a47a76bedd2b0cef39f0eec58fcbc9c3a85d99464c39e45",
+    "14-install-projection-reader.sql.review": "5811d2de772526f2f1e745b69db0bb9196b6eaaedd5b1d17c0354796eb311422",
+    "15-post-projection-reader.sql.readonly": "66cb003399c2ed3c5c08b4109d1632d6dc98b5cf144952f63b9c62cea31dec46",
+    "16-rollback-projection-reader-deny.sql.review": "b323d9dd19190f9e37674a0defe6293a9f654d990cd95eb2e54c01d5a06d3323"
+  },
+  "pre_pin": "LOCAL_DERIVED_REQUIRES_READONLY_CAPTURE",
+  "roles_accepted": "is_financial_staff (administrador/gestor/financeiro) + contas_receber + h15 active org",
+  "grants": "authenticated only on public RPC; helper zero grants",
+  "hosted": false,
+  "synthetic_auth": true
+}

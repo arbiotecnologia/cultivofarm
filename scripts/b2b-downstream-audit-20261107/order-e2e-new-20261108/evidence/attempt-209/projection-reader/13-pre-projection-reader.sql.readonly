@@ -1,0 +1,9 @@
+BEGIN READ ONLY;
+DO $$ BEGIN
+ IF md5(pg_get_functiondef('public.rpc_receivable_money_projection_v1(uuid,integer,integer)'::regprocedure))<>'7c5d3fa0a4c9516ab1c40b058a529578'
+   OR has_function_privilege('authenticated','public.rpc_receivable_money_projection_v1(uuid,integer,integer)','EXECUTE')
+   OR has_function_privilege('anon','public.rpc_receivable_money_projection_v1(uuid,integer,integer)','EXECUTE')
+   OR has_function_privilege('service_role','public.rpc_receivable_money_projection_v1(uuid,integer,integer)','EXECUTE') THEN
+  RAISE EXCEPTION 'PROJECTION_READER_PRE_DRIFT'; END IF; END $$;
+SELECT 'PRE_OK';
+ROLLBACK;
