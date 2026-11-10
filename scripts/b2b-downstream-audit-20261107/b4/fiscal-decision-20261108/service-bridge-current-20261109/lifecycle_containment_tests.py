@@ -8,7 +8,7 @@ def grant_sql(Q, order, partner):
     return f"""INSERT INTO platform_private.resale_pilot_allowlist_v1
       (gate,operation,actor_id,organization_id,partner_id,order_id,valid_until)
       SELECT 'b2b_resale',op,actor,'{Q.A}','{partner}','{order}',clock_timestamp()+interval '1 hour'
-      FROM unnest(ARRAY['forecast_sync','forecast_cancel']) op
+      FROM unnest(ARRAY['forecast_sync','forecast_cancel','forecast_begin']) op
       CROSS JOIN unnest(ARRAY['{Q.UADM}'::uuid,'{Q.UFIN}'::uuid]) actor;"""
 
 
@@ -22,6 +22,9 @@ def run(B, Q, OUT, order, doc, version):
         'forecast_sync': f"SELECT public.rpc_b2b_forecast_fiscal_sync_v1('{doc['tx']}',{version});",
         'forecast_cancel': f"SELECT public.rpc_b2b_forecast_cancel_residual_v1('{order}',{version},'LOCAL REVIEW');",
     }
+    for op, call in calls.items():
+        r=B.run_raw('BEGIN ISOLATION LEVEL REPEATABLE READ;'+ctx+call+'ROLLBACK;')
+        assert r.returncode!=0 and '42501' in r.stderr and 'READ_COMMITTED_REQUIRED' in r.stderr,r.stderr
     rows = []
     def expect(name, sql, token):
         r = B.run_raw(sql)
@@ -57,7 +60,10 @@ def run(B, Q, OUT, order, doc, version):
     # Permission checks must still pass when exact local grants are enabled.
     B.sql(grant+gate_on)
     for op, call in calls.items():
-        r=B.run_raw('BEGIN;'+ctx+call+'ROLLBACK;')
+        # CANCEL's positive control must settle the actual in-flight transmission
+        # through its canonical callback; do not force transmission/forecast UPDATE.
+        settle = (f"SET LOCAL ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_record_v1('{doc['tx']}','SUCCEEDED','{{\"cStat\":\"539\",\"tpAmb\":\"2\",\"chNFe\":\"{doc['access_key']}\"}}'::jsonb);" if op=='forecast_cancel' else '')
+        r=B.run_raw('BEGIN;'+settle+ctx+call+'ROLLBACK;')
         assert r.returncode==0, (op, r.stderr)
         rows.append(dict(case=op+'-exact-synthetic-control-rollback',exit=0,stdout=r.stdout))
     # Revoke during aggregate wait. No trigger/body/role alteration or forecast UPDATE.
@@ -67,6 +73,8 @@ def run(B, Q, OUT, order, doc, version):
             'pilot': (f"UPDATE platform_private.resale_pilot_allowlist_v1 SET revoked_at=clock_timestamp() WHERE operation='{op}';",f"UPDATE platform_private.resale_pilot_allowlist_v1 SET revoked_at=NULL WHERE operation='{op}';"),
             'pedidos_b2b': ("UPDATE public.saas_features SET active=false WHERE key='pedidos_b2b';","UPDATE public.saas_features SET active=true WHERE key='pedidos_b2b';"),
             'contas_receber': ("UPDATE public.saas_features SET active=false WHERE key='contas_receber';","UPDATE public.saas_features SET active=true WHERE key='contas_receber';"),
+            'role': (f"UPDATE public.user_roles SET role='tecnico_agronomo' WHERE user_id='{Q.UFIN}' AND role='financeiro';",f"UPDATE public.user_roles SET role='financeiro' WHERE user_id='{Q.UFIN}' AND role='tecnico_agronomo';"),
+            'tenant': (f"UPDATE public.organizations SET ativo=false WHERE id='{Q.A}';",f"UPDATE public.organizations SET ativo=true WHERE id='{Q.A}';"),
         }
         for name, (change, restore) in mutations.items():
             # For CANCEL hold the order; its locking SELECT itself re-evaluates pilot.

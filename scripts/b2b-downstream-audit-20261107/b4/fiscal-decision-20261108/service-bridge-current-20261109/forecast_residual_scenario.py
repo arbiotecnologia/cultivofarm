@@ -208,6 +208,10 @@ def insert_invoice(B, Q, order_id, partner, company, item_id, amount, n, issue_d
 
 
 def insert_followup_tx(B, Q, doc, n, service):
+    if service=='NFeConsultaProtocolo4':
+        got=B.run_raw(f"SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_begin_v1('{service}','local-forecast-consult-{n}','LOCAL-CONSULT-{n}','{ENDPOINT}','{doc['invoice']}','{doc['xml_run']}','{Q.UFIN}',NULL);")
+        assert got.returncode==0,got.stderr
+        return _last(got)['transmissionId']
     tx_id = Q.u(n)
     fingerprint = hashlib.sha256(f'{service}|{ENDPOINT}|{doc["access_key"]}'.encode()).hexdigest()
     B.sql(f"""SET ROLE service_role;INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,xml_run_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,c_stat,x_motivo,ch_nfe,ambiente_retorno,dh_recbto,created_by)
@@ -246,6 +250,11 @@ def denied(proc, token):
 
 def run_pre_nf_wrappers(B, Q, OUT, order_id, accepted, item):
     """Emission/consultation/cancel through authenticated wrappers over real callbacks."""
+    # Local restoration is metadata-only: populate the staging marker explicitly,
+    # with external emission still OFF. Never change a divergent existing marker.
+    B.sql("INSERT INTO public.fiscal_environment_marker(project_ref,environment_label,production_emission_allowed) SELECT 'swzpzcwiasxmjutrmvkm','STAGING',false WHERE NOT EXISTS(SELECT 1 FROM public.fiscal_environment_marker);")
+    assert B.last("SELECT project_ref='swzpzcwiasxmjutrmvkm' AND production_emission_allowed IS FALSE FROM public.fiscal_environment_marker;")=='t'
+    (OUT/'fiscal-marker-local.json').write_text(json.dumps(dict(ref='swzpzcwiasxmjutrmvkm',synthetic=True,production_emission_allowed=False,hosted=False))+'\n')
     company = accepted['internal_economic_snapshot']['origin']['company_settings_id']
     log = []
     R = insert_invoice(B, Q, order_id, Q.P, company, item['id'], 9, 960)
@@ -253,7 +262,7 @@ def run_pre_nf_wrappers(B, Q, OUT, order_id, accepted, item):
     from lifecycle_containment_tests import run as containment_run
     containment_run(B,Q,OUT,order_id,R,v)
     neg = dict(
-        foreign_admin=denied(sync_raw(Q, Q.UADMF, R['tx'], v), 'B2B_FORECAST_FISCAL_'),
+        foreign_admin=denied(sync_raw(Q, Q.UADMF, R['tx'], v), 'B2B_FORECAST_'),
         cross_tenant_buyer=denied(sync_raw(Q, Q.UB2, R['tx'], v), 'B2B_FORECAST_FISCAL_'),
         service_role_wrapper=denied(B.run_raw(f"SET ROLE service_role;SELECT public.rpc_b2b_forecast_fiscal_sync_v1('{R['tx']}',{v});"), 'permission denied'),
         service_role_private=denied(B.run_raw(f"SET ROLE service_role;SELECT platform_private.b2b_financial_forecast_transition_v1(gen_random_uuid(),1,'EMISSION_STARTED','x','{{}}'::jsonb);"), 'permission denied'),
@@ -443,6 +452,16 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
     for label, uid in (('financeiro', Q.UFIN), ('administrador', Q.UADM)):
         got = Q.as_user(uid, f"SELECT public.rpc_receivable_money_projection_v1('{first_receivable}',0,1000);")
         projection_attempts[label] = dict(exit=got.returncode, stdout=got.stdout.strip()[-300:], stderr=got.stderr.strip()[:200])
+    projection_meta=json.loads(B.last("""SELECT jsonb_build_object('body_md5',md5(pg_get_functiondef(p.oid)),
+      'owner',pg_get_userbyid(p.proowner),'acl',p.proacl::text,
+      'authenticated_execute',has_function_privilege('authenticated',p.oid,'EXECUTE'),
+      'service_execute',has_function_privilege('service_role',p.oid,'EXECUTE'))::text
+      FROM pg_proc p WHERE p.oid='public.rpc_receivable_money_projection_v1(uuid,integer,integer)'::regprocedure;"""))
+    assert projection_meta['authenticated_execute'] is False,projection_meta
+    (OUT/'projection-reader-diagnosis.json').write_text(json.dumps(dict(metadata=projection_meta,
+      attempts=projection_attempts,positive='BLOCKED_OWNER_ONLY_CANDIDATE_ACL',
+      source='financial-price-generator-20261029/integration/origin.sql.review REVOKE includes authenticated',
+      owner_read_is_not_positive=True,client_grants_added=False,hosted=False),indent=2)+'\n')
     installment = B.last(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{first_receivable}' ORDER BY installment_number LIMIT 1;")
     assert B.last(f"SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id='{first_receivable}';") == '1'
     payment = json.dumps({'amount_received':9,'payment_method_id':Q.M_BOL,'idempotency_key':'LOCAL-FORECAST-PAY-9'}).replace("'", "''")
@@ -489,7 +508,7 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
     values = {k: baseline[k] for k in fields}; values.update(credit_limit=1000, credit_limit_action='block')
     configured = Q.as_user(Q.UFIN, f"SELECT public.rpc_update_partner_financial_settings('{Q.PC}','{json.dumps(baseline).replace(chr(39), chr(39)*2)}'::jsonb,'{json.dumps(values).replace(chr(39), chr(39)*2)}'::jsonb);")
     assert configured.returncode == 0, configured.stderr
-    neg = dict(foreign_cancel=denied(cancel_raw(Q, Q.UADMF, pc_order, version(Q, pc_order), 'estrangeiro'), 'B2B_FORECAST_CANCEL_ACTOR_DENIED'),
+    neg = dict(foreign_cancel=denied(cancel_raw(Q, Q.UADMF, pc_order, version(Q, pc_order), 'estrangeiro'), 'B2B_FORECAST_'),
                buyer_cancel=denied(cancel_raw(Q, Q.UBC, pc_order, version(Q, pc_order), 'comprador'), 'B2B_FORECAST_CANCEL_ACTOR_DENIED'))
     P1 = insert_invoice(B, Q, pc_order, Q.PC, company, item_id, half, 980, '2027-02-03')
     dry = B.run_raw(f"BEGIN;SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_record_v1('{P1['tx']}','SUCCEEDED','{json.dumps({'cStat':'104','protocolCStat':'100','nProt':'LOCAL-PC-1','chNFe':P1['access_key'],'xMotivo':'AUTORIZADO','tpAmb':'2','dhRecbto':'2027-02-03T12:00:00Z'})}'::jsonb);ROLLBACK;")
@@ -515,9 +534,16 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
     l_consulted = sync(Q, Q.UFIN, consult, l_timeout['version'])
     assert l_consulted['state'] == 'aguardando_fiscal', l_consulted
     begin_race = test_begin_cancel_race(B,Q,OUT,pc_order,L,l_consulted['version'])
-    canceled = cancel_raw(Q, Q.UFIN, pc_order, l_consulted['version'], 'Residual cancelado por decisao comercial local')
+    # Permanent cancel wins against canonical begin, not only rollback serialization.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        claims=json.dumps({'sub':Q.UFIN,'role':'authenticated','iat':1,'exp':4102444800})
+        held_cancel=pool.submit(B.run_raw,f"BEGIN;SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{Q.UFIN}';SET LOCAL request.jwt.claims='{claims}';SELECT public.rpc_b2b_forecast_cancel_residual_v1('{pc_order}',{version(Q,pc_order)},'Residual cancelado por decisao comercial local');SELECT pg_sleep(.8);COMMIT;")
+        time.sleep(.2)
+        losing_begin=pool.submit(B.run_raw,begin_statement(Q,L,'permanent-cancel-wins'))
+        canceled,begin_lost=held_cancel.result(),losing_begin.result()
+    assert begin_lost.returncode!=0 and 'B2B_FORECAST_BEGIN_BLOCKED' in begin_lost.stderr,begin_lost.stderr
     assert canceled.returncode == 0, canceled.stderr
-    canceled_data = _last(canceled)
+    canceled_data = json.loads(next(x for x in canceled.stdout.splitlines() if x.startswith('{')))
     expected_state = 'cancelado_residual' if dry_ok else 'cancelado_antes_nf'
     assert canceled_data['state'] == expected_state, canceled_data
     after_cancel = forecast_row(B, pc_order)
@@ -573,6 +599,27 @@ def test_begin_cancel_race(B,Q,OUT,order_id,doc,v):
     before=forecast_row(B,order_id)
     claims=json.dumps({'sub':Q.UFIN,'role':'authenticated','iat':1,'exp':4102444800}).replace("'","''")
     ctx=f"SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{Q.UFIN}';SET LOCAL request.jwt.claims='{claims}';"
+    repeatable=B.run_raw('BEGIN ISOLATION LEVEL REPEATABLE READ;'+begin_statement(Q,doc,'repeatable-denied')+'ROLLBACK;')
+    assert repeatable.returncode!=0 and 'READ_COMMITTED_REQUIRED' in repeatable.stderr,repeatable.stderr
+    # Two independent invoice intentions for the same residual, before any SYNC.
+    extra=insert_invoice(B,Q,order_id,Q.PC,
+      B.last(f"SELECT company_settings_id FROM public.fiscal_invoices WHERE id='{doc['invoice']}';"),
+      B.last(f"SELECT partner_order_item_id FROM public.fiscal_invoice_items WHERE fiscal_invoice_id='{doc['invoice']}' LIMIT 1;"),9,1005)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        winner=pool.submit(B.run_raw,'BEGIN;'+begin_statement(Q,doc,'intent-first')+'SELECT pg_sleep(.8);COMMIT;')
+        time.sleep(.2)
+        loser=pool.submit(B.run_raw,begin_statement(Q,extra,'intent-second'))
+        won,lost=winner.result(),loser.result()
+    assert won.returncode==0 and lost.returncode!=0 and 'B2B_FORECAST_BEGIN_BLOCKED' in lost.stderr,(won.stderr,lost.stderr)
+    reserved_tx=json.loads(next(x for x in won.stdout.splitlines() if x.startswith('{')))['transmissionId']
+    assert forecast_row(B,order_id)['state']=='emissao_em_andamento'
+    assert B.last(f"SELECT count(*) FROM public.fiscal_sefaz_transmissions WHERE idempotency_key='LOCAL-REVIEW-intent-second';")=='0'
+    # Settle through canonical timeout + current consultation, not UPDATE.
+    transport_error(B,reserved_tx,'LOCAL_TWO_INTENT_TIMEOUT')
+    timed=sync(Q,Q.UFIN,reserved_tx,version(Q,order_id))
+    c=insert_followup_tx(B,Q,doc,1008,'NFeConsultaProtocolo4');reject(B,c,'217','LOCAL TWO INTENT ABSENCE')
+    clear=sync(Q,Q.UFIN,c,timed['version']);v=clear['version'];before=forecast_row(B,order_id)
+    rows.append(dict(case='two-begins-before-sync',winner=won.stdout,loser=lost.stderr,repeatable=repeatable.stderr))
     # Begin owns the shared order lock. Cancel waits, then sees committed pending tx.
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
         holder=pool.submit(B.run_raw,'BEGIN;'+begin_statement(Q,doc,'begin-first')+'SELECT pg_sleep(.8);COMMIT;')
@@ -581,9 +628,18 @@ def test_begin_cancel_race(B,Q,OUT,order_id,doc,v):
         held,called=holder.result(),cancel.result()
     assert held.returncode==0 and called.returncode!=0 and 'B2B_FORECAST_FISCAL_IN_FLIGHT' in called.stderr,(held.stderr,called.stderr)
     tx=json.loads(next(x for x in held.stdout.splitlines() if x.startswith('{')))['transmissionId']
+    # BEGIN now reserves EMISSION_STARTED atomically. SYNC is an exact replay.
+    reserved=forecast_row(B,order_id)
+    assert reserved['state']=='emissao_em_andamento' and reserved['version']==v+1,reserved
+    replay_begin=B.run_raw(begin_statement(Q,doc,'begin-first'))
+    assert replay_begin.returncode==0 and _last(replay_begin)['idempotentReplay'] is True,replay_begin.stderr
     transport_error(B,tx,'LOCAL_RACE_FINISHED_NO_EMISSION')
     rows.append(dict(case='begin-first',begin_stdout=held.stdout,cancel_stderr=called.stderr))
-    assert forecast_row(B,order_id)==before
+    timed=sync(Q,Q.UFIN,tx,reserved['version'])
+    consult=insert_followup_tx(B,Q,doc,997,'NFeConsultaProtocolo4')
+    reject(B,consult,'217','LOCAL RACE PROTOCOL ABSENCE')
+    cleared=sync(Q,Q.UFIN,consult,timed['version'])
+    v=cleared['version'];before=forecast_row(B,order_id)
     # Cancel owns order+forecast and commits before begin; the writer itself denies.
     # Rollback-only cancel serialization is tested here, permanent canceled path below.
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:

@@ -65,7 +65,7 @@ check("cancel blocked while fiscal in flight or close pending", "B2B_FORECAST_FI
 check("cancel locks scoped order before scoped forecast", W.CANCEL.index("FROM public.partner_orders WHERE id=p_order") < W.CANCEL.index("FROM platform_private.b2b_financial_forecasts WHERE order_id=p_order AND organization_id=org FOR UPDATE"))
 check("no RESET ROLE in wrapper SQL", "RESET ROLE" not in W.SYNC + W.CANCEL)
 check("helper ACL pins are mandatory", all(d['acl_md5']==W.B4_HELPER_ACL_MD5 for d in comp['b4_dependencies'].values()))
-check("only current protocol absence 217 is conclusive", "t.c_stat='217'" in W.SYNC and "t.service='NFeConsultaProtocolo4'" in W.SYNC and "newer.created_at,newer.id" in W.SYNC)
+check("only causally linked current protocol absence 217 is conclusive", "t.c_stat='217'" in W.SYNC and "t.service='NFeConsultaProtocolo4'" in W.SYNC and "l.forecast_version=f.version" in W.SYNC and "newer.created_at,newer.id" not in W.SYNC)
 check("consultation identity is exact", "t.ch_nfe=inv.access_key" in W.SYNC and "t.n_rec IS NULL" in W.SYNC and "r.fiscal_invoice_id=inv.id" in W.SYNC)
 check("foreign scope filtered before locks", W.SYNC.index("i.organization_id=org") < W.SYNC.index("FOR SHARE") and W.CANCEL.index("pa.commercial_owner_organization_id=org") < W.CANCEL.index("FOR UPDATE"))
 begin,_,_,_,_=W.begin_overlay(ROOT)
