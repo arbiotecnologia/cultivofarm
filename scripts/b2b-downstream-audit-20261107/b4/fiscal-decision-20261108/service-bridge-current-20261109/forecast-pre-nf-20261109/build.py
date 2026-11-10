@@ -50,14 +50,11 @@ def main():
     authority = scope_new + " RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n  IF platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro','gestor_comercial']::public.app_role[]) IS NULL THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='42501'; END IF;"
     select_anchor = "  SELECT po.payment_terms_id, po.created_by, po.numero"
     assert scoped_terms.count(select_anchor) == 1
-    scoped_terms = scoped_terms.replace(select_anchor, "  SELECT payment_terms_id INTO v_observed_terms FROM public.partner_orders WHERE id=p_partner_order_id;\n" + select_anchor)
+    scoped_terms = scoped_terms.replace(select_anchor, "  SELECT po.payment_terms_id,t.updated_at INTO v_observed_terms,v_observed_updated_at\n    FROM public.partner_orders po LEFT JOIN public.partner_order_payment_terms t ON t.id=po.payment_terms_id AND t.partner_order_id=po.id WHERE po.id=p_partner_order_id;\n" + select_anchor)
     scoped_terms = scoped_terms.replace(lock_anchor, "  WHERE po.id = p_partner_order_id FOR UPDATE;\n  " + authority + "\n  IF v_terms_id IS DISTINCT FROM v_observed_terms THEN RAISE EXCEPTION 'B2B_PAYMENT_TERMS_CAS_CONFLICT' USING ERRCODE='PT409'; END IF;\n  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND (status IN ('cancelado','reprovado') OR c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1')) THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVAL_UNAVAILABLE' USING ERRCODE='42501'; END IF;")
     child_anchor = "  UPDATE public.partner_order_payment_terms"
     assert scoped_terms.count(child_anchor) == 1
-    child_lock = """  SELECT updated_at INTO v_observed_updated_at FROM public.partner_order_payment_terms
-    WHERE id=v_terms_id AND partner_order_id=p_partner_order_id;
-  IF NOT FOUND THEN RAISE EXCEPTION 'payment_terms_not_defined' USING ERRCODE='42501'; END IF;
-  SELECT updated_at INTO v_locked_updated_at FROM public.partner_order_payment_terms
+    child_lock = """  SELECT updated_at INTO v_locked_updated_at FROM public.partner_order_payment_terms
     WHERE id=v_terms_id AND partner_order_id=p_partner_order_id FOR UPDATE;
   IF NOT FOUND OR v_locked_updated_at IS DISTINCT FROM v_observed_updated_at THEN
     RAISE EXCEPTION 'B2B_PAYMENT_TERMS_CAS_CONFLICT' USING ERRCODE='PT409'; END IF;

@@ -36,7 +36,20 @@ def test_terms_waits(B, Q, OUT, order_id):
             assert restored.returncode == 0, restored.stderr
     race('actor-revoked', f"UPDATE public.profiles SET ativo=false WHERE user_id='{Q.UFIN}'", f"UPDATE public.profiles SET ativo=true WHERE user_id='{Q.UFIN}';", '42501')
     race('tenant-revoked', f"UPDATE public.organizations SET ativo=false WHERE id='{Q.A}'", f"UPDATE public.organizations SET ativo=true WHERE id='{Q.A}';", '42501')
-    race('child-cas', f"UPDATE public.partner_order_payment_terms SET approval_notes='CONCURRENT OBSERVED CHANGE',updated_at=clock_timestamp() WHERE id='{terms_id}'", None, 'B2B_PAYMENT_TERMS_CAS_CONFLICT')
+    # A second real approval writer holds order THEN child; no reverse-lock
+    # UPDATE of the child (its captured trigger itself locks the parent).
+    before = snapshot()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(Q.as_user, Q.UFIN, f"BEGIN;SELECT id FROM public.partner_orders WHERE id='{order_id}' FOR UPDATE;SELECT pg_sleep(.8);SELECT public.approve_b2b_payment_terms_secure('{order_id}','CONCURRENT FIRST');COMMIT;")
+        time.sleep(.15)
+        second = pool.submit(Q.as_user, Q.UFIN, f"SELECT public.approve_b2b_payment_terms_secure('{order_id}','CONCURRENT SECOND');")
+        winner = first.result(); loser = second.result()
+    after = snapshot()
+    row = dict(name='canonical-terms-cas',before=before,after=after,winner_exit=winner.returncode,winner_stdout=winner.stdout,winner_stderr=winner.stderr,caller_exit=loser.returncode,stdout=loser.stdout,stderr=loser.stderr,hosted=False)
+    results.append(row)
+    (OUT/'terms-wait-real-guards.json').write_text(json.dumps(results,indent=2)+'\n')
+    assert winner.returncode == 0 and loser.returncode != 0 and 'B2B_PAYMENT_TERMS_CAS_CONFLICT' in loser.stderr, row
+    assert after['terms']['approval_notes'] == 'CONCURRENT FIRST' and after['terms']['approval_status'] == 'approved' and after['forecasts'] == 0, row
     return results
 
 
