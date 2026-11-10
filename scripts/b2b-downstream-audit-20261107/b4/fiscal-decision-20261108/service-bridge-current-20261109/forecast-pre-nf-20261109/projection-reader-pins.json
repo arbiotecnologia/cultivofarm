@@ -1,0 +1,54 @@
+{
+  "pre_rpc": {
+    "acl": "postgres:EXECUTE:postgres",
+    "md5": "7c5d3fa0a4c9516ab1c40b058a529578",
+    "owner": "postgres"
+  },
+  "deps": {
+    "public.is_financial_staff(uuid)": {
+      "acl": "authenticated:EXECUTE:postgres,postgres:EXECUTE:postgres,service_role:EXECUTE:postgres",
+      "md5": "6e8f2fa7b92ca7e039d092353b3ebfe2",
+      "owner": "postgres"
+    },
+    "public.h15_actor_organization()": {
+      "acl": "authenticated:EXECUTE:postgres,postgres:EXECUTE:postgres,service_role:EXECUTE:postgres",
+      "md5": "55edafec08bcc84a00f1526c14334a2c",
+      "owner": "postgres"
+    },
+    "public._saas_user_has_feature(uuid,text)": {
+      "acl": "postgres:EXECUTE:postgres,service_role:EXECUTE:postgres",
+      "md5": "501dd958e117d2df8a4d38f6bcbeed04",
+      "owner": "postgres"
+    },
+    "platform_private.b2b_legacy_money_row(uuid)": {
+      "acl": "postgres:EXECUTE:postgres",
+      "md5": "72d0b11083230fa663da46df31b7af22",
+      "owner": "postgres"
+    },
+    "platform_private.b2b_allocation_money_row(uuid)": {
+      "acl": "postgres:EXECUTE:postgres",
+      "md5": "2c8e4c323d1625bd06b9756c5fc7891d",
+      "owner": "postgres"
+    }
+  },
+  "cand_rpc": {
+    "acl": "authenticated:EXECUTE:postgres,postgres:EXECUTE:postgres",
+    "md5": "725f5790298315b806ba805bc47f6f4a",
+    "owner": "postgres"
+  },
+  "cand_helper": {
+    "acl": "postgres:EXECUTE:postgres",
+    "md5": "a7628d0002689bee089562416d299920",
+    "owner": "postgres"
+  },
+  "rb_rpc": {
+    "acl": "postgres:EXECUTE:postgres",
+    "md5": "725f5790298315b806ba805bc47f6f4a",
+    "owner": "postgres"
+  },
+  "rb_helper": {
+    "acl": "postgres:EXECUTE:postgres",
+    "md5": "a7628d0002689bee089562416d299920",
+    "owner": "postgres"
+  }
+}

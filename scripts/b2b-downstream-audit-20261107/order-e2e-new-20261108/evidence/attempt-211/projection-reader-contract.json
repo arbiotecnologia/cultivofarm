@@ -1,0 +1,238 @@
+{
+  "consumer": "deferred src/lib/financeiro/receivableOrigin.ts (not mounted in live src; not a real complete flow)",
+  "install_order": [
+    "scripts/financial-price-generator-20261029/integration/origin.sql.review (INTERMEDIATE)",
+    "13",
+    "14",
+    "15"
+  ],
+  "pins": {
+    "pre_rpc": {
+      "acl": "postgres:EXECUTE:postgres",
+      "md5": "7c5d3fa0a4c9516ab1c40b058a529578",
+      "owner": "postgres"
+    },
+    "deps": {
+      "public.is_financial_staff(uuid)": {
+        "acl": "authenticated:EXECUTE:postgres,postgres:EXECUTE:postgres,service_role:EXECUTE:postgres",
+        "md5": "6e8f2fa7b92ca7e039d092353b3ebfe2",
+        "owner": "postgres"
+      },
+      "public.h15_actor_organization()": {
+        "acl": "authenticated:EXECUTE:postgres,postgres:EXECUTE:postgres,service_role:EXECUTE:postgres",
+        "md5": "55edafec08bcc84a00f1526c14334a2c",
+        "owner": "postgres"
+      },
+      "public._saas_user_has_feature(uuid,text)": {
+        "acl": "postgres:EXECUTE:postgres,service_role:EXECUTE:postgres",
+        "md5": "501dd958e117d2df8a4d38f6bcbeed04",
+        "owner": "postgres"
+      },
+      "platform_private.b2b_legacy_money_row(uuid)": {
+        "acl": "postgres:EXECUTE:postgres",
+        "md5": "72d0b11083230fa663da46df31b7af22",
+        "owner": "postgres"
+      },
+      "platform_private.b2b_allocation_money_row(uuid)": {
+        "acl": "postgres:EXECUTE:postgres",
+        "md5": "2c8e4c323d1625bd06b9756c5fc7891d",
+        "owner": "postgres"
+      }
+    },
+    "cand_rpc": {
+      "acl": "authenticated:EXECUTE:postgres,postgres:EXECUTE:postgres",
+      "md5": "725f5790298315b806ba805bc47f6f4a",
+      "owner": "postgres"
+    },
+    "cand_helper": {
+      "acl": "postgres:EXECUTE:postgres",
+      "md5": "a7628d0002689bee089562416d299920",
+      "owner": "postgres"
+    },
+    "rb_rpc": {
+      "acl": "postgres:EXECUTE:postgres",
+      "md5": "725f5790298315b806ba805bc47f6f4a",
+      "owner": "postgres"
+    },
+    "rb_helper": {
+      "acl": "postgres:EXECUTE:postgres",
+      "md5": "ed947affc3525c1b845fa64f430330f2",
+      "owner": "postgres"
+    }
+  },
+  "pin_classes": {
+    "pre_rpc": "LOCAL_INTERMEDIATE_PROMOTED (reader absent in production)",
+    "is_financial_staff": "LIVE_READONLY 6e8f2fa7b92ca7e039d092353b3ebfe2",
+    "other_deps": "LOCAL_RESTORE_DERIVED",
+    "candidate_and_rollback": "LOCAL_PROBE_DERIVED"
+  },
+  "after_rollback": {
+    "rpc": {
+      "acl": "postgres:EXECUTE:postgres",
+      "md5": "725f5790298315b806ba805bc47f6f4a",
+      "owner": "postgres"
+    },
+    "helper": {
+      "acl": "postgres:EXECUTE:postgres",
+      "md5": "ed947affc3525c1b845fa64f430330f2",
+      "owner": "postgres"
+    },
+    "restored_pre_candidate_body": false
+  },
+  "cases": [
+    {
+      "case": "before-install-financeiro",
+      "exit": 3,
+      "stderr": "ERROR:  42501: permission denied for function rpc_receivable_money_projection_v1",
+      "stdout_tail": ""
+    },
+    {
+      "case": "before-install-administrador",
+      "exit": 3,
+      "stderr": "ERROR:  42501: permission denied for function rpc_receivable_money_projection_v1",
+      "stdout_tail": ""
+    },
+    {
+      "case": "stray-helper-pre",
+      "exit": 3,
+      "stderr": "ERROR:  P0001: PROJECTION_READER_HELPER_PREEXISTS",
+      "stdout_tail": ""
+    },
+    {
+      "case": "stray-helper-install",
+      "exit": 3,
+      "stderr": "ERROR:  P0001: PROJECTION_READER_HELPER_PREEXISTS",
+      "stdout_tail": ""
+    },
+    {
+      "case": "dep-acl-drift-pre",
+      "exit": 3,
+      "stderr": "ERROR:  P0001: PROJECTION_READER_DEP_DRIFT: platform_private.b2b_legacy_money_row(uuid)",
+      "stdout_tail": ""
+    },
+    {
+      "case": "pre",
+      "exit": 0,
+      "stderr": "",
+      "stdout_tail": "PRE_OK"
+    },
+    {
+      "case": "install",
+      "exit": 0,
+      "stderr": "",
+      "stdout_tail": ""
+    },
+    {
+      "case": "post",
+      "exit": 0,
+      "stderr": "",
+      "stdout_tail": "POST_OK"
+    },
+    {
+      "case": "reinstall-denied",
+      "exit": 3,
+      "stderr": "ERROR:  P0001: PROJECTION_READER_PRE_DRIFT: public.rpc_receivable_money_projection_v1(uuid,integer,integer)",
+      "stdout_tail": ""
+    },
+    {
+      "case": "financeiro-own-positive",
+      "exit": 0,
+      "stderr": "",
+      "stdout_tail": "ation_id\": \"00000000-0000-0000-0000-000000000001\", \"original_amount\": 9.00, \"received_amount\": 0.00, \"installment_number\": 1, \"monetary_semantics\": \"financed_total_v1\", \"financed_interest_amount\": 0}]"
+    },
+    {
+      "case": "administrador-own-positive",
+      "exit": 0,
+      "stderr": "",
+      "stdout_tail": "ation_id\": \"00000000-0000-0000-0000-000000000001\", \"original_amount\": 9.00, \"received_amount\": 0.00, \"installment_number\": 1, \"monetary_semantics\": \"financed_total_v1\", \"financed_interest_amount\": 0}]"
+    },
+    {
+      "case": "gestor-own-positive",
+      "exit": 0,
+      "stderr": "",
+      "stdout_tail": "ation_id\": \"00000000-0000-0000-0000-000000000001\", \"original_amount\": 9.00, \"received_amount\": 0.00, \"installment_number\": 1, \"monetary_semantics\": \"financed_total_v1\", \"financed_interest_amount\": 0}]"
+    },
+    {
+      "case": "gestor-foreign-tenant",
+      "exit": 3,
+      "stderr": "ERROR:  42501: MONEY_ORIGIN_ACCESS_DENIED",
+      "stdout_tail": ""
+    },
+    {
+      "case": "foreign-tenant-admin",
+      "exit": 3,
+      "stderr": "ERROR:  42501: MONEY_ORIGIN_ACCESS_DENIED",
+      "stdout_tail": ""
+    },
+    {
+      "case": "buyer",
+      "exit": 3,
+      "stderr": "ERROR:  42501: MONEY_ORIGIN_ACCESS_DENIED",
+      "stdout_tail": ""
+    },
+    {
+      "case": "anon",
+      "exit": 3,
+      "stderr": "ERROR:  42501: permission denied for function rpc_receivable_money_projection_v1",
+      "stdout_tail": ""
+    },
+    {
+      "case": "service_role",
+      "exit": 3,
+      "stderr": "ERROR:  42501: permission denied for function rpc_receivable_money_projection_v1",
+      "stdout_tail": ""
+    },
+    {
+      "case": "private-helper-direct",
+      "exit": 3,
+      "stderr": "ERROR:  42501: permission denied for function receivable_money_reader_allowed_v1",
+      "stdout_tail": ""
+    },
+    {
+      "case": "entitlement-revoked",
+      "exit": 3,
+      "stderr": "ERROR:  42501: MONEY_ORIGIN_ACCESS_DENIED",
+      "stdout_tail": ""
+    },
+    {
+      "case": "inactive-profile",
+      "exit": 3,
+      "stderr": "ERROR:  42501: MONEY_ORIGIN_ACCESS_DENIED",
+      "stdout_tail": ""
+    },
+    {
+      "case": "restored-positive",
+      "exit": 0,
+      "stderr": "",
+      "stdout_tail": "ation_id\": \"00000000-0000-0000-0000-000000000001\", \"original_amount\": 9.00, \"received_amount\": 0.00, \"installment_number\": 1, \"monetary_semantics\": \"financed_total_v1\", \"financed_interest_amount\": 0}]"
+    },
+    {
+      "case": "rollback",
+      "exit": 0,
+      "stderr": "",
+      "stdout_tail": ""
+    },
+    {
+      "case": "after-rollback-denied",
+      "exit": 3,
+      "stderr": "ERROR:  42501: permission denied for function rpc_receivable_money_projection_v1",
+      "stdout_tail": ""
+    },
+    {
+      "case": "rollback-rerun-fails-closed",
+      "exit": 3,
+      "stderr": "ERROR:  P0001: PROJECTION_READER_POST_FAILED: public.rpc_receivable_money_projection_v1(uuid,integer,integer)",
+      "stdout_tail": ""
+    }
+  ],
+  "sql_sha256": {
+    "13-pre-projection-reader.sql.readonly": "3ffd92f9fb85cd3e22804505e32ef8cbe8d50b1033787e9480ac9b8cbe1a40c3",
+    "14-install-projection-reader.sql.review": "7d5bf789e2601eb837a12c2240f3def7bd96d363d80b7d247441b3bf8564e93a",
+    "15-post-projection-reader.sql.readonly": "97f5460ac13820bf7d9d16f163149273c039436f560ce7ba457cdc71e7cbad5b",
+    "16-rollback-projection-reader-deny.sql.review": "532816164ebc6f45b92cca9ba941d950b9cea54e8bb6b86b78e5ff244d680be1"
+  },
+  "roles_accepted": "canonical is_financial_staff (administrador/gestor/financeiro, fn_authz_uid_scope_ok) + contas_receber + h15 active org; unchanged",
+  "grants": "authenticated only on public RPC; helper zero grants",
+  "hosted": false,
+  "synthetic_auth": true
+}

@@ -1,0 +1,214 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "status": "REVIEW_ONLY_INACTIVE_NOT_APPROVED",
+  "hosted_go": false,
+  "validated_by": {
+    "attempt": "order-e2e-new-20261108/evidence/attempt-212",
+    "exit": 0,
+    "checkpoints": "56/56 PASS",
+    "engine": "PostgreSQL 17.11 disposable",
+    "auth": "SYNTHETIC (SQL roles + synthetic profiles); not hosted JWT/RLS/Storage proof"
+  },
+  "stage_order": [
+    {
+      "n": 1,
+      "stage": "production PRE / plans install+POST (already reported installed by auditor; never reinstall)",
+      "kind": "LIVE"
+    },
+    {
+      "n": 2,
+      "stage": "forecast 01 PRE -> 02 INSTALL -> 03 POST (credit untouched, LIVE pin)",
+      "rollback": "04 deny"
+    },
+    {
+      "n": 3,
+      "stage": "B4 PRE/INSTALL/POST (fn_b2b_credit_exposure LIVE->B4)",
+      "pins": {
+        "live_md5": "213ac31f3a30816ead75365b0d1fed18",
+        "b4_md5": "44e8768ff53d7fe5ff3b9f0889258946"
+      }
+    },
+    {
+      "n": 4,
+      "stage": "credit 09 PRE -> 10 INSTALL -> 11 POST (B4->composed single body)",
+      "pins": {
+        "composed_md5": "7d841856ba1e2dd34b0fa6491c4914b5",
+        "acl_md5": "578c00048ab38c285e229e11ff6211ec",
+        "b4_dependencies": {
+          "platform_private.b2b_credit_balances(uuid,uuid)": {
+            "body_md5": "9fbf08a16f6bcbec379945886c85c245",
+            "owner": "postgres",
+            "acl_md5": "aae127bcdd4f7096876d7094c14eabd1",
+            "acl_source": "B4 OWNER_ONLY manifest; normalized aclexplode"
+          },
+          "platform_private.b2b_order_residual(uuid)": {
+            "body_md5": "93769163bfc7c72a4bbc722e62313179",
+            "owner": "postgres",
+            "acl_md5": "aae127bcdd4f7096876d7094c14eabd1",
+            "acl_source": "B4 OWNER_ONLY manifest; normalized aclexplode"
+          }
+        }
+      },
+      "rollback": "12 retain composed (no body restore)"
+    },
+    {
+      "n": 5,
+      "stage": "bridge/strict fiscal callback install+POST",
+      "kind": "existing reviewed package"
+    },
+    {
+      "n": 6,
+      "stage": "forecast 05 PRE -> 06 INSTALL -> 07 POST (reconcile + SYNC/CANCEL wrappers + begin overlay)",
+      "pins": {
+        "sync": "938a4ffd146a930d4d7ebaed9ed35080",
+        "cancel": "43adec08e129910aab7bbdb5a7216f80",
+        "begin": "a4074519c0185b67bc0aad0303153fb1"
+      },
+      "rollback": "08 deny (revokes lifecycle grants, keeps history)"
+    },
+    {
+      "n": 7,
+      "stage": "bridge-audit + H7",
+      "kind": "existing reviewed package"
+    },
+    {
+      "n": 8,
+      "stage": "financial origin INTERMEDIATE scripts/financial-price-generator-20261029/integration/origin.sql.review",
+      "kind": "LOCAL_INTERMEDIATE_PROMOTED (reader absent in production)",
+      "pins": {
+        "rpc_receivable_money_projection_v1": {
+          "acl": "postgres:EXECUTE:postgres",
+          "md5": "7c5d3fa0a4c9516ab1c40b058a529578",
+          "owner": "postgres"
+        }
+      }
+    },
+    {
+      "n": 9,
+      "stage": "projection reader 13 PRE -> 14 INSTALL -> 15 POST",
+      "pins": {
+        "pre_rpc": {
+          "acl": "postgres:EXECUTE:postgres",
+          "md5": "7c5d3fa0a4c9516ab1c40b058a529578",
+          "owner": "postgres"
+        },
+        "deps": {
+          "public.is_financial_staff(uuid)": {
+            "acl": "authenticated:EXECUTE:postgres,postgres:EXECUTE:postgres,service_role:EXECUTE:postgres",
+            "md5": "6e8f2fa7b92ca7e039d092353b3ebfe2",
+            "owner": "postgres"
+          },
+          "public.h15_actor_organization()": {
+            "acl": "authenticated:EXECUTE:postgres,postgres:EXECUTE:postgres,service_role:EXECUTE:postgres",
+            "md5": "55edafec08bcc84a00f1526c14334a2c",
+            "owner": "postgres"
+          },
+          "public._saas_user_has_feature(uuid,text)": {
+            "acl": "postgres:EXECUTE:postgres,service_role:EXECUTE:postgres",
+            "md5": "501dd958e117d2df8a4d38f6bcbeed04",
+            "owner": "postgres"
+          },
+          "platform_private.b2b_legacy_money_row(uuid)": {
+            "acl": "postgres:EXECUTE:postgres",
+            "md5": "72d0b11083230fa663da46df31b7af22",
+            "owner": "postgres"
+          },
+          "platform_private.b2b_allocation_money_row(uuid)": {
+            "acl": "postgres:EXECUTE:postgres",
+            "md5": "2c8e4c323d1625bd06b9756c5fc7891d",
+            "owner": "postgres"
+          }
+        },
+        "candidate_rpc": {
+          "acl": "authenticated:EXECUTE:postgres,postgres:EXECUTE:postgres",
+          "md5": "725f5790298315b806ba805bc47f6f4a",
+          "owner": "postgres"
+        },
+        "candidate_helper": {
+          "acl": "postgres:EXECUTE:postgres",
+          "md5": "a7628d0002689bee089562416d299920",
+          "owner": "postgres"
+        }
+      },
+      "rollback": {
+        "file": "16 deny-only",
+        "after": {
+          "rpc": {
+            "acl": "postgres:EXECUTE:postgres",
+            "md5": "725f5790298315b806ba805bc47f6f4a",
+            "owner": "postgres"
+          },
+          "helper": {
+            "acl": "postgres:EXECUTE:postgres",
+            "md5": "a7628d0002689bee089562416d299920",
+            "owner": "postgres"
+          }
+        },
+        "note": "revokes authenticated, keeps hardened body and real helper (internal caller rpc_register_receivable_payment); never restores pre-candidate body"
+      }
+    }
+  ],
+  "pin_classes": {
+    "is_financial_staff(uuid)": "LIVE_READONLY 6e8f2fa7b92ca7e039d092353b3ebfe2 (matched locally)",
+    "rpc_receivable_money_projection_v1 PRE": "LOCAL_INTERMEDIATE (not a LIVE capture)",
+    "other projection deps": "LOCAL_RESTORE_DERIVED; require READONLY confirmation before hosted",
+    "candidate/rollback": "LOCAL_PROBE_DERIVED"
+  },
+  "files_sha256": {
+    "01-pre.sql.readonly": "309955585401bde685aca773e94bf7ef675e0f5382e832a27e13c90ddae37b0d",
+    "02-install.sql.review": "a4f8881060bddb9902af7478003d65c46fa6e99937d5502098ffed5d668a7cf3",
+    "03-post.sql.readonly": "d93ef981086d5b96a627b306c4d507156e5bfe3d9426e5b577ec89f57ee80b09",
+    "04-rollback-deny.sql.review": "e0adf910aca0c0dfa8ee6ca019cbd4ba23c0c814e369de983e2ee51abea88a92",
+    "05-pre-fiscal-reconcile.sql.readonly": "f59ec3ea3e38be684c16349ace73750cc496b84ec5982e984ba507304570fff3",
+    "06-install-fiscal-reconcile.sql.review": "673baa8476fcc94af50be45f4cb9dc031b8a6a4c26f0482c20ead4f1a3c91885",
+    "07-post-fiscal-reconcile.sql.readonly": "ab2ba352d9be88eca496c8c6bda59947632cbdb26031a70ef003dc4f0a9e68bd",
+    "08-rollback-fiscal-reconcile-deny.sql.review": "ee1dabe993948bcd2df160fcab573c1b80b8a0b5850b0de2c38860b5c7ca656e",
+    "09-pre-credit-composition.sql.readonly": "761cfd8b9d11261734086b8de875f13b1c0e71212d8e6686c649eb0f79010f5c",
+    "10-install-credit-composition.sql.review": "8247a6beb20130b29d05cb69503aaa4d92cfe74982cb29acb3e02f2ff42693fc",
+    "11-post-credit-composition.sql.readonly": "ae4d927dcd5337a56538466144c9e54b4327168aa5fe5883e740f3ba38641dcb",
+    "12-rollback-credit-composition-retain.sql.review": "5160b5797a1f109cf17c5afe1fe676cf8829920264a1d573a1385b216ca3be29",
+    "13-pre-projection-reader.sql.readonly": "3ffd92f9fb85cd3e22804505e32ef8cbe8d50b1033787e9480ac9b8cbe1a40c3",
+    "14-install-projection-reader.sql.review": "7d5bf789e2601eb837a12c2240f3def7bd96d363d80b7d247441b3bf8564e93a",
+    "15-post-projection-reader.sql.readonly": "97f5460ac13820bf7d9d16f163149273c039436f560ce7ba457cdc71e7cbad5b",
+    "16-rollback-projection-reader-deny.sql.review": "8fe4bf057577fa0e259c8d8e01e3c39dd1d788885ee8fbc4ff61408d916231eb"
+  },
+  "mirror_vs_repo": "12 forecast SQL byte-identical to attempt-212 mirror build; 13-16 byte-identical to SQL generated and executed in attempt-212 (mirror copy of 13-16 was the stale pre-run version)",
+  "hosted_prerequisites_not_satisfied": [
+    "independent review of this package",
+    "READONLY capture confirming every non-LIVE pin above (B4 deps, projection deps, begin/sync/cancel PRE bodies)",
+    "real hosted JWT/RLS/Storage postflight in sessions A/B",
+    "fiscal/accounting gate (fiscal positive, SEFAZ) — stays NOT VALIDATABLE",
+    "global logistics gate b2b_resale_logistics_gate_v1 MUST NOT be opened for lifecycle: resale_pilot_allowed_v1 couples lifecycle to it; a separate lifecycle gate or exact-scope decision is required first"
+  ],
+  "pilot_scope_required": {
+    "gate": "b2b_resale",
+    "operations": [
+      "forecast_begin",
+      "forecast_sync",
+      "forecast_cancel"
+    ],
+    "exact": "actor_id+organization_id+partner_id+order_id, synthetic=true, valid_from/valid_until, revoked_at NULL",
+    "features": [
+      "pedidos_b2b",
+      "contas_receber"
+    ],
+    "roles_begin": [
+      "administrador",
+      "financeiro"
+    ]
+  },
+  "ui_consumers": {
+    "get_b2b_financial_forecast_secure": "mounted read-only (FinanceiroB2B -> B2BForecastCell); RPC absent in production => unavailable state",
+    "forecast SYNC/CANCEL wrappers": "no UI consumer",
+    "rpc_receivable_money_projection_v1": "deferred src/lib/financeiro/receivableOrigin.ts not mounted; internal caller rpc_register_receivable_payment",
+    "conclusion": "no real complete user flow exists; do not certify"
+  },
+  "blocked": [
+    "hosted SQL",
+    "publication",
+    "emission/sending",
+    "billing/charges",
+    "communications",
+    "opening global logistics gate"
+  ]
+}
