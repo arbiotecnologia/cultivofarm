@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-csy1dyop/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 851, in main
+    assert B.last("SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots;")=='2'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
