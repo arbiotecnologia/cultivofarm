@@ -199,14 +199,32 @@ def begin_overlay(root):
     # tenant's active settings. Candidate derives tpamb from the document's own
     # active settings after invoice derivation; no-document services keep the
     # canonical clause verbatim. Missing/other settings => NULL => blocked.
-    scoped_env = """  IF v_invoice IS NOT NULL THEN
+    # Identity first: Consulta/RetAutorizacao derive the invoice from the XML run
+    # (caller invoice is never authority, as H7G-001); then the ISSUER's exact
+    # active settings decide tpamb. Without a document, only the actor's own
+    # organization with exactly one active settings row may decide; absence or
+    # ambiguity blocks. Another tenant's settings are never read as authority.
+    scoped_env = """  IF _service IN ('NFeConsultaProtocolo4','NFeRetAutorizacao4') THEN
+    IF _xml_run_id IS NULL THEN RAISE EXCEPTION 'SEFAZ_RUN_REQUIRED'; END IF;
+    SELECT * INTO v_run FROM public.fiscal_xml_runs WHERE id = _xml_run_id;
+    IF NOT FOUND THEN RAISE EXCEPTION 'SEFAZ_RUN_NOT_FOUND'; END IF;
+    IF v_run.fiscal_invoice_id IS NULL THEN RAISE EXCEPTION 'SEFAZ_RUN_INVOICE_MISSING'; END IF;
+    IF _invoice_id IS NOT NULL AND _invoice_id IS DISTINCT FROM v_run.fiscal_invoice_id THEN
+      RAISE EXCEPTION 'SEFAZ_INVOICE_RUN_MISMATCH';
+    END IF;
+    v_invoice := v_run.fiscal_invoice_id;
+  END IF;
+  v_tpamb := NULL;
+  IF v_invoice IS NOT NULL THEN
     SELECT coalesce(c.nfe_environment_code, '') INTO v_tpamb
       FROM public.fiscal_invoices i JOIN public.company_fiscal_settings c
         ON c.id=i.company_settings_id AND c.organization_id=i.organization_id AND c.is_active
      WHERE i.id=v_invoice;
-  ELSE
-    SELECT coalesce(nfe_environment_code, '') INTO v_tpamb
-      FROM public.company_fiscal_settings WHERE is_active LIMIT 1;
+  ELSIF _actor IS NOT NULL THEN
+    SELECT CASE WHEN count(*)=1 THEN max(coalesce(c.nfe_environment_code,'')) END INTO v_tpamb
+      FROM public.profiles p JOIN public.company_fiscal_settings c
+        ON c.organization_id=p.organization_id AND c.is_active
+     WHERE p.user_id=_actor AND p.ativo IS TRUE;
   END IF;
   IF v_tpamb IS DISTINCT FROM '2' THEN
     RAISE EXCEPTION 'FISCAL_PRODUCTION_ENDPOINT_BLOCKED';
@@ -229,7 +247,9 @@ def begin_overlay(root):
     body=row['body'].replace(blind,'',1).replace(anchor,scoped_env+guard+anchor)
     # Only new dispatches reserve; exact replay above retains original transmission.
     insert_anchor = '  INSERT INTO public.fiscal_sefaz_transmissions ('
-    reserve = """  SELECT f.* INTO v_forecast FROM platform_private.b2b_financial_forecasts f
+    # Authority + scope re-checked AFTER every lock wait and BEFORE any replay,
+    # so a replay never returns a row to a revoked/foreign caller nor authorizes a send.
+    authz = """  SELECT f.* INTO v_forecast FROM platform_private.b2b_financial_forecasts f
     JOIN public.fiscal_invoices i ON i.partner_order_id=f.order_id WHERE i.id=v_invoice;
   IF FOUND AND _service IN ('NFeAutorizacao4','NFeConsultaProtocolo4','NFeRetAutorizacao4') THEN
     SELECT i.* INTO v_source FROM public.fiscal_invoices i WHERE i.id=v_invoice;
@@ -249,13 +269,29 @@ def begin_overlay(root):
         OR platform_private.resale_pilot_allowed_v1('b2b_resale','forecast_begin',_actor,
           v_source.organization_id,v_source.debtor_partner_id,v_source.partner_order_id,NULL,NULL,NULL,NULL) IS NOT TRUE THEN
         RAISE EXCEPTION 'B2B_FORECAST_BEGIN_SCOPE_DENIED' USING ERRCODE='42501';END IF;
-      IF public._saas_user_has_feature(_actor,'pedidos_b2b') IS NOT TRUE
-        OR public._saas_user_has_feature(_actor,'contas_receber') IS NOT TRUE
-        OR NOT EXISTS(SELECT 1 FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id
-          WHERE p.user_id=_actor AND p.ativo IS TRUE AND o.ativo IS TRUE AND p.organization_id=v_source.organization_id)
-        OR NOT (public.has_role(_actor,'administrador') OR public.has_role(_actor,'financeiro')) THEN
-        RAISE EXCEPTION 'B2B_FORECAST_BEGIN_SCOPE_DENIED' USING ERRCODE='42501';END IF;
     END IF;
+  END IF;
+"""
+    # Replay is bound to the full canonical identity, not only the fingerprint.
+    replay_old = """    IF v_existing.request_fingerprint IS DISTINCT FROM _request_fingerprint THEN
+      RAISE EXCEPTION 'FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH';
+    END IF;
+"""
+    replay_new = """    IF v_existing.request_fingerprint IS DISTINCT FROM _request_fingerprint
+      OR v_existing.service IS DISTINCT FROM _service
+      OR v_existing.fiscal_invoice_id IS DISTINCT FROM v_invoice
+      OR v_existing.xml_run_id IS DISTINCT FROM _xml_run_id
+      OR v_existing.fiscal_event_id IS DISTINCT FROM _event_id
+      OR v_existing.endpoint_url IS DISTINCT FROM _endpoint_url
+      OR (v_invoice IS NULL AND NOT EXISTS(SELECT 1 FROM public.profiles a JOIN public.profiles b
+            ON b.organization_id=a.organization_id
+          WHERE a.user_id=_actor AND a.ativo IS TRUE AND b.user_id=v_existing.created_by)) THEN
+      RAISE EXCEPTION 'FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH';
+    END IF;
+"""
+    replay_anchor = "  SELECT * INTO v_existing FROM public.fiscal_sefaz_transmissions\n   WHERE idempotency_key = _idempotency_key;"
+    reserve = """  IF v_forecast.id IS NOT NULL AND _service IN ('NFeAutorizacao4','NFeConsultaProtocolo4','NFeRetAutorizacao4') THEN
+    reserve = """  IF v_forecast.id IS NOT NULL AND _service IN ('NFeAutorizacao4','NFeConsultaProtocolo4','NFeRetAutorizacao4') THEN
     IF _service='NFeAutorizacao4' AND
       (v_forecast.state NOT IN ('aguardando_fiscal','faturado_parcial')
        OR v_source.total_amount IS NULL OR v_source.total_amount<=0 OR v_source.total_amount>v_forecast.residual_amount) THEN
@@ -273,6 +309,8 @@ def begin_overlay(root):
   END IF;
 """
     assert body.count(insert_anchor)==1
+    assert body.count(replay_anchor)==1 and body.count(replay_old)==1
+    body=body.replace(replay_anchor,authz+replay_anchor,1).replace(replay_old,replay_new,1)
     body=body.replace('  v_row       public.fiscal_sefaz_transmissions;', '''  v_row       public.fiscal_sefaz_transmissions;
   v_forecast platform_private.b2b_financial_forecasts;
   v_source public.fiscal_invoices;
