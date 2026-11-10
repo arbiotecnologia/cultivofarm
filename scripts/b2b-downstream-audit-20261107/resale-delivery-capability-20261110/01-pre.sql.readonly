@@ -1,0 +1,20 @@
+-- PRE somente leitura. Falha fechada se alvo existir ou dependências divergirem.
+-- Pin de corpo do helper de escopo = estágio INTERMEDIÁRIO local (61-pilot-containment, aplicado pelo auditor);
+-- delivery_actor/fn_estoque_pode_operar/os_operational: pin de dono+ACL privada; corpo LIVE a confirmar pelo auditor.
+DO $$
+DECLARE r record;
+BEGIN
+ IF to_regprocedure('public.rpc_b2b_resale_delivery_capability_v1(uuid,uuid[])') IS NOT NULL THEN RAISE EXCEPTION 'PRE_TARGET_PRESENT'; END IF;
+ IF md5(pg_get_functiondef('platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)'::regprocedure)) IS DISTINCT FROM ':SCOPE_MD5:' THEN RAISE EXCEPTION 'PRE_SCOPE_BODY_DRIFT'; END IF;
+ FOR r IN SELECT x::regprocedure p FROM unnest(ARRAY[
+  'platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)',
+  'platform_private.delivery_actor_20261030(text)',
+  'platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)']) x LOOP
+  IF (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=r.p)<>'postgres' THEN RAISE EXCEPTION 'PRE_OWNER_DRIFT %',r.p; END IF;
+  IF has_function_privilege('authenticated',r.p,'EXECUTE') OR has_function_privilege('anon',r.p,'EXECUTE') THEN RAISE EXCEPTION 'PRE_PRIVATE_ACL_DRIFT %',r.p; END IF;
+ END LOOP;
+ IF to_regprocedure('public.fn_estoque_pode_operar(uuid,text)') IS NULL THEN RAISE EXCEPTION 'PRE_DEP_ABSENT fn_estoque_pode_operar'; END IF;
+ -- Gates devem continuar fechados; a instalação não os abre.
+ IF EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE enabled) THEN RAISE EXCEPTION 'PRE_LOGISTICS_GATE_OPEN_UNEXPECTED'; END IF;
+END$$;
+SELECT 'PRE_PASS' AS result;

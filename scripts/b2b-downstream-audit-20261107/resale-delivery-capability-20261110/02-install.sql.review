@@ -19,7 +19,7 @@ BEGIN
  -- Escopo conhecido ANTES de ler linhas: nunca lê OS de outra empresa; sem FOR UPDATE.
  SELECT * INTO v_os FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org;
  IF NOT FOUND OR v_os.origem IS DISTINCT FROM 'b2b' OR v_os.partner_order_id IS NULL OR v_os.partner_order_item_id IS NULL THEN RETURN v_closed; END IF;
- SELECT po.partner_id INTO v_partner FROM public.partner_orders po WHERE po.id=v_os.partner_order_id AND po.organization_id=v_org;
+ SELECT po.partner_id INTO v_partner FROM public.partner_orders po JOIN public.partner_accounts pa ON pa.id=po.partner_id AND pa.commercial_owner_organization_id=v_org WHERE po.id=v_os.partner_order_id;
  IF v_partner IS NULL THEN RETURN v_closed; END IF;
  BEGIN v_os_ok:=coalesce(platform_private.b2b_resale_os_operational_valid_v1(v_os),false); EXCEPTION WHEN OTHERS THEN v_os_ok:=false; END;
  BEGIN v_reserve_actor:=coalesce(public.fn_estoque_pode_operar(v_uid,'reserva'),false); EXCEPTION WHEN OTHERS THEN v_reserve_actor:=false; END;
