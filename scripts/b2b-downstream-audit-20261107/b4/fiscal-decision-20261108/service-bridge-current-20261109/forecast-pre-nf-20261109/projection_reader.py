@@ -29,10 +29,15 @@ SOURCE = 'scripts/financial-price-generator-20261029/integration/origin.sql.revi
 LIVE_IS_FINANCIAL_STAFF_MD5 = '6e8f2fa7b92ca7e039d092353b3ebfe2'
 # Promoted local intermediate body after origin.sql.review (attempt 209, disposable PG).
 INTERMEDIATE_RPC_MD5 = '7c5d3fa0a4c9516ab1c40b058a529578'
+OPTIONAL_DEPS = ('platform_private.b2b_proven_money_row_internal(uuid,uuid)',)  # transitive, pinned when present
 INTERNAL_CALLERS = ('public.rpc_register_receivable_payment(uuid,jsonb)',)
 DEPS = ('public.is_financial_staff(uuid)', 'public.h15_actor_organization()',
         'public._saas_user_has_feature(uuid,text)',
-        'platform_private.b2b_legacy_money_row(uuid)', 'platform_private.b2b_allocation_money_row(uuid)')
+        'platform_private.b2b_legacy_money_row(uuid)', 'platform_private.b2b_allocation_money_row(uuid)',
+        # Called directly by the RPC; created by origin.sql.review and possibly recomposed by
+        # the B4 stage (canonical-composition-feb815603/stages/02-b4-install-post-composition):
+        # pinned as present after the preceding local stage, never as a LIVE capture.
+        'platform_private.b2b_proven_money_row(uuid)')
 CHECK = (" IF auth.uid() IS NULL OR org IS NULL OR public.is_financial_staff(auth.uid()) IS NOT TRUE "
          "THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;\n")
 ADDED = (" IF platform_private.receivable_money_reader_allowed_v1() IS NOT TRUE "
@@ -48,13 +53,14 @@ REVOKE ALL ON FUNCTION {HELPER} FROM PUBLIC,anon,authenticated,service_role;
 """
 
 def acl_expr(oid_sql):
-    """Normalized ACL: sorted grantee:privilege:grantor (PUBLIC=0) over aclexplode, owner default included."""
+    """Normalized ACL: sorted grantee:privilege:grantor:grant-option over aclexplode of the
+    effective ACL (owner default included when proacl is NULL); PUBLIC as grantee 0.
+    WITH GRANT OPTION drift therefore changes the pin."""
+    item = ("CASE WHEN x.grantee=0 THEN 'PUBLIC' ELSE x.grantee::regrole::text END||':'||x.privilege_type"
+            "||':'||x.grantor::regrole::text||':'||CASE WHEN x.is_grantable THEN 'G' ELSE '-' END")
     # Fully parenthesized: PL/pgSQL IF scans to the first THEN outside parentheses.
-    return (f"((SELECT coalesce(string_agg(x.grantee::regrole::text||':'||x.privilege_type||':'||x.grantor::regrole::text,"
-            f"',' ORDER BY x.grantee::regrole::text,x.privilege_type),'') FROM pg_proc pp, "
-            f"aclexplode(coalesce(pp.proacl,acldefault('f',pp.proowner))) x WHERE pp.oid={oid_sql} AND x.grantee<>0)"
-            f"||CASE WHEN EXISTS(SELECT 1 FROM pg_proc pp,aclexplode(coalesce(pp.proacl,acldefault('f',pp.proowner))) x "
-            f"WHERE pp.oid={oid_sql} AND x.grantee=0) THEN ',PUBLIC' ELSE '' END)")
+    return (f"((SELECT coalesce(string_agg({item},',' ORDER BY {item}),'') FROM pg_proc pp, "
+            f"aclexplode(coalesce(pp.proacl,acldefault('f',pp.proowner))) x WHERE pp.oid={oid_sql}))")
 
 
 def meta_sql(sig):
@@ -102,8 +108,8 @@ def build(root, pins):
     assert pins['pre_rpc']['md5'] == INTERMEDIATE_RPC_MD5, ('INTERMEDIATE_DRIFT', pins['pre_rpc'])
     assert pins['deps']['public.is_financial_staff(uuid)']['md5'] == LIVE_IS_FINANCIAL_STAFF_MD5, \
         ('IS_FINANCIAL_STAFF_NOT_LIVE', pins['deps']['public.is_financial_staff(uuid)'])
-    assert set(pins['deps']) == set(DEPS)
-    dep_checks = ''.join(_assert_meta(s, pins['deps'][s], 'PROJECTION_READER_DEP_DRIFT') for s in DEPS)
+    assert set(DEPS) <= set(pins['deps']) <= set(DEPS) | set(OPTIONAL_DEPS)
+    dep_checks = ''.join(_assert_meta(s, pins['deps'][s], 'PROJECTION_READER_DEP_DRIFT') for s in sorted(pins['deps']))
     pre_guard = ("DO $$ BEGIN\n" + _assert_meta(SIG, pins['pre_rpc'], 'PROJECTION_READER_PRE_DRIFT') + dep_checks +
                  f" IF to_regprocedure('{HELPER}') IS NOT NULL THEN RAISE EXCEPTION 'PROJECTION_READER_HELPER_PREEXISTS'; END IF;\n"
                  "END $$;\n")

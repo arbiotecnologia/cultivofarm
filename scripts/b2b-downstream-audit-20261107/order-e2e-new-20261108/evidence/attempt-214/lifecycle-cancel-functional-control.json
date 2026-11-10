@@ -1,0 +1,26 @@
+{
+  "classification": "FUNCTIONAL_CANCEL_SUCCESS_DEDICATED_RECONCILED_REFERENCE_ROLLBACK",
+  "order_id": "996033b0-c260-4daf-89b2-a9795a63f7a3",
+  "invoice_id": "00000000-0000-0000-0000-000000000985",
+  "consultation_id": "290dc507-79a6-4e57-a46e-73f775048626",
+  "in_flight": 0,
+  "canonical_reconciliation": {
+    "event": "CONSULTATION_NOT_AUTHORIZED",
+    "state": "aguardando_fiscal",
+    "version": 6,
+    "replayed": false,
+    "invoice_id": "00000000-0000-0000-0000-000000000985",
+    "forecast_id": "d718c84e-3820-4393-9570-3e588894eaae",
+    "transmission_id": "290dc507-79a6-4e57-a46e-73f775048626"
+  },
+  "exit": 0,
+  "ack": {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "state": "cancelado_residual",
+    "version": 7,
+    "order_id": "996033b0-c260-4daf-89b2-a9795a63f7a3",
+    "forecast_id": "d718c84e-3820-4393-9570-3e588894eaae"
+  },
+  "state_preserved_after_rollback": true,
+  "hosted": false
+}

@@ -6,13 +6,17 @@ DO $$ BEGIN
   OR NOT has_function_privilege('authenticated','public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text)','EXECUTE') OR has_function_privilege('anon','public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text)','EXECUTE') OR has_function_privilege('service_role','public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text)','EXECUTE') THEN RAISE EXCEPTION 'B2B_FORECAST_WRAPPER_ACL_INVALID';END IF;
  IF has_function_privilege('authenticated','platform_private.b2b_financial_forecast_transition_v1(uuid,integer,text,text,jsonb)','EXECUTE') OR has_function_privilege('service_role','platform_private.b2b_financial_forecast_transition_v1(uuid,integer,text,text,jsonb)','EXECUTE')
   OR has_function_privilege('authenticated','platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text)','EXECUTE') OR has_function_privilege('service_role','platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text)','EXECUTE') THEN RAISE EXCEPTION 'B2B_FORECAST_PRIVATE_ACL_INVALID';END IF;
- IF md5(pg_get_functiondef('public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer)'::regprocedure)) IS DISTINCT FROM '938a4ffd146a930d4d7ebaed9ed35080' OR md5(pg_get_functiondef('public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text)'::regprocedure)) IS DISTINCT FROM '43adec08e129910aab7bbdb5a7216f80' THEN RAISE EXCEPTION 'B2B_FORECAST_WRAPPER_BODY_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer)'::regprocedure)) IS DISTINCT FROM 'b5108651a0c7cf32b72b9183482b0a9c' OR md5(pg_get_functiondef('public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text)'::regprocedure)) IS DISTINCT FROM '9b930e51d8a95a1f516573d5dc64e937' THEN RAISE EXCEPTION 'B2B_FORECAST_WRAPPER_BODY_DRIFT';END IF;
 END$$;
 DO $$ BEGIN
- IF EXISTS(SELECT 1 FROM platform_private.resale_pilot_allowlist_v1 WHERE operation IN ('forecast_sync','forecast_cancel','forecast_begin')) THEN
+ IF EXISTS(SELECT 1 FROM platform_private.b2b_forecast_lifecycle_allowlist_v1)
+  OR (SELECT enabled FROM platform_private.b2b_forecast_lifecycle_gate_v1 WHERE singleton) IS DISTINCT FROM false THEN
   RAISE EXCEPTION 'B2B_FORECAST_PILOT_NOT_CLOSED' USING ERRCODE='42501';END IF;
- IF has_function_privilege('authenticated','platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)','EXECUTE')
-  OR has_function_privilege('authenticated','platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)','EXECUTE') THEN
+ IF has_function_privilege('authenticated','platform_private.b2b_forecast_lifecycle_allowed_v1(text,uuid,uuid,uuid,uuid)','EXECUTE')
+  OR has_function_privilege('service_role','platform_private.b2b_forecast_lifecycle_allowed_v1(text,uuid,uuid,uuid,uuid)','EXECUTE')
+  OR has_function_privilege('authenticated','platform_private.b2b_forecast_lifecycle_scope_v1(text,uuid,uuid,uuid,uuid)','EXECUTE')
+  OR has_table_privilege('authenticated','platform_private.b2b_forecast_lifecycle_allowlist_v1','SELECT,INSERT,UPDATE,DELETE')
+  OR has_table_privilege('authenticated','platform_private.b2b_forecast_lifecycle_gate_v1','SELECT,INSERT,UPDATE,DELETE') THEN
   RAISE EXCEPTION 'B2B_FORECAST_PILOT_ACL_INVALID' USING ERRCODE='42501';END IF;
 END$$;
 ROLLBACK;
