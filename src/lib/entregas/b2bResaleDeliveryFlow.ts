@@ -6,7 +6,7 @@
  * key and is NEVER re-dispatched (no second reservation / stock movement).
  */
 import { DELIVERY_OPERATION_BLOCK } from "./operationalContainment";
-import { DEFINITIVE_REJECTION_CODES, GROUP_RPC, dispatchOnce, freeze, parseGroupAck, probeDeliveryCapability, replayUncertain, type GroupAck, type GroupInput, type Outcome, type RetrySnapshot, type Rpc } from "./deliveryOperationsFlow";
+import { DEFINITIVE_REJECTION_CODES, GROUP_RPC, buildGroupArgs, dispatchOnce, freeze, parseGroupAck, probeDeliveryCapability, replayUncertain, type GroupAck, type GroupInput, type Outcome, type RetrySnapshot, type Rpc } from "./deliveryOperationsFlow";
 
 export const RESALE_CAP_RPC = "rpc_b2b_resale_delivery_capability_v1";
 export const RESERVE_RPC = "reservar_estoque_item";
@@ -47,7 +47,6 @@ export async function runAtomicResaleGroup(rpc: Rpc, input: Omit<GroupInput, "re
   const [cap, resale] = await Promise.all([probeDeliveryCapability(rpc), probeResaleCapability(rpc, input.osId, ids, input.expectedOrg)]);
   fence();
   if (!cap.group || !resale || !ids.every(id => resale.items.get(id)?.deliveryCreate === true)) return { status: "closed", message: DELIVERY_OPERATION_BLOCK };
-  const { buildGroupArgs } = await import("./deliveryOperationsFlow");
   const args = buildGroupArgs({ ...input, resale });
   const retry = freeze({ fn: GROUP_RPC, args, expectedOrg: input.expectedOrg, osId: input.osId, count: ids.length });
   return dispatchOnce(rpc, retry, d => parseGroupAck(d, input.osId, ids.length, input.expectedOrg), fence, onDispatch);
