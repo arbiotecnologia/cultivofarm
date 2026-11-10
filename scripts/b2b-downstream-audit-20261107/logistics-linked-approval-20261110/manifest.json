@@ -3,7 +3,7 @@
  "hosted": false,
  "files_sha256": {
   "01-pre.sql.readonly": "a0c2d1ea524f837979066ff77cfd691df5fb2995d8d72315024940f0ab948d01",
-  "02-install.sql.review": "a42cd20ad42c07cedd7705a69429dba381bdfd16dc7acb8cbf3b5e3b3182ca6f",
+  "02-install.sql.review": "e419fc3be1d51b3a9ea8ad67ec65fa241ba71040352bfb8f3df9178ebc9c3496",
   "03-post.sql.readonly": "eba7d65d4b5eb939df44a01996259e38774c2c258527cde6f40b56347615addd",
   "04-rollback-restore-legacy-strict.sql.review": "5ad7eb3beb854d4b3138305ace6b5c8dfff3fe1d95d3ee8249e49a079f8f6551"
  },
@@ -13,7 +13,7 @@
    "source": "production-rollout-posplans-20261108/61-pilot-containment-install.sql.review",
    "live_md5": "804e2a33cdf204ed9fa179f2afa2bf6e",
    "replaced": 1,
-   "candidate_sha256": "49908e439f02d7acab3ffba35c2bdc318c7c6a654dabcdef2ed360975b3590d3",
+   "candidate_sha256": "90dc18758a7ad42f2ce39a9e3407b6c2d0bb1a3e0268e694cea747ac3edc02e9",
    "candidate_md5_pinned": "30d5e9dea53862e3c3ca0608e95deac4",
    "acl_pinned": "{postgres=X/postgres}"
   },
@@ -22,7 +22,7 @@
    "source": "production-rollout-posplans-20261108/61-pilot-containment-install.sql.review",
    "live_md5": "7cd8ee22794bf57e6592867259c9397e",
    "replaced": 1,
-   "candidate_sha256": "469198a937bdfc593b21d1ed38a5695f9be9326b27036c4bf5ad9cf36d1ffb01",
+   "candidate_sha256": "26d4afd04b2e19122da636a097d54af1c3544339b4dc2ba7a4ca6397e4b60da6",
    "candidate_md5_pinned": "cfb3bc9dd157f4325c23deb285f91531",
    "acl_pinned": "{postgres=X/postgres}"
   },
@@ -31,7 +31,7 @@
    "source": "production-rollout-posplans-20261108/61-pilot-containment-install.sql.review",
    "live_md5": "bd76345c3bceaa5e6203013920427df4",
    "replaced": 1,
-   "candidate_sha256": "285678fec8640cbdb3a9aa9470269f6606ec5e73249c6c5a3bb62fd636a23996",
+   "candidate_sha256": "010d554b58a9412d62dbad80f656ad0b95271b5b49039703eb19276800b3dafa",
    "candidate_md5_pinned": "b23b40e68ff5772e0523cc858741766a",
    "acl_pinned": "{postgres=X/postgres}"
   },
@@ -40,7 +40,7 @@
    "source": "production-rollout-posplans-20261108/61-pilot-containment-install.sql.review",
    "live_md5": "c5b1da90e1f649fe0eeb99deac7094ee",
    "replaced": 2,
-   "candidate_sha256": "739181a85f4c2984676d3ffb5fed56c8dbd1f82bdd60ce470b65bd2e40650066",
+   "candidate_sha256": "f060fb28dfa777e5e734e8d9d6411f327c3db6dc61ee7a700d604b4eb9594a76",
    "candidate_md5_pinned": "befa8844838dcfb0d4c2d069f2500e37",
    "acl_pinned": "{postgres=X/postgres}"
   },
@@ -49,7 +49,7 @@
    "source": "production-rollout-posplans-20261108-reader-rowtype-overlay/71-reader-rowtype-install.sql.review",
    "live_md5": "e9767fcbcbfb831b92ee7f1523b1262e",
    "replaced": 1,
-   "candidate_sha256": "1ee3e5225462c3be2fbfd48684e478a32cca7fa70badd6809f598b2457954a24",
+   "candidate_sha256": "254c4a5aebca917d66eaa8d5ca16a8d4c1908a360c2cb9294d566a5e986f1300",
    "candidate_md5_pinned": "a3705949d107538151777e119b8a906a",
    "acl_pinned": "{postgres=X/postgres,authenticated=X/postgres}"
   },
@@ -58,7 +58,7 @@
    "source": "production-rollout-posplans-20261108/61-pilot-containment-install.sql.review",
    "live_md5": "6a249b41a6e729835ff86cfc2b40e25b",
    "replaced": 1,
-   "candidate_sha256": "be5088b610dc47ec20375936efdbce85ee253f7e661792239efac2dd08993717",
+   "candidate_sha256": "fb4970867ad72d19b9579c2542dce344cef57de0f1bb7a74523b8f1e589b18ce",
    "candidate_md5_pinned": "99758ab06ead6f225d0fe3376db9efe9",
    "acl_pinned": "{postgres=X/postgres,authenticated=X/postgres}"
   }

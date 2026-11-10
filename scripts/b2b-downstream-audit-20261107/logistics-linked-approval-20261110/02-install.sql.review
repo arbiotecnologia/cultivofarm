@@ -41,10 +41,11 @@ AS $function$
     AND po.receivable_generated IS FALSE AND (po.approved_by IS NOT NULL AND po.approved_at IS NOT NULL
     AND po.payment_condition_status IN ('defined','approved') AND po.financial_approval_status IS DISTINCT FROM 'rejected'
     AND ((po.credit_approved_at IS NULL) = (po.credit_approved_by IS NULL))
-    AND ((po.requires_financial_approval IS FALSE AND po.financial_approval_status NOT IN ('pending','rejected'))
-     OR EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
+    AND EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
        WHERE t.id=po.payment_terms_id AND t.partner_order_id=po.id
-        AND t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL)))
+        AND ((t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL)
+          OR (po.requires_financial_approval IS FALSE AND po.financial_approval_status NOT IN ('pending','rejected')
+              AND t.approval_status='not_required'))))
     AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
     AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
     AND i.product_id=o.produto_id AND i.microrganismo_id IS NULL
@@ -78,10 +79,11 @@ AS $function$
     AND (po.approved_by IS NOT NULL AND po.approved_at IS NOT NULL
     AND po.payment_condition_status IN ('defined','approved') AND po.financial_approval_status IS DISTINCT FROM 'rejected'
     AND ((po.credit_approved_at IS NULL) = (po.credit_approved_by IS NULL))
-    AND ((po.requires_financial_approval IS FALSE AND po.financial_approval_status NOT IN ('pending','rejected'))
-     OR EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
+    AND EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
        WHERE t.id=po.payment_terms_id AND t.partner_order_id=po.id
-        AND t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL)))
+        AND ((t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL)
+          OR (po.requires_financial_approval IS FALSE AND po.financial_approval_status NOT IN ('pending','rejected')
+              AND t.approval_status='not_required'))))
     AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
     AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
     AND i.product_id=o.produto_id AND i.microrganismo_id IS NULL
@@ -114,10 +116,11 @@ AS $function$
     AND (po.approved_by IS NOT NULL AND po.approved_at IS NOT NULL
     AND po.payment_condition_status IN ('defined','approved') AND po.financial_approval_status IS DISTINCT FROM 'rejected'
     AND ((po.credit_approved_at IS NULL) = (po.credit_approved_by IS NULL))
-    AND ((po.requires_financial_approval IS FALSE AND po.financial_approval_status NOT IN ('pending','rejected'))
-     OR EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
+    AND EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
        WHERE t.id=po.payment_terms_id AND t.partner_order_id=po.id
-        AND t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL)))
+        AND ((t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL)
+          OR (po.requires_financial_approval IS FALSE AND po.financial_approval_status NOT IN ('pending','rejected')
+              AND t.approval_status='not_required'))))
     AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
     AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
   )) IS TRUE;
@@ -159,10 +162,11 @@ BEGIN
   OR v_order.receivable_generated IS TRUE OR NOT (v_order.approved_by IS NOT NULL AND v_order.approved_at IS NOT NULL
     AND v_order.payment_condition_status IN ('defined','approved') AND v_order.financial_approval_status IS DISTINCT FROM 'rejected'
     AND ((v_order.credit_approved_at IS NULL) = (v_order.credit_approved_by IS NULL))
-    AND ((v_order.requires_financial_approval IS FALSE AND v_order.financial_approval_status NOT IN ('pending','rejected'))
-     OR EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
+    AND EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
        WHERE t.id=v_order.payment_terms_id AND t.partner_order_id=v_order.id
-        AND t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL))) THEN RAISE EXCEPTION 'B2B_RESALE_ORDER_CONFLICT' USING ERRCODE='PT409';END IF;
+        AND ((t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL)
+          OR (v_order.requires_financial_approval IS FALSE AND v_order.financial_approval_status NOT IN ('pending','rejected')
+              AND t.approval_status='not_required')))) THEN RAISE EXCEPTION 'B2B_RESALE_ORDER_CONFLICT' USING ERRCODE='PT409';END IF;
  SELECT * INTO v_item FROM public.partner_order_items i WHERE i.id=p_order_item_id AND i.order_id=p_order_id
   AND i.product_id IS NOT NULL AND i.microrganismo_id IS NULL AND i.quantidade>0 AND i.quantidade=trunc(i.quantidade)
   AND i.unidade_medida='unidade' AND i.packaging_id_snapshot IS NOT NULL AND i.packaging_version_snapshot>0
@@ -188,10 +192,11 @@ BEGIN
    AND (po.approved_by IS NOT NULL AND po.approved_at IS NOT NULL
     AND po.payment_condition_status IN ('defined','approved') AND po.financial_approval_status IS DISTINCT FROM 'rejected'
     AND ((po.credit_approved_at IS NULL) = (po.credit_approved_by IS NULL))
-    AND ((po.requires_financial_approval IS FALSE AND po.financial_approval_status NOT IN ('pending','rejected'))
-     OR EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
+    AND EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
        WHERE t.id=po.payment_terms_id AND t.partner_order_id=po.id
-        AND t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL)))
+        AND ((t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL)
+          OR (po.requires_financial_approval IS FALSE AND po.financial_approval_status NOT IN ('pending','rejected')
+              AND t.approval_status='not_required'))))
  ) THEN RAISE EXCEPTION 'B2B_RESALE_SCOPE_CHANGED' USING ERRCODE='42501';END IF;
  INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'b2b_resale_os_create_v1',v_os);
  INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,microrganismo_id,
@@ -246,10 +251,11 @@ BEGIN
      AND v_order.receivable_generated IS FALSE AND (v_order.approved_by IS NOT NULL AND v_order.approved_at IS NOT NULL
     AND v_order.payment_condition_status IN ('defined','approved') AND v_order.financial_approval_status IS DISTINCT FROM 'rejected'
     AND ((v_order.credit_approved_at IS NULL) = (v_order.credit_approved_by IS NULL))
-    AND ((v_order.requires_financial_approval IS FALSE AND v_order.financial_approval_status NOT IN ('pending','rejected'))
-     OR EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
+    AND EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
        WHERE t.id=v_order.payment_terms_id AND t.partner_order_id=v_order.id
-        AND t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL)))
+        AND ((t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL)
+          OR (v_order.requires_financial_approval IS FALSE AND v_order.financial_approval_status NOT IN ('pending','rejected')
+              AND t.approval_status='not_required'))))
      AND i.product_id IS NOT NULL AND i.microrganismo_id IS NULL
      AND i.quantidade>0 AND i.quantidade=trunc(i.quantidade) AND i.unidade_medida='unidade'
      AND i.packaging_id_snapshot IS NOT NULL AND i.packaging_version_snapshot>0
@@ -308,10 +314,11 @@ BEGIN
   AND po.receivable_generated IS FALSE AND (po.approved_by IS NOT NULL AND po.approved_at IS NOT NULL
     AND po.payment_condition_status IN ('defined','approved') AND po.financial_approval_status IS DISTINCT FROM 'rejected'
     AND ((po.credit_approved_at IS NULL) = (po.credit_approved_by IS NULL))
-    AND ((po.requires_financial_approval IS FALSE AND po.financial_approval_status NOT IN ('pending','rejected'))
-     OR EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
+    AND EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
        WHERE t.id=po.payment_terms_id AND t.partner_order_id=po.id
-        AND t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL)))
+        AND ((t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL)
+          OR (po.requires_financial_approval IS FALSE AND po.financial_approval_status NOT IN ('pending','rejected')
+              AND t.approval_status='not_required'))))
   AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
   AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL)
  THEN RAISE EXCEPTION 'B2B_RESALE_ORDER_CONFLICT' USING ERRCODE='PT409'; END IF;
