@@ -250,6 +250,11 @@ def denied(proc, token):
 
 def run_pre_nf_wrappers(B, Q, OUT, order_id, accepted, item):
     """Emission/consultation/cancel through authenticated wrappers over real callbacks."""
+    # Local restoration is metadata-only: populate the staging marker explicitly,
+    # with external emission still OFF. Never change a divergent existing marker.
+    B.sql("INSERT INTO public.fiscal_environment_marker(project_ref,environment_label,production_emission_allowed) SELECT 'swzpzcwiasxmjutrmvkm','LOCAL_DISPOSABLE_HOMOLOG',false WHERE NOT EXISTS(SELECT 1 FROM public.fiscal_environment_marker);")
+    assert B.last("SELECT project_ref='swzpzcwiasxmjutrmvkm' AND production_emission_allowed IS FALSE FROM public.fiscal_environment_marker;")=='t'
+    (OUT/'fiscal-marker-local.json').write_text(json.dumps(dict(ref='swzpzcwiasxmjutrmvkm',synthetic=True,production_emission_allowed=False,hosted=False))+'\n')
     company = accepted['internal_economic_snapshot']['origin']['company_settings_id']
     log = []
     R = insert_invoice(B, Q, order_id, Q.P, company, item['id'], 9, 960)
