@@ -356,10 +356,16 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
     assert B.last(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{order_id}' AND b2b_document_id IS NOT NULL;") == '2'
     assert forecast_row(B, order_id) == forecast
 
-    h7 = B.run_raw(f"BEGIN;UPDATE public.fiscal_invoices SET receivable_id='{second_receivable}' WHERE id='{first_invoice}';ROLLBACK;")
+    # H7 negative with the tenant admin's claims so the H15 company guard is satisfied
+    # and the immutability trigger itself must refuse; always rolled back.
+    claims = json.dumps({'sub': Q.UADM, 'role': 'authenticated', 'iat': 1, 'exp': 4102444800}).replace("'", "''")
+    h7_ctx = f"BEGIN;SET LOCAL request.jwt.claim.sub='{Q.UADM}';SET LOCAL request.jwt.claims='{claims}';"
+    h7 = B.run_raw(h7_ctx + f"UPDATE public.fiscal_invoices SET receivable_id='{second_receivable}' WHERE id='{first_invoice}';ROLLBACK;")
     assert h7.returncode != 0 and 'FISCAL_DOCUMENT_LOCKED' in h7.stderr, h7.stderr
-    h7_same = B.run_raw(f"BEGIN;UPDATE public.fiscal_invoices SET receivable_id=receivable_id WHERE id='{first_invoice}';ROLLBACK;")
-    assert h7_same.returncode == 0, h7_same.stderr
+    h7_same = B.run_raw(h7_ctx + f"UPDATE public.fiscal_invoices SET receivable_id=receivable_id WHERE id='{first_invoice}';ROLLBACK;")
+    h7_no_claims = B.run_raw(f"BEGIN;UPDATE public.fiscal_invoices SET receivable_id='{second_receivable}' WHERE id='{first_invoice}';ROLLBACK;")
+    assert h7_no_claims.returncode != 0, h7_no_claims.stderr
+    assert B.last(f"SELECT receivable_id FROM public.fiscal_invoices WHERE id='{first_invoice}';") == first_receivable
 
     projection = Q.as_user(Q.UFIN, f"SELECT public.rpc_receivable_money_projection_v1('{first_receivable}',0,1000);")
     if projection.returncode != 0:
@@ -381,7 +387,7 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
                   forecast_after_second=forecast, forecast_after_payment=forecast_after_payment, titles=totals, payment_amount=9,
                   payment_replay=dict(exit=paid_replay.returncode, stdout=paid_replay.stdout.strip()[-300:], stderr=paid_replay.stderr.strip()[-300:]),
                   projection_caller='authenticated' if 'RESET ROLE' not in str(projection.args) else 'owner-read-only',
-                  concurrent_replay_one_title=True, h7_receivable_id_immutable=True, synthetic_fiscal_documents=True, hosted=False)
+                  concurrent_replay_one_title=True, h7_receivable_id_immutable=True, h7=dict(change=h7.stderr.strip()[:300], same_value=dict(exit=h7_same.returncode, stderr=h7_same.stderr.strip()[:300]), without_claims=h7_no_claims.stderr.strip()[:300]), synthetic_fiscal_documents=True, hosted=False)
     (OUT/'forecast-two-partial-nf-and-payment.json').write_text(json.dumps(result, indent=2)+'\n')
     return result
 
