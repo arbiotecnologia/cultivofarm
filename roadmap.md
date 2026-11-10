@@ -1,3 +1,9 @@
+## 10/11 02:33 — Revisão independente dos wrappers após 184
+- [ ] Restringir resultado conclusivo de consulta a prova fiscal canônica vinculada e atual; testar erros e divergências sem cancelar/reemitir.
+- [ ] Serializar cancelamento com o início canônico da transmissão, com escopo antes dos locks e reautorização depois; reproduzir corridas e estrangeiro sem espera.
+- [ ] Pinar ACL normalizada dos dois auxiliares B4 e testar drift; revalidar 747→738 e pedido 18→9, 38 gatilhos ativos e rollback.
+- [ ] Entregar evidência local e pendência explícita do leitor autorizado para fase autenticada; pacote inativo, sem hosted ou efeitos externos.
+
 ## 10/11 02:40 — Composição B4+previsão e cadeia integral local (172–184)
 - [x] Corpo único `fn_b2b_credit_exposure` 7d841856 após B4 44e8768f (estágio 09–12), elegibilidade por termos vinculados, wrappers autenticados emissão/consulta/cancelamento; tentativa 184 exit 0, 55/55: 18/9/9, pagamento 9, duas últimas NFs concorrentes, replay, H7, parcial+cancelamento+callback tardio e rollback composto. Falhas 172–183 preservadas em REVIEW-20261110.md.
 - [ ] Revisão independente do auditor antes de qualquer instalação (bloqueio: decisão externa). Hosted JWT/RLS/Storage, SEFAZ real e UI autenticada continuam não provados.

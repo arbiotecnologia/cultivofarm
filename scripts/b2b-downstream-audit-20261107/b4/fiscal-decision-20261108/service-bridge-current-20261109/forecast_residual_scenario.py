@@ -223,7 +223,8 @@ def authorize(B, doc, tx, protocol, when='2027-02-02T12:00:00Z'):
 
 
 def reject(B, tx, cstat, motive):
-    got = record(B, tx, 'SUCCEEDED', {'cStat': cstat, 'xMotivo': motive, 'tpAmb': '2'})
+    key = B.last(f"SELECT i.access_key FROM public.fiscal_invoices i JOIN public.fiscal_sefaz_transmissions t ON t.fiscal_invoice_id=i.id WHERE t.id='{tx}';")
+    got = record(B, tx, 'SUCCEEDED', {'cStat': cstat, 'xMotivo': motive, 'tpAmb': '2', 'chNFe':key})
     assert got.returncode == 0 and _last(got)['outcome'] == 'REJECTED', (got.stdout, got.stderr)
     return _last(got)
 
@@ -272,6 +273,7 @@ def run_pre_nf_wrappers(B, Q, OUT, order_id, accepted, item):
     consult = insert_followup_tx(B, Q, T, 968, 'NFeConsultaProtocolo4')
     neg['consultation_not_terminal'] = denied(sync_raw(Q, Q.UFIN, consult, timeout['version']), 'B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE')
     neg['cancel_with_consultation_in_flight'] = denied(cancel_raw(Q, Q.UFIN, order_id, timeout['version'], 'consulta em voo'), 'B2B_FORECAST_FISCAL_IN_FLIGHT')
+    review = test_wrapper_review(B,Q,OUT,order_id,T,consult,timeout['version'])
     reject(B, consult, '217', 'NF-e nao consta na base de dados da SEFAZ')
     consulted = sync(Q, Q.UFIN, consult, timeout['version']); log.append(consulted)
     assert consulted['event'] == 'CONSULTATION_NOT_AUTHORIZED' and consulted['state'] == 'aguardando_fiscal', consulted
@@ -296,11 +298,56 @@ def run_pre_nf_wrappers(B, Q, OUT, order_id, accepted, item):
     assert final['state'] == 'aguardando_fiscal' and float(final['residual_amount']) == 18, final
     receivables = B.last(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{order_id}';")
     assert receivables == '0', receivables
-    result = dict(events=log, negatives=neg, final=final, receivables=0, invoices=dict(rejected=R, timeout=T, consultation_tx=consult, revocation=W),
+    result = dict(events=log, negatives=neg, review=review, final=final, receivables=0, invoices=dict(rejected=R, timeout=T, consultation_tx=consult, revocation=W),
                   callbacks='public.rpc_fiscal_sefaz_transmit_record_v1 as service_role (canonical H13 worker)',
                   wrappers_as='authenticated SQL role with JWT claims (local, not hosted JWT)', reset_role_used=False, hosted=False)
     (OUT / 'forecast-wrappers-pre-nf.json').write_text(json.dumps(result, indent=2) + '\n')
     return result
+
+
+def test_wrapper_review(B,Q,OUT,order_id,doc,consult,v):
+    """Actual SQL calls, rollback-only response mutations for negative provenance cases.
+    These mutations characterize the reader, not fiscal/provider evidence."""
+    rows=[]
+    claims=json.dumps({'sub':Q.UFIN,'role':'authenticated','iat':1,'exp':4102444800}).replace("'","''")
+    ctx=f"SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{Q.UFIN}';SET LOCAL request.jwt.claims='{claims}';"
+    before=forecast_row(B,order_id)
+    cases=[('schema-215',"c_stat='215'"),('receipt-106',"c_stat='106'"),('authorization-280',"c_stat='280'"),
+           ('key-mismatch',"ch_nfe='"+_key(555)+"'"),('environment-mismatch',"ambiente_retorno='1'"),
+           ('receipt-mismatch',"n_rec='DIVERGENT-RECEIPT'"),('document-mismatch',f"xml_run_id='{Q.u(961)}'"),
+           ('return-batch-not-proof',"service='NFeRetAutorizacao4'"),('stale-response',"created_at='2000-01-01'::timestamptz")]
+    for name,change in cases:
+        sql=f"BEGIN;UPDATE public.fiscal_sefaz_transmissions SET state='SUCCEEDED',outcome='REJECTED',c_stat='217',ch_nfe='{doc['access_key']}',ambiente_retorno='2',completed_at=now(),{change} WHERE id='{consult}';{ctx}SELECT public.rpc_b2b_forecast_fiscal_sync_v1('{consult}',{v});ROLLBACK;"
+        # Avoid assigning the same column twice while preserving the complete baseline.
+        assignments={k:val for k,val in (s.split('=',1) for s in ["state='SUCCEEDED'","outcome='REJECTED'","c_stat='217'",f"ch_nfe='{doc['access_key']}'","ambiente_retorno='2'","completed_at=now()",change])}
+        sql=f"BEGIN;UPDATE public.fiscal_sefaz_transmissions SET "+','.join(k+'='+val for k,val in assignments.items())+f" WHERE id='{consult}';{ctx}SELECT public.rpc_b2b_forecast_fiscal_sync_v1('{consult}',{v});ROLLBACK;"
+        got=B.run_raw(sql)
+        rows.append(dict(case=name,exit=got.returncode,stderr=got.stderr,hosted=False))
+        assert got.returncode!=0 and 'B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE' in got.stderr,rows[-1]
+        assert forecast_row(B,order_id)==before
+    # Foreign actor must not wait on an actual row lock of this tenant.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        hold=pool.submit(B.run_raw,f"BEGIN;SELECT id FROM public.fiscal_invoices WHERE id='{doc['invoice']}' FOR UPDATE;SELECT id FROM public.partner_orders WHERE id='{order_id}' FOR UPDATE;SELECT pg_sleep(1);COMMIT;")
+        time.sleep(.2)
+        start=time.monotonic()
+        claims_f=json.dumps({'sub':Q.UADMF,'role':'authenticated','iat':1,'exp':4102444800}).replace("'","''")
+        foreign_ctx=f"BEGIN;SET LOCAL lock_timeout='150ms';SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{Q.UADMF}';SET LOCAL request.jwt.claims='{claims_f}';"
+        a=B.run_raw(foreign_ctx+f"SELECT public.rpc_b2b_forecast_fiscal_sync_v1('{consult}',{v});COMMIT;")
+        b=B.run_raw(foreign_ctx+f"SELECT public.rpc_b2b_forecast_cancel_residual_v1('{order_id}',{v},'foreign');COMMIT;")
+        elapsed=time.monotonic()-start;held=hold.result()
+    assert held.returncode==0 and a.returncode!=0 and b.returncode!=0
+    assert '42501' in a.stderr and '42501' in b.stderr and 'lock timeout' not in a.stderr+b.stderr,(a.stderr,b.stderr)
+    rows.append(dict(case='foreign-no-wait',sync=a.stderr,cancel=b.stderr,elapsed=elapsed))
+    # ACL drift must fail actual generated POST, not just a source assertion.
+    from pathlib import Path
+    folder=Path(__file__).parent/'forecast-pre-nf-20261109'
+    for sig in ('platform_private.b2b_credit_balances(uuid,uuid)','platform_private.b2b_order_residual(uuid)'):
+        post=(folder/'11-post-credit-composition.sql.readonly').read_text().replace('BEGIN READ ONLY;','').replace('ROLLBACK;','')
+        got=B.run_raw(f"BEGIN;GRANT EXECUTE ON FUNCTION {sig} TO authenticated;"+post+'ROLLBACK;')
+        assert got.returncode!=0 and 'B2B_CREDIT_COMPOSITION_POST_ACL' in got.stderr,got.stderr
+        rows.append(dict(case='helper-acl-drift',signature=sig,stderr=got.stderr))
+    (OUT/'wrapper-review-affected.json').write_text(json.dumps(rows,indent=2)+'\n')
+    return rows
 
 
 def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, first_receivable, credit_before):
