@@ -314,10 +314,7 @@ def test_wrapper_review(B,Q,OUT,order_id,doc,consult,v):
     ctx=f"SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{Q.UFIN}';SET LOCAL request.jwt.claims='{claims}';"
     before=forecast_row(B,order_id)
     from pathlib import Path
-    root=Path(__file__).resolve().parents[5]
-    old_sql=(root/'scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/evidence').exists()
     # Frozen 184 source, not a reconstructed stand-in. Rollback retains candidate.
-    source=root/'scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-184/source-manifest.json'
     # Actual pre-review wrapper was frozen separately in the review package.
     old_folder=Path(__file__).parent/'forecast-pre-nf-20261109'
     old_source=old_folder/'wrappers-184.sql.capture'
@@ -516,7 +513,7 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
     blocked_begin = B.run_raw(begin_statement(Q,L,'after-cancel'))
     assert blocked_begin.returncode!=0 and 'B2B_FORECAST_BEGIN_BLOCKED' in blocked_begin.stderr,blocked_begin.stderr
     from pathlib import Path
-    root=Path(__file__).resolve().parents[5]
+    root=Path(__file__).resolve().parents[4]
     capture=json.loads((root/'scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-184/current-pre-physical.json').read_text())
     old_begin=next(r['body'] for r in capture['functions'] if r['name']=='rpc_fiscal_sefaz_transmit_begin_v1')
     old_started=B.run_raw('BEGIN;'+old_begin+';'+begin_statement(Q,L,'BEFORE-canceled-begin')+'ROLLBACK;')
