@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/resale-delivery-capability-20261110/db_capability_test.py", line 11, in <module>
+    sh("initdb","-D",str(d/"db"),"-U","postgres","-A","trust")
+    ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/resale-delivery-capability-20261110/db_capability_test.py", line 10, in sh
+    def sh(*a,**k): return subprocess.run(a,check=True,capture_output=True,text=True,**k)
+                           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/subprocess.py", line 577, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '('initdb', '-D', '/tmp/tmpmovrkmkt/db', '-U', 'postgres', '-A', 'trust')' returned non-zero exit status 1.
