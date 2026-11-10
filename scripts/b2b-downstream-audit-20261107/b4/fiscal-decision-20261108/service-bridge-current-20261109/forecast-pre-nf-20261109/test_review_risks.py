@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exact forecast function bodies, isolated synthetic schema; NOT fiscal/JWT proof."""
 import concurrent.futures
+import hashlib
 import importlib.util
 import json
 import os
@@ -70,6 +71,10 @@ try:
         match = re.search(r'CREATE FUNCTION platform_private\.b2b_financial_forecast_'+name+r'_v1\(.*?END\$\$;', text,re.S)
         assert match, name
         pg.sql(match.group())
+    # Execute the candidate ACL statements, not just the extracted body.
+    for text in (source,reconcile_source):
+        for statement in re.findall(r'(?:REVOKE ALL|GRANT EXECUTE) ON FUNCTION platform_private\.b2b_financial_forecast_.*?;',text,re.S):
+            pg.sql(statement)
     pg.sql(f"""INSERT INTO public.partner_accounts VALUES('{R}','{D}',true,NULL);
       INSERT INTO public.partner_orders VALUES('{O}','{R}','aprovado','{D}',now(),false,'{I}','defined',NULL,NULL,'{{"total":18}}',18,18);
       INSERT INTO public.partner_order_payment_schedule VALUES('{O}',1,18);
@@ -101,7 +106,25 @@ try:
     record('reconcile canceled residual',raw(f"SELECT platform_private.b2b_financial_forecast_reconcile_fiscal_v1('{D}','{R}');"),lambda r:r.returncode==0 if before else r.returncode!=0)
     state=json.loads(pg.sql(f"SELECT jsonb_build_object('state',state,'residual',residual_amount) FROM platform_private.b2b_financial_forecasts WHERE id='{F}';"))
     assert state==({'state':'faturado_parcial','residual':9} if before else {'state':'cancelado_residual','residual':0}),state
-    (OUT/'results.json').write_text(json.dumps(dict(kind='ISOLATED_COMPONENT_NOT_FISCAL_AUTHORITY',phase=sys.argv[4],checks=checks,hosted=False,sql_source=str(sys.argv[1]),fiscal_provenance_positive='NOT_PROVEN',synthetic_residual=True),indent=2)+'\n')
+    if not before:
+        v=reset('faturado_parcial',9)
+        # Cancel holds the exact aggregate lock; confirmation must observe its
+        # committed terminal state. No fiscal-positive stub is introduced.
+        cancel_sql=f"BEGIN;SELECT platform_private.b2b_financial_forecast_cancel_residual_v1('{F}',{v},'LOCAL RACE');SELECT pg_sleep(.5);COMMIT;"
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            cancel_future=pool.submit(raw,cancel_sql)
+            time.sleep(.15)
+            reconcile_future=pool.submit(raw,f"SELECT platform_private.b2b_financial_forecast_reconcile_fiscal_v1('{D}','{R}');")
+            cancellation=cancel_future.result();confirmation=reconcile_future.result()
+        record('cancel race committed',cancellation,lambda r:r.returncode==0)
+        record('confirmation observes canceled state after wait',confirmation,lambda r:'PT409' in r.stderr and 'RESIDUAL_CANCELED' in r.stderr)
+        record('canceled residual cannot emit',raw(event(version=v+1)),lambda r:'STATE_CONFLICT' in r.stderr)
+        v=reset('faturado_parcial',9)
+        record('allocation alone is not fiscal evidence',raw(f"SELECT platform_private.b2b_financial_forecast_reconcile_fiscal_v1('{D}','{R}');"),lambda r:'42501' in r.stderr and 'SERVICE_PERMIT_REQUIRED' in r.stderr)
+        for role in ('anon','authenticated','service_role'):
+            for sql in (event(version=v),f"SELECT platform_private.b2b_financial_forecast_cancel_residual_v1('{F}',{v},'DENIED');",f"SELECT platform_private.b2b_financial_forecast_reconcile_fiscal_v1('{D}','{R}');"):
+                record('private caller denied '+role,raw('SET ROLE '+role+';'+sql),lambda r:'42501' in r.stderr)
+    (OUT/'results.json').write_text(json.dumps(dict(kind='ISOLATED_COMPONENT_NOT_FISCAL_AUTHORITY',phase=sys.argv[4],checks=checks,hosted=False,source_sha256=hashlib.sha256(source.encode()).hexdigest(),reconcile_sha256=hashlib.sha256(reconcile_source.encode()).hexdigest(),fiscal_provenance_positive='NOT_PROVEN',synthetic_residual=True),indent=2)+'\n')
     print(json.dumps(dict(checks=len(checks),phase=sys.argv[4],status='EXPECTED_CHARACTERIZATION' if before else 'COMPONENT_PASS_NOT_RELEASE')))
 except Exception:
     (OUT/'failed-checks.json').write_text(json.dumps(checks,indent=2)+'\n')
