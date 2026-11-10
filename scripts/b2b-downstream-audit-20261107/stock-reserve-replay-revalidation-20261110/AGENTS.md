@@ -1,0 +1,5 @@
+- Preparação local apenas: nunca aplicar 02/04 hospedado nem publicar daqui; o auditor revisa e instala — evita mudança não revisada.
+- 02 é gerado por generate.py a partir do corpo v2 instalado (LIVE md5 3e0dc7c4…), uma âncora no ramo de recibo; nunca editar à mão — evita drift.
+- Recibo só retorna após revalidar, depois da espera, ator/tenant, referências e concessão/gate vigentes; origens sem estoque acabado e splits mantêm o comportamento — evita recibo com autoridade vencida.
+- Rollback é deny-only e nunca restaura o corpo vulnerável; histórico de recibos/ledger preservado.
+- Reserva de revenda usa somente rpc_estoque_reservar_v1 com chave idempotente; nunca rpc_reservar_embalagem_entrega legado.
