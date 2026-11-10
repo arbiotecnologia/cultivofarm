@@ -224,7 +224,8 @@ def authorize(B, doc, tx, protocol, when='2027-02-02T12:00:00Z'):
 
 def reject(B, tx, cstat, motive):
     key = B.last(f"SELECT i.access_key FROM public.fiscal_invoices i JOIN public.fiscal_sefaz_transmissions t ON t.fiscal_invoice_id=i.id WHERE t.id='{tx}';")
-    got = record(B, tx, 'SUCCEEDED', {'cStat': cstat, 'xMotivo': motive, 'tpAmb': '2', 'chNFe':key})
+    got = record(B, tx, 'SUCCEEDED', {'cStat': cstat, 'xMotivo': motive, 'tpAmb': '2', 'chNFe':key,
+                                   'responseSummary':{'cStat':cstat,'chNFe':key,'tpAmb':'2'}})
     assert got.returncode == 0 and _last(got)['outcome'] == 'REJECTED', (got.stdout, got.stderr)
     return _last(got)
 
@@ -315,11 +316,13 @@ def test_wrapper_review(B,Q,OUT,order_id,doc,consult,v):
     cases=[('schema-215',"c_stat='215'"),('receipt-106',"c_stat='106'"),('authorization-280',"c_stat='280'"),
            ('key-mismatch',"ch_nfe='"+_key(555)+"'"),('environment-mismatch',"ambiente_retorno='1'"),
            ('receipt-mismatch',"n_rec='DIVERGENT-RECEIPT'"),('document-mismatch',f"xml_run_id='{Q.u(961)}'"),
-           ('return-batch-not-proof',"service='NFeRetAutorizacao4'"),('stale-response',"created_at='2000-01-01'::timestamptz")]
+           ('return-batch-not-proof',"service='NFeRetAutorizacao4'"),('stale-response',"created_at='2000-01-01'::timestamptz"),
+           ('missing-returned-proof',"response_summary=NULL"),('returned-key-mismatch',"response_summary='{}'::jsonb")]
     for name,change in cases:
         sql=f"BEGIN;UPDATE public.fiscal_sefaz_transmissions SET state='SUCCEEDED',outcome='REJECTED',c_stat='217',ch_nfe='{doc['access_key']}',ambiente_retorno='2',completed_at=now(),{change} WHERE id='{consult}';{ctx}SELECT public.rpc_b2b_forecast_fiscal_sync_v1('{consult}',{v});ROLLBACK;"
         # Avoid assigning the same column twice while preserving the complete baseline.
-        assignments={k:val for k,val in (s.split('=',1) for s in ["state='SUCCEEDED'","outcome='REJECTED'","c_stat='217'",f"ch_nfe='{doc['access_key']}'","ambiente_retorno='2'","completed_at=now()",change])}
+        proof=json.dumps({'cStat':'217','chNFe':doc['access_key'],'tpAmb':'2'})
+        assignments={k:val for k,val in (s.split('=',1) for s in ["state='SUCCEEDED'","outcome='REJECTED'","c_stat='217'",f"ch_nfe='{doc['access_key']}'","ambiente_retorno='2'","completed_at=now()",f"response_summary='{proof}'::jsonb",change])}
         sql=f"BEGIN;UPDATE public.fiscal_sefaz_transmissions SET "+','.join(k+'='+val for k,val in assignments.items())+f" WHERE id='{consult}';{ctx}SELECT public.rpc_b2b_forecast_fiscal_sync_v1('{consult}',{v});ROLLBACK;"
         got=B.run_raw(sql)
         rows.append(dict(case=name,exit=got.returncode,stderr=got.stderr,hosted=False))
@@ -549,7 +552,7 @@ def test_begin_cancel_race(B,Q,OUT,order_id,doc,v):
         cancel=pool.submit(cancel_raw,Q,Q.UFIN,order_id,v,'race begin first')
         held,called=holder.result(),cancel.result()
     assert held.returncode==0 and called.returncode!=0 and 'B2B_FORECAST_FISCAL_IN_FLIGHT' in called.stderr,(held.stderr,called.stderr)
-    tx=_last(type('Proc',(),{'stdout':'\n'.join(x for x in held.stdout.splitlines() if x.startswith('{'))})())['transmissionId']
+    tx=json.loads(next(x for x in held.stdout.splitlines() if x.startswith('{')))['transmissionId']
     transport_error(B,tx,'LOCAL_RACE_FINISHED_NO_EMISSION')
     rows.append(dict(case='begin-first',begin_stdout=held.stdout,cancel_stderr=called.stderr))
     assert forecast_row(B,order_id)==before

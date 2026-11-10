@@ -80,6 +80,9 @@ BEGIN
   IF t.service='NFeConsultaProtocolo4' AND t.state='SUCCEEDED' AND t.outcome='REJECTED'
    AND t.c_stat='217' AND t.ch_nfe=inv.access_key AND inv.environment='HOMOLOGATION'
    AND t.environment_code='2' AND t.ambiente_retorno='2'
+   -- Returned proof is recorded by the worker callback, not inherited request fields.
+   AND t.response_summary->>'cStat'='217'
+   AND t.response_summary->>'chNFe'=inv.access_key AND t.response_summary->>'tpAmb'='2'
    AND t.xml_run_id IS NOT NULL AND EXISTS(SELECT 1 FROM public.fiscal_xml_runs r
      WHERE r.id=t.xml_run_id AND r.fiscal_invoice_id=inv.id AND r.access_key=inv.access_key AND r.environment_code='2')
    AND t.n_prot IS NULL AND t.n_rec IS NULL
@@ -158,6 +161,7 @@ def begin_overlay(root):
       JOIN public.fiscal_invoices i ON i.partner_order_id=f.order_id WHERE i.id=v_invoice
       AND (f.organization_id IS DISTINCT FROM i.organization_id OR f.partner_id IS DISTINCT FROM i.debtor_partner_id
        OR f.state IN ('cancelado_antes_nf','cancelado_residual','consulta_fiscal_obrigatoria','faturado_total')
+       OR (f.state='emissao_em_andamento' AND f.fiscal_intent_id IS DISTINCT FROM i.id)
        OR i.total_amount>f.residual_amount OR i.total_amount<=0)) THEN
       RAISE EXCEPTION 'B2B_FORECAST_BEGIN_BLOCKED' USING ERRCODE='PT409';
     END IF;
