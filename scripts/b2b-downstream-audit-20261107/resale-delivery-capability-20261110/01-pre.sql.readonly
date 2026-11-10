@@ -5,7 +5,7 @@ DO $$
 DECLARE r record;
 BEGIN
  IF to_regprocedure('public.rpc_b2b_resale_delivery_capability_v1(uuid,uuid[])') IS NOT NULL THEN RAISE EXCEPTION 'PRE_TARGET_PRESENT'; END IF;
- IF md5(pg_get_functiondef('platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)'::regprocedure)) IS DISTINCT FROM ':SCOPE_MD5:' THEN RAISE EXCEPTION 'PRE_SCOPE_BODY_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)'::regprocedure)) IS DISTINCT FROM '63f49feea167f6865fd7840cde7dc63b' THEN RAISE EXCEPTION 'PRE_SCOPE_BODY_DRIFT'; END IF;
  FOR r IN SELECT x::regprocedure p FROM unnest(ARRAY[
   'platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)',
   'platform_private.delivery_actor_20261030(text)',

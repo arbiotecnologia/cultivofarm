@@ -6,8 +6,9 @@ from pathlib import Path
 HERE=Path(__file__).parent
 SRC=HERE.parent/"order-e2e-new-20261108/production-rollout-posplans-20261108/61-pilot-containment-install.sql.review"
 SEAMS=["auth.uid() lê GUC test.uid","delivery_actor_20261030 lê tabela test_actor (seam)","fn_estoque_pode_operar lê test_actor.reserve","b2b_resale_os_operational_valid_v1 reduzido a origem/status/escopo (seam)","tabelas com colunas mínimas","reserva simulada por UPDATE direto como superusuário (seam do writer real)"]
-d=Path(tempfile.mkdtemp());port=str(55400+os.getpid()%500)
-def sh(*a,**k): return subprocess.run(a,check=True,capture_output=True,text=True,**k)
+d=Path(tempfile.mkdtemp());os.chmod(d,0o777);port=str(55400+os.getpid()%500)
+SU=["setpriv","--reuid=1000","--regid=1000","--clear-groups"] if os.getuid()==0 else []
+def sh(*a,**k): return subprocess.run(SU+list(a),check=True,capture_output=True,text=True,**k)
 sh("initdb","-D",str(d/"db"),"-U","postgres","-A","trust")
 sh("pg_ctl","-D",str(d/"db"),"-o",f"-p {port} -k {d} -c listen_addresses=''","-l",str(d/"log"),"-w","start")
 import psycopg2  # type: ignore
