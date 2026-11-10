@@ -12,9 +12,11 @@ dependency the candidate calls. is_financial_staff must equal the LIVE READONLY 
 6e8f2fa7b92ca7e039d092353b3ebfe2 (accepts administrador/gestor/financeiro via
 fn_authz_uid_scope_ok); the canonical policy is preserved, never narrowed/expanded.
 A pre-existing helper of the same signature aborts PRE/INSTALL (CREATE, not REPLACE).
-Rollback validates the exact candidate metadata first, then CLOSES deny-only: keeps the
-hardened candidate body, helper -> false, revokes authenticated. It never restores the
-pre-candidate body. Never applied hosted here.
+Rollback validates the exact candidate metadata first, then CLOSES deny-only: revokes
+authenticated EXECUTE and keeps the hardened candidate body AND the real helper. It never
+restores the pre-candidate body. The helper is NOT forced to false because the internal
+DEFINER writer rpc_register_receivable_payment(uuid,jsonb) calls this RPC (attempt 211:
+helper=false broke payment 9 with MONEY_ORIGIN_ACCESS_DENIED). Never applied hosted here.
 """
 import hashlib
 import json
@@ -27,6 +29,7 @@ SOURCE = 'scripts/financial-price-generator-20261029/integration/origin.sql.revi
 LIVE_IS_FINANCIAL_STAFF_MD5 = '6e8f2fa7b92ca7e039d092353b3ebfe2'
 # Promoted local intermediate body after origin.sql.review (attempt 209, disposable PG).
 INTERMEDIATE_RPC_MD5 = '7c5d3fa0a4c9516ab1c40b058a529578'
+INTERNAL_CALLERS = ('public.rpc_register_receivable_payment(uuid,jsonb)',)
 DEPS = ('public.is_financial_staff(uuid)', 'public.h15_actor_organization()',
         'public._saas_user_has_feature(uuid,text)',
         'platform_private.b2b_legacy_money_row(uuid)', 'platform_private.b2b_allocation_money_row(uuid)')
@@ -84,7 +87,7 @@ REVOKE ALL ON FUNCTION {SIG} FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION {SIG} TO authenticated;
 SELECT 'PROBE_RPC '||({meta_sql(SIG)[7:-1]});
 SELECT 'PROBE_HELPER '||({meta_sql(HELPER)[7:-1]});
-""" + CLOSED_HELPER + f"""REVOKE ALL ON FUNCTION {SIG} FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION {SIG} FROM PUBLIC,anon,authenticated,service_role;
 SELECT 'PROBE_RB_RPC '||({meta_sql(SIG)[7:-1]});
 SELECT 'PROBE_RB_HELPER '||({meta_sql(HELPER)[7:-1]});
 ROLLBACK;
@@ -121,7 +124,7 @@ GRANT EXECUTE ON FUNCTION {SIG} TO authenticated;
 """ + post_guard + "COMMIT;\n")
     post = header + "BEGIN READ ONLY;\n" + post_guard + "SELECT 'POST_OK';\nROLLBACK;\n"
     rollback = (header + "-- Deny-only: validates exact candidate, keeps hardened body, never restores pre-candidate body.\n"
-                "BEGIN;\n" + post_guard + CLOSED_HELPER +
+                "BEGIN;\n" + post_guard +
                 f"REVOKE ALL ON FUNCTION {SIG} FROM PUBLIC,anon,authenticated,service_role;\n" + rb_post + "COMMIT;\n")
     files = {'13-pre-projection-reader.sql.readonly': pre, '14-install-projection-reader.sql.review': install,
              '15-post-projection-reader.sql.readonly': post, '16-rollback-projection-reader-deny.sql.review': rollback}
