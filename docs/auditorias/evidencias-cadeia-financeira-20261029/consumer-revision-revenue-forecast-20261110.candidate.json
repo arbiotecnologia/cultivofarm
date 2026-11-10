@@ -1,0 +1,8 @@
+{
+ "src/hooks/useB2BFinanceiro.ts": {
+  "historical_md5": "34f3e9b43dbf97010090dc9d29deed37",
+  "current_md5": "49aa2f646b66170e8fea870a7a44d90e",
+  "commit": "working tree 2026-11-10 (sem commit fixado)",
+  "reason": "CANDIDATO — NÃO REVISADO. useB2BRevenueForecast deixa de chamar rpc_b2b_revenue_forecast legado e usa rpc_b2b_revenue_forecast_tenant_v2 com validação da empresa da sessão; ausência exata do leitor => indisponível. Sem escrita, cobrança ou dispatch. Promoção ao .reviewed.json só pelo revisor."
+ }
+}
