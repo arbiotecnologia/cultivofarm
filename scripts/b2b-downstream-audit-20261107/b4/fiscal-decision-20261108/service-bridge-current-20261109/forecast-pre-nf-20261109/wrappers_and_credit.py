@@ -188,6 +188,30 @@ def begin_overlay(root):
     capture = root / 'scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-184/current-pre-physical.json'
     row = next(r for r in json.loads(capture.read_text())['functions'] if r['name']=='rpc_fiscal_sefaz_transmit_begin_v1')
     assert md5(row['body']) == row['md5'] == '4d93bb04e4a18771ed9185d2f3c5d6dc'
+    blind = """  SELECT coalesce(nfe_environment_code, '') INTO v_tpamb
+    FROM public.company_fiscal_settings WHERE is_active LIMIT 1;
+  IF v_tpamb IS DISTINCT FROM '2' THEN
+    RAISE EXCEPTION 'FISCAL_PRODUCTION_ENDPOINT_BLOCKED';
+  END IF;
+"""
+    assert row['body'].count(blind)==1
+    # Demonstrated defect (attempt 195): tenant-blind LIMIT 1 reads another
+    # tenant's active settings. Candidate derives tpamb from the document's own
+    # active settings after invoice derivation; no-document services keep the
+    # canonical clause verbatim. Missing/other settings => NULL => blocked.
+    scoped_env = """  IF v_invoice IS NOT NULL THEN
+    SELECT coalesce(c.nfe_environment_code, '') INTO v_tpamb
+      FROM public.fiscal_invoices i JOIN public.company_fiscal_settings c
+        ON c.id=i.company_settings_id AND c.organization_id=i.organization_id AND c.is_active
+     WHERE i.id=v_invoice;
+  ELSE
+    SELECT coalesce(nfe_environment_code, '') INTO v_tpamb
+      FROM public.company_fiscal_settings WHERE is_active LIMIT 1;
+  END IF;
+  IF v_tpamb IS DISTINCT FROM '2' THEN
+    RAISE EXCEPTION 'FISCAL_PRODUCTION_ENDPOINT_BLOCKED';
+  END IF;
+"""
     anchor = "  PERFORM pg_advisory_xact_lock(hashtextextended('fiscal_sefaz_tx:' || _idempotency_key, 0));"
     guard = """  -- Shared serialization with cancel: invoice -> order -> forecast, as H13.
   -- Runs in the canonical worker writer, before any transmission insert/replay.
@@ -202,7 +226,7 @@ def begin_overlay(root):
   END IF;
 """
     assert row['body'].count(anchor)==1
-    body=row['body'].replace(anchor,guard+anchor)
+    body=row['body'].replace(blind,'',1).replace(anchor,scoped_env+guard+anchor)
     # Only new dispatches reserve; exact replay above retains original transmission.
     insert_anchor = '  INSERT INTO public.fiscal_sefaz_transmissions ('
     reserve = """  SELECT f.* INTO v_forecast FROM platform_private.b2b_financial_forecasts f

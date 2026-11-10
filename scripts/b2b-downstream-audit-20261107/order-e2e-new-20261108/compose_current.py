@@ -272,6 +272,9 @@ def main():
     SELECT '{Q.A}',true,'VALIDATED',now(),'ARBIO FIXTURE LOCAL SEM VALIDADE EXTERNA','00000000000191',1,'2'
     WHERE NOT EXISTS(SELECT 1 FROM public.company_fiscal_settings WHERE organization_id='{Q.A}' AND is_active);
    SET session_replication_role=origin;""")
+  # Fast READ ONLY replica of the canonical begin environment predicates; fails
+  # here (minutes earlier) instead of at the first consultation BEGIN.
+  load('forecast_preflight',ROOT/'scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast_residual_scenario.py').fiscal_begin_preflight(B,OUT,'after-fixture-settings-insert',org=Q.A)
   promoted,promote_error=Q.call(Q.UADM,f"public.c2_promote_accounting_pending_order_v1('{order_id}','{before['updated_at']}'::timestamptz)")
   assert promoted is not None,promote_error
   assert promoted['contract']=='C2_EXTERNAL_ORDER_ORIGIN_V1',promoted

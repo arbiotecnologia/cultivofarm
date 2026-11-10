@@ -207,8 +207,74 @@ def insert_invoice(B, Q, order_id, partner, company, item_id, amount, n, issue_d
     return dict(invoice=invoice_id, xml_run=xml_run_id, tx=tx_id, access_key=access_key)
 
 
-def insert_followup_tx(B, Q, doc, n, service):
+FISCAL_BEGIN_PREFLIGHT_SQL = """BEGIN READ ONLY;
+SELECT jsonb_build_object(
+ 'markers',(SELECT coalesce(jsonb_agg(jsonb_build_object('project_ref',m.project_ref,'production_emission_allowed',m.production_emission_allowed) ORDER BY m.ctid),'[]') FROM public.fiscal_environment_marker m),
+ 'clause1_marker_first',(SELECT jsonb_build_object('project_ref',project_ref,'production_emission_allowed',production_emission_allowed) FROM public.fiscal_environment_marker LIMIT 1),
+ 'clause2_tpamb_canonical_pick',(SELECT coalesce(nfe_environment_code,'') FROM public.company_fiscal_settings WHERE is_active LIMIT 1),
+ 'clause2_picked_row',(SELECT jsonb_build_object('id',id,'organization_id',organization_id,'nfe_environment_code',nfe_environment_code,'legal_name',legal_name,'ctid',ctid::text) FROM public.company_fiscal_settings WHERE is_active LIMIT 1),
+ 'active_settings',(SELECT coalesce(jsonb_agg(jsonb_build_object('id',id,'organization_id',organization_id,'nfe_environment_code',nfe_environment_code,'legal_name',legal_name,'ctid',ctid::text) ORDER BY ctid),'[]') FROM public.company_fiscal_settings WHERE is_active))::text;
+ROLLBACK;"""
+
+
+def fiscal_begin_preflight(B, OUT, label, invoice=None, org=None, require_marker=False):
+    """READ ONLY replica of the begin writer environment predicates. Records the
+    canonical tenant-blind pick (active settings LIMIT 1) and the tenant-scoped
+    pick (invoice settings / own org). Never mutates nor relaxes the guard."""
+    snap = json.loads([x for x in B.sql(FISCAL_BEGIN_PREFLIGHT_SQL).splitlines() if x.startswith('{')][-1])
+    if invoice:
+        snap['invoice_settings'] = json.loads([x for x in B.sql(f"""BEGIN READ ONLY;SELECT jsonb_build_object('company_settings_id',i.company_settings_id,'organization_id',i.organization_id,'environment',i.environment,
+ 'scoped_tpamb',(SELECT coalesce(c.nfe_environment_code,'') FROM public.company_fiscal_settings c WHERE c.id=i.company_settings_id AND c.organization_id=i.organization_id AND c.is_active))::text
+ FROM public.fiscal_invoices i WHERE i.id='{invoice}';ROLLBACK;""").splitlines() if x.startswith('{')][-1])
+        scoped = snap['invoice_settings']['scoped_tpamb']
+    else:
+        own = [r for r in snap['active_settings'] if r['organization_id'] == org]
+        scoped = own[0]['nfe_environment_code'] if len(own) == 1 else None
+    picked = snap['clause2_picked_row'] or {}
+    snap['canonical_pick_is_other_tenant'] = bool(org and picked.get('organization_id') != org) or bool(invoice and picked.get('id') != snap['invoice_settings']['company_settings_id'])
+    snap['scoped_tpamb'] = scoped
+    m = snap['clause1_marker_first'] or {}
+    failing = []
+    if require_marker and (m.get('project_ref') != 'swzpzcwiasxmjutrmvkm' or m.get('production_emission_allowed') is not False):
+        failing.append('clause1_marker')
+    if scoped != '2':
+        failing.append('clause2_scoped_tpamb')
+    snap.update(label=label, failing_predicates=failing, readonly=True, hosted=False,
+                canonical_clause2_result=('PASS' if snap['clause2_tpamb_canonical_pick'] == '2' else 'BLOCK'),
+                endpoint_host_clause='static ENDPOINT hnfe.fazenda.mg.gov.br (clause3) not data dependent')
+    path = OUT / 'fiscal-begin-preflight.json'
+    rows = json.loads(path.read_text()) if path.exists() else []
+    rows.append(snap)
+    path.write_text(json.dumps(rows, indent=2) + '\n')
+    assert not failing, f'FISCAL_BEGIN_PREFLIGHT_FAILED {label}: {failing}'
+    return snap
+
+
+def test_begin_env_tenant_scope(B, Q, OUT, doc, n):
+    """Rolled-back negatives: the document's OWN settings decide tpamb; another
+    tenant's active settings (env NULL sentinel or '2') never decide it."""
+    out = {}
+    company = B.last(f"SELECT company_settings_id FROM public.fiscal_invoices WHERE id='{doc['invoice']}';")
+    call = (f"SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_begin_v1('NFeConsultaProtocolo4','local-env-scope-{n}',"
+            f"'LOCAL-ENV-SCOPE-{n}','{ENDPOINT}','{doc['invoice']}','{doc['xml_run']}','{Q.UFIN}',NULL);")
+    for name, mutate in [('own_settings_env_1', f"UPDATE public.company_fiscal_settings SET nfe_environment_code='1' WHERE id='{company}';"),
+                         ('own_settings_env_null', f"UPDATE public.company_fiscal_settings SET nfe_environment_code=NULL WHERE id='{company}';"),
+                         ('own_settings_inactive_other_tenant_env_2', f"UPDATE public.company_fiscal_settings SET nfe_environment_code='2' WHERE id<>'{company}';UPDATE public.company_fiscal_settings SET is_active=false WHERE id='{company}';")]:
+        # Declared synthetic seam (as the fixture insert): settings staged with replica
+        # role inside a rolled-back txn; triggers return to origin BEFORE the writer call.
+        got = B.run_raw(f"BEGIN;SET LOCAL session_replication_role=replica;{mutate}SET LOCAL session_replication_role=origin;{call}ROLLBACK;")
+        out[name] = dict(exit=got.returncode, blocked='FISCAL_PRODUCTION_ENDPOINT_BLOCKED' in got.stderr, stderr=got.stderr[-400:])
+        assert got.returncode != 0 and out[name]['blocked'], out[name]
+    out['transmissions_created'] = B.last(f"SELECT count(*) FROM public.fiscal_sefaz_transmissions WHERE idempotency_key LIKE 'local-env-scope-{n}%';")
+    assert out['transmissions_created'] == '0', out
+    (OUT/'begin-env-tenant-scope.json').write_text(json.dumps(dict(cases=out, rolled_back=True, hosted=False, seam='settings staged with replica role, writer called with origin role'), indent=2)+'\n')
+    return out
+
+
+def insert_followup_tx(B, Q, doc, n, service, OUT=None):
     if service=='NFeConsultaProtocolo4':
+        if OUT is not None:
+            fiscal_begin_preflight(B, OUT, f'pre-begin-consult-{n}', doc['invoice'], require_marker=True)
         got=B.run_raw(f"SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_begin_v1('{service}','local-forecast-consult-{n}','LOCAL-CONSULT-{n}','{ENDPOINT}','{doc['invoice']}','{doc['xml_run']}','{Q.UFIN}',NULL);")
         assert got.returncode==0,got.stderr
         return _last(got)['transmissionId']
@@ -285,7 +351,8 @@ def run_pre_nf_wrappers(B, Q, OUT, order_id, accepted, item):
     timeout = sync(Q, Q.UFIN, T['tx'], t_started['version']); log.append(timeout)
     assert timeout['event'] == 'EMISSION_TIMEOUT' and timeout['state'] == 'consulta_fiscal_obrigatoria', timeout
     neg['cancel_while_consultation_required'] = denied(cancel_raw(Q, Q.UFIN, order_id, timeout['version'], 'consulta pendente'), 'B2B_FORECAST_STATE_CONFLICT')
-    consult = insert_followup_tx(B, Q, T, 968, 'NFeConsultaProtocolo4')
+    neg['begin_env_tenant_scope'] = test_begin_env_tenant_scope(B, Q, OUT, T, 967)
+    consult = insert_followup_tx(B, Q, T, 968, 'NFeConsultaProtocolo4', OUT)
     neg['consultation_not_terminal'] = denied(sync_raw(Q, Q.UFIN, consult, timeout['version']), 'B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE')
     neg['cancel_with_consultation_in_flight'] = denied(cancel_raw(Q, Q.UFIN, order_id, timeout['version'], 'consulta em voo'), 'B2B_FORECAST_FISCAL_IN_FLIGHT')
     review = test_wrapper_review(B,Q,OUT,order_id,T,consult,timeout['version'])
@@ -342,7 +409,7 @@ def test_wrapper_review(B,Q,OUT,order_id,doc,consult,v):
            ('key-mismatch',"ch_nfe='"+_key(555)+"'"),('environment-mismatch',"ambiente_retorno='1'"),
            ('receipt-mismatch',"n_rec='DIVERGENT-RECEIPT'"),('document-mismatch',f"xml_run_id='{Q.u(961)}'"),
            ('return-batch-not-proof',"service='NFeRetAutorizacao4'"),('stale-response',"created_at='2000-01-01'::timestamptz"),
-           ('missing-returned-proof',"response_summary=NULL"),('returned-key-mismatch',"response_summary='{}'::jsonb")]
+           ('missing-returned-proof',"response_summary='{\"cStat\":\"217\",\"tpAmb\":\"2\"}'::jsonb"),('returned-key-mismatch',"response_summary='{}'::jsonb")]
     for name,change in cases:
         sql=f"BEGIN;UPDATE public.fiscal_sefaz_transmissions SET state='SUCCEEDED',outcome='REJECTED',c_stat='217',ch_nfe='{doc['access_key']}',ambiente_retorno='2',completed_at=now(),{change} WHERE id='{consult}';{ctx}SELECT public.rpc_b2b_forecast_fiscal_sync_v1('{consult}',{v});ROLLBACK;"
         # Avoid assigning the same column twice while preserving the complete baseline.
@@ -529,7 +596,7 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
     l_started = sync(Q, Q.UFIN, L['tx'], version(Q, pc_order))
     transport_error(B, L['tx'], 'LOCAL_TRANSPORT_TIMEOUT_PC')
     l_timeout = sync(Q, Q.UFIN, L['tx'], l_started['version'])
-    consult = insert_followup_tx(B, Q, L, 988, 'NFeConsultaProtocolo4')
+    consult = insert_followup_tx(B, Q, L, 988, 'NFeConsultaProtocolo4', OUT)
     reject(B, consult, '217', 'NF-e nao consta na base de dados da SEFAZ')
     l_consulted = sync(Q, Q.UFIN, consult, l_timeout['version'])
     assert l_consulted['state'] == 'aguardando_fiscal', l_consulted

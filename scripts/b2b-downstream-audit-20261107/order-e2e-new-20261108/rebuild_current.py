@@ -57,11 +57,23 @@ def main():
         'PATH': str(PG) + ':' + os.environ['PATH'],
         'NEW_E2E_OUT': str(attempt),
     }
+    if os.environ.get('NEW_E2E_BUILD_FORECAST') == '1':
+        # Regenerate the forecast candidate ONLY inside the mirror, so the run
+        # exercises current sources; repository artifacts stay un-promoted.
+        fdir = mirror / 'scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109'
+        built = subprocess.run([sys.executable, str(fdir / 'build.py')], cwd=fdir, env=env, text=True, capture_output=True, timeout=300)
+        (attempt / 'mirror-forecast-build.txt').write_text(f'exit={built.returncode}\n{built.stdout[-3000:]}\n{built.stderr[-3000:]}')
+        (attempt / 'mirror-forecast-artifacts.json').write_text(json.dumps({
+            p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+            for p in sorted(fdir.glob('[01][0-9]-*.sql.*'))}, indent=2) + '\n')
+        if built.returncode != 0:
+            (attempt / 'run.exitcode').write_text('2\n')
+            print('MIRROR_FORECAST_BUILD_FAILED'); return 2
     runner = mirror / 'scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py'
     try:
         result = subprocess.run(
             [sys.executable, str(runner)], cwd=mirror, env=env,
-            text=True, capture_output=True, timeout=540,
+            text=True, capture_output=True, timeout=int(os.environ.get('NEW_E2E_TIMEOUT','540')),
         )
         stdout, stderr, exitcode = result.stdout, result.stderr, result.returncode
     except subprocess.TimeoutExpired as error:
@@ -71,7 +83,7 @@ def main():
             stdout = stdout.decode(errors='replace')
         if isinstance(stderr, bytes):
             stderr = stderr.decode(errors='replace')
-        stderr += '\nLOCAL_REHEARSAL_TIMEOUT_540S\n'
+        stderr += '\nLOCAL_REHEARSAL_TIMEOUT\n'
         exitcode = 124
     (attempt / 'run.stdout.txt').write_text(stdout)
     (attempt / 'run.stderr.txt').write_text(stderr)
