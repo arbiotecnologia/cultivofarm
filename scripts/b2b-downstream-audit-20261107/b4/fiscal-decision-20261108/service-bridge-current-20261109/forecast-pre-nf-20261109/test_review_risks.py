@@ -43,6 +43,11 @@ def record(name, result, expected):
 def event(payload='{}', version=1, reference=I):
     return f"SELECT platform_private.b2b_financial_forecast_transition_v1('{F}',{version},'EMISSION_STARTED','{reference}','{payload}'::jsonb);"
 
+def pre(name, result, expected):
+    row = dict(name=name, exit=result.returncode, stdout=result.stdout, stderr=result.stderr)
+    checks.append(row)
+    assert expected(result), row
+
 def reset(state='aguardando_fiscal', residual=18):
     pg.sql(f"TRUNCATE platform_private.b2b_financial_forecast_events; UPDATE platform_private.b2b_financial_forecasts SET state='{state}',residual_amount={residual},fiscal_intent_id=NULL,version=version+1; ")
     return int(pg.sql(f"SELECT version FROM platform_private.b2b_financial_forecasts WHERE id='{F}';"))
@@ -90,11 +95,11 @@ try:
     # Creation pilot: out of grant the helper defers BEFORE snapshot/schedule checks.
     pg.sql("SET request.jwt.claim.sub='00000000-0000-0000-0000-0000000000aa';")
     A='00000000-0000-0000-0000-0000000000aa'
-    record('no grant: creation deferred, no forecast',raw(f"SET request.jwt.claim.sub='{A}';SELECT platform_private.b2b_financial_forecast_after_approval_v1('{O}','{{\"reason_code\":\"OK\"}}');SELECT count(*) FROM platform_private.b2b_financial_forecasts;"),lambda r:r.returncode==0 and 'FORECAST_CREATION_NOT_GRANTED' in r.stdout and r.stdout.strip().endswith('0'))
+    pre('no grant: creation deferred, no forecast',raw(f"SET request.jwt.claim.sub='{A}';SELECT platform_private.b2b_financial_forecast_after_approval_v1('{O}','{{\"reason_code\":\"OK\"}}');SELECT count(*) FROM platform_private.b2b_financial_forecasts;"),lambda r:r.returncode==0 and 'FORECAST_CREATION_NOT_GRANTED' in r.stdout and r.stdout.strip().endswith('0'))
     pg.sql(f"INSERT INTO platform_private.b2b_forecast_creation_allowlist_v1(actor_id,organization_id,partner_id,order_id,valid_until) VALUES('{A}','{D}','{R}','{O}',now()+interval '1 hour');")
-    record('grant but gate closed: deferred',raw(f"SET request.jwt.claim.sub='{A}';SELECT platform_private.b2b_financial_forecast_after_approval_v1('{O}','{{\"reason_code\":\"OK\"}}');"),lambda r:r.returncode==0 and 'FORECAST_CREATION_NOT_GRANTED' in r.stdout)
+    pre('grant but gate closed: deferred',raw(f"SET request.jwt.claim.sub='{A}';SELECT platform_private.b2b_financial_forecast_after_approval_v1('{O}','{{\"reason_code\":\"OK\"}}');"),lambda r:r.returncode==0 and 'FORECAST_CREATION_NOT_GRANTED' in r.stdout)
     pg.sql("UPDATE platform_private.b2b_forecast_creation_gate_v1 SET enabled=true WHERE singleton;")
-    record('other actor with gate open: deferred',raw(f"SET request.jwt.claim.sub='{R}';SELECT platform_private.b2b_financial_forecast_after_approval_v1('{O}','{{\"reason_code\":\"OK\"}}');"),lambda r:r.returncode==0 and 'FORECAST_CREATION_NOT_GRANTED' in r.stdout)
+    pre('other actor with gate open: deferred',raw(f"SET request.jwt.claim.sub='{R}';SELECT platform_private.b2b_financial_forecast_after_approval_v1('{O}','{{\"reason_code\":\"OK\"}}');"),lambda r:r.returncode==0 and 'FORECAST_CREATION_NOT_GRANTED' in r.stdout)
     pg.sql(f"SET request.jwt.claim.sub='{A}';SELECT platform_private.b2b_financial_forecast_after_approval_v1('{O}','{{\"reason_code\":\"OK\",\"exposure\":0}}');")
     F = pg.sql(f"SELECT id FROM platform_private.b2b_financial_forecasts WHERE order_id='{O}';")
     pg.sql(f"UPDATE public.partner_order_payment_schedule SET status='linked',receivable_installment_id='{R}' WHERE partner_order_id='{O}';")
