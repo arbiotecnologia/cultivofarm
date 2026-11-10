@@ -20,6 +20,25 @@ CANON = """({a}.approved_by IS NOT NULL AND {a}.approved_at IS NOT NULL
      OR EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
        WHERE t.id={a}.payment_terms_id AND t.partner_order_id={a}.id
         AND t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL)))"""
+# Fixados da attempt-234 (evidence/attempt-234/candidate-md5.json): md5(pg_get_functiondef) medido após instalar o candidato.
+CANDIDATE_MD5 = {
+ "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)": "30d5e9dea53862e3c3ca0608e95deac4",
+ "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)": "cfb3bc9dd157f4325c23deb285f91531",
+ "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)": "b23b40e68ff5772e0523cc858741766a",
+ "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "befa8844838dcfb0d4c2d069f2500e37",
+ "public.rpc_b2b_resale_os_availability_v1(uuid)": "a3705949d107538151777e119b8a906a",
+ "public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "99758ab06ead6f225d0fe3376db9efe9",
+}
+# ACL fixada (medida no espelho alinhado; PRE hospedado somente leitura deu PRE_PASS com ela).
+ACL_PINNED = {
+ "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)": "{postgres=X/postgres}",
+ "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)": "{postgres=X/postgres}",
+ "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)": "{postgres=X/postgres}",
+ "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "{postgres=X/postgres}",
+ "public.rpc_b2b_resale_os_availability_v1(uuid)": "{postgres=X/postgres,authenticated=X/postgres}",
+ "public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "{postgres=X/postgres,authenticated=X/postgres}",
+}
+FILES = ("01-pre.sql.readonly", "02-install.sql.review", "03-post.sql.readonly", "04-rollback-restore-legacy-strict.sql.review")
 FENCES = ('B2B_RESALE_SCOPE_CHANGED','B2B_RESALE_GATE_CLOSED','RESALE_PILOT_SCOPE_DENIED','p_expected_updated_at','FOR UPDATE','FOR SHARE','resale_pilot_scope_v1','auth.uid()')
 
 def extract(path, head):
@@ -50,7 +69,7 @@ def build():
 def pins(rows, key):
     out = []
     for r in rows:
-        exp = r[key] if key == "live_md5" else ":" + r["signature"].split("(")[0] + ":"
+        exp = r["live_md5"] if key == "live_md5" else CANDIDATE_MD5[r["signature"]]
         out.append(f"""DO $$DECLARE p oid:=to_regprocedure('{r['signature']}');BEGIN
  IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '{exp}' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p)<>'postgres'
  THEN RAISE EXCEPTION 'LINKED_APPROVAL_CONSUMER_DRIFT %','{r['signature']}';END IF;END$$;""")
@@ -59,17 +78,33 @@ def pins(rows, key):
 ACL = """DO $$DECLARE r record;BEGIN FOR r IN SELECT * FROM (VALUES {vals}) v(s,a) LOOP
  IF (SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid=to_regprocedure(r.s)) IS DISTINCT FROM r.a THEN RAISE EXCEPTION 'LINKED_APPROVAL_ACL_DRIFT %',r.s;END IF;END LOOP;END$$;"""
 
-def main():
+def render():
     rows = build()
-    acl = json.loads((H / "acl-live.json").read_text())  # medido no espelho alinhado ao LIVE; auditor confere no PRE hospedado
+    assert set(CANDIDATE_MD5) == set(SRC) == set(ACL_PINNED)
+    acl = ACL_PINNED
     acl_sql = ACL.format(vals=",".join(f"('{s}','{a}')" for s, a in acl.items()))
     pre = "BEGIN READ ONLY;\n" + pins(rows, "live_md5") + "\n" + acl_sql + "\nSELECT 'PRE_PASS';\nROLLBACK;\n"
-    install = "BEGIN;\n" + pins(rows, "live_md5") + "\n" + acl_sql + "\n" + ";\n".join(r["candidate"] for r in rows) + ";\n" + acl_sql + "\nCOMMIT;\n"
+    install = "BEGIN;\n" + pins(rows, "live_md5") + "\n" + acl_sql + "\n" + ";\n".join(r["candidate"] for r in rows) + ";\n" + acl_sql + "\n" + pins(rows, "candidate") + "\nCOMMIT;\n"
     post = "BEGIN READ ONLY;\n" + pins(rows, "candidate") + "\n" + acl_sql + "\nSELECT 'POST_PASS';\nROLLBACK;\n"
     rollback = "BEGIN;\n" + ";\n".join(r["live"] for r in rows) + ";\n" + acl_sql + "\n" + pins(rows, "live_md5") + "\nCOMMIT;\n"
-    for n, t in [("01-pre.sql.readonly", pre), ("02-install.sql.review", install), ("03-post.sql.readonly", post), ("04-rollback-restore-legacy-strict.sql.review", rollback)]:
+    texts = dict(zip(FILES, (pre, install, post, rollback)))
+    for t in texts.values():
+        assert not re.search(r"'(:[a-z_.]+:)'", t) and "{" + "a}" not in t, "placeholder left"
+    return rows, texts
+
+def verify_on_disk():
+    """Fontes finais == gerador: bytes no disco idênticos ao render(); devolve sha256 por arquivo."""
+    rows, texts = render()
+    for n, t in texts.items():
+        assert (H / n).read_bytes() == t.encode(), ("FINAL_FILE_DIVERGES_FROM_GENERATOR", n)
+    return rows, {n: hashlib.sha256(t.encode()).hexdigest() for n, t in texts.items()}
+
+def main():
+    rows, texts = render()
+    for n, t in texts.items():
         (H / n).write_text(t)
-    (H / "manifest.json").write_text(json.dumps({"status": "REVIEW_ONLY_INACTIVE_NOT_APPROVED", "hosted": False, "rows": [{k: r[k] for k in ("signature", "source", "live_md5", "replaced")} | {"candidate_sha256": hashlib.sha256(r["candidate"].encode()).hexdigest()} for r in rows]}, indent=1) + "\n")
+    (H / "acl-live.json").write_text(json.dumps(ACL_PINNED, indent=1) + "\n")
+    (H / "manifest.json").write_text(json.dumps({"status": "REVIEW_ONLY_INACTIVE_NOT_APPROVED", "hosted": False, "files_sha256": {n: hashlib.sha256(t.encode()).hexdigest() for n, t in texts.items()}, "rows": [{k: r[k] for k in ("signature", "source", "live_md5", "replaced")} | {"candidate_sha256": hashlib.sha256(r["candidate"].encode()).hexdigest(), "candidate_md5_pinned": CANDIDATE_MD5[r["signature"]], "acl_pinned": ACL_PINNED[r["signature"]]} for r in rows]}, indent=1) + "\n")
     return rows
 
 if __name__ == "__main__":

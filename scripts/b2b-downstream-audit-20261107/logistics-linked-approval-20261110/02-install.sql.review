@@ -328,4 +328,22 @@ BEGIN
 END;$function$;
 DO $$DECLARE r record;BEGIN FOR r IN SELECT * FROM (VALUES ('platform_private.b2b_resale_os_valid_v1(public.ordens_servico)','{postgres=X/postgres}'),('platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)','{postgres=X/postgres}'),('platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)','{postgres=X/postgres}'),('platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)','{postgres=X/postgres}'),('public.rpc_b2b_resale_os_availability_v1(uuid)','{postgres=X/postgres,authenticated=X/postgres}'),('public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)','{postgres=X/postgres,authenticated=X/postgres}')) v(s,a) LOOP
  IF (SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid=to_regprocedure(r.s)) IS DISTINCT FROM r.a THEN RAISE EXCEPTION 'LINKED_APPROVAL_ACL_DRIFT %',r.s;END IF;END LOOP;END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_os_valid_v1(public.ordens_servico)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '30d5e9dea53862e3c3ca0608e95deac4' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p)<>'postgres'
+ THEN RAISE EXCEPTION 'LINKED_APPROVAL_CONSUMER_DRIFT %','platform_private.b2b_resale_os_valid_v1(public.ordens_servico)';END IF;END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'cfb3bc9dd157f4325c23deb285f91531' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p)<>'postgres'
+ THEN RAISE EXCEPTION 'LINKED_APPROVAL_CONSUMER_DRIFT %','platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)';END IF;END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'b23b40e68ff5772e0523cc858741766a' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p)<>'postgres'
+ THEN RAISE EXCEPTION 'LINKED_APPROVAL_CONSUMER_DRIFT %','platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)';END IF;END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'befa8844838dcfb0d4c2d069f2500e37' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p)<>'postgres'
+ THEN RAISE EXCEPTION 'LINKED_APPROVAL_CONSUMER_DRIFT %','platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)';END IF;END$$;
+DO $$DECLARE p oid:=to_regprocedure('public.rpc_b2b_resale_os_availability_v1(uuid)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'a3705949d107538151777e119b8a906a' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p)<>'postgres'
+ THEN RAISE EXCEPTION 'LINKED_APPROVAL_CONSUMER_DRIFT %','public.rpc_b2b_resale_os_availability_v1(uuid)';END IF;END$$;
+DO $$DECLARE p oid:=to_regprocedure('public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '99758ab06ead6f225d0fe3376db9efe9' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p)<>'postgres'
+ THEN RAISE EXCEPTION 'LINKED_APPROVAL_CONSUMER_DRIFT %','public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)';END IF;END$$;
 COMMIT;
