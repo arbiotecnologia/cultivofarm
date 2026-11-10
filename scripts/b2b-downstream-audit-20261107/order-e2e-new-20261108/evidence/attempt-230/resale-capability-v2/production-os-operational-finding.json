@@ -1,0 +1,16 @@
+{
+ "header": {
+  "payment_condition_status": "defined",
+  "financial_approval_status": "pending",
+  "requires_financial_approval": true
+ },
+ "os_operational_live": "false",
+ "capability": {
+  "os_id": null,
+  "allowed": false,
+  "operation": "reserve",
+  "stock_ids": [],
+  "capability": "b2b_resale_delivery_v2",
+  "organization_id": null
+ }
+}
