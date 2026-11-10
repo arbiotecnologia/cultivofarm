@@ -1,0 +1,36 @@
+{
+  "forecast": {
+    "state": "aguardando_fiscal",
+    "version": 1,
+    "order_id": "b885dd8f-364a-45eb-9d0d-8821a006aa37",
+    "schedule": [
+      {
+        "id": "43a1331a-8cd2-4eeb-a2f8-426301506189",
+        "amount": 18.0,
+        "due_date": "2026-12-10",
+        "interest_amount": 0.0,
+        "partner_order_id": "b885dd8f-364a-45eb-9d0d-8821a006aa37",
+        "payment_terms_id": "fc791c60-a3c6-4fb1-8d1a-7dc649c7db48",
+        "principal_amount": 18.0,
+        "installment_number": 1
+      }
+    ],
+    "created_at": "2026-11-10T21:48:47.839894+00:00",
+    "partner_id": "00000000-0000-0000-0000-000000000011",
+    "updated_at": "2026-11-10T21:48:47.839894+00:00",
+    "forecast_id": "cb09ea8e-bf1a-42f0-8555-33ae7efb209a",
+    "total_amount": 18.0,
+    "last_error_code": null,
+    "organization_id": "00000000-0000-0000-0000-000000000001",
+    "residual_amount": 18.0,
+    "fiscal_intent_id": null,
+    "due_dates_estimated": true
+  },
+  "replay": {
+    "state": "aguardando_fiscal",
+    "replayed": true,
+    "forecast_id": "cb09ea8e-bf1a-42f0-8555-33ae7efb209a"
+  },
+  "cross_tenant_denied": "ERROR:  42501: B2B_FORECAST_READ_DENIED\nCONTEXT:  PL/pgSQL function public.get_b2b_financial_forecast_secure(uuid) line 11 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+  "receivables_before_nf": 0
+}

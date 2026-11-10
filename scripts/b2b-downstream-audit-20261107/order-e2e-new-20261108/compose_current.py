@@ -506,6 +506,13 @@ def main():
   pilot_out=Pilot.install(B,OUT)
   PilotTests=load('pilot_containment_tests',H/'test_pilot_containment.py')
   pilot_results=PilotTests.run(B,Review70.Review,Q,A,choice,pilot_out)
+  if os.environ.get('NEW_E2E_LINKED_APPROVAL')=='1':
+   LLA=load('lla_mirror',ROOT/'scripts/b2b-downstream-audit-20261107/logistics-linked-approval-20261110/mirror_flow.py')
+   lr=LLA.run(B,Review70.Review,Q,A,choice,OUT)
+   checks.append(dict(test='logistics linked approval delta on composed mirror',status='PASS',checks=len(lr)))
+   triggers38.assert_and_write(B,ROOT,OUT,'after-linked-approval')
+   checks.append(dict(test='38 captured real triggers unchanged after linked approval branch',status='PASS'))
+   return 0
   if os.environ.get('NEW_E2E_RESALE_CAP')=='1':
    # Focused branch: capability v2 + reserve-receipt revalidation on the real composed mirror, then stop.
    RC=load('resale_cap_mirror',ROOT/'scripts/b2b-downstream-audit-20261107/resale-delivery-capability-20261110/mirror_tests.py')

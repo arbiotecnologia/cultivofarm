@@ -1,0 +1,32 @@
+{
+ "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)": {
+  "mirror_md5": "a317c4945f3b933a3b0cfacb0e049e02",
+  "live_md5_after": "804e2a33cdf204ed9fa179f2afa2bf6e",
+  "acl_unchanged": true
+ },
+ "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)": {
+  "mirror_md5": "21110263f68c54278e0874d677cd0418",
+  "live_md5_after": "7cd8ee22794bf57e6592867259c9397e",
+  "acl_unchanged": true
+ },
+ "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)": {
+  "mirror_md5": "49917dec96489dba3b10b8962af245ee",
+  "live_md5_after": "bd76345c3bceaa5e6203013920427df4",
+  "acl_unchanged": true
+ },
+ "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": {
+  "mirror_md5": "22f5c581afab10aa206d1919fe028105",
+  "live_md5_after": "c5b1da90e1f649fe0eeb99deac7094ee",
+  "acl_unchanged": true
+ },
+ "public.rpc_b2b_resale_os_availability_v1(uuid)": {
+  "mirror_md5": "5cb42bd5ff0f7e2a93ad4d8d79d8c22e",
+  "live_md5_after": "e9767fcbcbfb831b92ee7f1523b1262e",
+  "acl_unchanged": true
+ },
+ "public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": {
+  "mirror_md5": "a7eeeff264d350219f1519ddb15c730f",
+  "live_md5_after": "6a249b41a6e729835ff86cfc2b40e25b",
+  "acl_unchanged": true
+ }
+}

@@ -1,0 +1,11 @@
+{
+ "control_no_mutation": "true,true",
+ "terms_pending_real": "false,false",
+ "terms_rejected": "false,false",
+ "terms_approved_without_actor": "false,false",
+ "link_absent": "false,false",
+ "link_divergent_other_order": "false,false",
+ "header_rejected": "false,false",
+ "commercial_approval_absent": "false,false",
+ "credit_pair_inconsistent": "false,false"
+}

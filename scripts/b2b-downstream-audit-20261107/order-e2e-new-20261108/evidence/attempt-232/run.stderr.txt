@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-zg_zczzj/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 511, in main
+    lr=LLA.run(B,Review70.Review,Q,A,choice,OUT)
+  File "/tmp/new-order-e2e-zg_zczzj/project/scripts/b2b-downstream-audit-20261107/logistics-linked-approval-20261110/mirror_flow.py", line 130, in run
+    ok("concurrent same-key reserve (2 real sessions, proven wait): one reservation + one exact replay",
+    ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       waited and len(outs) == 2 and sorted(o["replay"] for o in outs) == [False, True] and outs[0]["itens"] == outs[1]["itens"], [o for o in outs])
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-zg_zczzj/project/scripts/b2b-downstream-audit-20261107/logistics-linked-approval-20261110/mirror_flow.py", line 13, in ok
+    assert cond, (name, detail)
+           ^^^^
+AssertionError: ('concurrent same-key reserve (2 real sessions, proven wait): one reservation + one exact replay', [{'ok': True, 'itens': ['6c160b6f-d4e6-49ff-abf6-a076ba060fe8'], 'replay': False}])

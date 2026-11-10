@@ -1,0 +1,20 @@
+LLA_PASS 6 consumers aligned verbatim to frozen production artifacts with LIVE md5 and ACL unchanged
+LLA_PASS PROBE: all non-financial conditions hold (scope grant, owner, family, integer whole packs, weight rule, snapshots)
+LLA_PASS PROBE: only failing condition is frozen header (financial_approval_status pending) while linked terms are approved
+LLA_PASS LIVE consumer denies OS creation for canonically approved order
+LLA_PASS PRE PASS
+LLA_PASS POST PASS
+LLA_PASS install rerun refused by PRE pins
+LLA_PASS candidate: OS created from linked approved terms
+LLA_PASS OS replay same key
+LLA_PASS canonical predicate: control true; pending/rejected/no actor/absent/divergent link/header rejected/no commercial/credit inconsistent all false
+LLA_PASS buyer/foreign actor denied on availability reader
+LLA_PASS two distinct purchased lots
+LLA_PASS reserve lot1 replay: same receipt, no new movement
+LLA_PASS concurrent same-key reserve (2 real sessions, proven wait): exactly one reservation; loser is exact replay or explicit error; later exact replay returns same receipt
+LLA_PASS no over-reservation beyond purchased lot
+LLA_PASS partial delivery 3/5 confirmed; order NOT concluded
+LLA_PASS confirm replay same key: no new stock movement (no double exit)
+LLA_PASS final: 5/5 delivered over two lots, zero reserved left, no receivable created, header untouched (pending)
+LLA_PASS rollback: LIVE md5 restored, deliveries kept
+LLA_PASS after rollback canonical-terms order is closed again (fail closed)
