@@ -1,4 +1,5 @@
 - Preparação local apenas: nunca aplicar 02/04 hospedado, publicar, criar concessões ou abrir gates daqui; o auditor revisa e instala — evita mudança não revisada.
-- Capability é somente leitura e nunca autoriza: deriva ator/empresa no servidor, reutiliza resale_pilot_scope_v1 exato (OS/item/estoque/operação) e fecha em qualquer ausência; writers bloqueados não recebem EXECUTE — evita ampliação global.
-- Reserva incerta só reconcilia lendo a mesma tentativa (delta exato reservado na OS); nunca redispara o writer — evita segunda reserva/baixa.
-- Banco descartável com seams declarados não prova JWT/RLS/Storage hospedado.
+- Capability v2 é somente leitura e nunca autoriza: deriva ator/empresa no servidor, tenant do estoque pelo lote (estoque_produto não tem organization_id), exige OS operacional válida e scope exato por operação; envelope negado não ecoa OS, empresa, saldo nem IDs — evita vazamento e ampliação global.
+- Reserva de revenda só por rpc_estoque_reservar_v1 com chave imutável; incerteza resolve-se apenas por replay exato iniciado pelo usuário com recibo exato, nunca por saldo agregado nem auto-retry — evita adotar reserva de outra sessão.
+- Testes de SQL rodam no espelho rebuild_current (NEW_E2E_RESALE_CAP=1) com corpos compostos reais; divergência do espelho só se alinha instalando artefato de produção verbatim e exigindo o md5 LIVE — nunca repinar ao valor do espelho.
+- Auth por claims SQL é sintética, não prova JWT/RLS/Storage hospedada.

@@ -36,34 +36,29 @@ export async function probeDeliveryCapability(rpc: Rpc): Promise<DeliveryCapabil
   }
 }
 
-/* ---- B2B resale capability (read-only, exact envelope, fail closed) ---- */
-export type ResaleItemCap = { reserve: boolean; deliveryCreate: boolean; reservedForOs: number };
-export type ResaleCapability = { osId: string; organizationId: string; items: ReadonlyMap<string, ResaleItemCap> };
+/* ---- B2B resale capability v2 (read-only, per operation, exact envelope, fail closed) ---- */
+export type ResaleOperation = "reserve" | "delivery_create";
+export type ResaleCapability = { osId: string; organizationId: string; operation: ResaleOperation; stockIds: ReadonlySet<string> };
 
-/** Exact envelope for exactly the requested stock ids, echoing the session tenant; anything else => null (closed). */
-export function parseResaleCapability(data: unknown, osId: string, stockIds: string[], expectedOrg: string): ResaleCapability | null {
-  if (!isObj(data) || !exactKeys(data, ["capability", "organization_id", "os_id", "items"])) return null;
-  if (data.capability !== "b2b_resale_delivery_v1" || data.os_id !== osId || !UUID.test(expectedOrg) || data.organization_id !== expectedOrg || !Array.isArray(data.items)) return null;
-  const want = new Set(stockIds);
-  if (want.size !== stockIds.length || data.items.length !== want.size) return null;
-  const items = new Map<string, ResaleItemCap>();
-  for (const x of data.items) {
-    if (!isObj(x) || !exactKeys(x, ["stock_id", "reserve", "delivery_create", "reserved_for_os"])) return null;
-    const id = x.stock_id, r = x.reserved_for_os;
-    if (typeof id !== "string" || !want.has(id) || items.has(id) || typeof x.reserve !== "boolean" || typeof x.delivery_create !== "boolean" || typeof r !== "number" || !Number.isFinite(r) || r < 0) return null;
-    items.set(id, { reserve: x.reserve, deliveryCreate: x.delivery_create, reservedForOs: r });
-  }
-  return { osId, organizationId: expectedOrg, items };
+/**
+ * Allowed only when the server echoes exactly the session tenant, this OS, this operation and exactly the requested
+ * stock ids (sorted). The server's closed envelope never echoes OS, tenant or ids; anything else => null (closed).
+ */
+export function parseResaleCapability(data: unknown, osId: string, stockIds: string[], expectedOrg: string, operation: ResaleOperation): ResaleCapability | null {
+  if (!isObj(data) || !exactKeys(data, ["capability", "organization_id", "os_id", "operation", "allowed", "stock_ids"])) return null;
+  if (data.capability !== "b2b_resale_delivery_v2" || data.allowed !== true || data.operation !== operation || data.os_id !== osId || !UUID.test(expectedOrg) || data.organization_id !== expectedOrg || !Array.isArray(data.stock_ids)) return null;
+  const want = [...new Set(stockIds)].sort();
+  if (want.length !== stockIds.length || data.stock_ids.length !== want.length || !data.stock_ids.every((x, i) => x === want[i])) return null;
+  return { osId, organizationId: expectedOrg, operation, stockIds: new Set(want) };
 }
 
-export async function probeResaleCapability(rpc: Rpc, osId: string, stockIds: string[], expectedOrg: string): Promise<ResaleCapability | null> {
+export async function probeResaleCapability(rpc: Rpc, osId: string, stockIds: string[], expectedOrg: string, operation: ResaleOperation): Promise<ResaleCapability | null> {
   if (!UUID.test(osId) || stockIds.length < 1 || stockIds.length > 100 || !stockIds.every(s => UUID.test(s))) return null;
   try {
-    const { data, error } = await rpc(RESALE_CAP_RPC, { p_os_id: osId, p_stock_ids: stockIds });
-    return error ? null : parseResaleCapability(data, osId, stockIds, expectedOrg);
+    const { data, error } = await rpc(RESALE_CAP_RPC, { p_os_id: osId, p_stock_ids: stockIds, p_operation: operation });
+    return error ? null : parseResaleCapability(data, osId, stockIds, expectedOrg, operation);
   } catch { return null; }
 }
-
 
 /** Fields the atomic contract persists. Anything else non-empty is rejected before dispatch (never silently dropped). */
 export const DATA_KEYS = [
@@ -105,7 +100,7 @@ export type GroupInput = {
   itens: { itemId: string; quantidade: number; observedUpdatedAt: string; status: string; reservadoParaOsId?: string | null; quantidadeReservada?: number | null; quantidadeTotal?: number | null }[];
   dados: Record<string, unknown>;
   /** Parsed exact B2B resale capability (see b2bResaleDeliveryFlow); absent => B2B stays closed. */
-  resale?: { osId: string; organizationId: string; items: ReadonlyMap<string, { reserve: boolean; deliveryCreate: boolean; reservedForOs: number }> };
+  resale?: ResaleCapability;
 };
 
 export function buildGroupArgs(input: GroupInput): Record<string, unknown> {
@@ -113,7 +108,7 @@ export function buildGroupArgs(input: GroupInput): Record<string, unknown> {
   const resale = input.resale;
   const resaleOk = !!resale && input.osOrigem === "b2b" && input.osPartnerOrderId !== null && UUID.test(input.osPartnerOrderId)
     && resale.osId === input.osId && resale.organizationId === input.expectedOrg
-    && input.itens.length > 0 && input.itens.every(i => resale.items.get(i.itemId)?.deliveryCreate === true);
+    && resale.operation === "delivery_create" && input.itens.length > 0 && input.itens.every(i => resale.stockIds.has(i.itemId));
   if (!resaleOk && (input.osTipo !== "padrao" || input.osOrigem !== "agronomica" || input.osPartnerOrderId !== null)) {
     throw new Error("Somente OS agronômica manual, sem pedido B2B, usa este contrato. OnFarm e B2B permanecem indisponíveis. Nenhuma alteração foi enviada.");
   }
@@ -237,9 +232,9 @@ export async function runAtomicGroup(rpc: Rpc, input: GroupInput, fence: () => v
     if (input.osTipo === "onfarm" || input.osPartnerOrderId === null || !UUID.test(input.osPartnerOrderId)) buildGroupArgs({ ...input, resale: undefined });
     // B2B resale: generic group capability AND the exact resale capability for this OS/items, probed now.
     const ids = input.itens.map(i => i.itemId);
-    const [cap, resale] = await Promise.all([probeDeliveryCapability(rpc), probeResaleCapability(rpc, input.osId, ids, input.expectedOrg)]);
+    const [cap, resale] = await Promise.all([probeDeliveryCapability(rpc), probeResaleCapability(rpc, input.osId, ids, input.expectedOrg, "delivery_create")]);
     fence();
-    if (!cap.group || !resale || !ids.every(id => resale.items.get(id)?.deliveryCreate === true)) return { status: "closed", message: DELIVERY_OPERATION_BLOCK };
+    if (!cap.group || !resale) return { status: "closed", message: DELIVERY_OPERATION_BLOCK };
     const retry = freeze({ fn: GROUP_RPC, args: buildGroupArgs({ ...input, resale }), expectedOrg: input.expectedOrg, osId: input.osId, count: ids.length });
     return dispatchOnce(rpc, retry, d => parseGroupAck(d, input.osId, ids.length, input.expectedOrg), fence, onDispatch);
   }

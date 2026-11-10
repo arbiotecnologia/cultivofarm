@@ -1,6 +1,6 @@
--- Rollback deny-only: revoga a leitura do cliente; mantém o corpo (sem restaurar nada), writers intocados.
+-- Rollback deny-only: revoga a leitura do cliente; corpo, concessões e históricos mantidos; writers intocados.
 BEGIN;
-DO $$BEGIN IF to_regprocedure('public.rpc_b2b_resale_delivery_capability_v1(uuid,uuid[])') IS NULL THEN RAISE EXCEPTION 'RESALE_DELIVERY_CAP_ABSENT'; END IF; END$$;
-REVOKE ALL ON FUNCTION public.rpc_b2b_resale_delivery_capability_v1(uuid,uuid[]) FROM PUBLIC,anon,authenticated,service_role;
-DO $$BEGIN IF has_function_privilege('authenticated','public.rpc_b2b_resale_delivery_capability_v1(uuid,uuid[])','EXECUTE') THEN RAISE EXCEPTION 'RESALE_DELIVERY_CAP_ROLLBACK_FAILED'; END IF; END$$;
+DO $$BEGIN IF to_regprocedure('public.rpc_b2b_resale_delivery_capability_v1(uuid,uuid[],text)') IS NULL THEN RAISE EXCEPTION 'RESALE_DELIVERY_CAP_ABSENT'; END IF; END$$;
+REVOKE ALL ON FUNCTION public.rpc_b2b_resale_delivery_capability_v1(uuid,uuid[],text) FROM PUBLIC,anon,authenticated,service_role;
+DO $$BEGIN IF has_function_privilege('authenticated','public.rpc_b2b_resale_delivery_capability_v1(uuid,uuid[],text)','EXECUTE') THEN RAISE EXCEPTION 'RESALE_DELIVERY_CAP_ROLLBACK_FAILED'; END IF; END$$;
 COMMIT;

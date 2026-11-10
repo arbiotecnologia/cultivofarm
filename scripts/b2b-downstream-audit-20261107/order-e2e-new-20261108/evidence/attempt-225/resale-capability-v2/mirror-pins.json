@@ -1,0 +1,7 @@
+{
+ "platform_private.delivery_actor_20261030(text)": "c6da1f5d9581a0c290e5e27e4605682c",
+ "public.fn_estoque_pode_operar(uuid,text)": "d0d1e37b39e6f9f814c832ec63a540dd",
+ "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)": "21110263f68c54278e0874d677cd0418",
+ "platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)": "63f49feea167f6865fd7840cde7dc63b",
+ "public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb)": "3e0dc7c48ab28f4402699b234476aa8a"
+}

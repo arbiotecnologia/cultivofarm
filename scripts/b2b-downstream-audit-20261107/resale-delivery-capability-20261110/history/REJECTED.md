@@ -1,0 +1,1 @@
+V1 (commit 5b6c3c1) REPROVADA pela revisão independente: usava estoque_produto.organization_id (inexistente em produção), mock com coluna extra, devolvia saldo/IDs sem permissão e reconciliação por delta agregado. Preservada só como histórico; não instalar.

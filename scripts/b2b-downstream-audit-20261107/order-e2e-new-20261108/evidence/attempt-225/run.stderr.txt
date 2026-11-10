@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-qce6vn7s/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 512, in main
+    rc=RC.run(B,Review70.Review,Q,A,choice,OUT,manual)
+  File "/tmp/new-order-e2e-qce6vn7s/project/scripts/b2b-downstream-audit-20261107/resale-delivery-capability-20261110/mirror_tests.py", line 48, in run
+    ok("mirror bodies equal LIVE pins (delivery_actor/fn_estoque_pode_operar/os_operational/scope/reservar)", pins == {
+    ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        "platform_private.delivery_actor_20261030(text)": "c6da1f5d9581a0c290e5e27e4605682c",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        "platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)": "63f49feea167f6865fd7840cde7dc63b",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        RSIG: "3e0dc7c48ab28f4402699b234476aa8a"}, pins)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-qce6vn7s/project/scripts/b2b-downstream-audit-20261107/resale-delivery-capability-20261110/mirror_tests.py", line 18, in ok
+    assert cond, (name, detail)
+           ^^^^
+AssertionError: ('mirror bodies equal LIVE pins (delivery_actor/fn_estoque_pode_operar/os_operational/scope/reservar)', {'platform_private.delivery_actor_20261030(text)': 'c6da1f5d9581a0c290e5e27e4605682c', 'public.fn_estoque_pode_operar(uuid,text)': 'd0d1e37b39e6f9f814c832ec63a540dd', 'platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)': '21110263f68c54278e0874d677cd0418', 'platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)': '63f49feea167f6865fd7840cde7dc63b', 'public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb)': '3e0dc7c48ab28f4402699b234476aa8a'})

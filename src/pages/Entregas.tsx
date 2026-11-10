@@ -61,6 +61,7 @@ import { PreviewDocumentoEntrega } from "@/components/entregas/PreviewDocumentoE
 import { labelModalidade, labelResponsavelCurto } from "@/lib/entregas/modalidade";
 import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
 import { replayResaleGroup } from "@/lib/entregas/b2bResaleDeliveryFlow";
+import { RevendaB2BPilotoPanel } from "@/components/entregas/RevendaB2BPilotoPanel";
 import { clearPending, loadPending, markReplayRejected, parserFor, replayUncertain, runAtomicCancel, runAtomicGroup, savePending, type Outcome, type RetrySnapshot, type Rpc } from "@/lib/entregas/deliveryOperationsFlow";
 import { dispatchSend, type SendAttempt } from "@/lib/entregas/deliverySendFlow";
 import { loadSends, persistBeforeDispatch, removeExactSend, SEND_PERSIST_PREFIX, toAttempt, withSendLock, type LockManagerLike } from "@/lib/entregas/deliverySendPersistence";
@@ -860,6 +861,7 @@ export default function Entregas() {
           </Button>
         }
       />
+      <RevendaB2BPilotoPanel actorId={actorId} orgId={orgId} />
 
       <div role="alert" className="border border-destructive rounded-md p-3 space-y-2">
         <p>{operationNotice || DELIVERY_OPERATION_BLOCK}</p>

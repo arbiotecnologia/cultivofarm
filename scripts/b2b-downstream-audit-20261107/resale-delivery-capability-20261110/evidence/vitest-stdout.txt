@@ -1,12 +1,15 @@
 
  RUN  v3.2.4 /dev-server
 
- ✓ src/test/entregas/deliveryProofFlow.test.ts (34 tests) 196ms
- ✓ src/test/entregas/b2bResaleDeliveryFlow.test.ts (11 tests) 29ms
- ✓ src/test/entregas/deliveryOperationsFlow.test.ts (72 tests) 117ms
+ ✓ src/test/estoque/stock-caller-compatibility.test.ts (12 tests) 29ms
+ ✓ src/test/entregas/deliveryProofFlow.test.ts (34 tests) 52ms
+ ✓ src/test/entregas/b2bResaleDeliveryFlow.test.ts (9 tests) 40ms
+ ✓ src/test/entregas/deliveryOperationsFlow.test.ts (72 tests) 70ms
+ ✓ src/test/entregas/revendaB2BPilotoPanel.test.tsx (4 tests) 483ms
 stderr | src/test/entregas/deliveryContainmentStock.test.tsx > reserva de embalagem com destino selecionado não envia nem anuncia sucesso
 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
 
+ ✓ src/test/entregas/deliveryContainmentStock.test.tsx (7 tests) 516ms
 stderr | src/test/entregas/deliveryAtomicPageMount.test.tsx > Entregas page with atomic adapter (mounted) > send timeout retains ownership until transport settles and never parallel-dispatches
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
@@ -16,38 +19,22 @@ stderr | src/test/entregas/registrarEntregaObservedSnapshot.test.tsx > Registrar
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
 
- ✓ src/test/entregas/deliveryContainmentStock.test.tsx (7 tests) 1023ms
-   ✓ separar e confirmar embalagens não enviam alterações  484ms
-   ✓ reserva de embalagem com destino selecionado não envia nem anuncia sucesso  515ms
-stderr | src/test/entregas/registrarEntregaObservedSnapshot.test.tsx > RegistrarEntregaDialog observed snapshot (real dialog) > keeps revisions from first selection even if the lists refresh before confirming
-Warning: The current testing environment is not configured to support act(...)
-Warning: The current testing environment is not configured to support act(...)
+ ✓ src/test/entregas/registrarEntregaObservedSnapshot.test.tsx (1 test) 783ms
+   ✓ RegistrarEntregaDialog observed snapshot (real dialog) > keeps revisions from first selection even if the lists refresh before confirming  780ms
+ ✓ src/test/entregas/confirmacaoEntregaAck.test.tsx (19 tests) 2169ms
+   ✓ Mounted canonical physical confirmation > invalid ACK os_id stays uncertain with same key and no success  420ms
+ ✓ src/test/entregas/deliveryAtomicPageMount.test.tsx (32 tests) 5361ms
+   ✓ Entregas page with atomic adapter (mounted) > send timeout retains ownership until transport settles and never parallel-dispatches  535ms
+   ✓ Entregas page with atomic adapter (mounted) > preflight rejection then refresh uses a fresh observed revision and dispatches once  443ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: reconcile  771ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: terminal  430ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: tenant  518ms
+   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=false)  408ms
+   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=true)  455ms
+   ✓ Entregas page with atomic adapter (mounted) > cancel uses the revision seen when the dialog opened and refuses if it changed  358ms
 
- ✓ src/test/entregas/registrarEntregaObservedSnapshot.test.tsx (1 test) 1162ms
-   ✓ RegistrarEntregaDialog observed snapshot (real dialog) > keeps revisions from first selection even if the lists refresh before confirming  1159ms
- ✓ src/test/entregas/confirmacaoEntregaAck.test.tsx (19 tests) 3959ms
-   ✓ Mounted canonical physical confirmation > invalid ACK os_id stays uncertain with same key and no success  591ms
-   ✓ Mounted canonical physical confirmation > invalid ACK updated_at stays uncertain with same key and no success  394ms
-   ✓ Mounted canonical physical confirmation > invalid ACK foreign-os stays uncertain with same key and no success  437ms
-   ✓ Mounted canonical physical confirmation > invalid ACK foreign-proof stays uncertain with same key and no success  405ms
- ✓ src/test/entregas/deliveryAtomicPageMount.test.tsx (32 tests) 7421ms
-   ✓ Entregas page with atomic adapter (mounted) > send timeout retains ownership until transport settles and never parallel-dispatches  839ms
-   ✓ Entregas page with atomic adapter (mounted) > preflight rejection then refresh uses a fresh observed revision and dispatches once  752ms
-   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: reconcile  1059ms
-   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: terminal  675ms
-   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: tenant  738ms
-   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=false)  462ms
-   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=true)  533ms
-   ✓ Entregas page with atomic adapter (mounted) > Enviar replaces direct UPDATE and makes physical confirmation reachable  353ms
-   ✓ Entregas page with atomic adapter (mounted) > cancel uses the revision seen when the dialog opened and refuses if it changed  486ms
+ Test Files  9 passed (9)
+      Tests  190 passed (190)
+   Start at  20:42:53
+   Duration  12.01s (transform 2.30s, setup 3.32s, collect 9.71s, tests 9.50s, environment 22.41s, prepare 2.76s)
 
- Test Files  7 passed (7)
-      Tests  176 passed (176)
-   Start at  20:24:08
-   Duration  18.89s (transform 4.00s, setup 5.09s, collect 15.96s, tests 13.91s, environment 31.16s, prepare 7.62s)
-
-npm notice
-npm notice New major version of npm available! 10.9.9 -> 12.2.2
-npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.2
-npm notice To update run: npm install -g npm@12.2.2
-npm notice
