@@ -320,7 +320,8 @@ def test_wrapper_review(B,Q,OUT,order_id,doc,consult,v):
     old_source=old_folder/'wrappers-184.sql.capture'
     old=old_source.read_text()
     legacy=old[old.index('CREATE OR REPLACE FUNCTION public.rpc_b2b_forecast_fiscal_sync_v1'):old.index('$function$;',old.index('AS $function$'))+len('$function$;')]
-    repro=B.run_raw(f"BEGIN;{legacy}UPDATE public.fiscal_sefaz_transmissions SET state='SUCCEEDED',outcome='REJECTED',c_stat='215' WHERE id='{consult}';{ctx}SELECT public.rpc_b2b_forecast_fiscal_sync_v1('{consult}',{v});ROLLBACK;")
+    worker="SET LOCAL ROLE service_role;"
+    repro=B.run_raw(f"BEGIN;{legacy}{worker}UPDATE public.fiscal_sefaz_transmissions SET state='SUCCEEDED',outcome='REJECTED',c_stat='215' WHERE id='{consult}';{ctx}SELECT public.rpc_b2b_forecast_fiscal_sync_v1('{consult}',{v});ROLLBACK;")
     assert repro.returncode==0 and 'CONSULTATION_NOT_AUTHORIZED' in repro.stdout,repro.stderr
     rows.append(dict(case='BEFORE-schema-rejection-clears-consultation',exit=repro.returncode,stdout=repro.stdout,stderr=repro.stderr,rollback=True))
     cases=[('schema-215',"c_stat='215'"),('receipt-106',"c_stat='106'"),('authorization-280',"c_stat='280'"),
@@ -333,7 +334,7 @@ def test_wrapper_review(B,Q,OUT,order_id,doc,consult,v):
         # Avoid assigning the same column twice while preserving the complete baseline.
         proof=json.dumps({'cStat':'217','chNFe':doc['access_key'],'tpAmb':'2'})
         assignments={k:val for k,val in (s.split('=',1) for s in ["state='SUCCEEDED'","outcome='REJECTED'","c_stat='217'",f"ch_nfe='{doc['access_key']}'","ambiente_retorno='2'","completed_at=now()",f"response_summary='{proof}'::jsonb",change])}
-        sql=f"BEGIN;UPDATE public.fiscal_sefaz_transmissions SET "+','.join(k+'='+val for k,val in assignments.items())+f" WHERE id='{consult}';{ctx}SELECT public.rpc_b2b_forecast_fiscal_sync_v1('{consult}',{v});ROLLBACK;"
+        sql=f"BEGIN;{worker}UPDATE public.fiscal_sefaz_transmissions SET "+','.join(k+'='+val for k,val in assignments.items())+f" WHERE id='{consult}';{ctx}SELECT public.rpc_b2b_forecast_fiscal_sync_v1('{consult}',{v});ROLLBACK;"
         got=B.run_raw(sql)
         rows.append(dict(case=name,exit=got.returncode,stderr=got.stderr,hosted=False))
         assert got.returncode!=0 and 'B2B_FORECAST_FISCAL_OUTCOME_NOT_SYNCABLE' in got.stderr,rows[-1]
