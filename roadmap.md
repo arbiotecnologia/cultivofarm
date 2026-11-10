@@ -1,3 +1,8 @@
+## 09/11 23:39 — Revisão previsão 3b7668cf
+- [ ] Reproduzir 153 com SQLSTATE/estado e corrigir ambos caminhos de aprovação sem mudar snapshots/gatilhos; tentativa 149 continua prova parcial.
+- [ ] Concluir 18/9/9, pagamento 9, cancelamento residual, concorrência/revogação e matriz de atores em banco descartável.
+- [ ] Concluir UI não exigível/definitivo sem Gerar AR antecipado; entregar PRE/POST/rollback deny, hashes e lacunas sem hosted/publicação/efeitos externos.
+
 ## 09/11 22:27 — Captura de cinco funções e reconciliação residual B4
 - [ ] Pinar as cinco funções capturadas; testar crédito OK sem override, override financeiro e escopo vendedor antes de qualquer correção de `approve_b2b_credit`.
 - [ ] Reconciliar `fn_b2b_credit_exposure` com residual de previsão B4, nunca soma aditiva; caso 18: NF 9 + residual 9, replay, segunda NF 9 e pagamentos sem reabrir residual.

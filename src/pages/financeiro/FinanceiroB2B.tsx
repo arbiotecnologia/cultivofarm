@@ -14,17 +14,17 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Eye, Plus, XCircle, Settings2, BarChart3, ShieldCheck } from "lucide-react";
+import { Eye, XCircle, Settings2, BarChart3, ShieldCheck } from "lucide-react";
+import { B2BForecastCell } from "@/components/financeiro/B2BForecastCell";
 import {
   useB2BReceivables,
-  useGenerateB2BReceivable,
   useCancelB2BReceivable,
   usePartnerFinancialSettings,
   useUpdatePartnerFinancialSettings,
   useFinancialSettingsPartners,
   useFinancialSettingsMethods,
 } from "@/hooks/useB2BFinanceiro";
-import { brl, fmtDate } from "@/lib/financial/format";
+import { brl } from "@/lib/financial/format";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { activePaymentMethodValid, canConfigurePartnerSettings, emptyPartnerSettings, samePartnerSettings, type PartnerSettings } from "@/lib/financeiro/partnerSettings";
@@ -48,10 +48,8 @@ export default function FinanceiroB2B() {
     status: filters.status,
     financial_status: filters.financial_status,
   });
-  const gen = useGenerateB2BReceivable();
   const cancel = useCancelB2BReceivable();
 
-  const canGenerate = role === "administrador" || role === "financeiro" || role === "gestor";
   const canCancel = role === "administrador" || role === "financeiro";
   const canSettings = fence.ready && canConfigurePartnerSettings(roles);
   const partners = useFinancialSettingsPartners(canSettings);
@@ -156,8 +154,8 @@ export default function FinanceiroB2B() {
                   <TableHead>Parceiro</TableHead>
                   <TableHead>Status pedido</TableHead>
                   <TableHead>Status financeiro</TableHead>
-                  <TableHead className="text-right">Valor</TableHead>
-                  <TableHead>Vencimento</TableHead>
+                  <TableHead className="text-right">Valor do pedido</TableHead>
+                  <TableHead>Previsão / confirmação</TableHead>
                   <TableHead>Forma</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -178,7 +176,7 @@ export default function FinanceiroB2B() {
                       <Badge variant={finStatusVariant[r.financial_status] ?? "secondary"}>{r.financial_status}</Badge>
                     </TableCell>
                     <TableCell className="text-right">{brl(r.total)}</TableCell>
-                    <TableCell>{fmtDate(r.payment_due_date)}</TableCell>
+                    <TableCell><B2BForecastCell orderId={r.partner_order_id} /></TableCell>
                     <TableCell className="capitalize">{r.payment_method ?? "—"}</TableCell>
                     <TableCell className="text-right space-x-1 whitespace-nowrap">
                       {canSettings && (
@@ -186,13 +184,6 @@ export default function FinanceiroB2B() {
                           size="icon" variant="ghost" title="Configurar parceiro"
                           onClick={() => setSettingsFor({ partner_id: r.partner_id, partner_name: r.partner_name })}
                         ><Settings2 className="h-4 w-4" /></Button>
-                      )}
-                      {!r.receivable_id && canGenerate && r.financial_status !== "cancelado" && (
-                        <Button
-                          size="sm" variant="default"
-                          disabled={gen.isPending}
-                          onClick={() => gen.mutate(r.partner_order_id)}
-                        ><Plus className="h-4 w-4 mr-1" />Gerar AR</Button>
                       )}
                       {r.receivable_id && (
                         <Button size="icon" variant="ghost" asChild title="Ver no Contas a Receber">

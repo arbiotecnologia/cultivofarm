@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-hvo5mily/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 326, in main
+    override=forecast_extra.run_override(B,Q,OUT)
+  File "/tmp/new-order-e2e-hvo5mily/project/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast_residual_scenario.py", line 23, in run_override
+    assert configured.returncode == 0, configured.stderr
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ERROR:  22023: C2P1_PAYMENT_METHOD_INVALID
+CONTEXT:  PL/pgSQL function platform_private.c2p1_update_settings(uuid,jsonb,jsonb) line 27 at RAISE
+SQL function "rpc_update_partner_financial_settings" statement 1
+LOCATION:  exec_stmt_raise, pl_exec.c:3911
+

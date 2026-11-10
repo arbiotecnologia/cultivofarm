@@ -12,8 +12,19 @@ def exposure(B, Q):
 
 def run_override(B, Q, OUT):
     """Crédito manual é exceção; crédito OK sem override já foi coberto pelo caso principal."""
-    choice = Q.ch('boleto', 1, 30)
-    B.sql(f"""UPDATE public.partner_financial_settings SET credit_limit=1,credit_limit_action='approval_required',block_if_overdue=false WHERE partner_id='{Q.PC}';""")
+    choice = Q.ch('boleto', 2, 30)
+    assigned, assignment_error = Q.assign(Q.UADM, Q.PC, Q.P3, 'boleto', 2)
+    assert assigned is not None, assignment_error
+    baseline = json.loads(B.last(f"SELECT to_jsonb(s)::text FROM public.partner_financial_settings s WHERE partner_id='{Q.PC}';"))
+    fields = ['billing_trigger','payment_terms_days','default_payment_method','credit_limit','block_if_overdue','auto_generate_receivable','active','credit_limit_action','overdue_tolerance_days','credit_alert_threshold_1','credit_alert_threshold_2']
+    values = {k: baseline[k] for k in fields}
+    values.update(credit_limit=1, credit_limit_action='approval_required', block_if_overdue=False)
+    values['default_payment_method'] = B.last(f"SELECT name FROM public.payment_methods WHERE id='{Q.M_BOL}' AND active IS TRUE;")
+    assert values['default_payment_method'], 'active canonical boleto method required'
+    expected_sql = json.dumps(baseline).replace("'", "''")
+    values_sql = json.dumps(values).replace("'", "''")
+    configured = Q.as_user(Q.UFIN, f"SELECT public.rpc_update_partner_financial_settings('{Q.PC}','{expected_sql}'::jsonb,'{values_sql}'::jsonb);")
+    assert configured.returncode == 0, configured.stderr
     simulated, error = Q.sim(Q.UBC, Q.P3, [Q.S(2)], choice, partner=Q.PC)
     assert simulated is not None, error
     created, error = Q.create(Q.UBC, Q.P3, [Q.S(2)], simulated['cart_hash'], 'LOCAL-FORECAST-MANUAL-CREDIT-18', choice, partner=Q.PC)
@@ -29,6 +40,9 @@ def run_override(B, Q, OUT):
     assert unchanged == before, unchanged
     approved_credit = Q.as_user(Q.UFIN, f"SELECT public.approve_b2b_credit('{order_id}','LOCAL MANUAL OVERRIDE');")
     assert approved_credit.returncode == 0, approved_credit.stderr
+    terms = Q.as_user(Q.UFIN, f"SELECT public.approve_b2b_payment_terms_secure('{order_id}','LOCAL TERMS BEFORE COMMERCIAL');")
+    assert terms.returncode == 0, terms.stderr
+    assert B.last(f"SELECT count(*) FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}';") == '0'
     approved = Q.as_user(Q.UADM, f"SELECT public.approve_partner_order('{order_id}',NULL,NULL);")
     assert approved.returncode == 0, approved.stderr
     row = json.loads(B.last(f"SELECT jsonb_build_object('status',status,'credit_approved_at',credit_approved_at,'credit_approved_by',credit_approved_by,'residual',(SELECT residual_amount FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}'),'total',(SELECT total_amount FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}'))::text FROM public.partner_orders WHERE id='{order_id}';"))
@@ -40,7 +54,7 @@ def run_override(B, Q, OUT):
 
 
 def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, first_receivable, credit_before):
-    """Duas NFs de 9, replay/corrida, H7 e pagamento canônico de 4."""
+    """Duas NFs de 9, replay/corrida, H7 e pagamento canônico de 9."""
     assert float(accepted['final_amount_with_interest']) == 18.0, accepted['final_amount_with_interest']
     first_credit = exposure(B, Q)
     assert float(first_credit['saldo_em_aberto']) == 9 and float(first_credit['comprometido_nao_faturado']) == 9 and float(first_credit['exposicao_atual']) == 18, first_credit
@@ -92,16 +106,16 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
     projection = B.run_raw(f"RESET ROLE;SELECT public.rpc_receivable_money_projection_v1('{first_receivable}',0,1000);")
     assert projection.returncode == 0, projection.stderr
     installment = json.loads(projection.stdout.strip().splitlines()[-1])[0]['id']
-    payment = json.dumps({'amount_received':4,'payment_method_id':Q.M_BOL,'idempotency_key':'LOCAL-FORECAST-PAY-4'}).replace("'", "''")
+    payment = json.dumps({'amount_received':9,'payment_method_id':Q.M_BOL,'idempotency_key':'LOCAL-FORECAST-PAY-9'}).replace("'", "''")
     paid = Q.as_user(Q.UFIN, f"SELECT public.rpc_register_receivable_payment('{installment}','{payment}'::jsonb);")
     assert paid.returncode == 0, paid.stderr
     paid_credit = exposure(B, Q)
-    assert float(paid_credit['saldo_em_aberto']) == 14 and float(paid_credit['comprometido_nao_faturado']) == 0 and float(paid_credit['exposicao_atual']) == 14, paid_credit
+    assert float(paid_credit['saldo_em_aberto']) == 9 and float(paid_credit['comprometido_nao_faturado']) == 0 and float(paid_credit['exposicao_atual']) == 9, paid_credit
     forecast_after_payment = json.loads(B.last(f"SELECT jsonb_build_object('state',state,'residual_amount',residual_amount,'version',version)::text FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}';"))
     assert forecast_after_payment == forecast, (forecast_after_payment, forecast)
     result = dict(first_invoice=first_invoice, first_receivable=first_receivable, second_invoice=invoice_id, second_receivable=second_receivable,
                   credit_before=credit_before, credit_after_first=first_credit, credit_after_second=second_credit, credit_after_payment=paid_credit,
-                  forecast_after_second=forecast, forecast_after_payment=forecast_after_payment, titles=totals, payment_amount=4,
+                  forecast_after_second=forecast, forecast_after_payment=forecast_after_payment, titles=totals, payment_amount=9,
                   concurrent_replay_one_title=True, h7_receivable_id_immutable=True, synthetic=True, hosted=False)
     (OUT/'forecast-two-partial-nf-and-payment.json').write_text(json.dumps(result, indent=2)+'\n')
     return result

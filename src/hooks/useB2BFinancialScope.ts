@@ -5,7 +5,7 @@ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 const financialKeys = new Set([
   "b2b-receivables", "b2b-financial-kpis", "pfs", "pfs-partners", "pfs-methods", "portal-partner-financial",
   "partner-credit", "portal-partner-credit", "b2b-gov-kpis", "b2b-aging",
-  "b2b-aging-det", "b2b-forecast", "b2b-profit", "b2b-exec-alerts",
+  "b2b-aging-det", "b2b-forecast", "b2b-order-forecast", "b2b-profit", "b2b-exec-alerts",
   "b2b-carteira-kpis", "b2b-exec-dashboard", "partner-risk-score", "fgr",
 ]);
 

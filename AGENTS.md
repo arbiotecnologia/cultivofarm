@@ -24,6 +24,7 @@
 - Fixtures need Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
+- B2B forecast readers use the scoped canonical endpoint and strict order-bound parsing; pre-install absence remains unavailable. Internal financial approval uses linked child approval evidence without mutating sealed economic headers — preserves snapshots and prevents premature receivables.
 - Resale OS UI mounts only behind the exact scoped server availability reader; private helper ACL stays closed, and retained session attempts reconcile without automatic resend. Production POSPLANOS rollout remains review-only with gates OFF — prevents grant shortcuts and unreviewed activation.
 - Origin/partial/server candidates follow scripts/financial-price-generator-20261029/integration/AGENTS.md; local regressions use maxWorkers=2 with unchanged assertions/timeouts, and incomplete fiscal provenance stays deny-only — prevents resource saturation from masquerading as functional failure or synthetic release.
 - Receivable projections validate requested title and unique installment IDs before adoption; null KPI mode stays server-scoped and failed reads cannot authorize cached settlement — prevents foreign-target ACK without replacing RLS.

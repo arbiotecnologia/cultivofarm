@@ -55,9 +55,11 @@ DECLARE po public.partner_orders;org uuid;f platform_private.b2b_financial_forec
  schedule jsonb;items jsonb;reason text:=coalesce(p_credit->>'reason_code','');total numeric(14,2);
 BEGIN
  SELECT * INTO po FROM public.partner_orders WHERE id=p_order FOR UPDATE;
- IF NOT FOUND OR po.status<>'aprovado' OR po.approved_by IS NULL OR po.approved_at IS NULL THEN
-  RAISE EXCEPTION 'B2B_FORECAST_COMMERCIAL_APPROVAL_REQUIRED' USING ERRCODE='42501';END IF;
- IF po.requires_financial_approval AND po.financial_approval_status IS DISTINCT FROM 'approved' THEN
+ IF NOT FOUND THEN RAISE EXCEPTION 'B2B_FORECAST_COMMERCIAL_APPROVAL_REQUIRED' USING ERRCODE='42501';END IF;
+ IF po.status<>'aprovado' OR po.approved_by IS NULL OR po.approved_at IS NULL THEN
+  RETURN jsonb_build_object('deferred',true,'reason','COMMERCIAL_APPROVAL_REQUIRED');END IF;
+ IF po.requires_financial_approval AND NOT EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
+  WHERE t.id=po.payment_terms_id AND t.partner_order_id=po.id AND t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL) THEN
   RETURN jsonb_build_object('deferred',true,'reason','PAYMENT_TERMS_APPROVAL_REQUIRED');END IF;
  IF po.payment_terms_id IS NULL OR coalesce(po.payment_condition_status,'') NOT IN ('defined','approved') THEN
   RAISE EXCEPTION 'B2B_FORECAST_CONDITION_UNPROVEN' USING ERRCODE='42501';END IF;
@@ -271,7 +273,10 @@ BEGIN
   SELECT po.payment_terms_id, po.created_by, po.numero
     INTO v_terms_id, v_created_by, v_numero
   FROM public.partner_orders po
-  WHERE po.id = p_partner_order_id;
+  WHERE po.id = p_partner_order_id FOR UPDATE;
+IF NOT (public.b2b_phase1_order_visible(p_partner_order_id) OR EXISTS (SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF NOT (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'financeiro') OR public.has_role(v_uid,'gestor_comercial')) THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='42501'; END IF;
+  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND (status IN ('cancelado','reprovado') OR c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1')) THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVAL_UNAVAILABLE' USING ERRCODE='42501'; END IF;
 
   IF v_terms_id IS NULL THEN
     RAISE EXCEPTION 'payment_terms_not_defined';
@@ -283,13 +288,14 @@ BEGIN
          approved_at = now(),
          approval_notes = COALESCE(p_notes, approval_notes),
          updated_at = now()
-   WHERE id = v_terms_id;
+   WHERE id = v_terms_id AND partner_order_id = p_partner_order_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'payment_terms_not_defined' USING ERRCODE='42501'; END IF;
 
   UPDATE public.partner_orders
      SET financial_approval_status = 'approved',
          payment_condition_status = 'approved',
          updated_at = now()
-   WHERE id = p_partner_order_id;
+   WHERE id = p_partner_order_id AND internal_origin_snapshot IS NULL AND c2_external_origin_snapshot IS NULL AND internal_economic_snapshot IS NULL;
 
   INSERT INTO public.partner_order_audit_logs(order_id, acao, usuario_id, dados_novos)
   VALUES (p_partner_order_id, 'payment_terms_approved', v_uid,
@@ -521,7 +527,7 @@ $function$
 ;
 DO $$ BEGIN
  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '0d3b85049e3b3b799ba81b4cb95be0da' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_INSTALL_POST_DRIFT';END IF;
- IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '75211662e8c413318a752527328671d3' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_INSTALL_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM 'c86f0994a94a41c84b0dac7d4e039534' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_INSTALL_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '26c77e55dfcb2b48fdb63cbc5b2819ed' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_INSTALL_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '028894275a3b98a3abdc4e01e3fd03bf' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_INSTALL_POST_DRIFT';END IF;
 END$$;

@@ -283,10 +283,15 @@ def main():
   assert float(accepted['final_amount_with_interest'])==18.0 and accepted['credit_approved_at'] is None,accepted
   assert accepted['financial_approval_status']=='pending',accepted
   assert B.last(f"SELECT count(*) FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}';")=='0'
+  terms_before=json.loads(B.last(f"SELECT jsonb_build_object('order',to_jsonb(po),'terms',(SELECT to_jsonb(t) FROM public.partner_order_payment_terms t WHERE t.id=po.payment_terms_id))::text FROM public.partner_orders po WHERE id='{order_id}';"))
   terms_approved=Q.as_user(Q.UADM,f"SELECT public.approve_b2b_payment_terms_secure('{order_id}','LOCAL TERMS APPROVAL');")
+  terms_after=json.loads(B.last(f"SELECT jsonb_build_object('order',to_jsonb(po),'terms',(SELECT to_jsonb(t) FROM public.partner_order_payment_terms t WHERE t.id=po.payment_terms_id))::text FROM public.partner_orders po WHERE id='{order_id}';"))
+  (OUT/'terms-post-commercial-state.json').write_text(json.dumps(dict(before=terms_before,after=terms_after,stdout=terms_approved.stdout,stderr=terms_approved.stderr,exit=terms_approved.returncode),indent=2)+'\n')
   assert terms_approved.returncode==0,terms_approved.stderr
   accepted=json.loads(Q.psql(f"SELECT to_jsonb(o)::text FROM public.partner_orders o WHERE id='{order_id}'").stdout.strip())
-  assert accepted['financial_approval_status']=='approved' and accepted['payment_condition_status']=='approved',accepted
+  assert terms_before['order']['internal_economic_snapshot']==terms_after['order']['internal_economic_snapshot']
+  assert accepted['financial_approval_status']=='pending' and accepted['payment_condition_status']=='defined',accepted
+  assert terms_after['terms']['approval_status']=='approved' and terms_after['terms']['approved_by']==Q.UADM,terms_after
   forecast_read=Q.as_user(Q.UADM,f"SELECT public.get_b2b_financial_forecast_secure('{order_id}');")
   assert forecast_read.returncode==0,forecast_read.stderr
   forecast=json.loads(forecast_read.stdout.strip().splitlines()[-1])
@@ -781,7 +786,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   (OUT/'integrated-strict-fiscal-callback.json').write_text(json.dumps(dict(callback=callback_data,replay=replay_data,confirmed=blocked,schema_and_fiscal_events_synthetic=True,always_allow_substitution=False,strict_permit_required=True),indent=2)+'\n')
   checks.append(dict(test='real H13 envelope 104 protocol 100 generates one receivable and replay preserves one document allocation snapshot and title without close pending',status='PASS',receivable_id=receivable_id))
   partial_completion=forecast_extra.run_partial_completion(B,Q,OUT,order_id,accepted,item,invoice_id,receivable_id,credit)
-  checks.append(dict(test='two authorized NF 9 plus residual 9 preserve exposure 18; replay race H7 and payment 4 leave exposure 14 without reopening residual',status='PASS',second_receivable=partial_completion['second_receivable']))
+  checks.append(dict(test='two authorized NF 9 plus residual 9 preserve exposure 18; replay race H7 and payment 9 leave exposure 9 without reopening residual',status='PASS',second_receivable=partial_completion['second_receivable']))
 
   (OUT/'integrated-b4-fiscal-bridge.json').write_text(json.dumps(dict(
    status='STRICT_FISCAL_CONFIRMED_TO_ONE_RECEIVABLE_REVIEW_ONLY',hosted=False,

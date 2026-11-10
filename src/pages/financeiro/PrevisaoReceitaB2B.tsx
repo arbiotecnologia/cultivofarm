@@ -6,8 +6,9 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { CheckCircle, AlertTriangle, TrendingUp, Calendar } from "lucide-react";
 
 export default function PrevisaoReceitaB2B() {
-  const { data } = useB2BRevenueForecast();
-  const f = data ?? { confirmada_30: 0, confirmada_60: 0, confirmada_90: 0, projetada: 0, em_risco: 0 };
+  const { data, isLoading, isError, ready } = useB2BRevenueForecast();
+  if (!ready || isError || !data) return <div className="p-4 sm:p-6 space-y-4"><h1 className="text-2xl font-semibold">Previsão de Receita B2B</h1><p role="status">{ready && isLoading ? 'Carregando…' : 'Previsão indisponível para esta sessão'}</p></div>;
+  const f = data;
 
   const chart = [
     { periodo: "30 dias", confirmada: Number(f.confirmada_30 || 0), projetada: Number(f.projetada || 0), risco: Number(f.em_risco || 0) },
@@ -41,9 +42,7 @@ export default function PrevisaoReceitaB2B() {
                 <YAxis tickFormatter={(v) => brl(Number(v))} width={90} />
                 <Tooltip formatter={(v: any) => brl(Number(v))} />
                 <Legend />
-                <Bar dataKey="confirmada" stackId="a" fill="hsl(var(--primary))" name="Confirmada" />
-                <Bar dataKey="projetada" stackId="a" fill="hsl(var(--muted-foreground))" name="Projetada" />
-                <Bar dataKey="risco" stackId="a" fill="hsl(var(--destructive))" name="Em risco" />
+                <Bar dataKey="confirmada" fill="hsl(var(--primary))" name="Confirmada acumulada" />
               </BarChart>
             </ResponsiveContainer>
           </div>
