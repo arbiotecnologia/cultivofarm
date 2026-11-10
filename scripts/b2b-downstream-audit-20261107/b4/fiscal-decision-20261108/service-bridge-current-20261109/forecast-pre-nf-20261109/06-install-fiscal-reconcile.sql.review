@@ -127,14 +127,27 @@ BEGIN
     v_invoice := v_ev.fiscal_invoice_id;
   END IF;
 
+  IF _service IN ('NFeConsultaProtocolo4','NFeRetAutorizacao4') THEN
+    IF _xml_run_id IS NULL THEN RAISE EXCEPTION 'SEFAZ_RUN_REQUIRED'; END IF;
+    SELECT * INTO v_run FROM public.fiscal_xml_runs WHERE id = _xml_run_id;
+    IF NOT FOUND THEN RAISE EXCEPTION 'SEFAZ_RUN_NOT_FOUND'; END IF;
+    IF v_run.fiscal_invoice_id IS NULL THEN RAISE EXCEPTION 'SEFAZ_RUN_INVOICE_MISSING'; END IF;
+    IF _invoice_id IS NOT NULL AND _invoice_id IS DISTINCT FROM v_run.fiscal_invoice_id THEN
+      RAISE EXCEPTION 'SEFAZ_INVOICE_RUN_MISMATCH';
+    END IF;
+    v_invoice := v_run.fiscal_invoice_id;
+  END IF;
+  v_tpamb := NULL;
   IF v_invoice IS NOT NULL THEN
     SELECT coalesce(c.nfe_environment_code, '') INTO v_tpamb
       FROM public.fiscal_invoices i JOIN public.company_fiscal_settings c
         ON c.id=i.company_settings_id AND c.organization_id=i.organization_id AND c.is_active
      WHERE i.id=v_invoice;
-  ELSE
-    SELECT coalesce(nfe_environment_code, '') INTO v_tpamb
-      FROM public.company_fiscal_settings WHERE is_active LIMIT 1;
+  ELSIF _actor IS NOT NULL THEN
+    SELECT CASE WHEN count(*)=1 THEN max(coalesce(c.nfe_environment_code,'')) END INTO v_tpamb
+      FROM public.profiles p JOIN public.company_fiscal_settings c
+        ON c.organization_id=p.organization_id AND c.is_active
+     WHERE p.user_id=_actor AND p.ativo IS TRUE;
   END IF;
   IF v_tpamb IS DISTINCT FROM '2' THEN
     RAISE EXCEPTION 'FISCAL_PRODUCTION_ENDPOINT_BLOCKED';
@@ -152,11 +165,41 @@ BEGIN
   END IF;
   PERFORM pg_advisory_xact_lock(hashtextextended('fiscal_sefaz_tx:' || _idempotency_key, 0));
 
+  SELECT f.* INTO v_forecast FROM platform_private.b2b_financial_forecasts f
+    JOIN public.fiscal_invoices i ON i.partner_order_id=f.order_id WHERE i.id=v_invoice;
+  IF FOUND AND _service IN ('NFeAutorizacao4','NFeConsultaProtocolo4','NFeRetAutorizacao4') THEN
+    SELECT i.* INTO v_source FROM public.fiscal_invoices i WHERE i.id=v_invoice;
+    IF v_forecast.organization_id IS DISTINCT FROM v_source.organization_id
+      OR v_forecast.partner_id IS DISTINCT FROM v_source.debtor_partner_id THEN
+      RAISE EXCEPTION 'B2B_FORECAST_BEGIN_SCOPE_DENIED' USING ERRCODE='42501';END IF;
+    IF _service IN ('NFeAutorizacao4','NFeConsultaProtocolo4') THEN
+      -- Worker actor argument is NOT sufficient: canonical active internal authority,
+      -- tenant, entitlements and exact pilot are read from server records.
+      IF _actor IS NULL OR NOT EXISTS(SELECT 1 FROM public.profiles p
+        JOIN public.organizations o ON o.id=p.organization_id
+        WHERE p.user_id=_actor AND p.ativo IS TRUE AND o.ativo IS TRUE
+         AND p.organization_id=v_source.organization_id)
+        OR NOT (public.has_role(_actor,'administrador') OR public.has_role(_actor,'financeiro'))
+        OR public._saas_user_has_feature(_actor,'pedidos_b2b') IS NOT TRUE
+        OR public._saas_user_has_feature(_actor,'contas_receber') IS NOT TRUE
+        OR platform_private.resale_pilot_allowed_v1('b2b_resale','forecast_begin',_actor,
+          v_source.organization_id,v_source.debtor_partner_id,v_source.partner_order_id,NULL,NULL,NULL,NULL) IS NOT TRUE THEN
+        RAISE EXCEPTION 'B2B_FORECAST_BEGIN_SCOPE_DENIED' USING ERRCODE='42501';END IF;
+    END IF;
+  END IF;
   SELECT * INTO v_existing FROM public.fiscal_sefaz_transmissions
    WHERE idempotency_key = _idempotency_key;
 
   IF FOUND THEN
-    IF v_existing.request_fingerprint IS DISTINCT FROM _request_fingerprint THEN
+    IF v_existing.request_fingerprint IS DISTINCT FROM _request_fingerprint
+      OR v_existing.service IS DISTINCT FROM _service
+      OR v_existing.fiscal_invoice_id IS DISTINCT FROM v_invoice
+      OR v_existing.xml_run_id IS DISTINCT FROM _xml_run_id
+      OR v_existing.fiscal_event_id IS DISTINCT FROM _event_id
+      OR v_existing.endpoint_url IS DISTINCT FROM _endpoint_url
+      OR (v_invoice IS NULL AND NOT EXISTS(SELECT 1 FROM public.profiles a JOIN public.profiles b
+            ON b.organization_id=a.organization_id
+          WHERE a.user_id=_actor AND a.ativo IS TRUE AND b.user_id=v_existing.created_by)) THEN
       RAISE EXCEPTION 'FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH';
     END IF;
     RETURN jsonb_build_object(
@@ -188,33 +231,7 @@ BEGIN
     END IF;
   END IF;
 
-  SELECT f.* INTO v_forecast FROM platform_private.b2b_financial_forecasts f
-    JOIN public.fiscal_invoices i ON i.partner_order_id=f.order_id WHERE i.id=v_invoice;
-  IF FOUND AND _service IN ('NFeAutorizacao4','NFeConsultaProtocolo4','NFeRetAutorizacao4') THEN
-    SELECT i.* INTO v_source FROM public.fiscal_invoices i WHERE i.id=v_invoice;
-    IF v_forecast.organization_id IS DISTINCT FROM v_source.organization_id
-      OR v_forecast.partner_id IS DISTINCT FROM v_source.debtor_partner_id THEN
-      RAISE EXCEPTION 'B2B_FORECAST_BEGIN_SCOPE_DENIED' USING ERRCODE='42501';END IF;
-    IF _service IN ('NFeAutorizacao4','NFeConsultaProtocolo4') THEN
-      -- Worker actor argument is NOT sufficient: canonical active internal authority,
-      -- tenant, entitlements and exact pilot are read from server records.
-      IF _actor IS NULL OR NOT EXISTS(SELECT 1 FROM public.profiles p
-        JOIN public.organizations o ON o.id=p.organization_id
-        WHERE p.user_id=_actor AND p.ativo IS TRUE AND o.ativo IS TRUE
-         AND p.organization_id=v_source.organization_id)
-        OR NOT (public.has_role(_actor,'administrador') OR public.has_role(_actor,'financeiro'))
-        OR public._saas_user_has_feature(_actor,'pedidos_b2b') IS NOT TRUE
-        OR public._saas_user_has_feature(_actor,'contas_receber') IS NOT TRUE
-        OR platform_private.resale_pilot_allowed_v1('b2b_resale','forecast_begin',_actor,
-          v_source.organization_id,v_source.debtor_partner_id,v_source.partner_order_id,NULL,NULL,NULL,NULL) IS NOT TRUE THEN
-        RAISE EXCEPTION 'B2B_FORECAST_BEGIN_SCOPE_DENIED' USING ERRCODE='42501';END IF;
-      IF public._saas_user_has_feature(_actor,'pedidos_b2b') IS NOT TRUE
-        OR public._saas_user_has_feature(_actor,'contas_receber') IS NOT TRUE
-        OR NOT EXISTS(SELECT 1 FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id
-          WHERE p.user_id=_actor AND p.ativo IS TRUE AND o.ativo IS TRUE AND p.organization_id=v_source.organization_id)
-        OR NOT (public.has_role(_actor,'administrador') OR public.has_role(_actor,'financeiro')) THEN
-        RAISE EXCEPTION 'B2B_FORECAST_BEGIN_SCOPE_DENIED' USING ERRCODE='42501';END IF;
-    END IF;
+  IF v_forecast.id IS NOT NULL AND _service IN ('NFeAutorizacao4','NFeConsultaProtocolo4','NFeRetAutorizacao4') THEN
     IF _service='NFeAutorizacao4' AND
       (v_forecast.state NOT IN ('aguardando_fiscal','faturado_parcial')
        OR v_source.total_amount IS NULL OR v_source.total_amount<=0 OR v_source.total_amount>v_forecast.residual_amount) THEN
@@ -258,7 +275,7 @@ BEGIN
 END $function$
 ;
 DO $guard$ DECLARE d record; BEGIN
- FOR d IN SELECT * FROM (VALUES ('public.rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid)','141de1aa89607262a2183f80d9e1c014','postgres','578c00048ab38c285e229e11ff6211ec')) x(sig,body_md5,owner,acl_md5) LOOP
+ FOR d IN SELECT * FROM (VALUES ('public.rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid)','70742ae2cd62c71b7bb1a85311c89739','postgres','578c00048ab38c285e229e11ff6211ec')) x(sig,body_md5,owner,acl_md5) LOOP
   IF to_regprocedure(d.sig) IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_BEGIN_POST_MISSING:%',d.sig USING ERRCODE='42501'; END IF;
   IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN RAISE EXCEPTION 'B2B_FORECAST_BEGIN_POST_BODY:%',d.sig USING ERRCODE='42501'; END IF;
   IF (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=d.sig::regprocedure) IS DISTINCT FROM d.owner THEN RAISE EXCEPTION 'B2B_FORECAST_BEGIN_POST_OWNER:%',d.sig USING ERRCODE='42501'; END IF;
