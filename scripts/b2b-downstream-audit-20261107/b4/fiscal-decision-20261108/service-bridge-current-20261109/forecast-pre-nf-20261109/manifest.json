@@ -11,6 +11,7 @@
   "after_forecast_approve_md5": "0d3b85049e3b3b799ba81b4cb95be0da",
   "after_forecast_payment_terms_md5": "c918d938031123434153d97765f92b68",
   "after_seller_scope_credit_approval_md5": "26c77e55dfcb2b48fdb63cbc5b2819ed",
+  "rollback_terms_denied_md5": "83d753e0881ccbfd8142c0d420ea0e37",
   "forecast_stage_credit_exposure_md5": "213ac31f3a30816ead75365b0d1fed18",
   "superseded_pre_b4_residual_credit_md5": "028894275a3b98a3abdc4e01e3fd03bf",
   "credit_composition": {
@@ -55,7 +56,7 @@
     "01-pre.sql.readonly": "309955585401bde685aca773e94bf7ef675e0f5382e832a27e13c90ddae37b0d",
     "02-install.sql.review": "3189be3938ff5587d2c849d1da996c3594de3870206419b560bb455dfab73c8f",
     "03-post.sql.readonly": "d93ef981086d5b96a627b306c4d507156e5bfe3d9426e5b577ec89f57ee80b09",
-    "04-rollback-deny.sql.review": "4b626c17f6e96c1352699f8c3765739704581140831a01e853bfcf3fb28c4d4c",
+    "04-rollback-deny.sql.review": "e0adf910aca0c0dfa8ee6ca019cbd4ba23c0c814e369de983e2ee51abea88a92",
     "05-pre-fiscal-reconcile.sql.readonly": "f59ec3ea3e38be684c16349ace73750cc496b84ec5982e984ba507304570fff3",
     "06-install-fiscal-reconcile.sql.review": "7414838d5424753e557c703fbfc87f09439613f145755a7aaab0ead0d210f75f",
     "07-post-fiscal-reconcile.sql.readonly": "ea9675d36753ef8ea6d3f0af55901de6ed4ed7373834a7c10c1c84bd0bf3c991",

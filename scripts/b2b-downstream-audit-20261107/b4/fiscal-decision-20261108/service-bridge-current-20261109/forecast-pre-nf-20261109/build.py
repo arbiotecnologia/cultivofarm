@@ -351,19 +351,28 @@ DO $$ BEGIN
 END$$;
 COMMIT;
 """
+    # Attempt 182 executed this rollback for the first time: `terms` had already been
+    # rewritten above, so the old "restore" pinned the LIVE md5 but installed a modified
+    # body (B2B_FORECAST_TERMS_ROLLBACK_POST_DRIFT). Restoring LIVE would also reopen the
+    # replay that rewrites approver/time and the unlocked read reproduced in 170/164.
+    # Deny-only instead: keep LIVE header/ACL, replace only the body with a closed raise.
+    live_terms = current["approve_b2b_payment_terms_secure"]["definition"]
+    terms_head = live_terms[:live_terms.index("AS $function$") + len("AS $function$")]
+    terms_denied = terms_head + "\nBEGIN RAISE EXCEPTION 'B2B_PAYMENT_TERMS_APPROVAL_ROLLED_BACK' USING ERRCODE='42501';END\n$function$"
+    terms_denied_md5 = md5(terms_denied + "\n")
     rollback = f"""-- REVIEW ONLY deny-only; preserva previsões/eventos e não reabre crédito legado subestimado.
 BEGIN;
 SET LOCAL lock_timeout='3s';
 {approve};
 {credit_approval};
-{terms};
+{terms_denied};
 -- Exposição de crédito NÃO é tocada aqui: o corpo composto B4+previsão (09-12)
 -- permanece; restaurar LIVE/B4 reabriria dupla contagem ou residual cancelado.
 REVOKE ALL ON FUNCTION public.get_b2b_financial_forecast_secure(uuid) FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb),platform_private.b2b_financial_forecast_transition_v1(uuid,integer,text,text,jsonb),platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text) FROM PUBLIC,anon,authenticated,service_role;
 DO $$ BEGIN
  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{OLD_APPROVE_MD5}' THEN RAISE EXCEPTION 'B2B_FORECAST_ROLLBACK_POST_DRIFT';END IF;
- IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '{current["approve_b2b_payment_terms_secure"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_ROLLBACK_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '{terms_denied_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_ROLLBACK_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '{current["approve_b2b_credit"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_ROLLBACK_POST_DRIFT';END IF;
 END$$;
 COMMIT;
@@ -421,7 +430,7 @@ COMMIT;
     manifest = {"project_ref":REF,"status":"REVIEW_ONLY_INACTIVE_NOT_APPROVED","phase":"FORECAST_AFTER_COMMERCIAL_AND_CREDIT_BEFORE_NF",
       "capture":str(CAPTURE5.relative_to(ROOT)),"capture_sha256":sha(CAPTURE5.read_text()),"live_approve_md5":OLD_APPROVE_MD5,
       "live_payment_terms_md5":current["approve_b2b_payment_terms_secure"]["md5"],"live_credit_approval_md5":current["approve_b2b_credit"]["md5"],"live_credit_exposure_md5":current["fn_b2b_credit_exposure"]["md5"],
-      "after_forecast_approve_md5":new_approve_md5,"after_forecast_payment_terms_md5":new_terms_md5,"after_seller_scope_credit_approval_md5":new_credit_approval_md5,"forecast_stage_credit_exposure_md5":current["fn_b2b_credit_exposure"]["md5"],
+      "after_forecast_approve_md5":new_approve_md5,"after_forecast_payment_terms_md5":new_terms_md5,"after_seller_scope_credit_approval_md5":new_credit_approval_md5,"rollback_terms_denied_md5":terms_denied_md5,"forecast_stage_credit_exposure_md5":current["fn_b2b_credit_exposure"]["md5"],
       "superseded_pre_b4_residual_credit_md5":new_credit_md5,"credit_composition":credit_manifest,"accounts_receivable_before_nf":False,"definitive_cardinality":"ONE_PER_AUTHORIZED_FISCAL_DOCUMENT",
       "forecast_additive_to_credit":False,"files":{n:sha(t) for n,t in files.items()},"hosted":False}
     (H/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
