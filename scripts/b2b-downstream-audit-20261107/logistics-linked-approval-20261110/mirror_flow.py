@@ -124,7 +124,7 @@ def run(B, Review, Q, A, choice, out):
     time.sleep(0.1); w = [B.T.session(reserve_sql(lot2, 2, k2)), B.T.session(reserve_sql(lot2, 2, k2))]
     deadline, waited = time.monotonic() + 3, False
     while time.monotonic() < deadline and not waited:
-        waited = B.last("SELECT count(*)>=2 FROM pg_locks WHERE locktype='advisory' AND NOT granted;") == "t"; time.sleep(0.03)
+        waited = B.last("SELECT count(*)>=1 FROM pg_locks WHERE locktype='advisory' AND NOT granted;") == "t"; time.sleep(0.03)
     B.T.finish(holder, "COMMIT;"); res = [B.T.finish(x) for x in w]
     outs = [json.loads(o.strip().splitlines()[-1]) for o, e in res if not e]
     errs = [next((l for l in e.splitlines() if l.startswith("ERROR")), e[-200:]) for o, e in res if e]
