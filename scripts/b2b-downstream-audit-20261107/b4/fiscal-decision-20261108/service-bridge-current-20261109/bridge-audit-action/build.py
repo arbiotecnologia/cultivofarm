@@ -82,15 +82,20 @@ DO $$ BEGIN
 END $$;
 COMMIT;
 """
-    rollback = f"""-- REVIEW ONLY deny-only; restaura ponte anterior sem apagar histórico.
+    denied = """CREATE OR REPLACE FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1(p_invoice uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $function$
+BEGIN RAISE EXCEPTION 'B2B_FISCAL_BRIDGE_ROLLED_BACK' USING ERRCODE='42501';END $function$"""
+    denied_md5 = md5(denied)
+    rollback = f"""-- REVIEW ONLY deny-only; não restaura a ponte sem proteção de cancelamento.
 BEGIN;
 SET LOCAL lock_timeout='3s';
 DO $$ BEGIN
  IF md5(pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure)) IS DISTINCT FROM '{new_md5}' THEN RAISE EXCEPTION 'BRIDGE_AUDIT_ROLLBACK_PRE_DRIFT'; END IF;
 END $$;
-{original};
+{denied};
+REVOKE ALL ON FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
 DO $$ BEGIN
- IF md5(pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure)) IS DISTINCT FROM '{old_md5}' THEN RAISE EXCEPTION 'BRIDGE_AUDIT_ROLLBACK_POST_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure)) IS DISTINCT FROM '{denied_md5}' THEN RAISE EXCEPTION 'BRIDGE_AUDIT_ROLLBACK_POST_DRIFT'; END IF;
 END $$;
 COMMIT;
 """
