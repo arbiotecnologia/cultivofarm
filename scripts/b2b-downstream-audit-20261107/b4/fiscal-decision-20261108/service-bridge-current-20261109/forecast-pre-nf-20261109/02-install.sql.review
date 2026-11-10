@@ -72,7 +72,9 @@ BEGIN
  IF org IS NULL OR po.internal_economic_snapshot IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_SCOPE_UNPROVEN' USING ERRCODE='42501';END IF;
  total:=round(coalesce(po.final_amount_with_interest,po.total,0),2);
  IF total<=0 THEN RAISE EXCEPTION 'B2B_FORECAST_TOTAL_INVALID' USING ERRCODE='23514';END IF;
- SELECT jsonb_agg(to_jsonb(s) ORDER BY s.installment_number) INTO schedule
+ -- Same economic identity as the sealed schedule: operational status/link and
+ -- bookkeeping time are not contractual values. Existing snapshots stay intact.
+ SELECT jsonb_agg(to_jsonb(s)-ARRAY['status','receivable_installment_id','created_at'] ORDER BY s.installment_number) INTO schedule
   FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=po.id;
  IF schedule IS NULL OR jsonb_array_length(schedule)=0 OR (SELECT sum((x->>'amount')::numeric) FROM jsonb_array_elements(schedule)x) IS DISTINCT FROM total THEN
   RAISE EXCEPTION 'B2B_FORECAST_SCHEDULE_UNPROVEN' USING ERRCODE='23514';END IF;
@@ -80,7 +82,8 @@ BEGIN
  IF jsonb_array_length(items)=0 THEN RAISE EXCEPTION 'B2B_FORECAST_ITEMS_UNPROVEN' USING ERRCODE='23514';END IF;
  SELECT * INTO f FROM platform_private.b2b_financial_forecasts WHERE order_id=po.id;
  IF f.id IS NOT NULL THEN
-  IF (f.organization_id,f.partner_id,f.total_amount,f.economic_snapshot,f.schedule_snapshot,f.items_snapshot,
+  IF (f.organization_id,f.partner_id,f.total_amount,f.economic_snapshot,
+      (SELECT jsonb_agg(x-ARRAY['status','receivable_installment_id','created_at'] ORDER BY (x->>'installment_number')::integer) FROM jsonb_array_elements(f.schedule_snapshot)x),f.items_snapshot,
       f.commercial_approved_by,f.commercial_approved_at,f.credit_approved_by,f.credit_approved_at)
    IS DISTINCT FROM (org,po.partner_id,total,po.internal_economic_snapshot,schedule,items,
       po.approved_by,po.approved_at,po.credit_approved_by,po.credit_approved_at)
@@ -265,6 +268,9 @@ DECLARE
   v_observed_terms uuid;
   v_observed_updated_at timestamptz;
   v_locked_updated_at timestamptz;
+  v_approved_by uuid;
+  v_approved_at timestamptz;
+  v_approval_status text;
   v_created_by uuid;
   v_numero text;
 BEGIN
@@ -294,12 +300,22 @@ BEGIN
     RAISE EXCEPTION 'payment_terms_not_defined';
   END IF;
 
-  SELECT updated_at INTO v_locked_updated_at FROM public.partner_order_payment_terms
+  SELECT updated_at,approval_status,approved_by,approved_at INTO v_locked_updated_at,v_approval_status,v_approved_by,v_approved_at FROM public.partner_order_payment_terms
     WHERE id=v_terms_id AND partner_order_id=p_partner_order_id FOR UPDATE;
   IF NOT FOUND OR v_locked_updated_at IS DISTINCT FROM v_observed_updated_at THEN
     RAISE EXCEPTION 'B2B_PAYMENT_TERMS_CAS_CONFLICT' USING ERRCODE='PT409'; END IF;
   IF NOT (public.b2b_phase1_order_visible(p_partner_order_id) OR EXISTS (SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
   IF platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro','gestor_comercial']::public.app_role[]) IS NULL THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='42501'; END IF;
+
+  -- Approval is one immutable decision. Repetition is not a notes editor and
+  -- cannot replace its original actor/time or redispatch audit/notification.
+  -- Authority, parent/child locks and observed CAS were checked before replay.
+  IF v_approval_status='approved' THEN
+    IF v_approved_by IS NULL OR v_approved_at IS NULL THEN
+      RAISE EXCEPTION 'B2B_PAYMENT_TERMS_APPROVAL_UNPROVEN' USING ERRCODE='42501'; END IF;
+    RETURN jsonb_build_object('success',true,'status','approved','replayed',true,
+      'approved_by',v_approved_by,'approved_at',v_approved_at);
+  END IF;
   UPDATE public.partner_order_payment_terms
      SET approval_status = 'approved',
          approved_by = v_uid,
@@ -549,7 +565,7 @@ $function$
 ;
 DO $$ BEGIN
  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '0d3b85049e3b3b799ba81b4cb95be0da' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_INSTALL_POST_DRIFT';END IF;
- IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '3455ffaf7010771654aee107c2996e46' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_INSTALL_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM 'c918d938031123434153d97765f92b68' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_INSTALL_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '26c77e55dfcb2b48fdb63cbc5b2819ed' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_INSTALL_POST_DRIFT';END IF;
  IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '028894275a3b98a3abdc4e01e3fd03bf' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_INSTALL_POST_DRIFT';END IF;
 END$$;

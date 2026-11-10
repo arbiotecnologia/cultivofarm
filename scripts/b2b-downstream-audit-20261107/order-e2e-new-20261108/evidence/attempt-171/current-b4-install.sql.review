@@ -1,0 +1,1382 @@
+-- CANDIDATO B4 INATIVO/BLOQUEADO; não aplicar. Instalação não habilita operação fiscal/contábil.
+BEGIN;
+SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='60s';
+-- READONLY. Revisão 458b6012; capturas locais canônicas exigem conferência LIVE.
+-- READONLY; pinos LIVE relatados pelo auditor + B3 instalado localmente pinado.
+DO $guard$ BEGIN
+ IF md5(pg_get_functiondef('public.generate_b2b_receivable_secure(uuid)'::regprocedure))<>'c49cc7ccedbcb28cba9b816b7e47c521' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.generate_b2b_receivable_secure(uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure))<>'1bdac7fae6d702fb42d3a30539e9c9c3' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.generate_b2b_receivable_secure_impl(uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.tg_auto_b2b_receivable()'::regprocedure))<>'0f679538fe394924b140e54938a3bb9e' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.tg_auto_b2b_receivable()'; END IF;
+ IF md5(pg_get_functiondef('public.fn_generate_receivable_from_entrega(uuid,jsonb)'::regprocedure))<>'670ea34d37c4c4fd6612031ad763a3a7' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.fn_generate_receivable_from_entrega(uuid,jsonb)'; END IF;
+ IF md5(pg_get_functiondef('public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid)'::regprocedure))<>'9c94985d80502c8aea8bfb5da3abdecd' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.fn_b2b_order_billing_eligibility(uuid)'::regprocedure))<>'db977875e15ea49ce10fb3e5388d7dfb' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.fn_b2b_order_billing_eligibility(uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure))<>'213ac31f3a30816ead75365b0d1fed18' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.fn_b2b_credit_exposure(uuid,numeric,uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)'::regprocedure))<>'c6fbe15906c5d893ab80e962ee162b3c' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)'; END IF;
+ IF md5(pg_get_functiondef('public.b2b_payment_condition_retire(uuid,text,integer)'::regprocedure))<>'a049478a9e2b74f315d6c5baf204efa1' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.b2b_payment_condition_retire(uuid,text,integer)'; END IF;
+ IF md5(pg_get_functiondef('public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)'::regprocedure))<>'f0d3ff51f5a4164da41db1a6ef262c8f' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)'; END IF;
+ IF md5(pg_get_functiondef('public.b2b_payment_condition_activation_set(text,uuid[],integer)'::regprocedure))<>'9efe4e6eb5afe29d8e3d9f3ef7077863' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.b2b_payment_condition_activation_set(text,uuid[],integer)'; END IF;
+ IF md5(pg_get_functiondef('public.b2b_payment_condition_config_list()'::regprocedure))<>'728b3b92bc4848873f6df85779585295' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.b2b_payment_condition_config_list()'; END IF;
+ IF md5(pg_get_functiondef('public.b2b_list_payment_condition_options_secure(uuid,uuid)'::regprocedure))<>'8a7f29c199e77e653966ebdb8a4b3ed3' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.b2b_list_payment_condition_options_secure(uuid,uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb)'::regprocedure))<>'06ea0933992a05a0d2a7fb78c6881bcf' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb)'; END IF;
+ IF md5(pg_get_functiondef('public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)'::regprocedure))<>'e86385fefb25c68d9dd4d0fef6619f27' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)'; END IF;
+ IF md5(pg_get_functiondef('public.get_partner_order_payment_condition_secure(uuid)'::regprocedure))<>'7ffe3bbbefd040bab1b3ce1bce8069a7' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.get_partner_order_payment_condition_secure(uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'::regprocedure))<>'97bcdb9884b54adb3bd4aae4915e32d0' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'; END IF;
+END $guard$;
+
+DO $guard$ DECLARE d record; BEGIN
+ FOR d IN SELECT * FROM (VALUES ('public.fn_b2b_credit_exposure(uuid,numeric,uuid)','213ac31f3a30816ead75365b0d1fed18','postgres','578c00048ab38c285e229e11ff6211ec'),('public.fn_generate_receivable_installments()','f632f15c9f46cb9889082fc533a27ea1','postgres','578c00048ab38c285e229e11ff6211ec'),('public.generate_b2b_receivable_secure_impl(uuid)','1bdac7fae6d702fb42d3a30539e9c9c3','postgres','578c00048ab38c285e229e11ff6211ec'),('public.rpc_register_receivable_payment(uuid,jsonb)','db41f7e2cfcb196ef64536f62746f365','postgres','04e771375e06113da45adc7fa45d56af'),('public.tg_auto_b2b_receivable()','0f679538fe394924b140e54938a3bb9e','postgres','578c00048ab38c285e229e11ff6211ec')) x(sig,body_md5,owner,acl_md5) LOOP
+  IF to_regprocedure(d.sig) IS NULL THEN RAISE EXCEPTION 'B4_PRE_SHARED_MISSING:%',d.sig USING ERRCODE='42501'; END IF;
+  IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN RAISE EXCEPTION 'B4_PRE_SHARED_BODY:%',d.sig USING ERRCODE='42501'; END IF;
+  IF (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=d.sig::regprocedure) IS DISTINCT FROM d.owner THEN RAISE EXCEPTION 'B4_PRE_SHARED_OWNER:%',d.sig USING ERRCODE='42501'; END IF;
+  IF (SELECT md5(string_agg(v.entry,'|' ORDER BY v.entry)) FROM (
+    SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END||'='||a.privilege_type||CASE WHEN a.is_grantable THEN '*' ELSE '' END||'/'||a.grantor::regrole::text entry
+    FROM pg_proc p,aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a WHERE p.oid=d.sig::regprocedure) v) IS DISTINCT FROM d.acl_md5
+  THEN RAISE EXCEPTION 'B4_PRE_SHARED_ACL:%',d.sig USING ERRCODE='42501'; END IF;
+ END LOOP;
+END $guard$;DO $guard$ BEGIN
+ IF (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='public.accounts_receivable'::regclass)<>'postgres' THEN RAISE EXCEPTION 'B4_PRE_TABLE_OWNER' USING ERRCODE='42501'; END IF;
+ IF (SELECT md5(string_agg(v.entry,'|' ORDER BY v.entry)) FROM (
+   SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END||'='||a.privilege_type||CASE WHEN a.is_grantable THEN '*' ELSE '' END||'/'||a.grantor::regrole::text entry
+   FROM pg_class c,aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='public.accounts_receivable'::regclass) v)<>'93490607307bc83e36605d2c0e7dc4ec'
+ THEN RAISE EXCEPTION 'B4_PRE_TABLE_ACL' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.accounts_receivable'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'B4_PRE_TABLE_RLS' USING ERRCODE='42501'; END IF;
+END $guard$;DO $guard$ DECLARE d record; BEGIN
+ FOR d IN SELECT * FROM (VALUES ('platform_private.delivery_no_downstream_20261030()','95e0e5a84ef511cd72d7807351f61cf4','postgres','aae127bcdd4f7096876d7094c14eabd1')) x(sig,body_md5,owner,acl_md5) LOOP
+  IF to_regprocedure(d.sig) IS NULL THEN RAISE EXCEPTION 'B4_IMMUTABLE_DOWNSTREAM_MISSING:%',d.sig USING ERRCODE='42501'; END IF;
+  IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN RAISE EXCEPTION 'B4_IMMUTABLE_DOWNSTREAM_BODY:%',d.sig USING ERRCODE='42501'; END IF;
+  IF (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=d.sig::regprocedure) IS DISTINCT FROM d.owner THEN RAISE EXCEPTION 'B4_IMMUTABLE_DOWNSTREAM_OWNER:%',d.sig USING ERRCODE='42501'; END IF;
+  IF (SELECT md5(string_agg(v.entry,'|' ORDER BY v.entry)) FROM (
+    SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END||'='||a.privilege_type||CASE WHEN a.is_grantable THEN '*' ELSE '' END||'/'||a.grantor::regrole::text entry
+    FROM pg_proc p,aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a WHERE p.oid=d.sig::regprocedure) v) IS DISTINCT FROM d.acl_md5
+  THEN RAISE EXCEPTION 'B4_IMMUTABLE_DOWNSTREAM_ACL:%',d.sig USING ERRCODE='42501'; END IF;
+ END LOOP;
+END $guard$;DO $guard$ BEGIN IF (SELECT md5(string_agg(c.column_name||'|'||format_type(a.atttypid,a.atttypmod)||'|'||coalesce(c.column_default,'')||'|'||c.is_nullable,'^' ORDER BY c.ordinal_position)) FROM information_schema.columns c JOIN pg_attribute a ON a.attrelid='public.accounts_receivable'::regclass AND a.attname=c.column_name WHERE c.table_schema='public' AND c.table_name='accounts_receivable') IS DISTINCT FROM '48e56787eb471eac7dbb59d23173961f' THEN RAISE EXCEPTION 'B4_PRE_COLUMNS' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(string_agg(c.conname||'|'||pg_get_constraintdef(c.oid),'^' ORDER BY c.conname)) FROM pg_constraint c WHERE c.conrelid='public.accounts_receivable'::regclass) IS DISTINCT FROM '22342047ab90371922b30c3e17ed95e1' THEN RAISE EXCEPTION 'B4_PRE_CONSTRAINTS' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(string_agg(c.relname||'|'||pg_get_indexdef(c.oid)||'|'||CASE WHEN i.indisvalid THEN 't' ELSE 'f' END,'^' ORDER BY c.relname)) FROM pg_class c JOIN pg_index i ON i.indexrelid=c.oid WHERE i.indrelid='public.accounts_receivable'::regclass) IS DISTINCT FROM '524434083f330c8c1b66e1712dfb2e0e' THEN RAISE EXCEPTION 'B4_PRE_INDEXES' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(string_agg(t.tgname||'|'||pg_get_triggerdef(t.oid)||'|'||t.tgenabled::text,'^' ORDER BY t.tgname)) FROM pg_trigger t WHERE t.tgrelid='public.accounts_receivable'::regclass AND NOT t.tgisinternal) IS DISTINCT FROM '7c65f3e7fed5e102fd6c8b96bc9fe8e0' THEN RAISE EXCEPTION 'B4_PRE_TRIGGERS' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN
+ IF to_regprocedure('platform_private.b2b_allocate_document(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.b2b_allocate_document(uuid)' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.b2b_allocation_money_row(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.b2b_allocation_money_row(uuid)' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.b2b_cancellation_fence()') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.b2b_cancellation_fence()' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.b2b_credit_balances(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.b2b_credit_balances(uuid,uuid)' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.b2b_credit_config_block(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.b2b_credit_config_block(uuid)' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.b2b_debtor_partner(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.b2b_debtor_partner(uuid,uuid)' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.b2b_integration_actor(uuid,boolean)') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.b2b_integration_actor(uuid,boolean)' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.b2b_integration_dependencies()') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.b2b_integration_dependencies()' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.b2b_legacy_money_row(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.b2b_legacy_money_row(uuid)' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.b2b_order_residual(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.b2b_order_residual(uuid)' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.b2b_proven_money_row(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.b2b_proven_money_row(uuid)' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.b2b_proven_money_row_internal(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.b2b_proven_money_row_internal(uuid,uuid)' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.b2b_receivable_partner_scope(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.b2b_receivable_partner_scope(uuid)' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.b2b_reverse_allocation(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.b2b_reverse_allocation(uuid,uuid)' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.b2b_shared_receivable_credit_guard()') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.b2b_shared_receivable_credit_guard()' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.b2b_title_insert_fence()') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.b2b_title_insert_fence()' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.b4_assert_order_eligible(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.b4_assert_order_eligible(uuid)' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.price_adjusted_due(date,platform_private.holiday_calendars)') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.price_adjusted_due(date,platform_private.holiday_calendars)' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.price_calendar_load(text,text)') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.price_calendar_load(text,text)' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.price_immutable()') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.price_immutable()' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('platform_private.price_pinned_calendar()') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:platform_private.price_pinned_calendar()' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('public.rpc_receivable_money_projection_v1(uuid,integer,integer)') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_FUNCTION:public.rpc_receivable_money_projection_v1(uuid,integer,integer)' USING ERRCODE='42501'; END IF;
+END $guard$;DO $guard$ BEGIN
+ IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+     WHERE n.nspname='public' AND p.proname='rpc_receivable_money_projection_v1')<>0
+ THEN RAISE EXCEPTION 'B4_PRE_PROJECTION_ANY_OVERLOAD_EXISTS' USING ERRCODE='42501'; END IF;
+END $guard$;DO $guard$ BEGIN
+ IF to_regclass('platform_private.holiday_calendars') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_RELATION:platform_private.holiday_calendars' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.price_schedule_snapshots') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_RELATION:platform_private.price_schedule_snapshots' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_authorized_documents') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_RELATION:platform_private.b2b_authorized_documents' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_document_allocations') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_RELATION:platform_private.b2b_document_allocations' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_allocation_reversals') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_RELATION:platform_private.b2b_allocation_reversals' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_title_permits') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_RELATION:platform_private.b2b_title_permits' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_cancellation_attestations') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_RELATION:platform_private.b2b_cancellation_attestations' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b4_order_condition_snapshots') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_RELATION:platform_private.b4_order_condition_snapshots' USING ERRCODE='42501'; END IF;
+ IF to_regclass('public.b2b_one_title_per_document') IS NOT NULL THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_RELATION:public.b2b_one_title_per_document' USING ERRCODE='42501'; END IF;
+END $guard$;DO $guard$ BEGIN
+ IF to_regclass('platform_private.holiday_calendars') IS NOT NULL AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='price_calendar_immutable' AND tgrelid=to_regclass('platform_private.holiday_calendars') AND NOT tgisinternal) THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_TRIGGER:platform_private.holiday_calendars.price_calendar_immutable' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.holiday_calendars') IS NOT NULL AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='price_calendar_no_truncate' AND tgrelid=to_regclass('platform_private.holiday_calendars') AND NOT tgisinternal) THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_TRIGGER:platform_private.holiday_calendars.price_calendar_no_truncate' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.price_schedule_snapshots') IS NOT NULL AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='price_snapshot_immutable' AND tgrelid=to_regclass('platform_private.price_schedule_snapshots') AND NOT tgisinternal) THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_TRIGGER:platform_private.price_schedule_snapshots.price_snapshot_immutable' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.price_schedule_snapshots') IS NOT NULL AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='price_snapshot_no_truncate' AND tgrelid=to_regclass('platform_private.price_schedule_snapshots') AND NOT tgisinternal) THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_TRIGGER:platform_private.price_schedule_snapshots.price_snapshot_no_truncate' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_authorized_documents') IS NOT NULL AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='immutable_update_delete' AND tgrelid=to_regclass('platform_private.b2b_authorized_documents') AND NOT tgisinternal) THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_TRIGGER:platform_private.b2b_authorized_documents.immutable_update_delete' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_document_allocations') IS NOT NULL AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='immutable_update_delete' AND tgrelid=to_regclass('platform_private.b2b_document_allocations') AND NOT tgisinternal) THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_TRIGGER:platform_private.b2b_document_allocations.immutable_update_delete' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_allocation_reversals') IS NOT NULL AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='immutable_update_delete' AND tgrelid=to_regclass('platform_private.b2b_allocation_reversals') AND NOT tgisinternal) THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_TRIGGER:platform_private.b2b_allocation_reversals.immutable_update_delete' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_cancellation_attestations') IS NOT NULL AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='immutable_update_delete' AND tgrelid=to_regclass('platform_private.b2b_cancellation_attestations') AND NOT tgisinternal) THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_TRIGGER:platform_private.b2b_cancellation_attestations.immutable_update_delete' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_authorized_documents') IS NOT NULL AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='immutable_truncate' AND tgrelid=to_regclass('platform_private.b2b_authorized_documents') AND NOT tgisinternal) THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_TRIGGER:platform_private.b2b_authorized_documents.immutable_truncate' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_document_allocations') IS NOT NULL AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='immutable_truncate' AND tgrelid=to_regclass('platform_private.b2b_document_allocations') AND NOT tgisinternal) THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_TRIGGER:platform_private.b2b_document_allocations.immutable_truncate' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_allocation_reversals') IS NOT NULL AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='immutable_truncate' AND tgrelid=to_regclass('platform_private.b2b_allocation_reversals') AND NOT tgisinternal) THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_TRIGGER:platform_private.b2b_allocation_reversals.immutable_truncate' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_cancellation_attestations') IS NOT NULL AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='immutable_truncate' AND tgrelid=to_regclass('platform_private.b2b_cancellation_attestations') AND NOT tgisinternal) THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_TRIGGER:platform_private.b2b_cancellation_attestations.immutable_truncate' USING ERRCODE='42501'; END IF;
+ IF to_regclass('public.accounts_receivable') IS NOT NULL AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='zz_b2b_shared_credit_guard' AND tgrelid=to_regclass('public.accounts_receivable') AND NOT tgisinternal) THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_TRIGGER:public.accounts_receivable.zz_b2b_shared_credit_guard' USING ERRCODE='42501'; END IF;
+ IF to_regclass('public.accounts_receivable') IS NOT NULL AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='a01_b2b_fiscal_title_fence' AND tgrelid=to_regclass('public.accounts_receivable') AND NOT tgisinternal) THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_TRIGGER:public.accounts_receivable.a01_b2b_fiscal_title_fence' USING ERRCODE='42501'; END IF;
+ IF to_regclass('public.accounts_receivable') IS NOT NULL AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='a01_b2b_fiscal_title_identity' AND tgrelid=to_regclass('public.accounts_receivable') AND NOT tgisinternal) THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_TRIGGER:public.accounts_receivable.a01_b2b_fiscal_title_identity' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_cancellation_attestations') IS NOT NULL AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='cancellation_scope_lock' AND tgrelid=to_regclass('platform_private.b2b_cancellation_attestations') AND NOT tgisinternal) THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_EXISTING_TRIGGER:platform_private.b2b_cancellation_attestations.cancellation_scope_lock' USING ERRCODE='42501'; END IF;
+END $guard$;DO $guard$ BEGIN
+ IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable' AND column_name='b2b_document_id') THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_COLUMN' USING ERRCODE='42501'; END IF;
+END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_triggerdef(t.oid)||'|'||t.tgenabled::text) FROM pg_trigger t WHERE t.tgname='trg_auto_b2b_receivable' AND t.tgrelid='public.partner_orders'::regclass AND NOT t.tgisinternal) IS DISTINCT FROM 'e0bef68247241994ec6e2fc113fe68dc' THEN RAISE EXCEPTION 'B4_PRE_AUTO_TRIGGER:trg_auto_b2b_receivable' USING ERRCODE='42501'; END IF; END $guard$;
+
+CREATE TABLE platform_private.holiday_calendars (
+  version text PRIMARY KEY,
+  locality text NOT NULL,
+  coverage_start date NOT NULL,
+  coverage_end date NOT NULL,
+  sha256 text NOT NULL CHECK (sha256 ~ '^[0-9a-f]{64}$'),
+  sealed_canonical text NOT NULL,
+  holidays date[] NOT NULL,
+  loaded_at timestamptz NOT NULL DEFAULT now(),
+  CHECK (coverage_end >= coverage_start)
+);
+
+CREATE TABLE platform_private.price_schedule_snapshots (
+  receivable_id uuid PRIMARY KEY REFERENCES public.accounts_receivable(id),
+  organization_id uuid NOT NULL,
+  customer_id uuid NOT NULL,
+  actor_id uuid NOT NULL,
+  transaction_id bigint NOT NULL,
+  policy_version text NOT NULL,
+  calendar_version text NOT NULL REFERENCES platform_private.holiday_calendars(version),
+  calendar_sha256 text NOT NULL,
+  nf_reference uuid NOT NULL,
+  nf_issue_date date NOT NULL,
+  table_amount numeric(14,2) NOT NULL CHECK (table_amount > 0),
+  discount_percent numeric(5,2) NOT NULL CHECK (discount_percent = 40),
+  principal numeric(14,2) NOT NULL CHECK (principal > 0),
+  monthly_rate_percent numeric(6,3) NOT NULL,
+  installment_count int NOT NULL CHECK (installment_count BETWEEN 1 AND 3),
+  financed_total numeric(14,2) NOT NULL,
+  credit_limit numeric(14,2) NOT NULL,
+  exposure_before numeric(14,2) NOT NULL,
+  rows jsonb NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+REVOKE ALL ON platform_private.holiday_calendars,platform_private.price_schedule_snapshots FROM PUBLIC,anon,authenticated,service_role;
+ALTER TABLE platform_private.holiday_calendars ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_private.price_schedule_snapshots ENABLE ROW LEVEL SECURITY;
+
+CREATE FUNCTION platform_private.price_immutable() RETURNS trigger
+LANGUAGE plpgsql SET search_path = '' AS $$
+BEGIN
+  RAISE EXCEPTION 'PRICE_RECORD_IMMUTABLE' USING ERRCODE = '42501';
+END $$;
+
+CREATE TRIGGER price_calendar_immutable BEFORE UPDATE OR DELETE ON platform_private.holiday_calendars FOR EACH ROW EXECUTE FUNCTION platform_private.price_immutable();
+CREATE TRIGGER price_calendar_no_truncate BEFORE TRUNCATE ON platform_private.holiday_calendars FOR EACH STATEMENT EXECUTE FUNCTION platform_private.price_immutable();
+CREATE TRIGGER price_snapshot_immutable BEFORE UPDATE OR DELETE ON platform_private.price_schedule_snapshots FOR EACH ROW EXECUTE FUNCTION platform_private.price_immutable();
+CREATE TRIGGER price_snapshot_no_truncate BEFORE TRUNCATE ON platform_private.price_schedule_snapshots FOR EACH STATEMENT EXECUTE FUNCTION platform_private.price_immutable();
+
+CREATE FUNCTION platform_private.price_calendar_load(p_canonical text, p_sha256 text) RETURNS text
+LANGUAGE plpgsql SET search_path = '' AS $$
+DECLARE d jsonb; v_h date[]; cs date; ce date;
+BEGIN
+  IF encode(sha256(convert_to(p_canonical, 'UTF8')), 'hex') IS DISTINCT FROM p_sha256 THEN
+    RAISE EXCEPTION 'CALENDAR_INTEGRITY_MISMATCH' USING ERRCODE = '23514';
+  END IF;
+  d := p_canonical::jsonb;
+  IF d->>'schema' IS DISTINCT FROM 'cultivofarm.holiday-calendar.v1' OR d->>'kind' IS DISTINCT FROM 'REAL_OFFICIAL_SOURCES'
+     OR coalesce(jsonb_array_length(d->'sources'), 0) = 0 THEN
+    RAISE EXCEPTION 'CALENDAR_METADATA_REQUIRED' USING ERRCODE = '23514';
+  END IF;
+  cs := (d->>'coverage_start')::date; ce := (d->>'coverage_end')::date;
+  SELECT array_agg((x->>'date')::date ORDER BY (x->>'date')::date) INTO v_h
+    FROM jsonb_array_elements(d->'data'->'holidays') x WHERE x->>'classification' = 'FERIADO';
+  IF v_h IS NULL OR cardinality(v_h) <> jsonb_array_length(d->'data'->'holidays')
+     OR EXISTS (SELECT 1 FROM unnest(v_h) h WHERE h < cs OR h > ce)
+     OR (SELECT count(DISTINCT h) FROM unnest(v_h) h) <> cardinality(v_h)
+     OR EXISTS (SELECT 1 FROM jsonb_array_elements(d->'data'->'excluded_optional_points') o WHERE (o->>'date')::date = ANY (v_h)) THEN
+    RAISE EXCEPTION 'CALENDAR_HOLIDAYS_INVALID' USING ERRCODE = '23514';
+  END IF;
+  INSERT INTO platform_private.holiday_calendars(version, locality, coverage_start, coverage_end, sha256, sealed_canonical, holidays)
+    VALUES (d->>'version', d->>'locality', cs, ce, p_sha256, p_canonical, v_h);
+  RETURN d->>'version';
+END $$;
+
+CREATE FUNCTION platform_private.price_pinned_calendar() RETURNS platform_private.holiday_calendars
+LANGUAGE plpgsql STABLE SET search_path = '' AS $$
+DECLARE c platform_private.holiday_calendars;
+BEGIN
+  SELECT * INTO c FROM platform_private.holiday_calendars WHERE version = 'paracatu-mg-2026-2027-v2';
+  IF NOT FOUND THEN RAISE EXCEPTION 'CALENDAR_SOURCE_REQUIRED' USING ERRCODE = '23514'; END IF;
+  IF c.locality IS DISTINCT FROM 'Paracatu-MG' THEN RAISE EXCEPTION 'CALENDAR_LOCALITY_MISMATCH' USING ERRCODE = '23514'; END IF;
+  IF c.sha256 IS DISTINCT FROM 'a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269'
+     OR encode(sha256(convert_to(c.sealed_canonical, 'UTF8')), 'hex') IS DISTINCT FROM c.sha256 THEN
+    RAISE EXCEPTION 'CALENDAR_INTEGRITY_MISMATCH' USING ERRCODE = '23514';
+  END IF;
+  RETURN c;
+END $$;
+
+CREATE FUNCTION platform_private.price_adjusted_due(p_nominal date, p_cal platform_private.holiday_calendars) RETURNS date
+LANGUAGE plpgsql IMMUTABLE SET search_path = '' AS $$
+DECLARE d date := p_nominal;
+BEGIN
+  FOR k IN 1..60 LOOP
+    IF d < p_cal.coverage_start OR d > p_cal.coverage_end THEN
+      RAISE EXCEPTION 'CALENDAR_COVERAGE_EXCEEDED' USING ERRCODE = '23514';
+    END IF;
+    IF extract(isodow FROM d) < 6 AND NOT (d = ANY (p_cal.holidays)) THEN RETURN d; END IF;
+    d := d + 1;
+  END LOOP;
+  RAISE EXCEPTION 'CALENDAR_NO_BUSINESS_DAY' USING ERRCODE = '23514';
+END $$;
+
+REVOKE ALL ON FUNCTION platform_private.price_immutable(),platform_private.price_calendar_load(text,text),platform_private.price_pinned_calendar(),platform_private.price_adjusted_due(date,platform_private.holiday_calendars) FROM PUBLIC,anon,authenticated,service_role;
+
+SELECT platform_private.price_calendar_load('{"consulted_on":"2026-10-29","coverage_end":"2027-12-31","coverage_start":"2026-01-01","data":{"excluded_optional_points":[{"business_day":true,"classification":"PONTO_FACULTATIVO","date":"2026-01-02"},{"business_day":true,"classification":"PONTO_FACULTATIVO","date":"2026-02-16"},{"business_day":true,"classification":"PONTO_FACULTATIVO","date":"2026-02-17"},{"business_day":true,"classification":"PONTO_FACULTATIVO","date":"2026-04-02"},{"business_day":true,"classification":"PONTO_FACULTATIVO","date":"2026-04-20"},{"business_day":true,"classification":"PONTO_FACULTATIVO","date":"2026-06-05"},{"business_day":true,"classification":"PONTO_FACULTATIVO","date":"2026-10-30"},{"business_day":true,"classification":"PONTO_FACULTATIVO","date":"2026-12-24"},{"business_day":true,"classification":"PONTO_FACULTATIVO","date":"2026-12-31"}],"explicitly_not_holiday":[{"date":"2026-12-08","name":"Imaculada Conceição","reason":"Lei 3.227/2016 substituiu no inciso III da Lei 2.383/2001 por Corpus Christi"},{"date":"2027-12-08","name":"Imaculada Conceição","reason":"Lei 3.227/2016 substituiu no inciso III da Lei 2.383/2001 por Corpus Christi"}],"holidays":[{"classification":"FERIADO","date":"2026-01-01","legal_basis":"Lei federal 662/1949 (red. Lei 10.607/2002); Anexo Decreto municipal 8.035/2025","name":"Confraternização Universal","origin":"ANNUAL_DECREE_8035_2025_AND_LAWS","scope":"national"},{"classification":"FERIADO","date":"2026-04-03","legal_basis":"Lei municipal 2.383/2001; Anexo Decreto 8.035/2025","name":"Sexta-feira da Paixão","origin":"ANNUAL_DECREE_8035_2025_AND_LAWS","scope":"municipal"},{"classification":"FERIADO","date":"2026-04-21","legal_basis":"Lei federal 662/1949; Anexo Decreto 8.035/2025","name":"Tiradentes","origin":"ANNUAL_DECREE_8035_2025_AND_LAWS","scope":"national"},{"classification":"FERIADO","date":"2026-05-01","legal_basis":"Lei federal 662/1949; Anexo Decreto 8.035/2025","name":"Dia do Trabalho","origin":"ANNUAL_DECREE_8035_2025_AND_LAWS","scope":"national"},{"classification":"FERIADO","date":"2026-06-04","legal_basis":"Lei municipal 2.383/2001 inciso III red. Lei 3.227/2016; Anexo Decreto 8.035/2025","name":"Corpus Christi","origin":"ANNUAL_DECREE_8035_2025_AND_LAWS","scope":"municipal"},{"classification":"FERIADO","date":"2026-06-13","legal_basis":"Lei municipal 2.383/2001; Anexo Decreto 8.035/2025","name":"Santo Antônio (padroeiro)","origin":"ANNUAL_DECREE_8035_2025_AND_LAWS","scope":"municipal"},{"classification":"FERIADO","date":"2026-09-07","legal_basis":"Lei federal 662/1949; Anexo Decreto 8.035/2025","name":"Independência do Brasil","origin":"ANNUAL_DECREE_8035_2025_AND_LAWS","scope":"national"},{"classification":"FERIADO","date":"2026-10-12","legal_basis":"Lei federal 6.802/1980; Anexo Decreto 8.035/2025","name":"Nossa Senhora Aparecida","origin":"ANNUAL_DECREE_8035_2025_AND_LAWS","scope":"national"},{"classification":"FERIADO","date":"2026-10-20","legal_basis":"Lei municipal 2.579/2005; Anexo Decreto 8.035/2025","name":"Aniversário de Paracatu","origin":"ANNUAL_DECREE_8035_2025_AND_LAWS","scope":"municipal"},{"classification":"FERIADO","date":"2026-10-31","legal_basis":"Lei municipal 2.383/2001; Anexo Decreto 8.035/2025","name":"Dia da Reforma","origin":"ANNUAL_DECREE_8035_2025_AND_LAWS","scope":"municipal"},{"classification":"FERIADO","date":"2026-11-02","legal_basis":"Lei federal 662/1949; Anexo Decreto 8.035/2025","name":"Finados","origin":"ANNUAL_DECREE_8035_2025_AND_LAWS","scope":"national"},{"classification":"FERIADO","date":"2026-11-15","legal_basis":"Lei federal 662/1949; Anexo Decreto 8.035/2025","name":"Proclamação da República","origin":"ANNUAL_DECREE_8035_2025_AND_LAWS","scope":"national"},{"classification":"FERIADO","date":"2026-11-20","legal_basis":"Lei federal 14.759/2023; Anexo Decreto 8.035/2025","name":"Dia Nacional de Zumbi e da Consciência Negra","origin":"ANNUAL_DECREE_8035_2025_AND_LAWS","scope":"national"},{"classification":"FERIADO","date":"2026-12-25","legal_basis":"Lei federal 662/1949; Anexo Decreto 8.035/2025","name":"Natal","origin":"ANNUAL_DECREE_8035_2025_AND_LAWS","scope":"national"},{"classification":"FERIADO","date":"2027-01-01","legal_basis":"Lei federal 662/1949 art. 1º, red. Lei 10.607/2002","name":"Confraternização Universal","origin":"RECURRING_LAW_COMPUTED","scope":"national"},{"classification":"FERIADO","date":"2027-03-26","legal_basis":"Lei municipal 2.383/2001 art. 1º IV; Páscoa-2 (computus gregoriano)","name":"Sexta-feira da Paixão","origin":"RECURRING_LAW_COMPUTED_MOVABLE","scope":"municipal"},{"classification":"FERIADO","date":"2027-04-21","legal_basis":"Lei federal 662/1949 art. 1º, red. Lei 10.607/2002","name":"Tiradentes","origin":"RECURRING_LAW_COMPUTED","scope":"national"},{"classification":"FERIADO","date":"2027-05-01","legal_basis":"Lei federal 662/1949 art. 1º, red. Lei 10.607/2002","name":"Dia do Trabalho","origin":"RECURRING_LAW_COMPUTED","scope":"national"},{"classification":"FERIADO","date":"2027-05-27","legal_basis":"Lei municipal 2.383/2001 art. 1º III red. Lei 3.227/2016; Páscoa+60","name":"Corpus Christi","origin":"RECURRING_LAW_COMPUTED_MOVABLE","scope":"municipal"},{"classification":"FERIADO","date":"2027-06-13","legal_basis":"Lei municipal 2.383/2001 art. 1º I","name":"Santo Antônio (padroeiro)","origin":"RECURRING_LAW_COMPUTED","scope":"municipal"},{"classification":"FERIADO","date":"2027-09-07","legal_basis":"Lei federal 662/1949 art. 1º, red. Lei 10.607/2002","name":"Independência do Brasil","origin":"RECURRING_LAW_COMPUTED","scope":"national"},{"classification":"FERIADO","date":"2027-10-12","legal_basis":"Lei federal 6.802/1980","name":"Nossa Senhora Aparecida","origin":"RECURRING_LAW_COMPUTED","scope":"national"},{"classification":"FERIADO","date":"2027-10-20","legal_basis":"Lei municipal 2.579/2005","name":"Aniversário de Paracatu","origin":"RECURRING_LAW_COMPUTED","scope":"municipal"},{"classification":"FERIADO","date":"2027-10-31","legal_basis":"Lei municipal 2.383/2001 art. 1º II","name":"Dia da Reforma","origin":"RECURRING_LAW_COMPUTED","scope":"municipal"},{"classification":"FERIADO","date":"2027-11-02","legal_basis":"Lei federal 662/1949 art. 1º, red. Lei 10.607/2002","name":"Finados","origin":"RECURRING_LAW_COMPUTED","scope":"national"},{"classification":"FERIADO","date":"2027-11-15","legal_basis":"Lei federal 662/1949 art. 1º, red. Lei 10.607/2002","name":"Proclamação da República","origin":"RECURRING_LAW_COMPUTED","scope":"national"},{"classification":"FERIADO","date":"2027-11-20","legal_basis":"Lei federal 14.759/2023","name":"Dia Nacional de Zumbi e da Consciência Negra","origin":"RECURRING_LAW_COMPUTED","scope":"national"},{"classification":"FERIADO","date":"2027-12-25","legal_basis":"Lei federal 662/1949 art. 1º, red. Lei 10.607/2002","name":"Natal","origin":"RECURRING_LAW_COMPUTED","scope":"national"}],"optional_points_2027":"NOT_LISTED: nenhum ponto facultativo 2027 entra; facultativos nunca são feriados (dias úteis)"},"kind":"REAL_OFFICIAL_SOURCES","locality":"Paracatu-MG","schema":"cultivofarm.holiday-calendar.v1","sources":[{"id":"decreto-8035-2025","note":"Anexo 2026; 3 páginas conferidas visualmente pelo proprietário","url":"https://www.paracatu.mg.gov.br/arquivos/decreto_8_035_12114530.pdf"},{"id":"noticia-prefeitura","url":"https://www.paracatu.mg.gov.br/portal/noticias/0/3/3534/confira-o-calendario-de-feriados-e-pontos-facultativos-de-2026"},{"id":"camara-legislacao","note":"Lei 3.227/2016 vigente; PDF da Câmara retornou 403, texto indexado oficial usado","url":"https://www.paracatu.mg.leg.br/legislacao/5"},{"id":"lei-2579-2005","url":"https://www.paracatu.mg.leg.br/html/norma-juridica/4/completo"},{"id":"nacionais-agencia-gov","url":"https://agenciagov.ebc.com.br/noticias/202512/confira-o-calendario-oficial-de-feriados-nacionais-e-pontos-facultativos-em-2026"},{"id":"lei-662-1949-atualizada","note":"texto atualizado (red. 10.607/2002): 01/01, 21/04, 01/05, 07/09, 02/11, 15/11, 25/12","url":"https://www2.camara.leg.br/legin/fed/lei/1940-1949/lei-662-6-abril-1949-347136-normaatualizada-pl.html"},{"id":"lei-662-presidencia","note":"indicado pelo proprietário; fetch automatizado bloqueado","url":"https://legislacao.presidencia.gov.br/atos/?ano=1949&ato=3deoXUE5EMBRVT165&numero=662&tipo=LEI"},{"id":"lei-6802-1980","url":"https://www2.camara.leg.br/legin/fed/lei/1980-1987/lei-6802-30-junho-1980-357065-publicacaooriginal-1-pl.html"},{"id":"lei-14759-2023","note":"texto confirmado via índice oficial planalto.gov.br","url":"https://presidencia.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14759.htm"},{"id":"lei-2383-2001","note":"13/06, 31/10, (08/12 alterado), Sexta da Paixão","url":"https://cmparacatu.gwlegis.com.br/html/norma-juridica/3/completo"},{"id":"cnj-portaria-6544","note":"SOMENTE corroboração de Páscoa 2027 (26/03 dentro da Semana Santa; Corpus 27/05); recessos/feriados forenses NÃO importados","url":"https://atos.cnj.jus.br/atos/detalhar/6544"}],"version":"paracatu-mg-2026-2027-v2"}','a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269');
+
+CREATE TABLE platform_private.b2b_authorized_documents (
+ id uuid PRIMARY KEY, organization_id uuid NOT NULL, partner_id uuid NOT NULL, order_id uuid NOT NULL REFERENCES public.partner_orders(id),
+ kind text NOT NULL CHECK(kind IN ('NFE','NFSE')), issue_date date NOT NULL CHECK(isfinite(issue_date)),
+ event_key text NOT NULL, source_digest text NOT NULL CHECK(source_digest ~ '^[0-9a-f]{64}$'),
+ items jsonb NOT NULL, state text NOT NULL CHECK(state IN ('AUTHORIZED','CANCELED')),
+ UNIQUE(organization_id,kind,event_key)
+);
+
+CREATE TABLE platform_private.b2b_document_allocations (
+ document_id uuid PRIMARY KEY REFERENCES platform_private.b2b_authorized_documents(id), organization_id uuid NOT NULL,
+ order_id uuid NOT NULL REFERENCES public.partner_orders(id), partner_id uuid NOT NULL,
+ receivable_id uuid NOT NULL UNIQUE REFERENCES public.accounts_receivable(id), source_digest text NOT NULL,
+ principal numeric NOT NULL CHECK(principal>0), financed_interest numeric NOT NULL CHECK(financed_interest>=0),
+ items jsonb NOT NULL, item_money jsonb NOT NULL CHECK(jsonb_typeof(item_money)='array'), rows jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE platform_private.b2b_allocation_reversals (
+ document_id uuid PRIMARY KEY REFERENCES platform_private.b2b_document_allocations(document_id),
+ replacement_document_id uuid REFERENCES platform_private.b2b_authorized_documents(id), source_digest text NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE platform_private.b2b_title_permits (
+ transaction_id bigint NOT NULL, actor_id uuid NOT NULL, organization_id uuid NOT NULL, title_id uuid NOT NULL,
+ order_id uuid NOT NULL, partner_id uuid NOT NULL, customer_id uuid NOT NULL, rows jsonb NOT NULL,
+ PRIMARY KEY(transaction_id,title_id)
+);
+
+CREATE TABLE platform_private.b2b_cancellation_attestations (
+ document_id uuid PRIMARY KEY REFERENCES platform_private.b2b_authorized_documents(id), organization_id uuid NOT NULL,
+ event_key text NOT NULL, source_digest text NOT NULL CHECK(source_digest ~ '^[0-9a-f]{64}$'), UNIQUE(organization_id,event_key)
+);
+
+ALTER TABLE public.accounts_receivable ADD COLUMN b2b_document_id uuid REFERENCES platform_private.b2b_authorized_documents(id);
+CREATE UNIQUE INDEX b2b_one_title_per_document ON public.accounts_receivable(b2b_document_id) WHERE b2b_document_id IS NOT NULL;
+DROP INDEX public.ux_ar_one_active_per_b2b_order;
+CREATE UNIQUE INDEX ux_ar_one_active_per_b2b_order ON public.accounts_receivable(origin_id) WHERE origin_type='B2B_ORDER' AND status<>'CANCELED' AND b2b_document_id IS NULL;
+
+
+CREATE VIEW platform_private.b4_order_condition_snapshots AS
+SELECT order_id,organization_id,partner_id,actor_id,plan_id,choice,condition,request_hash,rows,principal,financed_interest,financed_total,
+       quote,payment_terms_id,cart_hash,payment_method_name,estimated,due_basis,estimated_reference_date,condition_version,condition_method,created_at
+FROM platform_private.b2b_order_condition_snapshots WHERE quote IS FALSE
+UNION ALL
+SELECT order_id,organization_id,partner_id,actor_id,plan_id,choice,condition,request_hash,rows,principal,financed_interest,financed_total,
+       FALSE AS quote,payment_terms_id,cart_hash,payment_method_name,estimated,due_basis,estimated_reference_date,condition_version,condition_method,created_at
+FROM platform_private.b2b_order_condition_quote_snapshots;
+REVOKE ALL ON platform_private.b4_order_condition_snapshots FROM PUBLIC,anon,authenticated,service_role;
+
+
+DO $$ DECLARE t text; BEGIN
+ FOREACH t IN ARRAY ARRAY['b2b_authorized_documents','b2b_document_allocations','b2b_allocation_reversals','b2b_cancellation_attestations'] LOOP
+  EXECUTE format('ALTER TABLE platform_private.%I ENABLE ROW LEVEL SECURITY',t);
+  EXECUTE format('REVOKE ALL ON platform_private.%I FROM PUBLIC,anon,authenticated,service_role',t);
+  EXECUTE format('CREATE TRIGGER immutable_update_delete BEFORE UPDATE OR DELETE ON platform_private.%I FOR EACH ROW EXECUTE FUNCTION platform_private.price_immutable()',t);
+  EXECUTE format('CREATE TRIGGER immutable_truncate BEFORE TRUNCATE ON platform_private.%I FOR EACH STATEMENT EXECUTE FUNCTION platform_private.price_immutable()',t);
+ END LOOP;
+END $$;
+ALTER TABLE platform_private.b2b_title_permits ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON platform_private.b2b_title_permits FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.b2b_integration_dependencies() RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN RAISE EXCEPTION 'B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN' USING ERRCODE='42501'; END $$;
+
+CREATE FUNCTION platform_private.b2b_integration_actor(p_partner uuid, p_internal boolean DEFAULT false) RETURNS uuid
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE u uuid:=auth.uid(); org uuid:=public.h15_actor_organization(); owner_org uuid;
+BEGIN
+ IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'B2B_READ_COMMITTED_REQUIRED' USING ERRCODE='0A000'; END IF;
+ IF u IS NULL OR org IS NULL THEN RAISE EXCEPTION 'B2B_ACTOR_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM platform_private.c2_order_actor_scope(u,p_partner);
+ SELECT commercial_owner_organization_id INTO owner_org FROM public.partner_accounts WHERE id=p_partner AND ativo IS TRUE AND deleted_at IS NULL;
+ IF owner_org IS DISTINCT FROM org THEN RAISE EXCEPTION 'B2B_TENANT_DENIED' USING ERRCODE='42501'; END IF;
+ IF p_internal AND (public.is_financial_staff(u) IS NOT TRUE
+  OR public.has_role(u,'parceiro_b2b'::public.app_role) OR public.has_role(u,'parceiro_b2b_tecnico'::public.app_role)
+  OR public.has_role(u,'cliente_produtor'::public.app_role)) THEN RAISE EXCEPTION 'B2B_INTERNAL_ONLY' USING ERRCODE='42501'; END IF;
+ RETURN org;
+END $$;
+
+CREATE OR REPLACE FUNCTION platform_private.b4_schedule_from_nf(principal numeric, rate numeric, n integer, issue date, deadline integer, cal platform_private.holiday_calendars)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+DECLARE bal numeric; pmt numeric; intr numeric; amort numeric; amount numeric; first date; nom date; rows jsonb:='[]';
+BEGIN
+ IF principal IS NULL OR principal::text IN ('NaN','Infinity','-Infinity') OR principal<=0 OR principal<>round(principal,2)
+ OR rate IS NULL OR rate::text IN ('NaN','Infinity','-Infinity') OR rate<0 OR n IS NULL OR n NOT BETWEEN 1 AND 120
+ OR issue IS NULL OR NOT isfinite(issue) OR deadline IS NULL OR deadline<0 THEN RAISE EXCEPTION 'SCHEDULE_INVALID' USING ERRCODE='23514'; END IF;
+ bal:=principal; first:=issue+deadline;
+ pmt:=round(CASE WHEN rate=0 THEN principal/n ELSE principal*(rate/100)/(1-power(1+rate/100,-n)) END,2);
+ FOR k IN 1..n LOOP
+  intr:=round(bal*rate/100,2); amount:=CASE WHEN k=n THEN bal+intr ELSE pmt END; amort:=amount-intr;
+  IF amort<0 THEN RAISE EXCEPTION 'SCHEDULE_INVALID' USING ERRCODE='23514'; END IF;
+  nom:=(first+make_interval(months=>k-1))::date;
+  rows:=rows||jsonb_build_array(jsonb_build_object('installment_number',k,'principal_amount',amort,'interest_amount',intr,'amount',amount,'nominal_due_date',nom,'due_date',platform_private.price_adjusted_due(nom,cal),'received_amount',0));
+  bal:=bal-amort;
+ END LOOP;
+ IF bal<>0 THEN RAISE EXCEPTION 'SCHEDULE_RESIDUAL' USING ERRCODE='23514'; END IF;
+ RETURN rows;
+END $function$;
+
+CREATE FUNCTION platform_private.b2b_credit_config_block(p_partner uuid) RETURNS text
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
+  SELECT CASE
+    WHEN NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id = p_partner AND s.active IS TRUE) THEN 'configuracao_financeira_inativa'
+    WHEN NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id = p_partner AND s.active IS TRUE AND s.credit_limit IS NOT NULL AND s.credit_limit >= 0 AND s.credit_limit::text NOT IN ('NaN','Infinity','-Infinity')) THEN 'limite_nao_definido'
+    WHEN NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id = p_partner AND s.active IS TRUE
+      AND s.overdue_tolerance_days IS NOT NULL AND s.overdue_tolerance_days >= 0
+      AND s.block_if_overdue IS NOT NULL AND s.credit_limit_action IN ('block','approval_required')) THEN 'configuracao_financeira_incompleta'
+  END $$;
+
+CREATE FUNCTION platform_private.b2b_debtor_partner(p_org uuid, p_customer uuid) RETURNS uuid[]
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
+  SELECT array_agg(pa.id ORDER BY pa.id) FROM public.partner_accounts pa
+   WHERE pa.client_id = p_customer AND pa.commercial_owner_organization_id = p_org
+     AND pa.ativo IS TRUE AND pa.deleted_at IS NULL $$;
+REVOKE ALL ON FUNCTION platform_private.b2b_debtor_partner(uuid, uuid) FROM PUBLIC;
+
+CREATE FUNCTION platform_private.b2b_shared_receivable_credit_guard() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE v_p uuid[]; v_partner uuid; v jsonb; v_delta numeric(14,2); v_po_id uuid; v_po record; v_cfg text;
+BEGIN
+  IF NEW.customer_id IS NULL AND NEW.origin_type IS DISTINCT FROM 'B2B_ORDER' THEN RETURN NEW; END IF;
+  IF NEW.organization_id IS NULL THEN RAISE EXCEPTION 'CREDIT_TENANT_REQUIRED' USING ERRCODE = '42501'; END IF;
+  v_p := platform_private.b2b_debtor_partner(NEW.organization_id, NEW.customer_id);
+  IF cardinality(v_p) > 1 THEN RAISE EXCEPTION 'CREDIT_PARTNER_LINK_AMBIGUOUS' USING ERRCODE = '42501'; END IF;
+  v_partner := v_p[1];
+  -- Order-linked origins are never trusted from the row: the order must exist server-side, belong to
+  -- the resolved/declared partner, and its amount is netted only while it is still counted as committed.
+  IF NEW.origin_type = 'B2B_ORDER' THEN
+    v_po_id := NEW.origin_id;
+    IF v_po_id IS NULL OR NOT EXISTS (SELECT 1 FROM public.partner_orders po WHERE po.id = v_po_id) THEN
+      RAISE EXCEPTION 'CREDIT_B2B_ORIGIN_UNPROVEN' USING ERRCODE = '23514';
+    END IF;
+  ELSIF NEW.origin_type = 'DELIVERY' AND NEW.origin_id IS NOT NULL THEN
+    SELECT e.partner_order_id INTO v_po_id FROM public.entregas e WHERE e.id = NEW.origin_id;
+  END IF;
+  IF v_po_id IS NOT NULL THEN
+    SELECT po.* INTO v_po FROM public.partner_orders po WHERE po.id = v_po_id FOR UPDATE;  -- order row before b2b_credit
+    IF v_partner IS NULL AND NEW.origin_type = 'B2B_ORDER' THEN v_partner := v_po.partner_id; END IF;
+    IF v_po.partner_id IS NULL OR v_po.partner_id IS DISTINCT FROM v_partner THEN
+      RAISE EXCEPTION 'CREDIT_ORDER_PARTNER_MISMATCH' USING ERRCODE = '23514';
+    END IF;
+    IF NEW.origin_type = 'B2B_ORDER' AND EXISTS (SELECT 1 FROM public.accounts_receivable ar WHERE ar.origin_type = 'B2B_ORDER'
+         AND ar.origin_id = v_po_id AND ar.status <> 'CANCELED') THEN
+      RAISE EXCEPTION 'CREDIT_B2B_ORIGIN_ALREADY_BILLED' USING ERRCODE = 'PT409';
+    END IF;
+  END IF;
+  IF v_partner IS NULL THEN RETURN NEW; END IF;  -- not a partner debtor of this tenant: untouched
+  IF NEW.partner_id IS NOT NULL AND NEW.partner_id IS DISTINCT FROM v_partner THEN
+    RAISE EXCEPTION 'CREDIT_PARTNER_CONFLICT' USING ERRCODE = '23514';
+  END IF;
+  IF current_setting('transaction_isolation') <> 'read committed' THEN
+    RAISE EXCEPTION 'CREDIT_ISOLATION_UNSUPPORTED' USING ERRCODE = '0A000';  -- stale snapshot after wait
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || v_partner::text, 0));
+  -- Fresh statement snapshots from here on (READ COMMITTED): re-resolve the link after any wait.
+  IF platform_private.b2b_debtor_partner(NEW.organization_id, NEW.customer_id) IS DISTINCT FROM v_p THEN
+    RAISE EXCEPTION 'CREDIT_PARTNER_LINK_CHANGED' USING ERRCODE = 'PT409';  -- unlinked/relinked/transferred while waiting
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.partner_accounts pa WHERE pa.id = v_partner AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+                  AND pa.commercial_owner_organization_id = NEW.organization_id) THEN
+    RAISE EXCEPTION 'CREDIT_PARTNER_LINK_CHANGED' USING ERRCODE = 'PT409';
+  END IF;
+  v_cfg := platform_private.b2b_credit_config_block(v_partner);
+  IF v_cfg = 'configuracao_financeira_inativa' THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INACTIVE' USING ERRCODE = 'PT409'; END IF;
+  IF v_cfg = 'limite_nao_definido' THEN RAISE EXCEPTION 'CREDIT_NO_LIMIT_DEFINED' USING ERRCODE = 'PT409'; END IF;
+  IF v_cfg IS NOT NULL THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE = 'PT409'; END IF;
+  v := public.fn_b2b_credit_exposure(v_partner, 0, NULL);
+  IF (v->>'block_if_overdue')::boolean AND (v->>'tem_vencidos')::boolean THEN
+    RAISE EXCEPTION 'CREDIT_OVERDUE_BLOCK' USING ERRCODE = 'PT409';
+  END IF;
+  v_delta := round(NEW.total_amount, 2);
+  IF v_po_id IS NOT NULL THEN
+    SELECT po.* INTO v_po FROM public.partner_orders po WHERE po.id = v_po_id;
+    IF COALESCE(v_po.receivable_generated, false) = false
+       AND v_po.status IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue',
+                           'pendente','solicitado','em_analise_comercial','aguardando_aprovacao_credito','aguardando_ajuste_comercial','aguardando_itens')
+       AND NOT EXISTS (SELECT 1 FROM public.partner_order_financial_links l WHERE l.partner_order_id = v_po_id) THEN
+      v_delta := v_delta - round(COALESCE(v_po.final_amount_with_interest, v_po.total, 0), 2);
+    END IF;
+  END IF;
+  -- A title that does not increase exposure (conversion/delivery of an already counted, possibly
+  -- credit-approved order) is never refused for limit; any increase must fit.
+  IF v_delta > 0 AND (v->>'exposicao_atual')::numeric + v_delta > (v->>'credit_limit')::numeric THEN
+    IF v->>'credit_limit_action' = 'approval_required' THEN
+      RAISE EXCEPTION 'CREDIT_LIMIT_EXCEEDED_APPROVAL' USING ERRCODE = 'PT409';
+    END IF;
+    RAISE EXCEPTION 'CREDIT_LIMIT_EXCEEDED_BLOCK' USING ERRCODE = 'PT409';
+  END IF;
+  NEW.partner_id := v_partner;  -- canonical exposure sees the title afterwards (no second ledger)
+  RETURN NEW;
+END $$;
+
+CREATE FUNCTION platform_private.b2b_receivable_partner_scope(p_receivable uuid) RETURNS uuid
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
+DECLARE a public.accounts_receivable; links uuid[];
+BEGIN
+ SELECT * INTO a FROM public.accounts_receivable WHERE id=p_receivable;
+ IF NOT FOUND THEN RAISE EXCEPTION 'CREDIT_RECEIVABLE_NOT_FOUND' USING ERRCODE='23514'; END IF;
+ links:=platform_private.b2b_debtor_partner(a.organization_id,a.customer_id);
+ IF coalesce(cardinality(links),0)>1 THEN RAISE EXCEPTION 'CREDIT_PARTNER_LINK_AMBIGUOUS' USING ERRCODE='42501'; END IF;
+ IF a.partner_id IS NOT NULL THEN
+  IF NOT EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id=a.partner_id
+    AND pa.commercial_owner_organization_id=a.organization_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL)
+  THEN RAISE EXCEPTION 'CREDIT_PARTNER_OWNER_MISMATCH' USING ERRCODE='23514'; END IF;
+  IF coalesce(cardinality(links),0)=1 AND links[1] IS DISTINCT FROM a.partner_id
+  THEN RAISE EXCEPTION 'CREDIT_PARTNER_CONFLICT' USING ERRCODE='23514'; END IF;
+  RETURN a.partner_id;
+ END IF;
+ RETURN links[1];
+END $$;
+
+CREATE OR REPLACE FUNCTION platform_private.b4_assert_order_eligible(p_order uuid) RETURNS void
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
+DECLARE e jsonb;
+BEGIN
+ IF EXISTS(SELECT 1 FROM public.partner_orders o WHERE o.id=p_order AND o.internal_origin_snapshot IS NOT NULL) THEN
+  RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM public.partner_orders o WHERE o.id=p_order AND o.c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1') THEN
+  RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501'; END IF;
+ e:=public.fn_b2b_order_billing_eligibility(p_order);
+ IF coalesce(e->>'eligible','false')<>'true' THEN
+  RAISE EXCEPTION 'B2B_ORDER_NOT_BILLABLE:%',coalesce(e->>'reason_code','UNKNOWN') USING ERRCODE='PT409'; END IF;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.b4_assert_order_eligible(uuid) FROM PUBLIC,anon,authenticated,service_role;
+
+-- INACTIVE: canonical proof reads existing immutable history, never rewrites it.
+CREATE FUNCTION platform_private.b2b_legacy_money_row(p_id uuid) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE i public.accounts_receivable_installments; a public.accounts_receivable; po public.partner_orders;
+ org uuid; sealed jsonb; sch jsonb; terms jsonb; audit jsonb;
+ financing numeric; principal numeric; late_interest numeric; received numeric; disc numeric; penalty numeric;
+BEGIN
+ SELECT * INTO i FROM public.accounts_receivable_installments WHERE id=p_id;
+ org:=i.organization_id;
+ SELECT * INTO a FROM public.accounts_receivable WHERE id=i.receivable_id AND organization_id=org;
+ IF a.origin_type IS DISTINCT FROM 'B2B_ORDER' THEN RETURN NULL; END IF;
+ SELECT * INTO po FROM public.partner_orders WHERE id=a.origin_id AND partner_id=a.partner_id;
+ sealed:=po.internal_economic_snapshot; terms:=sealed->'terms';
+ IF sealed IS NULL OR sealed->>'schema_version' IS DISTINCT FROM '1' OR sealed->>'sealed_by' IS NULL
+ OR coalesce(sealed->'origin'->>'organization_id',sealed->'origin'->>'creditor_organization_id') IS DISTINCT FROM org::text
+ OR sealed->'origin'->>'partner_id' IS DISTINCT FROM a.partner_id::text
+ OR NOT EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id=a.partner_id AND pa.commercial_owner_organization_id=org)
+ OR terms->>'id' IS DISTINCT FROM po.payment_terms_id::text OR terms->>'partner_order_id' IS DISTINCT FROM po.id::text
+ OR (SELECT count(*) FROM public.partner_order_financial_links l WHERE l.partner_order_id=po.id AND l.receivable_id=a.id AND l.partner_id=a.partner_id)<>1
+ OR (SELECT count(*) FROM public.partner_order_financial_links l WHERE l.receivable_id=a.id)<>1
+ OR EXISTS(SELECT 1 FROM platform_private.price_schedule_snapshots s WHERE s.receivable_id=a.id)
+ OR EXISTS(SELECT 1 FROM platform_private.b2b_document_allocations x WHERE x.receivable_id=a.id)
+ THEN RAISE EXCEPTION 'B2B_LEGACY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+ IF jsonb_typeof(sealed->'schedule') IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'B2B_LEGACY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+ IF (SELECT count(*) FROM jsonb_array_elements(sealed->'schedule') s WHERE (s->>'installment_number')::int=i.installment_number)<>1 THEN RAISE EXCEPTION 'B2B_LEGACY_SCHEDULE_AMBIGUOUS' USING ERRCODE='23514'; END IF;
+ SELECT s INTO sch FROM jsonb_array_elements(sealed->'schedule') s WHERE (s->>'installment_number')::int=i.installment_number;
+ IF (SELECT count(*) FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=po.id AND s.payment_terms_id=po.payment_terms_id AND s.installment_number=i.installment_number AND s.receivable_installment_id=i.id)<>1
+ OR NOT EXISTS(SELECT 1 FROM public.partner_order_payment_schedule s WHERE s.id=(sch->>'id')::uuid AND s.receivable_installment_id=i.id AND (to_jsonb(s)-ARRAY['created_at','status','receivable_installment_id'])=sch)
+ OR (SELECT count(*) FROM public.accounts_receivable_installments s WHERE s.receivable_id=a.id)<>(terms->>'installment_count')::int
+ THEN RAISE EXCEPTION 'B2B_LEGACY_LINK_MISMATCH' USING ERRCODE='23514'; END IF;
+ -- Captured writer's immutable INSERT audit is required, not merely a current schedule match.
+ IF (SELECT count(*) FROM public.financial_audit_log f WHERE f.entity_type='accounts_receivable_installments' AND f.entity_id=i.id AND f.action='INSERT')<>1 THEN RAISE EXCEPTION 'B2B_LEGACY_WRITER_UNPROVEN' USING ERRCODE='23514'; END IF;
+ SELECT f.new_data INTO audit FROM public.financial_audit_log f WHERE f.entity_type='accounts_receivable_installments' AND f.entity_id=i.id AND f.action='INSERT';
+ financing:=(sch->>'interest_amount')::numeric; principal:=(sch->>'principal_amount')::numeric;
+ IF principal IS NULL OR financing IS NULL OR principal<0 OR financing<0 OR principal+financing IS DISTINCT FROM i.original_amount
+ OR i.original_amount IS DISTINCT FROM (sch->>'amount')::numeric OR i.due_date IS DISTINCT FROM (sch->>'due_date')::date
+ OR audit->>'receivable_id' IS DISTINCT FROM a.id::text OR audit->>'organization_id' IS DISTINCT FROM org::text
+ OR (audit->>'original_amount')::numeric IS DISTINCT FROM i.original_amount OR (audit->>'interest_amount')::numeric IS DISTINCT FROM financing
+ OR (terms->>'final_amount')::numeric IS DISTINCT FROM a.total_amount
+ OR (SELECT sum((s->>'amount')::numeric) FROM jsonb_array_elements(sealed->'schedule') s) IS DISTINCT FROM a.total_amount
+ THEN RAISE EXCEPTION 'B2B_LEGACY_WRITER_INCOMPATIBLE' USING ERRCODE='23514'; END IF;
+ IF EXISTS(SELECT 1 FROM public.receivable_payments p WHERE p.installment_id=i.id AND p.organization_id IS DISTINCT FROM org)
+ OR EXISTS(SELECT 1 FROM public.receivable_payments p WHERE p.installment_id=i.id AND p.is_reversal AND NOT EXISTS(SELECT 1 FROM public.receivable_payments r WHERE r.id=p.reversed_payment_id AND r.installment_id=i.id AND r.organization_id=org AND NOT r.is_reversal))
+ THEN RAISE EXCEPTION 'B2B_LEGACY_LEDGER_INCOMPATIBLE' USING ERRCODE='23514'; END IF;
+ SELECT coalesce(sum(p.interest_amount),0),coalesce(sum(p.amount_received),0),coalesce(sum(p.discount_amount),0),coalesce(sum(p.penalty_amount),0)
+ INTO late_interest,received,disc,penalty FROM public.receivable_payments p WHERE p.installment_id=i.id;
+ IF received IS DISTINCT FROM i.received_amount OR disc IS DISTINCT FROM i.discount_amount OR penalty IS DISTINCT FROM i.penalty_amount
+ OR (EXISTS(SELECT 1 FROM public.receivable_payments p WHERE p.installment_id=i.id) AND i.interest_amount IS DISTINCT FROM late_interest)
+ OR (NOT EXISTS(SELECT 1 FROM public.receivable_payments p WHERE p.installment_id=i.id) AND i.interest_amount IS DISTINCT FROM financing)
+ THEN RAISE EXCEPTION 'B2B_LEGACY_LEDGER_MISMATCH' USING ERRCODE='23514'; END IF;
+ RETURN to_jsonb(i)||jsonb_build_object('monetary_semantics','financed_total_v1','interest_amount',financing+late_interest,'financed_interest_amount',financing,
+ 'monetary_origin',jsonb_build_object('contract','RECEIVABLE_MONEY_V1','source','b2b_immutable_schedule_v1','installment_id',i.id,'receivable_id',a.id,'organization_id',org,'order_id',po.id,'schedule_id',sch->>'id','snapshot_principal',principal,'snapshot_interest',financing));
+END $$;
+
+CREATE FUNCTION platform_private.b2b_allocation_money_row(p_id uuid) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE i public.accounts_receivable_installments; a public.accounts_receivable; x platform_private.b2b_document_allocations; row jsonb;
+BEGIN
+ SELECT * INTO i FROM public.accounts_receivable_installments WHERE id=p_id;
+ SELECT * INTO a FROM public.accounts_receivable WHERE id=i.receivable_id AND organization_id=i.organization_id;
+ SELECT * INTO x FROM platform_private.b2b_document_allocations WHERE receivable_id=a.id AND organization_id=a.organization_id;
+ IF NOT FOUND THEN RETURN NULL; END IF;
+ IF a.origin_type IS DISTINCT FROM 'B2B_ORDER' OR a.origin_id IS DISTINCT FROM x.order_id OR a.partner_id IS DISTINCT FROM x.partner_id OR a.b2b_document_id IS DISTINCT FROM x.document_id
+ OR (SELECT count(*) FROM public.accounts_receivable_installments s WHERE s.receivable_id=a.id)<>jsonb_array_length(x.rows)
+ OR (SELECT count(DISTINCT s.installment_number) FROM public.accounts_receivable_installments s WHERE s.receivable_id=a.id)<>jsonb_array_length(x.rows)
+ OR (SELECT sum((r->>'principal_amount')::numeric) FROM jsonb_array_elements(x.rows) r) IS DISTINCT FROM x.principal
+ OR (SELECT sum((r->>'interest_amount')::numeric) FROM jsonb_array_elements(x.rows) r) IS DISTINCT FROM x.financed_interest
+ OR NOT EXISTS(SELECT 1 FROM platform_private.b2b_authorized_documents d WHERE d.id=x.document_id AND d.organization_id=x.organization_id AND d.order_id=x.order_id AND d.partner_id=x.partner_id AND d.source_digest=x.source_digest AND d.state='AUTHORIZED')
+ OR EXISTS(SELECT 1 FROM platform_private.price_schedule_snapshots s WHERE s.receivable_id=a.id)
+ OR (SELECT count(*) FROM jsonb_array_elements(x.rows) r WHERE (r->>'installment_number')::int=i.installment_number)<>1
+ THEN RAISE EXCEPTION 'B2B_ALLOCATION_ORIGIN_INVALID' USING ERRCODE='23514'; END IF;
+ SELECT r INTO row FROM jsonb_array_elements(x.rows) r WHERE (r->>'installment_number')::int=i.installment_number;
+ IF i.original_amount IS DISTINCT FROM (row->>'amount')::numeric OR i.due_date IS DISTINCT FROM (row->>'due_date')::date
+ OR i.original_amount IS DISTINCT FROM (row->>'principal_amount')::numeric+(row->>'interest_amount')::numeric
+ OR a.total_amount IS DISTINCT FROM x.principal+x.financed_interest
+ THEN RAISE EXCEPTION 'B2B_ALLOCATION_ORIGIN_INVALID' USING ERRCODE='23514'; END IF;
+ RETURN to_jsonb(i)||jsonb_build_object('monetary_semantics','financed_total_v1','interest_amount',i.interest_amount+(row->>'interest_amount')::numeric,'financed_interest_amount',(row->>'interest_amount')::numeric,
+ 'monetary_origin',jsonb_build_object('contract','RECEIVABLE_MONEY_V1','source','b2b_document_allocation_v1','installment_id',i.id,'receivable_id',a.id,'organization_id',a.organization_id,'order_id',x.order_id,'document_id',x.document_id,'snapshot_principal',(row->>'principal_amount')::numeric,'snapshot_interest',(row->>'interest_amount')::numeric));
+END $$;
+
+-- Single origin resolver shared by projection and credit; no legacy fallback.
+CREATE FUNCTION platform_private.b2b_proven_money_row_internal(p_id uuid,p_org uuid) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid:=p_org; i public.accounts_receivable_installments; row jsonb; r jsonb;
+BEGIN
+ IF org IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;
+ SELECT s.* INTO i FROM public.accounts_receivable_installments s JOIN public.accounts_receivable a ON a.id=s.receivable_id WHERE s.id=p_id AND s.organization_id=org AND a.organization_id=org;
+ IF NOT FOUND THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;
+ row:=NULL;
+  IF EXISTS(SELECT 1 FROM platform_private.price_schedule_snapshots s WHERE s.receivable_id=i.receivable_id AND s.organization_id=org) THEN
+   IF EXISTS(SELECT 1 FROM public.accounts_receivable a WHERE a.id=i.receivable_id AND a.origin_type='B2B_ORDER') THEN RAISE EXCEPTION 'MONEY_ORIGIN_MIXED' USING ERRCODE='23514'; END IF;
+   IF (SELECT count(*) FROM platform_private.price_schedule_snapshots s CROSS JOIN LATERAL jsonb_array_elements(s.rows) x WHERE s.receivable_id=i.receivable_id AND s.organization_id=org AND (x->>'installment_number')::int=i.installment_number)<>1 THEN RAISE EXCEPTION 'MONEY_ORIGIN_INVALID' USING ERRCODE='23514'; END IF;
+   SELECT x INTO r FROM platform_private.price_schedule_snapshots s CROSS JOIN LATERAL jsonb_array_elements(s.rows) x WHERE s.receivable_id=i.receivable_id AND s.organization_id=org AND (x->>'installment_number')::int=i.installment_number;
+   IF i.original_amount IS DISTINCT FROM (r->>'amount')::numeric OR i.original_amount IS DISTINCT FROM (r->>'principal')::numeric+(r->>'interest')::numeric THEN RAISE EXCEPTION 'MONEY_ORIGIN_INVALID' USING ERRCODE='23514'; END IF;
+   row:=to_jsonb(i)||jsonb_build_object('monetary_semantics','financed_total_v1','interest_amount',i.interest_amount+(r->>'interest')::numeric,'financed_interest_amount',(r->>'interest')::numeric,'monetary_origin',jsonb_build_object('contract','RECEIVABLE_MONEY_V1','source','price_snapshot_v1','installment_id',i.id,'receivable_id',i.receivable_id,'organization_id',org,'snapshot_principal',(r->>'principal')::numeric,'snapshot_interest',(r->>'interest')::numeric));
+  ELSE
+   row:=platform_private.b2b_allocation_money_row(i.id);
+   IF row IS NULL THEN row:=platform_private.b2b_legacy_money_row(i.id); END IF;
+  END IF;
+  IF row IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+ RETURN row;
+END $$;
+CREATE FUNCTION platform_private.b2b_proven_money_row(p_id uuid) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid:=public.h15_actor_organization();
+BEGIN
+ IF auth.uid() IS NULL OR org IS NULL OR public.is_financial_staff(auth.uid()) IS NOT TRUE THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;
+ RETURN platform_private.b2b_proven_money_row_internal(p_id,org);
+END $$;
+REVOKE ALL ON FUNCTION platform_private.b2b_proven_money_row(uuid),platform_private.b2b_proven_money_row_internal(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE OR REPLACE FUNCTION public.rpc_receivable_money_projection_v1(p_receivable_id uuid DEFAULT NULL,p_offset int DEFAULT 0,p_limit int DEFAULT 1000)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid:=public.h15_actor_organization(); i record; row jsonb; r jsonb; result jsonb:='[]';
+BEGIN
+ IF auth.uid() IS NULL OR org IS NULL OR public.is_financial_staff(auth.uid()) IS NOT TRUE THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;
+ IF p_offset IS NULL OR p_offset<0 OR p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 1000 THEN RAISE EXCEPTION 'MONEY_ORIGIN_PAGE_INVALID' USING ERRCODE='23514'; END IF;
+ IF p_receivable_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.accounts_receivable a WHERE a.id=p_receivable_id AND a.organization_id=org) THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;
+ FOR i IN SELECT s.* FROM public.accounts_receivable_installments s JOIN public.accounts_receivable a ON a.id=s.receivable_id WHERE s.organization_id=org AND a.organization_id=org AND (p_receivable_id IS NULL OR a.id=p_receivable_id) ORDER BY s.id OFFSET p_offset LIMIT p_limit LOOP
+  row:=platform_private.b2b_proven_money_row(i.id);
+  result:=result||jsonb_build_array(row);
+ END LOOP;
+ RETURN result;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.b2b_legacy_money_row(uuid),platform_private.b2b_allocation_money_row(uuid),public.rpc_receivable_money_projection_v1(uuid,int,int) FROM PUBLIC,anon,authenticated,service_role;
+-- INACTIVE. Append-only allocations replace neither old links nor historical rows.
+CREATE OR REPLACE FUNCTION platform_private.b2b_order_residual(p_order uuid)
+ RETURNS numeric
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE po public.partner_orders; s platform_private.b4_order_condition_snapshots; allocated numeric; total numeric; org uuid;
+BEGIN
+ SELECT * INTO po FROM public.partner_orders WHERE id=p_order;
+ SELECT pa.commercial_owner_organization_id INTO org FROM public.partner_accounts pa WHERE pa.id=po.partner_id;
+ IF org IS NULL THEN RAISE EXCEPTION 'CREDIT_ORDER_AMOUNT_UNPROVEN' USING ERRCODE='23514'; END IF;
+ SELECT * INTO s FROM platform_private.b4_order_condition_snapshots WHERE order_id=p_order;
+ total:=coalesce(s.financed_total,po.final_amount_with_interest);
+ IF total IS NULL OR total<0 OR total::text IN ('NaN','Infinity','-Infinity') THEN RAISE EXCEPTION 'CREDIT_ORDER_AMOUNT_UNPROVEN' USING ERRCODE='23514'; END IF;
+ IF EXISTS(SELECT 1 FROM public.partner_order_financial_links l WHERE l.partner_order_id=p_order) THEN
+  -- Legacy 1:1 can be netted only when the complete title is proven by the same projection.
+  IF s.order_id IS NOT NULL OR (SELECT count(*) FROM public.partner_order_financial_links l WHERE l.partner_order_id=p_order)<>1 THEN RAISE EXCEPTION 'CREDIT_LEGACY_ALLOCATION_UNPROVEN' USING ERRCODE='23514'; END IF;
+  PERFORM platform_private.b2b_proven_money_row_internal(i.id,org) FROM public.partner_order_financial_links l JOIN public.accounts_receivable a ON a.id=l.receivable_id JOIN public.accounts_receivable_installments i ON i.receivable_id=a.id WHERE l.partner_order_id=p_order;
+  IF NOT EXISTS(SELECT 1 FROM public.partner_order_financial_links l JOIN public.accounts_receivable a ON a.id=l.receivable_id WHERE l.partner_order_id=p_order AND a.total_amount=total AND a.status<>'CANCELED') THEN RAISE EXCEPTION 'CREDIT_LEGACY_ALLOCATION_UNPROVEN' USING ERRCODE='23514'; END IF;
+  RETURN 0;
+ END IF;
+ IF po.receivable_generated AND s.order_id IS NULL THEN RAISE EXCEPTION 'CREDIT_LEGACY_ALLOCATION_UNPROVEN' USING ERRCODE='23514'; END IF;
+ SELECT coalesce(sum(x.principal+x.financed_interest),0) INTO allocated FROM platform_private.b2b_document_allocations x WHERE x.order_id=p_order AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals r WHERE r.document_id=x.document_id);
+ IF allocated>total THEN RAISE EXCEPTION 'CREDIT_OVERALLOCATED' USING ERRCODE='23514'; END IF;
+ RETURN total-allocated;
+END $function$;
+
+CREATE FUNCTION platform_private.b2b_credit_balances(p_partner uuid,p_exclude uuid DEFAULT NULL) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid:=platform_private.b2b_integration_actor(p_partner); po record; i record; row jsonb; open_amount numeric:=0; overdue numeric:=0; committed numeric:=0; pending numeric:=0; balance numeric; residual numeric; tolerance int; debtor uuid;
+BEGIN
+ IF platform_private.b2b_credit_config_block(p_partner) IS NOT NULL THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE='23514'; END IF;
+ SELECT overdue_tolerance_days INTO tolerance FROM public.partner_financial_settings WHERE partner_id=p_partner AND active IS TRUE;
+ IF tolerance IS NULL OR tolerance<0 THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE='23514'; END IF;
+ FOR i IN SELECT a.id AS receivable_id,s.id,s.due_date FROM public.accounts_receivable_installments s JOIN public.accounts_receivable a ON a.id=s.receivable_id
+  WHERE a.organization_id=org AND s.organization_id=org AND a.status<>'CANCELED' AND s.status<>'CANCELED'
+   AND (a.partner_id=p_partner OR EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id=p_partner AND pa.client_id=a.customer_id
+        AND pa.commercial_owner_organization_id=org AND pa.ativo IS TRUE AND pa.deleted_at IS NULL)) LOOP
+  debtor:=platform_private.b2b_receivable_partner_scope(i.receivable_id);
+  IF debtor IS DISTINCT FROM p_partner THEN RAISE EXCEPTION 'CREDIT_PARTNER_CONFLICT' USING ERRCODE='23514'; END IF;
+  row:=platform_private.b2b_proven_money_row_internal(i.id,org);
+  IF row IS NULL THEN RAISE EXCEPTION 'CREDIT_MONEY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+  balance:=greatest((row->>'original_amount')::numeric+(row->>'interest_amount')::numeric-(row->>'financed_interest_amount')::numeric+(row->>'penalty_amount')::numeric-(row->>'discount_amount')::numeric-(row->>'received_amount')::numeric,0);
+  open_amount:=open_amount+balance;
+  IF i.due_date<CURRENT_DATE-tolerance THEN overdue:=overdue+balance; END IF;
+ END LOOP;
+ FOR po IN SELECT id,status::text AS status FROM public.partner_orders WHERE partner_id=p_partner AND id IS DISTINCT FROM p_exclude AND status::text IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','pendente','solicitado','em_analise_comercial','aguardando_aprovacao_credito','aguardando_ajuste_comercial','aguardando_itens') LOOP
+  residual:=platform_private.b2b_order_residual(po.id);
+  IF po.status IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue') THEN committed:=committed+residual; ELSE pending:=pending+residual; END IF;
+ END LOOP;
+ RETURN jsonb_build_object('saldo_em_aberto',open_amount,'saldo_vencido',overdue,'comprometido_nao_faturado',committed,'comprometido_pendente',pending);
+END $$;
+
+CREATE OR REPLACE FUNCTION platform_private.b2b_allocate_document(p_document uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE d platform_private.b2b_authorized_documents; s platform_private.b4_order_condition_snapshots; x platform_private.b2b_document_allocations;
+ org uuid; u uuid:=auth.uid(); it jsonb; accepted jsonb:='[]'; base jsonb; qty numeric; previous numeric; totalqty numeric; pr numeric; intr numeric; principal numeric:=0; financing numeric:=0; active_pr numeric; active_intr numeric;
+ tid uuid:=gen_random_uuid(); rows jsonb; final numeric; cfg jsonb; cal platform_private.holiday_calendars; customer uuid; category uuid; method_id uuid; item_net numeric; item_financing numeric;
+ commercial_unit text; taxable_unit text; content_unit text; content_per_unit numeric; commercial_qty numeric; taxable_qty numeric;
+ normalized_commercial numeric; normalized_taxable numeric; wholepack boolean;
+BEGIN
+ SELECT * INTO d FROM platform_private.b2b_authorized_documents WHERE id=p_document;
+ org:=platform_private.b2b_integration_actor(d.partner_id,true);
+ PERFORM platform_private.b2b_integration_dependencies();
+ IF d.organization_id IS DISTINCT FROM org OR d.state IS DISTINCT FROM 'AUTHORIZED' THEN RAISE EXCEPTION 'FISCAL_DOCUMENT_NOT_AUTHORIZED' USING ERRCODE='42501'; END IF;
+ -- Order row precedes shared credit, same as approval. Document lock follows order.
+ PERFORM 1 FROM public.partner_orders WHERE id=d.order_id FOR UPDATE;
+ PERFORM platform_private.b2b_integration_actor(d.partner_id,true);
+ PERFORM platform_private.b4_assert_order_eligible(d.order_id);
+ PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:'||d.partner_id::text,0));
+ PERFORM platform_private.b2b_integration_actor(d.partner_id,true);
+ SELECT * INTO d FROM platform_private.b2b_authorized_documents WHERE id=p_document FOR SHARE;
+ PERFORM platform_private.b2b_integration_actor(d.partner_id,true);
+ PERFORM platform_private.b4_assert_order_eligible(d.order_id);
+ PERFORM platform_private.b2b_integration_dependencies();
+ IF d.organization_id IS DISTINCT FROM org OR d.state IS DISTINCT FROM 'AUTHORIZED' THEN RAISE EXCEPTION 'FISCAL_DOCUMENT_NOT_AUTHORIZED' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM platform_private.b2b_cancellation_attestations c WHERE c.document_id=p_document) THEN RAISE EXCEPTION 'FISCAL_DOCUMENT_CANCELED' USING ERRCODE='PT409'; END IF;
+ SELECT * INTO s FROM platform_private.b4_order_condition_snapshots WHERE order_id=d.order_id AND organization_id=org AND partner_id=d.partner_id;
+ IF NOT FOUND OR s.quote IS NOT FALSE OR s.payment_terms_id IS NULL OR s.estimated IS NOT TRUE OR s.due_basis IS DISTINCT FROM 'nf_issue'
+ OR EXISTS(SELECT 1 FROM public.partner_order_financial_links l WHERE l.partner_order_id=d.order_id) THEN RAISE EXCEPTION 'B2B_ORDER_SNAPSHOT_UNPROVEN' USING ERRCODE='23514'; END IF;
+ SELECT * INTO x FROM platform_private.b2b_document_allocations WHERE document_id=p_document;
+ IF FOUND THEN
+  IF x.source_digest IS DISTINCT FROM d.source_digest OR x.order_id IS DISTINCT FROM d.order_id OR x.organization_id IS DISTINCT FROM org OR x.items IS DISTINCT FROM d.items THEN RAISE EXCEPTION 'FISCAL_REPLAY_DIVERGENCE' USING ERRCODE='PT409'; END IF;
+  IF EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals r WHERE r.document_id=p_document) THEN RAISE EXCEPTION 'FISCAL_DOCUMENT_CANCELED' USING ERRCODE='PT409'; END IF;
+  RETURN jsonb_build_object('success',true,'document_id',p_document,'receivable_id',x.receivable_id,'replayed',true);
+ END IF;
+ IF jsonb_typeof(d.items) IS DISTINCT FROM 'array' OR jsonb_array_length(d.items)=0 OR (SELECT count(DISTINCT j->>'item_id') FROM jsonb_array_elements(d.items) j)<>jsonb_array_length(d.items) THEN RAISE EXCEPTION 'FISCAL_ITEMS_INVALID' USING ERRCODE='23514'; END IF;
+ -- Subtotals must ALREADY be the accepted net item bases (as written by the
+ -- canonical cart). Never invent a discount allocation from aggregate totals.
+ IF (SELECT sum(i.subtotal) FROM public.partner_order_items i WHERE i.order_id=d.order_id) IS DISTINCT FROM s.principal
+ OR EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=d.order_id AND (i.subtotal IS NULL OR i.subtotal<0 OR i.quantidade IS NULL OR i.quantidade<=0))
+ THEN RAISE EXCEPTION 'FISCAL_NET_ITEM_BASE_UNPROVEN' USING ERRCODE='23514'; END IF;
+ FOR it IN SELECT j FROM jsonb_array_elements(d.items) j ORDER BY j->>'item_id' COLLATE "C" LOOP
+  IF NOT (it ?& ARRAY['item_id','quantity','commercial_unit','taxable_quantity','taxable_unit']) THEN RAISE EXCEPTION 'FISCAL_UNIT_CONTRACT_REQUIRED' USING ERRCODE='23514'; END IF;
+  IF jsonb_typeof(it) IS DISTINCT FROM 'object'
+   OR EXISTS(SELECT 1 FROM jsonb_object_keys(it) k WHERE k NOT IN ('item_id','quantity','commercial_unit','taxable_quantity','taxable_unit'))
+   OR jsonb_typeof(it->'quantity') IS DISTINCT FROM 'number' OR jsonb_typeof(it->'taxable_quantity') IS DISTINCT FROM 'number'
+   OR jsonb_typeof(it->'commercial_unit') IS DISTINCT FROM 'string' OR jsonb_typeof(it->'taxable_unit') IS DISTINCT FROM 'string'
+  THEN RAISE EXCEPTION 'FISCAL_ITEMS_INVALID' USING ERRCODE='23514'; END IF;
+  commercial_qty:=(it->>'quantity')::numeric; taxable_qty:=(it->>'taxable_quantity')::numeric;
+  commercial_unit:=upper(btrim(it->>'commercial_unit')); taxable_unit:=upper(btrim(it->>'taxable_unit'));
+  SELECT to_jsonb(i) INTO base FROM public.partner_order_items i WHERE i.id=(it->>'item_id')::uuid AND i.order_id=d.order_id;
+  IF base IS NULL OR commercial_qty<=0 OR taxable_qty<=0
+   OR commercial_qty::text IN ('NaN','Infinity','-Infinity') OR taxable_qty::text IN ('NaN','Infinity','-Infinity')
+  THEN RAISE EXCEPTION 'FISCAL_ITEMS_INVALID' USING ERRCODE='23514'; END IF;
+  wholepack:=NULLIF(base->>'packaging_id_snapshot','') IS NOT NULL;
+  IF wholepack THEN
+   -- product_packagings.peso_liquido_kg e seu snapshot armazenam SEMPRE kg.
+   -- packaging_unidade_conteudo_snapshot='g' controla apenas o rótulo (0,500 kg -> 500 g),
+   -- nunca a dimensão do número guardado. Whole-pack líquido não é presumido: o writer exige sólido.
+   IF lower(base->>'packaging_unidade_conteudo_snapshot') NOT IN ('kg','g')
+   THEN RAISE EXCEPTION 'FISCAL_ITEM_UNIT_SNAPSHOT_UNPROVEN' USING ERRCODE='23514'; END IF;
+   content_unit:='kg'; content_per_unit:=(base->>'packaging_peso_liquido_kg_snapshot')::numeric;
+  ELSE
+   content_unit:='ml';
+   IF NULLIF(base->>'volume_ml','') IS NOT NULL AND NULLIF(base->>'volume_ml_snapshot','') IS NOT NULL
+    AND (base->>'volume_ml')::numeric IS DISTINCT FROM (base->>'volume_ml_snapshot')::numeric
+   THEN RAISE EXCEPTION 'FISCAL_ITEM_UNIT_SNAPSHOT_UNPROVEN' USING ERRCODE='23514'; END IF;
+   content_per_unit:=coalesce(NULLIF(base->>'volume_ml','')::numeric,NULLIF(base->>'volume_ml_snapshot','')::numeric);
+  END IF;
+  IF content_per_unit IS NULL OR content_per_unit<=0 OR content_per_unit::text IN ('NaN','Infinity','-Infinity')
+   OR content_unit NOT IN ('kg','g','ml','l') THEN RAISE EXCEPTION 'FISCAL_ITEM_UNIT_SNAPSHOT_UNPROVEN' USING ERRCODE='23514'; END IF;
+  IF commercial_unit='UN' THEN
+   qty:=commercial_qty; normalized_commercial:=commercial_qty*content_per_unit;
+  ELSE
+   normalized_commercial:=CASE commercial_unit||'>'||upper(content_unit)
+    WHEN 'KG>KG' THEN commercial_qty WHEN 'KG>G' THEN commercial_qty*1000 WHEN 'G>KG' THEN commercial_qty/1000 WHEN 'G>G' THEN commercial_qty
+    WHEN 'L>L' THEN commercial_qty WHEN 'L>ML' THEN commercial_qty*1000 WHEN 'ML>L' THEN commercial_qty/1000 WHEN 'ML>ML' THEN commercial_qty ELSE NULL END;
+   IF normalized_commercial IS NULL THEN RAISE EXCEPTION 'FISCAL_UNIT_MISMATCH' USING ERRCODE='23514'; END IF;
+   qty:=normalized_commercial/content_per_unit;
+  END IF;
+  IF taxable_unit='UN' THEN normalized_taxable:=taxable_qty*content_per_unit;
+  ELSE normalized_taxable:=CASE taxable_unit||'>'||upper(content_unit)
+   WHEN 'KG>KG' THEN taxable_qty WHEN 'KG>G' THEN taxable_qty*1000 WHEN 'G>KG' THEN taxable_qty/1000 WHEN 'G>G' THEN taxable_qty
+   WHEN 'L>L' THEN taxable_qty WHEN 'L>ML' THEN taxable_qty*1000 WHEN 'ML>L' THEN taxable_qty/1000 WHEN 'ML>ML' THEN taxable_qty ELSE NULL END;
+  END IF;
+  IF normalized_taxable IS NULL THEN RAISE EXCEPTION 'FISCAL_UNIT_MISMATCH' USING ERRCODE='23514'; END IF;
+  IF normalized_commercial IS DISTINCT FROM normalized_taxable THEN RAISE EXCEPTION 'FISCAL_QUANTITY_UNIT_DIVERGENCE' USING ERRCODE='23514'; END IF;
+  IF wholepack AND qty<>trunc(qty) THEN RAISE EXCEPTION 'FISCAL_WHOLE_PACKAGE_FRACTION' USING ERRCODE='23514'; END IF;
+  IF qty<=0 OR qty::text IN ('NaN','Infinity','-Infinity') THEN RAISE EXCEPTION 'FISCAL_ITEMS_INVALID' USING ERRCODE='23514'; END IF;
+  -- Item monetary base is the immutable order snapshot, never callback price.
+  IF NOT EXISTS(SELECT 1 FROM public.partner_orders po CROSS JOIN LATERAL jsonb_array_elements(po.internal_economic_snapshot->'items') b WHERE po.id=d.order_id AND b->>'id'=base->>'id' AND (b->>'quantidade')::numeric=(base->>'quantidade')::numeric AND (b->>'subtotal')::numeric=(base->>'subtotal')::numeric) THEN RAISE EXCEPTION 'FISCAL_ITEM_SNAPSHOT_UNPROVEN' USING ERRCODE='23514'; END IF;
+  totalqty:=(base->>'quantidade')::numeric;
+  SELECT coalesce(sum((j->>'quantity')::numeric),0) INTO previous FROM platform_private.b2b_document_allocations a CROSS JOIN LATERAL jsonb_array_elements(a.item_money) j WHERE a.order_id=d.order_id AND j->>'item_id'=it->>'item_id' AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals r WHERE r.document_id=a.document_id);
+  IF previous+qty>totalqty THEN RAISE EXCEPTION 'FISCAL_QUANTITY_OVERALLOCATED' USING ERRCODE='PT409'; END IF;
+  item_net:=(base->>'subtotal')::numeric;
+  -- Financing distribution is cumulative; final item absorbs cent residual deterministically.
+  SELECT round(s.financed_interest*sum(i.subtotal)/s.principal,2)-round(s.financed_interest*(sum(i.subtotal)-item_net)/s.principal,2) INTO item_financing FROM public.partner_order_items i WHERE i.order_id=d.order_id AND i.id<=(base->>'id')::uuid;
+  -- Quantity alone cannot reconstruct cents after a middle reversal. Retain
+  -- each item's money append-only and reconcile the ACTIVE monetary ledger.
+  IF EXISTS(SELECT 1 FROM platform_private.b2b_document_allocations a CROSS JOIN LATERAL jsonb_array_elements(a.items) j
+   WHERE a.order_id=d.order_id AND j->>'item_id'=it->>'item_id'
+   AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals r WHERE r.document_id=a.document_id)
+   AND (SELECT count(*) FROM jsonb_array_elements(a.item_money) m WHERE m->>'item_id'=it->>'item_id')<>1)
+  THEN RAISE EXCEPTION 'FISCAL_ITEM_MONEY_UNPROVEN' USING ERRCODE='23514'; END IF;
+  SELECT coalesce(sum((m->>'principal')::numeric),0),coalesce(sum((m->>'financed_interest')::numeric),0)
+   INTO active_pr,active_intr FROM platform_private.b2b_document_allocations a CROSS JOIN LATERAL jsonb_array_elements(a.item_money) m
+   WHERE a.order_id=d.order_id AND m->>'item_id'=it->>'item_id' AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals r WHERE r.document_id=a.document_id);
+  IF active_pr<0 OR active_pr>item_net OR active_intr<0 OR active_intr>item_financing THEN RAISE EXCEPTION 'FISCAL_ITEM_MONEY_UNPROVEN' USING ERRCODE='23514'; END IF;
+  pr:=CASE WHEN previous+qty=totalqty THEN item_net-active_pr ELSE least(item_net-active_pr,round(item_net*(previous+qty)/totalqty,2)-round(item_net*previous/totalqty,2)) END;
+  intr:=CASE WHEN previous+qty=totalqty THEN item_financing-active_intr ELSE least(item_financing-active_intr,round(item_financing*(previous+qty)/totalqty,2)-round(item_financing*previous/totalqty,2)) END;
+  principal:=principal+pr; financing:=financing+intr; accepted:=accepted||jsonb_build_array(jsonb_build_object('item_id',it->>'item_id','quantity',qty,'order_quantity',qty,'normalized_quantity',normalized_commercial,'normalized_unit',content_unit,'commercial_quantity',commercial_qty,'commercial_unit',commercial_unit,'taxable_quantity',taxable_qty,'taxable_unit',taxable_unit,'whole_package',wholepack,'principal',pr,'financed_interest',intr));
+ END LOOP;
+ final:=principal+financing;
+ IF principal<=0 OR final>platform_private.b2b_order_residual(d.order_id) THEN RAISE EXCEPTION 'FISCAL_AMOUNT_OVERALLOCATED' USING ERRCODE='PT409'; END IF;
+ cal:=platform_private.price_pinned_calendar();
+ rows:=platform_private.b4_schedule_from_nf(principal,(s.condition->>'monthly_rate')::numeric,(s.condition->>'installment_count')::int,d.issue_date,(s.choice->>'payment_deadline_days')::int,cal);
+ -- Keep accepted order financing, even on partial documents: allocate breakdown cumulatively,
+ -- not a new interest contract. Due dates use issue date of THIS authorized document.
+ WITH r AS (SELECT j, (j->>'installment_number')::int n FROM jsonb_array_elements(rows) j), weights AS (
+ SELECT r.n,r.j,sum((o->>'principal_amount')::numeric) OVER(ORDER BY r.n) cp,
+ sum((o->>'interest_amount')::numeric) OVER(ORDER BY r.n) cf,(o->>'principal_amount')::numeric p,(o->>'interest_amount')::numeric f
+ FROM r JOIN LATERAL (SELECT o FROM jsonb_array_elements(s.rows) o WHERE (o->>'installment_number')::int=r.n) original ON true), dist AS (
+ SELECT n,j,round(principal*cp/s.principal,2)-round(principal*(cp-p)/s.principal,2) p,
+ CASE WHEN s.financed_interest=0 THEN 0 ELSE round(financing*cf/s.financed_interest,2)-round(financing*(cf-f)/s.financed_interest,2) END f FROM weights)
+ SELECT jsonb_agg(j||jsonb_build_object('amount',p+f,'principal_amount',p,'interest_amount',f) ORDER BY n) INTO rows FROM dist;
+ SELECT client_id INTO customer FROM public.partner_accounts WHERE id=d.partner_id AND commercial_owner_organization_id=org;
+ category:=(s.condition->>'category_id')::uuid; method_id:=(s.condition->>'payment_method_id')::uuid;
+ IF customer IS NULL OR category IS NULL OR method_id IS NULL OR NOT EXISTS(SELECT 1 FROM public.financial_categories WHERE id=category AND active AND upper(btrim(type))='RECEITA') OR NOT EXISTS(SELECT 1 FROM public.payment_methods WHERE id=method_id AND active) THEN RAISE EXCEPTION 'FINANCIAL_REFS_UNPROVEN' USING ERRCODE='23514'; END IF;
+ INSERT INTO platform_private.b2b_title_permits VALUES(txid_current(),u,org,tid,d.order_id,d.partner_id,customer,rows);
+ INSERT INTO public.accounts_receivable(id,organization_id,origin_type,origin_id,customer_id,partner_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by,b2b_document_id)
+ VALUES(tid,org,'B2B_ORDER',d.order_id,customer,d.partner_id,'Documento fiscal autorizado — candidato interno',category,final,d.issue_date,(rows->0->>'due_date')::date,jsonb_array_length(rows),'OPEN',method_id,u,d.id);
+ IF EXISTS(SELECT 1 FROM platform_private.b2b_title_permits WHERE transaction_id=txid_current() AND title_id=tid) THEN RAISE EXCEPTION 'B2B_TITLE_PERMIT_NOT_CONSUMED' USING ERRCODE='23514'; END IF;
+ INSERT INTO platform_private.b2b_document_allocations(document_id,organization_id,order_id,partner_id,receivable_id,source_digest,principal,financed_interest,items,item_money,rows) VALUES(d.id,org,d.order_id,d.partner_id,tid,d.source_digest,principal,financing,d.items,accepted,rows);
+ RETURN jsonb_build_object('success',true,'document_id',d.id,'receivable_id',tid,'principal',principal,'financed_interest',financing,'residual',platform_private.b2b_order_residual(d.order_id),'replayed',false);
+END $function$;
+
+CREATE FUNCTION platform_private.b2b_reverse_allocation(p_document uuid,p_replacement uuid DEFAULT NULL) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE x platform_private.b2b_document_allocations; org uuid; d platform_private.b2b_authorized_documents;
+BEGIN
+ SELECT * INTO x FROM platform_private.b2b_document_allocations WHERE document_id=p_document;
+ org:=platform_private.b2b_integration_actor(x.partner_id,true); PERFORM platform_private.b2b_integration_dependencies();
+ PERFORM 1 FROM public.partner_orders WHERE id=x.order_id FOR UPDATE; PERFORM platform_private.b2b_integration_actor(x.partner_id,true);
+ PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:'||x.partner_id::text,0)); PERFORM platform_private.b2b_integration_actor(x.partner_id,true);
+ IF x.organization_id IS DISTINCT FROM org THEN RAISE EXCEPTION 'B2B_TENANT_DENIED' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals r WHERE r.document_id=p_document) THEN
+  IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals r WHERE r.document_id=p_document AND r.replacement_document_id IS NOT DISTINCT FROM p_replacement) THEN RAISE EXCEPTION 'FISCAL_REPLAY_DIVERGENCE' USING ERRCODE='PT409'; END IF;
+  RETURN jsonb_build_object('success',true,'replayed',true);
+ END IF;
+ -- Paid or adjusted histories require independent reconciliation, never automatic cancellation.
+ PERFORM 1 FROM public.accounts_receivable_installments WHERE receivable_id=x.receivable_id ORDER BY id FOR UPDATE;
+ PERFORM platform_private.b2b_integration_actor(x.partner_id,true);
+ PERFORM platform_private.b2b_integration_dependencies();
+ IF EXISTS(SELECT 1 FROM public.receivable_payments p JOIN public.accounts_receivable_installments i ON i.id=p.installment_id WHERE i.receivable_id=x.receivable_id) THEN RAISE EXCEPTION 'FISCAL_PAID_RECONCILIATION_REQUIRED' USING ERRCODE='PT409'; END IF;
+ IF (SELECT count(*) FROM public.accounts_receivable_installments i WHERE i.receivable_id=x.receivable_id)<>jsonb_array_length(x.rows)
+ OR NOT EXISTS(SELECT 1 FROM public.accounts_receivable a WHERE a.id=x.receivable_id AND a.status='OPEN' AND a.b2b_document_id=x.document_id AND a.total_amount=x.principal+x.financed_interest)
+ OR EXISTS(SELECT 1 FROM public.accounts_receivable_installments i WHERE i.receivable_id=x.receivable_id AND
+ (i.status<>'OPEN' OR i.received_amount IS DISTINCT FROM 0::numeric OR i.interest_amount IS DISTINCT FROM 0::numeric OR i.penalty_amount IS DISTINCT FROM 0::numeric OR i.discount_amount IS DISTINCT FROM 0::numeric
+ OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(x.rows) r WHERE (r->>'installment_number')::int=i.installment_number AND (r->>'amount')::numeric=i.original_amount AND (r->>'due_date')::date=i.due_date)))
+ THEN RAISE EXCEPTION 'FISCAL_PAID_RECONCILIATION_REQUIRED' USING ERRCODE='PT409'; END IF;
+ SELECT * INTO d FROM platform_private.b2b_authorized_documents WHERE id=p_replacement AND organization_id=org AND order_id=x.order_id AND partner_id=x.partner_id AND state='AUTHORIZED';
+ IF p_replacement IS NOT NULL AND (NOT FOUND OR p_replacement=p_document OR EXISTS(SELECT 1 FROM platform_private.b2b_cancellation_attestations c WHERE c.document_id=p_replacement)) THEN RAISE EXCEPTION 'FISCAL_REPLACEMENT_INVALID' USING ERRCODE='23514'; END IF;
+ -- Cancellation ingestion itself remains an unproven dependency; no buyer callback accepted.
+ IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_cancellation_attestations c WHERE c.document_id=p_document AND c.organization_id=org) THEN RAISE EXCEPTION 'FISCAL_CANCELLATION_UNPROVEN' USING ERRCODE='42501'; END IF;
+ INSERT INTO platform_private.b2b_allocation_reversals VALUES(p_document,p_replacement,x.source_digest,now());
+ UPDATE public.accounts_receivable_installments SET status='CANCELED' WHERE receivable_id=x.receivable_id;
+ UPDATE public.accounts_receivable SET status='CANCELED' WHERE id=x.receivable_id;
+ IF p_replacement IS NOT NULL THEN PERFORM platform_private.b2b_allocate_document(p_replacement); END IF;
+ RETURN jsonb_build_object('success',true,'replayed',false);
+END $$;
+REVOKE ALL ON FUNCTION platform_private.b2b_order_residual(uuid),platform_private.b2b_credit_balances(uuid,uuid),platform_private.b2b_allocate_document(uuid),platform_private.b2b_reverse_allocation(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+CREATE OR REPLACE FUNCTION public.fn_b2b_credit_exposure(p_partner_id uuid, p_new_order_amount numeric DEFAULT 0, p_exclude_order_id uuid DEFAULT NULL::uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_settings_json jsonb;
+  v_limit numeric(14,2); v_open numeric(14,2); v_overdue numeric(14,2);
+  v_committed numeric(14,2); v_pending numeric(14,2);
+  v_new numeric(14,2) := ROUND(COALESCE(p_new_order_amount,0),2);
+  v_proj numeric(14,2); v_disp numeric(14,2); v_pct numeric;
+  v_tolerance int; v_block boolean; v_action text; v_reason text;
+BEGIN
+  PERFORM platform_private.b2b_integration_actor(p_partner_id);
+  IF p_new_order_amount IS NULL OR p_new_order_amount<0 OR p_new_order_amount::text IN ('NaN','Infinity','-Infinity') THEN RAISE EXCEPTION 'CREDIT_AMOUNT_INVALID' USING ERRCODE='23514'; END IF;
+  IF platform_private.b2b_credit_config_block(p_partner_id) IS NOT NULL THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE='PT409'; END IF;
+  SELECT COALESCE(credit_limit,0), COALESCE(overdue_tolerance_days,0),
+         COALESCE(block_if_overdue,false), COALESCE(credit_limit_action,'block')
+    INTO v_limit, v_tolerance, v_block, v_action
+  FROM public.partner_financial_settings WHERE partner_id = p_partner_id;
+  v_limit := COALESCE(v_limit,0); v_tolerance := COALESCE(v_tolerance,0);
+  v_block := COALESCE(v_block,false); v_action := COALESCE(v_action,'block');
+
+  v_settings_json:=platform_private.b2b_credit_balances(p_partner_id,p_exclude_order_id);
+  v_open:=(v_settings_json->>'saldo_em_aberto')::numeric;
+  v_overdue:=(v_settings_json->>'saldo_vencido')::numeric;
+  v_committed:=(v_settings_json->>'comprometido_nao_faturado')::numeric;
+  v_pending:=(v_settings_json->>'comprometido_pendente')::numeric;
+  v_proj := ROUND(v_open + v_committed + v_pending + v_new, 2);
+  v_disp := GREATEST(v_limit - v_proj, 0);
+  v_pct  := CASE WHEN v_limit > 0 THEN ROUND((v_proj / v_limit) * 100, 2) ELSE 0 END;
+
+  v_reason := CASE
+    WHEN v_block AND v_overdue > 0 THEN 'OVERDUE_BLOCK'
+    WHEN v_proj > v_limit AND v_action = 'approval_required' THEN 'LIMIT_EXCEEDED_APPROVAL'
+    WHEN v_proj > v_limit THEN 'LIMIT_EXCEEDED_BLOCK'
+    ELSE 'OK' END;
+
+  RETURN jsonb_build_object(
+    'partner_id', p_partner_id,
+    'credit_limit', v_limit,
+    'saldo_em_aberto', v_open,
+    'saldo_vencido', v_overdue,
+    'comprometido_nao_faturado', v_committed,
+    'comprometido_pendente', v_pending,
+    'novo_pedido', v_new,
+    'exposicao_atual', ROUND(v_open + v_committed + v_pending, 2),
+    'exposicao_projetada', v_proj,
+    'credito_disponivel', v_disp,
+    'percentual_utilizado', v_pct,
+    'overdue_tolerance_days', v_tolerance,
+    'block_if_overdue', v_block,
+    'credit_limit_action', v_action,
+    'tem_vencidos', v_overdue > 0,
+    'reason_code', v_reason
+  );
+END $function$;
+CREATE OR REPLACE FUNCTION public.rpc_register_receivable_payment(p_installment_id uuid, p_payload jsonb)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_proven jsonb; v_origin public.accounts_receivable%ROWTYPE; v_interest numeric; v_financed numeric; v_debtor uuid;
+  v_uid uuid := auth.uid();
+  v_org uuid := platform_private.h15_actor_organization();
+  v_inst public.accounts_receivable_installments%ROWTYPE;
+  v_amount numeric; v_disc numeric; v_int numeric; v_pen numeric; v_saldo numeric;
+  v_pm uuid; v_ba uuid; v_pay_date date; v_notes text;
+  v_has_receipt boolean; v_require_receipt boolean;
+  v_payment_id uuid; v_idem text; v_fp text; v_existing record;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Sessão inválida.' USING ERRCODE='insufficient_privilege';
+  END IF;
+  IF NOT public.is_financial_staff(v_uid) THEN
+    RAISE EXCEPTION 'Sem permissão para registrar recebimento.' USING ERRCODE='insufficient_privilege';
+  END IF;
+
+  -- H6-001: idempotency_key obrigatoria (fail-closed)
+  IF v_org IS NULL OR NOT EXISTS (SELECT 1 FROM public.accounts_receivable_installments WHERE id=p_installment_id AND organization_id=v_org) THEN
+    RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501';
+  END IF;
+  IF (p_payload ? 'organization_id' AND NULLIF(p_payload->>'organization_id','')::uuid IS DISTINCT FROM v_org)
+     OR (p_payload ? 'tenant_id' AND NULLIF(p_payload->>'tenant_id','')::uuid IS DISTINCT FROM v_org) THEN
+    RAISE EXCEPTION 'FINANCIAL_TENANT_MISMATCH' USING ERRCODE='42501';
+  END IF;
+  v_idem := NULLIF(trim(p_payload->>'idempotency_key'), '');
+  IF v_idem IS NULL OR length(v_idem) < 8 THEN
+    RAISE EXCEPTION 'FIN_IDEMPOTENCY_REQUIRED: idempotency_key obrigatória (mín. 8 caracteres).'
+      USING ERRCODE='check_violation';
+  END IF;
+
+  v_fp := public.fn_h6b_payment_fingerprint('receivable', p_installment_id, p_payload);
+
+  -- lock determinístico por tipo + parcela + chave, ANTES da decisao de replay
+  PERFORM pg_advisory_xact_lock(
+    hashtextextended('fin_pay:receivable:' || p_installment_id::text || ':' || v_idem, 0));
+
+  SELECT * INTO v_inst FROM public.accounts_receivable_installments
+   WHERE id = p_installment_id AND organization_id=v_org FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Parcela não encontrada.'; END IF;
+
+  IF auth.uid() IS DISTINCT FROM v_uid OR public.h15_actor_organization() IS DISTINCT FROM v_org OR public.is_financial_staff(v_uid) IS NOT TRUE THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+  SELECT * INTO v_origin FROM public.accounts_receivable WHERE id=v_inst.receivable_id AND organization_id=v_org;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+  v_debtor:=platform_private.b2b_receivable_partner_scope(v_origin.id);
+  IF v_origin.origin_type='B2B_ORDER' OR v_debtor IS NOT NULL THEN
+   SELECT r INTO v_proven FROM jsonb_array_elements(public.rpc_receivable_money_projection_v1(v_inst.receivable_id,0,1000)) r WHERE r->>'id'=v_inst.id::text;
+   IF v_proven IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+   v_interest:=(v_proven->>'interest_amount')::numeric;
+   v_financed:=(v_proven->>'financed_interest_amount')::numeric;
+  ELSE
+   -- Caminho capturado para MANUAL não B2B sem parceiro; não é prova de origem B4.
+   v_interest:=v_inst.interest_amount; v_financed:=0;
+  END IF;
+  SELECT id, request_fingerprint INTO v_existing FROM public.receivable_payments
+   WHERE installment_id = p_installment_id AND idempotency_key = v_idem;
+  IF v_existing.id IS NOT NULL THEN
+    IF v_existing.request_fingerprint IS NOT NULL AND v_existing.request_fingerprint <> v_fp THEN
+      RAISE EXCEPTION 'FIN_IDEMPOTENCY_CONFLICT: mesma idempotency_key com payload divergente.'
+        USING ERRCODE='check_violation';
+    END IF;
+    RETURN v_existing.id;
+  END IF;
+
+  IF v_inst.status = 'CANCELED' THEN
+    RAISE EXCEPTION 'Parcela cancelada.' USING ERRCODE='check_violation';
+  END IF;
+  IF v_inst.status = 'PAID' THEN
+    RAISE EXCEPTION 'Parcela já quitada.' USING ERRCODE='check_violation';
+  END IF;
+
+  v_amount   := COALESCE((p_payload->>'amount_received')::numeric, 0);
+  v_disc     := COALESCE((p_payload->>'discount_amount')::numeric, 0);
+  v_int      := COALESCE((p_payload->>'interest_amount')::numeric, 0);
+  v_pen      := COALESCE((p_payload->>'penalty_amount')::numeric, 0);
+  v_pm       := NULLIF(p_payload->>'payment_method_id','')::uuid;
+  v_ba       := NULLIF(p_payload->>'bank_account_id','')::uuid;
+  v_pay_date := COALESCE((p_payload->>'payment_date')::date, (pg_catalog.now() AT TIME ZONE 'America/Sao_Paulo')::date);
+  v_notes    := NULLIF(p_payload->>'notes','');
+  v_has_receipt := COALESCE((p_payload->>'has_receipt')::boolean, false);
+
+  IF v_amount::text IN ('NaN','Infinity','-Infinity') OR v_disc::text IN ('NaN','Infinity','-Infinity') OR v_int::text IN ('NaN','Infinity','-Infinity') OR v_pen::text IN ('NaN','Infinity','-Infinity') OR v_disc < 0 OR v_int < 0 OR v_pen < 0 OR v_amount <> round(v_amount,2) OR v_disc <> round(v_disc,2) OR v_int <> round(v_int,2) OR v_pen <> round(v_pen,2) THEN
+ RAISE EXCEPTION 'FIN_INVALID_AMOUNT: valores monetários inválidos.' USING ERRCODE='23514';
+ END IF;
+ IF v_amount <= 0 THEN
+    RAISE EXCEPTION 'Valor inválido.' USING ERRCODE='check_violation';
+  END IF;
+  IF v_pm IS NULL OR NOT EXISTS (SELECT 1 FROM public.payment_methods WHERE id = v_pm AND active) THEN
+    RAISE EXCEPTION 'Forma de pagamento inválida ou inativa.' USING ERRCODE='check_violation';
+  END IF;
+  IF v_ba IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.bank_accounts WHERE id = v_ba AND active) THEN
+    RAISE EXCEPTION 'Conta bancária inválida ou inativa.' USING ERRCODE='check_violation';
+  END IF;
+
+  v_saldo := v_inst.original_amount + (v_interest-v_financed) + COALESCE(v_inst.penalty_amount,0) - COALESCE(v_inst.discount_amount,0) - COALESCE(v_inst.received_amount,0) + v_int + v_pen - v_disc;
+  IF v_amount - v_saldo > 0.005 THEN
+    RAISE EXCEPTION 'Valor excede o saldo da parcela (saldo: %).', v_saldo USING ERRCODE='check_violation';
+  END IF;
+
+  SELECT require_receipt_on_receivable_payment INTO v_require_receipt
+    FROM public.financial_settings LIMIT 1;
+  IF COALESCE(v_require_receipt,false) AND NOT v_has_receipt THEN
+    RAISE EXCEPTION 'Comprovante de recebimento é obrigatório.' USING ERRCODE='check_violation';
+  END IF;
+
+  BEGIN
+    INSERT INTO public.receivable_payments (
+      organization_id, installment_id, payment_date, amount_received, payment_method_id, bank_account_id,
+      discount_amount, interest_amount, penalty_amount, notes, created_by,
+      idempotency_key, request_fingerprint
+    ) VALUES (
+      v_org, p_installment_id, v_pay_date, v_amount, v_pm, v_ba,
+      v_disc, v_int, v_pen, v_notes, v_uid, v_idem, v_fp
+    ) RETURNING id INTO v_payment_id;
+  EXCEPTION WHEN unique_violation THEN
+    SELECT id, request_fingerprint INTO v_existing FROM public.receivable_payments
+     WHERE installment_id = p_installment_id AND idempotency_key = v_idem;
+    IF v_existing.request_fingerprint IS NOT NULL AND v_existing.request_fingerprint <> v_fp THEN
+      RAISE EXCEPTION 'FIN_IDEMPOTENCY_CONFLICT: mesma idempotency_key com payload divergente.'
+        USING ERRCODE='check_violation';
+    END IF;
+    RETURN v_existing.id;
+  END;
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, performed_by)
+  VALUES ('receivable_payments', v_payment_id, 'PAYMENT_REGISTERED',
+    jsonb_build_object('installment_id', p_installment_id, 'amount', v_amount,
+      'payment_method_id', v_pm, 'bank_account_id', v_ba, 'payment_date', v_pay_date,
+      'idempotency_key', v_idem, 'request_fingerprint', v_fp), v_uid);
+
+  RETURN v_payment_id;
+END $function$;
+CREATE OR REPLACE FUNCTION public.fn_generate_receivable_installments()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  i int;
+  v_context platform_private.financial_initial_installments;
+  v_inst jsonb;
+  v_fiscal platform_private.b2b_title_permits;
+  v_qtd int := NEW.installment_count;
+  v_base numeric(14,2) := ROUND(NEW.total_amount / v_qtd, 2);
+  v_acc numeric(14,2) := 0;
+  v_amt numeric(14,2);
+BEGIN
+  IF NEW.organization_id IS NULL THEN
+    RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE = '23514';
+  END IF;
+  DELETE FROM platform_private.b2b_title_permits WHERE transaction_id=txid_current() AND title_id=NEW.id RETURNING * INTO v_fiscal;
+  IF FOUND THEN
+    IF NEW.origin_type<>'B2B_ORDER' OR NEW.origin_id IS DISTINCT FROM v_fiscal.order_id OR NEW.organization_id IS DISTINCT FROM v_fiscal.organization_id OR auth.uid() IS DISTINCT FROM v_fiscal.actor_id THEN RAISE EXCEPTION 'B2B_GENERATOR_PERMIT_INVALID' USING ERRCODE='42501'; END IF;
+    PERFORM platform_private.b2b_integration_actor(v_fiscal.partner_id,true);
+    FOR v_inst IN SELECT r FROM jsonb_array_elements(v_fiscal.rows) r LOOP
+      INSERT INTO public.accounts_receivable_installments(organization_id,receivable_id,installment_number,due_date,original_amount,net_amount,status) VALUES(NEW.organization_id,NEW.id,(v_inst->>'installment_number')::int,(v_inst->>'due_date')::date,(v_inst->>'amount')::numeric,(v_inst->>'amount')::numeric,'OPEN');
+    END LOOP;
+    RETURN NEW;
+  END IF;
+  IF NEW.origin_type='B2B_ORDER' THEN RAISE EXCEPTION 'B2B_GENERATOR_PERMIT_REQUIRED' USING ERRCODE='42501'; END IF;
+  DELETE FROM platform_private.financial_initial_installments
+    WHERE transaction_id=txid_current() AND title_id=NEW.id AND kind='receivable'
+    RETURNING * INTO v_context;
+  IF FOUND THEN
+    IF v_context.actor_id IS DISTINCT FROM auth.uid() OR v_context.organization_id IS DISTINCT FROM NEW.organization_id
+       OR NEW.created_by IS DISTINCT FROM v_context.actor_id OR NEW.origin_type <> 'MANUAL'
+       OR platform_private.h15_actor_organization() IS DISTINCT FROM NEW.organization_id
+       OR NOT public.is_financial_staff(auth.uid()) THEN
+      RAISE EXCEPTION 'FIN_INITIAL_CONTEXT_DENIED' USING ERRCODE='42501';
+    END IF;
+    IF jsonb_array_length(v_context.installments) <> NEW.installment_count
+       OR (SELECT sum((x->>'amount')::numeric) FROM jsonb_array_elements(v_context.installments) x) IS DISTINCT FROM NEW.total_amount THEN
+      RAISE EXCEPTION 'FIN_TITLE_INVALID_SUM' USING ERRCODE='23514';
+    END IF;
+    FOR v_inst IN SELECT * FROM jsonb_array_elements(v_context.installments) LOOP
+      INSERT INTO public.accounts_receivable_installments(organization_id,receivable_id,installment_number,due_date,original_amount,net_amount,status)
+        VALUES(NEW.organization_id,NEW.id,(v_inst->>'installment_number')::int,(v_inst->>'due_date')::date,
+          (v_inst->>'amount')::numeric,(v_inst->>'amount')::numeric,'OPEN');
+    END LOOP;
+    RETURN NEW;
+  END IF;
+  FOR i IN 1..v_qtd LOOP
+    IF i < v_qtd THEN
+      v_amt := v_base;
+      v_acc := v_acc + v_amt;
+    ELSE
+      v_amt := NEW.total_amount - v_acc;
+    END IF;
+    INSERT INTO public.accounts_receivable_installments
+      (receivable_id, installment_number, due_date, original_amount, net_amount, status, organization_id)
+    VALUES
+      (NEW.id, i, (NEW.first_due_date + ((i-1) || ' months')::interval)::date, v_amt, v_amt, 'OPEN', NEW.organization_id);
+  END LOOP;
+  RETURN NEW;
+END
+$function$
+;
+
+CREATE OR REPLACE FUNCTION platform_private.b2b_shared_receivable_credit_guard() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE v_p uuid[]; v_partner uuid; v jsonb; v_delta numeric(14,2); v_po_id uuid; v_po record; v_cfg text;
+BEGIN
+  IF EXISTS(SELECT 1 FROM platform_private.b2b_title_permits p WHERE p.transaction_id=txid_current() AND p.title_id=NEW.id) THEN
+    PERFORM platform_private.b2b_integration_actor(NEW.partner_id,true);
+    IF NEW.total_amount>platform_private.b2b_order_residual(NEW.origin_id) THEN RAISE EXCEPTION 'CREDIT_OVERALLOCATED' USING ERRCODE='PT409'; END IF;
+    RETURN NEW;
+  END IF;
+  IF NEW.customer_id IS NULL AND NEW.origin_type IS DISTINCT FROM 'B2B_ORDER' THEN RETURN NEW; END IF;
+  IF NEW.organization_id IS NULL THEN RAISE EXCEPTION 'CREDIT_TENANT_REQUIRED' USING ERRCODE = '42501'; END IF;
+  v_p := platform_private.b2b_debtor_partner(NEW.organization_id, NEW.customer_id);
+  IF cardinality(v_p) > 1 THEN RAISE EXCEPTION 'CREDIT_PARTNER_LINK_AMBIGUOUS' USING ERRCODE = '42501'; END IF;
+  v_partner := v_p[1];
+  -- Order-linked origins are never trusted from the row: the order must exist server-side, belong to
+  -- the resolved/declared partner, and its amount is netted only while it is still counted as committed.
+  IF NEW.origin_type = 'B2B_ORDER' THEN
+    v_po_id := NEW.origin_id;
+    IF v_po_id IS NULL OR NOT EXISTS (SELECT 1 FROM public.partner_orders po WHERE po.id = v_po_id) THEN
+      RAISE EXCEPTION 'CREDIT_B2B_ORIGIN_UNPROVEN' USING ERRCODE = '23514';
+    END IF;
+  ELSIF NEW.origin_type = 'DELIVERY' AND NEW.origin_id IS NOT NULL THEN
+    SELECT e.partner_order_id INTO v_po_id FROM public.entregas e WHERE e.id = NEW.origin_id;
+  END IF;
+  IF v_po_id IS NOT NULL THEN
+    SELECT po.* INTO v_po FROM public.partner_orders po WHERE po.id = v_po_id FOR UPDATE;  -- order row before b2b_credit
+    IF v_partner IS NULL AND NEW.origin_type = 'B2B_ORDER' THEN v_partner := v_po.partner_id; END IF;
+    IF v_po.partner_id IS NULL OR v_po.partner_id IS DISTINCT FROM v_partner THEN
+      RAISE EXCEPTION 'CREDIT_ORDER_PARTNER_MISMATCH' USING ERRCODE = '23514';
+    END IF;
+    IF NEW.origin_type = 'B2B_ORDER' AND EXISTS (SELECT 1 FROM public.accounts_receivable ar WHERE ar.origin_type = 'B2B_ORDER'
+         AND ar.origin_id = v_po_id AND ar.status <> 'CANCELED') THEN
+      RAISE EXCEPTION 'CREDIT_B2B_ORIGIN_ALREADY_BILLED' USING ERRCODE = 'PT409';
+    END IF;
+  END IF;
+  IF v_partner IS NULL THEN RETURN NEW; END IF;  -- not a partner debtor of this tenant: untouched
+  IF NEW.partner_id IS NOT NULL AND NEW.partner_id IS DISTINCT FROM v_partner THEN
+    RAISE EXCEPTION 'CREDIT_PARTNER_CONFLICT' USING ERRCODE = '23514';
+  END IF;
+  IF current_setting('transaction_isolation') <> 'read committed' THEN
+    RAISE EXCEPTION 'CREDIT_ISOLATION_UNSUPPORTED' USING ERRCODE = '0A000';  -- stale snapshot after wait
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || v_partner::text, 0));
+  -- Fresh statement snapshots from here on (READ COMMITTED): re-resolve the link after any wait.
+  IF platform_private.b2b_debtor_partner(NEW.organization_id, NEW.customer_id) IS DISTINCT FROM v_p THEN
+    RAISE EXCEPTION 'CREDIT_PARTNER_LINK_CHANGED' USING ERRCODE = 'PT409';  -- unlinked/relinked/transferred while waiting
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.partner_accounts pa WHERE pa.id = v_partner AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+                  AND pa.commercial_owner_organization_id = NEW.organization_id) THEN
+    RAISE EXCEPTION 'CREDIT_PARTNER_LINK_CHANGED' USING ERRCODE = 'PT409';
+  END IF;
+  v_cfg := platform_private.b2b_credit_config_block(v_partner);
+  IF v_cfg = 'configuracao_financeira_inativa' THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INACTIVE' USING ERRCODE = 'PT409'; END IF;
+  IF v_cfg = 'limite_nao_definido' THEN RAISE EXCEPTION 'CREDIT_NO_LIMIT_DEFINED' USING ERRCODE = 'PT409'; END IF;
+  IF v_cfg IS NOT NULL THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE = 'PT409'; END IF;
+  v := public.fn_b2b_credit_exposure(v_partner, 0, NULL);
+  IF (v->>'block_if_overdue')::boolean AND (v->>'tem_vencidos')::boolean THEN
+    RAISE EXCEPTION 'CREDIT_OVERDUE_BLOCK' USING ERRCODE = 'PT409';
+  END IF;
+  v_delta := round(NEW.total_amount, 2);
+  IF v_po_id IS NOT NULL THEN
+    SELECT po.* INTO v_po FROM public.partner_orders po WHERE po.id = v_po_id;
+    IF COALESCE(v_po.receivable_generated, false) = false
+       AND v_po.status IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue',
+                           'pendente','solicitado','em_analise_comercial','aguardando_aprovacao_credito','aguardando_ajuste_comercial','aguardando_itens')
+       AND NOT EXISTS (SELECT 1 FROM public.partner_order_financial_links l WHERE l.partner_order_id = v_po_id) THEN
+      v_delta := v_delta - round(COALESCE(v_po.final_amount_with_interest, v_po.total, 0), 2);
+    END IF;
+  END IF;
+  -- A title that does not increase exposure (conversion/delivery of an already counted, possibly
+  -- credit-approved order) is never refused for limit; any increase must fit.
+  IF v_delta > 0 AND (v->>'exposicao_atual')::numeric + v_delta > (v->>'credit_limit')::numeric THEN
+    IF v->>'credit_limit_action' = 'approval_required' THEN
+      RAISE EXCEPTION 'CREDIT_LIMIT_EXCEEDED_APPROVAL' USING ERRCODE = 'PT409';
+    END IF;
+    RAISE EXCEPTION 'CREDIT_LIMIT_EXCEEDED_BLOCK' USING ERRCODE = 'PT409';
+  END IF;
+  NEW.partner_id := v_partner;  -- canonical exposure sees the title afterwards (no second ledger)
+  RETURN NEW;
+END $$;
+CREATE OR REPLACE FUNCTION platform_private.b2b_shared_receivable_credit_guard() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE v_p uuid[]; v_partner uuid; v jsonb; v_delta numeric(14,2); v_po_id uuid; v_po record; v_cfg text;
+BEGIN
+  IF EXISTS(SELECT 1 FROM platform_private.b2b_title_permits p WHERE p.transaction_id=txid_current() AND p.title_id=NEW.id) THEN
+    PERFORM platform_private.b2b_integration_actor(NEW.partner_id,true);
+    IF NEW.total_amount>platform_private.b2b_order_residual(NEW.origin_id) THEN RAISE EXCEPTION 'CREDIT_OVERALLOCATED' USING ERRCODE='PT409'; END IF;
+    RETURN NEW;
+  END IF;
+  IF NEW.customer_id IS NULL AND NEW.origin_type IS DISTINCT FROM 'B2B_ORDER' THEN RETURN NEW; END IF;
+  IF NEW.organization_id IS NULL THEN RAISE EXCEPTION 'CREDIT_TENANT_REQUIRED' USING ERRCODE = '42501'; END IF;
+  v_p := platform_private.b2b_debtor_partner(NEW.organization_id, NEW.customer_id);
+  IF cardinality(v_p) > 1 THEN RAISE EXCEPTION 'CREDIT_PARTNER_LINK_AMBIGUOUS' USING ERRCODE = '42501'; END IF;
+  v_partner := v_p[1];
+  -- Order-linked origins are never trusted from the row: the order must exist server-side, belong to
+  -- the resolved/declared partner, and its amount is netted only while it is still counted as committed.
+  IF NEW.origin_type = 'B2B_ORDER' THEN
+    v_po_id := NEW.origin_id;
+    IF v_po_id IS NULL OR NOT EXISTS (SELECT 1 FROM public.partner_orders po WHERE po.id = v_po_id) THEN
+      RAISE EXCEPTION 'CREDIT_B2B_ORIGIN_UNPROVEN' USING ERRCODE = '23514';
+    END IF;
+  ELSIF NEW.origin_type = 'DELIVERY' AND NEW.origin_id IS NOT NULL THEN
+    SELECT e.partner_order_id INTO v_po_id FROM public.entregas e WHERE e.id = NEW.origin_id;
+  END IF;
+  IF v_po_id IS NOT NULL THEN
+    SELECT po.* INTO v_po FROM public.partner_orders po WHERE po.id = v_po_id FOR UPDATE;  -- order row before b2b_credit
+    IF v_partner IS NULL AND NEW.origin_type = 'B2B_ORDER' THEN v_partner := v_po.partner_id; END IF;
+    IF v_po.partner_id IS NULL OR v_po.partner_id IS DISTINCT FROM v_partner THEN
+      RAISE EXCEPTION 'CREDIT_ORDER_PARTNER_MISMATCH' USING ERRCODE = '23514';
+    END IF;
+    IF NEW.origin_type = 'B2B_ORDER' AND EXISTS (SELECT 1 FROM public.accounts_receivable ar WHERE ar.origin_type = 'B2B_ORDER'
+         AND ar.origin_id = v_po_id AND ar.status <> 'CANCELED') THEN
+      RAISE EXCEPTION 'CREDIT_B2B_ORIGIN_ALREADY_BILLED' USING ERRCODE = 'PT409';
+    END IF;
+  END IF;
+  IF v_partner IS NULL THEN RETURN NEW; END IF;  -- not a partner debtor of this tenant: untouched
+  IF NEW.partner_id IS NOT NULL AND NEW.partner_id IS DISTINCT FROM v_partner THEN
+    RAISE EXCEPTION 'CREDIT_PARTNER_CONFLICT' USING ERRCODE = '23514';
+  END IF;
+  IF current_setting('transaction_isolation') <> 'read committed' THEN
+    RAISE EXCEPTION 'CREDIT_ISOLATION_UNSUPPORTED' USING ERRCODE = '0A000';  -- stale snapshot after wait
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || v_partner::text, 0));
+  -- Fresh statement snapshots from here on (READ COMMITTED): re-resolve the link after any wait.
+  IF platform_private.b2b_debtor_partner(NEW.organization_id, NEW.customer_id) IS DISTINCT FROM v_p THEN
+    RAISE EXCEPTION 'CREDIT_PARTNER_LINK_CHANGED' USING ERRCODE = 'PT409';  -- unlinked/relinked/transferred while waiting
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.partner_accounts pa WHERE pa.id = v_partner AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+                  AND pa.commercial_owner_organization_id = NEW.organization_id) THEN
+    RAISE EXCEPTION 'CREDIT_PARTNER_LINK_CHANGED' USING ERRCODE = 'PT409';
+  END IF;
+  v_cfg := platform_private.b2b_credit_config_block(v_partner);
+  IF v_cfg = 'configuracao_financeira_inativa' THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INACTIVE' USING ERRCODE = 'PT409'; END IF;
+  IF v_cfg = 'limite_nao_definido' THEN RAISE EXCEPTION 'CREDIT_NO_LIMIT_DEFINED' USING ERRCODE = 'PT409'; END IF;
+  IF v_cfg IS NOT NULL THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE = 'PT409'; END IF;
+  v := public.fn_b2b_credit_exposure(v_partner, 0, NULL);
+  IF (v->>'block_if_overdue')::boolean AND (v->>'tem_vencidos')::boolean THEN
+    RAISE EXCEPTION 'CREDIT_OVERDUE_BLOCK' USING ERRCODE = 'PT409';
+  END IF;
+  v_delta := round(NEW.total_amount, 2);
+  IF v_po_id IS NOT NULL THEN
+    SELECT po.* INTO v_po FROM public.partner_orders po WHERE po.id = v_po_id;
+    IF COALESCE(v_po.receivable_generated, false) = false
+       AND v_po.status IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue',
+                           'pendente','solicitado','em_analise_comercial','aguardando_aprovacao_credito','aguardando_ajuste_comercial','aguardando_itens')
+       AND NOT EXISTS (SELECT 1 FROM public.partner_order_financial_links l WHERE l.partner_order_id = v_po_id) THEN
+      v_delta := v_delta - round(COALESCE(v_po.final_amount_with_interest, v_po.total, 0), 2);
+    END IF;
+  END IF;
+  -- A title that does not increase exposure (conversion/delivery of an already counted, possibly
+  -- credit-approved order) is never refused for limit; any increase must fit.
+  IF v_delta > 0 AND (v->>'exposicao_atual')::numeric + v_delta > (v->>'credit_limit')::numeric THEN
+    IF v->>'credit_limit_action' = 'approval_required' THEN
+      RAISE EXCEPTION 'CREDIT_LIMIT_EXCEEDED_APPROVAL' USING ERRCODE = 'PT409';
+    END IF;
+    RAISE EXCEPTION 'CREDIT_LIMIT_EXCEEDED_BLOCK' USING ERRCODE = 'PT409';
+  END IF;
+  NEW.partner_id := v_partner;  -- canonical exposure sees the title afterwards (no second ledger)
+  RETURN NEW;
+END $$;
+CREATE TRIGGER zz_b2b_shared_credit_guard BEFORE INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_shared_receivable_credit_guard();
+
+CREATE FUNCTION platform_private.b2b_title_insert_fence() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE p platform_private.b2b_title_permits;
+BEGIN
+ IF TG_OP='UPDATE' THEN
+  IF (OLD.origin_type IN ('B2B_ORDER','DELIVERY') OR NEW.origin_type IN ('B2B_ORDER','DELIVERY') OR OLD.b2b_document_id IS NOT NULL OR NEW.b2b_document_id IS NOT NULL)
+  AND (OLD.organization_id,OLD.origin_type,OLD.origin_id,OLD.partner_id,OLD.customer_id,OLD.b2b_document_id) IS DISTINCT FROM (NEW.organization_id,NEW.origin_type,NEW.origin_id,NEW.partner_id,NEW.customer_id,NEW.b2b_document_id)
+  THEN RAISE EXCEPTION 'B2B_TITLE_IDENTITY_IMMUTABLE' USING ERRCODE='42501'; END IF;
+  RETURN NEW;
+ END IF;
+ IF NEW.origin_type='B2B_ORDER' OR (NEW.origin_type='DELIVERY' AND EXISTS(SELECT 1 FROM public.entregas e WHERE e.id=NEW.origin_id AND e.partner_order_id IS NOT NULL)) THEN
+  SELECT * INTO p FROM platform_private.b2b_title_permits WHERE transaction_id=txid_current() AND title_id=NEW.id;
+  IF NOT FOUND OR p.actor_id IS DISTINCT FROM auth.uid() OR p.organization_id IS DISTINCT FROM public.h15_actor_organization()
+  OR NEW.organization_id IS DISTINCT FROM p.organization_id OR NEW.origin_type<>'B2B_ORDER' OR NEW.origin_id IS DISTINCT FROM p.order_id
+  OR NEW.partner_id IS DISTINCT FROM p.partner_id OR NEW.customer_id IS DISTINCT FROM p.customer_id
+  OR NOT EXISTS(SELECT 1 FROM platform_private.b2b_authorized_documents d WHERE d.id=NEW.b2b_document_id AND d.order_id=p.order_id AND d.organization_id=p.organization_id AND d.partner_id=p.partner_id AND d.state='AUTHORIZED')
+  OR NEW.total_amount IS DISTINCT FROM (SELECT sum((r->>'amount')::numeric) FROM jsonb_array_elements(p.rows) r)
+  THEN RAISE EXCEPTION 'B2B_FISCAL_ONE_SHOT_PERMIT_REQUIRED' USING ERRCODE='42501'; END IF;
+  PERFORM platform_private.b2b_integration_actor(p.partner_id,true);
+ END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER a01_b2b_fiscal_title_fence BEFORE INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_title_insert_fence();
+CREATE TRIGGER a01_b2b_fiscal_title_identity BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_title_insert_fence();
+-- Serialize private cancellation attestation with fiscal allocation, including cancel-before-title.
+CREATE FUNCTION platform_private.b2b_cancellation_fence() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE d platform_private.b2b_authorized_documents; org uuid;
+BEGIN
+ SELECT * INTO d FROM platform_private.b2b_authorized_documents WHERE id=NEW.document_id;
+ org:=platform_private.b2b_integration_actor(d.partner_id,true);PERFORM platform_private.b2b_integration_dependencies();
+ PERFORM 1 FROM public.partner_orders WHERE id=d.order_id FOR UPDATE;PERFORM platform_private.b2b_integration_actor(d.partner_id,true);
+ PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:'||d.partner_id::text,0));PERFORM platform_private.b2b_integration_actor(d.partner_id,true);
+ PERFORM 1 FROM platform_private.b2b_authorized_documents WHERE id=d.id FOR SHARE;PERFORM platform_private.b2b_integration_actor(d.partner_id,true);
+ PERFORM platform_private.b2b_integration_dependencies();
+ IF NEW.organization_id IS DISTINCT FROM org OR d.organization_id IS DISTINCT FROM org THEN RAISE EXCEPTION 'B2B_TENANT_DENIED' USING ERRCODE='42501'; END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER cancellation_scope_lock BEFORE INSERT ON platform_private.b2b_cancellation_attestations FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_cancellation_fence();
+REVOKE ALL ON FUNCTION platform_private.b2b_cancellation_fence() FROM PUBLIC,anon,authenticated,service_role;
+
+-- Approval/delivery/production cannot call the old integral generator in parallel.
+CREATE OR REPLACE FUNCTION public.tg_auto_b2b_receivable()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$ BEGIN RETURN NEW; END $function$;
+CREATE OR REPLACE FUNCTION public.generate_b2b_receivable_secure_impl(p_partner_order_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$ BEGIN RAISE EXCEPTION 'B2B_AUTHORIZED_FISCAL_DOCUMENT_REQUIRED' USING ERRCODE='42501'; END $function$;
+
+REVOKE ALL ON FUNCTION platform_private.b2b_title_insert_fence(),public.generate_b2b_receivable_secure_impl(uuid),public.tg_auto_b2b_receivable() FROM PUBLIC,anon,authenticated,service_role;
+
+-- Captured broad internal-own-finance reader requires a separate owner-only 1:N review;
+-- current own-obligation reader stays closed rather than returning incomplete legacy results.
+REVOKE ALL ON FUNCTION platform_private.b2b_own_obligations(uuid,timestamptz,uuid) FROM PUBLIC,anon,authenticated,service_role;
+
+-- Revisão 458b6012: nenhuma função nova herda EXECUTE implícito de PUBLIC.
+REVOKE ALL ON FUNCTION platform_private.b2b_allocate_document(uuid),platform_private.b2b_allocation_money_row(uuid),platform_private.b2b_cancellation_fence(),platform_private.b2b_credit_balances(uuid,uuid),platform_private.b2b_credit_config_block(uuid),platform_private.b2b_debtor_partner(uuid,uuid),platform_private.b2b_integration_actor(uuid,boolean),platform_private.b2b_integration_dependencies(),platform_private.b2b_legacy_money_row(uuid),platform_private.b2b_order_residual(uuid),platform_private.b2b_proven_money_row(uuid),platform_private.b2b_proven_money_row_internal(uuid,uuid),platform_private.b2b_receivable_partner_scope(uuid),platform_private.b2b_reverse_allocation(uuid,uuid),platform_private.b2b_shared_receivable_credit_guard(),platform_private.b2b_title_insert_fence(),platform_private.b4_assert_order_eligible(uuid),platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars),platform_private.price_adjusted_due(date,platform_private.holiday_calendars),platform_private.price_calendar_load(text,text),platform_private.price_immutable(),platform_private.price_pinned_calendar(),public.rpc_receivable_money_projection_v1(uuid,integer,integer) FROM PUBLIC,anon,authenticated,service_role;
+
+-- READONLY. Exige instalação candidata íntegra; operação continua fechada.
+DO $guard$ DECLARE d record; BEGIN
+ FOR d IN SELECT * FROM (VALUES ('public.fn_b2b_credit_exposure(uuid,numeric,uuid)','44e8768ff53d7fe5ff3b9f0889258946','postgres','578c00048ab38c285e229e11ff6211ec'),('public.fn_generate_receivable_installments()','4fa47b35665c13d3c9f0ce15262dd98c','postgres','578c00048ab38c285e229e11ff6211ec'),('public.rpc_register_receivable_payment(uuid,jsonb)','db0ef1369e8a98630afb98368d391678','postgres','04e771375e06113da45adc7fa45d56af')) x(sig,body_md5,owner,acl_md5) LOOP
+  IF to_regprocedure(d.sig) IS NULL THEN RAISE EXCEPTION 'B4_POST_SHARED_MISSING:%',d.sig USING ERRCODE='42501'; END IF;
+  IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN RAISE EXCEPTION 'B4_POST_SHARED_BODY:%',d.sig USING ERRCODE='42501'; END IF;
+  IF (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=d.sig::regprocedure) IS DISTINCT FROM d.owner THEN RAISE EXCEPTION 'B4_POST_SHARED_OWNER:%',d.sig USING ERRCODE='42501'; END IF;
+  IF (SELECT md5(string_agg(v.entry,'|' ORDER BY v.entry)) FROM (
+    SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END||'='||a.privilege_type||CASE WHEN a.is_grantable THEN '*' ELSE '' END||'/'||a.grantor::regrole::text entry
+    FROM pg_proc p,aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a WHERE p.oid=d.sig::regprocedure) v) IS DISTINCT FROM d.acl_md5
+  THEN RAISE EXCEPTION 'B4_POST_SHARED_ACL:%',d.sig USING ERRCODE='42501'; END IF;
+ END LOOP;
+END $guard$;DO $guard$ DECLARE d record; BEGIN
+ FOR d IN SELECT * FROM (VALUES ('platform_private.b2b_allocate_document(uuid)'),('platform_private.b2b_allocation_money_row(uuid)'),('platform_private.b2b_cancellation_fence()'),('platform_private.b2b_credit_balances(uuid,uuid)'),('platform_private.b2b_credit_config_block(uuid)'),('platform_private.b2b_debtor_partner(uuid,uuid)'),('platform_private.b2b_integration_actor(uuid,boolean)'),('platform_private.b2b_integration_dependencies()'),('platform_private.b2b_legacy_money_row(uuid)'),('platform_private.b2b_order_residual(uuid)'),('platform_private.b2b_proven_money_row(uuid)'),('platform_private.b2b_proven_money_row_internal(uuid,uuid)'),('platform_private.b2b_receivable_partner_scope(uuid)'),('platform_private.b2b_reverse_allocation(uuid,uuid)'),('platform_private.b2b_shared_receivable_credit_guard()'),('platform_private.b2b_title_insert_fence()'),('platform_private.b4_assert_order_eligible(uuid)'),('platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)'),('platform_private.price_adjusted_due(date,platform_private.holiday_calendars)'),('platform_private.price_calendar_load(text,text)'),('platform_private.price_immutable()'),('platform_private.price_pinned_calendar()'),('public.rpc_receivable_money_projection_v1(uuid,integer,integer)'),('public.generate_b2b_receivable_secure_impl(uuid)'),('public.tg_auto_b2b_receivable()')) x(sig) LOOP
+  IF to_regprocedure(d.sig) IS NULL THEN RAISE EXCEPTION 'B4_POST_MISSING:%',d.sig USING ERRCODE='42501'; END IF;
+  IF (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=d.sig::regprocedure)<>'postgres' THEN RAISE EXCEPTION 'B4_POST_OWNER:%',d.sig USING ERRCODE='42501'; END IF;
+  IF EXISTS(SELECT 1 FROM pg_proc p,aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a WHERE p.oid=d.sig::regprocedure AND a.grantee<>p.proowner)
+  THEN RAISE EXCEPTION 'B4_POST_ACL:%',d.sig USING ERRCODE='42501'; END IF;
+ END LOOP;
+END $guard$;DO $guard$ BEGIN
+ IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+     WHERE n.nspname='public' AND p.proname='rpc_receivable_money_projection_v1')<>1
+ THEN RAISE EXCEPTION 'B4_POST_PROJECTION_OVERLOAD_COUNT_DRIFT' USING ERRCODE='42501'; END IF;
+END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.b2b_allocate_document(uuid)'::regprocedure))) IS DISTINCT FROM 'cc539ca8c501af53a528d66b810aecd8' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.b2b_allocate_document(uuid)' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.b2b_allocation_money_row(uuid)'::regprocedure))) IS DISTINCT FROM '2c8e4c323d1625bd06b9756c5fc7891d' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.b2b_allocation_money_row(uuid)' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.b2b_cancellation_fence()'::regprocedure))) IS DISTINCT FROM '09cc54398ceeed2b11d7baaa2c1255e1' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.b2b_cancellation_fence()' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.b2b_credit_balances(uuid,uuid)'::regprocedure))) IS DISTINCT FROM '9fbf08a16f6bcbec379945886c85c245' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.b2b_credit_balances(uuid,uuid)' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.b2b_credit_config_block(uuid)'::regprocedure))) IS DISTINCT FROM 'a9ff339b7a9151b0945a37ef9aef66e3' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.b2b_credit_config_block(uuid)' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.b2b_debtor_partner(uuid,uuid)'::regprocedure))) IS DISTINCT FROM '19d096e643067fc3c73d0a0a1546d0ea' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.b2b_debtor_partner(uuid,uuid)' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.b2b_integration_actor(uuid,boolean)'::regprocedure))) IS DISTINCT FROM 'c6c25ebcb29ba64adafb0bc42295d3b6' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.b2b_integration_actor(uuid,boolean)' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.b2b_integration_dependencies()'::regprocedure))) IS DISTINCT FROM '605e722506de23bfd69c890c4123d4b6' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.b2b_integration_dependencies()' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.b2b_legacy_money_row(uuid)'::regprocedure))) IS DISTINCT FROM '72d0b11083230fa663da46df31b7af22' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.b2b_legacy_money_row(uuid)' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.b2b_order_residual(uuid)'::regprocedure))) IS DISTINCT FROM '93769163bfc7c72a4bbc722e62313179' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.b2b_order_residual(uuid)' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.b2b_proven_money_row(uuid)'::regprocedure))) IS DISTINCT FROM '8966df7474276af347bfd40c474b52a8' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.b2b_proven_money_row(uuid)' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.b2b_proven_money_row_internal(uuid,uuid)'::regprocedure))) IS DISTINCT FROM 'b4cfcf65495322ce3c3b911a3597abe2' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.b2b_proven_money_row_internal(uuid,uuid)' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.b2b_receivable_partner_scope(uuid)'::regprocedure))) IS DISTINCT FROM 'cbebb71371eec7bd73fcdc2900088876' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.b2b_receivable_partner_scope(uuid)' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.b2b_reverse_allocation(uuid,uuid)'::regprocedure))) IS DISTINCT FROM 'a8fa031cd834bf6525222dc7cc1f330a' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.b2b_reverse_allocation(uuid,uuid)' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.b2b_shared_receivable_credit_guard()'::regprocedure))) IS DISTINCT FROM 'dbcf1a2b836bebe5175dcfa6cd0bab83' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.b2b_shared_receivable_credit_guard()' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.b2b_title_insert_fence()'::regprocedure))) IS DISTINCT FROM '39d8b85a715722b4a976db4e2fd21167' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.b2b_title_insert_fence()' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.b4_assert_order_eligible(uuid)'::regprocedure))) IS DISTINCT FROM 'b0e81f44de310fc38ae9ea3cdebd628b' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.b4_assert_order_eligible(uuid)' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)'::regprocedure))) IS DISTINCT FROM 'af9e7e4f05742ab42f2d2b30e8faf560' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.price_adjusted_due(date,platform_private.holiday_calendars)'::regprocedure))) IS DISTINCT FROM '41d8c08797118e69f435e7b355b28ea6' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.price_adjusted_due(date,platform_private.holiday_calendars)' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.price_calendar_load(text,text)'::regprocedure))) IS DISTINCT FROM 'e68759899b50efd93579f5bca2da9940' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.price_calendar_load(text,text)' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.price_immutable()'::regprocedure))) IS DISTINCT FROM 'd001f9720ad2c42c6d1d62c210e043dd' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.price_immutable()' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('platform_private.price_pinned_calendar()'::regprocedure))) IS DISTINCT FROM '2c96486a431bc06abf9d42bb756e60e4' THEN RAISE EXCEPTION 'B4_POST_BODY:platform_private.price_pinned_calendar()' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('public.rpc_receivable_money_projection_v1(uuid,integer,integer)'::regprocedure))) IS DISTINCT FROM '7c5d3fa0a4c9516ab1c40b058a529578' THEN RAISE EXCEPTION 'B4_POST_BODY:public.rpc_receivable_money_projection_v1(uuid,integer,integer)' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure))) IS DISTINCT FROM '3a4ca7fcd75f9fd3a183b6917fe05cd2' THEN RAISE EXCEPTION 'B4_POST_BODY:public.generate_b2b_receivable_secure_impl(uuid)' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_functiondef('public.tg_auto_b2b_receivable()'::regprocedure))) IS DISTINCT FROM 'd179755ea3701a723338d08283d42fe5' THEN RAISE EXCEPTION 'B4_POST_BODY:public.tg_auto_b2b_receivable()' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN
+ IF (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='public.accounts_receivable'::regclass)<>'postgres' THEN RAISE EXCEPTION 'B4_POST_TABLE_OWNER' USING ERRCODE='42501'; END IF;
+ IF (SELECT md5(string_agg(v.entry,'|' ORDER BY v.entry)) FROM (
+   SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END||'='||a.privilege_type||CASE WHEN a.is_grantable THEN '*' ELSE '' END||'/'||a.grantor::regrole::text entry
+   FROM pg_class c,aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='public.accounts_receivable'::regclass) v)<>'93490607307bc83e36605d2c0e7dc4ec'
+ THEN RAISE EXCEPTION 'B4_POST_TABLE_ACL' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.accounts_receivable'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'B4_POST_TABLE_RLS' USING ERRCODE='42501'; END IF;
+END $guard$;DO $guard$ DECLARE d record; BEGIN
+ FOR d IN SELECT * FROM (VALUES ('platform_private.delivery_no_downstream_20261030()','95e0e5a84ef511cd72d7807351f61cf4','postgres','aae127bcdd4f7096876d7094c14eabd1')) x(sig,body_md5,owner,acl_md5) LOOP
+  IF to_regprocedure(d.sig) IS NULL THEN RAISE EXCEPTION 'B4_IMMUTABLE_DOWNSTREAM_MISSING:%',d.sig USING ERRCODE='42501'; END IF;
+  IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN RAISE EXCEPTION 'B4_IMMUTABLE_DOWNSTREAM_BODY:%',d.sig USING ERRCODE='42501'; END IF;
+  IF (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=d.sig::regprocedure) IS DISTINCT FROM d.owner THEN RAISE EXCEPTION 'B4_IMMUTABLE_DOWNSTREAM_OWNER:%',d.sig USING ERRCODE='42501'; END IF;
+  IF (SELECT md5(string_agg(v.entry,'|' ORDER BY v.entry)) FROM (
+    SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END||'='||a.privilege_type||CASE WHEN a.is_grantable THEN '*' ELSE '' END||'/'||a.grantor::regrole::text entry
+    FROM pg_proc p,aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a WHERE p.oid=d.sig::regprocedure) v) IS DISTINCT FROM d.acl_md5
+  THEN RAISE EXCEPTION 'B4_IMMUTABLE_DOWNSTREAM_ACL:%',d.sig USING ERRCODE='42501'; END IF;
+ END LOOP;
+END $guard$;DO $guard$ BEGIN IF (SELECT md5(string_agg(c.column_name||'|'||format_type(a.atttypid,a.atttypmod)||'|'||coalesce(c.column_default,'')||'|'||c.is_nullable,'^' ORDER BY c.ordinal_position)) FROM information_schema.columns c JOIN pg_attribute a ON a.attrelid='public.accounts_receivable'::regclass AND a.attname=c.column_name WHERE c.table_schema='public' AND c.table_name='accounts_receivable') IS DISTINCT FROM '62e9a6d0710abab3dd0f1ce6db4005bd' THEN RAISE EXCEPTION 'B4_POST_COLUMNS' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(string_agg(c.conname||'|'||pg_get_constraintdef(c.oid),'^' ORDER BY c.conname)) FROM pg_constraint c WHERE c.conrelid='public.accounts_receivable'::regclass) IS DISTINCT FROM '09ce695b8adddd296478b570c5608125' THEN RAISE EXCEPTION 'B4_POST_CONSTRAINTS' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(string_agg(c.relname||'|'||pg_get_indexdef(c.oid)||'|'||CASE WHEN i.indisvalid THEN 't' ELSE 'f' END,'^' ORDER BY c.relname)) FROM pg_class c JOIN pg_index i ON i.indexrelid=c.oid WHERE i.indrelid='public.accounts_receivable'::regclass) IS DISTINCT FROM '53e7b38728aa3dcd5190a8287a166b12' THEN RAISE EXCEPTION 'B4_POST_INDEXES' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(string_agg(t.tgname||'|'||pg_get_triggerdef(t.oid)||'|'||t.tgenabled::text,'^' ORDER BY t.tgname)) FROM pg_trigger t WHERE t.tgrelid='public.accounts_receivable'::regclass AND NOT t.tgisinternal) IS DISTINCT FROM 'c0bcb36555a47914814dda1c2f5c3ce3' THEN RAISE EXCEPTION 'B4_POST_TRIGGERS' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN IF (SELECT md5(pg_get_triggerdef(t.oid)||'|'||t.tgenabled::text) FROM pg_trigger t WHERE t.tgname='trg_auto_b2b_receivable' AND t.tgrelid='public.partner_orders'::regclass AND NOT t.tgisinternal) IS DISTINCT FROM 'e0bef68247241994ec6e2fc113fe68dc' THEN RAISE EXCEPTION 'B4_POST_AUTO_TRIGGER:trg_auto_b2b_receivable' USING ERRCODE='42501'; END IF; END $guard$;DO $guard$ BEGIN
+ IF to_regclass('platform_private.holiday_calendars') IS NULL THEN RAISE EXCEPTION 'B4_POST_RELATION_MISSING:platform_private.holiday_calendars' USING ERRCODE='42501'; END IF;
+ IF (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='platform_private.holiday_calendars'::regclass)<>'postgres' THEN RAISE EXCEPTION 'B4_POST_RELATION_OWNER:platform_private.holiday_calendars' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_class c,aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='platform_private.holiday_calendars'::regclass AND a.grantee<>c.relowner) THEN RAISE EXCEPTION 'B4_POST_RELATION_ACL:platform_private.holiday_calendars' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.price_schedule_snapshots') IS NULL THEN RAISE EXCEPTION 'B4_POST_RELATION_MISSING:platform_private.price_schedule_snapshots' USING ERRCODE='42501'; END IF;
+ IF (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='platform_private.price_schedule_snapshots'::regclass)<>'postgres' THEN RAISE EXCEPTION 'B4_POST_RELATION_OWNER:platform_private.price_schedule_snapshots' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_class c,aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='platform_private.price_schedule_snapshots'::regclass AND a.grantee<>c.relowner) THEN RAISE EXCEPTION 'B4_POST_RELATION_ACL:platform_private.price_schedule_snapshots' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_authorized_documents') IS NULL THEN RAISE EXCEPTION 'B4_POST_RELATION_MISSING:platform_private.b2b_authorized_documents' USING ERRCODE='42501'; END IF;
+ IF (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='platform_private.b2b_authorized_documents'::regclass)<>'postgres' THEN RAISE EXCEPTION 'B4_POST_RELATION_OWNER:platform_private.b2b_authorized_documents' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_class c,aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='platform_private.b2b_authorized_documents'::regclass AND a.grantee<>c.relowner) THEN RAISE EXCEPTION 'B4_POST_RELATION_ACL:platform_private.b2b_authorized_documents' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_document_allocations') IS NULL THEN RAISE EXCEPTION 'B4_POST_RELATION_MISSING:platform_private.b2b_document_allocations' USING ERRCODE='42501'; END IF;
+ IF (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='platform_private.b2b_document_allocations'::regclass)<>'postgres' THEN RAISE EXCEPTION 'B4_POST_RELATION_OWNER:platform_private.b2b_document_allocations' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_class c,aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='platform_private.b2b_document_allocations'::regclass AND a.grantee<>c.relowner) THEN RAISE EXCEPTION 'B4_POST_RELATION_ACL:platform_private.b2b_document_allocations' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_allocation_reversals') IS NULL THEN RAISE EXCEPTION 'B4_POST_RELATION_MISSING:platform_private.b2b_allocation_reversals' USING ERRCODE='42501'; END IF;
+ IF (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='platform_private.b2b_allocation_reversals'::regclass)<>'postgres' THEN RAISE EXCEPTION 'B4_POST_RELATION_OWNER:platform_private.b2b_allocation_reversals' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_class c,aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='platform_private.b2b_allocation_reversals'::regclass AND a.grantee<>c.relowner) THEN RAISE EXCEPTION 'B4_POST_RELATION_ACL:platform_private.b2b_allocation_reversals' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_title_permits') IS NULL THEN RAISE EXCEPTION 'B4_POST_RELATION_MISSING:platform_private.b2b_title_permits' USING ERRCODE='42501'; END IF;
+ IF (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='platform_private.b2b_title_permits'::regclass)<>'postgres' THEN RAISE EXCEPTION 'B4_POST_RELATION_OWNER:platform_private.b2b_title_permits' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_class c,aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='platform_private.b2b_title_permits'::regclass AND a.grantee<>c.relowner) THEN RAISE EXCEPTION 'B4_POST_RELATION_ACL:platform_private.b2b_title_permits' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b2b_cancellation_attestations') IS NULL THEN RAISE EXCEPTION 'B4_POST_RELATION_MISSING:platform_private.b2b_cancellation_attestations' USING ERRCODE='42501'; END IF;
+ IF (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='platform_private.b2b_cancellation_attestations'::regclass)<>'postgres' THEN RAISE EXCEPTION 'B4_POST_RELATION_OWNER:platform_private.b2b_cancellation_attestations' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_class c,aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='platform_private.b2b_cancellation_attestations'::regclass AND a.grantee<>c.relowner) THEN RAISE EXCEPTION 'B4_POST_RELATION_ACL:platform_private.b2b_cancellation_attestations' USING ERRCODE='42501'; END IF;
+ IF to_regclass('platform_private.b4_order_condition_snapshots') IS NULL THEN RAISE EXCEPTION 'B4_POST_RELATION_MISSING:platform_private.b4_order_condition_snapshots' USING ERRCODE='42501'; END IF;
+ IF (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='platform_private.b4_order_condition_snapshots'::regclass)<>'postgres' THEN RAISE EXCEPTION 'B4_POST_RELATION_OWNER:platform_private.b4_order_condition_snapshots' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_class c,aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='platform_private.b4_order_condition_snapshots'::regclass AND a.grantee<>c.relowner) THEN RAISE EXCEPTION 'B4_POST_RELATION_ACL:platform_private.b4_order_condition_snapshots' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.holiday_calendars'::regclass AND relrowsecurity) THEN RAISE EXCEPTION 'B4_POST_RLS:platform_private.holiday_calendars' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.price_schedule_snapshots'::regclass AND relrowsecurity) THEN RAISE EXCEPTION 'B4_POST_RLS:platform_private.price_schedule_snapshots' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.b2b_authorized_documents'::regclass AND relrowsecurity) THEN RAISE EXCEPTION 'B4_POST_RLS:platform_private.b2b_authorized_documents' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.b2b_document_allocations'::regclass AND relrowsecurity) THEN RAISE EXCEPTION 'B4_POST_RLS:platform_private.b2b_document_allocations' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.b2b_allocation_reversals'::regclass AND relrowsecurity) THEN RAISE EXCEPTION 'B4_POST_RLS:platform_private.b2b_allocation_reversals' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.b2b_title_permits'::regclass AND relrowsecurity) THEN RAISE EXCEPTION 'B4_POST_RLS:platform_private.b2b_title_permits' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.b2b_cancellation_attestations'::regclass AND relrowsecurity) THEN RAISE EXCEPTION 'B4_POST_RLS:platform_private.b2b_cancellation_attestations' USING ERRCODE='42501'; END IF;
+ IF to_regclass('public.b2b_one_title_per_document') IS NULL OR NOT EXISTS(SELECT 1 FROM pg_index WHERE indexrelid='public.b2b_one_title_per_document'::regclass AND indisvalid AND indisready) THEN RAISE EXCEPTION 'B4_POST_INDEX:public.b2b_one_title_per_document' USING ERRCODE='42501'; END IF;
+ IF to_regclass('public.ux_ar_one_active_per_b2b_order') IS NULL OR NOT EXISTS(SELECT 1 FROM pg_index WHERE indexrelid='public.ux_ar_one_active_per_b2b_order'::regclass AND indisvalid AND indisready) THEN RAISE EXCEPTION 'B4_POST_INDEX:public.ux_ar_one_active_per_b2b_order' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='price_calendar_immutable' AND tgrelid='platform_private.holiday_calendars'::regclass AND NOT tgisinternal AND tgenabled='O') THEN RAISE EXCEPTION 'B4_POST_TRIGGER:platform_private.holiday_calendars.price_calendar_immutable' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='price_calendar_no_truncate' AND tgrelid='platform_private.holiday_calendars'::regclass AND NOT tgisinternal AND tgenabled='O') THEN RAISE EXCEPTION 'B4_POST_TRIGGER:platform_private.holiday_calendars.price_calendar_no_truncate' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='price_snapshot_immutable' AND tgrelid='platform_private.price_schedule_snapshots'::regclass AND NOT tgisinternal AND tgenabled='O') THEN RAISE EXCEPTION 'B4_POST_TRIGGER:platform_private.price_schedule_snapshots.price_snapshot_immutable' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='price_snapshot_no_truncate' AND tgrelid='platform_private.price_schedule_snapshots'::regclass AND NOT tgisinternal AND tgenabled='O') THEN RAISE EXCEPTION 'B4_POST_TRIGGER:platform_private.price_schedule_snapshots.price_snapshot_no_truncate' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='immutable_update_delete' AND tgrelid='platform_private.b2b_authorized_documents'::regclass AND NOT tgisinternal AND tgenabled='O') THEN RAISE EXCEPTION 'B4_POST_TRIGGER:platform_private.b2b_authorized_documents.immutable_update_delete' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='immutable_update_delete' AND tgrelid='platform_private.b2b_document_allocations'::regclass AND NOT tgisinternal AND tgenabled='O') THEN RAISE EXCEPTION 'B4_POST_TRIGGER:platform_private.b2b_document_allocations.immutable_update_delete' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='immutable_update_delete' AND tgrelid='platform_private.b2b_allocation_reversals'::regclass AND NOT tgisinternal AND tgenabled='O') THEN RAISE EXCEPTION 'B4_POST_TRIGGER:platform_private.b2b_allocation_reversals.immutable_update_delete' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='immutable_update_delete' AND tgrelid='platform_private.b2b_cancellation_attestations'::regclass AND NOT tgisinternal AND tgenabled='O') THEN RAISE EXCEPTION 'B4_POST_TRIGGER:platform_private.b2b_cancellation_attestations.immutable_update_delete' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='immutable_truncate' AND tgrelid='platform_private.b2b_authorized_documents'::regclass AND NOT tgisinternal AND tgenabled='O') THEN RAISE EXCEPTION 'B4_POST_TRIGGER:platform_private.b2b_authorized_documents.immutable_truncate' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='immutable_truncate' AND tgrelid='platform_private.b2b_document_allocations'::regclass AND NOT tgisinternal AND tgenabled='O') THEN RAISE EXCEPTION 'B4_POST_TRIGGER:platform_private.b2b_document_allocations.immutable_truncate' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='immutable_truncate' AND tgrelid='platform_private.b2b_allocation_reversals'::regclass AND NOT tgisinternal AND tgenabled='O') THEN RAISE EXCEPTION 'B4_POST_TRIGGER:platform_private.b2b_allocation_reversals.immutable_truncate' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='immutable_truncate' AND tgrelid='platform_private.b2b_cancellation_attestations'::regclass AND NOT tgisinternal AND tgenabled='O') THEN RAISE EXCEPTION 'B4_POST_TRIGGER:platform_private.b2b_cancellation_attestations.immutable_truncate' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='zz_b2b_shared_credit_guard' AND tgrelid='public.accounts_receivable'::regclass AND NOT tgisinternal AND tgenabled='O') THEN RAISE EXCEPTION 'B4_POST_TRIGGER:public.accounts_receivable.zz_b2b_shared_credit_guard' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='a01_b2b_fiscal_title_fence' AND tgrelid='public.accounts_receivable'::regclass AND NOT tgisinternal AND tgenabled='O') THEN RAISE EXCEPTION 'B4_POST_TRIGGER:public.accounts_receivable.a01_b2b_fiscal_title_fence' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='a01_b2b_fiscal_title_identity' AND tgrelid='public.accounts_receivable'::regclass AND NOT tgisinternal AND tgenabled='O') THEN RAISE EXCEPTION 'B4_POST_TRIGGER:public.accounts_receivable.a01_b2b_fiscal_title_identity' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='cancellation_scope_lock' AND tgrelid='platform_private.b2b_cancellation_attestations'::regclass AND NOT tgisinternal AND tgenabled='O') THEN RAISE EXCEPTION 'B4_POST_TRIGGER:platform_private.b2b_cancellation_attestations.cancellation_scope_lock' USING ERRCODE='42501'; END IF;
+END $guard$;
+
+COMMIT;
