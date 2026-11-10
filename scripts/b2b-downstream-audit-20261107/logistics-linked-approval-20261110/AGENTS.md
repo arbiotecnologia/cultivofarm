@@ -1,5 +1,5 @@
 - Preparação local apenas: nunca aplicar 02/04 hospedado nem publicar daqui; o auditor revisa e instala — evita mudança não revisada.
 - 01–04 são gerados por generate.py a partir dos corpos de produção congelados (61/71) com md5 LIVE, md5 candidatos e ACL fixados no gerador; arquivos finais não têm placeholders e o espelho executa exatamente esses bytes (verify_on_disk) — evita drift e afrouxamento.
-- Aprovação canônica = aprovação comercial (approved_by/at) + termos vinculados do MESMO pedido aprovados com autor/data; cabeçalho rejeitado, vínculo ausente/divergente, termos pendentes/rejeitados ou crédito incoerente negam — nunca alterar cabeçalho para aprovar.
+- Aprovação canônica = aprovação comercial (approved_by/at) + termos vinculados do MESMO pedido: approved com autor/data, ou dispensa válida (requires_financial_approval=false, cabeçalho fora de pending/rejected) com termos not_required; termos rejected/pending, vínculo ausente/trocado, cabeçalho rejeitado ou crédito incoerente negam inclusive na dispensa — nunca alterar cabeçalho para aprovar.
 - Rollback reinstala os corpos LIVE (predicado legado, mais restritivo) preservando histórico.
 - Negativas mutam termos/cabeçalho apenas em transação revertida; auth por claims SQL é sintética, não prova JWT/RLS/Storage.
