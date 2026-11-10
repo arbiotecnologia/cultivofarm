@@ -95,7 +95,7 @@ Evidência: `order-e2e-new-20261108/evidence/attempt-203/` (`run.exitcode`=0, `c
 
 **Auditoria do corpo canônico (MD5 `4d93bb04…`):** a cláusula de ambiente (linhas 31–35) roda **antes** da derivação da nota pelo XML (45–63) e sem escopo de empresa, o que confirma a constatação independente. A repetição (79–94) era devolvida antes de qualquer autorização nova e comparava só o fingerprint. Para Consulta/RetAutorizacao, a nota era o parâmetro do chamador, sem derivação.
 
-**Overlay candidato (MD5 `70742ae2cd62c71b7bb1a85311c89739`), ordem final:** identidade (Autorização pelo XML, como no canônico; Consulta/RetAutorização agora também pelo XML, com `SEFAZ_RUN_REQUIRED`/`SEFAZ_INVOICE_RUN_MISMATCH`) → ambiente da configuração ativa **exata** da emitente (`company_settings_id` + `organization_id` da nota) → locks nota→pedido→previsão + advisory → autoridade/escopo/features/piloto relidos → repetição → início. Sem documento, só decide a configuração ativa única da empresa do ator; sem ator ou sem configuração, bloqueia. Não existe mais `is_active LIMIT 1`, e o permitido fiscal não foi ampliado (marcador, host `hnfe` e XML `2` intactos).
+**Overlay candidato final (MD5 `210f8b548ad4490da22f59551abaa220`), ordem:** identidade (Autorização pelo XML, como no canônico; Consulta/RetAutorização pelo XML **quando informado**, com `SEFAZ_INVOICE_RUN_MISMATCH`; sem XML, a nota autorizada por `h15_service_actor_invoice_access` no transporte) → ambiente da configuração ativa **exata** da emitente (`company_settings_id` + `organization_id` da nota) → locks nota→pedido→previsão + advisory → autoridade/escopo/features/piloto relidos → repetição → início. Sem documento, só decide a configuração ativa única da empresa do ator; sem ator ou sem configuração, bloqueia. Não existe mais `is_active LIMIT 1`, e o permitido fiscal não foi ampliado (marcador, host `hnfe` e XML `2` intactos).
 
 **Ambiguidade:** o índice único `ux_company_fiscal_settings_active_organization` já impede duas configurações ativas na mesma empresa (23505, comprovado). O `count(*)=1` no writer fica apenas como defesa.
 
@@ -110,6 +110,6 @@ Evidência: `order-e2e-new-20261108/evidence/attempt-203/` (`run.exitcode`=0, `c
 
 **Leitura de histórico:** os leitores auditáveis não mudaram. A repetição do início deixou de servir como leitura para quem não tem autoridade atual.
 
-**Mudança de comportamento a revisar:** Consulta/RetAutorizacao sem `_xml_run_id` agora falham fechado. Os chamadores canônicos do repositório passam o XML.
+**Tentativa 206 (substitui a 205):** a variante da 205 exigia XML na Consulta/RetAutorização, mas `supabase/functions/fiscal-sefaz-transport/index.ts` envia status/recibo/consulta com a nota obrigatória e `run_id` **opcional**. Isso quebraria o chamador real, então foi descartada. A 206 terminou com exit 0, 55/55: as mesmas 9 verificações de repetição e 8 de ambiente, com `status_invoice_only_issuer_env_1` (só a nota, emitente em `1`, outra empresa em `2`) → bloqueado. Nas previsões, a consulta sem XML continua barrada pela prova causal (`t.xml_run_id=_xml_run_id`).
 
-**Promoção:** 12/12 SQL iguais aos do espelho validado (`review-1425-source-hashes.json`). Pacote **REVIEW_ONLY_INACTIVE_NOT_APPROVED**; sem SQL hospedado, publicação, emissão, envio ou cobrança. Auth sintética.
+**Promoção:** 12/12 SQL iguais aos do espelho validado na **206** (`review-1425-source-hashes.json`). Pacote **REVIEW_ONLY_INACTIVE_NOT_APPROVED**; sem SQL hospedado, publicação, emissão, envio ou cobrança. Auth sintética.
