@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Eye, XCircle, Settings2, BarChart3, ShieldCheck } from "lucide-react";
 import { B2BForecastCell } from "@/components/financeiro/B2BForecastCell";
+import { B2BPaymentMethodCell } from "@/components/financeiro/B2BPaymentMethodCell";
 import {
   useB2BReceivables,
   useCancelB2BReceivable,
@@ -177,7 +178,7 @@ export default function FinanceiroB2B() {
                     </TableCell>
                     <TableCell className="text-right">{brl(r.total)}</TableCell>
                     <TableCell><B2BForecastCell orderId={r.partner_order_id} /></TableCell>
-                    <TableCell className="capitalize">{r.payment_method ?? "—"}</TableCell>
+                    <TableCell><B2BPaymentMethodCell orderId={r.partner_order_id} /></TableCell>
                     <TableCell className="text-right space-x-1 whitespace-nowrap">
                       {canSettings && (
                         <Button

@@ -1,0 +1,54 @@
+-- REVIEW_ONLY_INACTIVE_NOT_APPROVED. project_ref swzpzcwiasxmjutrmvkm. Ordem: 01-pre -> 02-install -> 03-post; rollback 04 (deny-only).
+-- Não altera public.rpc_b2b_revenue_forecast(uuid) (corpo/ACL legados intocados, sem regrant).
+BEGIN;
+DO $$ BEGIN IF to_regprocedure('public.rpc_b2b_revenue_forecast_tenant_v1(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'REVENUE_TENANT_TARGET_PREEXISTS'; END IF;
+ IF to_regclass('platform_private.b2b_financial_forecasts') IS NULL THEN RAISE EXCEPTION 'REVENUE_TENANT_FORECAST_ABSENT'; END IF; END $$;
+CREATE FUNCTION public.rpc_b2b_revenue_forecast_tenant_v1(p_partner_id uuid DEFAULT NULL)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $fn$
+DECLARE actor uuid:=auth.uid(); org uuid:=public.h15_actor_organization();
+ v_res numeric:=0; v_res_n int:=0; v_t jsonb; v_legacy int:=0;
+BEGIN
+ IF actor IS NULL OR org IS NULL OR public.is_financial_staff(actor) IS NOT TRUE
+  OR public._saas_user_has_feature(actor,'contas_receber') IS NOT TRUE
+  OR public._saas_user_has_feature(actor,'pedidos_b2b') IS NOT TRUE THEN
+  RAISE EXCEPTION 'B2B_REVENUE_FORECAST_DENIED' USING ERRCODE='42501'; END IF;
+ IF p_partner_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.partner_accounts pa
+   WHERE pa.id=p_partner_id AND pa.commercial_owner_organization_id=org) THEN
+  RAISE EXCEPTION 'B2B_REVENUE_FORECAST_DENIED' USING ERRCODE='42501'; END IF;
+ -- Previsão não exigível: somente residual vivo da previsão privada do tenant (porção ainda sem NF).
+ SELECT coalesce(sum(f.residual_amount),0), count(*) INTO v_res, v_res_n
+   FROM platform_private.b2b_financial_forecasts f
+   JOIN public.partner_accounts pa ON pa.id=f.partner_id AND pa.commercial_owner_organization_id=org
+  WHERE f.organization_id=org AND f.residual_amount>0
+    AND f.state IN ('aguardando_fiscal','emissao_em_andamento','consulta_fiscal_obrigatoria','faturado_parcial')
+    AND (p_partner_id IS NULL OR f.partner_id=p_partner_id);
+ -- Títulos confirmados (motor único: criados só após evento fiscal validado ou exceção manual auditada).
+ SELECT jsonb_build_object(
+   'vencido',  coalesce(sum(o) FILTER (WHERE d<0),0),
+   'ate_30',   coalesce(sum(o) FILTER (WHERE d BETWEEN 0 AND 30),0),
+   'ate_60',   coalesce(sum(o) FILTER (WHERE d BETWEEN 31 AND 60),0),
+   'ate_90',   coalesce(sum(o) FILTER (WHERE d BETWEEN 61 AND 90),0),
+   'apos_90',  coalesce(sum(o) FILTER (WHERE d>90),0),
+   'total_aberto', coalesce(sum(o),0))
+   INTO v_t
+   FROM (SELECT greatest(i.net_amount-i.received_amount,0) o, (i.due_date-current_date) d
+           FROM public.accounts_receivable ar
+           JOIN public.partner_accounts pa ON pa.id=ar.partner_id AND pa.commercial_owner_organization_id=org
+           JOIN public.accounts_receivable_installments i ON i.receivable_id=ar.id
+          WHERE ar.origin_type='B2B_ORDER' AND ar.status<>'CANCELED' AND upper(i.status) NOT IN ('CANCELED','PAID')
+            AND (p_partner_id IS NULL OR ar.partner_id=p_partner_id)) s;
+ -- Legado não comprovado: aprovado sem previsão nem título vivo; só contagem, nunca valor.
+ SELECT count(*) INTO v_legacy FROM public.partner_orders po
+   JOIN public.partner_accounts pa ON pa.id=po.partner_id AND pa.commercial_owner_organization_id=org
+  WHERE po.status::text IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue')
+    AND (p_partner_id IS NULL OR po.partner_id=p_partner_id)
+    AND NOT EXISTS (SELECT 1 FROM platform_private.b2b_financial_forecasts f WHERE f.order_id=po.id)
+    AND NOT EXISTS (SELECT 1 FROM public.accounts_receivable ar WHERE ar.origin_type='B2B_ORDER' AND ar.origin_id=po.id AND ar.status<>'CANCELED');
+ RETURN jsonb_build_object('contract','B2B_REVENUE_FORECAST_TENANT_V1','organization_id',org,'partner_id',p_partner_id,
+  'forecast_residual',jsonb_build_object('amount',v_res,'orders',v_res_n,'enforceable',false,'due_dates_estimated',true),
+  'confirmed_titles',v_t,'legacy_unproven_orders',v_legacy);
+END $fn$;
+
+REVOKE ALL ON FUNCTION public.rpc_b2b_revenue_forecast_tenant_v1(uuid) FROM PUBLIC,anon,service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_b2b_revenue_forecast_tenant_v1(uuid) TO authenticated;
+COMMIT;

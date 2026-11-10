@@ -2,52 +2,39 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { KpiCard } from "@/components/financeiro/KpiCard";
 import { useB2BRevenueForecast } from "@/hooks/useB2BFinanceiro";
 import { brl } from "@/lib/financial/format";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { CheckCircle, AlertTriangle, TrendingUp, Calendar } from "lucide-react";
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return <div className="p-4 sm:p-6 space-y-4"><h1 className="text-2xl font-semibold">Previsão de Receita B2B</h1>{children}</div>;
+}
 
 export default function PrevisaoReceitaB2B() {
   const { data, isLoading, isError, ready } = useB2BRevenueForecast();
-  if (!ready || isError || !data) return <div className="p-4 sm:p-6 space-y-4"><h1 className="text-2xl font-semibold">Previsão de Receita B2B</h1><p role="status">{ready && isLoading ? 'Carregando…' : 'Previsão indisponível para esta sessão'}</p></div>;
-  const f = data;
-
-  const chart = [
-    { periodo: "30 dias", confirmada: Number(f.confirmada_30 || 0), projetada: Number(f.projetada || 0), risco: Number(f.em_risco || 0) },
-    { periodo: "60 dias", confirmada: Number(f.confirmada_60 || 0), projetada: Number(f.projetada || 0), risco: Number(f.em_risco || 0) },
-    { periodo: "90 dias", confirmada: Number(f.confirmada_90 || 0), projetada: Number(f.projetada || 0), risco: Number(f.em_risco || 0) },
-  ];
-
+  if (ready && isLoading) return <Shell><p role="status">Carregando…</p></Shell>;
+  if (!ready || isError || data === undefined) return <Shell><p role="status">Previsão indisponível para esta sessão</p></Shell>;
+  if (data === null) return <Shell><p role="status">Previsão indisponível até a instalação do leitor seguro por empresa.</p></Shell>;
+  const t = data.confirmed_titles;
   return (
-    <div className="p-4 sm:p-6 space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold">Previsão de Receita B2B</h1>
-        <p className="text-sm text-muted-foreground">Projeção consolidada de recebimentos para 30/60/90 dias.</p>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <KpiCard label="Confirmada 30 dias" value={brl(f.confirmada_30)} icon={CheckCircle} tone="success" />
-        <KpiCard label="Confirmada 60 dias" value={brl(f.confirmada_60)} icon={Calendar} tone="success" />
-        <KpiCard label="Confirmada 90 dias" value={brl(f.confirmada_90)} icon={Calendar} tone="success" />
-        <KpiCard label="Receita projetada" value={brl(f.projetada)} icon={TrendingUp} />
-        <KpiCard label="Receita em risco" value={brl(f.em_risco)} icon={AlertTriangle} tone="danger" />
-      </div>
-
+    <Shell>
+      <p className="text-sm text-muted-foreground">Títulos confirmados e previsão não exigível são mostrados separadamente e nunca somados.</p>
       <Card>
-        <CardHeader><CardTitle className="text-base">Composição da previsão</CardTitle></CardHeader>
-        <CardContent>
-          <div className="h-72">
-            <ResponsiveContainer>
-              <BarChart data={chart}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="periodo" />
-                <YAxis tickFormatter={(v) => brl(Number(v))} width={90} />
-                <Tooltip formatter={(v: any) => brl(Number(v))} />
-                <Legend />
-                <Bar dataKey="confirmada" fill="hsl(var(--primary))" name="Confirmada acumulada" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        <CardHeader><CardTitle className="text-base">Títulos confirmados em aberto</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <KpiCard label="Vencidos" value={brl(t.vencido)} icon={AlertTriangle} tone="danger" />
+          <KpiCard label="Até 30 dias" value={brl(t.ate_30)} icon={CheckCircle} tone="success" />
+          <KpiCard label="31 a 60 dias" value={brl(t.ate_60)} icon={Calendar} tone="success" />
+          <KpiCard label="61 a 90 dias" value={brl(t.ate_90)} icon={Calendar} tone="success" />
+          <KpiCard label="Total em aberto" value={brl(t.total_aberto)} icon={CheckCircle} />
         </CardContent>
       </Card>
-    </div>
+      <Card>
+        <CardHeader><CardTitle className="text-base">Previsão aguardando NF (não exigível)</CardTitle></CardHeader>
+        <CardContent className="space-y-2">
+          <KpiCard label="Residual previsto" value={brl(data.forecast_residual.amount)} icon={TrendingUp} />
+          <p className="text-sm text-muted-foreground">{data.forecast_residual.orders} pedido(s) aprovados comercialmente e no crédito; datas estimadas, sem cobrança até NF autorizada.</p>
+          {data.legacy_unproven_orders > 0 && <p role="note" className="text-sm text-muted-foreground">{data.legacy_unproven_orders} pedido(s) antigos sem previsão comprovada: valor indisponível.</p>}
+        </CardContent>
+      </Card>
+    </Shell>
   );
 }

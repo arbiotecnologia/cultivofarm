@@ -1,0 +1,136 @@
+{
+ "checks": [
+  {
+   "name": "PRE falha fechado contra stubs (deps divergentes)",
+   "pass": true,
+   "detail": "CONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE"
+  },
+  {
+   "name": "INSTALL aplica arquivo exato",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "POST corpo/owner/ACL/definer",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "INSTALL rerun aborta",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "ARBio financeiro: residual 27 (parcial 9 + aberto 18), cancelado/total fora",
+   "pass": true,
+   "detail": "{\"contract\": \"B2B_REVENUE_FORECAST_TENANT_V1\", \"partner_id\": null, \"organization_id\": \"00000000-0000-0000-0000-0000000000a1\", \"confirmed_titles\": {\"ate_30\": 4.5, \"ate_60\": 4.5, \"ate_90\": 0, \"apos_90\": 0, \"vencido\": 0, \"total_aberto\": 9.0}, \"forecast_residual\": {\"amount\": 27, \"orders\": 2, \"enforceable\": false, \"due_dates_estimated\": true}, \"legacy_unproven_orders\": 1}"
+  },
+  {
+   "name": "ARBio títulos: 9 aberto (4,5 até30 + 4,5 até60), cancelado e pago excluídos, FSF 700 fora",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "Parcial sem dupla contagem: residual 9 + título 9 = 18 do pedido",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "Legado sem previsão/título só contagem (1), sem valor",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "Gestor ARBio (is_financial_staff canônico) positivo igual",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "FSF isolada: residual 500, título 700, sem ARBio",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "arbio_sem_papel negado 42501",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "arbio_sem_feature negado 42501",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "sem auth.uid negado",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "ARBio filtrando parceiro FSF negado sem vazar",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "Filtro parceiro próprio positivo",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "Revogação de feature contas_receber negada na chamada seguinte",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "Pagamento 9 zera título aberto sem alterar residual",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "Cancelamento do residual remove 9 da previsão",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "authenticated sem acesso direto à tabela privada",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "anon sem EXECUTE",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "ROLLBACK deny-only aplica",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "Após rollback authenticated negado (permission denied)",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "Corpo mantido após rollback",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "Legado rpc_b2b_revenue_forecast corpo/ACL intocados",
+   "pass": true,
+   "detail": "46fb4416a3066d48f7f09e05ca9b6fe1|{postgres=X/postgres}"
+  }
+ ],
+ "limits": "PostgreSQL descartável; auth.uid/h15/is_financial_staff/_saas_user_has_feature e tabelas são STUBS sintéticos. Não prova JWT/RLS/Storage hospedado nem os corpos LIVE.",
+ "reader_md5": "c49f76514411568b70768f7b1445bac0",
+ "pg_version": "17.11",
+ "file_sha256": {
+  "01-pre.sql.readonly": "67745285fd69512fb8781e18856faa14d4da457af9ea4a1daaf2cc3807baebe5",
+  "02-install.sql.review": "087a8f900314c86e2a8d2ad46aefdc0b1ff42672986e5d8e3a1f7d3e5cacc379",
+  "03-post.sql.readonly": "5c91aaf0fcdef6a09e1a15b2df771e32e0391e4ad580251053a12ca5f76b3f4a",
+  "04-rollback-deny.sql.review": "c9fce9deb657b0d892f11fec65b0c70485af8ab507f8fdbfde8a731f5903570a",
+  "reader.sql": "c089c41ffb125a94cbcdaf39ac7d60f22e9dfd3fd174046963653b14c36d86e9"
+ },
+ "passed": 24,
+ "total": 24
+}
