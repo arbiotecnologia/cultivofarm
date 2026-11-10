@@ -843,6 +843,11 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   triggers38.assert_and_write(B,ROOT,OUT,'before-forecast-scenarios')
   cancel_late=forecast_extra.run_cancel_late_callback(B,Q,OUT,override['order_id'],accepted)
   checks.append(dict(test='partial NF then residual cancel by wrapper; canceled residual not emitted; late authorized callback preserves fiscal evidence as close-pending without title or residual reopening',status='PASS',**{k:cancel_late[k] for k in ('order_id','late_close_code')}))
+  creation_barrier=load('forecast_creation_barrier',forecast_dir.parent/'lifecycle_lock_barrier.py')
+  creation_tests=load('forecast_creation_gate_tests',forecast_dir.parent/'forecast_creation_gate_tests.py')
+  creation_tests.run(B,Q,OUT,creation_barrier)
+  (OUT/'forecast-creation-grants.json').write_text(json.dumps(creation_grants,indent=2)+'\n')
+  checks.append(dict(test='forecast creation pilot: out-of-pilot LIVE differential and legacy no-snapshot keep approvals without forecast; exact grant; revocation and gate OFF after proven wait; gate closed; scope mismatch',status='PASS'))
 
   (OUT/'integrated-b4-fiscal-bridge.json').write_text(json.dumps(dict(
    status='STRICT_FISCAL_CONFIRMED_TO_ONE_RECEIVABLE_REVIEW_ONLY',hosted=False,
@@ -862,6 +867,9 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   B.sql("SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(composed_dir/'04-rollback-deny.sql.review').read_text())
   B.sql("SET b2b_forecast.review_project_ref='swzpzcwiasxmjutrmvkm';"+(forecast_dir/'08-rollback-fiscal-reconcile-deny.sql.review').read_text())
   B.sql("SET b2b_forecast.review_project_ref='swzpzcwiasxmjutrmvkm';"+(forecast_dir/'04-rollback-deny.sql.review').read_text())
+  creation_after_rollback=json.loads(B.last("SELECT jsonb_build_object('enabled',(SELECT enabled FROM platform_private.b2b_forecast_creation_gate_v1 WHERE singleton),'open_grants',(SELECT count(*) FROM platform_private.b2b_forecast_creation_allowlist_v1 WHERE revoked_at IS NULL),'grants_retained',(SELECT count(*) FROM platform_private.b2b_forecast_creation_allowlist_v1),'forecasts_retained',(SELECT count(*) FROM platform_private.b2b_financial_forecasts))::text;"))
+  assert creation_after_rollback['enabled'] is False and creation_after_rollback['open_grants']==0 and creation_after_rollback['grants_retained']>0 and creation_after_rollback['forecasts_retained']>0,creation_after_rollback
+  (OUT/'forecast-creation-rollback.json').write_text(json.dumps(creation_after_rollback,indent=2)+'\n')
   B.sql("SET b2b_forecast.review_project_ref='swzpzcwiasxmjutrmvkm';"+(forecast_dir/'12-rollback-credit-composition-retain.sql.review').read_text())
   assert B.last("SELECT md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure));")==credit_composed
   wrapper_after=Q.as_user(Q.UFIN,f"SELECT public.rpc_b2b_forecast_cancel_residual_v1('{order_id}',1,'post rollback');")
@@ -895,11 +903,6 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   checks.append(dict(test='strict then composed deny-only rollback closes writers; preserves confirmed NF snapshot title idempotency and all original ten receivable triggers',status='PASS'))
   # Cadeia reversa completa: inclusive contenção e os dois geradores compostos,
   # exatamente como no ramo logistics-only; nenhum POST intermediário é reutilizado.
-  creation_barrier=load('forecast_creation_barrier',forecast_dir.parent/'lifecycle_lock_barrier.py')
-  creation_tests=load('forecast_creation_gate_tests',forecast_dir.parent/'forecast_creation_gate_tests.py')
-  creation_tests.run(B,Q,OUT,creation_barrier)
-  (OUT/'forecast-creation-grants.json').write_text(json.dumps(creation_grants,indent=2)+'\n')
-  checks.append(dict(test='forecast creation pilot: out-of-pilot LIVE differential and legacy no-snapshot keep approvals without forecast; exact grant; revocation and gate OFF after proven wait; gate closed; scope mismatch',status='PASS'))
   triggers38.assert_and_write(B,ROOT,OUT,'before-final-rollback')
   run_final_delivery_rollback('integrated')
   triggers38.assert_and_write(B,ROOT,OUT,'end')
