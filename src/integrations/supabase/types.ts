@@ -268,11 +268,12 @@ export type Database = {
       accounts_receivable: {
         Row: {
           auto_generated: boolean
+          b2b_document_id: string | null
           boleto_url: string | null
           category_id: string
           cost_center_id: string | null
           created_at: string
-          created_by: string
+          created_by: string | null
           customer_id: string | null
           description: string
           external_payment_id: string | null
@@ -305,11 +306,12 @@ export type Database = {
         }
         Insert: {
           auto_generated?: boolean
+          b2b_document_id?: string | null
           boleto_url?: string | null
           category_id: string
           cost_center_id?: string | null
           created_at?: string
-          created_by: string
+          created_by?: string | null
           customer_id?: string | null
           description: string
           external_payment_id?: string | null
@@ -342,11 +344,12 @@ export type Database = {
         }
         Update: {
           auto_generated?: boolean
+          b2b_document_id?: string | null
           boleto_url?: string | null
           category_id?: string
           cost_center_id?: string | null
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           customer_id?: string | null
           description?: string
           external_payment_id?: string | null
@@ -9978,6 +9981,7 @@ export type Database = {
           n_prot: string | null
           n_rec: string | null
           outcome: string
+          protocol_c_stat: string | null
           request_fingerprint: string
           response_summary: Json
           service: string
@@ -10007,6 +10011,7 @@ export type Database = {
           n_prot?: string | null
           n_rec?: string | null
           outcome?: string
+          protocol_c_stat?: string | null
           request_fingerprint: string
           response_summary?: Json
           service: string
@@ -10036,6 +10041,7 @@ export type Database = {
           n_prot?: string | null
           n_rec?: string | null
           outcome?: string
+          protocol_c_stat?: string | null
           request_fingerprint?: string
           response_summary?: Json
           service?: string
@@ -22561,6 +22567,10 @@ export type Database = {
       }
       gerar_codigo_lote: { Args: { _ano?: number }; Returns: string }
       gerar_codigo_visita: { Args: { _ano: number }; Returns: string }
+      get_b2b_financial_forecast_secure: {
+        Args: { p_order: string }
+        Returns: Json
+      }
       get_b2b_partner_clients_for_assignment_secure: {
         Args: { p_search?: string }
         Returns: {
@@ -24203,6 +24213,14 @@ export type Database = {
       rpc_b2b_executive_dashboard: { Args: never; Returns: Json }
       rpc_b2b_financial_kpis: {
         Args: { p_from?: string; p_partner_id?: string; p_to?: string }
+        Returns: Json
+      }
+      rpc_b2b_forecast_cancel_residual_v1: {
+        Args: { p_expected_version: number; p_order: string; p_reason: string }
+        Returns: Json
+      }
+      rpc_b2b_forecast_fiscal_sync_v1: {
+        Args: { p_expected_version: number; p_transmission_id: string }
         Returns: Json
       }
       rpc_b2b_governance_kpis: { Args: never; Returns: Json }
@@ -26053,6 +26071,10 @@ export type Database = {
       rpc_recalcular_separacao_entrega: {
         Args: { p_entrega_id: string }
         Returns: string
+      }
+      rpc_receivable_money_projection_v1: {
+        Args: { p_limit?: number; p_offset?: number; p_receivable_id?: string }
+        Returns: Json
       }
       rpc_record_aplicacao_email: {
         Args: {
