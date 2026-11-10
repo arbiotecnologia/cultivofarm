@@ -74,10 +74,17 @@ export type GroupInput = {
   /** Reserved rows are accepted only when wholly reserved for this same OS (server re-proves ownership). */
   itens: { itemId: string; quantidade: number; observedUpdatedAt: string; status: string; reservadoParaOsId?: string | null; quantidadeReservada?: number | null; quantidadeTotal?: number | null }[];
   dados: Record<string, unknown>;
+  /** Parsed exact B2B resale capability (see b2bResaleDeliveryFlow); absent => B2B stays closed. */
+  resale?: { osId: string; organizationId: string; items: ReadonlyMap<string, { reserve: boolean; deliveryCreate: boolean; reservedForOs: number }> };
 };
 
 export function buildGroupArgs(input: GroupInput): Record<string, unknown> {
-  if (input.osTipo !== "padrao" || input.osOrigem !== "agronomica" || input.osPartnerOrderId !== null) {
+  // B2B revenda abre SOMENTE com o envelope exato da capability de revenda (ator/empresa/OS/itens, concessão vigente).
+  const resale = input.resale;
+  const resaleOk = !!resale && input.osOrigem === "b2b" && input.osPartnerOrderId !== null && UUID.test(input.osPartnerOrderId)
+    && resale.osId === input.osId && resale.organizationId === input.expectedOrg
+    && input.itens.length > 0 && input.itens.every(i => resale.items.get(i.itemId)?.deliveryCreate === true);
+  if (!resaleOk && (input.osTipo !== "padrao" || input.osOrigem !== "agronomica" || input.osPartnerOrderId !== null)) {
     throw new Error("Somente OS agronômica manual, sem pedido B2B, usa este contrato. OnFarm e B2B permanecem indisponíveis. Nenhuma alteração foi enviada.");
   }
   if (!UUID.test(input.osId) || !UUID.test(input.expectedOrg) || typeof input.requestKey !== "string" || input.requestKey.length < 8 || input.requestKey.length > 128 || !input.osObservedUpdatedAt) {
@@ -113,7 +120,7 @@ export function buildGroupArgs(input: GroupInput): Record<string, unknown> {
   if (invalid.length) throw new Error(`Dados da entrega inválidos: ${invalid.join(", ")}. Corrija data (AAAA-MM-DD), horário (HH:MM) ou texto. Nenhuma alteração foi enviada.`);
   return {
     p_os_id: input.osId,
-    p_origem: "manual",
+    p_origem: resaleOk ? "b2b" : "manual",
     p_itens: input.itens.map(i => ({ item_id: i.itemId, quantidade: i.quantidade, observed_updated_at: i.observedUpdatedAt })),
     p_request_key: input.requestKey,
     p_dados: dados,
@@ -163,9 +170,9 @@ export type Outcome<T> =
   /** Session/tenant changed while waiting: result is discarded for this scope (no confirmation, no rejection, no retry). */
   | { status: "stale" };
 
-const freeze = (r: RetrySnapshot): RetrySnapshot => Object.freeze({ ...r, args: JSON.parse(JSON.stringify(r.args)) });
+export const freeze = (r: RetrySnapshot): RetrySnapshot => Object.freeze({ ...r, args: JSON.parse(JSON.stringify(r.args)) });
 
-async function dispatchOnce<T>(rpc: Rpc, retry: RetrySnapshot, parse: (d: unknown) => T | null, fence: () => void, onDispatch: (r: RetrySnapshot) => void): Promise<Outcome<T>> {
+export async function dispatchOnce<T>(rpc: Rpc, retry: RetrySnapshot, parse: (d: unknown) => T | null, fence: () => void, onDispatch: (r: RetrySnapshot) => void): Promise<Outcome<T>> {
   fence();
   onDispatch(retry);
   fence();
