@@ -23,6 +23,7 @@ OUT.mkdir(exist_ok=False)
 source = Path(sys.argv[1]).read_text()
 reconcile_source = Path(sys.argv[3]).read_text()
 before = sys.argv[4] == 'before'
+schedule_before = sys.argv[4] == 'schedule-before'
 F = '00000000-0000-0000-0000-000000000001'
 O = '00000000-0000-0000-0000-000000000002'
 D = '00000000-0000-0000-0000-000000000003'
@@ -56,7 +57,7 @@ try:
         credit_approved_by uuid,internal_economic_snapshot jsonb,final_amount_with_interest numeric,total numeric);
       CREATE TABLE public.partner_order_payment_terms(id uuid,partner_order_id uuid,approval_status text,approved_by uuid,approved_at timestamptz);
       CREATE TABLE public.partner_accounts(id uuid,commercial_owner_organization_id uuid,ativo boolean,deleted_at timestamptz);
-      CREATE TABLE public.partner_order_payment_schedule(partner_order_id uuid,installment_number integer,amount numeric);
+      CREATE TABLE public.partner_order_payment_schedule(partner_order_id uuid,installment_number integer,amount numeric,status text DEFAULT 'pending',receivable_installment_id uuid);
       CREATE TABLE public.partner_order_items(id uuid,order_id uuid);
       CREATE TABLE platform_private.b2b_document_allocations(document_id uuid,receivable_id uuid,order_id uuid);
       CREATE TABLE platform_private.b2b_fiscal_service_permits(transaction_id bigint,document_id uuid,invoice_id uuid,order_id uuid,organization_id uuid,partner_id uuid);
@@ -78,12 +79,20 @@ try:
             pg.sql(statement)
     pg.sql(f"""INSERT INTO public.partner_accounts VALUES('{R}','{D}',true,NULL);
       INSERT INTO public.partner_orders VALUES('{O}','{R}','aprovado','{D}',now(),false,'{I}','defined',NULL,NULL,'{{"total":18}}',18,18);
-      INSERT INTO public.partner_order_payment_schedule VALUES('{O}',1,18);
+      INSERT INTO public.partner_order_payment_schedule(partner_order_id,installment_number,amount) VALUES('{O}',1,18);
       INSERT INTO public.partner_order_items VALUES('{I}','{O}');
       SELECT platform_private.b2b_financial_forecast_after_approval_v1('{O}','{{"reason_code":"OK","exposure":0}}');
       UPDATE platform_private.b2b_financial_forecasts SET id='{F}';
     """.replace(f"UPDATE platform_private.b2b_financial_forecasts SET id='{F}';",''))
     F = pg.sql(f"SELECT id FROM platform_private.b2b_financial_forecasts WHERE order_id='{O}';")
+    pg.sql(f"UPDATE public.partner_order_payment_schedule SET status='linked',receivable_installment_id='{R}' WHERE partner_order_id='{O}';")
+    record('economic replay after mutable NF installment link',raw(f"SELECT platform_private.b2b_financial_forecast_after_approval_v1('{O}','{{\"reason_code\":\"OK\"}}');"),lambda r:'REPLAY_DIVERGENCE' in r.stderr if schedule_before else r.returncode==0)
+    pg.sql(f"UPDATE public.partner_order_payment_schedule SET status='paid' WHERE partner_order_id='{O}';")
+    record('economic replay after mutable payment status',raw(f"SELECT platform_private.b2b_financial_forecast_after_approval_v1('{O}','{{\"reason_code\":\"OK\"}}');"),lambda r:'REPLAY_DIVERGENCE' in r.stderr if schedule_before else r.returncode==0)
+    if schedule_before:
+        (OUT/'results.json').write_text(json.dumps(dict(kind='ISOLATED_COMPONENT_NOT_NF_OR_PAYMENT_WRITER',checks=checks,hosted=False),indent=2)+'\n')
+        print('schedule-before: two divergences reproduced')
+        sys.exit(0)
     v = int(pg.sql(f"SELECT version FROM platform_private.b2b_financial_forecasts WHERE id='{F}';"))
     record('first intent',raw(event(version=v)),lambda r:r.returncode==0)
     record('divergent replay',raw(event('{"error_code":"DIFFERENT"}',v)),lambda r:r.returncode==0 if before else 'PT409' in r.stderr and 'REPLAY_DIVERGENCE' in r.stderr)
