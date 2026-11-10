@@ -1,0 +1,38 @@
+RESCAP_PASS os_operational aligned to frozen production 61 artifact with ACL unchanged
+RESCAP_PASS mirror bodies equal LIVE pins (delivery_actor/fn_estoque_pode_operar/os_operational/scope/reservar)
+RESCAP_PASS real estoque_produto has no organization_id; lotes has it
+RESCAP_PASS LIVE first reserve receipt
+RESCAP_PASS REPRODUCED: LIVE returns receipt after revocation during proven wait
+RESCAP_PASS OBSERVED: LIVE with gates closed already denies BEFORE the receipt lock (real motor pre-check); gap is post-wait only
+RESCAP_PASS reserve PRE PASS
+RESCAP_PASS reserve POST PASS
+RESCAP_PASS reserve install rerun refused
+RESCAP_PASS CANDIDATE gate closed: receipt denied 42501
+RESCAP_PASS CANDIDATE revoked grant: receipt denied
+RESCAP_PASS CANDIDATE valid grant: same receipt, no new movement
+RESCAP_PASS CANDIDATE revocation during proven wait: receipt denied
+RESCAP_PASS CANDIDATE expired grant: receipt denied
+RESCAP_PASS CANDIDATE foreign tenant same key denied
+RESCAP_PASS CANDIDATE new reservation path unchanged (split target id returned)
+RESCAP_PASS no extra movement from any replay: second NEW reservation adds exactly the per-reservation count of the first
+RESCAP_PASS biological (non finished) receipt preserved with gates closed
+RESCAP_PASS cap PRE PASS
+RESCAP_PASS cap POST PASS
+RESCAP_PASS gate closed + valid grant: closed envelope without ids/org/os
+RESCAP_PASS PRODUCTION body: OS validity uses frozen header; linked-terms-approved synthetic order stays CLOSED (fail closed, no forcing)
+RESCAP_PASS phase B uses mirror linked-terms os_operational (INTERMEDIATE, NOT LIVE)
+RESCAP_PASS exact reserve grant: allowed with only requested ids
+RESCAP_PASS no delivery_create grant: closed
+RESCAP_PASS foreign tenant admin: closed without ids
+RESCAP_PASS buyer: closed
+RESCAP_PASS unknown extra stock: closed, nothing echoed
+RESCAP_PASS biological stock not resale: closed
+RESCAP_PASS non-B2B OS: closed
+RESCAP_PASS duplicate ids: closed
+RESCAP_PASS revoked: closed
+RESCAP_PASS expired: closed
+RESCAP_PASS exact delivery_create grant: allowed
+RESCAP_PASS capability writes nothing
+RESCAP_PASS anon/writers/helpers closed
+RESCAP_PASS cap rollback deny-only
+RESCAP_PASS reserve rollback deny-only keeps receipts and never restores vulnerable body
