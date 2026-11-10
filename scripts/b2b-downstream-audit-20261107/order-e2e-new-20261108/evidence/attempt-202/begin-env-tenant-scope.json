@@ -1,0 +1,23 @@
+{
+  "cases": {
+    "own_settings_env_1": {
+      "exit": 3,
+      "blocked": true,
+      "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 80 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    "own_settings_env_null": {
+      "exit": 3,
+      "blocked": true,
+      "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 80 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    "own_settings_inactive_other_tenant_env_2": {
+      "exit": 3,
+      "blocked": true,
+      "stderr": "ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 80 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    "transmissions_created": "0"
+  },
+  "rolled_back": true,
+  "hosted": false,
+  "seam": "settings staged with replica role, writer called with origin role"
+}

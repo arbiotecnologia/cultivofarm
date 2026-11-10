@@ -30,8 +30,18 @@
     "acl_md5": "578c00048ab38c285e229e11ff6211ec",
     "b4_stage_sha256": "6500bf54b5df05c753e75ada0f6ed12948e81f0e86f274222a2eae481a681f54",
     "b4_dependencies": {
-      "platform_private.b2b_credit_balances(uuid,uuid)": "9fbf08a16f6bcbec379945886c85c245",
-      "platform_private.b2b_order_residual(uuid)": "93769163bfc7c72a4bbc722e62313179"
+      "platform_private.b2b_credit_balances(uuid,uuid)": {
+        "body_md5": "9fbf08a16f6bcbec379945886c85c245",
+        "owner": "postgres",
+        "acl_md5": "aae127bcdd4f7096876d7094c14eabd1",
+        "acl_source": "B4 OWNER_ONLY manifest; normalized aclexplode"
+      },
+      "platform_private.b2b_order_residual(uuid)": {
+        "body_md5": "93769163bfc7c72a4bbc722e62313179",
+        "owner": "postgres",
+        "acl_md5": "aae127bcdd4f7096876d7094c14eabd1",
+        "acl_source": "B4 OWNER_ONLY manifest; normalized aclexplode"
+      }
     },
     "rule": "exposure = open titles (B4 proven money) + B4 residual per order; forecast only zeroes canceled residual, must equal B4 residual otherwise",
     "additive_forecast": false,
@@ -45,8 +55,9 @@
     },
     "rollback": "RETAIN_COMPOSED_NO_BODY_RESTORE",
     "wrapper_md5": {
-      "sync": "ac88b7fb8d7d792eb589f0c6cce348b9",
-      "cancel": "00cb8bcda7716bb4fa15a93acc4c1c5f"
+      "sync": "938a4ffd146a930d4d7ebaed9ed35080",
+      "cancel": "43adec08e129910aab7bbdb5a7216f80",
+      "begin": "141de1aa89607262a2183f80d9e1c014"
     }
   },
   "accounts_receivable_before_nf": false,
@@ -54,17 +65,17 @@
   "forecast_additive_to_credit": false,
   "files": {
     "01-pre.sql.readonly": "309955585401bde685aca773e94bf7ef675e0f5382e832a27e13c90ddae37b0d",
-    "02-install.sql.review": "3189be3938ff5587d2c849d1da996c3594de3870206419b560bb455dfab73c8f",
+    "02-install.sql.review": "a4f8881060bddb9902af7478003d65c46fa6e99937d5502098ffed5d668a7cf3",
     "03-post.sql.readonly": "d93ef981086d5b96a627b306c4d507156e5bfe3d9426e5b577ec89f57ee80b09",
     "04-rollback-deny.sql.review": "e0adf910aca0c0dfa8ee6ca019cbd4ba23c0c814e369de983e2ee51abea88a92",
     "05-pre-fiscal-reconcile.sql.readonly": "f59ec3ea3e38be684c16349ace73750cc496b84ec5982e984ba507304570fff3",
-    "06-install-fiscal-reconcile.sql.review": "7414838d5424753e557c703fbfc87f09439613f145755a7aaab0ead0d210f75f",
-    "07-post-fiscal-reconcile.sql.readonly": "ea9675d36753ef8ea6d3f0af55901de6ed4ed7373834a7c10c1c84bd0bf3c991",
-    "08-rollback-fiscal-reconcile-deny.sql.review": "490e3993eddbd47303808ed4b367229e5e1cb95153e044ad00739b057d0c9788",
-    "09-pre-credit-composition.sql.readonly": "a17bb89d307c18cd2665cb6d965acfee6bfcc252891f09bf614946cc01c2e21a",
-    "10-install-credit-composition.sql.review": "97458f694377c0f439c11a95cd0e474d42b0ff52cc22071a5912475a09ded69b",
-    "11-post-credit-composition.sql.readonly": "fe89d4862d7e511d8ddaf22ef56667062c4894c9aa255d14671755ae90b10ef2",
-    "12-rollback-credit-composition-retain.sql.review": "0105b036b919a21a55bfe03b299aa8cd9bfd0760237fb9c8aef09270332621c6",
+    "06-install-fiscal-reconcile.sql.review": "3ef97e73780f6a3054526a112924c3148faf78002e725558147308091a45d1ee",
+    "07-post-fiscal-reconcile.sql.readonly": "ab2ba352d9be88eca496c8c6bda59947632cbdb26031a70ef003dc4f0a9e68bd",
+    "08-rollback-fiscal-reconcile-deny.sql.review": "ee1dabe993948bcd2df160fcab573c1b80b8a0b5850b0de2c38860b5c7ca656e",
+    "09-pre-credit-composition.sql.readonly": "761cfd8b9d11261734086b8de875f13b1c0e71212d8e6686c649eb0f79010f5c",
+    "10-install-credit-composition.sql.review": "8247a6beb20130b29d05cb69503aaa4d92cfe74982cb29acb3e02f2ff42693fc",
+    "11-post-credit-composition.sql.readonly": "ae4d927dcd5337a56538466144c9e54b4327168aa5fe5883e740f3ba38641dcb",
+    "12-rollback-credit-composition-retain.sql.review": "5160b5797a1f109cf17c5afe1fe676cf8829920264a1d573a1385b216ca3be29",
     "credit-exposure.composed.sql": "ca710ae1d4d3159a9f740ba3e37ffc78e5ae216eb94725a3e0622af76a563375",
     "billing-eligibility.linked-terms.sql": "9d58cc3b57c4dcf69172359417253ac092f6ed0a63e139d62de0e477cb703eba"
   },

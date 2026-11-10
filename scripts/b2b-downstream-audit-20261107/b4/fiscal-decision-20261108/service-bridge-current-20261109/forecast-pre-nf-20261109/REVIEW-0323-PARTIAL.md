@@ -53,3 +53,40 @@ O marcador canônico STAGING/production_emission_allowed=false foi lido e regist
 **Acoplamento piloto/logística:** o helper existente exige gate `b2b_resale_logistics_gate_v1` além da allowlist. Ativar esse singleton hosted só para testar lifecycle pode afetar capacidades logísticas e NÃO está autorizado. Antes de qualquer piloto hosted, revisar impacto nos consumidores e comprovar contenção exata independente; nenhuma abertura global foi feita ou proposta como atalho. Instalação candidata continua fechada e SQL históricos não foram promovidos.
 
 Permanecem pendentes: controle funcional reconciliado, corridas begin/cancel e duas intenções, causalidade/negativas fiscais finais, drift ACL executado, cadeia 18/9/9 e parceiro747→738, pagamento9, callback tardio/rollback integral/preservação final dos 38 triggers e leitor financeiro positivo. Resultados 184/191 históricos não substituem estas provas; JWT/RLS/Storage hosted, emissão/envio/cobrança reais não foram executados. **NÃO GO.**
+## Complemento 12:55 — diagnóstico FISCAL_PRODUCTION_ENDPOINT_BLOCKED (somente local)
+
+**Predicado que falhava (193/194):** `rpc_fiscal_sefaz_transmit_begin_v1` (corpo canônico MD5 `4d93bb04e4a18771ed9185d2f3c5d6dc`, sobreposição candidata linha 32) — cláusula 2:
+`SELECT coalesce(nfe_environment_code,'') FROM public.company_fiscal_settings WHERE is_active LIMIT 1` → `''` ≠ `'2'`.
+Cláusulas: (1) marcador `project_ref`/`production_emission_allowed` — passava (STAGING/false); (2) configuração ativa LIMIT 1 — **falhava**; (3) host `hnfe.fazenda.mg.gov.br` — estático, passava.
+
+**Causa demonstrada (tentativa 195, `fiscal-begin-preflight.json`, READ ONLY):** duas configurações ativas; a primeira no heap (ctid (0,1)) é a sentinela sintética `10000000-0000-4000-8000-000000000707` da organização `10000000-…-0001` (origem `stock-envase-recovery-20261027/isolated/sentinels.py`), com `nfe_environment_code` NULL. A da ARBio (`00000000-…-0001`, `'2'`) foi inserida corretamente — não houve ON CONFLICT/NOT EXISTS ineficaz para a ARBio. O ajuste do INSERT na 194 nunca poderia resolver: o guard lê configuração de **qualquer empresa**, sem ORDER BY nem tenant.
+
+**Defeito de código (não da fixture):** a cláusula 2 canônica é tenant-blind; em multi-tenant real o bloqueio/liberação de uma emissão depende de outra empresa. A sentinela foi preservada. Correção candidata em `begin_overlay` (`wrappers_and_credit.py`): com documento, `tpamb` vem da configuração ativa **da própria NF** (`c.id=i.company_settings_id AND c.organization_id=i.organization_id`); sem documento, a cláusula canônica fica literal. Ausente/outra empresa ⇒ NULL ⇒ bloqueado. Marcador e host intactos; nenhuma emissão externa.
+
+**Preflight rápido:** `fiscal_begin_preflight` (READ ONLY) roda logo após o INSERT da fixture e antes de cada BEGIN de consulta; aborta em minutos citando o predicado.
+**Negativas (tentativa 198, rollback):** própria configuração `'1'`, NULL e inativa com outras empresas `'2'` → `P0001 FISCAL_PRODUCTION_ENDPOINT_BLOCKED`, zero transmissões. A configuração é preparada com `session_replication_role=replica` dentro da transação revertida (mesma costura sintética da fixture) e o writer roda com `origin`.
+
+**Outros defeitos demonstrados e corrigidos no candidato:**
+- 196: a cadeia usava SQL `06-install` antigo do repositório (sem READ COMMITTED). `rebuild_current.py` agora gera o candidato **dentro do espelho** (`NEW_E2E_BUILD_FORECAST=1`) e grava `mirror-forecast-artifacts.json` com hashes; o repositório não é promovido.
+- 199: `B2B_FORECAST_REPLAY_DIVERGENCE` no segundo ciclo da mesma NF: `attempt` era sempre `1+1`, então a chave de repetição `nota:2` colidia entre transmissões. A transição agora usa `transmission_id` do payload na chave (a NF continua sendo a intenção). A 200 mostrou que trocar a referência quebrava `fiscal_intent_id::uuid`; essa alternativa foi revertida.
+- 201a: a segunda intenção da corrida usava fixture com transmissão SENT pré-inserida, que bloqueava o cancelamento seguinte de forma legítima (`FISCAL_IN_FLIGHT`). Agora a segunda NF nasce sem transmissão; só o início canônico pode criar uma.
+- `missing-returned-proof`: `response_summary` é NOT NULL (padrão `'{}'`); o caso passou a usar retorno 217 sem `chNFe`.
+
+**Perda de evidência:** dois reinícios do sandbox apagaram os diretórios 195–199 e o primeiro 201. Os resultados acima foram observados durante a execução, mas os arquivos **não estão preservados**; foram renumerados e nada é declarado PASS com base neles. A tentativa 200 está preservada.
+
+### Tentativa 203 — cadeia integral local, exit 0, 55/55 (PostgreSQL 17.11 descartável)
+
+Evidência: `order-e2e-new-20261108/evidence/attempt-203/` (`run.exitcode`=0, `checks.json`, `mirror-forecast-artifacts.json`). Tentativas 200 (22P02 por referência não-UUID, alternativa revertida), 201b (caminho `parents[4]` da captura 184, corrigido para `[5]`) e 202 (início canônico exato bloqueado pela cláusula tenant-blind na reprodução histórica) preservadas com exit 1.
+
+- Preflight: `after-fixture-settings-insert` com cláusula canônica = BLOCK (seleciona sentinela de outra empresa) e cláusula por empresa = `'2'`; consultas com marcador STAGING/false.
+- Negativas de ambiente: `begin-env-tenant-scope.json` — 3/3 `FISCAL_PRODUCTION_ENDPOINT_BLOCKED`, 0 transmissões.
+- Duas intenções antes do SYNC: vencedora PENDING; perdedora `PT409 B2B_FORECAST_BEGIN_BLOCKED`, sem transmissão (`canonical-begin-cancel-race.json`). begin-first: cancelamento `PT409 B2B_FORECAST_FISCAL_IN_FLIGHT`; replay do início idempotente. cancel-first: início espera e conclui após o rollback do cancelamento.
+- 217/negativas: 215/106/280, chave/ambiente/recibo/documento divergentes, RetAutorizacao, resposta antiga, prova ausente/sem chave negados (`wrapper-review-affected.json`); documento/serviço/created_at alterados barrados por `FISCAL_TRANSMISSION_FIELDS_IMMUTABLE`, sem desligar guard. A causalidade usa vínculo begin→timeout, não created_at+UUID.
+- Drift de ACL: `B2B_CREDIT_COMPOSITION_POST_ACL` para `b2b_credit_balances(uuid,uuid)` e `b2b_order_residual(uuid)`.
+- Contenção: 48 controles, **12 esperas comprovadas** (holder/waiter/`pg_blocking_pids`/locks não concedidos) antes de cada revogação.
+- Financeiro: após NF1 título 9 + residual 9 = 18; após NF2 títulos 18 + residual 0 = 18, parceiro 747; após pagamento 9: 9, parceiro **738**. NFs concorrentes: um título e um `FISCAL_AUTHORIZATION_CLOSE_PENDING` (`FISCAL_QUANTITY_OVERALLOCATED` na perdedora).
+- Cancelamento + callback tardio: residual cancelado não emitido nem reaberto; callback autorizado preserva protocolo como close-pending sem título. Reprodução histórica: corpo canônico exato bloqueado pelo ambiente; com só a cláusula de ambiente corrigida, iniciaria a emissão do residual cancelado (`before-canceled-begin.json`, revertido).
+- Rollback: histórico idêntico antes/depois (3 documentos, 3 snapshots, 3 títulos, 2 close-pending, 40 eventos); dez gatilhos de recebíveis e pins de 120 gatilhos LIVE preservados. **A contagem específica de 38 gatilhos do terms-wait não foi verificada separadamente nesta cadeia.**
+- Leitor `rpc_receivable_money_projection_v1`: ACL `{postgres=X/postgres}`, financeiro/administrador `42501`; positivo **BLOCKED_OWNER_ONLY_CANDIDATE_ACL**, sem grant e sem usar leitura do owner como prova.
+
+**Promoção:** depois da 203, o gerador rodou no repositório; os 12 SQL candidatos ficaram byte a byte iguais aos validados no espelho (`review-1255-source-hashes.json`). Os SQL ficam **REVIEW_ONLY_INACTIVE_NOT_APPROVED**: nada de SQL hospedado, publicação, emissão, envio ou cobrança. Auth é SQL sintética (não JWT/RLS/Storage hospedado). Gate logístico global não foi aberto.

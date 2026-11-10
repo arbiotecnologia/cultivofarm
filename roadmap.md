@@ -1689,3 +1689,10 @@
 - [ ] 31 finished_product_closed_reviewed_20261109 NÃO instalada (confirmação técnica expirada; gate/writer ausentes, migration_count 0) — aguarda aprovação humana do auditor.
 - [x] Overlay separado 40/41/42 para ACL real service_role do snapshot guard (origem migration 20261008192025); tentativa 06 PG17 descartável exit 0, 21 verificações, 50–62 e rollbacks juntos; falhas 01–05 preservadas. Sem hosted/publicação.
 - [ ] Instalação 40/41/42 do overlay e 50+ pelo auditor após revisão; leitura READ ONLY recomendada da ACL de c2_external_origin_contract_valid antes do PRE50.
+
+## 10/11 12:55 — bloqueio fiscal 193/194 e cadeia faltante
+- [x] Diagnosticar FISCAL_PRODUCTION_ENDPOINT_BLOCKED: cláusula 2 tenant-blind lê a sentinela NULL de outra empresa; correção candidata por empresa da NF + preflight READ ONLY.
+- [x] Cadeia integral 203 exit 0, 55/55: intenções, begin×cancel, 217/negativas, drift ACL, 18/9/9, 747→738, pagamento 9, callback tardio, rollback; SQL promovido igual ao espelho.
+- [ ] Leitor positivo rpc_receivable_money_projection_v1: ACL candidata só owner; exige decisão de revisão (sem grant amplo).
+- [ ] Contagem específica de 38 gatilhos do terms-wait não verificada separadamente na 203.
+- [ ] Revisão independente, JWT/RLS/Storage hospedado e piloto (sem abrir gate logístico global): fora deste ambiente.

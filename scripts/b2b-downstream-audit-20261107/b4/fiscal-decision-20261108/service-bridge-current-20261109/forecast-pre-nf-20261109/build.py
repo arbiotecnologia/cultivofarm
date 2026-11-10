@@ -226,7 +226,9 @@ BEGIN
  IF p_reference IS NULL OR btrim(p_reference)='' OR p_payload IS NULL OR jsonb_typeof(p_payload)<>'object' THEN
   RAISE EXCEPTION 'B2B_FORECAST_EVENT_INVALID' USING ERRCODE='22023';END IF;
  IF coalesce(p_payload->>'attempt','1')!~'^[1-9][0-9]*$' THEN RAISE EXCEPTION 'B2B_FORECAST_ATTEMPT_INVALID' USING ERRCODE='22023';END IF;
- event_ref:=p_reference||':'||coalesce(nullif(p_payload->>'attempt',''),'1');
+ -- Replay key is per source transmission when present (attempt-199: constant attempt
+ -- collided across two cycles of one invoice); reference stays the intent invoice.
+ event_ref:=p_reference||':'||coalesce(nullif(p_payload->>'transmission_id',''),nullif(p_payload->>'attempt',''),'1');
  SELECT * INTO f FROM platform_private.b2b_financial_forecasts WHERE id=p_forecast FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'B2B_FORECAST_CAS_CONFLICT' USING ERRCODE='PT409';END IF;
  SELECT * INTO existing FROM platform_private.b2b_financial_forecast_events WHERE forecast_id=p_forecast AND event_type=p_event AND event_reference=event_ref;
