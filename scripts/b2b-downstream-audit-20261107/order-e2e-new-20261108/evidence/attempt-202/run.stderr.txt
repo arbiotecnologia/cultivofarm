@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-49a87pdb/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 814, in main
+    cancel_late=forecast_extra.run_cancel_late_callback(B,Q,OUT,override['order_id'],accepted)
+  File "/tmp/new-order-e2e-49a87pdb/project/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast_residual_scenario.py", line 640, in run_cancel_late_callback
+    assert old_started.returncode==0 and '"idempotentReplay": false' in old_started.stdout,old_started.stderr
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ERROR:  P0001: FISCAL_PRODUCTION_ENDPOINT_BLOCKED
+CONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid) line 29 at RAISE
+LOCATION:  exec_stmt_raise, pl_exec.c:3911
+
