@@ -24282,6 +24282,10 @@ export type Database = {
         Args: { p_partner_id?: string }
         Returns: Json
       }
+      rpc_b2b_revenue_forecast_tenant_v2: {
+        Args: { p_partner_id?: string }
+        Returns: Json
+      }
       rpc_bi_esteira_resumo: {
         Args: {
           p_cliente_id?: string
