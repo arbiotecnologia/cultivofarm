@@ -748,6 +748,8 @@ def _first_err(r):
 
 
 def test_projection_reader_contract(B,Q,OUT,receivable):
+    """Review 209/584d530 item 2: full body/owner/ACL pins for RPC, helper and deps;
+    stray helper aborts; rollback validates candidate and closes deny-only."""
     import sys
     from pathlib import Path
     here=Path(__file__).resolve().parent/'forecast-pre-nf-20261109'
@@ -755,25 +757,55 @@ def test_projection_reader_contract(B,Q,OUT,receivable):
     import projection_reader as PR
     root=Path(__file__).resolve().parents[5]
     out=OUT/'projection-reader';out.mkdir(exist_ok=True)
-    pre_meta=json.loads(B.last(f"""SELECT jsonb_build_object('md5',md5(pg_get_functiondef(p.oid)),'owner',pg_get_userbyid(p.proowner),
-      'acl',coalesce(p.proacl::text,''),'authenticated',has_function_privilege('authenticated',p.oid,'EXECUTE'))::text
-      FROM pg_proc p WHERE p.oid='{PR.SIG}'::regprocedure;"""))
-    files,hashes=PR.build(root,pre_meta['md5'])
+    meta=lambda sig: json.loads(B.last(PR.meta_sql(sig)))
+    pins=dict(pre_rpc=meta(PR.SIG),deps={d:meta(d) for d in PR.DEPS})
+    probe=B.run_raw(PR.probe_sql(root));assert probe.returncode==0,probe.stderr
+    pins.update(PR.parse_probe(probe.stdout))
+    assert B.last(f"SELECT (to_regprocedure('{PR.HELPER}') IS NULL)::text;")=='true'
+    files,hashes=PR.build(root,pins)
     for k,v in files.items():(out/k).write_text(v)
+    (out/'pins.json').write_text(json.dumps(pins,indent=2)+'\n')
     def call(uid,rid=receivable):
         return Q.as_user(uid,f"SELECT public.rpc_receivable_money_projection_v1('{rid}',0,1000);")
-    before_install={lbl:call(u).returncode for lbl,u in (('financeiro',Q.UFIN),('administrador',Q.UADM))}
-    pre=B.run_raw(files['13-pre-projection-reader.sql.readonly']);assert pre.returncode==0 and 'PRE_OK' in pre.stdout,pre.stderr
-    inst=B.run_raw(files['14-install-projection-reader.sql.review']);assert inst.returncode==0,inst.stderr
-    post=B.run_raw(files['15-post-projection-reader.sql.readonly']);assert post.returncode==0 and 'POST_OK' in post.stdout,post.stderr
-    rerun=B.run_raw(files['14-install-projection-reader.sql.review']);assert rerun.returncode!=0 and 'PRE_DRIFT' in rerun.stderr,rerun.stderr
     cases=[]
     def rec(name,r,ok):
         cases.append(dict(case=name,exit=r.returncode,stderr=_first_err(r),stdout_tail=r.stdout.strip()[-200:] if r.returncode==0 else ''))
         assert ok,cases[-1]
+    for lbl,u in (('financeiro',Q.UFIN),('administrador',Q.UADM)):
+        r=call(u);rec('before-install-'+lbl,r,r.returncode!=0)
+    rep="SET session_replication_role=replica;";org="SET session_replication_role=origin;"
+    # Stray pre-existing helper (even with no grants) aborts PRE and INSTALL.
+    B.sql(f"CREATE FUNCTION {PR.HELPER} RETURNS boolean LANGUAGE sql AS $$ SELECT true $$;")
+    try:
+        r=B.run_raw(files['13-pre-projection-reader.sql.readonly']);rec('stray-helper-pre',r,r.returncode!=0 and 'HELPER_PREEXISTS' in r.stderr)
+        r=B.run_raw(files['14-install-projection-reader.sql.review']);rec('stray-helper-install',r,r.returncode!=0 and 'HELPER_PREEXISTS' in r.stderr)
+    finally: B.sql(f"DROP FUNCTION {PR.HELPER};")
+    # Dependency ACL drift aborts PRE.
+    B.sql("GRANT EXECUTE ON FUNCTION platform_private.b2b_legacy_money_row(uuid) TO authenticated;")
+    try:
+        r=B.run_raw(files['13-pre-projection-reader.sql.readonly']);rec('dep-acl-drift-pre',r,r.returncode!=0 and 'DEP_DRIFT' in r.stderr)
+    finally: B.sql("REVOKE EXECUTE ON FUNCTION platform_private.b2b_legacy_money_row(uuid) FROM authenticated;")
+    assert meta('platform_private.b2b_legacy_money_row(uuid)')==pins['deps']['platform_private.b2b_legacy_money_row(uuid)']
+    pre=B.run_raw(files['13-pre-projection-reader.sql.readonly']);rec('pre',pre,pre.returncode==0 and 'PRE_OK' in pre.stdout)
+    inst=B.run_raw(files['14-install-projection-reader.sql.review']);rec('install',inst,inst.returncode==0)
+    post=B.run_raw(files['15-post-projection-reader.sql.readonly']);rec('post',post,post.returncode==0 and 'POST_OK' in post.stdout)
+    rerun=B.run_raw(files['14-install-projection-reader.sql.review']);rec('reinstall-denied',rerun,rerun.returncode!=0 and 'PRE_DRIFT' in rerun.stderr)
     for lbl,u in (('financeiro-own',Q.UFIN),('administrador-own',Q.UADM)):
         r=call(u);rows=json.loads(_last_line(r)) if r.returncode==0 else []
         rec(lbl+'-positive',r,r.returncode==0 and len(rows)>=1 and all(x['monetary_origin']['receivable_id']==receivable for x in rows))
+    # Gestor (canonical is_financial_staff) own positive / foreign negative: swap roles, restore exactly.
+    def swap(uid,frm,to):
+        B.sql(rep+f"DELETE FROM public.user_roles WHERE user_id='{uid}' AND role='{frm}';INSERT INTO public.user_roles(user_id,role) VALUES('{uid}','{to}');"+org)
+    roles_before=B.last(f"SELECT coalesce(string_agg(user_id::text||':'||role::text,',' ORDER BY user_id,role),'') FROM public.user_roles WHERE user_id IN ('{Q.UFIN}','{Q.UADMF}');")
+    swap(Q.UFIN,'financeiro','gestor')
+    try:
+        r=call(Q.UFIN);rows=json.loads(_last_line(r)) if r.returncode==0 else []
+        rec('gestor-own-positive',r,r.returncode==0 and len(rows)>=1)
+    finally: swap(Q.UFIN,'gestor','financeiro')
+    swap(Q.UADMF,'administrador','gestor')
+    try: r=call(Q.UADMF);rec('gestor-foreign-tenant',r,r.returncode!=0 and '42501' in r.stderr)
+    finally: swap(Q.UADMF,'gestor','administrador')
+    assert B.last(f"SELECT coalesce(string_agg(user_id::text||':'||role::text,',' ORDER BY user_id,role),'') FROM public.user_roles WHERE user_id IN ('{Q.UFIN}','{Q.UADMF}');")==roles_before
     r=call(Q.UADMF);rec('foreign-tenant-admin',r,r.returncode!=0 and '42501' in r.stderr)
     r=call(Q.UBC);rec('buyer',r,r.returncode!=0 and ('42501' in r.stderr or 'MONEY_ORIGIN_ACCESS_DENIED' in r.stderr))
     an=B.run_raw(f"SET ROLE anon;SELECT public.rpc_receivable_money_projection_v1('{receivable}',0,1000);")
@@ -786,20 +818,25 @@ def test_projection_reader_contract(B,Q,OUT,receivable):
     try: r=call(Q.UFIN)
     finally: B.sql("UPDATE public.saas_features SET active=true WHERE key='contas_receber';")
     rec('entitlement-revoked',r,r.returncode!=0 and 'MONEY_ORIGIN_ACCESS_DENIED' in r.stderr)
-    B.sql(f"SET session_replication_role=replica;UPDATE public.profiles SET ativo=false WHERE user_id='{Q.UFIN}';SET session_replication_role=origin;")
+    B.sql(rep+f"UPDATE public.profiles SET ativo=false WHERE user_id='{Q.UFIN}';"+org)
     try: r=call(Q.UFIN)
-    finally: B.sql(f"SET session_replication_role=replica;UPDATE public.profiles SET ativo=true WHERE user_id='{Q.UFIN}';SET session_replication_role=origin;")
+    finally: B.sql(rep+f"UPDATE public.profiles SET ativo=true WHERE user_id='{Q.UFIN}';"+org)
     rec('inactive-profile',r,r.returncode!=0 and 'MONEY_ORIGIN_ACCESS_DENIED' in r.stderr)
     r=call(Q.UFIN);rec('restored-positive',r,r.returncode==0)
-    rb=B.run_raw(files['16-rollback-projection-reader-deny.sql.review']);assert rb.returncode==0,rb.stderr
-    after_meta=json.loads(B.last(f"""SELECT jsonb_build_object('md5',md5(pg_get_functiondef(p.oid)),'owner',pg_get_userbyid(p.proowner),
-      'acl',coalesce(p.proacl::text,''),'authenticated',has_function_privilege('authenticated',p.oid,'EXECUTE'))::text
-      FROM pg_proc p WHERE p.oid='{PR.SIG}'::regprocedure;"""))
+    rb=B.run_raw(files['16-rollback-projection-reader-deny.sql.review']);rec('rollback',rb,rb.returncode==0)
+    after_rpc,after_helper=meta(PR.SIG),meta(PR.HELPER)
+    assert after_rpc==pins['rb_rpc'] and after_helper==pins['rb_helper'],(after_rpc,after_helper)
+    assert after_rpc['md5']!=PR.INTERMEDIATE_RPC_MD5 and after_rpc['md5']==pins['cand_rpc']['md5']
     r=call(Q.UFIN);rec('after-rollback-denied',r,r.returncode!=0 and 'permission denied' in r.stderr)
-    assert after_meta==pre_meta,(pre_meta,after_meta)
-    result=dict(consumer='deferred src/lib/financeiro/receivableOrigin.ts (not mounted in live src)',pre=pre_meta,after_rollback=after_meta,
-      before_install_exit=before_install,cases=cases,sql_sha256=hashes,pre_pin='LOCAL_DERIVED_REQUIRES_READONLY_CAPTURE',
-      roles_accepted='is_financial_staff (administrador/gestor/financeiro) + contas_receber + h15 active org',
+    rb2=B.run_raw(files['16-rollback-projection-reader-deny.sql.review']);rec('rollback-rerun-fails-closed',rb2,rb2.returncode!=0)
+    result=dict(consumer='deferred src/lib/financeiro/receivableOrigin.ts (not mounted in live src; not a real complete flow)',
+      install_order=['scripts/financial-price-generator-20261029/integration/origin.sql.review (INTERMEDIATE)','13','14','15'],
+      pins=pins,pin_classes=dict(pre_rpc='LOCAL_INTERMEDIATE_PROMOTED (reader absent in production)',
+        is_financial_staff='LIVE_READONLY '+PR.LIVE_IS_FINANCIAL_STAFF_MD5,other_deps='LOCAL_RESTORE_DERIVED',
+        candidate_and_rollback='LOCAL_PROBE_DERIVED'),
+      after_rollback=dict(rpc=after_rpc,helper=after_helper,restored_pre_candidate_body=False),
+      cases=cases,sql_sha256=hashes,
+      roles_accepted='canonical is_financial_staff (administrador/gestor/financeiro, fn_authz_uid_scope_ok) + contas_receber + h15 active org; unchanged',
       grants='authenticated only on public RPC; helper zero grants',hosted=False,synthetic_auth=True)
     (OUT/'projection-reader-contract.json').write_text(json.dumps(result,indent=2)+'\n')
     return result
