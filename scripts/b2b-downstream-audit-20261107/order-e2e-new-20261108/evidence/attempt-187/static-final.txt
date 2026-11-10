@@ -1,0 +1,32 @@
+PASS B4 source body pinned to 44e8768f
+PASS composed body is B4 body plus only the forecast block
+PASS composed md5 pinned in manifest
+PASS open titles still come only from B4 balances
+PASS forecast never adds: committed is replaced by B4 residual delta
+PASS canceled residual counts zero
+PASS forecast must equal B4 residual otherwise (fail closed)
+PASS tenant/partner conflict fails closed
+PASS forecast stage 02 no longer redefines credit exposure
+PASS forecast rollback 04 no longer replaces credit exposure
+PASS 09 PRE requires exact B4 body, not LIVE
+PASS 10 install has exactly one credit definition
+PASS 10 install grants nothing
+PASS 12 rollback never restores B4/LIVE credit body
+PASS 12 rollback restores only the stricter LIVE eligibility
+PASS eligibility accepts only the exact linked approved child terms
+PASS eligibility keeps header rejection blocking
+PASS wrappers granted to authenticated only
+PASS no grant on private forecast helpers
+PASS wrappers re-authorize after locks
+PASS sync derives event from fiscal transmission, never from caller payload
+PASS authorized return confirms only through H13 bridge
+PASS cancel blocked while fiscal in flight or close pending
+PASS cancel locks scoped order before scoped forecast
+PASS no RESET ROLE in wrapper SQL
+PASS helper ACL pins are mandatory
+PASS only current protocol absence 217 is conclusive
+PASS consultation identity is exact
+PASS foreign scope filtered before locks
+PASS canonical begin shares order/forecast locks before insert
+PASS canonical begin itself blocks canceled/uncertain residual
+{"failed": [], "total_failed": 0}
