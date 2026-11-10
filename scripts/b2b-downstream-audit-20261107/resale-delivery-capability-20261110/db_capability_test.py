@@ -113,7 +113,7 @@ GRANT USAGE ON SCHEMA auth,platform_private TO authenticated,anon;
     q.execute((HERE/"04-rollback-deny.sql.review").read_text())
     try: cap(actor,os_,[st]);check("ROLLBACK_REVOKES",False)
     except psycopg2.Error as e: check("ROLLBACK_REVOKES","permission denied" in str(e)); c.cursor().execute("ROLLBACK")
-    q=c.cursor();q.execute("SELECT count(*) FROM platform_private.resale_pilot_allowlist_v1");check("ROLLBACK_PRESERVES_HISTORY",q.fetchone()[0]==4)
+    q=c.cursor();q.execute("SELECT count(*) FROM platform_private.resale_pilot_allowlist_v1");check("ROLLBACK_PRESERVES_HISTORY",q.fetchone()[0]==3,"3 concessões, incl. revogada e expirada")
 finally:
     sh("pg_ctl","-D",str(d/"db"),"-m","fast","stop");shutil.rmtree(d,ignore_errors=True)
 out={"seams":SEAMS,"results":R,"failed":fail,"files":{f:hashlib.sha256((HERE/f).read_bytes()).hexdigest() for f in ["01-pre.sql.readonly","02-install.sql.review","03-post.sql.readonly","04-rollback-deny.sql.review"]}}

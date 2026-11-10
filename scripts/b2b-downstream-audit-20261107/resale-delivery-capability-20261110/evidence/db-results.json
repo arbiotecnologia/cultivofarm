@@ -26,7 +26,7 @@
   {
    "case": "PILOT_ABSENT_GATE_CLOSED",
    "pass": true,
-   "detail": "{\"items\": [{\"reserve\": false, \"stock_id\": \"48eaf10c-4ac5-41de-8e45-148ebf40c9c2\", \"delivery_create\": false, \"reserved_for_os\": 0}], \"os_id\": \"0276c438-3802-4c4a-8e80-8ee9e794ca5c\", \"capability\": \"b2b_resale_delivery_v1\", \"organization_id\": \"5e623eca-7698-404d-b5c2-af1b5e37bde6\"}"
+   "detail": "{\"items\": [{\"reserve\": false, \"stock_id\": \"5de2ee4e-9e7d-4adc-b53a-268bcbcd27d4\", \"delivery_create\": false, \"reserved_for_os\": 0}], \"os_id\": \"b095f6fa-f907-43dc-932b-2733d1bf5f10\", \"capability\": \"b2b_resale_delivery_v1\", \"organization_id\": \"79c095c9-7c06-4f71-a0e3-f5226af58928\"}"
   },
   {
    "case": "GATE_OPEN_NO_GRANT_CLOSED",
@@ -36,7 +36,7 @@
   {
    "case": "EXACT_GRANT_RESERVE_ONLY",
    "pass": true,
-   "detail": "{\"48eaf10c-4ac5-41de-8e45-148ebf40c9c2\": {\"reserve\": true, \"stock_id\": \"48eaf10c-4ac5-41de-8e45-148ebf40c9c2\", \"delivery_create\": false, \"reserved_for_os\": 0}, \"bbab3e14-7075-41eb-8a4a-37cfec530af8\": {\"reserve\": false, \"stock_id\": \"bbab3e14-7075-41eb-8a4a-37cfec530af8\", \"delivery_create\": false, \"reserved_for_os\": 0}}"
+   "detail": "{\"2d626b00-fa68-450c-82f5-edc5a7276ca0\": {\"reserve\": false, \"stock_id\": \"2d626b00-fa68-450c-82f5-edc5a7276ca0\", \"delivery_create\": false, \"reserved_for_os\": 0}, \"5de2ee4e-9e7d-4adc-b53a-268bcbcd27d4\": {\"reserve\": true, \"stock_id\": \"5de2ee4e-9e7d-4adc-b53a-268bcbcd27d4\", \"delivery_create\": false, \"reserved_for_os\": 0}}"
   },
   {
    "case": "ACTOR_WITHOUT_STOCK_PERMISSION",
@@ -130,11 +130,11 @@
   },
   {
    "case": "ROLLBACK_PRESERVES_HISTORY",
-   "pass": false,
-   "detail": ""
+   "pass": true,
+   "detail": "3 concessões, incl. revogada e expirada"
   }
  ],
- "failed": 1,
+ "failed": 0,
  "files": {
   "01-pre.sql.readonly": "2e94c371a76d85130832aafce6a89581d926c2c1302dc57baccccb3fb58627bb",
   "02-install.sql.review": "e38ebb9daffcb2a6dccdae5ccacb0f76d73c8aab281522626df45ac02658def2",

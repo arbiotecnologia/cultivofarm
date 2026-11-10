@@ -1,9 +1,9 @@
 PASS PRE_PASS 63f49feea167f6865fd7840cde7dc63b
 PASS POST_PASS ae4e259ddf5b4005a7be9320e29117ef
 PASS INSTALL_RERUN_REFUSED 
-PASS PILOT_ABSENT_GATE_CLOSED {"items": [{"reserve": false, "stock_id": "48eaf10c-4ac5-41de-8e45-148ebf40c9c2", "delivery_create": false, "reserved_for_os": 0}], "os_id": "0276c438-3802-4c4a-8e80-8ee9e794ca5c", "capability": "b2b_resale_delivery_v1", "organization_id": "5e623eca-7698-404d-b5c2-af1b5e37bde6"}
+PASS PILOT_ABSENT_GATE_CLOSED {"items": [{"reserve": false, "stock_id": "5de2ee4e-9e7d-4adc-b53a-268bcbcd27d4", "delivery_create": false, "reserved_for_os": 0}], "os_id": "b095f6fa-f907-43dc-932b-2733d1bf5f10", "capability": "b2b_resale_delivery_v1", "organization_id": "79c095c9-7c06-4f71-a0e3-f5226af58928"}
 PASS GATE_OPEN_NO_GRANT_CLOSED 
-PASS EXACT_GRANT_RESERVE_ONLY {"48eaf10c-4ac5-41de-8e45-148ebf40c9c2": {"reserve": true, "stock_id": "48eaf10c-4ac5-41de-8e45-148ebf40c9c2", "delivery_create": false, "reserved_for_os": 0}, "bbab3e14-7075-41eb-8a4a-37cfec530af8": {"reserve": false, "stock_id": "bbab3e14-7075-41eb-8a4a-37cfec530af8", "delivery_create": false, "reserved_for_os": 0}}
+PASS EXACT_GRANT_RESERVE_ONLY {"2d626b00-fa68-450c-82f5-edc5a7276ca0": {"reserve": false, "stock_id": "2d626b00-fa68-450c-82f5-edc5a7276ca0", "delivery_create": false, "reserved_for_os": 0}, "5de2ee4e-9e7d-4adc-b53a-268bcbcd27d4": {"reserve": true, "stock_id": "5de2ee4e-9e7d-4adc-b53a-268bcbcd27d4", "delivery_create": false, "reserved_for_os": 0}}
 PASS ACTOR_WITHOUT_STOCK_PERMISSION 
 PASS FOREIGN_ACTOR_CLOSED_ENVELOPE 
 PASS FOREIGN_OS_CLOSED 
@@ -22,5 +22,5 @@ PASS PARTIAL_SECOND_RESERVATION_ACCUMULATES
 PASS CAPABILITY_WRITES_NOTHING 
 PASS ACL_ANON_HELPER_WRITER_CLOSED 
 PASS ROLLBACK_REVOKES 
-FAIL ROLLBACK_PRESERVES_HISTORY 
-TOTAL 24/25
+PASS ROLLBACK_PRESERVES_HISTORY 3 concessões, incl. revogada e expirada
+TOTAL 25/25
