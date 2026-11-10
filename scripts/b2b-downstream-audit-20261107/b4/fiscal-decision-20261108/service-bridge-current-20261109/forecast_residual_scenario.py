@@ -1069,12 +1069,12 @@ def revenue_v2_phase(B, Q, OUT, phase, order_id, receivable, state):
         def fault(name, mutation, expect):
             r, x = _rv2_call(B, Q.UFIN, mutation=rep + mutation + "SET LOCAL session_replication_role=origin;")
             if r.returncode != 0:
-                rec(name, expect == 'denied_by_schema' or ('violates' in r.stderr), stderr=r.stderr.strip()[-300:]); return
+                rec(name, expect == 'denied_by_schema', stderr=r.stderr.strip()[-300:]); return
             u = x['titles_unavailable']
             rec(name, x['confirmed_titles']['installments'] == base - 1 and float(x['confirmed_titles']['total_aberto']) == round(float(d['confirmed_titles']['total_aberto']) - 9, 2)
                 and (expect == 'excluded' or u[expect] == d['titles_unavailable'][expect] + 1), result=x)
         fault('legacy-forged-no-allocation', f"DELETE FROM platform_private.b2b_allocation_reversals WHERE document_id IN (SELECT document_id FROM platform_private.b2b_document_allocations WHERE receivable_id='{receivable}');DELETE FROM platform_private.b2b_document_allocations WHERE receivable_id='{receivable}';", 'unproven')
-        fault('no-nf-document-not-authorized', f"UPDATE platform_private.b2b_authorized_documents SET state='CANCELED_LOCAL_FAULT' WHERE id=(SELECT document_id FROM platform_private.b2b_document_allocations WHERE receivable_id='{receivable}');", 'unproven')
+        fault('no-nf-document-digest-divergent', f"UPDATE platform_private.b2b_authorized_documents SET source_digest=source_digest||'-LOCAL-FAULT' WHERE id=(SELECT document_id FROM platform_private.b2b_document_allocations WHERE receivable_id='{receivable}');", 'unproven')
         fault('snapshot-due-divergent', f"UPDATE public.accounts_receivable_installments SET due_date=due_date+1 WHERE id={ref};", 'unproven')
         fault('received-exceeds-inconsistent', f"UPDATE public.accounts_receivable_installments SET received_amount=original_amount+1 WHERE id={ref};", 'inconsistent')
         fault('paid-with-balance-inconsistent', f"UPDATE public.accounts_receivable_installments SET status='PAID' WHERE id={ref};", 'inconsistent')
@@ -1082,7 +1082,7 @@ def revenue_v2_phase(B, Q, OUT, phase, order_id, receivable, state):
         fault('unknown-status-inconsistent', f"ALTER TABLE public.accounts_receivable_installments DROP CONSTRAINT accounts_receivable_installments_status_check;UPDATE public.accounts_receivable_installments SET status='LOCAL_UNKNOWN' WHERE id={ref};", 'inconsistent')
         fault('null-due-not-confirmed', f"ALTER TABLE public.accounts_receivable_installments ALTER COLUMN due_date DROP NOT NULL;UPDATE public.accounts_receivable_installments SET due_date=NULL WHERE id={ref};", 'unproven')
         fault('title-canceled-excluded', f"UPDATE public.accounts_receivable SET status='CANCELED' WHERE id='{receivable}';", 'excluded')
-        fault('forecast-partner-divergent', f"UPDATE platform_private.b2b_financial_forecasts SET partner_id=(SELECT id FROM public.partner_accounts WHERE id<>'{Q.P}' AND commercial_owner_organization_id IS DISTINCT FROM (SELECT commercial_owner_organization_id FROM public.partner_accounts WHERE id='{Q.P}') LIMIT 1) WHERE order_id='{order_id}';", 'inconsistent')
+        fault('forecast-partner-divergent', f"UPDATE platform_private.b2b_financial_forecasts SET partner_id=gen_random_uuid() WHERE order_id='{order_id}';", 'inconsistent')
         r, x = _rv2_call(B, Q.UFIN, mutation=rep + f"UPDATE platform_private.b2b_financial_forecasts SET organization_id=gen_random_uuid() WHERE order_id='{order_id}';SET LOCAL session_replication_role=origin;")
         rec('forecast-issuer-divergent-not-summed', x is not None and round(float(x['forecast_residual']['amount']), 2) == round(float(d['forecast_residual']['amount']) - 9, 2) and x['forecast_residual']['inconsistent'] == d['forecast_residual']['inconsistent'] + 1, result=x)
         r, x = _rv2_call(B, Q.UADMF); rec('foreign-admin-isolated', x is not None and x['organization_id'] != d['organization_id'], result=x); state['foreign'] = x
