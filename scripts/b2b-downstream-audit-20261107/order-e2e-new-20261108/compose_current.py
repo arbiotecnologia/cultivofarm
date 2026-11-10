@@ -307,7 +307,7 @@ def main():
   # ocorrem depois, pelos wrappers autenticados sobre retornos fiscais reais (05-08).
   forecast_final=json.loads(Q.as_user(Q.UADM,f"SELECT public.get_b2b_financial_forecast_secure('{order_id}');").stdout.strip())
   assert forecast_final['state']=='aguardando_fiscal' and forecast_final['version']==1,forecast_final
-  assert B.last(f"SELECT count(*) FROM platform_private.b2b_financial_forecast_events e JOIN platform_private.b2b_financial_forecasts f ON f.id=e.forecast_id WHERE f.order_id='{order_id}' AND e.event_type<>'FORECAST_CREATED';")=='0'
+  assert B.last(f"SELECT count(*) FROM platform_private.b2b_financial_forecast_events e JOIN platform_private.b2b_financial_forecasts f ON f.id=e.forecast_id WHERE f.order_id='{order_id}' AND e.event_type<>'PREVISION_CREATED';")=='0'
   assert B.last(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{order_id}';")=='0'
   (OUT/'forecast-pre-nf.json').write_text(json.dumps(dict(forecast=forecast_final,replay=forecast_replay,cross_tenant_denied=forecast_denied.stderr,receivables_before_nf=0),indent=2)+'\n')
   checks.append(dict(test='forecast separate after commercial and valid credit; idempotent scoped no receivable; private transition denied to authenticated',status='PASS',forecast_id=forecast['forecast_id']))
