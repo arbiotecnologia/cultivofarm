@@ -1,0 +1,49 @@
+{
+  "signature": "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+  "frozen_pin": "4926a99c3fa3086b34ff25bb4b4038bb",
+  "live_pin": "97bcdb9884b54adb3bd4aae4915e32d0",
+  "live_source": "production READONLY read by independent reviewer (cf7d5fb/214)",
+  "body_source": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/respond.seller91.sql",
+  "body_sha256": "5f1155e2782dfbfa0bbd2ba27447a2632fdc41000245402aeb9ddd6f394f5ea9",
+  "frozen_sources_modified": false,
+  "files": [
+    {
+      "source": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/stages/01-b4-pre-post-composition.sql.readonly",
+      "source_sha256": "f495866d7628858360fa409247f929862360939091b216f289af9cf4e39d5464",
+      "output": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/b4-seller91-current/01-b4-pre-seller91-live.sql.readonly",
+      "output_sha256": "a65bf140d3a077d1d8214a3c8c8d082967f669f139811894f3b50932a450e0ad",
+      "changed_lines": 1,
+      "only_change": "4926a99c3fa3086b34ff25bb4b4038bb -> 97bcdb9884b54adb3bd4aae4915e32d0 in public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) md5 guard"
+    },
+    {
+      "source": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/stages/02-b4-install-post-composition.sql.review",
+      "source_sha256": "6500bf54b5df05c753e75ada0f6ed12948e81f0e86f274222a2eae481a681f54",
+      "output": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/b4-seller91-current/02-b4-install-seller91-live.sql.review",
+      "output_sha256": "5f93d3cedf0f3db07c7ca968265b91ae702492d1ea2e6c3872353ba6b69e32dd",
+      "changed_lines": 1,
+      "only_change": "4926a99c3fa3086b34ff25bb4b4038bb -> 97bcdb9884b54adb3bd4aae4915e32d0 in public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) md5 guard"
+    },
+    {
+      "source": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/03-post.sql.readonly",
+      "source_sha256": "85b0736d03cc5b2a6a5347b2575e88241cfc40be0ba6be5808b77ea31957854d",
+      "output": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/b4-seller91-current/03-composed-post-seller91-live.sql.readonly",
+      "output_sha256": "257a0a00bf33d105ab007ff43d408d17633e1e5f65d197d9d37d1abb3dbbea21",
+      "changed_lines": 1,
+      "only_change": "4926a99c3fa3086b34ff25bb4b4038bb -> 97bcdb9884b54adb3bd4aae4915e32d0 in public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) md5 guard"
+    }
+  ],
+  "unchanged": [
+    {
+      "path": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/stages/03-b4-post.sql.readonly",
+      "sha256": "2b9e665765c85e3f9cc6ffb0fc9fcd59cb8272fcf60833bf257da33935af2ae4"
+    },
+    {
+      "path": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/stages/04-bridge-install.sql.review",
+      "sha256": "5db2c160fd3a99bb847fe20a1d9764cbfed82d5cd80915be0eceb94eadfb9964"
+    },
+    {
+      "path": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/04-rollback-deny.sql.review",
+      "sha256": "d51b80a5a8eec7fc6d873a4ba4c96bcc8d5e0e5534297daf021469db03a11f4f"
+    }
+  ]
+}

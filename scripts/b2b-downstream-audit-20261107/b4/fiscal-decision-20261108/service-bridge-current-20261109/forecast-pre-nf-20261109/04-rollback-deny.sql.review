@@ -200,6 +200,9 @@ CREATE OR REPLACE FUNCTION public.approve_b2b_payment_terms_secure(p_partner_ord
 AS $function$
 BEGIN RAISE EXCEPTION 'B2B_PAYMENT_TERMS_APPROVAL_ROLLED_BACK' USING ERRCODE='42501';END
 $function$;
+-- Creation pilot closed deny-only; grant rows and forecasts retained as history.
+UPDATE platform_private.b2b_forecast_creation_gate_v1 SET enabled=false,updated_at=clock_timestamp(),reason='FORECAST_REVIEW_ROLLBACK' WHERE singleton;
+UPDATE platform_private.b2b_forecast_creation_allowlist_v1 SET revoked_at=clock_timestamp(),revoke_reason='FORECAST_REVIEW_ROLLBACK' WHERE revoked_at IS NULL;
 -- Exposição de crédito NÃO é tocada aqui: o corpo composto B4+previsão (09-12)
 -- permanece; restaurar LIVE/B4 reabriria dupla contagem ou residual cancelado.
 REVOKE ALL ON FUNCTION public.get_b2b_financial_forecast_secure(uuid) FROM PUBLIC,anon,authenticated,service_role;
