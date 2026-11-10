@@ -551,7 +551,7 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
                   credit_before=credit_before, credit_after_first=first_credit, credit_after_second=second_credit, credit_after_payment=paid_credit,
                   forecast_after_second=forecast, forecast_after_payment=forecast_after_payment, titles=totals, payment_amount=9,
                   payment_replay=dict(exit=paid_replay.returncode, stdout=paid_replay.stdout.strip()[-300:], stderr=paid_replay.stderr.strip()[-300:]),
-                  projection_reader_attempts=projection_attempts, installment_id=installment,
+                  projection_reader_contract=projection_result, installment_id=installment,
                   concurrent_replay_one_title=True, h7_receivable_id_immutable=True, h7=dict(change=h7.stderr.strip()[:300], same_value=dict(exit=h7_same.returncode, stderr=h7_same.stderr.strip()[:300]), without_claims=h7_no_claims.stderr.strip()[:300]), synthetic_fiscal_documents=True, hosted=False)
     (OUT/'forecast-two-partial-nf-and-payment.json').write_text(json.dumps(result, indent=2)+'\n')
     return result
@@ -774,8 +774,8 @@ def test_projection_reader_contract(B,Q,OUT,receivable):
     for lbl,u in (('financeiro-own',Q.UFIN),('administrador-own',Q.UADM)):
         r=call(u);rows=json.loads(_last_line(r)) if r.returncode==0 else []
         rec(lbl+'-positive',r,r.returncode==0 and len(rows)>=1 and all(x['monetary_origin']['receivable_id']==receivable for x in rows))
-    rec('foreign-tenant-admin',call(Q.UADMF),False if call(Q.UADMF).returncode==0 else True)
-    rec('buyer',call(Q.UBC),call(Q.UBC).returncode!=0)
+    r=call(Q.UADMF);rec('foreign-tenant-admin',r,r.returncode!=0 and '42501' in r.stderr)
+    r=call(Q.UBC);rec('buyer',r,r.returncode!=0 and ('42501' in r.stderr or 'MONEY_ORIGIN_ACCESS_DENIED' in r.stderr))
     an=B.run_raw(f"SET ROLE anon;SELECT public.rpc_receivable_money_projection_v1('{receivable}',0,1000);")
     rec('anon',an,an.returncode!=0 and 'permission denied' in an.stderr)
     sv=B.run_raw(f"SET ROLE service_role;SELECT public.rpc_receivable_money_projection_v1('{receivable}',0,1000);")
