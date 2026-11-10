@@ -1,0 +1,98 @@
+{
+  "kind": "ISOLATED_COMPONENT_NOT_FISCAL_AUTHORITY",
+  "phase": "after",
+  "checks": [
+    {
+      "name": "first intent",
+      "exit": 0,
+      "stdout": "{\"state\": \"emissao_em_andamento\", \"version\": 2, \"replayed\": false, \"forecast_id\": \"dd7897a9-14d7-4b47-ac00-e413900f7c24\"}\n",
+      "stderr": "",
+      "state": {
+        "state": "emissao_em_andamento",
+        "version": 2,
+        "residual": 18.0
+      }
+    },
+    {
+      "name": "divergent replay",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: B2B_FORECAST_REPLAY_DIVERGENCE\nCONTEXT:  PL/pgSQL function platform_private.b2b_financial_forecast_transition_v1(uuid,integer,text,text,jsonb) line 12 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "state": {
+        "state": "emissao_em_andamento",
+        "version": 2,
+        "residual": 18.0
+      }
+    },
+    {
+      "name": "concurrent same intent 0",
+      "exit": 0,
+      "stdout": "{\"state\": \"emissao_em_andamento\", \"version\": 4, \"replayed\": false, \"forecast_id\": \"dd7897a9-14d7-4b47-ac00-e413900f7c24\"}\n",
+      "stderr": "",
+      "state": {
+        "state": "emissao_em_andamento",
+        "version": 4,
+        "residual": 18.0
+      }
+    },
+    {
+      "name": "concurrent same intent 1",
+      "exit": 0,
+      "stdout": "{\"state\": \"emissao_em_andamento\", \"version\": 4, \"replayed\": true, \"forecast_id\": \"dd7897a9-14d7-4b47-ac00-e413900f7c24\"}\n",
+      "stderr": "",
+      "state": {
+        "state": "emissao_em_andamento",
+        "version": 4,
+        "residual": 18.0
+      }
+    },
+    {
+      "name": "second emission from partial",
+      "exit": 0,
+      "stdout": "{\"state\": \"emissao_em_andamento\", \"version\": 6, \"replayed\": false, \"forecast_id\": \"dd7897a9-14d7-4b47-ac00-e413900f7c24\"}\n",
+      "stderr": "",
+      "state": {
+        "state": "emissao_em_andamento",
+        "version": 6,
+        "residual": 9.0
+      }
+    },
+    {
+      "name": "economic replay after NF with dynamic credit",
+      "exit": 0,
+      "stdout": "{\"state\": \"faturado_parcial\", \"replayed\": true, \"forecast_id\": \"dd7897a9-14d7-4b47-ac00-e413900f7c24\"}\n",
+      "stderr": "",
+      "state": {
+        "state": "faturado_parcial",
+        "version": 7,
+        "residual": 9.0
+      }
+    },
+    {
+      "name": "cancel residual",
+      "exit": 0,
+      "stdout": "{\"state\": \"cancelado_residual\", \"version\": 8, \"forecast_id\": \"dd7897a9-14d7-4b47-ac00-e413900f7c24\"}\n",
+      "stderr": "",
+      "state": {
+        "state": "cancelado_residual",
+        "version": 8,
+        "residual": 0.0
+      }
+    },
+    {
+      "name": "reconcile canceled residual",
+      "exit": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: B2B_FORECAST_RESIDUAL_CANCELED\nCONTEXT:  PL/pgSQL function platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid) line 9 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "state": {
+        "state": "cancelado_residual",
+        "version": 8,
+        "residual": 0.0
+      }
+    }
+  ],
+  "hosted": false,
+  "sql_source": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/02-install.sql.review",
+  "fiscal_provenance_positive": "NOT_PROVEN",
+  "synthetic_residual": true
+}

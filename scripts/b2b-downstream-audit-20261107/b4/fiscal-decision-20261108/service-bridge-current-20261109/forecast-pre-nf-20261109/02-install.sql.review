@@ -63,7 +63,7 @@ BEGIN
   RETURN jsonb_build_object('deferred',true,'reason','PAYMENT_TERMS_APPROVAL_REQUIRED');END IF;
  IF po.payment_terms_id IS NULL OR coalesce(po.payment_condition_status,'') NOT IN ('defined','approved') THEN
   RAISE EXCEPTION 'B2B_FORECAST_CONDITION_UNPROVEN' USING ERRCODE='42501';END IF;
- IF po.credit_approved_at IS NULL AND reason<>'OK' THEN
+ IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_financial_forecasts WHERE order_id=po.id) AND po.credit_approved_at IS NULL AND reason<>'OK' THEN
   RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_REQUIRED' USING ERRCODE='42501';END IF;
  IF po.credit_approved_at IS NOT NULL AND po.credit_approved_by IS NULL THEN
   RAISE EXCEPTION 'B2B_FORECAST_CREDIT_APPROVAL_REQUIRED' USING ERRCODE='42501';END IF;
@@ -80,8 +80,10 @@ BEGIN
  IF jsonb_array_length(items)=0 THEN RAISE EXCEPTION 'B2B_FORECAST_ITEMS_UNPROVEN' USING ERRCODE='23514';END IF;
  SELECT * INTO f FROM platform_private.b2b_financial_forecasts WHERE order_id=po.id;
  IF f.id IS NOT NULL THEN
-  IF (f.organization_id,f.partner_id,f.total_amount,f.residual_amount,f.economic_snapshot,f.schedule_snapshot,f.items_snapshot,f.credit_decision_snapshot)
-   IS DISTINCT FROM (org,po.partner_id,total,total,po.internal_economic_snapshot,schedule,items,p_credit)
+  IF (f.organization_id,f.partner_id,f.total_amount,f.economic_snapshot,f.schedule_snapshot,f.items_snapshot,
+      f.commercial_approved_by,f.commercial_approved_at,f.credit_approved_by,f.credit_approved_at)
+   IS DISTINCT FROM (org,po.partner_id,total,po.internal_economic_snapshot,schedule,items,
+      po.approved_by,po.approved_at,po.credit_approved_by,po.credit_approved_at)
   THEN RAISE EXCEPTION 'B2B_FORECAST_REPLAY_DIVERGENCE' USING ERRCODE='PT409';END IF;
   RETURN jsonb_build_object('forecast_id',f.id,'replayed',true,'state',f.state);
  END IF;
@@ -119,17 +121,21 @@ GRANT EXECUTE ON FUNCTION public.get_b2b_financial_forecast_secure(uuid) TO auth
 
 CREATE FUNCTION platform_private.b2b_financial_forecast_transition_v1(p_forecast uuid,p_expected_version integer,p_event text,p_reference text,p_payload jsonb DEFAULT '{}'::jsonb)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
-DECLARE f platform_private.b2b_financial_forecasts;new_state text;existing bigint;event_ref text;
+DECLARE f platform_private.b2b_financial_forecasts;new_state text;existing platform_private.b2b_financial_forecast_events;event_ref text;
 BEGIN
+ IF p_reference IS NULL OR btrim(p_reference)='' OR p_payload IS NULL OR jsonb_typeof(p_payload)<>'object' THEN
+  RAISE EXCEPTION 'B2B_FORECAST_EVENT_INVALID' USING ERRCODE='22023';END IF;
  IF coalesce(p_payload->>'attempt','1')!~'^[1-9][0-9]*$' THEN RAISE EXCEPTION 'B2B_FORECAST_ATTEMPT_INVALID' USING ERRCODE='22023';END IF;
  event_ref:=p_reference||':'||coalesce(nullif(p_payload->>'attempt',''),'1');
- SELECT id INTO existing FROM platform_private.b2b_financial_forecast_events WHERE forecast_id=p_forecast AND event_type=p_event AND event_reference=event_ref;
- IF existing IS NOT NULL THEN SELECT state,version INTO new_state,f.version FROM platform_private.b2b_financial_forecasts WHERE id=p_forecast;
-  RETURN jsonb_build_object('forecast_id',p_forecast,'state',new_state,'version',f.version,'replayed',true);END IF;
  SELECT * INTO f FROM platform_private.b2b_financial_forecasts WHERE id=p_forecast FOR UPDATE;
- IF NOT FOUND OR f.version<>p_expected_version THEN RAISE EXCEPTION 'B2B_FORECAST_CAS_CONFLICT' USING ERRCODE='PT409';END IF;
+ IF NOT FOUND THEN RAISE EXCEPTION 'B2B_FORECAST_CAS_CONFLICT' USING ERRCODE='PT409';END IF;
+ SELECT * INTO existing FROM platform_private.b2b_financial_forecast_events WHERE forecast_id=p_forecast AND event_type=p_event AND event_reference=event_ref;
+ IF FOUND THEN
+  IF existing.payload IS DISTINCT FROM p_payload THEN RAISE EXCEPTION 'B2B_FORECAST_REPLAY_DIVERGENCE' USING ERRCODE='PT409';END IF;
+  RETURN jsonb_build_object('forecast_id',p_forecast,'state',f.state,'version',f.version,'replayed',true);END IF;
+ IF f.version IS DISTINCT FROM p_expected_version THEN RAISE EXCEPTION 'B2B_FORECAST_CAS_CONFLICT' USING ERRCODE='PT409';END IF;
  IF p_event='EMISSION_STARTED' THEN
-  IF f.state NOT IN ('aguardando_fiscal','emissao_em_andamento') THEN RAISE EXCEPTION 'B2B_FORECAST_STATE_CONFLICT' USING ERRCODE='PT409';END IF;
+  IF f.residual_amount<=0 OR f.state NOT IN ('aguardando_fiscal','emissao_em_andamento','faturado_parcial') THEN RAISE EXCEPTION 'B2B_FORECAST_STATE_CONFLICT' USING ERRCODE='PT409';END IF;
   IF f.state='emissao_em_andamento' AND f.fiscal_intent_id::text IS DISTINCT FROM p_reference THEN RAISE EXCEPTION 'B2B_FORECAST_INTENT_CONFLICT' USING ERRCODE='PT409';END IF;
   new_state:='emissao_em_andamento';
  ELSIF p_event IN ('EMISSION_FAILED','EMISSION_REJECTED') THEN
@@ -164,7 +170,7 @@ BEGIN
  RETURN jsonb_build_object('forecast_id',f.id,'state',new_state,'version',f.version+1);
 END$$;
 REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb),platform_private.b2b_financial_forecast_events_immutable(),platform_private.b2b_financial_forecast_guard(),platform_private.b2b_financial_forecast_transition_v1(uuid,integer,text,text,jsonb),platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text) FROM PUBLIC,anon,authenticated,service_role;
-GRANT EXECUTE ON FUNCTION platform_private.b2b_financial_forecast_transition_v1(uuid,integer,text,text,jsonb),platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text) TO service_role;
+-- No direct service caller: canonical wrappers/authority still require review.
 
 CREATE OR REPLACE FUNCTION public.approve_b2b_credit(p_partner_order_id uuid, p_notes text DEFAULT NULL::text)
  RETURNS jsonb

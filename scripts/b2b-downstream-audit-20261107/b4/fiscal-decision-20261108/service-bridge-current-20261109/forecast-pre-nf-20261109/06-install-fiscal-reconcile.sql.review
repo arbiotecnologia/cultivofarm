@@ -9,6 +9,11 @@ BEGIN
  IF NOT FOUND THEN RAISE EXCEPTION 'B2B_FORECAST_FISCAL_ALLOCATION_UNPROVEN' USING ERRCODE='42501';END IF;
  SELECT * INTO f FROM platform_private.b2b_financial_forecasts WHERE order_id=a.order_id FOR UPDATE;
  IF NOT FOUND THEN RETURN jsonb_build_object('forecast_found',false,'legacy_order',true);END IF;
+ IF f.state IN ('cancelado_antes_nf','cancelado_residual') THEN
+  RAISE EXCEPTION 'B2B_FORECAST_RESIDUAL_CANCELED' USING ERRCODE='PT409';END IF;
+ -- Only the existing fiscal bridge owns this transaction permit. Payloads,
+ -- service_role and caller-supplied IDs cannot attest authorization or tenant.
+ PERFORM platform_private.b2b_integration_dependencies();
  IF EXISTS(SELECT 1 FROM platform_private.b2b_financial_forecast_events WHERE forecast_id=f.id AND event_type='FISCAL_CONFIRMED' AND event_reference=p_document::text) THEN
   RETURN jsonb_build_object('forecast_id',f.id,'state',f.state,'version',f.version,'replayed',true);END IF;
  residual:=platform_private.b2b_order_residual(a.order_id);new_state:=CASE WHEN residual=0 THEN 'faturado_total' ELSE 'faturado_parcial' END;
@@ -20,5 +25,5 @@ END$$;
 
 
 REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
-GRANT EXECUTE ON FUNCTION platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid) TO service_role;
+-- Owner-only nested invocation from the existing fiscal bridge; no service grant.
 COMMIT;
