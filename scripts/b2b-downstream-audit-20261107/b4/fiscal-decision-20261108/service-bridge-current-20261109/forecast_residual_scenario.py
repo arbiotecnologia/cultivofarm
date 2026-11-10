@@ -4,6 +4,9 @@ import concurrent.futures
 import hashlib
 import json
 import time
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
 def test_terms_waits(B, Q, OUT, order_id):
@@ -247,6 +250,8 @@ def run_pre_nf_wrappers(B, Q, OUT, order_id, accepted, item):
     log = []
     R = insert_invoice(B, Q, order_id, Q.P, company, item['id'], 9, 960)
     v = version(Q, order_id)
+    from lifecycle_containment_tests import run as containment_run
+    containment_run(B,Q,OUT,order_id,R,v)
     neg = dict(
         foreign_admin=denied(sync_raw(Q, Q.UADMF, R['tx'], v), 'B2B_FORECAST_FISCAL_'),
         cross_tenant_buyer=denied(sync_raw(Q, Q.UB2, R['tx'], v), 'B2B_FORECAST_FISCAL_'),
@@ -471,6 +476,8 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
     company = order['internal_economic_snapshot']['origin']['company_settings_id']
     item_id = B.last(f"SELECT id FROM public.partner_order_items WHERE order_id='{pc_order}' ORDER BY created_at,id LIMIT 1;")
     total = float(forecast_row(B, pc_order)['residual_amount'])
+    from lifecycle_containment_tests import grant_sql
+    B.sql(grant_sql(Q,pc_order,Q.PC))
     pc_base_open = float(exposure(B, Q, partner=Q.PC)['saldo_em_aberto'])
     pc_initial = assert_order_exposure(B, Q, pc_order, pc_base_open, 0, total, partner=Q.PC, label='PC before NF: residual only')
     half = round(total / 2, 2)
