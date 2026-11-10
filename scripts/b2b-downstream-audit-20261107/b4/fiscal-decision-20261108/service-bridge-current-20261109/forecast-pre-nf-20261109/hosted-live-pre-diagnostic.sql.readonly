@@ -9,8 +9,10 @@ WITH objs(kind, sig, expectation) AS (VALUES
  ('LIVE','public.h15_actor_organization()','PRESENT'),
  ('LIVE','public._saas_user_has_feature(uuid,text)','PRESENT'),
  ('LIVE','public.fn_b2b_credit_exposure','PRESENT md5 213ac31f3a30816ead75365b0d1fed18 (pré-B4)'),
- ('LIVE','public.approve_b2b_payment_terms_secure','PRESENT'),
- ('LIVE','public.approve_b2b_credit','PRESENT'),
+ ('LIVE','public.approve_b2b_payment_terms_secure','PRESENT md5 a61daa8542058bdbf239903d655c2a1b'),
+ ('LIVE','public.approve_partner_order(uuid,text,date)','PRESENT md5 664f63441c92a6716f0117362255ec9e'),
+ ('LIVE','public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)','PRESENT md5 97bcdb9884b54adb3bd4aae4915e32d0 (pinned by b4-seller91-current; 4926a99c = STOP)'),
+ ('LIVE','public.approve_b2b_credit','PRESENT md5 8127c7b697871fa1eecafa845a551eea'),
  ('LIVE','public.rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid)','PRESENT md5 4d93bb04e4a18771ed9185d2f3c5d6dc'),
  ('LIVE','public.rpc_register_receivable_payment(uuid,jsonb)','PRESENT'),
  ('LIVE','platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)','PRESENT or ABSENT (logistics pilot; never modified by this package)'),
@@ -23,7 +25,9 @@ WITH objs(kind, sig, expectation) AS (VALUES
  ('LOCAL_ONLY','public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer)','ABSENT expected'),
  ('LOCAL_ONLY','public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text)','ABSENT expected'),
  ('LOCAL_ONLY','public.get_b2b_financial_forecast_secure(uuid)','ABSENT expected (UI shows unavailable)'),
- ('LOCAL_ONLY','platform_private.b2b_forecast_lifecycle_allowed_v1(text,uuid,uuid,uuid,uuid)','ABSENT expected')
+ ('LOCAL_ONLY','platform_private.b2b_forecast_lifecycle_allowed_v1(text,uuid,uuid,uuid,uuid)','ABSENT expected'),
+ ('LOCAL_ONLY','platform_private.b2b_forecast_creation_allowed_v1(uuid,uuid,uuid,uuid)','ABSENT expected (creation pilot, installed closed by stage 3)'),
+ ('LOCAL_ONLY','platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb)','ABSENT expected')
 )
 SELECT jsonb_pretty(jsonb_agg(jsonb_build_object(
   'kind',o.kind,'signature',o.sig,'expectation',o.expectation,
