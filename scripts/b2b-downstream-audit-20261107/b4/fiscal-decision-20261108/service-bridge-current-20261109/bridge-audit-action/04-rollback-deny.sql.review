@@ -1,113 +1,14 @@
--- REVIEW ONLY deny-only; restaura ponte anterior sem apagar histórico.
+-- REVIEW ONLY deny-only; não restaura a ponte sem proteção de cancelamento.
 BEGIN;
 SET LOCAL lock_timeout='3s';
 DO $$ BEGIN
- IF md5(pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure)) IS DISTINCT FROM '9a6d2c8d686d2c2f83fca9917881c02b' THEN RAISE EXCEPTION 'BRIDGE_AUDIT_ROLLBACK_PRE_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure)) IS DISTINCT FROM '9b14fa08913075c08bc905074fb98a10' THEN RAISE EXCEPTION 'BRIDGE_AUDIT_ROLLBACK_PRE_DRIFT'; END IF;
 END $$;
 CREATE OR REPLACE FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1(p_invoice uuid)
- RETURNS jsonb
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO ''
-AS $function$
-DECLARE inv public.fiscal_invoices; po public.partner_orders; tx public.fiscal_sefaz_transmissions;
- org uuid; items jsonb; snapshot_items jsonb; canonical_snapshot jsonb; digest_snapshot jsonb; digest text; result jsonb;
- existing platform_private.b2b_authorized_documents; saved platform_private.b2b_fiscal_invoice_snapshots;
-BEGIN
- IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'B2B_READ_COMMITTED_REQUIRED' USING ERRCODE='0A000'; END IF;
- SELECT * INTO inv FROM public.fiscal_invoices WHERE id=p_invoice FOR UPDATE;
- IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_INVOICE_NOT_FOUND' USING ERRCODE='42501'; END IF;
- IF inv.normalized_status IS DISTINCT FROM 'AUTHORIZED' THEN
-  RETURN jsonb_build_object('success',true,'skipped',true,'reason',coalesce(inv.normalized_status,inv.status),'receivable_id',NULL);
- END IF;
- -- Nenhum vínculo B2B: preserva o fluxo fiscal existente. Qualquer vínculo parcial,
- -- item de pedido ou documento B4 existente torna a nota B2B e falha fechado se inválida.
- IF inv.partner_order_id IS NULL AND inv.debtor_partner_id IS NULL
-  AND NOT EXISTS(SELECT 1 FROM public.fiscal_invoice_items i WHERE i.fiscal_invoice_id=inv.id AND i.partner_order_item_id IS NOT NULL)
-  AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_authorized_documents d WHERE d.id=inv.id) THEN
-  RETURN jsonb_build_object('success',true,'skipped',true,'reason','NON_B2B','receivable_id',NULL);
- END IF;
- IF inv.partner_order_id IS NULL OR inv.debtor_partner_id IS NULL THEN
-  RAISE EXCEPTION 'B2B_FISCAL_ORDER_SCOPE_INVALID' USING ERRCODE='42501';
- END IF;
- IF inv.invoice_type='NFSE' THEN RAISE EXCEPTION 'B2B_FISCAL_NFSE_CALLBACK_UNPROVEN' USING ERRCODE='42501'; END IF;
- IF inv.invoice_type IS DISTINCT FROM 'NFE' OR inv.authorized_at IS NULL OR inv.issue_date IS NULL
-  OR inv.environment IS DISTINCT FROM 'HOMOLOGATION' OR coalesce(inv.access_key,'')!~'^[0-9]{44}$'
- THEN RAISE EXCEPTION 'B2B_FISCAL_CONFIRMATION_UNPROVEN' USING ERRCODE='42501'; END IF;
- SELECT * INTO saved FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id=inv.id;
- IF saved.invoice_id IS NOT NULL THEN
-  SELECT * INTO tx FROM public.fiscal_sefaz_transmissions t
-  WHERE t.id=saved.transmission_id AND t.fiscal_invoice_id=inv.id AND t.state='SUCCEEDED' AND t.outcome='AUTHORIZED'
-   AND coalesce(t.protocol_c_stat,t.c_stat) IN ('100','150') AND t.ch_nfe=inv.access_key AND t.n_prot IS NOT NULL AND t.ambiente_retorno='2'
-  FOR UPDATE;
- ELSE
-  SELECT * INTO tx FROM public.fiscal_sefaz_transmissions t
-  WHERE t.fiscal_invoice_id=inv.id AND t.state='SUCCEEDED' AND t.outcome='AUTHORIZED'
-   AND coalesce(t.protocol_c_stat,t.c_stat) IN ('100','150') AND t.ch_nfe=inv.access_key AND t.n_prot IS NOT NULL AND t.ambiente_retorno='2'
-  ORDER BY t.completed_at ASC NULLS LAST,t.id ASC LIMIT 1 FOR UPDATE;
- END IF;
- IF tx.id IS NULL OR NOT EXISTS(SELECT 1 FROM public.fiscal_xml_runs r
-   WHERE r.fiscal_invoice_id=inv.id AND r.signed_path IS NOT NULL AND (r.access_key IS NULL OR r.access_key=inv.access_key))
- THEN RAISE EXCEPTION 'B2B_FISCAL_CONFIRMATION_UNPROVEN' USING ERRCODE='42501'; END IF;
- SELECT c.organization_id INTO org FROM public.company_fiscal_settings c
- WHERE c.id=inv.company_settings_id AND c.is_active IS TRUE;
- IF org IS NULL OR inv.organization_id IS DISTINCT FROM org THEN RAISE EXCEPTION 'B2B_FISCAL_TENANT_MISMATCH' USING ERRCODE='42501'; END IF;
- SELECT * INTO po FROM public.partner_orders WHERE id=inv.partner_order_id;
- IF po.id IS NULL OR po.partner_id IS DISTINCT FROM inv.debtor_partner_id OR NOT EXISTS(
-   SELECT 1 FROM public.partner_accounts pa WHERE pa.id=po.partner_id AND pa.commercial_owner_organization_id=org AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
- ) THEN RAISE EXCEPTION 'B2B_FISCAL_ORDER_SCOPE_INVALID' USING ERRCODE='42501'; END IF;
- SELECT jsonb_agg(jsonb_build_object('item_id',x.partner_order_item_id,'quantity',x.quantity,
-   'commercial_unit',x.commercial_unit,'taxable_quantity',x.taxable_quantity,'taxable_unit',x.taxable_unit) ORDER BY x.partner_order_item_id),
- jsonb_agg(jsonb_build_object('item_id',x.partner_order_item_id,'quantity',x.quantity,
-   'commercial_unit',x.commercial_unit,'taxable_quantity',x.taxable_quantity,'taxable_unit',x.taxable_unit,'net_value',x.net_value) ORDER BY x.partner_order_item_id)
- INTO items,snapshot_items FROM (
-   SELECT i.partner_order_item_id,sum(i.quantity) quantity,i.commercial_unit,sum(i.taxable_quantity) taxable_quantity,i.taxable_unit,sum(i.net_value) net_value
-   FROM public.fiscal_invoice_items i WHERE i.fiscal_invoice_id=inv.id
-    GROUP BY i.partner_order_item_id,i.commercial_unit,i.taxable_unit
- ) x;
- IF items IS NULL OR jsonb_array_length(items)=0 OR EXISTS(
-   SELECT 1 FROM public.fiscal_invoice_items i LEFT JOIN public.partner_order_items oi ON oi.id=i.partner_order_item_id AND oi.order_id=po.id
-   WHERE i.fiscal_invoice_id=inv.id AND (i.partner_order_item_id IS NULL OR oi.id IS NULL OR i.quantity IS NULL OR i.quantity<=0
-    OR i.taxable_quantity IS NULL OR i.taxable_quantity<=0 OR i.commercial_unit IS NULL OR i.taxable_unit IS NULL OR i.net_value IS NULL OR i.net_value<0)
- ) OR (SELECT sum(i.net_value) FROM public.fiscal_invoice_items i WHERE i.fiscal_invoice_id=inv.id) IS DISTINCT FROM inv.total_amount
- THEN RAISE EXCEPTION 'B2B_FISCAL_ITEMS_UNPROVEN' USING ERRCODE='23514'; END IF;
- canonical_snapshot:=jsonb_build_object(
-  'invoice_id',inv.id,'invoice_type',inv.invoice_type,'access_key',inv.access_key,'authorized_at',inv.authorized_at,
-  'environment',inv.environment,'organization_id',inv.organization_id,'company_settings_id',inv.company_settings_id,
-  'partner_order_id',inv.partner_order_id,'debtor_partner_id',inv.debtor_partner_id,'debtor_customer_id',inv.debtor_customer_id,
-  'issue_date',inv.issue_date,'total_amount',inv.total_amount,'provider_reference',inv.provider_reference,
-  'provider_status_raw',inv.provider_status_raw,'tax_authority_notes',inv.tax_authority_notes,
-  'transmission_id',tx.id,'protocol',tx.n_prot,'transmission_c_stat',coalesce(tx.protocol_c_stat,tx.c_stat),
-  'transmission_outcome',tx.outcome,'transmission_environment',tx.ambiente_retorno,'items',snapshot_items);
- -- O ID identifica a evidência original, mas não a identidade fiscal do evento.
- -- Nova confirmação da mesma chave/protocolo não altera digest nem referência.
- digest_snapshot:=canonical_snapshot-'transmission_id';
- digest:=encode(extensions.digest(convert_to(digest_snapshot::text,'UTF8'),'sha256'),'hex');
- SELECT * INTO existing FROM platform_private.b2b_authorized_documents WHERE id=inv.id;
- -- Uma confirmação divergente é negada pelo H12 no próprio callback; ela não
- -- contamina nem substitui a referência original usada por replays diretos.
- IF existing.id IS NOT NULL AND (saved.invoice_id IS NULL OR saved.source_digest IS DISTINCT FROM digest OR saved.snapshot IS DISTINCT FROM canonical_snapshot
-   OR (existing.organization_id,existing.partner_id,existing.order_id,existing.kind,existing.issue_date,existing.event_key,existing.source_digest,existing.items,existing.state)
-   IS DISTINCT FROM (org,po.partner_id,po.id,inv.invoice_type,inv.issue_date,'fiscal_invoice:'||inv.id::text,digest,items,'AUTHORIZED'))
- THEN RAISE EXCEPTION 'FISCAL_REPLAY_DIVERGENCE' USING ERRCODE='PT409'; END IF;
- IF existing.id IS NULL THEN
-  INSERT INTO platform_private.b2b_fiscal_invoice_snapshots(invoice_id,transmission_id,protocol,source_digest,snapshot)
-  VALUES(inv.id,tx.id,tx.n_prot,digest,canonical_snapshot);
-  INSERT INTO platform_private.b2b_authorized_documents(id,organization_id,partner_id,order_id,kind,issue_date,event_key,source_digest,items,state)
-  VALUES(inv.id,org,po.partner_id,po.id,inv.invoice_type,inv.issue_date,'fiscal_invoice:'||inv.id::text,digest,items,'AUTHORIZED');
- END IF;
- INSERT INTO platform_private.b2b_fiscal_service_permits(transaction_id,invoice_id,document_id,organization_id,order_id,partner_id)
- VALUES(txid_current(),inv.id,inv.id,org,po.id,po.partner_id);
- result:=platform_private.b2b_allocate_document(inv.id);
- UPDATE public.fiscal_invoices SET receivable_id=(result->>'receivable_id')::uuid,updated_at=now() WHERE id=inv.id;
- INSERT INTO public.fiscal_audit_log(table_name,record_id,action,old_values,new_values,changed_by)
- VALUES('fiscal_invoices',inv.id,'B2B_RECEIVABLE_RECONCILED',jsonb_build_object('receivable_id',inv.receivable_id),
-   jsonb_build_object('receivable_id',result->>'receivable_id','document_id',inv.id,'replayed',result->>'replayed','source_digest',digest),NULL);
- DELETE FROM platform_private.b2b_fiscal_service_permits WHERE transaction_id=txid_current() AND invoice_id=inv.id;
- RETURN result||jsonb_build_object('invoice_id',inv.id,'skipped',false,'source_digest',digest);
-END $function$
-;
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $function$
+BEGIN RAISE EXCEPTION 'B2B_FISCAL_BRIDGE_ROLLED_BACK' USING ERRCODE='42501';END $function$;
+REVOKE ALL ON FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
 DO $$ BEGIN
- IF md5(pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure)) IS DISTINCT FROM '8905212e276f6bb43be32423ee48abc8' THEN RAISE EXCEPTION 'BRIDGE_AUDIT_ROLLBACK_POST_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure)) IS DISTINCT FROM '7ba1e15a134fa6336754f851aaa66647' THEN RAISE EXCEPTION 'BRIDGE_AUDIT_ROLLBACK_POST_DRIFT'; END IF;
 END $$;
 COMMIT;

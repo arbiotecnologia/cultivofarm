@@ -1,3 +1,9 @@
+## 10/11 00:04 — Revisão estática previsão 02/06
+- [x] Caracterizar os quatro riscos nos corpos anteriores e corrigir candidatos; 21 verificações isoladas, sem tratar estado/residual sintéticos como NF real.
+- [x] Fechar grants privados sem chamador comprovado; reconciliador exige permit transacional exato e validador existente. Ponte protege cancelamento antes da alocação; rollback deny-only.
+- [x] Corrigir journal da fixture de override; termos pós-comercial/antes-comercial e crédito OK/override formal comprovados na tentativa 163, sem snapshot rewrite. UI/testes focados 27/27; build automático OK.
+- [ ] PASS integrado bloqueado: tentativa 163 parou em B2B_RESALE_ORDER_CONFLICT no caller operacional. 18/9/9, pagamento, segunda NF real, corridas fiscais positivas/revogação/matriz e rollback novo não comprovados; não contornar gates. Relatório REVIEW-20261110.md distingue 160–163 e componentes.
+
 ## 09/11 23:39 — Revisão previsão 3b7668cf
 - [ ] Reproduzir 153 com SQLSTATE/estado e corrigir ambos caminhos de aprovação sem mudar snapshots/gatilhos; tentativa 149 continua prova parcial.
 - [ ] Concluir 18/9/9, pagamento 9, cancelamento residual, concorrência/revogação e matriz de atores em banco descartável.

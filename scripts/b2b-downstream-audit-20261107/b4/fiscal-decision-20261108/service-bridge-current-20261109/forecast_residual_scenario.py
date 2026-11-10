@@ -27,7 +27,9 @@ def run_override(B, Q, OUT):
     assert configured.returncode == 0, configured.stderr
     simulated, error = Q.sim(Q.UBC, Q.P3, [Q.S(2)], choice, partner=Q.PC)
     assert simulated is not None, error
-    created, error = Q.create(Q.UBC, Q.P3, [Q.S(2)], simulated['cart_hash'], 'LOCAL-FORECAST-MANUAL-CREDIT-18', choice, partner=Q.PC)
+    journal, journal_error = Q.call(Q.UBC, f"public.recover_partner_order_attempt_v1('{Q.PC}',NULL,NULL,false,NULL)")
+    assert journal is not None and journal['state'] == 'reserved', journal_error or journal
+    created, error = Q.create(Q.UBC, Q.P3, [Q.S(2)], simulated['cart_hash'], journal['key'], choice, partner=Q.PC)
     assert created is not None, error
     order_id = created['id']
     before = json.loads(B.last(f"SELECT jsonb_build_object('status',status,'credit_approved_at',credit_approved_at,'credit_approved_by',credit_approved_by)::text FROM public.partner_orders WHERE id='{order_id}';"))
@@ -67,6 +69,10 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
     assert B.last(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{first_invoice}';") == '1'
     assert B.last(f"SELECT count(*) FROM platform_private.b2b_financial_forecast_events WHERE event_type='FISCAL_CONFIRMED' AND event_reference='{first_invoice}';") == '1'
 
+    observed = json.loads(B.last(f"SELECT jsonb_build_object('id',id,'version',version) FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}';"))
+    started = B.run_raw(f"RESET ROLE;SELECT platform_private.b2b_financial_forecast_transition_v1('{observed['id']}',{observed['version']},'EMISSION_STARTED','{Q.u(913)}','{{}}'::jsonb);")
+    assert started.returncode == 0, started.stderr
+
     invoice_id, transmission_id, xml_run_id = Q.u(910), Q.u(911), Q.u(912)
     access_key = '35261111111111111111111111111111111111111112'
     company_settings_id = accepted['internal_economic_snapshot']['origin']['company_settings_id']
@@ -92,7 +98,7 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
     second_receivable = B.last(f"SELECT receivable_id FROM public.fiscal_invoices WHERE id='{invoice_id}';")
     assert second_receivable and second_receivable != first_receivable
     forecast = json.loads(B.last(f"SELECT jsonb_build_object('state',state,'residual_amount',residual_amount,'version',version)::text FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}';"))
-    assert forecast == {'state':'faturado_total','residual_amount':0.0,'version':10}, forecast
+    assert forecast == {'state':'faturado_total','residual_amount':0.0,'version':11}, forecast
     second_credit = exposure(B, Q)
     assert float(second_credit['saldo_em_aberto']) == 18 and float(second_credit['comprometido_nao_faturado']) == 0 and float(second_credit['exposicao_atual']) == 18, second_credit
     totals = json.loads(B.last(f"SELECT jsonb_build_object('titles',count(*),'total',sum(total_amount))::text FROM public.accounts_receivable WHERE origin_id='{order_id}' AND b2b_document_id IS NOT NULL;"))
