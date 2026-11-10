@@ -1,0 +1,456 @@
+{
+  "status": "PREFLIGHT_ROLLBACK_OK",
+  "tables": {
+    "fiscal_invoices": {
+      "required_without_default": [
+        "invoice_type",
+        "created_by",
+        "company_settings_id"
+      ],
+      "insert_columns": [
+        "id",
+        "invoice_type",
+        "document_model",
+        "idempotency_key",
+        "status",
+        "normalized_status",
+        "environment",
+        "company_settings_id",
+        "organization_id",
+        "partner_order_id",
+        "debtor_partner_id",
+        "issue_date",
+        "total_amount",
+        "created_by",
+        "provider_reference",
+        "access_key"
+      ],
+      "constraints": [
+        {
+          "name": "chk_fi_direction",
+          "type": "c",
+          "definition": "CHECK (((direction IS NULL) OR (direction = ANY (ARRAY['OUT'::text, 'IN'::text]))))"
+        },
+        {
+          "name": "chk_fi_document_model",
+          "type": "c",
+          "definition": "CHECK (((document_model IS NULL) OR (document_model = ANY (ARRAY['NFE'::text, 'NFSE'::text, 'OTHER'::text]))))"
+        },
+        {
+          "name": "chk_fi_document_origin",
+          "type": "c",
+          "definition": "CHECK (((document_origin IS NULL) OR (document_origin = ANY (ARRAY['MANUAL_RECORD'::text, 'EXTERNAL_IMPORTED'::text, 'SYSTEM_PREPARED'::text, 'PROVIDER_INTEGRATED'::text]))))"
+        },
+        {
+          "name": "chk_fi_environment",
+          "type": "c",
+          "definition": "CHECK (((environment IS NULL) OR (environment = ANY (ARRAY['NOT_CONFIGURED'::text, 'HOMOLOGATION'::text, 'PRODUCTION'::text]))))"
+        },
+        {
+          "name": "chk_fi_fin_nfe",
+          "type": "c",
+          "definition": "CHECK (((fin_nfe IS NULL) OR (fin_nfe = ANY (ARRAY[1, 2, 3, 4, 5, 6]))))"
+        },
+        {
+          "name": "chk_fi_fiscal_operation_type",
+          "type": "c",
+          "definition": "CHECK (((fiscal_operation_type IS NULL) OR (fiscal_operation_type = ANY (ARRAY['NORMAL'::text, 'ADVANCE_PAYMENT'::text, 'EFFECTIVE_SALE_AFTER_ADVANCE'::text, 'STOCK_LOSS'::text, 'VALUE_QUANTITY_REDUCTION'::text, 'DELIVERY_REFUSAL_TOTAL'::text, 'DELIVERY_REFUSAL_PARTIAL'::text, 'RECIPIENT_NOT_FOUND'::text]))))"
+        },
+        {
+          "name": "chk_fi_no_self_parent",
+          "type": "c",
+          "definition": "CHECK (((parent_invoice_id IS NULL) OR (parent_invoice_id <> id)))"
+        },
+        {
+          "name": "chk_fi_no_self_substitution",
+          "type": "c",
+          "definition": "CHECK (((substitution_invoice_id IS NULL) OR (substitution_invoice_id <> id)))"
+        },
+        {
+          "name": "chk_fi_normalized_status",
+          "type": "c",
+          "definition": "CHECK (((normalized_status IS NULL) OR (normalized_status = ANY (ARRAY['LEGACY_RECORDED'::text, 'DRAFT'::text, 'VALIDATING'::text, 'READY'::text, 'QUEUED'::text, 'PROCESSING'::text, 'AUTHORIZED'::text, 'REJECTED'::text, 'ERROR'::text, 'CANCEL_REQUESTED'::text, 'CANCELED'::text, 'SUBSTITUTED'::text]))))"
+        },
+        {
+          "name": "chk_fi_reconciliation_status",
+          "type": "c",
+          "definition": "CHECK (((reconciliation_status IS NULL) OR (reconciliation_status = ANY (ARRAY['NOT_APPLICABLE'::text, 'PENDING'::text, 'RECONCILED'::text, 'DIVERGENT'::text, 'REQUIRES_REVIEW'::text]))))"
+        },
+        {
+          "name": "chk_fi_sinief20_icms_conditional",
+          "type": "c",
+          "definition": "CHECK (((icms_amount IS NULL) OR ((icms_due IS TRUE) AND (icms_amount >= (0)::numeric))))"
+        },
+        {
+          "name": "chk_fi_sinief20_reduction_dest_snapshot",
+          "type": "c",
+          "definition": "CHECK (((fiscal_operation_type IS DISTINCT FROM 'VALUE_QUANTITY_REDUCTION'::text) OR ((original_recipient_snapshot IS NOT NULL) AND (jsonb_typeof(original_recipient_snapshot) = 'object'::text) AND (original_recipient_snapshot ?& ARRAY['kind'::text, 'cnpjCpf'::text, 'capturedAt'::text, 'source'::text]) AND (btrim(COALESCE((original_recipient_snapshot ->> 'kind'::text), ''::text)) = ANY (ARRAY['EXTERNAL'::text, 'INTERNAL'::text])) AND (btrim(COALESCE((original_recipient_snapshot ->> 'cnpjCpf'::text), ''::text)) <> ''::text) AND (btrim(COALESCE((original_recipient_snapshot ->> 'source'::text), ''::text)) <> ''::text) AND (btrim(COALESCE((original_recipient_snapshot ->> 'capturedAt'::text), ''::text)) <> ''::text) AND\nCASE\n    WHEN (btrim((original_recipient_snapshot ->> 'capturedAt'::text)) ~ '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:?\\d{2})$'::text) THEN ((btrim((original_recipient_snapshot ->> 'capturedAt'::text)))::timestamp with time zone IS NOT NULL)\n    ELSE false\nEND)))"
+        },
+        {
+          "name": "chk_fi_tp_nf_credito",
+          "type": "c",
+          "definition": "CHECK (((tp_nf_credito IS NULL) OR ((tp_nf_credito >= 1) AND (tp_nf_credito <= 99))))"
+        },
+        {
+          "name": "chk_fi_tp_nf_debito",
+          "type": "c",
+          "definition": "CHECK (((tp_nf_debito IS NULL) OR ((tp_nf_debito >= 1) AND (tp_nf_debito <= 99))))"
+        },
+        {
+          "name": "fi_customer_id_fk",
+          "type": "f",
+          "definition": "FOREIGN KEY (customer_id) REFERENCES clientes(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "fi_fiscal_profile_snapshot_object",
+          "type": "c",
+          "definition": "CHECK (((jsonb_typeof(fiscal_profile_snapshot) = 'object'::text) AND (NOT fiscal_json_has_sensitive_key(fiscal_profile_snapshot))))"
+        },
+        {
+          "name": "fi_homologation_status_domain",
+          "type": "c",
+          "definition": "CHECK ((homologation_validation_status = ANY (ARRAY['NOT_VALIDATED'::text, 'READY'::text, 'INCOMPLETE'::text, 'BLOCKED'::text])))"
+        },
+        {
+          "name": "fi_homologation_summary_no_secrets",
+          "type": "c",
+          "definition": "CHECK ((NOT fiscal_json_has_sensitive_key(homologation_validation_summary)))"
+        },
+        {
+          "name": "fi_homologation_summary_object",
+          "type": "c",
+          "definition": "CHECK ((jsonb_typeof(homologation_validation_summary) = 'object'::text))"
+        },
+        {
+          "name": "fi_tax_snapshot_object",
+          "type": "c",
+          "definition": "CHECK (((jsonb_typeof(tax_snapshot) = 'object'::text) AND (NOT fiscal_json_has_sensitive_key(tax_snapshot))))"
+        },
+        {
+          "name": "fiscal_invoices_company_settings_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (company_settings_id) REFERENCES company_fiscal_settings(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "fiscal_invoices_danfe_document_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (danfe_document_id) REFERENCES financial_documents(id)"
+        },
+        {
+          "name": "fiscal_invoices_debtor_customer_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (debtor_customer_id) REFERENCES clientes(id)"
+        },
+        {
+          "name": "fiscal_invoices_debtor_partner_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (debtor_partner_id) REFERENCES partner_accounts(id)"
+        },
+        {
+          "name": "fiscal_invoices_delivery_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (delivery_id) REFERENCES entregas(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "fiscal_invoices_invoice_type_check",
+          "type": "c",
+          "definition": "CHECK ((invoice_type = ANY (ARRAY['NFE'::text, 'NFSE'::text, 'NFCE'::text, 'OUTRO'::text])))"
+        },
+        {
+          "name": "fiscal_invoices_organization_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
+        },
+        {
+          "name": "fiscal_invoices_parent_invoice_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (parent_invoice_id) REFERENCES fiscal_invoices(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "fiscal_invoices_partner_order_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (partner_order_id) REFERENCES partner_orders(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "fiscal_invoices_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "fiscal_invoices_receivable_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (receivable_id) REFERENCES accounts_receivable(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "fiscal_invoices_status_check",
+          "type": "c",
+          "definition": "CHECK ((status = ANY (ARRAY['DRAFT'::text, 'PENDING'::text, 'ISSUED'::text, 'CANCELED'::text, 'ERROR'::text])))"
+        },
+        {
+          "name": "fiscal_invoices_substitution_invoice_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (substitution_invoice_id) REFERENCES fiscal_invoices(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "fiscal_invoices_tp_emis_chk",
+          "type": "c",
+          "definition": "CHECK ((tp_emis = 1))"
+        },
+        {
+          "name": "fiscal_invoices_xml_document_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (xml_document_id) REFERENCES financial_documents(id)"
+        }
+      ]
+    },
+    "fiscal_invoice_items": {
+      "required_without_default": [
+        "fiscal_invoice_id",
+        "item_sequence",
+        "item_kind"
+      ],
+      "insert_columns": [
+        "fiscal_invoice_id",
+        "partner_order_item_id",
+        "item_sequence",
+        "item_kind",
+        "quantity",
+        "commercial_unit",
+        "taxable_quantity",
+        "taxable_unit",
+        "net_value"
+      ],
+      "constraints": [
+        {
+          "name": "fii_tax_input_snapshot_chk",
+          "type": "c",
+          "definition": "CHECK (fn_fiscal_tax_input_valid(tax_input_snapshot))"
+        },
+        {
+          "name": "fiscal_invoice_items_entrega_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (entrega_id) REFERENCES entregas(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "fiscal_invoice_items_fiscal_invoice_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (fiscal_invoice_id) REFERENCES fiscal_invoices(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "fiscal_invoice_items_fiscal_invoice_id_item_sequence_key",
+          "type": "u",
+          "definition": "UNIQUE (fiscal_invoice_id, item_sequence)"
+        },
+        {
+          "name": "fiscal_invoice_items_item_kind_check",
+          "type": "c",
+          "definition": "CHECK ((item_kind = ANY (ARRAY['PRODUCT'::text, 'MICROORGANISM'::text, 'SERVICE'::text, 'OTHER'::text])))"
+        },
+        {
+          "name": "fiscal_invoice_items_lote_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (lote_id) REFERENCES lotes(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "fiscal_invoice_items_partner_order_item_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (partner_order_item_id) REFERENCES partner_order_items(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "fiscal_invoice_items_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "h7k_fii_commercial_unit_present",
+          "type": "c",
+          "definition": "CHECK (((commercial_unit IS NULL) OR (btrim(commercial_unit) <> ''::text)))"
+        },
+        {
+          "name": "h7k_fii_quantity_positive",
+          "type": "c",
+          "definition": "CHECK (((quantity IS NULL) OR (quantity > (0)::numeric)))"
+        },
+        {
+          "name": "h7k_fii_values_non_negative",
+          "type": "c",
+          "definition": "CHECK (((COALESCE(unit_value, (0)::numeric) >= (0)::numeric) AND (COALESCE(gross_value, (0)::numeric) >= (0)::numeric) AND (COALESCE(discount_value, (0)::numeric) >= (0)::numeric) AND (COALESCE(freight_value, (0)::numeric) >= (0)::numeric) AND (COALESCE(insurance_value, (0)::numeric) >= (0)::numeric) AND (COALESCE(other_value, (0)::numeric) >= (0)::numeric) AND (COALESCE(net_value, (0)::numeric) >= (0)::numeric)))"
+        }
+      ]
+    },
+    "fiscal_xml_runs": {
+      "required_without_default": [
+        "fiscal_invoice_id",
+        "idempotency_key",
+        "schema_version",
+        "environment_code",
+        "access_key",
+        "payload",
+        "payload_sha256"
+      ],
+      "insert_columns": [
+        "id",
+        "fiscal_invoice_id",
+        "idempotency_key",
+        "run_version",
+        "schema_version",
+        "environment_code",
+        "access_key",
+        "state",
+        "payload",
+        "payload_sha256",
+        "signed_sha256",
+        "signed_path",
+        "signed_at",
+        "validation",
+        "signature_metadata",
+        "created_by",
+        "updated_at"
+      ],
+      "constraints": [
+        {
+          "name": "fiscal_xml_runs_env_chk",
+          "type": "c",
+          "definition": "CHECK ((environment_code = '2'::text))"
+        },
+        {
+          "name": "fiscal_xml_runs_fiscal_invoice_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (fiscal_invoice_id) REFERENCES fiscal_invoices(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "fiscal_xml_runs_idem_unique",
+          "type": "u",
+          "definition": "UNIQUE (fiscal_invoice_id, idempotency_key)"
+        },
+        {
+          "name": "fiscal_xml_runs_key_chk",
+          "type": "c",
+          "definition": "CHECK ((access_key ~ '^[0-9]{44}$'::text))"
+        },
+        {
+          "name": "fiscal_xml_runs_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "fiscal_xml_runs_previous_run_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (previous_run_id) REFERENCES fiscal_xml_runs(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "fiscal_xml_runs_reservation_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (reservation_id) REFERENCES fiscal_number_reservations(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "fiscal_xml_runs_state_chk",
+          "type": "c",
+          "definition": "CHECK ((state = ANY (ARRAY['PREPARED'::text, 'GENERATED'::text, 'XSD_VALIDATED'::text, 'SIGNED'::text, 'FAILED'::text])))"
+        },
+        {
+          "name": "fiscal_xml_runs_version_chk",
+          "type": "c",
+          "definition": "CHECK ((run_version >= 1))"
+        }
+      ]
+    },
+    "fiscal_sefaz_transmissions": {
+      "required_without_default": [
+        "service",
+        "endpoint_host",
+        "endpoint_url",
+        "idempotency_key",
+        "request_fingerprint"
+      ],
+      "insert_columns": [
+        "id",
+        "fiscal_invoice_id",
+        "xml_run_id",
+        "service",
+        "environment_code",
+        "endpoint_host",
+        "endpoint_url",
+        "idempotency_key",
+        "request_fingerprint",
+        "state",
+        "outcome",
+        "c_stat",
+        "x_motivo",
+        "ch_nfe",
+        "n_prot",
+        "ambiente_retorno",
+        "dh_recbto",
+        "completed_at",
+        "created_by"
+      ],
+      "constraints": [
+        {
+          "name": "chk_fiscal_sefaz_tx_outcome",
+          "type": "c",
+          "definition": "CHECK ((outcome = ANY (ARRAY['PENDING'::text, 'AUTHORIZED'::text, 'REJECTED'::text, 'PROCESSING'::text, 'EVENT_REGISTERED'::text, 'SERVICE_INFO'::text, 'TRANSPORT_ERROR'::text])))"
+        },
+        {
+          "name": "fiscal_sefaz_transmissions_attempt_check",
+          "type": "c",
+          "definition": "CHECK ((attempt >= 0))"
+        },
+        {
+          "name": "fiscal_sefaz_transmissions_endpoint_host_check",
+          "type": "c",
+          "definition": "CHECK ((endpoint_host = 'hnfe.fazenda.mg.gov.br'::text))"
+        },
+        {
+          "name": "fiscal_sefaz_transmissions_endpoint_url_check",
+          "type": "c",
+          "definition": "CHECK ((endpoint_url ~~ 'https://hnfe.fazenda.mg.gov.br/%'::text))"
+        },
+        {
+          "name": "fiscal_sefaz_transmissions_environment_code_check",
+          "type": "c",
+          "definition": "CHECK ((environment_code = '2'::text))"
+        },
+        {
+          "name": "fiscal_sefaz_transmissions_fiscal_event_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (fiscal_event_id) REFERENCES fiscal_events(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "fiscal_sefaz_transmissions_fiscal_invoice_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (fiscal_invoice_id) REFERENCES fiscal_invoices(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "fiscal_sefaz_transmissions_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "fiscal_sefaz_transmissions_service_check",
+          "type": "c",
+          "definition": "CHECK ((service = ANY (ARRAY['NFeStatusServico4'::text, 'NFeAutorizacao4'::text, 'NFeRetAutorizacao4'::text, 'NFeConsultaProtocolo4'::text, 'NFeRecepcaoEvento4'::text, 'NFeInutilizacao4'::text])))"
+        },
+        {
+          "name": "fiscal_sefaz_transmissions_state_check",
+          "type": "c",
+          "definition": "CHECK ((state = ANY (ARRAY['PENDING'::text, 'SENT'::text, 'SUCCEEDED'::text, 'FAILED'::text, 'BLOCKED'::text])))"
+        },
+        {
+          "name": "fiscal_sefaz_transmissions_xml_run_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (xml_run_id) REFERENCES fiscal_xml_runs(id) ON DELETE RESTRICT"
+        }
+      ]
+    }
+  },
+  "invoice_id": "00000000-0000-0000-0000-000000000900",
+  "xml_run_id": "00000000-0000-0000-0000-000000000902",
+  "transmission_id": "00000000-0000-0000-0000-000000000901",
+  "invoice_idempotency_key": "integrated-fiscal-invoice:a1e7dfde-1606-457a-96d8-467e38bc445f:v1",
+  "xml_idempotency_key": "integrated-fiscal-xml:00000000-0000-0000-0000-000000000900:v1",
+  "transmission_idempotency_key": "integrated-sefaz-authorize:00000000-0000-0000-0000-000000000900:v1",
+  "xml_payload_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "transmission_request_fingerprint": "8688af46f6a9511ffed83d08fbf35192bf590dc0e64ed39b4dced0bb8504591e",
+  "network": false,
+  "provider_called": false
+}
