@@ -61,6 +61,30 @@ def exposure(B, Q):
     return json.loads(B.last(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims={claims};SELECT public.fn_b2b_credit_exposure('{Q.P}',0,NULL);"))
 
 
+def test_terms_replay(B, Q, OUT, order_id, before_fix=False):
+    def state():
+        return json.loads(B.last(f"SELECT jsonb_build_object('order',to_jsonb(po),'terms',(SELECT to_jsonb(t) FROM public.partner_order_payment_terms t WHERE t.id=po.payment_terms_id AND t.partner_order_id=po.id),'audit',(SELECT count(*) FROM public.partner_order_audit_logs WHERE order_id=po.id),'notifications',(SELECT count(*) FROM public.notificacoes_operacionais WHERE tipo='b2b_payment_terms'),'forecast',(SELECT to_jsonb(f) FROM platform_private.b2b_financial_forecasts f WHERE f.order_id=po.id)) FROM public.partner_orders po WHERE po.id='{order_id}';"))
+    original = state()
+    called = Q.as_user(Q.UFIN, f"SELECT public.approve_b2b_payment_terms_secure('{order_id}','LOCAL TERMS REPLAY');")
+    after = state()
+    row = dict(before=original,after=after,exit=called.returncode,stdout=called.stdout,stderr=called.stderr,synthetic_auth=True,hosted=False,before_fix=before_fix)
+    (OUT/('terms-replay-before.json' if before_fix else 'terms-replay-after.json')).write_text(json.dumps(row,indent=2)+'\n')
+    assert called.returncode == 0, row
+    if before_fix:
+        assert after['terms']['approved_at'] != original['terms']['approved_at'] and after['audit'] > original['audit'], row
+        # Notification containment may suppress the attempted write; a static
+        # INSERT does not establish a delivered or persisted notification.
+    else:
+        assert original == after, row
+        assert json.loads(called.stdout.strip().splitlines()[-1])['replayed'] is True, row
+        for uid in (Q.UADM,Q.UFIN):
+            again = Q.as_user(uid,f"SELECT public.approve_b2b_payment_terms_secure('{order_id}',NULL);")
+            assert again.returncode == 0 and state() == original, (again.stdout,again.stderr)
+        denied = Q.as_user(Q.UADMF,f"SELECT public.approve_b2b_payment_terms_secure('{order_id}',NULL);")
+        assert denied.returncode != 0 and state() == original, (denied.stdout,denied.stderr)
+    return row
+
+
 def run_override(B, Q, OUT):
     """Crédito manual é exceção; crédito OK sem override já foi coberto pelo caso principal."""
     choice = Q.ch('boleto', 2, 30)

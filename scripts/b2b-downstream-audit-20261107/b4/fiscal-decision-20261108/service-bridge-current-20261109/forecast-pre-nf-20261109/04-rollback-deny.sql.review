@@ -204,6 +204,9 @@ DECLARE
   v_observed_terms uuid;
   v_observed_updated_at timestamptz;
   v_locked_updated_at timestamptz;
+  v_approved_by uuid;
+  v_approved_at timestamptz;
+  v_approval_status text;
   v_created_by uuid;
   v_numero text;
 BEGIN

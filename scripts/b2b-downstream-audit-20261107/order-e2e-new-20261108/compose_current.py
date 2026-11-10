@@ -324,6 +324,7 @@ def main():
   (OUT/'seller-acceptance.json').write_text(json.dumps(dict(promotion=promoted,order=accepted),indent=2)+'\n')
   checks.append(dict(test='synthetic accounting CAS promotion and canonical seller acceptance; biological production stays closed',status='PASS'))
   override=forecast_extra.run_override(B,Q,OUT)
+  forecast_extra.test_terms_replay(B,Q,OUT,order_id,before_fix=os.environ.get('FORECAST_REPLAY_BEFORE')=='1')
   checks.append(dict(test='credit OK without override creates 18 only after commercial and payment terms; separate manual override and cross tenant scope use real canonical approvals',status='PASS',override_order=override['order_id'],seller_scope=override['seller_scope']))
 
   # Nova ponte de revenda: gerada no espelho a partir dos corpos recém-instalados.

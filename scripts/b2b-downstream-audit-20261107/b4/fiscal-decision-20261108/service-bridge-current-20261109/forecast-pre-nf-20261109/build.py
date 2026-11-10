@@ -42,7 +42,7 @@ def main():
     new_credit_approval_md5 = md5(candidate_credit_approval)
 
     terms = current["approve_b2b_payment_terms_secure"]["definition"]
-    terms = terms.replace("  v_terms_id uuid;", "  v_terms_id uuid;\n  v_observed_terms uuid;\n  v_observed_updated_at timestamptz;\n  v_locked_updated_at timestamptz;")
+    terms = terms.replace("  v_terms_id uuid;", "  v_terms_id uuid;\n  v_observed_terms uuid;\n  v_observed_updated_at timestamptz;\n  v_locked_updated_at timestamptz;\n  v_approved_by uuid;\n  v_approved_at timestamptz;\n  v_approval_status text;")
     assert terms.count(scope_old) == 1
     scoped_terms = terms.replace(scope_old, scope_new)
     lock_anchor = "  WHERE po.id = p_partner_order_id;"
@@ -54,12 +54,23 @@ def main():
     scoped_terms = scoped_terms.replace(lock_anchor, "  WHERE po.id = p_partner_order_id FOR UPDATE;\n  " + authority + "\n  IF v_terms_id IS DISTINCT FROM v_observed_terms THEN RAISE EXCEPTION 'B2B_PAYMENT_TERMS_CAS_CONFLICT' USING ERRCODE='PT409'; END IF;\n  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND (status IN ('cancelado','reprovado') OR c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1')) THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVAL_UNAVAILABLE' USING ERRCODE='42501'; END IF;")
     child_anchor = "  UPDATE public.partner_order_payment_terms"
     assert scoped_terms.count(child_anchor) == 1
-    child_lock = """  SELECT updated_at INTO v_locked_updated_at FROM public.partner_order_payment_terms
+    child_lock = """  SELECT updated_at,approval_status,approved_by,approved_at INTO v_locked_updated_at,v_approval_status,v_approved_by,v_approved_at FROM public.partner_order_payment_terms
     WHERE id=v_terms_id AND partner_order_id=p_partner_order_id FOR UPDATE;
   IF NOT FOUND OR v_locked_updated_at IS DISTINCT FROM v_observed_updated_at THEN
     RAISE EXCEPTION 'B2B_PAYMENT_TERMS_CAS_CONFLICT' USING ERRCODE='PT409'; END IF;
 """
-    scoped_terms = scoped_terms.replace(child_anchor, child_lock + "  " + authority + "\n" + child_anchor)
+    replay = """
+  -- Approval is one immutable decision. Repetition is not a notes editor and
+  -- cannot replace its original actor/time or redispatch audit/notification.
+  -- Authority, parent/child locks and observed CAS were checked before replay.
+  IF v_approval_status='approved' THEN
+    IF v_approved_by IS NULL OR v_approved_at IS NULL THEN
+      RAISE EXCEPTION 'B2B_PAYMENT_TERMS_APPROVAL_UNPROVEN' USING ERRCODE='42501'; END IF;
+    RETURN jsonb_build_object('success',true,'status','approved','replayed',true,
+      'approved_by',v_approved_by,'approved_at',v_approved_at);
+  END IF;
+"""
+    scoped_terms = scoped_terms.replace(child_anchor, child_lock + "  " + authority + "\n" + replay + child_anchor)
     scoped_terms = scoped_terms.replace("  UPDATE public.partner_orders", "  " + authority + "\n  UPDATE public.partner_orders")
     scoped_terms = scoped_terms.replace("   WHERE id = v_terms_id;", "   WHERE id = v_terms_id AND partner_order_id = p_partner_order_id;\n  IF NOT FOUND THEN RAISE EXCEPTION 'payment_terms_not_defined' USING ERRCODE='42501'; END IF;")
     # Internal economics remain frozen: linked child approval metadata is already
@@ -156,7 +167,9 @@ BEGIN
  IF org IS NULL OR po.internal_economic_snapshot IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_SCOPE_UNPROVEN' USING ERRCODE='42501';END IF;
  total:=round(coalesce(po.final_amount_with_interest,po.total,0),2);
  IF total<=0 THEN RAISE EXCEPTION 'B2B_FORECAST_TOTAL_INVALID' USING ERRCODE='23514';END IF;
- SELECT jsonb_agg(to_jsonb(s) ORDER BY s.installment_number) INTO schedule
+ -- Same economic identity as the sealed schedule: operational status/link and
+ -- bookkeeping time are not contractual values. Existing snapshots stay intact.
+ SELECT jsonb_agg(to_jsonb(s)-ARRAY['status','receivable_installment_id','created_at'] ORDER BY s.installment_number) INTO schedule
   FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=po.id;
  IF schedule IS NULL OR jsonb_array_length(schedule)=0 OR (SELECT sum((x->>'amount')::numeric) FROM jsonb_array_elements(schedule)x) IS DISTINCT FROM total THEN
   RAISE EXCEPTION 'B2B_FORECAST_SCHEDULE_UNPROVEN' USING ERRCODE='23514';END IF;
@@ -164,7 +177,8 @@ BEGIN
  IF jsonb_array_length(items)=0 THEN RAISE EXCEPTION 'B2B_FORECAST_ITEMS_UNPROVEN' USING ERRCODE='23514';END IF;
  SELECT * INTO f FROM platform_private.b2b_financial_forecasts WHERE order_id=po.id;
  IF f.id IS NOT NULL THEN
-  IF (f.organization_id,f.partner_id,f.total_amount,f.economic_snapshot,f.schedule_snapshot,f.items_snapshot,
+  IF (f.organization_id,f.partner_id,f.total_amount,f.economic_snapshot,
+      (SELECT jsonb_agg(x-ARRAY['status','receivable_installment_id','created_at'] ORDER BY (x->>'installment_number')::integer) FROM jsonb_array_elements(f.schedule_snapshot)x),f.items_snapshot,
       f.commercial_approved_by,f.commercial_approved_at,f.credit_approved_by,f.credit_approved_at)
    IS DISTINCT FROM (org,po.partner_id,total,po.internal_economic_snapshot,schedule,items,
       po.approved_by,po.approved_at,po.credit_approved_by,po.credit_approved_at)

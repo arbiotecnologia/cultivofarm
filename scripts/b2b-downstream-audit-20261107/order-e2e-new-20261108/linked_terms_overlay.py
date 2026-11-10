@@ -1,6 +1,7 @@
 """Inactive, pinned consumer delta: read linked approval without rewriting economics."""
 import hashlib
 import json
+import re
 from pathlib import Path
 
 
@@ -24,13 +25,21 @@ def install(B, out):
     for sig in signatures:
         row = json.loads(B.last(f"SELECT jsonb_build_object('signature','{sig}','body',pg_get_functiondef(p.oid),'md5',md5(pg_get_functiondef(p.oid)),'owner',pg_get_userbyid(p.proowner),'acl',coalesce(p.proacl::text,'')) FROM pg_proc p WHERE oid='{sig}'::regprocedure;"))
         body = row['body']
+        replacement_count = 0
         for alias in ('po', 'v_order'):
-            import re
             pattern = rf"{alias}\.payment_condition_status='defined'\s+AND {alias}\.financial_approval_status NOT IN \('pending','rejected'\)"
-            body = re.sub(pattern, predicate.format(alias=alias), body)
+            body, count = re.subn(pattern, predicate.format(alias=alias), body)
+            replacement_count += count
         old = "v_order.payment_condition_status IS DISTINCT FROM 'defined'\n  OR v_order.financial_approval_status IN ('pending','rejected')"
+        replacement_count += body.count(old)
         body = body.replace(old, 'NOT (' + predicate.format(alias='v_order') + ')')
         assert body != row['body'], sig
+        assert replacement_count == (2 if sig.startswith('platform_private.b2b_resale_os_create_v1') else 1), (sig,replacement_count)
+        # These are immutable surrounding authorization/CAS/pilot checks, not
+        # financial predicates. The overlay may not remove or multiply any.
+        fences = ('B2B_RESALE_SCOPE_CHANGED','B2B_RESALE_GATE_CLOSED','RESALE_PILOT_SCOPE_DENIED','p_expected_updated_at','FOR UPDATE','FOR SHARE')
+        assert all(body.count(x)==row['body'].count(x) for x in fences), sig
+        row['financial_checks_reconciled'] = replacement_count
         row['candidate'] = body
         row['post_md5'] = hashlib.md5(body.encode()).hexdigest()
         rows.append(row)
