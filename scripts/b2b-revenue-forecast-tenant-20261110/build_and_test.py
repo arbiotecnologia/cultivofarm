@@ -93,10 +93,11 @@ def main():
     p = pins()
     files = {'01-pre.sql.readonly': pre_sql(p), '02-install.sql.review': install_sql(body)}
     tmp = tempfile.mkdtemp(prefix='rf-tenant-'); data = os.path.join(tmp,'d'); port = '55493'
-    run = lambda *a, **k: subprocess.run(list(a), capture_output=True, text=True, **k)
+    env = {k:v for k,v in os.environ.items() if not k.startswith('PG')}  # nunca herdar conexão hospedada
+    run = lambda *a, **k: subprocess.run(list(a), capture_output=True, text=True, env=env, **k)
+    pre = None
     if os.geteuid()==0:
-        shutil.chown(tmp,'postgres') if run('id','postgres').returncode==0 else None
-    pre = ['su','postgres','-c'] if os.geteuid()==0 and run('id','postgres').returncode==0 else None
+        shutil.chown(tmp,'lovable'); pre = ['runuser','-u','lovable','--','bash','-c']
     def sh(cmd): return run(*(pre+[cmd])) if pre else run('bash','-c',cmd)
     r = sh(f"initdb -D {data} -U postgres -A trust >/dev/null && pg_ctl -D {data} -o '-p {port} -k {tmp}' -l {tmp}/log start -w >/dev/null"); assert r.returncode==0, r.stderr
     ev = {'checks': [], 'limits': 'PostgreSQL descartável; auth.uid/h15/is_financial_staff/_saas_user_has_feature e tabelas são STUBS sintéticos. Não prova JWT/RLS/Storage hospedado nem os corpos LIVE.'}
