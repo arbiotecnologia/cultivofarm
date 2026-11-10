@@ -4,5 +4,11 @@
   "current_md5": "045be9c926880c8434219495bf9f0dfc",
   "commit": "91609839d8f9d72be3ce8a15f7d2b507ee72b032",
   "reason": "REVISADO E APROVADO tecnicamente por Renato S. Cunha na revisão c9f89292 (06/11/2026): diff do commit 91609839 conferido pessoalmente; mantém a mesma leitura escopada e reduz callbacks (remove reject local; estados indisponivel/carregando/nenhum_titulo), sem RPC, escrita, cobrança ou dispatch novos. Pin histórico a8fac0db preservado; promovido de consumer-revision-delivery-finance-20261030.candidate.json."
+ },
+ "src/hooks/useB2BFinanceiro.ts": {
+  "historical_md5": "34f3e9b43dbf97010090dc9d29deed37",
+  "current_md5": "49aa2f646b66170e8fea870a7a44d90e",
+  "commit": "95e8c3b386675b477c27e7d18c27e9142b153d13",
+  "reason": "REVISADO E APROVADO tecnicamente por Renato S. Cunha na revisão independente 95e8c3b (10/11/2026): delta exato 49aa2f646b66170e8fea870a7a44d90e do hook useB2BRevenueForecast conferido; usa rpc_b2b_revenue_forecast_tenant_v2 + empresa da sessão + prefixo de cache correto, sem escrita, cobrança ou dispatch. Pin histórico 34f3e9b4 preservado; promovido de consumer-revision-revenue-forecast-20261110.candidate.json. Aprovação do consumidor não aprova instalação do leitor."
  }
 }

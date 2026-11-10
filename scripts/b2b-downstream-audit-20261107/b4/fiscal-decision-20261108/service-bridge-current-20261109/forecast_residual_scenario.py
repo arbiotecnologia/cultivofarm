@@ -495,11 +495,17 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
     started = sync(Q, Q.UFIN, A['tx'], v)
     assert started['event'] == 'EMISSION_STARTED' and started['state'] == 'emissao_em_andamento', started
     second_intent_denied = denied(sync_raw(Q, Q.UFIN, Z['tx'], started['version']), 'B2B_FORECAST_INTENT_CONFLICT')
-    # Both authorizations arrive concurrently through the canonical callback.
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-        fa = pool.submit(authorize, B, A, A['tx'], 'LOCAL-INTEGRATED-PROTOCOL-2A')
-        fz = pool.submit(authorize, B, Z, Z['tx'], 'LOCAL-INTEGRATED-PROTOCOL-2Z')
-        ra, rz = fa.result(), fz.result()
+    # Both authorizations arrive concurrently through the canonical callback, committed while
+    # reader probes provably wait mid-read (revisão 95e8c3b: consistência de leitura V2).
+    import revenue_read_consistency as rrc
+    (OUT / 'revenue-tenant-v2').mkdir(exist_ok=True)
+    (OUT / 'revenue-tenant-v2' / 'read-consistency-probes.json').write_text(json.dumps(rrc.install_probes(B), indent=1) + '\n')
+    def _nf2():
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            fa = pool.submit(authorize, B, A, A['tx'], 'LOCAL-INTEGRATED-PROTOCOL-2A')
+            fz = pool.submit(authorize, B, Z, Z['tx'], 'LOCAL-INTEGRATED-PROTOCOL-2Z')
+            return fa.result(), fz.result()
+    (ra, rz), _ = rrc.race(B, Q, OUT, 'nf2-partial-completion', _nf2, expect_old_mix=True)
     assert ra.returncode == 0 and rz.returncode == 0, (ra.stderr, rz.stderr)
     da, dz = _last(ra), _last(rz)
     assert da['outcome'] == 'AUTHORIZED' and dz['outcome'] == 'AUTHORIZED', (da, dz)
@@ -541,7 +547,8 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
     installment = B.last(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{first_receivable}' ORDER BY installment_number LIMIT 1;")
     assert B.last(f"SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id='{first_receivable}';") == '1'
     payment = json.dumps({'amount_received':9,'payment_method_id':Q.M_BOL,'idempotency_key':'LOCAL-FORECAST-PAY-9'}).replace("'", "''")
-    paid = Q.as_user(Q.UFIN, f"SELECT public.rpc_register_receivable_payment('{installment}','{payment}'::jsonb);")
+    import revenue_read_consistency as rrc
+    paid, _ = rrc.race(B, Q, OUT, 'payment-9', lambda: Q.as_user(Q.UFIN, f"SELECT public.rpc_register_receivable_payment('{installment}','{payment}'::jsonb);"))
     assert paid.returncode == 0, paid.stderr
     paid_replay = Q.as_user(Q.UFIN, f"SELECT public.rpc_register_receivable_payment('{installment}','{payment}'::jsonb);")
     paid_credit = assert_order_exposure(B, Q, order_id, base_open, 9, 0, label='after payment 9: open 9 + residual 0 = 9')
@@ -635,7 +642,9 @@ def run_cancel_late_callback(B, Q, OUT, pc_order, accepted):
     claims=json.dumps({'sub':Q.UFIN,'role':'authenticated','iat':1,'exp':4102444800})
     cancel_hold=(f"SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{Q.UFIN}';SET LOCAL request.jwt.claims='{claims}';"
                  f"SELECT public.rpc_b2b_forecast_cancel_residual_v1('{pc_order}',{version(Q,pc_order)},'Residual cancelado por decisao comercial local');")
-    begin_lost,perm_barrier=revoke_after_proven_wait(B,cancel_hold,begin_statement(Q,L,'permanent-cancel-wins'),'')
+    import revenue_read_consistency as rrc
+    (begin_lost,perm_barrier),_=rrc.race(B,Q,OUT,'residual-cancel-commit',lambda: revoke_after_proven_wait(B,cancel_hold,begin_statement(Q,L,'permanent-cancel-wins'),''),real_fn='local_probe_rv2_new')  # V2 real já revogado (rollback deny fase C)
+    rrc.drop_probes(B)
     assert begin_lost.returncode!=0 and 'B2B_FORECAST_BEGIN_BLOCKED' in begin_lost.stderr,begin_lost.stderr
     tx_after_perm=B.last(tx_count)
     assert tx_before_perm==tx_after_perm,(tx_before_perm,tx_after_perm)

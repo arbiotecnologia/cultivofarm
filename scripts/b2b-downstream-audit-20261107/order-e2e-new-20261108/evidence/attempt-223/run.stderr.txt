@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-79dfew7l/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 406, in main
+    EndpointTests.run(B,Q,endpoint_fixture['id'],endpoint_fixture['items'][0]['id'],endpoint_fixture['accepted']['updated_at'],OUT)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-79dfew7l/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_os_endpoint.py", line 73, in run
+    r=B.run_raw(sql);assert r.returncode!=0 and token in r.stderr,(name,r.stdout,r.stderr)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('linked_terms_pending', '{"ok": true, "os_id": "2f3eb209-764d-4f75-8ff4-ed0b9a3f2530", "replay": false, "contract": "B2B_RESALE_OS_V1", "order_id": "6b2ac026-69cf-4a64-b6a1-d2dcf720770b", "order_item_id": "263ddb8c-41da-4327-80cd-d652699bd1fc"}\n', '')
