@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-bb_k11hq/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 495, in main
+    pilot_results=PilotTests.run(B,Review70.Review,Q,A,choice,pilot_out)
+  File "/tmp/new-order-e2e-bb_k11hq/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_pilot_containment.py", line 42, in run
+    fixture = R.make_order([Q.S(3)], "pilot-contained")
+  File "/tmp/new-order-e2e-bb_k11hq/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py", line 76, in make_order
+    assert denied.returncode != 0 and 'B2B_RESALE_ORDER_CONFLICT' in denied.stderr, (label, denied.stdout, denied.stderr)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('pilot-contained', '', 'ERROR:  42501: RESALE_PILOT_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 26 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n')
