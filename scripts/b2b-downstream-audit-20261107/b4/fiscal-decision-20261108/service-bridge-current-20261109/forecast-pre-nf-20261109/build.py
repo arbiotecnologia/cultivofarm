@@ -146,10 +146,55 @@ END$$;
 CREATE TRIGGER b2b_forecast_guard BEFORE UPDATE OR DELETE ON platform_private.b2b_financial_forecasts
 FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_financial_forecast_guard();
 
+-- Review cf7d5fb/214: forecast CREATION has its own deny-default gate + exact
+-- short grant (actor/org/partner/order, synthetic, <=4h, revocable). Installed
+-- closed and empty. Without it the approval hooks keep the original LIVE effects
+-- (no forecast, no new snapshot/schedule failure). Lifecycle/logistics gates untouched.
+CREATE TABLE platform_private.b2b_forecast_creation_gate_v1(
+ singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),enabled boolean NOT NULL DEFAULT false,
+ updated_at timestamptz NOT NULL DEFAULT now(),updated_by uuid,reason text);
+INSERT INTO platform_private.b2b_forecast_creation_gate_v1(singleton,enabled,reason) VALUES(true,false,'INSTALLED_CLOSED');
+CREATE TABLE platform_private.b2b_forecast_creation_allowlist_v1(
+ id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ actor_id uuid NOT NULL,organization_id uuid NOT NULL,partner_id uuid NOT NULL,order_id uuid NOT NULL,
+ synthetic boolean NOT NULL DEFAULT true CHECK(synthetic IS TRUE),
+ valid_from timestamptz NOT NULL DEFAULT now(),valid_until timestamptz NOT NULL,
+ revoked_at timestamptz,revoked_by uuid,revoke_reason text,created_at timestamptz NOT NULL DEFAULT now(),created_by uuid,
+ CHECK(valid_until>valid_from AND valid_until<=valid_from+interval '4 hours'),CHECK(revoked_at IS NULL OR revoked_at>=valid_from));
+ALTER TABLE platform_private.b2b_forecast_creation_gate_v1 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_private.b2b_forecast_creation_allowlist_v1 ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON platform_private.b2b_forecast_creation_gate_v1,platform_private.b2b_forecast_creation_allowlist_v1 FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION platform_private.b2b_forecast_creation_scope_v1(p_actor uuid,p_org uuid,p_partner uuid,p_order uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ -- Unlocked pre-filter only: out-of-pilot approvals never wait on pilot rows.
+ SELECT p_actor IS NOT NULL AND p_org IS NOT NULL AND p_partner IS NOT NULL AND p_order IS NOT NULL
+  AND EXISTS(SELECT 1 FROM platform_private.b2b_forecast_creation_gate_v1 g WHERE g.singleton AND g.enabled IS TRUE)
+  AND EXISTS(SELECT 1 FROM platform_private.b2b_forecast_creation_allowlist_v1 a
+   WHERE a.actor_id=p_actor AND a.organization_id=p_org AND a.partner_id=p_partner AND a.order_id=p_order
+    AND a.revoked_at IS NULL AND a.valid_from<=pg_catalog.clock_timestamp() AND a.valid_until>pg_catalog.clock_timestamp());
+$$;
+CREATE FUNCTION platform_private.b2b_forecast_creation_allowed_v1(p_actor uuid,p_org uuid,p_partner uuid,p_order uuid)
+RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_grant record;v_enabled boolean;
+BEGIN
+ IF p_actor IS NULL OR p_org IS NULL OR p_partner IS NULL OR p_order IS NULL THEN RETURN false;END IF;
+ -- Lock order grant -> gate (held to commit); validity/enabled measured after each wait.
+ FOR v_grant IN SELECT a.* FROM platform_private.b2b_forecast_creation_allowlist_v1 a
+  WHERE a.actor_id=p_actor AND a.organization_id=p_org AND a.partner_id=p_partner AND a.order_id=p_order ORDER BY a.id FOR UPDATE
+ LOOP
+  SELECT g.enabled INTO v_enabled FROM platform_private.b2b_forecast_creation_gate_v1 g WHERE g.singleton FOR UPDATE;
+  IF v_enabled IS NOT TRUE THEN RETURN false;END IF;
+  IF v_grant.synthetic IS TRUE AND v_grant.revoked_at IS NULL
+   AND v_grant.valid_from<=pg_catalog.clock_timestamp() AND v_grant.valid_until>pg_catalog.clock_timestamp() THEN RETURN true;END IF;
+ END LOOP;
+ RETURN false;
+END$$;
+REVOKE ALL ON FUNCTION platform_private.b2b_forecast_creation_scope_v1(uuid,uuid,uuid,uuid),platform_private.b2b_forecast_creation_allowed_v1(uuid,uuid,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+
 CREATE FUNCTION platform_private.b2b_financial_forecast_after_approval_v1(p_order uuid,p_credit jsonb)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
-DECLARE po public.partner_orders;org uuid;f platform_private.b2b_financial_forecasts;
- schedule jsonb;items jsonb;reason text:=coalesce(p_credit->>'reason_code','');total numeric(14,2);
+DECLARE po public.partner_orders;org uuid;org_after uuid;f platform_private.b2b_financial_forecasts;
+ schedule jsonb;items jsonb;reason text;total numeric(14,2);v_credit jsonb:=p_credit;
 BEGIN
  SELECT * INTO po FROM public.partner_orders WHERE id=p_order FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'B2B_FORECAST_COMMERCIAL_APPROVAL_REQUIRED' USING ERRCODE='42501';END IF;
@@ -158,6 +203,25 @@ BEGIN
  IF po.requires_financial_approval AND NOT EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
   WHERE t.id=po.payment_terms_id AND t.partner_order_id=po.id AND t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL) THEN
   RETURN jsonb_build_object('deferred',true,'reason','PAYMENT_TERMS_APPROVAL_REQUIRED');END IF;
+ -- Creation pilot: before ANY snapshot/schedule/credit check, so out-of-pilot
+ -- approvals keep their original result and effects (no forecast, no new raise).
+ IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_financial_forecasts WHERE order_id=po.id) THEN
+  SELECT pa.commercial_owner_organization_id INTO org FROM public.partner_accounts pa
+   WHERE pa.id=po.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL;
+  IF org IS NULL OR NOT platform_private.b2b_forecast_creation_scope_v1(auth.uid(),org,po.partner_id,po.id) THEN
+   RETURN jsonb_build_object('deferred',true,'reason','FORECAST_CREATION_NOT_GRANTED');END IF;
+  IF NOT platform_private.b2b_forecast_creation_allowed_v1(auth.uid(),org,po.partner_id,po.id) THEN
+   RETURN jsonb_build_object('deferred',true,'reason','FORECAST_CREATION_NOT_GRANTED');END IF;
+  -- Nothing read before the grant/gate wait counts after it: reread order, owner org and actor.
+  SELECT * INTO po FROM public.partner_orders WHERE id=p_order FOR UPDATE;
+  SELECT pa.commercial_owner_organization_id INTO org_after FROM public.partner_accounts pa
+   WHERE pa.id=po.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL;
+  IF org_after IS DISTINCT FROM org OR po.status<>'aprovado' OR po.approved_by IS NULL OR po.approved_at IS NULL
+   OR platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro','gestor','gestor_comercial']::public.app_role[]) IS DISTINCT FROM org THEN
+   RETURN jsonb_build_object('deferred',true,'reason','FORECAST_CREATION_NOT_GRANTED');END IF;
+  IF v_credit IS NULL THEN v_credit:=public.fn_b2b_credit_exposure(po.partner_id,0,NULL);END IF;
+ END IF;
+ reason:=coalesce(v_credit->>'reason_code','');
  IF po.payment_terms_id IS NULL OR coalesce(po.payment_condition_status,'') NOT IN ('defined','approved') THEN
   RAISE EXCEPTION 'B2B_FORECAST_CONDITION_UNPROVEN' USING ERRCODE='42501';END IF;
  IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_financial_forecasts WHERE order_id=po.id) AND po.credit_approved_at IS NULL AND reason<>'OK' THEN
