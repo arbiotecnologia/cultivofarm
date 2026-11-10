@@ -1,0 +1,24 @@
+{
+ "final_files": {
+  "01-pre.sql.readonly": "a0c2d1ea524f837979066ff77cfd691df5fb2995d8d72315024940f0ab948d01",
+  "02-install.sql.review": "a42cd20ad42c07cedd7705a69429dba381bdfd16dc7acb8cbf3b5e3b3182ca6f",
+  "03-post.sql.readonly": "eba7d65d4b5eb939df44a01996259e38774c2c258527cde6f40b56347615addd",
+  "04-rollback-restore-legacy-strict.sql.review": "5ad7eb3beb854d4b3138305ace6b5c8dfff3fe1d95d3ee8249e49a079f8f6551"
+ },
+ "executed": {
+  "01-pre.sql.readonly": [
+   "a0c2d1ea524f837979066ff77cfd691df5fb2995d8d72315024940f0ab948d01"
+  ],
+  "02-install.sql.review": [
+   "a42cd20ad42c07cedd7705a69429dba381bdfd16dc7acb8cbf3b5e3b3182ca6f",
+   "a42cd20ad42c07cedd7705a69429dba381bdfd16dc7acb8cbf3b5e3b3182ca6f"
+  ],
+  "03-post.sql.readonly": [
+   "eba7d65d4b5eb939df44a01996259e38774c2c258527cde6f40b56347615addd"
+  ],
+  "04-rollback-restore-legacy-strict.sql.review": [
+   "5ad7eb3beb854d4b3138305ace6b5c8dfff3fe1d95d3ee8249e49a079f8f6551",
+   "5ad7eb3beb854d4b3138305ace6b5c8dfff3fe1d95d3ee8249e49a079f8f6551"
+  ]
+ }
+}
