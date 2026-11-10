@@ -132,7 +132,10 @@ class Run:
     def prepare_until_final(self, order):
         """Credit + terms by the real canonical writers; final commercial approval left for the case."""
         Q = self.Q
+        status = self.B.last(f"SELECT status FROM public.partner_orders WHERE id='{order}';")
         for name, uid, call in self.sequence(order)[:2]:
+            if name == 'credit' and status != 'aguardando_aprovacao_credito':
+                continue          # credit already released by the canonical calculator
             r = Q.as_user(uid, f"SELECT {call};")
             assert r.returncode == 0, (name, r.stderr[-600:])
         assert self.forecasts(order) == 0
