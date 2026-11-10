@@ -1,0 +1,48 @@
+{
+ "status": "REVIEW_ONLY_INACTIVE_NOT_APPROVED",
+ "hosted": false,
+ "rows": [
+  {
+   "signature": "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)",
+   "source": "production-rollout-posplans-20261108/61-pilot-containment-install.sql.review",
+   "live_md5": "804e2a33cdf204ed9fa179f2afa2bf6e",
+   "replaced": 1,
+   "candidate_sha256": "49908e439f02d7acab3ffba35c2bdc318c7c6a654dabcdef2ed360975b3590d3"
+  },
+  {
+   "signature": "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)",
+   "source": "production-rollout-posplans-20261108/61-pilot-containment-install.sql.review",
+   "live_md5": "7cd8ee22794bf57e6592867259c9397e",
+   "replaced": 1,
+   "candidate_sha256": "469198a937bdfc593b21d1ed38a5695f9be9326b27036c4bf5ad9cf36d1ffb01"
+  },
+  {
+   "signature": "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)",
+   "source": "production-rollout-posplans-20261108/61-pilot-containment-install.sql.review",
+   "live_md5": "bd76345c3bceaa5e6203013920427df4",
+   "replaced": 1,
+   "candidate_sha256": "285678fec8640cbdb3a9aa9470269f6606ec5e73249c6c5a3bb62fd636a23996"
+  },
+  {
+   "signature": "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)",
+   "source": "production-rollout-posplans-20261108/61-pilot-containment-install.sql.review",
+   "live_md5": "c5b1da90e1f649fe0eeb99deac7094ee",
+   "replaced": 2,
+   "candidate_sha256": "739181a85f4c2984676d3ffb5fed56c8dbd1f82bdd60ce470b65bd2e40650066"
+  },
+  {
+   "signature": "public.rpc_b2b_resale_os_availability_v1(uuid)",
+   "source": "production-rollout-posplans-20261108-reader-rowtype-overlay/71-reader-rowtype-install.sql.review",
+   "live_md5": "e9767fcbcbfb831b92ee7f1523b1262e",
+   "replaced": 1,
+   "candidate_sha256": "1ee3e5225462c3be2fbfd48684e478a32cca7fa70badd6809f598b2457954a24"
+  },
+  {
+   "signature": "public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)",
+   "source": "production-rollout-posplans-20261108/61-pilot-containment-install.sql.review",
+   "live_md5": "6a249b41a6e729835ff86cfc2b40e25b",
+   "replaced": 1,
+   "candidate_sha256": "be5088b610dc47ec20375936efdbce85ee253f7e661792239efac2dd08993717"
+  }
+ ]
+}

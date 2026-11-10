@@ -1,6 +1,11 @@
+a0c2d1ea524f837979066ff77cfd691df5fb2995d8d72315024940f0ab948d01  ./01-pre.sql.readonly
+ba2b11e67aa8276354104f8c43d5f2d6b7ac14b106e2f8de10b1e2f2d99a57a1  ./02-install.sql.review
+2ec71d5b0f8fce8e86d70cfb91de99e69f8a212d10f3530db598fb26b8c4596e  ./03-post.sql.readonly
+5ad7eb3beb854d4b3138305ace6b5c8dfff3fe1d95d3ee8249e49a079f8f6551  ./04-rollback-restore-legacy-strict.sql.review
 de0d4bcc3db164f8a462b2953787dd840da54109ea75572e5df5b18c3876c27c  ./AGENTS.md
 296aa8c9ac08792dfd6fa4c144dafc1ff257d07b50df0729ad70672838520808  ./README.md
 e82943471e5164b455059dcac49e58732457209d53148030ae28b79c7b677275  ./__pycache__/generate.cpython-313.pyc
+1d9e11662b8695ab127e1ebe5656faef71594266c77b97b12fc158a4d9aa1498  ./acl-live.json
 b9c9e579b83a08e30f545b0b6f1f083fab148d1831d60e5c393880426323fe37  ./evidence/attempt-234/candidate-md5.json
 5094ce2e2d97958e1048a1ff9ef77729d417b97999cfaf5ba86f4b7db26c2fff  ./evidence/attempt-234/checks.json
 d64a7ebb2bdc502889b6ee6be89b79211e8b4c8cb0680808176369eb4307ac6c  ./evidence/attempt-234/concurrent-reserve.json
@@ -13,6 +18,7 @@ f2ca8895779d1fb90f59d5617b92afea0d4752301604f66bad92110bef1342b8  ./evidence/att
 1d2aab0361dcacdd680d41d470783f13015aa35d0daf0f598b79db54f0b5f3bd  ./evidence/attempt-234/stdout-checks.txt
 619ae8bb244f007c1e8cd0258ee5a7174807451b0e5b441e2e6b43016c3d53a0  ./evidence/attempt-234/triggers38-after-linked-approval.json
 efc166cd32ae100af78efd6b0abf30352fbb0bdb8867532f8212b82edcd00b41  ./generate.py
+6c68c0ba0d85100be8317465403d12c6664fa810239e037b4699b2ecc357ef09  ./manifest.json
 c910411173706435a2d97d970d823d79a48d2821696389a3dddb8b28dc342773  ./mirror_flow.py
 73abe68a957c0ebe0bc839d8f9dbaa7482b130208463e44edb04ec5a6158fac6  ./run1-interrupted.log
 c047572786d2adb4fc7b1c1358e282ff36782d33508af20fa80fbc659532244f  ./run2-interrupted.log

@@ -1,0 +1,291 @@
+BEGIN;
+CREATE OR REPLACE FUNCTION platform_private.b2b_resale_os_valid_v1(o ordens_servico)
+ RETURNS boolean
+ LANGUAGE sql
+ VOLATILE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+ SELECT (platform_private.resale_pilot_scope_v1('b2b_resale',NULL,auth.uid(),o.organization_id,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=o.partner_order_id),o.partner_order_id,o.partner_order_item_id,o.produto_id,NULL,NULL)
+  AND o.id IS NOT NULL AND o.origem='b2b' AND o.status::text='pronto_entrega'
+  AND o.organization_id IS NOT NULL AND o.partner_order_id IS NOT NULL AND o.partner_order_item_id IS NOT NULL
+  AND o.produto_id IS NOT NULL AND o.microrganismo_id IS NULL AND o.cliente_id IS NULL
+  AND o.fazenda_id IS NULL AND o.talhao_id IS NULL AND o.volume_total_ml IS NULL AND o.area_hectares IS NULL
+  AND EXISTS(
+   SELECT 1 FROM public.partner_orders po
+   JOIN public.partner_accounts pa ON pa.id=po.partner_id AND pa.commercial_owner_organization_id=o.organization_id
+    AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+   JOIN public.partner_order_items i ON i.id=o.partner_order_item_id AND i.order_id=po.id
+   JOIN public.produtos p ON p.id=i.product_id AND p.owner_organization_id=o.organization_id
+    AND p.ativo IS TRUE AND p.familia_catalogo IN ('quimico','fertilizante_adubo')
+   WHERE po.id=o.partner_order_id AND po.status::text='aprovado' AND po.ready_for_production IS FALSE
+    AND po.receivable_generated IS FALSE AND po.payment_condition_status='defined'
+    AND po.financial_approval_status NOT IN ('pending','rejected')
+    AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
+    AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
+    AND i.product_id=o.produto_id AND i.microrganismo_id IS NULL
+    AND i.quantidade>0 AND i.quantidade=trunc(i.quantidade) AND i.unidade_medida='unidade'
+    AND i.packaging_id_snapshot IS NOT NULL AND i.packaging_version_snapshot>0
+    AND i.packaging_unidade_conteudo_snapshot IN ('kg','g','l','ml')
+    AND ((i.packaging_unidade_conteudo_snapshot IN ('kg','g') AND i.packaging_peso_liquido_kg_snapshot>0)
+      OR (i.packaging_unidade_conteudo_snapshot IN ('l','ml') AND i.packaging_peso_liquido_kg_snapshot IS NULL))
+  )) IS TRUE;
+$function$;
+CREATE OR REPLACE FUNCTION platform_private.b2b_resale_os_operational_valid_v1(o ordens_servico)
+ RETURNS boolean
+ LANGUAGE sql
+ VOLATILE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+ SELECT (platform_private.resale_pilot_scope_v1('b2b_resale',NULL,auth.uid(),o.organization_id,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=o.partner_order_id),o.partner_order_id,o.partner_order_item_id,o.produto_id,NULL,NULL)
+  AND o.id IS NOT NULL AND o.origem='b2b' AND o.status::text='pronto_entrega'
+  AND o.organization_id IS NOT NULL AND o.partner_order_id IS NOT NULL AND o.partner_order_item_id IS NOT NULL
+  AND o.produto_id IS NOT NULL AND o.microrganismo_id IS NULL AND o.cliente_id IS NULL
+  AND o.fazenda_id IS NULL AND o.talhao_id IS NULL AND o.volume_total_ml IS NULL AND o.area_hectares IS NULL
+  AND EXISTS(
+   SELECT 1 FROM public.partner_orders po
+    JOIN public.partner_accounts pa ON pa.id=po.partner_id AND pa.commercial_owner_organization_id=o.organization_id
+    AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+   JOIN public.partner_order_items i ON i.id=o.partner_order_item_id AND i.order_id=po.id
+   JOIN public.produtos p ON p.id=i.product_id AND p.owner_organization_id=o.organization_id
+    AND p.ativo IS TRUE AND p.familia_catalogo IN ('quimico','fertilizante_adubo')
+   WHERE po.id=o.partner_order_id AND po.status::text IN ('aprovado','aguardando_entrega','em_separacao','enviado','entregue','faturado')
+    AND po.ready_for_production IS FALSE AND po.receivable_generated IS FALSE
+    AND po.payment_condition_status='defined' AND po.financial_approval_status NOT IN ('pending','rejected')
+    AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
+    AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
+    AND i.product_id=o.produto_id AND i.microrganismo_id IS NULL
+    AND i.quantidade>0 AND i.quantidade=trunc(i.quantidade) AND i.unidade_medida='unidade'
+    AND i.packaging_id_snapshot IS NOT NULL AND i.packaging_version_snapshot>0
+    AND i.packaging_unidade_conteudo_snapshot IN ('kg','g','l','ml')
+    AND ((i.packaging_unidade_conteudo_snapshot IN ('kg','g') AND i.packaging_peso_liquido_kg_snapshot>0)
+      OR (i.packaging_unidade_conteudo_snapshot IN ('l','ml') AND i.packaging_peso_liquido_kg_snapshot IS NULL))
+  )) IS TRUE;
+$function$;
+CREATE OR REPLACE FUNCTION platform_private.b2b_resale_delivery_order_valid_v1(e entregas)
+ RETURNS boolean
+ LANGUAGE sql
+ VOLATILE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+ SELECT (EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)
+  AND (e.status::text='separado' OR platform_private.resale_pilot_delivery_scope_v1('b2b_resale',NULL,auth.uid(),e.organization_id,e.id) IS TRUE)
+  AND e.id IS NOT NULL AND e.organization_id IS NOT NULL AND e.partner_order_id IS NOT NULL
+  AND e.receivable_id IS NULL AND e.ordem_servico_id IS NOT NULL AND e.ordem_servico_onfarm_id IS NULL
+  AND e.cliente_id IS NULL AND EXISTS(
+   SELECT 1 FROM public.ordens_servico os
+   JOIN public.partner_orders po ON po.id=os.partner_order_id AND po.id=e.partner_order_id
+   JOIN public.partner_accounts pa ON pa.id=po.partner_id AND pa.commercial_owner_organization_id=os.organization_id
+    AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+   WHERE os.id=e.ordem_servico_id AND os.organization_id=e.organization_id AND os.origem='b2b'
+    AND os.partner_order_item_id IS NOT NULL AND os.produto_id=e.produto_id AND os.microrganismo_id IS NULL
+    AND po.status::text IN ('aprovado','aguardando_entrega','em_separacao','enviado','entregue','faturado')
+    AND po.ready_for_production IS FALSE AND po.receivable_generated IS FALSE
+    AND po.payment_condition_status='defined' AND po.financial_approval_status NOT IN ('pending','rejected')
+    AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
+    AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
+  )) IS TRUE;
+$function$;
+CREATE OR REPLACE FUNCTION platform_private.b2b_resale_os_create_v1(p_order_id uuid, p_order_item_id uuid, p_expected_updated_at timestamp with time zone, p_request_key text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+ SET lock_timeout TO '3s'
+AS $function$
+DECLARE v_uid uuid:=auth.uid();v_org uuid;v_order public.partner_orders%ROWTYPE;
+ v_item public.partner_order_items%ROWTYPE;v_prev platform_private.b2b_resale_os_requests_v1%ROWTYPE;
+ v_os uuid:=gen_random_uuid();v_fp text;v_result jsonb;
+BEGIN
+ IF platform_private.b2b_internal_commercial_actor() IS NOT TRUE THEN RAISE EXCEPTION 'B2B_RESALE_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ v_org:=platform_private.stock_motor_actor('reserva');
+ IF NOT platform_private.resale_pilot_scope_v1('b2b_resale','os_create',v_uid,v_org,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_order_id),p_order_id,p_order_item_id,(SELECT i.product_id FROM public.partner_order_items i WHERE i.id=p_order_item_id AND i.order_id=p_order_id),NULL,NULL) THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501';END IF;
+ IF p_order_id IS NULL OR p_order_item_id IS NULL OR p_expected_updated_at IS NULL OR p_request_key IS NULL
+  OR length(btrim(p_request_key))<8 OR length(p_request_key)>128 THEN RAISE EXCEPTION 'B2B_RESALE_REQUEST_INVALID' USING ERRCODE='22023';END IF;
+ PERFORM pg_advisory_xact_lock(hashtextextended('b2b_resale_os_request:'||p_request_key,0));
+ PERFORM pg_advisory_xact_lock(hashtextextended('b2b_resale_os_item:'||p_order_item_id::text,0));
+ v_org:=platform_private.stock_motor_actor('reserva');
+ IF platform_private.b2b_internal_commercial_actor() IS NOT TRUE THEN RAISE EXCEPTION 'B2B_RESALE_SCOPE_CHANGED' USING ERRCODE='42501';END IF;
+ IF NOT platform_private.resale_pilot_scope_v1('b2b_resale','os_create',v_uid,v_org,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_order_id),p_order_id,p_order_item_id,(SELECT i.product_id FROM public.partner_order_items i WHERE i.id=p_order_item_id AND i.order_id=p_order_id),NULL,NULL) THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501';END IF;
+ SELECT * INTO v_order FROM public.partner_orders po WHERE po.id=p_order_id
+  AND EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id=po.partner_id AND pa.commercial_owner_organization_id=v_org AND pa.ativo AND pa.deleted_at IS NULL)
+  AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
+  AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL AND po.ready_for_production IS FALSE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'B2B_RESALE_ORDER_SCOPE_DENIED' USING ERRCODE='42501';END IF;
+ v_fp:=encode(extensions.digest(jsonb_build_object('contract','B2B_RESALE_OS_V1','actor',v_uid,'org',v_org,'order',p_order_id,'item',p_order_item_id,'observed',p_expected_updated_at)::text,'sha256'),'hex');
+ SELECT * INTO v_prev FROM platform_private.b2b_resale_os_requests_v1 WHERE actor=v_uid AND organization_id=v_org AND request_key=p_request_key;
+ IF FOUND THEN
+  IF v_prev.fingerprint IS DISTINCT FROM v_fp OR v_prev.order_id IS DISTINCT FROM p_order_id OR v_prev.order_item_id IS DISTINCT FROM p_order_item_id THEN RAISE EXCEPTION 'B2B_RESALE_REPLAY_CONFLICT' USING ERRCODE='PT409';END IF;
+  RETURN v_prev.result||jsonb_build_object('replay',true);
+ END IF;
+ SELECT * INTO v_order FROM public.partner_orders WHERE id=p_order_id FOR UPDATE;
+ IF v_order.status::text IS DISTINCT FROM 'aprovado' OR v_order.updated_at IS DISTINCT FROM p_expected_updated_at
+  OR v_order.receivable_generated IS TRUE OR v_order.payment_condition_status IS DISTINCT FROM 'defined'
+  OR v_order.financial_approval_status IN ('pending','rejected') THEN RAISE EXCEPTION 'B2B_RESALE_ORDER_CONFLICT' USING ERRCODE='PT409';END IF;
+ SELECT * INTO v_item FROM public.partner_order_items i WHERE i.id=p_order_item_id AND i.order_id=p_order_id
+  AND i.product_id IS NOT NULL AND i.microrganismo_id IS NULL AND i.quantidade>0 AND i.quantidade=trunc(i.quantidade)
+  AND i.unidade_medida='unidade' AND i.packaging_id_snapshot IS NOT NULL AND i.packaging_version_snapshot>0
+  AND i.packaging_unidade_conteudo_snapshot IN ('kg','g','l','ml')
+  AND EXISTS(SELECT 1 FROM public.produtos p WHERE p.id=i.product_id AND p.owner_organization_id=v_org AND p.ativo
+   AND p.familia_catalogo IN ('quimico','fertilizante_adubo')) FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'B2B_RESALE_ITEM_DENIED' USING ERRCODE='42501';END IF;
+ -- O FOR SHARE do item é o último lock explícito antes do ticket/INSERT. Toda
+ -- autoridade e o escopo precisam ser observados novamente aqui: revogação de
+ -- papel, perfil, tenant, parceiro ou gate durante a espera não pode criar OS,
+ -- recibo, ticket ou efeito posterior. O replay continua reautorizado acima.
+ IF auth.uid() IS DISTINCT FROM v_uid OR platform_private.b2b_internal_commercial_actor() IS NOT TRUE THEN RAISE EXCEPTION 'B2B_RESALE_SCOPE_CHANGED' USING ERRCODE='42501';END IF;
+ IF platform_private.stock_motor_actor('reserva') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'B2B_RESALE_SCOPE_CHANGED' USING ERRCODE='42501';END IF;
+ IF NOT platform_private.resale_pilot_allowed_v1('b2b_resale','os_create',v_uid,v_org,v_order.partner_id,p_order_id,p_order_item_id,v_item.product_id,NULL,NULL) THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501';END IF;
+ IF NOT EXISTS(
+  SELECT 1 FROM public.partner_orders po
+  JOIN public.partner_accounts pa ON pa.id=po.partner_id AND pa.commercial_owner_organization_id=v_org
+   AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+  WHERE po.id=p_order_id AND po.status::text='aprovado'
+   AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
+   AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
+   AND po.ready_for_production IS FALSE AND po.receivable_generated IS FALSE
+   AND po.payment_condition_status='defined' AND po.financial_approval_status NOT IN ('pending','rejected')
+ ) THEN RAISE EXCEPTION 'B2B_RESALE_SCOPE_CHANGED' USING ERRCODE='42501';END IF;
+ INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'b2b_resale_os_create_v1',v_os);
+ INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,microrganismo_id,
+  volume_total_ml,area_hectares,prioridade,status,tipo_item,partner_order_id,partner_order_item_id,origem)
+ VALUES(v_os,v_org,NULL,NULL,NULL,v_item.product_id,NULL,NULL,NULL,'media','pronto_entrega','produto',p_order_id,p_order_item_id,'b2b');
+ DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='b2b_resale_os_create_v1' AND target=v_os;
+ v_result:=jsonb_build_object('ok',true,'replay',false,'contract','B2B_RESALE_OS_V1','os_id',v_os,'order_id',p_order_id,'order_item_id',p_order_item_id);
+ INSERT INTO platform_private.b2b_resale_os_requests_v1(request_key,actor,organization_id,order_id,order_item_id,fingerprint,result)
+ VALUES(p_request_key,v_uid,v_org,p_order_id,p_order_item_id,v_fp,v_result);
+ RETURN v_result;
+EXCEPTION WHEN OTHERS THEN
+ DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='b2b_resale_os_create_v1';
+ RAISE;
+END;$function$;
+CREATE OR REPLACE FUNCTION public.rpc_b2b_resale_os_availability_v1(p_order_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ VOLATILE SECURITY DEFINER
+ SET search_path TO ''
+ SET lock_timeout TO '3s'
+AS $function$
+DECLARE actor uuid:=auth.uid(); org uuid; result jsonb; gate_open boolean;
+ v_order public.partner_orders%ROWTYPE; duplicate_os integer;
+BEGIN
+ IF actor IS NULL OR platform_private.b2b_internal_commercial_actor() IS NOT TRUE
+ THEN RAISE EXCEPTION 'B2B_RESALE_ACTOR_DENIED' USING ERRCODE='42501'; END IF;
+ org:=platform_private.stock_motor_actor('reserva');
+ IF p_order_id IS NULL THEN RAISE EXCEPTION 'B2B_RESALE_REQUEST_INVALID' USING ERRCODE='22023'; END IF;
+ SELECT po.* INTO v_order FROM public.partner_orders po
+  JOIN public.partner_accounts pa ON pa.id=po.partner_id
+  WHERE po.id=p_order_id AND pa.commercial_owner_organization_id=org
+   AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+   AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
+   AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
+   AND po.ready_for_production IS FALSE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'B2B_RESALE_ORDER_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ SELECT platform_private.resale_pilot_scope_v1('b2b_resale','read',actor,org,v_order.partner_id,p_order_id,NULL,NULL,NULL,NULL) INTO gate_open;
+ IF EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE) AND gate_open IS NOT TRUE THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ SELECT count(*) INTO duplicate_os FROM (
+   SELECT i.id FROM public.partner_order_items i
+   WHERE i.order_id=p_order_id
+    AND (SELECT count(*) FROM public.ordens_servico os
+      WHERE os.partner_order_id=p_order_id AND os.partner_order_item_id=i.id AND os.origem='b2b')>1
+ ) d;
+ IF duplicate_os<>0 THEN RAISE EXCEPTION 'B2B_RESALE_OS_CARDINALITY_CONFLICT' USING ERRCODE='PT409'; END IF;
+ SELECT jsonb_build_object(
+  'contract','B2B_RESALE_OS_AVAILABILITY_V1','order_id',p_order_id,
+  'actor_id',actor,'organization_id',org,'observed_updated_at',v_order.updated_at,
+  'available',gate_open,'items',coalesce(jsonb_agg(jsonb_build_object(
+    'order_item_id',i.id,'os_id',os.id,
+    'create_available',gate_open AND os.id IS NULL AND v_order.status::text='aprovado'
+     AND v_order.receivable_generated IS FALSE AND v_order.payment_condition_status='defined'
+     AND v_order.financial_approval_status NOT IN ('pending','rejected')
+     AND i.product_id IS NOT NULL AND i.microrganismo_id IS NULL
+     AND i.quantidade>0 AND i.quantidade=trunc(i.quantidade) AND i.unidade_medida='unidade'
+     AND i.packaging_id_snapshot IS NOT NULL AND i.packaging_version_snapshot>0
+     AND i.packaging_unidade_conteudo_snapshot IN ('kg','g','l','ml')
+     AND p.id IS NOT NULL
+   ) ORDER BY i.created_at,i.id),'[]'::jsonb)
+ ) INTO result
+ FROM public.partner_order_items i
+ LEFT JOIN public.produtos p ON p.id=i.product_id AND p.owner_organization_id=org
+  AND p.ativo IS TRUE AND p.familia_catalogo IN ('quimico','fertilizante_adubo')
+ LEFT JOIN public.ordens_servico os ON os.partner_order_id=p_order_id
+  AND os.partner_order_item_id=i.id AND os.origem='b2b'
+ WHERE i.order_id=p_order_id;
+ IF platform_private.resale_pilot_scope_v1('b2b_resale','read',actor,org,v_order.partner_id,p_order_id,NULL,NULL,NULL,NULL) IS DISTINCT FROM gate_open THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ IF auth.uid() IS DISTINCT FROM actor OR platform_private.b2b_internal_commercial_actor() IS NOT TRUE
+ OR platform_private.stock_motor_actor('reserva') IS DISTINCT FROM org
+ THEN RAISE EXCEPTION 'B2B_RESALE_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ RETURN result;
+END;$function$;
+CREATE OR REPLACE FUNCTION public.rpc_b2b_resale_os_create_v1(p_order_id uuid, p_order_item_id uuid, p_expected_updated_at timestamp with time zone, p_request_key text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+ SET lock_timeout TO '3s'
+AS $function$
+DECLARE actor uuid:=auth.uid(); org uuid; result jsonb;
+BEGIN
+ IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed'
+ THEN RAISE EXCEPTION 'B2B_RESALE_ISOLATION_DENIED' USING ERRCODE='42501'; END IF;
+ IF actor IS NULL OR platform_private.b2b_internal_commercial_actor() IS NOT TRUE
+ THEN RAISE EXCEPTION 'B2B_RESALE_ACTOR_DENIED' USING ERRCODE='42501'; END IF;
+ org:=platform_private.stock_motor_actor('reserva');
+ IF p_order_id IS NULL OR p_order_item_id IS NULL OR p_expected_updated_at IS NULL
+ OR NOT isfinite(p_expected_updated_at) OR p_request_key IS NULL
+ OR length(btrim(p_request_key))<8 OR length(p_request_key)>128
+ THEN RAISE EXCEPTION 'B2B_RESALE_REQUEST_INVALID' USING ERRCODE='22023'; END IF;
+ -- Exact helper lock order. No unowned row lock or existence oracle.
+ IF NOT EXISTS(SELECT 1 FROM public.partner_orders po JOIN public.partner_accounts pa ON pa.id=po.partner_id
+  WHERE po.id=p_order_id AND pa.commercial_owner_organization_id=org AND pa.ativo IS TRUE AND pa.deleted_at IS NULL)
+ THEN RAISE EXCEPTION 'B2B_RESALE_ORDER_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM pg_advisory_xact_lock(hashtextextended('b2b_resale_os_request:'||p_request_key,0));
+ PERFORM pg_advisory_xact_lock(hashtextextended('b2b_resale_os_item:'||p_order_item_id::text,0));
+ PERFORM 1 FROM public.partner_orders WHERE id=p_order_id FOR UPDATE;
+ PERFORM 1 FROM public.partner_order_items WHERE id=p_order_item_id AND order_id=p_order_id FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'B2B_RESALE_ITEM_DENIED' USING ERRCODE='42501'; END IF;
+ IF auth.uid() IS DISTINCT FROM actor OR platform_private.b2b_internal_commercial_actor() IS NOT TRUE
+ OR platform_private.stock_motor_actor('reserva') IS DISTINCT FROM org
+ THEN RAISE EXCEPTION 'B2B_RESALE_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ IF NOT platform_private.resale_pilot_allowed_v1('b2b_resale','os_create',actor,org,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_order_id),p_order_id,p_order_item_id,(SELECT i.product_id FROM public.partner_order_items i WHERE i.id=p_order_item_id AND i.order_id=p_order_id),NULL,NULL)
+ THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ -- Replays also require current approved-origin authority, not just a receipt.
+ IF NOT EXISTS(SELECT 1 FROM public.partner_orders po JOIN public.partner_accounts pa ON pa.id=po.partner_id
+   WHERE po.id=p_order_id AND pa.commercial_owner_organization_id=org AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+  AND po.status::text IN ('aprovado','entregue') AND po.ready_for_production IS FALSE
+  AND po.receivable_generated IS FALSE AND po.payment_condition_status='defined'
+  AND po.financial_approval_status NOT IN ('pending','rejected')
+  AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
+  AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL)
+ THEN RAISE EXCEPTION 'B2B_RESALE_ORDER_CONFLICT' USING ERRCODE='PT409'; END IF;
+ -- No actor, org, price, quantity or accounting input; existing core owns CAS/receipt/INSERT.
+ result:=platform_private.b2b_resale_os_create_v1(p_order_id,p_order_item_id,p_expected_updated_at,p_request_key);
+ IF auth.uid() IS DISTINCT FROM actor OR platform_private.b2b_internal_commercial_actor() IS NOT TRUE
+  OR platform_private.stock_motor_actor('reserva') IS DISTINCT FROM org
+ THEN RAISE EXCEPTION 'B2B_RESALE_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ IF result->>'contract' IS DISTINCT FROM 'B2B_RESALE_OS_V1' OR (result->>'ok')::boolean IS NOT TRUE
+ OR result->>'order_id' IS DISTINCT FROM p_order_id::text
+ OR result->>'order_item_id' IS DISTINCT FROM p_order_item_id::text OR result->>'os_id' IS NULL
+ THEN RAISE EXCEPTION 'B2B_RESALE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+ RETURN result;
+END;$function$;
+DO $$DECLARE r record;BEGIN FOR r IN SELECT * FROM (VALUES ('platform_private.b2b_resale_os_valid_v1(public.ordens_servico)','{postgres=X/postgres}'),('platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)','{postgres=X/postgres}'),('platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)','{postgres=X/postgres}'),('platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)','{postgres=X/postgres}'),('public.rpc_b2b_resale_os_availability_v1(uuid)','{postgres=X/postgres,authenticated=X/postgres}'),('public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)','{postgres=X/postgres,authenticated=X/postgres}')) v(s,a) LOOP
+ IF (SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid=to_regprocedure(r.s)) IS DISTINCT FROM r.a THEN RAISE EXCEPTION 'LINKED_APPROVAL_ACL_DRIFT %',r.s;END IF;END LOOP;END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_os_valid_v1(public.ordens_servico)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '804e2a33cdf204ed9fa179f2afa2bf6e' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p)<>'postgres'
+ THEN RAISE EXCEPTION 'LINKED_APPROVAL_CONSUMER_DRIFT %','platform_private.b2b_resale_os_valid_v1(public.ordens_servico)';END IF;END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '7cd8ee22794bf57e6592867259c9397e' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p)<>'postgres'
+ THEN RAISE EXCEPTION 'LINKED_APPROVAL_CONSUMER_DRIFT %','platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)';END IF;END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'bd76345c3bceaa5e6203013920427df4' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p)<>'postgres'
+ THEN RAISE EXCEPTION 'LINKED_APPROVAL_CONSUMER_DRIFT %','platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)';END IF;END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'c5b1da90e1f649fe0eeb99deac7094ee' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p)<>'postgres'
+ THEN RAISE EXCEPTION 'LINKED_APPROVAL_CONSUMER_DRIFT %','platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)';END IF;END$$;
+DO $$DECLARE p oid:=to_regprocedure('public.rpc_b2b_resale_os_availability_v1(uuid)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'e9767fcbcbfb831b92ee7f1523b1262e' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p)<>'postgres'
+ THEN RAISE EXCEPTION 'LINKED_APPROVAL_CONSUMER_DRIFT %','public.rpc_b2b_resale_os_availability_v1(uuid)';END IF;END$$;
+DO $$DECLARE p oid:=to_regprocedure('public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '6a249b41a6e729835ff86cfc2b40e25b' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p)<>'postgres'
+ THEN RAISE EXCEPTION 'LINKED_APPROVAL_CONSUMER_DRIFT %','public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)';END IF;END$$;
+COMMIT;
