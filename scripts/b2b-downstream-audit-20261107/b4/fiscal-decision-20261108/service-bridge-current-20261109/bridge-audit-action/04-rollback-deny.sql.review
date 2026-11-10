@@ -5,10 +5,14 @@ DO $$ BEGIN
  IF md5(pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure)) IS DISTINCT FROM '9b14fa08913075c08bc905074fb98a10' THEN RAISE EXCEPTION 'BRIDGE_AUDIT_ROLLBACK_PRE_DRIFT'; END IF;
 END $$;
 CREATE OR REPLACE FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1(p_invoice uuid)
-RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $function$
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
 BEGIN RAISE EXCEPTION 'B2B_FISCAL_BRIDGE_ROLLED_BACK' USING ERRCODE='42501';END $function$;
 REVOKE ALL ON FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
 DO $$ BEGIN
- IF md5(pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure)) IS DISTINCT FROM '7ba1e15a134fa6336754f851aaa66647' THEN RAISE EXCEPTION 'BRIDGE_AUDIT_ROLLBACK_POST_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure)) IS DISTINCT FROM 'e6fe76ec0bbe5b40d41f6776c3ab70fa' THEN RAISE EXCEPTION 'BRIDGE_AUDIT_ROLLBACK_POST_DRIFT'; END IF;
 END $$;
 COMMIT;
