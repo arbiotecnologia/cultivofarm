@@ -1,4 +1,5 @@
 ## 10/11 00:04 — Revisão estática previsão 02/06
+- [ ] Complemento 00:22 no mesmo review153: provar deferred antes/depois comercial e revogação/tenant/CAS dos termos após espera; sem fixtures/stubs novos.
 - [x] Caracterizar os quatro riscos nos corpos anteriores e corrigir candidatos; 21 verificações isoladas, sem tratar estado/residual sintéticos como NF real.
 - [x] Fechar grants privados sem chamador comprovado; reconciliador exige permit transacional exato e validador existente. Ponte protege cancelamento antes da alocação; rollback deny-only.
 - [x] Corrigir journal da fixture de override; termos pós-comercial/antes-comercial e crédito OK/override formal comprovados na tentativa 163, sem snapshot rewrite. UI/testes focados 27/27; build automático OK.

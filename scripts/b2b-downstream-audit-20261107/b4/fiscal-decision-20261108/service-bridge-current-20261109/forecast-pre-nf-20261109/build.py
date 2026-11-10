@@ -42,18 +42,35 @@ def main():
     new_credit_approval_md5 = md5(candidate_credit_approval)
 
     terms = current["approve_b2b_payment_terms_secure"]["definition"]
+    terms = terms.replace("  v_terms_id uuid;", "  v_terms_id uuid;\n  v_observed_terms uuid;\n  v_observed_updated_at timestamptz;\n  v_locked_updated_at timestamptz;")
     assert terms.count(scope_old) == 1
     scoped_terms = terms.replace(scope_old, scope_new)
     lock_anchor = "  WHERE po.id = p_partner_order_id;"
     assert scoped_terms.count(lock_anchor) == 1
-    scoped_terms = scoped_terms.replace(lock_anchor, "  WHERE po.id = p_partner_order_id FOR UPDATE;\n" + scope_new + " RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n  IF NOT (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'financeiro') OR public.has_role(v_uid,'gestor_comercial')) THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='42501'; END IF;\n  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND (status IN ('cancelado','reprovado') OR c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1')) THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVAL_UNAVAILABLE' USING ERRCODE='42501'; END IF;")
+    authority = scope_new + " RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n  IF platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro','gestor_comercial']::public.app_role[]) IS NULL THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='42501'; END IF;"
+    select_anchor = "  SELECT po.payment_terms_id, po.created_by, po.numero"
+    assert scoped_terms.count(select_anchor) == 1
+    scoped_terms = scoped_terms.replace(select_anchor, "  SELECT payment_terms_id INTO v_observed_terms FROM public.partner_orders WHERE id=p_partner_order_id;\n" + select_anchor)
+    scoped_terms = scoped_terms.replace(lock_anchor, "  WHERE po.id = p_partner_order_id FOR UPDATE;\n  " + authority + "\n  IF v_terms_id IS DISTINCT FROM v_observed_terms THEN RAISE EXCEPTION 'B2B_PAYMENT_TERMS_CAS_CONFLICT' USING ERRCODE='PT409'; END IF;\n  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND (status IN ('cancelado','reprovado') OR c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1')) THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVAL_UNAVAILABLE' USING ERRCODE='42501'; END IF;")
+    child_anchor = "  UPDATE public.partner_order_payment_terms"
+    assert scoped_terms.count(child_anchor) == 1
+    child_lock = """  SELECT updated_at INTO v_observed_updated_at FROM public.partner_order_payment_terms
+    WHERE id=v_terms_id AND partner_order_id=p_partner_order_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'payment_terms_not_defined' USING ERRCODE='42501'; END IF;
+  SELECT updated_at INTO v_locked_updated_at FROM public.partner_order_payment_terms
+    WHERE id=v_terms_id AND partner_order_id=p_partner_order_id FOR UPDATE;
+  IF NOT FOUND OR v_locked_updated_at IS DISTINCT FROM v_observed_updated_at THEN
+    RAISE EXCEPTION 'B2B_PAYMENT_TERMS_CAS_CONFLICT' USING ERRCODE='PT409'; END IF;
+"""
+    scoped_terms = scoped_terms.replace(child_anchor, child_lock + "  " + authority + "\n" + child_anchor)
+    scoped_terms = scoped_terms.replace("  UPDATE public.partner_orders", "  " + authority + "\n  UPDATE public.partner_orders")
     scoped_terms = scoped_terms.replace("   WHERE id = v_terms_id;", "   WHERE id = v_terms_id AND partner_order_id = p_partner_order_id;\n  IF NOT FOUND THEN RAISE EXCEPTION 'payment_terms_not_defined' USING ERRCODE='42501'; END IF;")
     # Internal economics remain frozen: linked child approval metadata is already
     # explicitly mutable under the captured child snapshot guard.
     scoped_terms = scoped_terms.replace("   WHERE id = p_partner_order_id;", "   WHERE id = p_partner_order_id AND internal_origin_snapshot IS NULL AND c2_external_origin_snapshot IS NULL AND internal_economic_snapshot IS NULL;")
     terms_anchor = "  RETURN jsonb_build_object('success', true, 'status', 'approved');"
     assert scoped_terms.count(terms_anchor) == 1
-    candidate_terms = scoped_terms.replace(terms_anchor, "  PERFORM platform_private.b2b_financial_forecast_after_approval_v1(p_partner_order_id,\n    public.fn_b2b_credit_exposure((SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_partner_order_id),0,NULL));\n" + terms_anchor)
+    candidate_terms = scoped_terms.replace(terms_anchor, "  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND status='aprovado' AND approved_by IS NOT NULL AND approved_at IS NOT NULL) THEN\n    PERFORM platform_private.b2b_financial_forecast_after_approval_v1(p_partner_order_id,\n      public.fn_b2b_credit_exposure((SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_partner_order_id),0,NULL));\n  END IF;\n" + terms_anchor)
     new_terms_md5 = md5(candidate_terms)
 
     credit = current["fn_b2b_credit_exposure"]["definition"]
