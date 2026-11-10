@@ -1,0 +1,48 @@
+-- REVIEW_ONLY. Diagnóstico SOMENTE LEITURA para o operador, APÓS revisão independente.
+-- Este arquivo não foi executado hospedado nesta preparação e não autoriza SQL hospedado.
+-- Pré-condição do operador: confirmar no painel que o projeto é swzpzcwiasxmjutrmvkm; se divergente, NÃO executar.
+-- Não altera nada (BEGIN READ ONLY ... ROLLBACK). Não lê segredos, tokens, linhas de clientes nem valores.
+BEGIN READ ONLY;
+WITH objs(kind, sig, expectation) AS (VALUES
+ -- LIVE: devem existir; o corpo/owner/ACL devolvidos são comparados com final-manifest-20261110.json
+ ('LIVE','public.is_financial_staff(uuid)','PRESENT md5 6e8f2fa7b92ca7e039d092353b3ebfe2'),
+ ('LIVE','public.h15_actor_organization()','PRESENT'),
+ ('LIVE','public._saas_user_has_feature(uuid,text)','PRESENT'),
+ ('LIVE','public.fn_b2b_credit_exposure','PRESENT md5 213ac31f3a30816ead75365b0d1fed18 (pré-B4)'),
+ ('LIVE','public.approve_b2b_payment_terms_secure','PRESENT'),
+ ('LIVE','public.approve_b2b_credit','PRESENT'),
+ ('LIVE','public.rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid)','PRESENT md5 4d93bb04e4a18771ed9185d2f3c5d6dc'),
+ ('LIVE','public.rpc_register_receivable_payment(uuid,jsonb)','PRESENT'),
+ ('LIVE','platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)','PRESENT or ABSENT (logistics pilot; never modified by this package)'),
+ -- INTERMEDIÁRIO/LOCAL: só existem após etapas locais; a ausência é o estado esperado hoje
+ ('INTERMEDIATE','public.rpc_receivable_money_projection_v1(uuid,integer,integer)','ABSENT expected (created by B4 composition stage 02)'),
+ ('INTERMEDIATE','platform_private.b2b_proven_money_row(uuid)','ABSENT expected (B4 composition)'),
+ ('INTERMEDIATE','platform_private.b2b_legacy_money_row(uuid)','ABSENT expected (B4 composition)'),
+ ('INTERMEDIATE','platform_private.b2b_allocation_money_row(uuid)','ABSENT expected (B4 composition)'),
+ ('LOCAL_ONLY','platform_private.receivable_money_reader_allowed_v1()','ABSENT expected'),
+ ('LOCAL_ONLY','public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer)','ABSENT expected'),
+ ('LOCAL_ONLY','public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text)','ABSENT expected'),
+ ('LOCAL_ONLY','public.get_b2b_financial_forecast_secure(uuid)','ABSENT expected (UI shows unavailable)'),
+ ('LOCAL_ONLY','platform_private.b2b_forecast_lifecycle_allowed_v1(text,uuid,uuid,uuid,uuid)','ABSENT expected')
+)
+SELECT jsonb_pretty(jsonb_agg(jsonb_build_object(
+  'kind',o.kind,'signature',o.sig,'expectation',o.expectation,
+  'resolved_signature',CASE WHEN p.oid IS NOT NULL THEN p.oid::regprocedure::text END,
+  'present',p.oid IS NOT NULL,
+  'body_md5',CASE WHEN p.oid IS NOT NULL THEN md5(pg_get_functiondef(p.oid)) END,
+  'owner',CASE WHEN p.oid IS NOT NULL THEN pg_get_userbyid(p.proowner) END,
+  'acl',CASE WHEN p.oid IS NOT NULL THEN (SELECT string_agg(
+      CASE WHEN x.grantee=0 THEN 'PUBLIC' ELSE x.grantee::regrole::text END||':'||x.privilege_type||':'||x.grantor::regrole::text||':'||CASE WHEN x.is_grantable THEN 'G' ELSE '-' END,
+      ',' ORDER BY 1) FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) x) END)
+ ORDER BY o.kind,o.sig))
+FROM objs o LEFT JOIN pg_proc p ON CASE WHEN position('(' in o.sig)>0 THEN p.oid=to_regprocedure(o.sig)
+  ELSE p.pronamespace::regnamespace::text=split_part(o.sig,'.',1) AND p.proname=split_part(o.sig,'.',2) END;
+-- Entradas sem assinatura são resolvidas por nome (todas as sobrecargas listadas).
+-- Estado de gates/tabelas (sem linhas de dados de clientes)
+SELECT jsonb_pretty(jsonb_build_object(
+ 'logistics_gate_table_present',to_regclass('platform_private.b2b_resale_logistics_gate_v1') IS NOT NULL,
+ 'lifecycle_gate_table_present',to_regclass('platform_private.b2b_forecast_lifecycle_gate_v1') IS NOT NULL,
+ 'forecast_table_present',to_regclass('platform_private.b2b_financial_forecasts') IS NOT NULL,
+ 'accounts_receivable_acl',(SELECT md5(coalesce(relacl::text,'')) FROM pg_class WHERE oid='public.accounts_receivable'::regclass),
+ 'accounts_receivable_triggers',(SELECT count(*) FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND NOT tgisinternal)));
+ROLLBACK;

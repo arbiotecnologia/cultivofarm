@@ -55,8 +55,8 @@ BEGIN
  JOIN public.fiscal_invoices i ON i.id=t0.fiscal_invoice_id
  WHERE t0.id=p_transmission_id AND i.organization_id=org
  AND platform_private.c2p1_settings_allowed(i.debtor_partner_id,true)
- AND platform_private.resale_pilot_scope_v1('b2b_resale','forecast_sync',auth.uid(),org,
-  i.debtor_partner_id,i.partner_order_id,NULL,NULL,NULL,NULL) IS TRUE;
+ AND platform_private.b2b_forecast_lifecycle_scope_v1('forecast_sync',auth.uid(),org,
+  i.debtor_partner_id,i.partner_order_id) IS TRUE;
  IF v_invoice IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_FISCAL_SOURCE_UNPROVEN' USING ERRCODE='42501';END IF;
  -- Canonical H13 order: fiscal invoice, transmission, then forecast (bridge: invoice, order, forecast).
  SELECT * INTO inv FROM public.fiscal_invoices WHERE id=v_invoice AND organization_id=org FOR SHARE;
@@ -72,8 +72,8 @@ BEGIN
  IF platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]) IS DISTINCT FROM f.organization_id
   OR NOT platform_private.c2p1_settings_allowed(f.partner_id,true) THEN
   RAISE EXCEPTION 'B2B_FORECAST_FISCAL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
- IF platform_private.resale_pilot_allowed_v1('b2b_resale','forecast_sync',auth.uid(),org,
-   inv.debtor_partner_id,inv.partner_order_id,NULL,NULL,NULL,NULL) IS NOT TRUE THEN
+ IF platform_private.b2b_forecast_lifecycle_allowed_v1('forecast_sync',auth.uid(),org,
+   inv.debtor_partner_id,inv.partner_order_id) IS NOT TRUE THEN
   RAISE EXCEPTION 'B2B_FORECAST_PILOT_DENIED' USING ERRCODE='42501';END IF;
  -- Recheck entitlements and actor after grant/gate locks, not just aggregate locks.
  IF public._saas_user_has_feature(auth.uid(),'pedidos_b2b') IS NOT TRUE
@@ -152,8 +152,8 @@ BEGIN
   AND EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id=partner_orders.partner_id
    AND pa.commercial_owner_organization_id=org)
   AND platform_private.c2p1_settings_allowed(partner_id,true)
-  AND platform_private.resale_pilot_scope_v1('b2b_resale','forecast_cancel',auth.uid(),org,
-   partner_id,id,NULL,NULL,NULL,NULL) IS TRUE FOR UPDATE;
+  AND platform_private.b2b_forecast_lifecycle_scope_v1('forecast_cancel',auth.uid(),org,
+   partner_id,id) IS TRUE FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'B2B_FORECAST_CANCEL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
  SELECT * INTO f FROM platform_private.b2b_financial_forecasts WHERE order_id=p_order AND organization_id=org FOR UPDATE;
  IF NOT FOUND OR f.partner_id IS DISTINCT FROM po.partner_id THEN
@@ -161,8 +161,8 @@ BEGIN
  IF platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]) IS DISTINCT FROM f.organization_id
   OR NOT platform_private.c2p1_settings_allowed(f.partner_id,true) THEN
   RAISE EXCEPTION 'B2B_FORECAST_CANCEL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
- IF platform_private.resale_pilot_allowed_v1('b2b_resale','forecast_cancel',auth.uid(),org,
-   po.partner_id,po.id,NULL,NULL,NULL,NULL) IS NOT TRUE THEN
+ IF platform_private.b2b_forecast_lifecycle_allowed_v1('forecast_cancel',auth.uid(),org,
+   po.partner_id,po.id) IS NOT TRUE THEN
   RAISE EXCEPTION 'B2B_FORECAST_PILOT_DENIED' USING ERRCODE='42501';END IF;
  IF public._saas_user_has_feature(auth.uid(),'pedidos_b2b') IS NOT TRUE
   OR public._saas_user_has_feature(auth.uid(),'contas_receber') IS NOT TRUE THEN
@@ -268,8 +268,8 @@ def begin_overlay(root):
     -- revalidation below (marker, XML identity/signature, issuer settings) and
     -- every profile/role/tenant/entitlement check runs AFTER that helper returns
     -- and BEFORE replay/INSERT (review 209/584d530 item 1).
-    v_pilot := platform_private.resale_pilot_allowed_v1('b2b_resale','forecast_begin',_actor,
-          v_source.organization_id,v_source.debtor_partner_id,v_source.partner_order_id,NULL,NULL,NULL,NULL);
+    v_pilot := platform_private.b2b_forecast_lifecycle_allowed_v1('forecast_begin',_actor,
+          v_source.organization_id,v_source.debtor_partner_id,v_source.partner_order_id);
     SELECT project_ref, production_emission_allowed INTO v_ref, v_prod
       FROM public.fiscal_environment_marker LIMIT 1;
     IF v_ref IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' OR coalesce(v_prod, true) THEN
@@ -360,33 +360,79 @@ def begin_overlay(root):
 
 
 def lifecycle_pilot_sql():
-    """Extend only operation vocabulary of the existing private, revocable pilot.
-    No rows or global switches are enabled; historical read grants authorize nothing.
-    Constraint pins measured from pilot_containment.foundation on PG17.11.
+    """Own deny-default lifecycle gate + exact revocable allowlist (review 212/09537e49 A).
+    Decoupled from b2b_resale_logistics_gate_v1 / resale_pilot_allowlist_v1, which are
+    NOT modified (PRE pins their constraints). Installs gate=false and ZERO grants.
+    Lock order grant row -> gate row (same safe structure as the resale pilot).
     """
     return """DO $pilot$ DECLARE op text; shape text; BEGIN
- IF to_regprocedure('public._saas_user_has_feature(uuid,text)') IS NULL
-  OR to_regprocedure('platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)') IS NULL
-  OR to_regprocedure('platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)') IS NULL THEN
+ IF to_regprocedure('public._saas_user_has_feature(uuid,text)') IS NULL THEN
   RAISE EXCEPTION 'B2B_FORECAST_PILOT_DEPENDENCY_MISSING' USING ERRCODE='42501';END IF;
- LOCK TABLE platform_private.resale_pilot_allowlist_v1 IN ACCESS EXCLUSIVE MODE;
- SELECT pg_get_constraintdef(oid) INTO op FROM pg_constraint
-  WHERE conrelid='platform_private.resale_pilot_allowlist_v1'::regclass AND conname='resale_pilot_allowlist_v1_operation_check';
- SELECT pg_get_constraintdef(oid) INTO shape FROM pg_constraint
-  WHERE conrelid='platform_private.resale_pilot_allowlist_v1'::regclass AND conname='resale_pilot_allowlist_v1_check2';
- IF md5(op) IS DISTINCT FROM '0fd27c10e23c84c4157e0e3c5219e9c3'
-  OR md5(shape) IS DISTINCT FROM 'eded2fefaa492b7e32ba8e6f39c9f420' THEN
-  RAISE EXCEPTION 'B2B_FORECAST_PILOT_CONSTRAINT_DRIFT' USING ERRCODE='42501';END IF;
- IF EXISTS(SELECT 1 FROM platform_private.resale_pilot_allowlist_v1 WHERE operation IN ('forecast_sync','forecast_cancel')) THEN
-  RAISE EXCEPTION 'B2B_FORECAST_PILOT_NOT_CLOSED' USING ERRCODE='42501';END IF;
- ALTER TABLE platform_private.resale_pilot_allowlist_v1 DROP CONSTRAINT resale_pilot_allowlist_v1_operation_check;
- ALTER TABLE platform_private.resale_pilot_allowlist_v1 DROP CONSTRAINT resale_pilot_allowlist_v1_check2;
- EXECUTE 'ALTER TABLE platform_private.resale_pilot_allowlist_v1 ADD CONSTRAINT resale_pilot_allowlist_v1_operation_check CHECK ('
-  ||substr(op,8,length(op)-8)||' OR operation IN (''forecast_sync'',''forecast_cancel'',''forecast_begin''))';
- EXECUTE 'ALTER TABLE platform_private.resale_pilot_allowlist_v1 ADD CONSTRAINT resale_pilot_allowlist_v1_check2 CHECK ('
-  ||substr(shape,8,length(shape)-8)||' OR (operation IN (''forecast_sync'',''forecast_cancel'',''forecast_begin'') AND gate=''b2b_resale''
-   AND partner_id IS NOT NULL AND order_id IS NOT NULL AND order_item_id IS NULL AND product_id IS NULL AND stock_id IS NULL AND delivery_id IS NULL))';
+ IF to_regclass('platform_private.b2b_forecast_lifecycle_gate_v1') IS NOT NULL
+  OR to_regclass('platform_private.b2b_forecast_lifecycle_allowlist_v1') IS NOT NULL
+  OR to_regprocedure('platform_private.b2b_forecast_lifecycle_allowed_v1(text,uuid,uuid,uuid,uuid)') IS NOT NULL
+  OR to_regprocedure('platform_private.b2b_forecast_lifecycle_scope_v1(text,uuid,uuid,uuid,uuid)') IS NOT NULL THEN
+  RAISE EXCEPTION 'B2B_FORECAST_LIFECYCLE_GATE_PREEXISTS' USING ERRCODE='42501';END IF;
+ -- Logistics pilot stays byte-identical: its constraints are pinned, never altered.
+ IF to_regclass('platform_private.resale_pilot_allowlist_v1') IS NOT NULL THEN
+  SELECT pg_get_constraintdef(oid) INTO op FROM pg_constraint
+   WHERE conrelid='platform_private.resale_pilot_allowlist_v1'::regclass AND conname='resale_pilot_allowlist_v1_operation_check';
+  SELECT pg_get_constraintdef(oid) INTO shape FROM pg_constraint
+   WHERE conrelid='platform_private.resale_pilot_allowlist_v1'::regclass AND conname='resale_pilot_allowlist_v1_check2';
+  IF md5(op) IS DISTINCT FROM '0fd27c10e23c84c4157e0e3c5219e9c3'
+   OR md5(shape) IS DISTINCT FROM 'eded2fefaa492b7e32ba8e6f39c9f420' THEN
+   RAISE EXCEPTION 'B2B_FORECAST_LOGISTICS_PILOT_DRIFT' USING ERRCODE='42501';END IF;
+ END IF;
 END $pilot$;
+CREATE TABLE platform_private.b2b_forecast_lifecycle_gate_v1(
+ singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),
+ enabled boolean NOT NULL DEFAULT false,
+ updated_at timestamptz NOT NULL DEFAULT now(),updated_by uuid,reason text);
+INSERT INTO platform_private.b2b_forecast_lifecycle_gate_v1(singleton,enabled,reason) VALUES(true,false,'INSTALLED_CLOSED');
+CREATE TABLE platform_private.b2b_forecast_lifecycle_allowlist_v1(
+ id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ operation text NOT NULL CHECK(operation IN ('forecast_sync','forecast_cancel','forecast_begin')),
+ actor_id uuid NOT NULL,organization_id uuid NOT NULL,partner_id uuid NOT NULL,order_id uuid NOT NULL,
+ synthetic boolean NOT NULL DEFAULT true CHECK(synthetic IS TRUE),
+ valid_from timestamptz NOT NULL DEFAULT now(),valid_until timestamptz NOT NULL,
+ revoked_at timestamptz,revoked_by uuid,revoke_reason text,
+ created_at timestamptz NOT NULL DEFAULT now(),created_by uuid,
+ CHECK(valid_until>valid_from),CHECK(revoked_at IS NULL OR revoked_at>=valid_from));
+ALTER TABLE platform_private.b2b_forecast_lifecycle_gate_v1 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_private.b2b_forecast_lifecycle_allowlist_v1 ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON platform_private.b2b_forecast_lifecycle_gate_v1,platform_private.b2b_forecast_lifecycle_allowlist_v1 FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION platform_private.b2b_forecast_lifecycle_scope_v1(p_operation text,p_actor uuid,p_org uuid,p_partner uuid,p_order uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ -- Unlocked pre-filter only (never final authority): avoids waiting on foreign rows.
+ SELECT p_actor IS NOT NULL AND p_org IS NOT NULL AND p_partner IS NOT NULL AND p_order IS NOT NULL
+  AND EXISTS(SELECT 1 FROM platform_private.b2b_forecast_lifecycle_gate_v1 g WHERE g.singleton AND g.enabled IS TRUE)
+  AND EXISTS(SELECT 1 FROM platform_private.b2b_forecast_lifecycle_allowlist_v1 a
+   WHERE a.operation=p_operation AND a.actor_id=p_actor AND a.organization_id=p_org
+    AND a.partner_id=p_partner AND a.order_id=p_order AND a.revoked_at IS NULL
+    AND a.valid_from<=pg_catalog.clock_timestamp() AND a.valid_until>pg_catalog.clock_timestamp());
+$$;
+CREATE FUNCTION platform_private.b2b_forecast_lifecycle_allowed_v1(p_operation text,p_actor uuid,p_org uuid,p_partner uuid,p_order uuid)
+RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_grant record;v_enabled boolean;
+BEGIN
+ IF p_actor IS NULL OR p_org IS NULL OR p_partner IS NULL OR p_order IS NULL
+  OR p_operation NOT IN ('forecast_sync','forecast_cancel','forecast_begin') THEN RETURN false; END IF;
+ -- Single lock order grant -> gate; both held until commit, so revocation/gate OFF
+ -- serialize with an authorized writer; enabled/validity measured after every wait.
+ FOR v_grant IN SELECT a.* FROM platform_private.b2b_forecast_lifecycle_allowlist_v1 a
+  WHERE a.operation=p_operation AND a.actor_id=p_actor AND a.organization_id=p_org
+   AND a.partner_id=p_partner AND a.order_id=p_order ORDER BY a.id FOR UPDATE
+ LOOP
+  SELECT g.enabled INTO v_enabled FROM platform_private.b2b_forecast_lifecycle_gate_v1 g WHERE g.singleton FOR UPDATE;
+  IF v_enabled IS NOT TRUE THEN RETURN false; END IF;
+  IF v_grant.synthetic IS TRUE AND v_grant.revoked_at IS NULL
+   AND v_grant.valid_from<=pg_catalog.clock_timestamp() AND v_grant.valid_until>pg_catalog.clock_timestamp() THEN RETURN true; END IF;
+ END LOOP;
+ RETURN false;
+END;
+$$;
+REVOKE ALL ON FUNCTION platform_private.b2b_forecast_lifecycle_scope_v1(text,uuid,uuid,uuid,uuid),
+ platform_private.b2b_forecast_lifecycle_allowed_v1(text,uuid,uuid,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
 CREATE TABLE platform_private.b2b_forecast_consultation_links_v1(
  transmission_id uuid PRIMARY KEY REFERENCES public.fiscal_sefaz_transmissions(id),
  forecast_id uuid NOT NULL REFERENCES platform_private.b2b_financial_forecasts(id),

@@ -721,7 +721,7 @@ def test_begin_replay_binding(B,Q,OUT,order_id,doc,other,key):
            ('endpoint-differs',call(endpoint=ENDPOINT+'-OTHER'),'FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH'),
            ('caller-invoice-not-run',call(inv=other['invoice']),'SEFAZ_INVOICE_RUN_MISMATCH'),
            ('foreign-or-unknown-actor',call(actor='00000000-0000-4000-8000-0000000f0f0f'),'B2B_FORECAST_BEGIN_SCOPE_DENIED'),
-           ('pilot-revoked-before',"BEGIN;UPDATE platform_private.resale_pilot_allowlist_v1 SET revoked_at=clock_timestamp() WHERE operation='forecast_begin';"+call()+'ROLLBACK;','B2B_FORECAST_BEGIN_SCOPE_DENIED')]
+           ('pilot-revoked-before',"BEGIN;UPDATE platform_private.b2b_forecast_lifecycle_allowlist_v1 SET revoked_at=clock_timestamp() WHERE operation='forecast_begin';"+call()+'ROLLBACK;','B2B_FORECAST_BEGIN_SCOPE_DENIED')]
     out=[]
     for name,sql,token in cases:
         r=B.run_raw(sql)
@@ -730,8 +730,8 @@ def test_begin_replay_binding(B,Q,OUT,order_id,doc,other,key):
         assert r.returncode!=0 and token in r.stderr and not leaked,out[-1]
     lock=f"SELECT id FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}' FOR UPDATE;"
     called,barrier=revoke_after_proven_wait(B,lock,'BEGIN;'+call()+'COMMIT;',
-      "UPDATE platform_private.resale_pilot_allowlist_v1 SET revoked_at=clock_timestamp() WHERE operation='forecast_begin';")
-    B.sql("UPDATE platform_private.resale_pilot_allowlist_v1 SET revoked_at=NULL WHERE operation='forecast_begin';")
+      "UPDATE platform_private.b2b_forecast_lifecycle_allowlist_v1 SET revoked_at=clock_timestamp() WHERE operation='forecast_begin';")
+    B.sql("UPDATE platform_private.b2b_forecast_lifecycle_allowlist_v1 SET revoked_at=NULL WHERE operation='forecast_begin';")
     out.append(dict(case='pilot-revoked-while-replay-waits-on-lock',exit=called.returncode,stderr=called.stderr.strip().splitlines()[0] if called.stderr.strip() else '',
                     leaked_row='transmissionId' in called.stdout,barrier=barrier))
     assert called.returncode!=0 and 'B2B_FORECAST_BEGIN_SCOPE_DENIED' in called.stderr and 'transmissionId' not in called.stdout,out[-1]
@@ -758,7 +758,8 @@ def test_projection_reader_contract(B,Q,OUT,receivable):
     root=Path(__file__).resolve().parents[5]
     out=OUT/'projection-reader';out.mkdir(exist_ok=True)
     meta=lambda sig: json.loads(B.last(PR.meta_sql(sig)))
-    pins=dict(pre_rpc=meta(PR.SIG),deps={d:meta(d) for d in PR.DEPS})
+    present=[d for d in PR.OPTIONAL_DEPS if B.last(f"SELECT (to_regprocedure('{d}') IS NOT NULL)::text;")=='true']
+    pins=dict(pre_rpc=meta(PR.SIG),deps={d:meta(d) for d in (*PR.DEPS,*present)})
     probe=B.run_raw(PR.probe_sql(root));assert probe.returncode==0,probe.stderr
     pins.update(PR.parse_probe(probe.stdout))
     assert B.last(f"SELECT (to_regprocedure('{PR.HELPER}') IS NULL)::text;")=='true'
@@ -786,6 +787,17 @@ def test_projection_reader_contract(B,Q,OUT,receivable):
         r=B.run_raw(files['13-pre-projection-reader.sql.readonly']);rec('dep-acl-drift-pre',r,r.returncode!=0 and 'DEP_DRIFT' in r.stderr)
     finally: B.sql("REVOKE EXECUTE ON FUNCTION platform_private.b2b_legacy_money_row(uuid) FROM authenticated;")
     assert meta('platform_private.b2b_legacy_money_row(uuid)')==pins['deps']['platform_private.b2b_legacy_money_row(uuid)']
+    # WITH GRANT OPTION drift only (privilege already held): must change the pin.
+    B.sql("GRANT EXECUTE ON FUNCTION public.is_financial_staff(uuid) TO authenticated WITH GRANT OPTION;")
+    try:
+        r=B.run_raw(files['13-pre-projection-reader.sql.readonly']);rec('dep-grant-option-drift-pre',r,r.returncode!=0 and 'DEP_DRIFT' in r.stderr and 'is_financial_staff' in r.stderr)
+    finally: B.sql("REVOKE GRANT OPTION FOR EXECUTE ON FUNCTION public.is_financial_staff(uuid) FROM authenticated;")
+    assert meta('public.is_financial_staff(uuid)')==pins['deps']['public.is_financial_staff(uuid)']
+    B.sql("GRANT EXECUTE ON FUNCTION platform_private.b2b_proven_money_row(uuid) TO service_role;")
+    try:
+        r=B.run_raw(files['13-pre-projection-reader.sql.readonly']);rec('proven-money-acl-drift-pre',r,r.returncode!=0 and 'DEP_DRIFT' in r.stderr and 'b2b_proven_money_row' in r.stderr)
+    finally: B.sql("REVOKE EXECUTE ON FUNCTION platform_private.b2b_proven_money_row(uuid) FROM service_role;")
+    assert meta('platform_private.b2b_proven_money_row(uuid)')==pins['deps']['platform_private.b2b_proven_money_row(uuid)']
     pre=B.run_raw(files['13-pre-projection-reader.sql.readonly']);rec('pre',pre,pre.returncode==0 and 'PRE_OK' in pre.stdout)
     inst=B.run_raw(files['14-install-projection-reader.sql.review']);rec('install',inst,inst.returncode==0)
     post=B.run_raw(files['15-post-projection-reader.sql.readonly']);rec('post',post,post.returncode==0 and 'POST_OK' in post.stdout)
@@ -875,8 +887,8 @@ def test_begin_post_wait(B,Q,OUT,order_id,doc):
        rep+f"UPDATE public.fiscal_xml_runs SET state='{run_state}' WHERE id='{doc['xml_run']}';"+org,'SEFAZ_INVOICE_RUN_MISMATCH'),
       ('actor-profile-inactive-during-wait',rep+f"UPDATE public.profiles SET ativo=false WHERE user_id='{Q.UADM}';"+org,
        rep+f"UPDATE public.profiles SET ativo=true WHERE user_id='{Q.UADM}';"+org,'B2B_FORECAST_BEGIN_SCOPE_DENIED'),
-      ('pilot-revoked-during-wait-retautorizacao',"UPDATE platform_private.resale_pilot_allowlist_v1 SET revoked_at=clock_timestamp() WHERE operation='forecast_begin';",
-       "UPDATE platform_private.resale_pilot_allowlist_v1 SET revoked_at=NULL WHERE operation='forecast_begin';",'B2B_FORECAST_BEGIN_SCOPE_DENIED'),
+      ('pilot-revoked-during-wait-retautorizacao',"UPDATE platform_private.b2b_forecast_lifecycle_allowlist_v1 SET revoked_at=clock_timestamp() WHERE operation='forecast_begin';",
+       "UPDATE platform_private.b2b_forecast_lifecycle_allowlist_v1 SET revoked_at=NULL WHERE operation='forecast_begin';",'B2B_FORECAST_BEGIN_SCOPE_DENIED'),
     ]
     out=[]
     for name,mut,restore,token in cases:
@@ -890,12 +902,12 @@ def test_begin_post_wait(B,Q,OUT,order_id,doc):
         out.append(row)
         assert called.returncode!=0 and token in called.stderr and not row['leaked_row'],row
     # Review 209/584d530 item 1: the waiter blocks SPECIFICALLY inside
-    # resale_pilot_allowed_v1 (holder locks only the allowlist row or only the
+    # b2b_forecast_lifecycle_allowed_v1 (holder locks only the allowlist row or only the
     # gate row, never invoice/order/forecast). Fiscal state revoked meanwhile must
     # be re-read after the helper returns and deny before replay/INSERT.
     signed=B.last(f"SELECT coalesce(signed_path,'') FROM public.fiscal_xml_runs WHERE id='{doc['xml_run']}';")
-    pilot_locks=[('allowlist',"SELECT id FROM platform_private.resale_pilot_allowlist_v1 WHERE gate='b2b_resale' AND operation='forecast_begin' FOR UPDATE;"),
-                 ('gate',"SELECT singleton FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton FOR UPDATE;")]
+    pilot_locks=[('allowlist',f"SELECT id FROM platform_private.b2b_forecast_lifecycle_allowlist_v1 WHERE operation='forecast_begin' AND actor_id='{Q.UADM}' FOR UPDATE;"),
+                 ('gate',"SELECT singleton FROM platform_private.b2b_forecast_lifecycle_gate_v1 WHERE singleton FOR UPDATE;")]
     pilot_cases=[
       ('issuer-settings-env-1',rep+f"UPDATE public.company_fiscal_settings SET nfe_environment_code='1' WHERE id='{settings}';"+org,
        rep+f"UPDATE public.company_fiscal_settings SET nfe_environment_code='2' WHERE id='{settings}';"+org,'FISCAL_PRODUCTION_ENDPOINT_BLOCKED'),
@@ -913,7 +925,7 @@ def test_begin_post_wait(B,Q,OUT,order_id,doc):
             finally:
                 B.sql(restore)
             row=dict(case=f'pilot-{lk}-wait-{name}',service='NFeAutorizacao4',holder_lock=lock_sql,
-                     holder_locks_only='resale_pilot_allowlist_v1' if lk=='allowlist' else 'b2b_resale_logistics_gate_v1',
+                     holder_locks_only='b2b_forecast_lifecycle_allowlist_v1' if lk=='allowlist' else 'b2b_forecast_lifecycle_gate_v1',
                      exit=called.returncode,expected=token,stderr=_first_err(called),
                      leaked_row='transmissionId' in called.stdout,barrier=barrier)
             out.append(row)
