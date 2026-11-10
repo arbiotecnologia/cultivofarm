@@ -6,52 +6,18 @@
  * key: exact server replay (same idempotency key) or read-only delta; never a new key/second reservation.
  */
 import { DELIVERY_OPERATION_BLOCK } from "./operationalContainment";
-import { DEFINITIVE_REJECTION_CODES, GROUP_RPC, buildGroupArgs, dispatchOnce, freeze, parseGroupAck, probeDeliveryCapability, replayUncertain, type GroupAck, type GroupInput, type Outcome, type RetrySnapshot, type Rpc } from "./deliveryOperationsFlow";
+import { RESALE_CAP_RPC, parseResaleCapability, probeResaleCapability, type ResaleCapability, type ResaleItemCap } from "./deliveryOperationsFlow";
+export { RESALE_CAP_RPC, parseResaleCapability, probeResaleCapability, type ResaleCapability, type ResaleItemCap };
+import { DEFINITIVE_REJECTION_CODES, GROUP_RPC, parseGroupAck, replayUncertain, runAtomicGroup, type GroupAck, type GroupInput, type Outcome, type RetrySnapshot, type Rpc } from "./deliveryOperationsFlow";
 
-export const RESALE_CAP_RPC = "rpc_b2b_resale_delivery_capability_v1";
 /** Batch writer with server idempotency key and receipt replay (never the legacy rpc_reservar_embalagem_entrega). */
 export const RESERVE_RPC = "rpc_estoque_reservar_v1";
 const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
 const keysExact = (v: Record<string, unknown>, k: string[]) => { const a = Object.keys(v).sort(); return a.length === k.length && [...k].sort().every((x, i) => x === a[i]); };
 
-export type ResaleItemCap = { reserve: boolean; deliveryCreate: boolean; reservedForOs: number };
-export type ResaleCapability = { osId: string; organizationId: string; items: ReadonlyMap<string, ResaleItemCap> };
-
-/** Exact envelope for exactly the requested stock ids, echoing the session tenant; anything else => null (closed). */
-export function parseResaleCapability(data: unknown, osId: string, stockIds: string[], expectedOrg: string): ResaleCapability | null {
-  if (!isObj(data) || !keysExact(data, ["capability", "organization_id", "os_id", "items"])) return null;
-  if (data.capability !== "b2b_resale_delivery_v1" || data.os_id !== osId || !UUID.test(expectedOrg) || data.organization_id !== expectedOrg || !Array.isArray(data.items)) return null;
-  const want = new Set(stockIds);
-  if (want.size !== stockIds.length || data.items.length !== want.size) return null;
-  const items = new Map<string, ResaleItemCap>();
-  for (const x of data.items) {
-    if (!isObj(x) || !keysExact(x, ["stock_id", "reserve", "delivery_create", "reserved_for_os"])) return null;
-    const id = x.stock_id, r = x.reserved_for_os;
-    if (typeof id !== "string" || !want.has(id) || items.has(id) || typeof x.reserve !== "boolean" || typeof x.delivery_create !== "boolean" || typeof r !== "number" || !Number.isFinite(r) || r < 0) return null;
-    items.set(id, { reserve: x.reserve, deliveryCreate: x.delivery_create, reservedForOs: r });
-  }
-  return { osId, organizationId: expectedOrg, items };
-}
-
-export async function probeResaleCapability(rpc: Rpc, osId: string, stockIds: string[], expectedOrg: string): Promise<ResaleCapability | null> {
-  if (!UUID.test(osId) || stockIds.length < 1 || stockIds.length > 100 || !stockIds.every(s => UUID.test(s))) return null;
-  try {
-    const { data, error } = await rpc(RESALE_CAP_RPC, { p_os_id: osId, p_stock_ids: stockIds });
-    return error ? null : parseResaleCapability(data, osId, stockIds, expectedOrg);
-  } catch { return null; }
-}
-
-/** Group creation for B2B resale: generic group capability AND exact resale capability, then the single atomic writer. */
-export async function runAtomicResaleGroup(rpc: Rpc, input: Omit<GroupInput, "resale">, fence: () => void, onDispatch: (r: RetrySnapshot) => void = () => {}): Promise<Outcome<GroupAck>> {
-  const ids = input.itens.map(i => i.itemId);
-  const [cap, resale] = await Promise.all([probeDeliveryCapability(rpc), probeResaleCapability(rpc, input.osId, ids, input.expectedOrg)]);
-  fence();
-  if (!cap.group || !resale || !ids.every(id => resale.items.get(id)?.deliveryCreate === true)) return { status: "closed", message: DELIVERY_OPERATION_BLOCK };
-  const args = buildGroupArgs({ ...input, resale });
-  const retry = freeze({ fn: GROUP_RPC, args, expectedOrg: input.expectedOrg, osId: input.osId, count: ids.length });
-  return dispatchOnce(rpc, retry, d => parseGroupAck(d, input.osId, ids.length, input.expectedOrg), fence, onDispatch);
-}
+/** Group creation for B2B resale (delegates to runAtomicGroup, which branches on osOrigem "b2b"). */
+export const runAtomicResaleGroup = (rpc: Rpc, input: Omit<GroupInput, "resale">, fence: () => void, onDispatch: (r: RetrySnapshot) => void = () => {}) => runAtomicGroup(rpc, { ...input, osOrigem: "b2b" }, fence, onDispatch);
 
 /** Exact replay (same request key/args) of an uncertain B2B group; requires the resale capability to still be open. */
 export async function replayResaleGroup(rpc: Rpc, retry: RetrySnapshot, fence: () => void, onDispatch: (r: RetrySnapshot) => void = () => {}): Promise<Outcome<GroupAck>> {

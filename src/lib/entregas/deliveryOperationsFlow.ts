@@ -11,6 +11,7 @@ export type DeliveryCapability = { group: boolean; cancel: boolean };
 export const CAPABILITY_RPC = "rpc_entrega_operacoes_capability_v1";
 export const GROUP_RPC = "rpc_cockpit_criar_entrega_v1";
 export const CANCEL_RPC = "rpc_entrega_cancelar_v1";
+export const RESALE_CAP_RPC = "rpc_b2b_resale_delivery_capability_v1";
 export const CLOSED: DeliveryCapability = Object.freeze({ group: false, cancel: false });
 
 const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
@@ -34,6 +35,35 @@ export async function probeDeliveryCapability(rpc: Rpc): Promise<DeliveryCapabil
     return CLOSED;
   }
 }
+
+/* ---- B2B resale capability (read-only, exact envelope, fail closed) ---- */
+export type ResaleItemCap = { reserve: boolean; deliveryCreate: boolean; reservedForOs: number };
+export type ResaleCapability = { osId: string; organizationId: string; items: ReadonlyMap<string, ResaleItemCap> };
+
+/** Exact envelope for exactly the requested stock ids, echoing the session tenant; anything else => null (closed). */
+export function parseResaleCapability(data: unknown, osId: string, stockIds: string[], expectedOrg: string): ResaleCapability | null {
+  if (!isObj(data) || !exactKeys(data, ["capability", "organization_id", "os_id", "items"])) return null;
+  if (data.capability !== "b2b_resale_delivery_v1" || data.os_id !== osId || !UUID.test(expectedOrg) || data.organization_id !== expectedOrg || !Array.isArray(data.items)) return null;
+  const want = new Set(stockIds);
+  if (want.size !== stockIds.length || data.items.length !== want.size) return null;
+  const items = new Map<string, ResaleItemCap>();
+  for (const x of data.items) {
+    if (!isObj(x) || !exactKeys(x, ["stock_id", "reserve", "delivery_create", "reserved_for_os"])) return null;
+    const id = x.stock_id, r = x.reserved_for_os;
+    if (typeof id !== "string" || !want.has(id) || items.has(id) || typeof x.reserve !== "boolean" || typeof x.delivery_create !== "boolean" || typeof r !== "number" || !Number.isFinite(r) || r < 0) return null;
+    items.set(id, { reserve: x.reserve, deliveryCreate: x.delivery_create, reservedForOs: r });
+  }
+  return { osId, organizationId: expectedOrg, items };
+}
+
+export async function probeResaleCapability(rpc: Rpc, osId: string, stockIds: string[], expectedOrg: string): Promise<ResaleCapability | null> {
+  if (!UUID.test(osId) || stockIds.length < 1 || stockIds.length > 100 || !stockIds.every(s => UUID.test(s))) return null;
+  try {
+    const { data, error } = await rpc(RESALE_CAP_RPC, { p_os_id: osId, p_stock_ids: stockIds });
+    return error ? null : parseResaleCapability(data, osId, stockIds, expectedOrg);
+  } catch { return null; }
+}
+
 
 /** Fields the atomic contract persists. Anything else non-empty is rejected before dispatch (never silently dropped). */
 export const DATA_KEYS = [
@@ -202,7 +232,16 @@ export function parserFor(retry: RetrySnapshot): (d: unknown) => unknown {
 
 /** Fresh capability probe, then one dispatch. `fence` must throw if scope/session changed. */
 export async function runAtomicGroup(rpc: Rpc, input: GroupInput, fence: () => void, onDispatch: (r: RetrySnapshot) => void = () => {}): Promise<Outcome<GroupAck>> {
-  const args = buildGroupArgs(input);
+  if (input.osOrigem === "b2b") {
+    // B2B resale: generic group capability AND the exact resale capability for this OS/items, probed now.
+    const ids = input.itens.map(i => i.itemId);
+    const [cap, resale] = await Promise.all([probeDeliveryCapability(rpc), probeResaleCapability(rpc, input.osId, ids, input.expectedOrg)]);
+    fence();
+    if (!cap.group || !resale || !ids.every(id => resale.items.get(id)?.deliveryCreate === true)) return { status: "closed", message: DELIVERY_OPERATION_BLOCK };
+    const retry = freeze({ fn: GROUP_RPC, args: buildGroupArgs({ ...input, resale }), expectedOrg: input.expectedOrg, osId: input.osId, count: ids.length });
+    return dispatchOnce(rpc, retry, d => parseGroupAck(d, input.osId, ids.length, input.expectedOrg), fence, onDispatch);
+  }
+  const args = buildGroupArgs({ ...input, resale: undefined });
   const cap = await probeDeliveryCapability(rpc);
   fence();
   if (!cap.group) return { status: "closed", message: DELIVERY_OPERATION_BLOCK };

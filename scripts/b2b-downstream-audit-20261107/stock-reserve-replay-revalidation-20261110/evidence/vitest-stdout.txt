@@ -1,22 +1,23 @@
 
  RUN  v3.2.4 /dev-server
 
- ✓ src/test/entregas/b2bResaleDeliveryFlow.test.ts (13 tests) 39ms
- ❯ src/test/estoque/stock-caller-compatibility.test.ts (12 tests | 1 failed) 44ms
+ ✓ src/test/entregas/b2bResaleDeliveryFlow.test.ts (13 tests) 21ms
+ ❯ src/test/estoque/stock-caller-compatibility.test.ts (12 tests | 1 failed) 37ms
    ✓ compatibilidade dos callers de estoque — sem API real > ação não-entrega mantém nome, parâmetros e resultado da RPC tipada 5ms
-   ✓ compatibilidade dos callers de estoque — sem API real > preserva quantidade NULL e payload default onde ainda aplicável 4ms
-   ✓ compatibilidade dos callers de estoque — sem API real > contenção: expedicao pelo motor legado falha sem chamar RPC 3ms
+   ✓ compatibilidade dos callers de estoque — sem API real > preserva quantidade NULL e payload default onde ainda aplicável 3ms
+   ✓ compatibilidade dos callers de estoque — sem API real > contenção: expedicao pelo motor legado falha sem chamar RPC 2ms
    ✓ compatibilidade dos callers de estoque — sem API real > contenção: entrega pelo motor legado falha sem chamar RPC 1ms
    ✓ compatibilidade dos callers de estoque — sem API real > contenção: estorno_expedicao pelo motor legado falha sem chamar RPC 1ms
    ✓ compatibilidade dos callers de estoque — sem API real > contenção: devolucao pelo motor legado falha sem chamar RPC 1ms
    ✓ compatibilidade dos callers de estoque — sem API real > continua propagando o erro de negócio sem repetir escrita 1ms
-   ✓ compatibilidade dos callers de estoque — sem API real > criação vincula OS/chave/CAS e tipo de OS é validado antes de qualquer RPC 3ms
-   ✓ compatibilidade dos callers de estoque — sem API real > capability envelope malformado (recusa por schema): só CAPABILITY_RPC, nenhum GROUP_RPC 2ms
+   × compatibilidade dos callers de estoque — sem API real > criação vincula OS/chave/CAS e tipo de OS é validado antes de qualquer RPC 16ms
+     → promise resolved "{ status: 'closed', …(1) }" instead of rejecting
+   ✓ compatibilidade dos callers de estoque — sem API real > capability envelope malformado (recusa por schema): só CAPABILITY_RPC, nenhum GROUP_RPC 1ms
    ✓ compatibilidade dos callers de estoque — sem API real > capability envelope válido com group:false: só CAPABILITY_RPC, nenhum GROUP_RPC 1ms
-   ✓ compatibilidade dos callers de estoque — sem API real > controle positivo: capability válida group:true despacha mesma chave/CAS e ACK canônico confirma 2ms
-   × compatibilidade dos callers de estoque — sem API real > Entregas passa o tipo da OS e a revisão observada ao contrato atômico 16ms
-     → expected -1 to be greater than -1
- ✓ src/test/entregas/deliveryOperationsFlow.test.ts (72 tests) 62ms
+   ✓ compatibilidade dos callers de estoque — sem API real > controle positivo: capability válida group:true despacha mesma chave/CAS e ACK canônico confirma 3ms
+   ✓ compatibilidade dos callers de estoque — sem API real > Entregas passa o tipo da OS e a revisão observada ao contrato atômico 1ms
+ ✓ src/test/entregas/deliveryProofFlow.test.ts (34 tests) 43ms
+ ✓ src/test/entregas/deliveryOperationsFlow.test.ts (72 tests) 57ms
 stderr | src/test/entregas/deliveryContainmentStock.test.tsx > reserva de embalagem com destino selecionado não envia nem anuncia sucesso
 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
 
@@ -24,35 +25,52 @@ stderr | src/test/entregas/deliveryAtomicPageMount.test.tsx > Entregas page with
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
- ✓ src/test/entregas/deliveryContainmentStock.test.tsx (7 tests) 531ms
- ✓ src/test/entregas/deliveryAtomicPageMount.test.tsx (32 tests) 5126ms
-   ✓ Entregas page with atomic adapter (mounted) > send timeout retains ownership until transport settles and never parallel-dispatches  501ms
-   ✓ Entregas page with atomic adapter (mounted) > preflight rejection then refresh uses a fresh observed revision and dispatches once  449ms
-   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: reconcile  690ms
-   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: terminal  411ms
-   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: tenant  547ms
-   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=false)  385ms
-   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=true)  413ms
-   ✓ Entregas page with atomic adapter (mounted) > Enviar replaces direct UPDATE and makes physical confirmation reachable  302ms
-   ✓ Entregas page with atomic adapter (mounted) > cancel uses the revision seen when the dialog opened and refuses if it changed  341ms
+ ✓ src/test/entregas/deliveryContainmentStock.test.tsx (7 tests) 454ms
+stderr | src/test/entregas/registrarEntregaObservedSnapshot.test.tsx > RegistrarEntregaDialog observed snapshot (real dialog) > keeps revisions from first selection even if the lists refresh before confirming
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/entregas/registrarEntregaObservedSnapshot.test.tsx (1 test) 694ms
+   ✓ RegistrarEntregaDialog observed snapshot (real dialog) > keeps revisions from first selection even if the lists refresh before confirming  692ms
+ ✓ src/test/entregas/confirmacaoEntregaAck.test.tsx (19 tests) 1917ms
+   ✓ Mounted canonical physical confirmation > invalid ACK os_id stays uncertain with same key and no success  395ms
+ ✓ src/test/entregas/deliveryAtomicPageMount.test.tsx (32 tests) 4228ms
+   ✓ Entregas page with atomic adapter (mounted) > send timeout retains ownership until transport settles and never parallel-dispatches  450ms
+   ✓ Entregas page with atomic adapter (mounted) > preflight rejection then refresh uses a fresh observed revision and dispatches once  395ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: reconcile  662ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: terminal  367ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: tenant  386ms
+   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=false)  322ms
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  src/test/estoque/stock-caller-compatibility.test.ts > compatibilidade dos callers de estoque — sem API real > Entregas passa o tipo da OS e a revisão observada ao contrato atômico
-AssertionError: expected -1 to be greater than -1
- ❯ src/test/estoque/stock-caller-compatibility.test.ts:89:19
-     87|     const caller = readFileSync("src/pages/Entregas.tsx", "utf8");
-     88|     const start = caller.indexOf("runAtomicGroup(supabase.rpc");
-     89|     expect(start).toBeGreaterThan(-1);
-       |                   ^
-     90|     const call = caller.slice(start, caller.indexOf("}, check,", start…
-     91|     expect(call).toContain("osId, osTipo");
+ FAIL  src/test/estoque/stock-caller-compatibility.test.ts > compatibilidade dos callers de estoque — sem API real > criação vincula OS/chave/CAS e tipo de OS é validado antes de qualquer RPC
+AssertionError: promise resolved "{ status: 'closed', …(1) }" instead of rejecting
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Error {[39m
+[32m-   "message": "rejected promise",[39m
+[31m+ {[39m
+[31m+   "message": "Operação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.",[39m
+[31m+   "status": "closed",[39m
+[2m  }[22m
+
+ ❯ src/test/estoque/stock-caller-compatibility.test.ts:60:57
+     58|     });
+     59|     for (const o of [{ osTipo: "onfarm" }, { osPartnerOrderId: OS }, {…
+     60|       await expect(runAtomicGroup(rpc, group(o), () => {})).rejects.to…
+       |                                                         ^
+     61|     }
+     62|     expect(rpc).not.toHaveBeenCalled();
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 
 
- Test Files  1 failed | 4 passed (5)
-      Tests  1 failed | 135 passed (136)
-   Start at  20:30:33
-   Duration  10.69s (transform 1.27s, setup 1.46s, collect 3.87s, tests 5.80s, environment 10.02s, prepare 1.04s)
+ Test Files  1 failed | 7 passed (8)
+      Tests  1 failed | 189 passed (190)
+   Start at  20:31:23
+   Duration  10.00s (transform 1.63s, setup 2.35s, collect 7.22s, tests 7.45s, environment 17.23s, prepare 2.57s)
 
