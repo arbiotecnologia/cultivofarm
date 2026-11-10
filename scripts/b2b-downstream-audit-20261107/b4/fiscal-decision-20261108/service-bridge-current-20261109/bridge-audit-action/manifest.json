@@ -14,7 +14,7 @@
     "01-pre.sql.readonly": "20e62965cd2c8ebe9d32406feadba5204680393032c2dc5878ae9b3daa8de8f9",
     "02-install.sql.review": "772511ecb7c493dba7486e394647fd401cf2659afe531a2d47311ebf7be74105",
     "03-post.sql.readonly": "fb3bec2716b1b12b5e0ea159d38de9c0f8fef8fb8843384e17ec18981c854342",
-    "04-rollback-deny.sql.review": "b8852d9229f64fbd44001a1a6a4ea71c51ac2ede36fa5ab100cfb0d66dd30166"
+    "04-rollback-deny.sql.review": "92c9acb971a9b9b825d0e3179c49438200884c23dc209fa45b24f5cea2de98ea"
   },
   "hosted": false
 }
