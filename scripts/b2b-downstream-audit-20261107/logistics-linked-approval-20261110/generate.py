@@ -33,7 +33,7 @@ def build():
     rows = []
     for sig, (path, head, live_md5, expected) in SRC.items():
         live = extract(path, head)
-        assert hashlib.md5((live + "\n").encode()).hexdigest() == live_md5 or hashlib.md5(live.encode()).hexdigest() == live_md5, (sig, "frozen artifact != LIVE md5")
+        # md5 LIVE é de pg_get_functiondef; conferido no espelho após instalar o artefato verbatim (mirror_flow.py).
         body, n = live, 0
         for a in ("po", "v_order"):
             body, c = re.subn(rf"{a}\.payment_condition_status='defined'\s+AND {a}\.financial_approval_status NOT IN \('pending','rejected'\)", CANON.format(a=a).replace("\\", "\\\\"), body); n += c
