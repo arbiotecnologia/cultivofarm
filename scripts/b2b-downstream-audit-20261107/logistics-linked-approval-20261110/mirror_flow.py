@@ -132,7 +132,7 @@ def run(B, Review, Q, A, choice, out):
     assert Q_.as_user(Q_.UADM, f"SELECT public.approve_partner_order('{rej_order}',NULL,NULL);").returncode == 0
     rj = Q_.as_user(Q_.UFIN, f"SELECT public.reject_b2b_payment_terms_secure('{rej_order}','LLA TERMOS REJEITADOS LOCAL');")
     rej_state = json.loads(B.last(f"SELECT jsonb_build_object('header',o.financial_approval_status,'terms',t.approval_status,'same',t.partner_order_id=o.id)::text FROM public.partner_orders o JOIN public.partner_order_payment_terms t ON t.id=o.payment_terms_id WHERE o.id='{rej_order}';"))
-    ok("canonical writer rejected linked terms", rj.returncode == 0 and rej_state == {"header": "rejected", "terms": "rejected", "same": True}, rej_state)
+    ok("canonical writer rejected linked terms", rj.returncode == 0 and rej_state == {"header": "rejected", "terms": "rejected", "same": True}, {"state": rej_state, "rc": rj.returncode, "out": rj.stdout[-400:], "err": rj.stderr[-400:]})
     rej_item = B.last(f"SELECT id FROM public.partner_order_items WHERE order_id='{rej_order}' ORDER BY id LIMIT 1;")
     rej_prod = B.last(f"SELECT product_id FROM public.partner_order_items WHERE id='{rej_item}';")
     grant("b2b_resale", "os_create", Q.P, rej_order, rej_item, rej_prod)
