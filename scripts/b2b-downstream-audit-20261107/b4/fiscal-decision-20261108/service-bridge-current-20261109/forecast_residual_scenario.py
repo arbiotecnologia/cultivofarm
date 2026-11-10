@@ -310,11 +310,14 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
     first_credit = assert_order_exposure(B, Q, order_id, base_open, 9, 9, label='after NF1: title 9 + residual 9 = 18')
     assert abs(float(first_credit['full']['exposicao_atual']) - float(credit_before['exposicao_atual'])) < .001, (first_credit, credit_before)
 
-    def bridge_race(_):
-        return B.run_raw(f"SET ROLE service_role;SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{first_invoice}');")
+    # Replay race only through the canonical H13 callback (the bridge itself has no
+    # service grant); identical authorized returns must keep one document and title.
+    first_doc = dict(invoice=first_invoice, access_key='35261111111111111111111111111111111111111111')
+    first_tx = B.last(f"SELECT id FROM public.fiscal_sefaz_transmissions WHERE fiscal_invoice_id='{first_invoice}' AND outcome='AUTHORIZED';")
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-        races = list(pool.map(bridge_race, range(2)))
-    assert all(r.returncode == 0 for r in races), [r.stderr for r in races]
+        races = list(pool.map(lambda _: authorize(B, first_doc, first_tx, 'LOCAL-INTEGRATED-PROTOCOL', '2027-02-01T12:00:00Z'), range(2)))
+    assert all(r.returncode == 0 and _last(r)['reconciliationPending'] is False for r in races), [(r.stdout, r.stderr) for r in races]
+    direct_bridge = denied(B.run_raw(f"SET ROLE service_role;SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{first_invoice}');"), 'permission denied')
     assert B.last(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{first_invoice}';") == '1'
     assert B.last(f"SELECT count(*) FROM platform_private.b2b_financial_forecast_events WHERE event_type='FISCAL_CONFIRMED' AND event_reference='{first_invoice}';") == '1'
 
@@ -371,7 +374,7 @@ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, f
     assert abs(float(paid_credit['full']['exposicao_atual']) - (float(credit_before['exposicao_atual']) - 9)) < .001, (paid_credit, credit_before)
     forecast_after_payment = forecast_row(B, order_id)
     assert forecast_after_payment == forecast, (forecast_after_payment, forecast)
-    result = dict(first_invoice=first_invoice, first_receivable=first_receivable, winner_invoice=winner['invoice'], loser_invoice=loser['invoice'], second_receivable=second_receivable,
+    result = dict(first_invoice=first_invoice, first_receivable=first_receivable, replay_race=[_last(r) for r in races], direct_bridge_service_denied=direct_bridge, winner_invoice=winner['invoice'], loser_invoice=loser['invoice'], second_receivable=second_receivable,
                   second_intent_denied=second_intent_denied, concurrent_callbacks=dict(a=da, z=dz), loser_state=loser_state,
                   loser_reason=dict(exit=loser_reason.returncode, stderr=loser_reason.stderr.strip()[-600:]),
                   credit_before=credit_before, credit_after_first=first_credit, credit_after_second=second_credit, credit_after_payment=paid_credit,
