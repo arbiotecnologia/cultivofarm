@@ -4,6 +4,9 @@ import concurrent.futures
 import hashlib
 import json
 import time
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
 def test_terms_waits(B, Q, OUT, order_id):
