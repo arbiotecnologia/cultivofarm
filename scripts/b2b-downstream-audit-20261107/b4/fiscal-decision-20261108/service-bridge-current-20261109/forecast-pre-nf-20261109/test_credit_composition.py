@@ -58,7 +58,7 @@ fiscal = (H / "06-install-fiscal-reconcile.sql.review").read_text()
 check("wrappers granted to authenticated only", "GRANT EXECUTE ON FUNCTION public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer),public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) TO authenticated;" in fiscal
       and "FROM PUBLIC,anon,service_role;" in fiscal)
 check("no grant on private forecast helpers", not re.search(r"GRANT [^;]*platform_private\.b2b_financial_forecast", fiscal + forecast_install))
-check("wrappers re-authorize after locks", W.SYNC.count("platform_private.c2p1_internal_actor(") == 2 and W.CANCEL.count("platform_private.c2p1_internal_actor(") == 2)
+check("wrappers re-authorize after aggregate and pilot locks", W.SYNC.count("platform_private.c2p1_internal_actor(") == 3 and W.CANCEL.count("platform_private.c2p1_internal_actor(") == 3)
 check("sync derives event from fiscal transmission, never from caller payload", "p_payload" not in W.SYNC and "FROM public.fiscal_sefaz_transmissions WHERE id=p_transmission_id FOR SHARE" in W.SYNC)
 check("authorized return confirms only through H13 bridge", "'fiscal_confirmation','H13_BRIDGE_ONLY'" in W.SYNC)
 check("cancel blocked while fiscal in flight or close pending", "B2B_FORECAST_FISCAL_IN_FLIGHT" in W.CANCEL and "B2B_FORECAST_FISCAL_RECONCILIATION_PENDING" in W.CANCEL)

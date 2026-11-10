@@ -44,12 +44,17 @@ BEGIN
  -- Authority is derived server-side from the JWT actor; payload/IDs never attest it.
  org:=platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]);
  IF org IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_FISCAL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ IF public._saas_user_has_feature(auth.uid(),'pedidos_b2b') IS NOT TRUE
+  OR public._saas_user_has_feature(auth.uid(),'contas_receber') IS NOT TRUE THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FEATURE_DENIED' USING ERRCODE='42501';END IF;
  IF p_transmission_id IS NULL OR p_expected_version IS NULL OR p_expected_version<1 THEN
   RAISE EXCEPTION 'B2B_FORECAST_EVENT_INVALID' USING ERRCODE='22023';END IF;
  SELECT t0.fiscal_invoice_id INTO v_invoice FROM public.fiscal_sefaz_transmissions t0
  JOIN public.fiscal_invoices i ON i.id=t0.fiscal_invoice_id
  WHERE t0.id=p_transmission_id AND i.organization_id=org
- AND platform_private.c2p1_settings_allowed(i.debtor_partner_id,true);
+ AND platform_private.c2p1_settings_allowed(i.debtor_partner_id,true)
+ AND platform_private.resale_pilot_scope_v1('b2b_resale','forecast_sync',auth.uid(),org,
+  i.debtor_partner_id,i.partner_order_id,NULL,NULL,NULL,NULL) IS TRUE;
  IF v_invoice IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_FISCAL_SOURCE_UNPROVEN' USING ERRCODE='42501';END IF;
  -- Canonical H13 order: fiscal invoice, transmission, then forecast (bridge: invoice, order, forecast).
  SELECT * INTO inv FROM public.fiscal_invoices WHERE id=v_invoice AND organization_id=org FOR SHARE;
@@ -64,6 +69,16 @@ BEGIN
  -- Re-authorize after every wait: role, profile, tenant and seller scope may have been revoked.
  IF platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]) IS DISTINCT FROM f.organization_id
   OR NOT platform_private.c2p1_settings_allowed(f.partner_id,true) THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FISCAL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ IF platform_private.resale_pilot_allowed_v1('b2b_resale','forecast_sync',auth.uid(),org,
+   inv.debtor_partner_id,inv.partner_order_id,NULL,NULL,NULL,NULL) IS NOT TRUE THEN
+  RAISE EXCEPTION 'B2B_FORECAST_PILOT_DENIED' USING ERRCODE='42501';END IF;
+ -- Recheck entitlements and actor after grant/gate locks, not just aggregate locks.
+ IF public._saas_user_has_feature(auth.uid(),'pedidos_b2b') IS NOT TRUE
+  OR public._saas_user_has_feature(auth.uid(),'contas_receber') IS NOT TRUE THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FEATURE_DENIED' USING ERRCODE='42501';END IF;
+ IF platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]) IS DISTINCT FROM org
+  OR platform_private.c2p1_settings_allowed(inv.debtor_partner_id,true) IS NOT TRUE THEN
   RAISE EXCEPTION 'B2B_FORECAST_FISCAL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
  IF t.outcome='AUTHORIZED' THEN
   -- Definitive confirmation exists only through the H13 callback and fiscal bridge permit.
@@ -116,19 +131,33 @@ DECLARE po public.partner_orders;f platform_private.b2b_financial_forecasts;org 
 BEGIN
  org:=platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]);
  IF org IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_CANCEL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ IF public._saas_user_has_feature(auth.uid(),'pedidos_b2b') IS NOT TRUE
+  OR public._saas_user_has_feature(auth.uid(),'contas_receber') IS NOT TRUE THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FEATURE_DENIED' USING ERRCODE='42501';END IF;
  IF p_order IS NULL OR p_expected_version IS NULL OR nullif(btrim(coalesce(p_reason,'')),'') IS NULL THEN
   RAISE EXCEPTION 'B2B_FORECAST_CANCEL_REASON_REQUIRED' USING ERRCODE='22023';END IF;
  -- Canonical order: order row first, then forecast (same as approval and the bridge).
  SELECT * INTO po FROM public.partner_orders WHERE id=p_order
   AND EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id=partner_orders.partner_id
    AND pa.commercial_owner_organization_id=org)
-  AND platform_private.c2p1_settings_allowed(partner_id,true) FOR UPDATE;
+  AND platform_private.c2p1_settings_allowed(partner_id,true)
+  AND platform_private.resale_pilot_scope_v1('b2b_resale','forecast_cancel',auth.uid(),org,
+   partner_id,id,NULL,NULL,NULL,NULL) IS TRUE FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'B2B_FORECAST_CANCEL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
  SELECT * INTO f FROM platform_private.b2b_financial_forecasts WHERE order_id=p_order AND organization_id=org FOR UPDATE;
  IF NOT FOUND OR f.partner_id IS DISTINCT FROM po.partner_id THEN
   RAISE EXCEPTION 'B2B_FORECAST_CAS_CONFLICT' USING ERRCODE='PT409';END IF;
  IF platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]) IS DISTINCT FROM f.organization_id
   OR NOT platform_private.c2p1_settings_allowed(f.partner_id,true) THEN
+  RAISE EXCEPTION 'B2B_FORECAST_CANCEL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ IF platform_private.resale_pilot_allowed_v1('b2b_resale','forecast_cancel',auth.uid(),org,
+   po.partner_id,po.id,NULL,NULL,NULL,NULL) IS NOT TRUE THEN
+  RAISE EXCEPTION 'B2B_FORECAST_PILOT_DENIED' USING ERRCODE='42501';END IF;
+ IF public._saas_user_has_feature(auth.uid(),'pedidos_b2b') IS NOT TRUE
+  OR public._saas_user_has_feature(auth.uid(),'contas_receber') IS NOT TRUE THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FEATURE_DENIED' USING ERRCODE='42501';END IF;
+ IF platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]) IS DISTINCT FROM org
+  OR platform_private.c2p1_settings_allowed(po.partner_id,true) IS NOT TRUE THEN
   RAISE EXCEPTION 'B2B_FORECAST_CANCEL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
  -- An emission/consultation still open or an authorized return awaiting close must settle first.
  IF EXISTS(SELECT 1 FROM public.fiscal_invoices i JOIN public.fiscal_sefaz_transmissions t ON t.fiscal_invoice_id=i.id
@@ -174,9 +203,40 @@ def begin_overlay(root):
     return body, sig, row['md5'], md5(body), acl
 
 
+def lifecycle_pilot_sql():
+    """Extend only operation vocabulary of the existing private, revocable pilot.
+    No rows or global switches are enabled; historical read grants authorize nothing.
+    Constraint pins measured from pilot_containment.foundation on PG17.11.
+    """
+    return """DO $pilot$ DECLARE op text; shape text; BEGIN
+ IF to_regprocedure('public._saas_user_has_feature(uuid,text)') IS NULL
+  OR to_regprocedure('platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)') IS NULL
+  OR to_regprocedure('platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)') IS NULL THEN
+  RAISE EXCEPTION 'B2B_FORECAST_PILOT_DEPENDENCY_MISSING' USING ERRCODE='42501';END IF;
+ LOCK TABLE platform_private.resale_pilot_allowlist_v1 IN ACCESS EXCLUSIVE MODE;
+ SELECT pg_get_constraintdef(oid) INTO op FROM pg_constraint
+  WHERE conrelid='platform_private.resale_pilot_allowlist_v1'::regclass AND conname='resale_pilot_allowlist_v1_operation_check';
+ SELECT pg_get_constraintdef(oid) INTO shape FROM pg_constraint
+  WHERE conrelid='platform_private.resale_pilot_allowlist_v1'::regclass AND conname='resale_pilot_allowlist_v1_check2';
+ IF md5(op) IS DISTINCT FROM '0fd27c10e23c84c4157e0e3c5219e9c3'
+  OR md5(shape) IS DISTINCT FROM 'eded2fefaa492b7e32ba8e6f39c9f420' THEN
+  RAISE EXCEPTION 'B2B_FORECAST_PILOT_CONSTRAINT_DRIFT' USING ERRCODE='42501';END IF;
+ IF EXISTS(SELECT 1 FROM platform_private.resale_pilot_allowlist_v1 WHERE operation IN ('forecast_sync','forecast_cancel')) THEN
+  RAISE EXCEPTION 'B2B_FORECAST_PILOT_NOT_CLOSED' USING ERRCODE='42501';END IF;
+ ALTER TABLE platform_private.resale_pilot_allowlist_v1 DROP CONSTRAINT resale_pilot_allowlist_v1_operation_check;
+ ALTER TABLE platform_private.resale_pilot_allowlist_v1 DROP CONSTRAINT resale_pilot_allowlist_v1_check2;
+ EXECUTE 'ALTER TABLE platform_private.resale_pilot_allowlist_v1 ADD CONSTRAINT resale_pilot_allowlist_v1_operation_check CHECK ('
+  ||substr(op,8,length(op)-8)||' OR operation IN (''forecast_sync'',''forecast_cancel''))';
+ EXECUTE 'ALTER TABLE platform_private.resale_pilot_allowlist_v1 ADD CONSTRAINT resale_pilot_allowlist_v1_check2 CHECK ('
+  ||substr(shape,8,length(shape)-8)||' OR (operation IN (''forecast_sync'',''forecast_cancel'') AND gate=''b2b_resale''
+   AND partner_id IS NOT NULL AND order_id IS NOT NULL AND order_item_id IS NULL AND product_id IS NULL AND stock_id IS NULL AND delivery_id IS NULL))';
+END $pilot$;
+"""
+
+
 def wrappers_sql():
     begin,sig,old,new,acl=begin_overlay(Path(__file__).resolve().parent.parents[5])
-    sql = (SYNC + ";\n" + CANCEL + ";\n"
+    sql = (lifecycle_pilot_sql() + SYNC + ";\n" + CANCEL + ";\n"
            "REVOKE ALL ON FUNCTION public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer),public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) FROM PUBLIC,anon,service_role;\n"
            "GRANT EXECUTE ON FUNCTION public.rpc_b2b_forecast_fiscal_sync_v1(uuid,integer),public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) TO authenticated;\n"
            "-- Private transition/cancel/reconcile keep NO grant: only these owner wrappers and the bridge nest them.\n")
