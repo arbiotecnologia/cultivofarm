@@ -359,7 +359,15 @@ def main():
   assert denied.returncode!=0 and 'B2B_RESALE_ACTOR_DENIED' in denied.stderr,denied.stderr
   denied=B.run_raw(resale_call(Q.UADM,'resale-stale-cas-0001',expected='2000-01-01 00:00:00+00'))
   assert denied.returncode!=0 and 'B2B_RESALE_ORDER_CONFLICT' in denied.stderr,denied.stderr
-  created=json.loads(B.last(resale_call(Q.UADM,'resale-os-create-0001')))
+  operational_before=B.run_raw(resale_call(Q.UADM,'resale-os-create-0001'))
+  (OUT/'linked-terms-before.json').write_text(json.dumps(dict(stdout=operational_before.stdout,stderr=operational_before.stderr,exit=operational_before.returncode,header_status=accepted['financial_approval_status'],linked_terms=terms_after['terms']),indent=2)+'\n')
+  assert operational_before.returncode!=0 and 'B2B_RESALE_ORDER_CONFLICT' in operational_before.stderr,operational_before.stderr
+  linked=load('linked_terms_overlay',H/'linked_terms_overlay.py')
+  linked_out=linked.install(B,OUT)
+  operational_after=B.run_raw(resale_call(Q.UADM,'resale-os-create-0001'))
+  (OUT/'linked-terms-after.json').write_text(json.dumps(dict(stdout=operational_after.stdout,stderr=operational_after.stderr,exit=operational_after.returncode),indent=2)+'\n')
+  assert operational_after.returncode==0,operational_after.stderr
+  created=json.loads(operational_after.stdout.strip().splitlines()[-1])
   assert created['ok'] is True and created['replay'] is False,created
   os_id=created['os_id']
   replay=json.loads(B.last(resale_call(Q.UADM,'resale-os-create-0001')))

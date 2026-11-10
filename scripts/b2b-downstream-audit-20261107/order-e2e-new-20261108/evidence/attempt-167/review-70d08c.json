@@ -1,0 +1,117 @@
+{
+  "review": "70d08c",
+  "candidate_sha256": "8ad4def8d4ae3c2e86518f2d82bf57f053cee66b0d7e165b84472cb586812c20",
+  "hosted": false,
+  "results": [
+    {
+      "name": "two_items_only_one_os_and_delivery",
+      "status": "FAIL",
+      "error": "ERROR:  B2B_RESALE_ORDER_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 38 at RAISE\n",
+      "traceback": "Traceback (most recent call last):\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 44, in run\n    detail = fn()\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 198, in two_items_only_one_os_and_delivery\n    flow = self.prepare_sent_delivery(order, first, 1, \"two-items-first\")\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 158, in prepare_sent_delivery\n    os_id = self.create_os(order, item, label + \"-os\")\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 84, in create_os\n    result = json.loads(self.B.last(self.os_create_sql(order[\"id\"], item[\"id\"], order[\"accepted\"][\"updated_at\"], self.key(label))))\n                        ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 60, in last\n    return sql(statement).splitlines()[-1]\n           ~~~^^^^^^^^^^^\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 56, in sql\n    return pg.sql(statement)\n           ~~~~~~^^^^^^^^^^^\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  B2B_RESALE_ORDER_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 38 at RAISE\n\n"
+    },
+    {
+      "name": "quantity_three_delivery_one_remainder_unreserved",
+      "status": "FAIL",
+      "error": "ERROR:  B2B_RESALE_ORDER_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 38 at RAISE\n",
+      "traceback": "Traceback (most recent call last):\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 44, in run\n    detail = fn()\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 211, in quantity_three_delivery_one_remainder_unreserved\n    os_id = self.create_os(order, item, \"qty-three-os\")\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 84, in create_os\n    result = json.loads(self.B.last(self.os_create_sql(order[\"id\"], item[\"id\"], order[\"accepted\"][\"updated_at\"], self.key(label))))\n                        ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 60, in last\n    return sql(statement).splitlines()[-1]\n           ~~~^^^^^^^^^^^\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 56, in sql\n    return pg.sql(statement)\n           ~~~~~~^^^^^^^^^^^\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  B2B_RESALE_ORDER_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 38 at RAISE\n\n"
+    },
+    {
+      "name": "cancelled_partial_does_not_complete",
+      "status": "FAIL",
+      "error": "ERROR:  B2B_RESALE_ORDER_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 38 at RAISE\n",
+      "traceback": "Traceback (most recent call last):\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 44, in run\n    detail = fn()\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 233, in cancelled_partial_does_not_complete\n    os_id = self.create_os(order, item, \"cancel-partial-os\")\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 84, in create_os\n    result = json.loads(self.B.last(self.os_create_sql(order[\"id\"], item[\"id\"], order[\"accepted\"][\"updated_at\"], self.key(label))))\n                        ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 60, in last\n    return sql(statement).splitlines()[-1]\n           ~~~^^^^^^^^^^^\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 56, in sql\n    return pg.sql(statement)\n           ~~~~~~^^^^^^^^^^^\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  B2B_RESALE_ORDER_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 38 at RAISE\n\n"
+    },
+    {
+      "name": "overdelivery_cannot_complete_or_rewrite_snapshots",
+      "status": "FAIL",
+      "error": "ERROR:  B2B_RESALE_ORDER_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 38 at RAISE\n",
+      "traceback": "Traceback (most recent call last):\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 44, in run\n    detail = fn()\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 255, in overdelivery_cannot_complete_or_rewrite_snapshots\n    flow = self.prepare_sent_delivery(order, item, 3, \"overdelivery\")\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 158, in prepare_sent_delivery\n    os_id = self.create_os(order, item, label + \"-os\")\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 84, in create_os\n    result = json.loads(self.B.last(self.os_create_sql(order[\"id\"], item[\"id\"], order[\"accepted\"][\"updated_at\"], self.key(label))))\n                        ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 60, in last\n    return sql(statement).splitlines()[-1]\n           ~~~^^^^^^^^^^^\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 56, in sql\n    return pg.sql(statement)\n           ~~~~~~^^^^^^^^^^^\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  B2B_RESALE_ORDER_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 38 at RAISE\n\n"
+    },
+    {
+      "name": "last_two_deliveries_concurrent",
+      "status": "FAIL",
+      "error": "ERROR:  B2B_RESALE_ORDER_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 38 at RAISE\n",
+      "traceback": "Traceback (most recent call last):\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 44, in run\n    detail = fn()\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 266, in last_two_deliveries_concurrent\n    flows = [self.prepare_sent_delivery(order, item, 1, f\"concurrent-last-{index}\") for index, item in enumerate(order[\"items\"])]\n             ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 158, in prepare_sent_delivery\n    os_id = self.create_os(order, item, label + \"-os\")\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 84, in create_os\n    result = json.loads(self.B.last(self.os_create_sql(order[\"id\"], item[\"id\"], order[\"accepted\"][\"updated_at\"], self.key(label))))\n                        ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 60, in last\n    return sql(statement).splitlines()[-1]\n           ~~~^^^^^^^^^^^\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 56, in sql\n    return pg.sql(statement)\n           ~~~~~~^^^^^^^^^^^\n  File \"/tmp/new-order-e2e-_6lf06r_/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  B2B_RESALE_ORDER_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 38 at RAISE\n\n"
+    },
+    {
+      "name": "create_wait_revocation_role",
+      "status": "PASS",
+      "detail": {
+        "actual_row_wait": true,
+        "error": "ERROR:  B2B_RESALE_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 24 at RAISE\n",
+        "zero_os_ticket_ledger_event_receipt_delta": true,
+        "explicit_candidate_reauth": true
+      }
+    },
+    {
+      "name": "create_wait_revocation_profile",
+      "status": "PASS",
+      "detail": {
+        "actual_row_wait": true,
+        "error": "ERROR:  B2B_RESALE_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 24 at RAISE\n",
+        "zero_os_ticket_ledger_event_receipt_delta": true,
+        "explicit_candidate_reauth": true
+      }
+    },
+    {
+      "name": "create_wait_revocation_tenant",
+      "status": "PASS",
+      "detail": {
+        "actual_row_wait": true,
+        "error": "ERROR:  ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 22 at IF\n",
+        "zero_os_ticket_ledger_event_receipt_delta": true,
+        "explicit_candidate_reauth": true
+      }
+    },
+    {
+      "name": "create_wait_revocation_gate",
+      "status": "PASS",
+      "detail": {
+        "actual_row_wait": true,
+        "error": "ERROR:  B2B_RESALE_GATE_CLOSED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 26 at RAISE\n",
+        "zero_os_ticket_ledger_event_receipt_delta": true,
+        "explicit_candidate_reauth": true
+      }
+    },
+    {
+      "name": "replay_wait_revocation_role",
+      "status": "PASS",
+      "detail": {
+        "actual_advisory_wait": true,
+        "receipt_not_returned": true,
+        "error": "ERROR:  B2B_RESALE_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 24 at RAISE\n",
+        "explicit_candidate_reauth": true
+      }
+    },
+    {
+      "name": "replay_wait_revocation_profile",
+      "status": "PASS",
+      "detail": {
+        "actual_advisory_wait": true,
+        "receipt_not_returned": true,
+        "error": "ERROR:  B2B_RESALE_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 24 at RAISE\n",
+        "explicit_candidate_reauth": true
+      }
+    },
+    {
+      "name": "replay_wait_revocation_tenant",
+      "status": "PASS",
+      "detail": {
+        "actual_advisory_wait": true,
+        "receipt_not_returned": true,
+        "error": "ERROR:  ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 22 at IF\n",
+        "explicit_candidate_reauth": false
+      }
+    },
+    {
+      "name": "replay_wait_revocation_gate",
+      "status": "PASS",
+      "detail": {
+        "actual_advisory_wait": true,
+        "receipt_not_returned": true,
+        "error": "ERROR:  B2B_RESALE_GATE_CLOSED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 26 at RAISE\n",
+        "explicit_candidate_reauth": true
+      }
+    }
+  ]
+}
