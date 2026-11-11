@@ -33,6 +33,8 @@ import {
 import { DetalhePedidoDrawer } from "@/components/pedidos-b2b/DetalhePedidoDrawer";
 import { DetalheSimulacaoDrawer } from "@/components/pedidos-b2b/DetalheSimulacaoDrawer";
 import { useActiveTenantName } from "@/hooks/useActiveTenantName";
+import { useAuth } from "@/hooks/useAuth";
+import { SellerFinanceOrderReview } from "@/components/pedidos-b2b/SellerFinanceOrderReview";
 
 const SIM_STATUS_LABEL: Record<string, string> = {
   rascunho: "Rascunho",
@@ -57,6 +59,9 @@ function WithTenantName({ children }: { children: (name: string | null) => JSX.E
 export default function SolicitacoesB2B() {
   const { data: pedidos = [], isLoading: loadingPed, actorScope } = usePartnerOrdersAdmin();
   const { data: sims = [], isLoading: loadingSim } = useComercialSimulacoesAll();
+  const { roles } = useAuth();
+  // Financeiro sem papel comercial: pedido externo abre a revisão financeira canônica (servidor decide o acesso).
+  const financeOnly = roles.includes("financeiro" as any) && !roles.some((r) => r === "administrador" || r === "gestor_comercial");
 
   const [statusPed, setStatusPed] = useState("all");
   const [statusSim, setStatusSim] = useState("all");
@@ -383,6 +388,8 @@ export default function SolicitacoesB2B() {
                               >
                                 Simulação <ArrowRight className="h-3 w-3 ml-1" />
                               </Button>
+                            ) : o.c2_external_origin_snapshot ? (
+                              <Badge variant="outline">Pedido do parceiro</Badge>
                             ) : (
                               <Badge variant="outline">Manual</Badge>
                             )}
@@ -531,7 +538,12 @@ export default function SolicitacoesB2B() {
         </TabsContent>
       </Tabs>
 
-      {!!openPedido && <WithTenantName>{(tenantName) => <DetalhePedidoDrawer
+      {!!openPedido && financeReview && <SellerFinanceOrderReview
+        orderId={openPedido}
+        open={!!openPedido}
+        onOpenChange={(o) => !o && setOpenPedido(null)}
+      />}
+      {!!openPedido && !financeReview && <WithTenantName>{(tenantName) => <DetalhePedidoDrawer
         empresaNome={tenantName}
         orderId={openPedido}
         open={!!openPedido}
