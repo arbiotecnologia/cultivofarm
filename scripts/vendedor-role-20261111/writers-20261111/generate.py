@@ -105,9 +105,9 @@ def main():
     for sig,v in pt.items(): db.sql(v['new'])
     for sig,v in pt.items(): v['candidate']=db.md5(sig)
     cat_new=pt['public.get_partner_catalog_secure(uuid)']['candidate']
-    cb=db.body(CAP[0]);assert db.md5(CAP[0])==CAP[1];assert cb.count("'b5684d350603d1db77ab9f1db0f4b253'")==1
-    cnew=cb.replace("'b5684d350603d1db77ab9f1db0f4b253'","'"+cat_new+"'");db.sql(cnew)
-    pt[CAP[0]]=dict(orig=cb,new=cnew,live=CAP[1],auditor_confirmed=True,candidate=db.md5(CAP[0]))
+    # Capacidade interna do gestor (LIVE e2619c71) NÃO é alterada: em produção já pina o catálogo antigo b5684d35 e responde
+    # catalog_reader_pending com o catálogo 6b56cfb1; reabri-la para o gestor seria ampliação fora do escopo Vendedor.
+    assert db.md5(CAP[0])==CAP[1];assert db.body(CAP[0]).count("'b5684d350603d1db77ab9f1db0f4b253'")==1
     acl={sig:C.acl_set(db,sig) for sig in pt}
     for s,tx in C.PROD_ACL.items(): assert acl[s]==C.acl_text_to_set(db,tx),('PROD_ACL_MISMATCH',s)
     aclq=lambda sig: C.acl_set_sql(sig)
@@ -130,6 +130,7 @@ def main():
     for s in newf[:3]+newf[4:]:
         pre.append(f" IF to_regprocedure('{s}') IS NOT NULL THEN RAISE EXCEPTION 'VENDW_PRE_ALREADY_PRESENT:{s}'; END IF;")
     for s,h in (C.READER,C.PRICE): pre.append(f" IF md5(pg_get_functiondef('{s}'::regprocedure)) IS DISTINCT FROM '{h}' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:{s}'; END IF;")
+    pre.append(f" IF md5(pg_get_functiondef('{CAP[0]}'::regprocedure)) IS DISTINCT FROM '{CAP[1]}' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:{CAP[0]}'; END IF;")
     pre.append(" IF md5(pg_get_functiondef('platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'::regprocedure)) IS DISTINCT FROM '999e5e9fd9887595e252523fb2142726' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:c2_external_origin_assert'; END IF;")
     pre.append("END $pre$;\nSELECT 'VENDW_PRE_PASS';")
     pre_sql='\n'.join(pre)+'\n'
@@ -140,6 +141,7 @@ def main():
     for s in newf:
         post.append(f" IF md5(pg_get_functiondef('{s}'::regprocedure)) IS DISTINCT FROM '{newm[s]}' THEN RAISE EXCEPTION 'VENDW_POST_DRIFT:{s}'; END IF;")
         post.append(f" IF {aclq(s)} IS DISTINCT FROM '{newacl[s]}' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:{s}'; END IF;")
+    post.append(f" IF md5(pg_get_functiondef('{CAP[0]}'::regprocedure)) IS DISTINCT FROM '{CAP[1]}' THEN RAISE EXCEPTION 'VENDW_POST_GESTOR_CAPABILITY_CHANGED'; END IF;")
     post.append(" IF md5(pg_get_functiondef('platform_private.b2b_internal_commercial_actor()'::regprocedure)) IS DISTINCT FROM '6555396c4f8fe914177d2ccfc3891279' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
     post.append(" IF md5(pg_get_functiondef('platform_private.c2_internal_order_target_reason(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '07d7c9002cbfe17497c9ee4a92d5a928' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
     post.append(" IF md5(pg_get_functiondef('public.fn_cc_can_prepare(uuid)'::regprocedure)) IS DISTINCT FROM '"+db.md5('public.fn_cc_can_prepare(uuid)')+"' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
@@ -173,7 +175,7 @@ def main():
       patched={s:dict(live=v['live'],candidate=v['candidate'],auditor_confirmed=v['auditor_confirmed'],acl=acl[s]) for s,v in pt.items()},
       catalog_reconciliation=dict(recon,source=['scripts/tenant-exclusive-catalog-20261101/ae_section.py','scripts/b2b-catalog-read-fence-v2-20261103/02-install-v2.sql.review','scripts/b2b-catalog-read-fence-v2-20261103/evidence-local.json post_pins'],production_md5=C.PROD_MD5,mirror_md5=C.MIRROR_MD5),
       acl_comparison='conjunto aclexplode (grantor>grantee:privilégio:grant_option)+owner, ACL NULL=acldefault; ordem textual ignorada, membros extras/grant option detectados',
-      acl_reconciliation=aclrecon,new=newm,new_acl=newacl,seller_cap_02b=cap02b,shared_helpers_unchanged=['platform_private.b2b_internal_commercial_actor()','platform_private.c2_internal_order_target_reason(uuid,uuid)','public.fn_cc_can_prepare(uuid)'],
+      acl_reconciliation=aclrecon,new=newm,new_acl=newacl,seller_cap_02b=cap02b,gestor_capability_unchanged=dict(sig=CAP[0],md5=CAP[1],note='pina catálogo b5684d35; com catálogo de produção 6b56cfb1 responde catalog_reader_pending (estado LIVE preservado)'),shared_helpers_unchanged=['platform_private.b2b_internal_commercial_actor()','platform_private.c2_internal_order_target_reason(uuid,uuid)','public.fn_cc_can_prepare(uuid)'],
       files={n:hashlib.sha256(t.encode()).hexdigest() for n,t in files.items()},helpers_sha256=hashlib.sha256(HELPERS.encode()).hexdigest())
     (H/'manifest.json').write_text(json.dumps(man,indent=2,ensure_ascii=False)+'\n');print(json.dumps(man['files'],indent=1))
 if __name__=='__main__':main()

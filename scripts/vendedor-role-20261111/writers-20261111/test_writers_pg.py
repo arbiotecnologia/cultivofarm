@@ -119,7 +119,7 @@ try:
     c,e=call(V2,"public.seller_portfolio_capability_v1()");ok('capacidade V2: só P2',c and [p['partner_id'] for p in c['partners']]==[P2],c or e)
     c,e=call(VB,"public.seller_portfolio_capability_v1()");ok('capacidade VB (outro tenant) sem parceiros',c and c['partners']==[] and c['order_create'] is False,c or e)
     c,e=call(VX,"public.seller_portfolio_capability_v1()");ok('vendedor+gestor não é vendedor exclusivo',c and c['ready'] is False and c['reason']=='not_seller',c or e)
-    c,e=call(UGC,"public.c2_internal_order_entry_capability_v1()");ok('regressão: capacidade do gestor segue aberta (pin catálogo novo)',c and c['order_create'] is True,c or e)
+    c,e=call(UGC,"public.c2_internal_order_entry_capability_v1()");ok('regressão: capacidade do gestor inalterada = LIVE (catalog_reader_pending com catálogo 6b56cfb1)',c and c['order_create'] is False and c['reason']=='catalog_reader_pending',c or e)
     c,e=call(V1,"public.c2_internal_order_entry_capability_v1()");ok('capacidade interna do gestor não abre para vendedor',c and c['order_create'] is False and c['reason']=='actor_not_allowed',c or e)
     # Catálogo
     r=call(V1,f"public.get_partner_catalog_secure('{P}')");ok('V1 lê catálogo de P',r[0] is not None,r)
@@ -308,7 +308,7 @@ try:
     ok('vínculo revogado pelo administrador',d.last(f"select revoked_at is not null from platform_private.seller_portfolio_assignments where id='{a1}'")=='t')
     c,e=call(V1,"public.seller_portfolio_capability_v1()");ok('após revogação: carteira vazia',c and c['partners']==[] and c['order_create'] is False and c['reason']=='no_partner_in_scope',c or e)
     deny('após revogação: criação negada',lambda: full_create(V1,P),'42501','C2_SELLER_TARGET_DENIED:not_assigned')
-    deny('após revogação: catálogo negado',lambda: call(V1,f"public.get_partner_catalog_secure('{P}')"),'42501','forbidden_partner')
+    deny('após revogação: catálogo negado',lambda: call(V1,f"public.get_partner_catalog_secure('{P}')"),'42501','forbidden_role')
     got,e=plan_ids(V1);ok('após revogação: nenhum plano listado ao vendedor',got==set(),(got,e))
     deny('após revogação: condições de P negadas',lambda: call(V1,f"public.b2b_list_payment_condition_options_secure('{P}','{P3}')"),'42501','forbidden_role')
     ords,e=call(V1,"public.seller_portfolio_orders_v1()");ok('após revogação: pedidos de P somem da carteira',ords is not None and not any(o['partner_id']==P for o in ords['orders']),ords or e)
@@ -376,7 +376,7 @@ try:
     deny('após rollback: vendedor sem writers',lambda: full_create(V1,P),'42501','forbidden_partner')
     ok('após rollback: pedidos e atribuições preservados',d.last(f"select count(*) from public.partner_orders where created_by='{V1}'")=='2' and d.last("select count(*) from platform_private.seller_portfolio_assignments")=='4')
     r=run_file('04c-rollback-writers.sql.review');ok('rollback repetido recusa drift',r.returncode!=0 and 'VENDW_RB_DRIFT' in r.stderr,r.stderr[-200:])
-    c,e=call(UGC,"public.c2_internal_order_entry_capability_v1()");ok('após rollback: gestor segue aberto',c and c['order_create'] is True,c or e)
+    c,e=call(UGC,"public.c2_internal_order_entry_capability_v1()");ok('após rollback: capacidade do gestor = LIVE (catalog_reader_pending)',c and c['order_create'] is False and c['reason']=='catalog_reader_pending',c or e)
 finally:
     out=H/'evidence';out.mkdir(exist_ok=True)
     n=1+max([int(p.stem.split('-')[-1]) for p in out.glob('attempt-*.json')],default=0)
