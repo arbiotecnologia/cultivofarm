@@ -150,6 +150,7 @@ const QUOTE_REPLY = (extra: Record<string, unknown> = {}) => ({
   schedule: [], warnings: ["Condicao sob consulta: preco sera definido em cotacao."], ...extra,
 });
 const FIN_FISCAL = /fiscal|receivable|nf|boleto_emit|titulo|cobranc|communication|comunicacao/i;
+let statusFailures = 0;
 function useServer(opts: { reply?: (a: Record<string, unknown>) => unknown; journal?: "legacy" | "none" | "committed" } = {}) {
   const base = wrapped();
   state.rpc.mockImplementation((n: string, a: Record<string, unknown> = {}) => {
@@ -158,6 +159,7 @@ function useServer(opts: { reply?: (a: Record<string, unknown>) => unknown; jour
     }
     if (opts.journal === "committed" && n === "partner_order_attempt_status_v1") return response({ contract: "C2_ORDER_JOURNAL_V1",
       key: "66666666-6666-4666-8666-666666666666", generation: 1, state: "committed", order_id: "55555555-5555-4555-8555-555555555555", numero: "PB-ANTERIOR", predecessors: [] });
+    if (opts.journal === "none" && n === "partner_order_attempt_status_v1" && statusFailures-- > 0) return response(null).then(() => ({ data: null, error: { code: "XX000", message: "transient" } }));
     if (opts.journal === "none" && n === "partner_order_attempt_status_v1") return response({ contract: "C2_ORDER_ATTEMPT_STATUS_V1", state: "none",
       actor_id: state.actor, organization_id: state.tenant, partner_id: state.partner });
     if (n === "simulate_b2b_payment_condition_secure") {
@@ -232,19 +234,21 @@ it("preço ausente fora de quote_only segue bloqueado: sem simulação nem envio
   expect(calls("create_partner_order_condition_secure")).toHaveLength(0);
 });
 
-it("tentativa anterior registrada (journal durável): cotação bloqueada com o motivo e a ação explícita DENTRO da janela", async () => {
-  useServer({ journal: "committed" });
+it("continuidade durável não verificada: dentro da janela mostra o motivo e 'Verificar novamente'; só após o servidor confirmar habilita", async () => {
+  statusFailures = 1;
+  useServer({ journal: "none" });
   await toPayment(); await pickTestPix();
   await waitFor(() => expect(calls("simulate_b2b_payment_condition_secure")).toHaveLength(1));
-  await new Promise((r) => setTimeout(r, 50));
-  console.log("DLG2", document.body.textContent?.slice(-1500));
   const b = await quoteBtn();
-  await waitFor(() => expect(screen.getByTestId("submit-block-reason")).toHaveTextContent("tentativa anterior"));
-  expect(b).toBeDisabled();
   const dialog = screen.getByRole("dialog");
-  expect(within(dialog).getByText(/Pedido PB-ANTERIOR já registrado/)).toBeInTheDocument();
-  expect(within(dialog).getByRole("button", { name: "Confirmar pedido existente e iniciar novo" })).toBeInTheDocument();
+  await waitFor(() => expect(within(dialog).getByText(/Não foi possível verificar a continuidade do pedido/)).toBeInTheDocument());
+  expect(within(dialog).getByTestId("submit-block-reason")).toHaveTextContent("tentativa anterior");
+  expect(b).toBeDisabled();
   fireEvent.click(b);
   expect(calls("create_partner_order_condition_secure")).toHaveLength(0);
+  fireEvent.click(within(dialog).getByRole("button", { name: "Verificar novamente" }));
+  await waitFor(() => expect(b).toBeEnabled());
+  expect(within(dialog).queryByTestId("submit-block-reason")).toBeNull();
   expect(calls("recover_partner_order_attempt_v1")).toHaveLength(0);
+  expect(calls("create_partner_order_condition_secure")).toHaveLength(0);
 });
