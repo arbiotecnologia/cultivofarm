@@ -1,4 +1,7 @@
-Patch revisável (NÃO aplicado: a função é implantada automaticamente ao editar).
-Aplicar somente após 02a/02b instalados e POST_PASS:
-supabase/functions/create-user/index.ts — acrescentar "vendedor" a TENANT_USER_ROLES.
-Nada mais muda: superadmin continua recusado e a carteira só nasce por admin_assign_seller_portfolio_v1.
+Estado: v108 IMPLANTADA pelo auditor (única adição: "vendedor" em TENANT_USER_ROLES; JWT do chamador preservado).
+Fonte do projeto em supabase/functions/create-user/index.ts AINDA SEM a adição: editar esse arquivo dispara
+implantação automática (seria uma nova versão, não a v108). Alinhar o fonte somente com autorização explícita para
+essa reimplantação idêntica, ou sincronizando pelo canal do auditor.
+Diff exato da v108:
+-      "tecnico_agronomo", "producao", "administrativo", "financeiro", "gestor_comercial",
++      "tecnico_agronomo", "producao", "administrativo", "financeiro", "gestor_comercial", "vendedor",
