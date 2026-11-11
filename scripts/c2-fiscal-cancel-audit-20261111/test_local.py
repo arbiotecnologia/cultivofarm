@@ -75,10 +75,11 @@ pre=call(FIN,prepare(key),'service_role');event=last(pre);ok('preparo evento por
 if event:
  replay=call(FIN,prepare(key),'service_role');ok('preparo replay mesma chave mesmo ID',replay.returncode==0 and last(replay)['eventId']==event['eventId'] and last(replay)['idempotentReplay'] is True)
  eid=event['eventId'];tx=str(uuid.uuid4());sig=hashlib.sha256(b'local synthetic signed event').hexdigest()
- signed=call(FIN,f"SELECT public.rpc_fiscal_event_sefaz_mark_signed_v1('{eid}','local/synthetic-event.xml','{sig}','{FIN}');",'service_role')
+ signed=call(FIN,f"SELECT public.rpc_fiscal_event_sefaz_mark_signed_v1('{eid}','eventos/local/synthetic-event.xml','{sig}','{FIN}');",'service_role')
  ok('assinatura sintética registrada via RPC real',signed.returncode==0,signed.stderr)
  # Local transmission input is exactly what transport begin normally persists; never set a terminal outcome.
- d.sql(f"INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('{tx}','{INV}','{eid}','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','audit-event-tx:{tx}','{sig}','SENT','PENDING','{FIN}');")
+ tr=call(FIN,f"INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('{tx}','{INV}','{eid}','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','audit-event-tx:{tx}','{sig}','SENT','PENDING','{FIN}');",'service_role')
+ ok('transmissão sintética mantém integridade real de empresa',tr.returncode==0,tr.stderr)
  body=json.dumps({'cStat':'135','nProt':'LOCAL-CANCEL-PROTOCOL','chNFe':event['accessKey'],'tpAmb':'2','xMotivo':'Evento registrado sintético','dhRecbto':'2027-02-02T12:00:00Z'})
  cb=lambda:f"SELECT public.rpc_fiscal_sefaz_transmit_record_v1('{tx}','SUCCEEDED','{body}'::jsonb);"
  rolled=call(FIN,cb(),'service_role',pre='BEGIN;',post='ROLLBACK;');ok('callback cancelamento rollback sem efeitos financeiros/físicos',rolled.returncode==0 and snapshot(ORDER)==state0,rolled.stderr)
