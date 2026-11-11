@@ -1,9 +1,11 @@
 ## 11/11 22:50 — Semântica econômica C2 e auditoria de cancelamentos (somente local)
-- [ ] Auditar consumidores da elegibilidade e distinguir aprovação econômica explícita de autorização operacional/contábil, sem alterar approved_* ou elegibilidade.
-- [ ] Reconstituir espelho r12 com restauração limpa/FKs validadas e pin do leitor 70dba08838cd4d5eea29f37f5f8a3373; preservar positivo já encerrado.
-- [ ] Auditar entradas UI/backend de cancelamento de pedido e documento fiscal; testar antes/depois de previsão, parcial, autorização, recusa/pendência, confirmação simulada, replay, concorrência, pagamento e isolamento.
-- [ ] Executar evidências locais positivas/negativas/rollback; separar correções prontas de decisões de negócio bloqueadas em pacotes pequenos gerados com PRE/INSTALL fechado/POST/rollback e hashes.
-- [ ] Documentar comandos, fontes, limitações e decisões materiais; nenhuma rede remota/runtime/publicação/emissão/cobrança/cancelamento real.
+- [x] Consumidores auditados; delta diagnóstico local distingue econômica vigente de operacional sem mudar eligible/reasons/approved_*; painel runtime não alterado.
+- [x] r12 reconstituído; restauração limpa com duas FKs validadas e pin 70dba08838cd4d5eea29f37f5f8a3373; positivo histórico preservado.
+- [x] Entradas UI/backend e componentes de cancelamento exercitados; 41 PASS + 23 PASS em baterias separadas, callback/rollback/replay/concorrência/pagamento/isolamento; não certifica cascata completa.
+- [x] Dois pacotes gerados PRE/INSTALL/POST/rollback e hashes em scripts/c2-fiscal-cancel-audit-20261111; sequência duplicada reproduzida e delta local testado; sete arquivos do roundtrip exit 0, Vitest 4/4, build automático OK.
+- [x] REPORT.md documenta comandos, fontes, efeitos reais e limitações; nenhum runtime/remoto/publicação/emissão/cobrança/cancelamento real.
+- [ ] Bloqueio externo: decidir transição/cancelamento C2, cascata NF/título/residual, valores pagos e devolução física; sem essas regras, não autorizar novos efeitos.
+- [ ] Bloqueio externo de implantação: auditor fornecer pins LIVE das dependências/preparo e revisar deltas; prova de revogação durante espera do preparo e cascata integrada seguem não homologadas, sem release.
 
 ## 11/11 03:27 — Rejeição financeira externa ARBio (local)
 - [ ] Revisão 03:53: enum real, via legada integral, rollback somente hash candidato→LIVE sem drift; preservar erro 42883 e continuar correções até prova final.
