@@ -221,6 +221,9 @@ try:
                 f"INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'seller_quote_respond','{qid}'); SELECT platform_private.seller_quote_origin_dispatch('{qid}','{sq1(qid)}'::jsonb,'{P}',{cl1s}); ROLLBACK;")
         ok('marcador não substitui a carteira: V2 com marcador de Q1 segue negado',r.returncode!=0 and 'C2_SELLER_TARGET_DENIED:not_assigned' in r.stderr,r.stderr[-300:])
         r=act(V1,f"INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'seller_quote_respond','{qid2}');","\\set VERBOSITY verbose\n")
+        r=d.raw("\\set VERBOSITY verbose\nBEGIN; SET LOCAL request.jwt.claim.sub='"+V1+"'; SET LOCAL request.jwt.claims='"+json.dumps({'sub':V1,'role':'authenticated','iat':1})+"';"
+                f"INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'seller_quote_respond_locked','{qid}'); SELECT platform_private.seller_quote_origin_dispatch('{qid}','{sq1(qid)}'::jsonb,'{P}',{cl1s}); ROLLBACK;")
+        ok('marca de pedido travado sozinha não autoriza (SELLER_QUOTE_FLOW_REQUIRED)',r.returncode!=0 and 'SELLER_QUOTE_FLOW_REQUIRED' in r.stderr,r.stderr[-300:])
         ok('cliente autenticado não emite marcador',r.returncode!=0 and '42501' in r.stderr,r.stderr[-200:])
         ok('validador compartilhado permanece com corpo LIVE',d.md5('platform_private.c2_external_origin_assert(jsonb,uuid,uuid)')=='999e5e9fd9887595e252523fb2142726')
         deny('V2 (outro vendedor) não responde Q1',lambda: rq(V2),'42501','C2_SELLER_TARGET_DENIED:not_assigned')
