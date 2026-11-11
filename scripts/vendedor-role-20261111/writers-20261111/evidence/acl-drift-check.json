@@ -1,0 +1,13 @@
+{
+  "pre_sha256": "b55769c0694673bdca06dec087a7b0bce9844ab265f31b044d3bdc2d12d1a4b8",
+  "results": {
+    "pre_pass_base": true,
+    "ordem_textual": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "pre_pass_ordem_diferente": true,
+    "pre_falha_membro_extra": true,
+    "pre_falha_grant_option": true,
+    "pre_falha_membro_ausente": true,
+    "pre_falha_catalogo_antigo_sem_leitor": true
+  },
+  "all_pass": true
+}
