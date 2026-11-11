@@ -173,7 +173,7 @@ const finFiscalCalls = () => state.rpc.mock.calls.filter(([n]) => FIN_FISCAL.tes
 it("quote_only com meio explícito: botão de cotação habilita e envia sem preço/parcelas inventados", async () => {
   useServer();
   await toPayment();
-  expect(await screen.findByTestId("submit-block-reason")).toHaveTextContent("meio de pagamento");
+  await waitFor(() => expect(screen.getByTestId("submit-block-reason")).toHaveTextContent("Selecione um meio de pagamento"));
   await pickTestPix();
   await waitFor(() => expect(calls("simulate_b2b_payment_condition_secure")).toHaveLength(1));
   const b = await quoteBtn();
