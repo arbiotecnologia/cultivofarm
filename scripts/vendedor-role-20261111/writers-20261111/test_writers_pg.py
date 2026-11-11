@@ -20,14 +20,30 @@ def ok(name,cond,detail=None):
 d=mirror_db.DB(55761)
 js=lambda x:json.dumps(x).replace("'","''")
 def act(uid,s,pre=''):
-    return d.raw(pre+f"SET ROLE authenticated; SET request.jwt.claim.sub='{uid}'; SET request.jwt.claims='"+json.dumps({'sub':uid,'role':'authenticated','iat':1})+"';"+s)
+    return d.raw("\\set VERBOSITY verbose\n"+pre+f"SET ROLE authenticated; SET request.jwt.claim.sub='{uid}'; SET request.jwt.claims='"+json.dumps({'sub':uid,'role':'authenticated','iat':1})+"';"+s)
 def call(uid,expr,pre=''):
     r=act(uid,f"SELECT ({expr})::text;",pre)
-    if r.returncode: return None,(r.stderr.strip().splitlines() or [''])[0]
+    if r.returncode: return None,next((l for l in r.stderr.splitlines() if l.startswith('ERROR:')),r.stderr.strip()[:200])
     lines=r.stdout.strip().splitlines();v=lines[-1] if lines else ''
     try: return json.loads(v),None
     except Exception: return (v if v else True),None
-def deny(name,r,tok): ok(name,r[0] is None and tok in (r[1] or ''),r)
+FP_SQL="""SELECT md5(concat_ws('|',
+ (SELECT count(*)||':'||coalesce(md5(string_agg(id::text||status::text||coalesce(updated_at::text,''),',' ORDER BY id)),'') FROM public.partner_orders),
+ (SELECT count(*) FROM public.partner_order_items),(SELECT count(*) FROM public.partner_order_payment_terms),
+ (SELECT count(*) FROM platform_private.b2b_quote_response_receipts),(SELECT count(*) FROM public.partner_order_idempotency),
+ (SELECT count(*)||':'||count(revoked_at) FROM platform_private.seller_portfolio_assignments),(SELECT count(*) FROM platform_private.seller_portfolio_audit),
+ (SELECT count(*) FROM platform_private.authz_tickets),(SELECT count(*)||':'||coalesce(md5(string_agg(id::text||status::text,',' ORDER BY id)),'') FROM public.commercial_payment_plan_assignments),
+ (SELECT count(*) FROM public.accounts_receivable),(SELECT count(*) FROM public.fiscal_invoices),(SELECT count(*) FROM public.fiscal_events),
+ (SELECT count(*) FROM public.comunicacao_outbox),(SELECT count(*) FROM public.estoque_movimentacoes),(SELECT count(*) FROM public.entregas),
+ (SELECT count(*) FROM public.user_roles),(SELECT count(*) FILTER (WHERE ativo) FROM public.profiles)));"""
+fp=lambda: d.last(FP_SQL)
+def deny(name,thunk,state,tok):
+    """Negativa exige SQLSTATE e motivo exatos e nenhum efeito persistido (impressão digital antes/depois)."""
+    b=fp();r=thunk() if callable(thunk) else thunk;a=fp()
+    err=r[1] or ''
+    got=err.split(':',2)[1].strip() if err.startswith('ERROR:') and len(err.split(':',2))>2 else ''
+    okc=r[0] is None and got==state and tok in err and a==b
+    ok(f'{name} [{state} {tok}]',okc,dict(result=r,sqlstate=got,effects_changed=a!=b))
 def run_file(n,pre=''):
     data=(H/n).read_bytes();sha=hashlib.sha256(data).hexdigest()
     assert sha==json.loads((H/'manifest.json').read_text())['files'][n],('SHA',n)
