@@ -16,7 +16,6 @@ r=run('');res['pre_pass_ordem_diferente']=r.returncode==0
 r=run(f"BEGIN; GRANT EXECUTE ON FUNCTION {S} TO anon;\n");res['pre_falha_membro_extra']=r.returncode!=0 and 'VENDW_PRE_ACL_DRIFT' in r.stderr
 r=run(f"BEGIN; GRANT EXECUTE ON FUNCTION {G} TO service_role WITH GRANT OPTION;\n");res['pre_falha_grant_option']=r.returncode!=0 and 'VENDW_PRE_ACL_DRIFT' in r.stderr
 r=run(f"BEGIN; REVOKE EXECUTE ON FUNCTION {G} FROM service_role;\n");res['pre_falha_membro_ausente']=r.returncode!=0 and 'VENDW_PRE_ACL_DRIFT' in r.stderr
-r=run(f"BEGIN; CREATE OR REPLACE FUNCTION public.__x() RETURNS int LANGUAGE sql AS 'select 1'; {open('/dev/null').read()}\n");
 d2=d.body(S).replace("PERFORM platform_private.b2b_partner_catalog_reader(p_partner_id);","PERFORM 1;")
 r=d.raw("BEGIN;\n"+d2+";\nSET app.expected_ref='swzpzcwiasxmjutrmvkm';\n"+pre);res['pre_falha_catalogo_antigo_sem_leitor']=r.returncode!=0 and 'VENDW_PRE_DRIFT:public.get_partner_catalog_secure' in r.stderr
 out=dict(pre_sha256=sha,results=res,all_pass=all(v for k,v in res.items() if k!='ordem_textual'))
