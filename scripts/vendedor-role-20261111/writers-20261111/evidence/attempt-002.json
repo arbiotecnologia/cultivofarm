@@ -1,0 +1,306 @@
+{
+  "attempt": 2,
+  "pass_": 51,
+  "fail": 6,
+  "checks": [
+    {
+      "test": "restore sem erros além das FKs auth conhecidas",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base reconstituída = MD5 auditor public.c2_internal_order_entry_capability_v1()",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base reconstituída = MD5 auditor public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base reconstituída = MD5 auditor public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base reconstituída = MD5 auditor platform_private.b2b_internal_commercial_actor()",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base reconstituída = MD5 auditor platform_private.c2_internal_order_target_reason(uuid,uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base reconstituída = MD5 auditor public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "espelho: catálogo reconstituído = produção 6b56cfb1 (b5684d35→d3217db2→6b56cfb1)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "espelho: ACL dos seis = conjunto real de produção",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "ACL por conjunto ignora ordem textual",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "ACL por conjunto detecta membro extra",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "ACL por conjunto detecta grant option",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "ACL por conjunto detecta owner divergente",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "LIVE: vendedor sem delta não cria pedido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "PRE ref divergente falha fechada",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "PRE_PASS",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "admin atribui P a V1",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "admin atribui P2 a V2",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não atribui carteira [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "gestor comercial não atribui carteira [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "admin A não atribui vendedor de F [22023 SELLER_PORTFOLIO_SELLER_INVALID]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "INSTALL transação única",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "POST_PASS",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "reinstalação recusada (PRE interno)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "admin vê vendedores e atribuições só da própria empresa",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "gestor comercial não lê visão de carteiras [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não lê visão de carteiras [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "capacidade V1: só P, order_create e quote_respond",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "capacidade V2: só P2",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "capacidade VB (outro tenant) sem parceiros",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor+gestor não é vendedor exclusivo",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "regressão: capacidade do gestor segue aberta (pin catálogo novo)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "capacidade interna do gestor não abre para vendedor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 lê catálogo de P",
+      "status": "FAIL",
+      "detail": "(None, 'ERROR:  42883: function platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid, uuid, uuid, text, unknown, date) does not exist')"
+    },
+    {
+      "test": "V1 catálogo de parceiro não atribuído [42501 forbidden_partner]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: forbidden_role'), 'sqlstate': '42501', 'effects_changed': False}"
+    },
+    {
+      "test": "V1 catálogo de P2 (de V2) [42501 forbidden_partner]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: forbidden_role'), 'sqlstate': '42501', 'effects_changed': False}"
+    },
+    {
+      "test": "VB catálogo de P (outro tenant) [42501 forbidden_partner]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: forbidden_role'), 'sqlstate': '42501', 'effects_changed': False}"
+    },
+    {
+      "test": "V1 lê embalagens de P",
+      "status": "FAIL",
+      "detail": "(None, 'ERROR:  42883: function platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid, uuid, uuid, text, unknown, date) does not exist')"
+    },
+    {
+      "test": "planos V1 = planos publicados/vigentes da empresa atribuídos a P (carteira)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "planos V2 = só os de P2; nenhum plano exclusivo de P (outra carteira)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "plano só em rascunho não aparece ao vendedor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "VB (outro tenant) não vê planos de A",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "atribuição de plano vencida (transação revertida) some da lista do vendedor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "detalhe: condições de plano para parceiro de outra carteira [42501 forbidden_role]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "detalhe: simulação para parceiro de outra carteira [42501 C2_SELLER_TARGET_DENIED:not_assigned]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "detalhe: condições para parceiro de outro tenant [42501 forbidden_role]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "detalhe: VB não lê condições de P [42501 forbidden_role]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 lê condições vigentes de P",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 lança pedido para P (positivo apto)",
+      "status": "FAIL",
+      "detail": "ERROR:  42883: function platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid, uuid, uuid, text, unknown, date) does not exist"
+    },
+    {
+      "test": "V1 não lança para parceiro não atribuído [42501 C2_SELLER_TARGET_DENIED:not_assigned]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 não lança para P2 (outro vendedor) [42501 C2_SELLER_TARGET_DENIED:not_assigned]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 não lança para parceiro de outro tenant [42501 C2_SELLER_TARGET_DENIED:target_outside_portfolio]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "VB não lança para P [42501 C2_SELLER_TARGET_DENIED:target_outside_portfolio]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não publica condição [42501 forbidden]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não lista planos administrativos [P0001 not_authorized]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não altera atribuição de condição [42501 forbidden]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "emitente não validado: fiscal_block issuer_not_validated e order_create false, quote_respond mantido",
+      "status": "PASS",
+      "detail": null
+    }
+  ],
+  "executed_sha256": {
+    "01c-pre-writers.sql.readonly": [
+      "94635f058be178a161b244ba69c5d64b143bbffda57df49154c3eeec5e58ab3b",
+      "94635f058be178a161b244ba69c5d64b143bbffda57df49154c3eeec5e58ab3b"
+    ],
+    "02c-install-writers.sql.review": [
+      "a62a7d4ad4e5f046d8a82995bfea9a4fba582871862c50477b7a2ed02293de0c",
+      "a62a7d4ad4e5f046d8a82995bfea9a4fba582871862c50477b7a2ed02293de0c"
+    ],
+    "03c-post-writers.sql.readonly": [
+      "f656006ea43f7ed8299b737b1e7b282554ac51a874b93c4df78fc33daf910393"
+    ]
+  },
+  "note": "PostgreSQL descartável restaurado do espelho composto; Auth sintética; não prova JWT/RLS/Storage hospedados"
+}
