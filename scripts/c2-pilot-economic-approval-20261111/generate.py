@@ -16,7 +16,7 @@ DEPS={"public.approve_partner_order(uuid,text,date)":"0d3b85049e3b3b799ba81b4cb9
 "platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb)":"80c808dd095746213ddb37fbca44b525",
 "platform_private.c2_external_origin_contract_valid(jsonb)":"369fd07cd9c659b87941b9a3bf972868",
 "platform_private.c2p1_internal_actor(public.app_role[])":"97bab97591a9f662bad7b1ccf837bfcd",
-"public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)":"97bcdb9884b54adb3bd4aae4915e32d0",
+"public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)":"964b79ecd6f293c4bf81fd8ee5f5bbf5",
 "platform_private.b2b_financial_forecast_guard()":"2a28194f419c5e7627cb9ec04bb8bebe",
 "platform_private.has_ticket(text,uuid)":"29adae3347e8a5ff23327fa86fceb54b",
 "public.get_b2b_financial_forecast_secure(uuid)":"c0d3cfff6ef757498b27009ae50950c3",
