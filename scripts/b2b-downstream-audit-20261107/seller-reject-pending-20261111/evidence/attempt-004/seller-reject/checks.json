@@ -1,0 +1,208 @@
+[
+  {
+    "test": "LIVE exact body owner ACL",
+    "status": "PASS",
+    "detail": {
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "40777d0cec6a7d8a8d4dfcb3370b08b6",
+      "body": "CREATE OR REPLACE FUNCTION public.reject_b2b_payment_terms_secure(p_partner_order_id uuid, p_reason text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_terms_id uuid;\n  v_created_by uuid;\n  v_numero text;\nBEGIN\n\n  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n  IF v_uid IS NULL THEN\n    RAISE EXCEPTION 'unauthorized';\n  END IF;\n  IF NOT (public.has_role(v_uid,'administrador')\n       OR public.has_role(v_uid,'financeiro')\n       OR public.has_role(v_uid,'gestor_comercial')) THEN\n    RAISE EXCEPTION 'unauthorized';\n  END IF;\n  IF p_reason IS NULL OR btrim(p_reason) = '' THEN\n    RAISE EXCEPTION 'reason_required';\n  END IF;\n\n  SELECT po.payment_terms_id, po.created_by, po.numero\n    INTO v_terms_id, v_created_by, v_numero\n  FROM public.partner_orders po\n  WHERE po.id = p_partner_order_id;\n\n  IF v_terms_id IS NULL THEN\n    RAISE EXCEPTION 'payment_terms_not_defined';\n  END IF;\n\n  UPDATE public.partner_order_payment_terms\n     SET approval_status = 'rejected',\n         approved_by = v_uid,\n         approved_at = now(),\n         approval_notes = p_reason,\n         updated_at = now()\n   WHERE id = v_terms_id;\n\n  UPDATE public.partner_orders\n     SET financial_approval_status = 'rejected',\n         payment_condition_status = 'rejected',\n         updated_at = now()\n   WHERE id = p_partner_order_id;\n\n  INSERT INTO public.partner_order_audit_logs(order_id, acao, usuario_id, dados_novos)\n  VALUES (p_partner_order_id, 'payment_terms_rejected', v_uid,\n          jsonb_build_object('reason', p_reason));\n\n  IF v_created_by IS NOT NULL THEN\n    INSERT INTO public.notificacoes_operacionais(usuario_id, tipo, titulo, mensagem, link)\n    VALUES (v_created_by, 'b2b_payment_terms',\n            'Condi\u00e7\u00e3o financeira reprovada',\n            format('Pedido %s teve a condi\u00e7\u00e3o de pagamento reprovada: %s',\n                   COALESCE(v_numero,'B2B'), p_reason),\n            '/comercial/pedidos-b2b');\n  END IF;\n\n  RETURN jsonb_build_object('success', true, 'status', 'rejected');\nEND;\n$function$\n",
+      "owner": "postgres"
+    }
+  },
+  {
+    "test": "normal buyer entry creates pending linked terms before commercial approval",
+    "status": "PASS",
+    "detail": {
+      "terms": {
+        "id": "128b658c-bb68-4405-85db-067749ce4213",
+        "created_at": "2026-11-11T03:51:49.734819+00:00",
+        "created_by": "00000000-0000-0000-0000-000000000021",
+        "updated_at": "2026-11-11T03:51:49.734819+00:00",
+        "approved_at": null,
+        "approved_by": null,
+        "final_amount": 18.0,
+        "table_amount": 20.0,
+        "approval_notes": null,
+        "first_due_date": "2026-12-11",
+        "approval_status": "pending",
+        "discount_amount": 2.0,
+        "payment_plan_id": "00000000-0000-0000-0000-000000000081",
+        "partner_order_id": "b3f2344b-858d-4ef8-a92e-781e83171a16",
+        "installment_count": 1,
+        "plan_code_snapshot": "T3",
+        "plan_name_snapshot": "TESTE 3x",
+        "months_count_snapshot": 1.0,
+        "pricing_mode_snapshot": "discount_from_base",
+        "interest_type_snapshot": "simple",
+        "credit_decision_snapshot": {
+          "partner_id": "00000000-0000-0000-0000-000000000011",
+          "novo_pedido": 18.0,
+          "reason_code": "OK",
+          "credit_limit": 1000000.0,
+          "tem_vencidos": false,
+          "saldo_vencido": 0.0,
+          "credit_checked": true,
+          "exposicao_atual": 747.0,
+          "saldo_em_aberto": 0.0,
+          "block_if_overdue": false,
+          "credito_disponivel": 999235.0,
+          "credit_limit_action": "block",
+          "exposicao_projetada": 765.0,
+          "percentual_utilizado": 0.08,
+          "comprometido_pendente": 0.0,
+          "overdue_tolerance_days": 0,
+          "comprometido_nao_faturado": 747.0
+        },
+        "discount_percent_snapshot": 10.0,
+        "financial_interest_amount": 0.0,
+        "net_amount_after_discount": 18.0,
+        "monthly_interest_percent_snapshot": 0.0
+      },
+      "audits": 0,
+      "header": {
+        "id": "b3f2344b-858d-4ef8-a92e-781e83171a16",
+        "total": 18.0,
+        "numero": "PB-001020",
+        "status": "em_analise_comercial",
+        "cultura": null,
+        "priority": "normal",
+        "subtotal": 20.0,
+        "cliente_id": "00000000-0000-0000-0000-000000000301",
+        "created_at": "2026-11-11T03:51:49.734819+00:00",
+        "created_by": "00000000-0000-0000-0000-000000000021",
+        "partner_id": "00000000-0000-0000-0000-000000000011",
+        "updated_at": "2026-11-11T03:51:49.734819+00:00",
+        "approved_at": null,
+        "approved_by": null,
+        "observacoes": null,
+        "table_amount": 20.0,
+        "area_total_ha": null,
+        "approval_notes": null,
+        "desconto_total": 2.0,
+        "payment_method": null,
+        "payment_plan_id": "00000000-0000-0000-0000-000000000081",
+        "commercial_notes": null,
+        "financial_status": "pendente",
+        "payment_due_date": null,
+        "payment_terms_id": "128b658c-bb68-4405-85db-067749ce4213",
+        "credit_approved_at": null,
+        "credit_approved_by": null,
+        "credit_block_reason": null,
+        "origin_simulation_id": null,
+        "ready_for_production": false,
+        "receivable_generated": false,
+        "credit_approval_notes": null,
+        "future_financial_link": null,
+        "itens_pendentes_motivo": null,
+        "estimated_delivery_date": null,
+        "receivable_generated_at": null,
+        "receivable_generated_by": null,
+        "requested_delivery_date": null,
+        "internal_origin_snapshot": null,
+        "payment_condition_status": "defined",
+        "financial_approval_status": "pending",
+        "financial_interest_amount": 0.0,
+        "net_amount_after_discount": 18.0,
+        "commercial_discount_amount": 2.0,
+        "final_amount_with_interest": 18.0,
+        "internal_economic_snapshot": null,
+        "c2_external_origin_snapshot": {
+          "contract": "C2_EXTERNAL_ORDER_ORIGIN_V1",
+          "partner_id": "00000000-0000-0000-0000-000000000011",
+          "issuer_cnpj": "00000000000191",
+          "actor_user_id": "00000000-0000-0000-0000-000000000021",
+          "schema_version": "1",
+          "organization_id": "007bb519-cba0-4704-be2c-cb93ad010048",
+          "issuer_legal_name": "ARBIO FIXTURE LOCAL SEM VALIDADE EXTERNA",
+          "company_settings_id": "cceebc81-64af-414d-b45f-a65670cb9999",
+          "issuer_organization_id": "007bb519-cba0-4704-be2c-cb93ad010048",
+          "creditor_organization_id": "007bb519-cba0-4704-be2c-cb93ad010048",
+          "company_configuration_version": 1
+        },
+        "requires_financial_approval": true,
+        "itens_pendentes_resolvido_em": null,
+        "itens_pendentes_solicitado_em": null,
+        "itens_pendentes_solicitado_por": null
+      },
+      "notifications": 0
+    }
+  },
+  {
+    "test": "reproduce 238 BLOCKED LIVE seller Financeiro",
+    "status": "PASS",
+    "detail": {
+      "exit": 3,
+      "error": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 9 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  },
+  {
+    "test": "PRE final exact bytes",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "POST final exact bytes md5 owner ACL",
+    "status": "PASS",
+    "detail": {
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "988935a5dfdbaa3914954f4b2fa66ec7",
+      "body": "CREATE OR REPLACE FUNCTION public.reject_b2b_payment_terms_secure(p_partner_order_id uuid, p_reason text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_org uuid;\n  v_order public.partner_orders%ROWTYPE;\n  v_terms public.partner_order_payment_terms%ROWTYPE;\n  v_observed_terms uuid;\n  v_observed_revision timestamptz;\n  v_observed_partner uuid;\n  v_external boolean;\nBEGIN\n  IF v_uid IS NULL OR current_setting('transaction_isolation') <> 'read committed' THEN\n    RAISE EXCEPTION 'B2B_REJECT_SCOPE_DENIED' USING ERRCODE='42501';\n  END IF;\n  SELECT po.* INTO v_order\n    FROM public.partner_orders po WHERE po.id=p_partner_order_id;\n  IF NOT FOUND THEN RAISE EXCEPTION 'B2B_REJECT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n  v_observed_partner := v_order.partner_id;\n  v_observed_terms := v_order.payment_terms_id;\n  SELECT updated_at INTO v_observed_revision FROM public.partner_order_payment_terms\n    WHERE id=v_observed_terms AND partner_order_id=p_partner_order_id;\n  v_external := v_order.c2_external_origin_snapshot IS NOT NULL;\n  v_org := public.h15_actor_organization();\n  IF auth.uid() IS DISTINCT FROM v_uid OR public.h15_actor_organization() IS DISTINCT FROM v_org\n    OR platform_private.platform_actor_access_ready(v_uid) IS NOT TRUE\n    OR public.is_platform_superadmin(v_uid) IS TRUE\n    OR EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=v_uid AND role IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor','superadmin'))\n    OR (v_order.c2_external_origin_snapshot IS NOT NULL) IS DISTINCT FROM v_external THEN\n    RAISE EXCEPTION 'B2B_REJECT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n  IF v_external THEN\n    IF v_org IS DISTINCT FROM '007bb519-cba0-4704-be2c-cb93ad010048'::uuid\n      OR platform_private.c2p1_internal_actor(ARRAY['financeiro']::public.app_role[]) IS DISTINCT FROM v_org\n      OR public._saas_user_has_feature(v_uid,'pedidos_b2b') IS NOT TRUE\n      OR NOT EXISTS(SELECT 1 FROM public.partner_accounts pa JOIN public.organizations o ON o.id=pa.commercial_owner_organization_id\n        WHERE pa.id=v_order.partner_id AND pa.commercial_owner_organization_id=v_org AND pa.ativo IS TRUE AND pa.deleted_at IS NULL AND o.ativo IS TRUE AND o.status='ativa')\n      OR v_order.internal_origin_snapshot IS NOT NULL\n      OR platform_private.c2_external_origin_contract_valid(v_order.c2_external_origin_snapshot) IS NOT TRUE\n      OR v_order.c2_external_origin_snapshot->>'organization_id' IS DISTINCT FROM v_org::text\n      OR v_order.c2_external_origin_snapshot->>'partner_id' IS DISTINCT FROM v_order.partner_id::text\n      OR v_order.c2_external_origin_snapshot->>'actor_user_id' IS DISTINCT FROM v_order.created_by::text\n      OR NOT EXISTS(SELECT 1 FROM public.partner_users pu JOIN public.profiles p ON p.user_id=pu.user_id\n        WHERE pu.user_id=v_order.created_by AND pu.partner_id=v_order.partner_id AND pu.tenant_id=v_org\n          AND pu.revoked_at IS NULL AND (pu.valid_from IS NULL OR pu.valid_from<=clock_timestamp())\n          AND p.ativo IS TRUE AND p.organization_id=v_org AND public.is_valid_b2b_partner_user(pu.user_id,pu.partner_id)) THEN\n      RAISE EXCEPTION 'B2B_REJECT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n  ELSE\n    -- Legacy visibility is never widened; common state fences only narrow it.\n    IF public.b2b_phase1_order_visible(p_partner_order_id) IS NOT TRUE\n      OR NOT(public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'financeiro') OR public.has_role(v_uid,'gestor_comercial')) THEN\n      RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n  END IF;\n  IF nullif(btrim(p_reason),'') IS NULL THEN RAISE EXCEPTION 'reason_required' USING ERRCODE='22023'; END IF;\n  -- Same first lock as stock batch, then approval's order -> child order.\n  PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;\n  IF NOT FOUND THEN RAISE EXCEPTION 'STOCK_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;\n  SELECT * INTO v_order FROM public.partner_orders WHERE id=p_partner_order_id FOR UPDATE;\n  IF NOT FOUND OR v_order.partner_id IS DISTINCT FROM v_observed_partner\n    OR v_order.payment_terms_id IS DISTINCT FROM v_observed_terms THEN\n    RAISE EXCEPTION 'B2B_REJECT_CAS_CONFLICT' USING ERRCODE='PT409'; END IF;\n  IF auth.uid() IS DISTINCT FROM v_uid OR public.h15_actor_organization() IS DISTINCT FROM v_org\n    OR platform_private.platform_actor_access_ready(v_uid) IS NOT TRUE\n    OR public.is_platform_superadmin(v_uid) IS TRUE\n    OR EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=v_uid AND role IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor','superadmin'))\n    OR (v_order.c2_external_origin_snapshot IS NOT NULL) IS DISTINCT FROM v_external THEN\n    RAISE EXCEPTION 'B2B_REJECT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n  IF v_external THEN\n    IF v_org IS DISTINCT FROM '007bb519-cba0-4704-be2c-cb93ad010048'::uuid\n      OR platform_private.c2p1_internal_actor(ARRAY['financeiro']::public.app_role[]) IS DISTINCT FROM v_org\n      OR public._saas_user_has_feature(v_uid,'pedidos_b2b') IS NOT TRUE\n      OR NOT EXISTS(SELECT 1 FROM public.partner_accounts pa JOIN public.organizations o ON o.id=pa.commercial_owner_organization_id\n        WHERE pa.id=v_order.partner_id AND pa.commercial_owner_organization_id=v_org AND pa.ativo IS TRUE AND pa.deleted_at IS NULL AND o.ativo IS TRUE AND o.status='ativa')\n      OR v_order.internal_origin_snapshot IS NOT NULL\n      OR platform_private.c2_external_origin_contract_valid(v_order.c2_external_origin_snapshot) IS NOT TRUE\n      OR v_order.c2_external_origin_snapshot->>'organization_id' IS DISTINCT FROM v_org::text\n      OR v_order.c2_external_origin_snapshot->>'partner_id' IS DISTINCT FROM v_order.partner_id::text\n      OR v_order.c2_external_origin_snapshot->>'actor_user_id' IS DISTINCT FROM v_order.created_by::text\n      OR NOT EXISTS(SELECT 1 FROM public.partner_users pu JOIN public.profiles p ON p.user_id=pu.user_id\n        WHERE pu.user_id=v_order.created_by AND pu.partner_id=v_order.partner_id AND pu.tenant_id=v_org\n          AND pu.revoked_at IS NULL AND (pu.valid_from IS NULL OR pu.valid_from<=clock_timestamp())\n          AND p.ativo IS TRUE AND p.organization_id=v_org AND public.is_valid_b2b_partner_user(pu.user_id,pu.partner_id)) THEN\n      RAISE EXCEPTION 'B2B_REJECT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n  ELSE\n    -- Legacy visibility is never widened; common state fences only narrow it.\n    IF public.b2b_phase1_order_visible(p_partner_order_id) IS NOT TRUE\n      OR NOT(public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'financeiro') OR public.has_role(v_uid,'gestor_comercial')) THEN\n      RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n  END IF;\n  SELECT * INTO v_terms FROM public.partner_order_payment_terms\n    WHERE id=v_order.payment_terms_id AND partner_order_id=v_order.id FOR UPDATE;\n  IF NOT FOUND OR v_terms.updated_at IS DISTINCT FROM v_observed_revision THEN\n    RAISE EXCEPTION 'B2B_REJECT_CAS_CONFLICT' USING ERRCODE='PT409'; END IF;\n  IF auth.uid() IS DISTINCT FROM v_uid OR public.h15_actor_organization() IS DISTINCT FROM v_org\n    OR platform_private.platform_actor_access_ready(v_uid) IS NOT TRUE\n    OR public.is_platform_superadmin(v_uid) IS TRUE\n    OR EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=v_uid AND role IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor','superadmin'))\n    OR (v_order.c2_external_origin_snapshot IS NOT NULL) IS DISTINCT FROM v_external THEN\n    RAISE EXCEPTION 'B2B_REJECT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n  IF v_external THEN\n    IF v_org IS DISTINCT FROM '007bb519-cba0-4704-be2c-cb93ad010048'::uuid\n      OR platform_private.c2p1_internal_actor(ARRAY['financeiro']::public.app_role[]) IS DISTINCT FROM v_org\n      OR public._saas_user_has_feature(v_uid,'pedidos_b2b') IS NOT TRUE\n      OR NOT EXISTS(SELECT 1 FROM public.partner_accounts pa JOIN public.organizations o ON o.id=pa.commercial_owner_organization_id\n        WHERE pa.id=v_order.partner_id AND pa.commercial_owner_organization_id=v_org AND pa.ativo IS TRUE AND pa.deleted_at IS NULL AND o.ativo IS TRUE AND o.status='ativa')\n      OR v_order.internal_origin_snapshot IS NOT NULL\n      OR platform_private.c2_external_origin_contract_valid(v_order.c2_external_origin_snapshot) IS NOT TRUE\n      OR v_order.c2_external_origin_snapshot->>'organization_id' IS DISTINCT FROM v_org::text\n      OR v_order.c2_external_origin_snapshot->>'partner_id' IS DISTINCT FROM v_order.partner_id::text\n      OR v_order.c2_external_origin_snapshot->>'actor_user_id' IS DISTINCT FROM v_order.created_by::text\n      OR NOT EXISTS(SELECT 1 FROM public.partner_users pu JOIN public.profiles p ON p.user_id=pu.user_id\n        WHERE pu.user_id=v_order.created_by AND pu.partner_id=v_order.partner_id AND pu.tenant_id=v_org\n          AND pu.revoked_at IS NULL AND (pu.valid_from IS NULL OR pu.valid_from<=clock_timestamp())\n          AND p.ativo IS TRUE AND p.organization_id=v_org AND public.is_valid_b2b_partner_user(pu.user_id,pu.partner_id)) THEN\n      RAISE EXCEPTION 'B2B_REJECT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n  ELSE\n    -- Legacy visibility is never widened; common state fences only narrow it.\n    IF public.b2b_phase1_order_visible(p_partner_order_id) IS NOT TRUE\n      OR NOT(public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'financeiro') OR public.has_role(v_uid,'gestor_comercial')) THEN\n      RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n  END IF;\n  IF v_terms.approval_status IS DISTINCT FROM 'pending' OR v_terms.approved_by IS NOT NULL\n    OR v_terms.approved_at IS NOT NULL OR v_order.approved_by IS NOT NULL OR v_order.approved_at IS NOT NULL\n    OR public.fn_b2b_status_is_approved_or_later(v_order.status::text)\n    OR v_order.status::text IN ('cancelado','reprovado')\n    OR EXISTS(SELECT 1 FROM public.estoque_produto s WHERE s.reservado_para_partner_order_id=v_order.id\n      OR s.reservado_para_os_id IN (SELECT id FROM public.ordens_servico WHERE partner_order_id=v_order.id))\n    OR EXISTS(SELECT 1 FROM public.estoque_movimentacoes m\n      WHERE (m.acao='reserva' OR coalesce(m.reservado_posterior,0)>coalesce(m.reservado_anterior,0))\n      AND (m.os_id IN (SELECT id FROM public.ordens_servico WHERE partner_order_id=v_order.id)\n        OR m.metadata->>'partner_order_id'=v_order.id::text)) THEN\n    RAISE EXCEPTION 'B2B_REJECT_STATE_CONFLICT' USING ERRCODE='PT409'; END IF;\n  UPDATE public.partner_order_payment_terms SET approval_status='rejected', approved_by=v_uid,\n    approved_at=now(), approval_notes=btrim(p_reason), updated_at=now()\n    WHERE id=v_terms.id AND partner_order_id=v_order.id AND approval_status='pending';\n  IF NOT FOUND THEN RAISE EXCEPTION 'B2B_REJECT_STATE_CONFLICT' USING ERRCODE='PT409'; END IF;\n  -- Frozen header and economic snapshots remain byte-identical. No notification/outbox.\n  INSERT INTO public.partner_order_audit_logs(order_id,acao,usuario_id,dados_novos)\n    VALUES(v_order.id,'payment_terms_rejected',v_uid,jsonb_build_object('reason',btrim(p_reason)));\n  RETURN jsonb_build_object('success',true,'status','rejected');\nEND;\n$function$\n",
+      "owner": "postgres"
+    }
+  },
+  {
+    "test": "blank reason denied",
+    "status": "PASS",
+    "detail": {
+      "exit": 3,
+      "error": "ERROR:  22023: reason_required\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 52 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  },
+  {
+    "test": "buyer denied",
+    "status": "PASS",
+    "detail": {
+      "exit": 3,
+      "error": "ERROR:  42501: B2B_REJECT_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 29 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  },
+  {
+    "test": "other company admin denied",
+    "status": "PASS",
+    "detail": {
+      "exit": 3,
+      "error": "ERROR:  42501: B2B_REJECT_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 45 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  },
+  {
+    "test": "seller admin without Financeiro denied",
+    "status": "PASS",
+    "detail": {
+      "exit": 3,
+      "error": "ERROR:  42501: B2B_REJECT_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 45 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  },
+  {
+    "test": "buyer link revoked fails closed",
+    "status": "PASS",
+    "detail": "ERROR:  42501: B2B_REJECT_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 45 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "test": "seller actor inactive fails closed",
+    "status": "PASS",
+    "detail": "ERROR:  42501: B2B_REJECT_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 29 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "test": "seller actor wrong tenant fails closed",
+    "status": "PASS",
+    "detail": "ERROR:  42501: B2B_REJECT_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 45 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  }
+]

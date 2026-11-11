@@ -1,0 +1,20 @@
+{
+  "workspace": "/tmp/seller-reject-mirror-xnjvotuv",
+  "synthetic_seams": [
+    "Auth SQL claims; schema and dependency seams inherited from current rebuild",
+    "synthetic seller fixture UUID mapped before boot; final candidate unchanged",
+    "temporary composition branch; no frozen source edits"
+  ],
+  "files": {
+    "scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/generate.py": "d7e81f3d7c81228f14f061fa83ded09fe9082d06a5d7b81c0dadd421a8947b66",
+    "scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/AGENTS.md": "c258d9494fc43268d78ae9b4d045d420ad06e965efcf653143cc7aafb10402bf",
+    "scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/mirror_flow.py": "adc8eeeac385366b1d7799ffa6db83c031e1a60352d81ad13dc6f18541d4cd4e",
+    "scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/run_mirror.py": "b3d82e6e468684df2e083e8a92ec308b18867c9079f3105ea767ece641f6eac6",
+    "scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/01-pre.sql.readonly": "e7f5e4aae78eeb0024c7ad22b8725d5a3c2be95e4ff58624c9e94df8f887a19e",
+    "scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/02-install.sql.review": "a489abf341770286d99c9041a78bd6323f1fe2d14736585520b0aef621cabf07",
+    "scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/03-post.sql.readonly": "0cb95baba62d6066ad26044c0bdc8726e421c40654fb24fdc7f0093a1e3edddd",
+    "scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/04-rollback-deny.sql.review": "dba4b28fc074962710d5c22f80c9d7998c439da9e0d48a6a465567097a62d7b1",
+    "scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/candidate.sql.review": "513a898cded72e9bd4b27a5d82b9ce124660e41d66d01a89e8e4bb1071c4410f",
+    "scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/manifest.json": "47c51363d812119f1ea96f4f557a50a1c12e31a40f8def53c369e27b8e9b4397"
+  }
+}

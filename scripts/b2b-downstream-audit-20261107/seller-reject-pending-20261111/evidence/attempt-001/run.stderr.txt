@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/tmp/seller-reject-mirror-b67fj9gg/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 511, in main
+    results=SR.run(B,Review70.Review,Q,A,choice,OUT)
+  File "/tmp/seller-reject-mirror-b67fj9gg/project/scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/mirror_flow.py", line 37, in run
+    B.sql(G.candidate()+';');cand=catalog();B.sql(G.rollback()+';');rb=catalog()
+          ~~~~~~~~~~~^^
+  File "/tmp/seller-reject-mirror-b67fj9gg/project/scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/generate.py", line 17, in candidate
+    assert hashlib.md5(src.encode()).hexdigest() == LIVE_MD5
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

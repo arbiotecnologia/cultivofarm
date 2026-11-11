@@ -1,0 +1,14 @@
+{
+  "workspace": "/tmp/seller-reject-mirror-b67fj9gg",
+  "synthetic_seams": [
+    "Auth SQL claims; schema and dependency seams inherited from current rebuild",
+    "synthetic seller fixture UUID mapped before boot; final candidate unchanged",
+    "temporary composition branch; no frozen source edits"
+  ],
+  "files": {
+    "scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/generate.py": "ae6aeb4e601994b0ee8302bd63c0520979c57c3bcc6f848d6830f1c8993e8a88",
+    "scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/AGENTS.md": "c258d9494fc43268d78ae9b4d045d420ad06e965efcf653143cc7aafb10402bf",
+    "scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/mirror_flow.py": "bc88c06c449b6bdbefbe4ca1cafcfa189e58bad94cb8842f5bffdaf5d7a5a546",
+    "scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/run_mirror.py": "b3d82e6e468684df2e083e8a92ec308b18867c9079f3105ea767ece641f6eac6"
+  }
+}
