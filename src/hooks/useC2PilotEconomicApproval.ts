@@ -23,11 +23,25 @@ export type C2PilotRead = { state: "ready"; pilot: C2PilotState } | { state: "un
 const n = (v: unknown) => typeof v === "number" && Number.isFinite(v);
 const HASH = /^[0-9a-f]{32}$/;
 
+const UNAVAILABLE_REASONS = ["PILOT_DISABLED", "NOT_GRANTED"];
+const UNAVAILABLE_KEYS = ["contract", "order_id", "available", "reason"];
+
+/** Indisponível (fora do piloto, desligado ou sem concessão vigente): só aceito sem nenhum payload financeiro/autor. */
+export function parseC2PilotRead(data: unknown, orderId: string): C2PilotRead {
+  const d = data as Record<string, any> | null;
+  if (d && d.available === false) {
+    if (d.contract !== "C2_PILOT_ECON_STATE_V1" || d.order_id !== orderId || !UNAVAILABLE_REASONS.includes(d.reason) ||
+        Object.keys(d).some((k) => !UNAVAILABLE_KEYS.includes(k))) throw new Error("c2_pilot_state_contract_invalid");
+    return { state: "unavailable" };
+  }
+  return { state: "ready", pilot: parseC2PilotState(data, orderId) };
+}
+
 /** Interpretação estrita; divergência falha fechada (sem ações). */
 export function parseC2PilotState(data: unknown, orderId: string): C2PilotState {
   const d = data as Record<string, any> | null;
   const bad = () => { throw new Error("c2_pilot_state_contract_invalid"); };
-  if (!d || d.contract !== "C2_PILOT_ECON_STATE_V1" || d.order_id !== orderId || typeof d.pilot_enabled !== "boolean" ||
+  if (!d || d.contract !== "C2_PILOT_ECON_STATE_V1" || d.order_id !== orderId || d.available !== true || d.pilot_enabled !== true ||
       !Array.isArray(d.approvals) || typeof d.can_approve_commercial !== "boolean" || typeof d.can_approve_credit !== "boolean" ||
       d.operational_blocked !== true || d.fiscal_blocked !== true || d.billing_blocked !== true || d.shipping_blocked !== true) bad();
   for (const a of d!.approvals) if (!a || !["commercial", "credit"].includes(a.kind) || typeof a.approved_by !== "string" || typeof a.approved_at !== "string") bad();
@@ -47,7 +61,7 @@ export function useC2PilotEconomicState(orderId: string | null) {
       const { data, error } = await (supabase.rpc as any)(C2_PILOT_STATE_ENDPOINT, { p_order: orderId }).abortSignal(signal);
       // Não instalado (PGRST202 exato) ou negado: painel não monta ações; nada é inferido.
       if (error) return { state: "unavailable" };
-      return { state: "ready", pilot: parseC2PilotState(data, orderId as string) };
+      return parseC2PilotRead(data, orderId as string);
     },
   });
 }
