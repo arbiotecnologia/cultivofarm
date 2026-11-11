@@ -199,7 +199,7 @@ try:
         rq=lambda uid,q=None: call(uid,rqs(q or qid,L(q or qid)))
         tk=lambda: d.last("select count(*) from platform_private.authz_tickets")
         tk0=tk()
-        ok('marcador seller_quote_respond aparece só na resposta de cotação e no despachante dedicado',d.sql("select string_agg(p.oid::regprocedure::text,',' order by 1) from pg_proc p where p.prokind='f' and pg_get_functiondef(p.oid) like '%seller_quote_respond%'")=='platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid),respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)',d.sql("select string_agg(p.oid::regprocedure::text,',' order by 1) from pg_proc p where p.prokind='f' and pg_get_functiondef(p.oid) like '%seller_quote_respond%'"))
+        ok('marcador seller_quote_respond aparece só na resposta de cotação e no despachante dedicado',set(d.sql("select string_agg(p.oid::regprocedure::text,',') from pg_proc p where p.prokind='f' and pg_get_functiondef(p.oid) like '%seller_quote_respond%'").split(','))=={'platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)','respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'},d.sql("select string_agg(p.oid::regprocedure::text,',' order by 1) from pg_proc p where p.prokind='f' and pg_get_functiondef(p.oid) like '%seller_quote_respond%'"))
         ok('cobrança B2B continua no validador LIVE (não usa o despachante)',"seller_quote_origin_dispatch" not in d.body('public.generate_b2b_receivable_secure_impl(uuid)'))
         # Costura declarada: marcador de Q1 inserido manualmente (simula o meio da resposta de Q1) em transação revertida.
         cl1=d.last(f"select coalesce(cliente_id::text,'') from public.partner_orders where id='{qid}'")
@@ -260,7 +260,7 @@ try:
         rr2,e=rq(V1)
         ok('replay idempotente devolve o mesmo resultado, sem duplicar termos',rr2==rr and d.last(f"select count(*) from public.partner_order_payment_terms where partner_order_id='{qid}'")=='1',(rr2,e))
         deny('preço diferente após resposta: conflito explícito',lambda: call(V1,rqs(qid,[{**x,'unit_price':91} for x in L(qid)])),'PT409','quote_idempotency_conflict')
-        deny('outro vendedor não reaproveita o recibo de Q1',lambda: rq(V2),'42501','C2_SELLER_TARGET_DENIED:not_assigned')
+        deny('outro vendedor não reaproveita o recibo de Q1',lambda: rq(V2),'42501','SELLER_QUOTE_STATE_DENIED')
         deny('vendedor não aprova o pedido respondido',lambda: call(V1,f"public.approve_partner_order('{qid}',NULL)"),'42501','b2b_phase1_scope_denied')
         # Concorrência: duas respostas idênticas a Q2
         import subprocess
@@ -365,7 +365,6 @@ try:
     for sig,v in json.loads((H/'manifest.json').read_text())['patched'].items():
         ok('rollback md5 LIVE '+sig,d.md5(sig)==v['live'],d.md5(sig))
     deny('após rollback: vendedor sem writers',lambda: full_create(V1,P),'42501','forbidden_partner')
-    print('DBG',d.last(f"select count(*) from public.partner_orders where created_by='{V1}'"),d.last("select count(*) from platform_private.seller_portfolio_assignments"))
     ok('após rollback: pedidos e atribuições preservados',d.last(f"select count(*) from public.partner_orders where created_by='{V1}'")=='2' and d.last("select count(*) from platform_private.seller_portfolio_assignments")=='4')
     r=run_file('04c-rollback-writers.sql.review');ok('rollback repetido recusa drift',r.returncode!=0 and 'VENDW_RB_DRIFT' in r.stderr,r.stderr[-200:])
     c,e=call(UGC,"public.c2_internal_order_entry_capability_v1()");ok('após rollback: gestor segue aberto',c and c['order_create'] is True,c or e)

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -66,7 +67,10 @@ export function CarteiraVendedoresAdmin() {
           {active.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma atribuição vigente.</p> :
             <ul className="divide-y">{active.map((a) => (
               <li key={a.id} className="py-2 flex flex-wrap items-center justify-between gap-2">
-                <span>{name.s(a.seller_user_id)} · {name.p(a.partner_id)}</span>
+                <span>{name.s(a.seller_user_id)} · {name.p(a.partner_id)}
+                  {a.seller_active === false && <Badge variant="outline" className="ml-2">vendedor suspenso</Badge>}
+                  {a.partner_active === false && <Badge variant="outline" className="ml-2">parceiro desativado</Badge>}
+                </span>
                 <span className="flex items-center gap-2">
                   <Input aria-label={`Motivo da revogação de ${name.p(a.partner_id)}`} className="w-56" value={revokeReason[a.id] ?? ""} onChange={(e) => setRevokeReason({ ...revokeReason, [a.id]: e.target.value })} placeholder="Motivo da revogação" />
                   <Button size="sm" variant="outline" disabled={busy || !(revokeReason[a.id] ?? "").trim()} onClick={async () => {

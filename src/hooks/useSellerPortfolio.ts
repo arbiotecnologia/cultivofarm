@@ -107,7 +107,7 @@ export function useSellerPortfolioOrders(enabled: boolean) {
 export interface SellerPortfolioOverview {
   sellers: Array<{ user_id: string; nome: string | null }>;
   partners: Array<{ partner_id: string; razao_social: string }>;
-  assignments: Array<{ id: string; seller_user_id: string; partner_id: string; assigned_at: string; reason: string; revoked_at: string | null; revoke_reason: string | null }>;
+  assignments: Array<{ id: string; seller_user_id: string; partner_id: string; assigned_at: string; reason: string; revoked_at: string | null; revoke_reason: string | null; seller_active?: boolean; partner_active?: boolean }>;
 }
 
 export function parseOverview(data: unknown): SellerPortfolioOverview | null {
