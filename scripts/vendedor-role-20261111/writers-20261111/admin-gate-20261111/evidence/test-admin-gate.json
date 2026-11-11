@@ -1,6 +1,6 @@
 {
- "passed": 66,
- "total": 66,
+ "passed": 79,
+ "total": 79,
  "executed_sha256": {
   "01d-pre-admin-gate.sql.readonly": [
    "5bcb8c023e62a0306f1f81f8bf9d5294cda4a18bae5f0c6ed5cc1d3e0576c00e",
@@ -95,6 +95,71 @@
   },
   {
    "test": "POST_PASS",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "espelho emula default de produção (função nova em public ganha service_role)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "ACL instalada: só authenticated+owner, sem service_role/anon/PUBLIC public.admin_assign_seller_portfolio_v1(uuid,uuid,text)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "ACL instalada: só authenticated+owner, sem service_role/anon/PUBLIC public.admin_revoke_seller_portfolio_v1(uuid,text)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "ACL instalada: só authenticated+owner, sem service_role/anon/PUBLIC public.admin_list_seller_portfolio_v1()",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "ACL instalada: só authenticated+owner, sem service_role/anon/PUBLIC public.seller_portfolio_capability_v1()",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "ACL instalada: só authenticated+owner, sem service_role/anon/PUBLIC public.seller_portfolio_orders_v1()",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "ACL instalada: só authenticated+owner, sem service_role/anon/PUBLIC public.admin_seller_portfolio_overview_v1()",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "preexistente com ACL de produção intacta public.get_partner_catalog_secure(uuid)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "preexistente com ACL de produção intacta public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "preexistente com ACL de produção intacta public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "preexistente com ACL de produção intacta platform_private.b2b_internal_order_snapshot_guard()",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "preexistente com ACL de produção intacta platform_private.b2b_internal_child_snapshot_guard()",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "preexistente com ACL de produção intacta platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)",
    "status": "PASS",
    "detail": null
   },
