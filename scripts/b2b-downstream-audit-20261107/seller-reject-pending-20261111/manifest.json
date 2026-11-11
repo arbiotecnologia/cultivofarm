@@ -2,8 +2,8 @@
   "status": "REVIEW_ONLY_INACTIVE",
   "signature": "public.reject_b2b_payment_terms_secure(uuid,text)",
   "live_md5": "40777d0cec6a7d8a8d4dfcb3370b08b6",
-  "candidate_md5": "988935a5dfdbaa3914954f4b2fa66ec7",
-  "rollback_md5": "dae0d60c90d283401217bd4c7050397c",
+  "candidate_md5": "781427080999234bfe74b04e2b8e7ffd",
+  "rollback_md5": "40777d0cec6a7d8a8d4dfcb3370b08b6",
   "acl": [
     "authenticated=X/postgres",
     "postgres=X/postgres",
@@ -14,8 +14,8 @@
   "provenance_sha256": "26ed9c09aa3881b95537e9b543f41a2928a631d8e654af9fd24e9240afe90998",
   "files": {
     "01-pre.sql.readonly": "e7f5e4aae78eeb0024c7ad22b8725d5a3c2be95e4ff58624c9e94df8f887a19e",
-    "02-install.sql.review": "a489abf341770286d99c9041a78bd6323f1fe2d14736585520b0aef621cabf07",
-    "03-post.sql.readonly": "0cb95baba62d6066ad26044c0bdc8726e421c40654fb24fdc7f0093a1e3edddd",
-    "04-rollback-deny.sql.review": "dba4b28fc074962710d5c22f80c9d7998c439da9e0d48a6a465567097a62d7b1"
+    "02-install.sql.review": "90ae83d627e9c4b4453ad297fb3dcd1f9d113c993bedbd0c145e4cb5c41fdb5a",
+    "03-post.sql.readonly": "ec1e935c7f0939bb8677abcbba78e67b23c29fed7df4100b6891f1fa55aa8550",
+    "04-rollback-deny.sql.review": "44e2b3b0248721052c2eb889186f8549f9d954a70bd65f66fd97630be0c4382e"
   }
 }
