@@ -29,6 +29,15 @@ class Mirror:
         lines=r.stdout.strip().splitlines();v=lines[-1] if lines else ''
         try: return json.loads(v),None
         except Exception: return (v if v else True),None
+    def install_reported_stack(s):
+        """Estado reportado instalado em produção: Vendedor 02a+02b+02c+02d (bytes finais, SHA conferido pelos manifestos)."""
+        V=ROOT/'scripts/vendedor-role-20261111';W=V/'writers-20261111';G=W/'admin-gate-20261111'
+        out={}
+        for f in (V/'02a-install-enum.sql.review',V/'02b-install.sql.review',W/'02c-install-writers.sql.review',G/'02d-install-admin-gate.sql.review'):
+            b=f.read_bytes();r=s.d.raw("SET app.expected_ref='swzpzcwiasxmjutrmvkm';"+b.decode())
+            if r.returncode: raise RuntimeError((f.name,r.stderr[-800:]))
+            import hashlib;out[str(f.relative_to(ROOT))]=hashlib.sha256(b).hexdigest()
+        return out
     def setup_quote_plan(s):
         d=s.d
         d.sql(f"SET session_replication_role=replica; UPDATE public.commercial_payment_plans SET organization_id='{A}' WHERE id='{PLQ}'; SET session_replication_role=origin;")
