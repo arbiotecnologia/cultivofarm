@@ -14,8 +14,11 @@ DECLARE
   n_items int := 0; n_quote int := 0; n_no_snapshot int := 0;
   canceled boolean := false;
   allowed text[];
+  v_actor_org uuid;
+  v_owner_org uuid;
 BEGIN
   PERFORM public.h15_require_staff();
+  v_actor_org := public.h15_actor_organization();
 
   IF _source_type IS NULL OR _source_id IS NULL THEN
     RETURN jsonb_build_object('eligible', false, 'reasons',
@@ -25,8 +28,12 @@ BEGIN
 
   IF _source_type = 'PARTNER_ORDER' THEN
     SELECT * INTO po FROM public.partner_orders WHERE id = _source_id;
-    IF NOT FOUND THEN
-      reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_NOT_FOUND','severity','BLOCK','message','Pedido inexistente.');
+    IF po.id IS NOT NULL THEN
+      SELECT pa.commercial_owner_organization_id INTO v_owner_org FROM public.partner_accounts pa WHERE pa.id = po.partner_id;
+    END IF;
+    -- Escopo vendedor: inexistente e de outra empresa respondem igual, sem IDs.
+    IF po.id IS NULL OR v_owner_org IS NULL OR v_owner_org IS DISTINCT FROM v_actor_org THEN
+      RETURN jsonb_build_object('eligible',false,'reasons',jsonb_build_array(jsonb_build_object('code','FISCAL_ORDER_NOT_FOUND','severity','BLOCK','message','Pedido inexistente.')),'sourceType',_source_type,'orderId',NULL::uuid,'debtorPartnerId',NULL::uuid,'has_canceled_history',false);
     ELSE
       v_order_id := po.id;
       st := po.status::text;
@@ -95,8 +102,9 @@ BEGIN
 
   ELSIF _source_type = 'ENTREGA' THEN
     SELECT * INTO ent FROM public.entregas WHERE id = _source_id;
-    IF NOT FOUND THEN
-      reasons := reasons || jsonb_build_object('code','FISCAL_DELIVERY_NOT_FOUND','severity','BLOCK','message','Entrega inexistente.');
+    -- Escopo vendedor: inexistente e de outra empresa respondem igual, sem IDs.
+    IF ent.id IS NULL OR ent.organization_id IS NULL OR ent.organization_id IS DISTINCT FROM v_actor_org THEN
+      RETURN jsonb_build_object('eligible',false,'reasons',jsonb_build_array(jsonb_build_object('code','FISCAL_DELIVERY_NOT_FOUND','severity','BLOCK','message','Entrega inexistente.')),'sourceType',_source_type,'orderId',NULL::uuid,'debtorPartnerId',NULL::uuid,'has_canceled_history',false);
     ELSE
       IF ent.cancelada_em IS NOT NULL OR coalesce(ent.status::text,'') = 'cancelada'
          OR coalesce(ent.financial_status,'') = 'CANCELED' THEN
@@ -115,7 +123,14 @@ BEGIN
           'message','Entrega sem vinculo inequivoco a pedido B2B.');
       ELSE
         v_order_id := ent.partner_order_id;
-        SELECT partner_id, status::text INTO v_debtor, st FROM public.partner_orders WHERE id = ent.partner_order_id;
+        SELECT o.partner_id, o.status::text, pa.commercial_owner_organization_id INTO v_debtor, st, v_owner_org
+          FROM public.partner_orders o LEFT JOIN public.partner_accounts pa ON pa.id = o.partner_id WHERE o.id = ent.partner_order_id;
+        IF v_owner_org IS NULL OR v_owner_org IS DISTINCT FROM ent.organization_id THEN
+          -- Pedido vinculado ausente/de outra empresa: nega sem expor seus IDs.
+          reasons := reasons || jsonb_build_object('code','FISCAL_DELIVERY_TENANT_MISMATCH','severity','BLOCK',
+            'message','Entrega e pedido vinculado nao pertencem a mesma empresa vendedora.');
+          v_order_id := NULL; v_debtor := NULL; st := NULL;
+        END IF;
         IF v_debtor IS NULL THEN
           reasons := reasons || jsonb_build_object('code','FISCAL_DEBTOR_UNRESOLVED','severity','BLOCK',
             'message','Parceiro devedor da entrega nao identificado.');

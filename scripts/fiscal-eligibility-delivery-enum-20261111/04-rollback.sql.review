@@ -4,7 +4,7 @@ DECLARE r record;
 BEGIN
   IF current_setting('fiscal_elig_fix.review_project_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'FELIG_ROLLBACK_PROJECT_REF_REQUIRED'; END IF;
   SELECT md5(pg_get_functiondef(p.oid)) m, pg_get_userbyid(p.proowner) o, coalesce(p.proacl::text,'') a, p.prosecdef d, coalesce(p.proconfig::text,'') c INTO r FROM pg_proc p WHERE p.oid='public.fn_fiscal_invoice_eligibility(text,uuid)'::regprocedure;
-  IF r.m IS DISTINCT FROM '4d37996a185773de5d1560369bca288d' THEN RAISE EXCEPTION 'FELIG_ROLLBACK_BODY_DRIFT_2ARG %',r.m; END IF;
+  IF r.m IS DISTINCT FROM '70dba08838cd4d5eea29f37f5f8a3373' THEN RAISE EXCEPTION 'FELIG_ROLLBACK_BODY_DRIFT_2ARG %',r.m; END IF;
   IF r.o IS DISTINCT FROM 'postgres' OR r.a IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' OR r.d IS DISTINCT FROM true OR r.c IS DISTINCT FROM '{"search_path=pg_catalog, public, pg_temp"}' THEN RAISE EXCEPTION 'FELIG_ROLLBACK_META_DRIFT_2ARG % % % %',r.o,r.a,r.d,r.c; END IF;
   SELECT md5(pg_get_functiondef(p.oid)) m, coalesce(p.proacl::text,'') a INTO r FROM pg_proc p WHERE p.oid='public.fn_fiscal_invoice_eligibility(text,uuid,uuid)'::regprocedure;
   IF r.m IS DISTINCT FROM 'c920cc8f80b03733f58105b083d788c2' OR r.a IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' THEN RAISE EXCEPTION 'FELIG_ROLLBACK_3ARG_DRIFT % %',r.m,r.a; END IF;
