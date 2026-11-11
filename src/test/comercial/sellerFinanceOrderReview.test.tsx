@@ -59,7 +59,6 @@ it("pedido externo elegível: itens e condição reais, origem do parceiro, repr
 
 it.each([
   ["terms_not_required", { terms: { ...review().terms, approval_status: "not_required" }, terms_review_path: "new_order_with_financial_approval_plan" }, /novo pedido com um plano que exija aprovação financeira/, "Termos sem exigência"],
-  ["accounting_pending", { accounting_pending: true }, /validação contábil.*entregas continuam bloqueados/, "Termos aguardando"],
   ["commercial_approved", {}, /aprovação comercial/, "Termos aguardando"],
   ["reserved", {}, /reserva de estoque/, "Termos aguardando"],
   ["terms_decided", { terms: { ...review().terms, approval_status: "approved" } }, /não pode ser revertida/, "Termos aprovados"],
@@ -70,6 +69,14 @@ it.each([
   expect(screen.getByTestId("terms-status")).toHaveTextContent(label);
   expect(screen.queryByRole("button", { name: "Reprovar termos" })).toBeNull();
   expect(writes()).toHaveLength(0);
+});
+
+it("pendência contábil legítima: lê itens, informa bloqueios e permite reprovar termos pendentes", async () => {
+  s.rpc.mockImplementation(() => ok(review({ accounting_pending: true })));
+  mount();
+  expect(await screen.findByTestId("accounting-pending-note")).toHaveTextContent(/nota fiscal, recebíveis e entregas continuam bloqueados/);
+  expect(screen.getByText("Itens (1)")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Reprovar termos" })).toBeInTheDocument();
 });
 
 it("cabeçalho financeiro pendente com termos not_required nunca aparece como termos pendentes", async () => {
@@ -86,7 +93,7 @@ it.each([
   ["contrato inválido", () => ok({ ...review(), contract: "X" })],
   ["outro pedido", () => ok({ ...review(), order_id: "outro" })],
   ["elegível incoerente com termos aprovados", () => ok(review({ terms: { ...review().terms, approval_status: "approved" } }))],
-  ["elegível com pendência contábil", () => ok(review({ accounting_pending: true }))],
+  ["motivo removido origin_invalid", () => ok(review({ reject_eligible: false, reject_block_reason: "origin_invalid" }))],
 ] as const)("%s => indisponível, sem itens vazios nem ação", async (_n, impl) => {
   s.rpc.mockImplementation(impl);
   mount();

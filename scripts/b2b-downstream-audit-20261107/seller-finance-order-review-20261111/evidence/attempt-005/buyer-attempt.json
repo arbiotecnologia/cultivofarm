@@ -1,0 +1,19 @@
+{
+  "initial": {
+    "key": "80f6c353-2638-43c1-8d4b-b2ad12196925",
+    "state": "reserved",
+    "contract": "C2_ORDER_JOURNAL_V1",
+    "generation": 1,
+    "predecessors": []
+  },
+  "replay_order_id": "530a633e-6626-4dcb-ba2d-f8132ec49d4f",
+  "recovered": {
+    "key": "80f6c353-2638-43c1-8d4b-b2ad12196925",
+    "state": "committed",
+    "numero": "PB-001001",
+    "contract": "C2_ORDER_JOURNAL_V1",
+    "order_id": "530a633e-6626-4dcb-ba2d-f8132ec49d4f",
+    "generation": 1,
+    "predecessors": []
+  }
+}

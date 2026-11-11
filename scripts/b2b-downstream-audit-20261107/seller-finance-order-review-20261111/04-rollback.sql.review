@@ -1,6 +1,6 @@
 BEGIN;
 DO $$DECLARE p oid:=to_regprocedure('public.get_b2b_seller_finance_order_review_v1(uuid)'); BEGIN
- IF p IS NULL OR md5(pg_get_functiondef(p))<>'451db4ab6cd9e8d87e036b7a9c828238' THEN RAISE EXCEPTION 'REVIEW_READER_CATALOG_DRIFT'; END IF;
+ IF p IS NULL OR md5(pg_get_functiondef(p))<>'69f145f16b963044f319948ef9daa8aa' THEN RAISE EXCEPTION 'REVIEW_READER_CATALOG_DRIFT'; END IF;
  IF has_function_privilege('anon',p,'EXECUTE') OR has_function_privilege('public',p,'EXECUTE') OR NOT has_function_privilege('authenticated',p,'EXECUTE')
    OR pg_get_userbyid((SELECT proowner FROM pg_proc WHERE oid=p))<>'postgres' THEN RAISE EXCEPTION 'REVIEW_READER_ACL_DRIFT'; END IF; END$$;
 DROP FUNCTION public.get_b2b_seller_finance_order_review_v1(uuid);

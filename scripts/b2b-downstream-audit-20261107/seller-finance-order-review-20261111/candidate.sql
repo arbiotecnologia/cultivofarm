@@ -25,6 +25,8 @@ BEGIN
     OR NOT EXISTS(SELECT 1 FROM public.partner_accounts pa JOIN public.organizations o ON o.id=pa.commercial_owner_organization_id
       WHERE pa.id=v_order.partner_id AND pa.commercial_owner_organization_id=v_org AND pa.ativo IS TRUE AND pa.deleted_at IS NULL AND o.ativo IS TRUE AND o.status='ativa')
     OR v_order.internal_origin_snapshot IS NOT NULL
+    -- Review 051e9d14: canonical external-origin contract must validate BEFORE any detail is read or returned.
+    OR platform_private.c2_external_origin_contract_valid(v_order.c2_external_origin_snapshot) IS NOT TRUE
     OR v_order.c2_external_origin_snapshot->>'organization_id' IS DISTINCT FROM v_org::text
     OR v_order.c2_external_origin_snapshot->>'partner_id' IS DISTINCT FROM v_order.partner_id::text
     OR v_order.c2_external_origin_snapshot->>'actor_user_id' IS DISTINCT FROM v_order.created_by::text
@@ -44,11 +46,10 @@ BEGIN
       WHERE (m.acao='reserva' OR coalesce(m.reservado_posterior,0)>coalesce(m.reservado_anterior,0))
       AND (m.os_id IN (SELECT id FROM public.ordens_servico WHERE partner_order_id=v_order.id)
         OR m.metadata->>'partner_order_id'=v_order.id::text));
-  -- Ordered like the writer's state predicate; first blocking reason wins.
+  -- Ordered like the writer's state predicate; first blocking reason wins. Accounting pending is informative:
+  -- the canonical validator accepts it and the writer may reject pending terms; no fiscal/receivable effect.
   v_code := CASE
     WHEN v_terms.id IS NULL THEN 'terms_absent'
-    WHEN platform_private.c2_external_origin_contract_valid(v_order.c2_external_origin_snapshot) IS NOT TRUE THEN
-      CASE WHEN v_accounting_pending THEN 'accounting_pending' ELSE 'origin_invalid' END
     WHEN v_terms.approval_status='not_required' THEN 'terms_not_required'
     WHEN v_terms.approval_status IS DISTINCT FROM 'pending' OR v_terms.approved_by IS NOT NULL OR v_terms.approved_at IS NOT NULL THEN 'terms_decided'
     WHEN v_order.approved_by IS NOT NULL OR v_order.approved_at IS NOT NULL

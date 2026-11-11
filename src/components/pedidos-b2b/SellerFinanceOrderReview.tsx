@@ -18,8 +18,6 @@ const TERMS_LABEL: Record<string, string> = {
 };
 export const BLOCK_REASON_TEXT: Record<RejectBlockReason, string> = {
   terms_absent: "Pedido sem termos de pagamento vinculados. Nenhuma ação financeira disponível.",
-  accounting_pending: "Pedido aguardando validação contábil da empresa. Termos e entregas continuam bloqueados até a regularização.",
-  origin_invalid: "Origem do pedido não confirmada pelo servidor. Nenhuma ação disponível.",
   terms_not_required: "Os termos deste pedido foram registrados sem exigência de aprovação financeira e não podem ser convertidos em pendentes. Para revisão financeira, o parceiro precisa fazer um novo pedido com um plano que exija aprovação financeira.",
   terms_decided: "Os termos já foram decididos. Uma decisão anterior não pode ser revertida aqui.",
   commercial_approved: "O pedido já recebeu aprovação comercial; a reprovação dos termos não está mais disponível.",
@@ -64,6 +62,13 @@ export function SellerFinanceOrderReview({ orderId, open, onOpenChange }: Props)
                 <Badge variant="outline">Pedido do parceiro</Badge>
                 <Badge variant="secondary">{partnerOrderStatusLabel(review.status)}</Badge>
                 {review.accounting_pending && <Badge variant="destructive">Pendência contábil</Badge>}
+              </div>
+              {review.accounting_pending && (
+                <p className="text-sm text-muted-foreground" data-testid="accounting-pending-note">
+                  A contabilidade da empresa ainda não está validada: aprovação, nota fiscal, recebíveis e entregas continuam bloqueados. Termos pendentes ainda podem ser reprovados.
+                </p>
+              )}
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-muted-foreground">Emissão {fd(review.created_at)}</span>
               </div>
 
