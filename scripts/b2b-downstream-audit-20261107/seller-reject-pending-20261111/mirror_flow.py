@@ -50,7 +50,7 @@ def run(B,Review,Q,A,choice,out):
     denied('seller admin without Financeiro denied',po,actor=Q.UADM,token='B2B_REJECT_SCOPE_DENIED')
     # Negative mutations are transactionally reverted, no trigger disabled.
     for label,mutation in (
-        ('buyer link revoked',f"UPDATE public.partner_users SET revoked_at=now() WHERE user_id='{Q.UB}' AND partner_id='{Q.P}';"),
+        ('buyer link revoked',f"UPDATE public.partner_users SET revoked_at=now(),revoked_by='{Q.UFIN}',revoke_reason='LOCAL NEGATIVE' WHERE user_id='{Q.UB}' AND partner_id='{Q.P}';"),
         ('seller actor inactive',f"UPDATE public.profiles SET ativo=false WHERE user_id='{Q.UFIN}';"),
         ('seller actor wrong tenant',f"UPDATE public.profiles SET organization_id='{Q.F}' WHERE user_id='{Q.UFIN}';"),
     ):
