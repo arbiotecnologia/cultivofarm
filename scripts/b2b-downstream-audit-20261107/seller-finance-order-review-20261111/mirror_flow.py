@@ -71,7 +71,7 @@ def run(B,Review,Q,A,choice,out):
     e0=effects();h0=header(pa);w=reject(pa);r,v=read(pa)
     ok('accounting pending: writer rejects pending terms; header unchanged; one audit; no fiscal/receivable/send effect',w.returncode==0 and v['terms']['approval_status']=='rejected' and header(pa)==h0 and audits(pa)==1 and effects()==e0,dict(w=w.stderr[-300:],before=e0,after=effects()))
     # (2) Invalid origin: validator seam replaced only inside a reverted transaction; reader must return no payload.
-    seam="BEGIN;CREATE OR REPLACE FUNCTION platform_private.c2_external_origin_contract_valid(jsonb) RETURNS boolean LANGUAGE sql IMMUTABLE AS 'SELECT false';"
+    seam="BEGIN;CREATE OR REPLACE FUNCTION platform_private.c2_external_origin_contract_valid(s jsonb) RETURNS boolean LANGUAGE sql IMMUTABLE AS 'SELECT false';"
     po2=pending();r2,v2=read(po2,prefix=seam,suffix='ROLLBACK;')
     ok('invalid origin denied before any detail: no payload, no items/terms/notes',r2.returncode!=0 and 'B2B_SELLER_FINANCE_REVIEW_DENIED' in r2.stderr and v2 is None and 'produto_nome' not in r2.stdout and 'approval_notes' not in r2.stdout,dict(out=r2.stdout[-200:],err=r2.stderr[-200:]))
     w2=reject(po2,prefix=seam,suffix='ROLLBACK;');ok('invalid origin: writer also denies, no audit',w2.returncode!=0 and audits(po2)==0,w2.stderr[-200:])
