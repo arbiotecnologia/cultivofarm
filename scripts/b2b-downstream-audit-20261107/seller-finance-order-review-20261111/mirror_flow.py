@@ -52,15 +52,47 @@ def run(B,Review,Q,A,choice,out):
                       ('Financeiro inactive',f"UPDATE public.profiles SET ativo=false WHERE user_id='{Q.UFIN}';"),
                       ('Financeiro other tenant',f"UPDATE public.profiles SET organization_id='{Q.F}' WHERE user_id='{Q.UFIN}';")):
         r2,_=read(po,prefix='BEGIN;'+mut,suffix='ROLLBACK;');ok(label+' reader fails closed',r2.returncode!=0,r2.stderr[-300:])
-    # Synthetic transactional seams (reverted): not_required and accounting pending.
-    for label,mut,code in (('not_required frozen terms',f"UPDATE public.partner_order_payment_terms SET approval_status='not_required' WHERE partner_order_id='{po}';",'terms_not_required'),
-                           ('accounting pending snapshot',f"UPDATE public.partner_orders SET c2_external_origin_snapshot=c2_external_origin_snapshot||jsonb_build_object('contract','C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1','accounting_validated',false) WHERE id='{po}';",'accounting_pending')):
-        h0=header(po);r2,v2=read(po,prefix='BEGIN;'+mut,suffix='ROLLBACK;')
-        w=reject(po,prefix='BEGIN;'+mut,suffix='ROLLBACK;')
-        if r2.returncode!=0:
-            checks.append(dict(test=label,status='BLOCKED',detail=r2.stderr[-600:]));print('REVIEW_BLOCKED',label,flush=True);continue
-        ok(label+': not eligible, writer denied, no change',v2['reject_eligible'] is False and v2['reject_block_reason']==code and w.returncode!=0 and header(po)==h0 and audits(po)==0,dict(v=v2,w=w.stderr[-300:]))
-        if code=='terms_not_required': ok('not_required documents new-order path, terms never shown pending',v2['terms']['approval_status']=='not_required' and v2['terms_review_path']=='new_order_with_financial_approval_plan',v2)
+    def effects():
+        q=["SELECT count(*) FROM public.accounts_receivable","SELECT count(*) FROM public.fiscal_invoices","SELECT count(*) FROM public.notificacoes_operacionais"]
+        for t in ('public.fiscal_events','public.fiscal_invoice_events','public.communication_outbox','public.communication_deliveries','public.b2b_receivable_forecasts'):
+            if B.last(f"SELECT to_regclass('{t}') IS NOT NULL;")=='t': q.append(f"SELECT count(*) FROM {t}")
+        return {x:B.last(x+';') for x in q}
+    def contract(o): return B.last(f"SELECT c2_external_origin_snapshot->>'contract' FROM public.partner_orders WHERE id='{o}';")
+    # (1) Legitimate accounting-pending order through the NORMAL create path: the issuer's active fiscal settings
+    # are made unavailable (fixture setting, not the order snapshot), the canonical writer inserts the snapshot.
+    fs=B.last(f"SELECT coalesce(string_agg(quote_literal(id::text),','),'NULL') FROM public.company_fiscal_settings WHERE organization_id='{Q.A}' AND is_active;")
+    B.sql(f"SET session_replication_role=replica;UPDATE public.company_fiscal_settings SET is_active=false WHERE id::text IN ({fs});SET session_replication_role=origin;")
+    try: pa=pending()
+    finally: B.sql(f"SET session_replication_role=replica;UPDATE public.company_fiscal_settings SET is_active=true WHERE id::text IN ({fs});SET session_replication_role=origin;")
+    ok('normal create yields canonical PENDING_ACCOUNTING snapshot accepted by existing validator',contract(pa)=='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1'
+       and B.last(f"SELECT (c2_external_origin_snapshot->>'accounting_validated')||'|'||platform_private.c2_external_origin_contract_valid(c2_external_origin_snapshot)::text FROM public.partner_orders WHERE id='{pa}';")=='false|true',contract(pa))
+    r,v=read(pa)
+    ok('accounting-pending legit order readable with items/terms; pending terms eligible',v and v['accounting_pending'] is True and len(v['items'])>=1 and v['terms']['approval_status']=='pending' and v['reject_eligible'] is True,dict(err=r.stderr[-300:],v=v))
+    e0=effects();h0=header(pa);w=reject(pa);r,v=read(pa)
+    ok('accounting pending: writer rejects pending terms; header unchanged; one audit; no fiscal/receivable/send effect',w.returncode==0 and v['terms']['approval_status']=='rejected' and header(pa)==h0 and audits(pa)==1 and effects()==e0,dict(w=w.stderr[-300:],before=e0,after=effects()))
+    # (2) Invalid origin: validator seam replaced only inside a reverted transaction; reader must return no payload.
+    seam="BEGIN;CREATE OR REPLACE FUNCTION platform_private.c2_external_origin_contract_valid(s jsonb) RETURNS boolean LANGUAGE sql IMMUTABLE AS 'SELECT false';"
+    po2=pending();r2,v2=read(po2,prefix=seam,suffix='ROLLBACK;')
+    ok('invalid origin denied before any detail: no payload, no items/terms/notes',r2.returncode!=0 and 'B2B_SELLER_FINANCE_REVIEW_DENIED' in r2.stderr and v2 is None and 'produto_nome' not in r2.stdout and 'approval_notes' not in r2.stdout,dict(out=r2.stdout[-200:],err=r2.stderr[-200:]))
+    w2=reject(po2,prefix=seam,suffix='ROLLBACK;');ok('invalid origin: writer also denies, no audit',w2.returncode!=0 and audits(po2)==0,w2.stderr[-200:])
+    r3,v3=read(po2);ok('validator restored after rollback: same order readable',v3 is not None and v3['reject_eligible'] is True,r3.stderr[-200:])
+    # (3) Dispensed new order keeps not_required (plan configuration, never snapshot mutation).
+    flag=B.last(f"SELECT requires_financial_approval FROM public.commercial_payment_plans WHERE id='{Q.P3}';")
+    u=B.run_raw(f"UPDATE public.commercial_payment_plans SET requires_financial_approval=false WHERE id='{Q.P3}';")
+    if u.returncode!=0:
+        checks.append(dict(test='dispensed new order keeps not_required',status='BLOCKED',detail=u.stderr[-400:]));print('REVIEW_BLOCKED dispensed',flush=True)
+    else:
+        try: pd=pending()
+        finally: B.sql(f"UPDATE public.commercial_payment_plans SET requires_financial_approval='{flag}'::boolean WHERE id='{Q.P3}';")
+        r,v=read(pd);w=reject(pd)
+        ok('dispensed new order: terms not_required, new-order path, writer denied, no audit',v and v['terms']['approval_status']=='not_required' and v['reject_block_reason']=='terms_not_required' and v['terms_review_path']=='new_order_with_financial_approval_plan' and w.returncode!=0 and audits(pd)==0,dict(v=v,w=w.stderr[-200:]))
+    # (4) Existing reservation blocks rejection (order reserved earlier by the composed flow through rpc_estoque_reservar_v1).
+    ro=B.last("SELECT os.partner_order_id FROM public.estoque_movimentacoes m JOIN public.ordens_servico os ON os.id=m.os_id WHERE m.acao='reserva' AND os.partner_order_id IS NOT NULL ORDER BY m.created_at LIMIT 1;")
+    if ro:
+        r,v=read(ro);w=reject(ro)
+        ok('reserved order: reader ineligible and writer denied, no audit',(v is None or v['reject_eligible'] is False) and w.returncode!=0 and audits(ro)==0,dict(v=v,w=w.stderr[-200:]))
+    else:
+        checks.append(dict(test='reserved order blocks rejection',status='BLOCKED',detail='no reservation in composition'));print('REVIEW_BLOCKED reserved',flush=True)
     h0=header(po);n0=notif();w=reject(po);r,v=read(po)
     ok('installed writer rejects; reader reflects rejected; header unchanged; one audit; no notification',w.returncode==0 and v['terms']['approval_status']=='rejected' and v['reject_eligible'] is False and v['reject_block_reason']=='terms_decided' and header(po)==h0 and audits(po)==1 and notif()==n0,dict(w=w.stderr[-300:],v=v))
     w2=reject(po);ok('repeat rejection denied, still one audit',w2.returncode!=0 and audits(po)==1,w2.stderr[-300:])

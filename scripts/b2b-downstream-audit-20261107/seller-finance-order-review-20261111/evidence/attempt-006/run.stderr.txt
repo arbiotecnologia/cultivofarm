@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/tmp/seller-review-mirror-5yq9dw6u/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 511, in main
+    results=SR.run(B,Review70.Review,Q,A,choice,OUT)
+  File "/tmp/seller-review-mirror-5yq9dw6u/project/scripts/b2b-downstream-audit-20261107/seller-finance-order-review-20261111/mirror_flow.py", line 76, in run
+    ok('invalid origin denied before any detail: no payload, no items/terms/notes',r2.returncode!=0 and 'B2B_SELLER_FINANCE_REVIEW_DENIED' in r2.stderr and v2 is None and 'produto_nome' not in r2.stdout and 'approval_notes' not in r2.stdout,dict(out=r2.stdout[-200:],err=r2.stderr[-200:]))
+    ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/seller-review-mirror-5yq9dw6u/project/scripts/b2b-downstream-audit-20261107/seller-finance-order-review-20261111/mirror_flow.py", line 14, in ok
+    assert cond,(name,detail)
+           ^^^^
+AssertionError: ('invalid origin denied before any detail: no payload, no items/terms/notes', {'out': '', 'err': 'ERROR:  42P13: cannot change name of input parameter "s"\nHINT:  Use DROP FUNCTION platform_private.c2_external_origin_contract_valid(jsonb) first.\nLOCATION:  ProcedureCreate, pg_proc.c:493\n'})

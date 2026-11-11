@@ -7,7 +7,7 @@ const CONTRACT = "B2B_SELLER_FINANCE_ORDER_REVIEW_V1";
 export const SELLER_FINANCE_REVIEW_KEY = "b2b-seller-finance-order-review";
 
 export type RejectBlockReason =
-  | "terms_absent" | "accounting_pending" | "origin_invalid" | "terms_not_required"
+  | "terms_absent" | "terms_not_required"
   | "terms_decided" | "commercial_approved" | "order_closed" | "reserved";
 
 export interface SellerFinanceReviewItem {
@@ -34,7 +34,8 @@ export type SellerFinanceReviewRead =
   /** Leitor não instalado (PGRST202 exato): nunca equivale a pedido vazio. */
   | { state: "reader_unavailable" };
 
-const REASONS: RejectBlockReason[] = ["terms_absent", "accounting_pending", "origin_invalid", "terms_not_required",
+// Origem inválida é negada pelo servidor sem payload; pendência contábil é informativa (não bloqueia reprovar).
+const REASONS: RejectBlockReason[] = ["terms_absent", "terms_not_required",
   "terms_decided", "commercial_approved", "order_closed", "reserved"];
 const STATUSES = ["not_required", "pending", "approved", "rejected"];
 const n = (v: unknown) => typeof v === "number" && Number.isFinite(v);
@@ -51,7 +52,7 @@ export function parseSellerFinanceReview(data: unknown, orderId: string): Seller
   const t = d!.terms;
   if (t !== null && (!t || typeof t.id !== "string" || !STATUSES.includes(t.approval_status) || !n(t.final_amount))) bad();
   if (d!.reject_eligible) {
-    if (d!.reject_block_reason !== null || t?.approval_status !== "pending" || d!.accounting_pending) bad();
+    if (d!.reject_block_reason !== null || t?.approval_status !== "pending") bad();
   } else if (!REASONS.includes(d!.reject_block_reason)) bad();
   if (d!.terms_review_path !== null && d!.terms_review_path !== "new_order_with_financial_approval_plan") bad();
   return d as unknown as SellerFinanceReview;
