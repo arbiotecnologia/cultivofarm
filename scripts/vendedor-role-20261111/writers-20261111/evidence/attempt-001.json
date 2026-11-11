@@ -1,7 +1,7 @@
 {
   "attempt": 1,
-  "pass_": 10,
-  "fail": 0,
+  "pass_": 26,
+  "fail": 13,
   "checks": [
     {
       "test": "restore sem erros além das FKs auth conhecidas",
@@ -52,12 +52,164 @@
       "test": "PRE_PASS",
       "status": "PASS",
       "detail": null
+    },
+    {
+      "test": "admin atribui P a V1",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "admin atribui P2 a V2",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não atribui carteira",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "gestor comercial não atribui carteira",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "admin A não atribui vendedor de F",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "INSTALL transação única",
+      "status": "FAIL",
+      "detail": "ERROR:  VENDW_PRE_REF_UNPROVEN\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\n"
+    },
+    {
+      "test": "POST_PASS",
+      "status": "FAIL",
+      "detail": "ERROR:  VENDW_POST_DRIFT:platform_private.c2_order_actor_scope(uuid,uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\n"
+    },
+    {
+      "test": "reinstalação recusada (PRE interno)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "capacidade V1: só P, order_create e quote_respond",
+      "status": "FAIL",
+      "detail": "{'ready': True, 'reason': None, 'contract': 'seller_portfolio_capability_v1', 'partners': [{'partner_id': '00000000-0000-0000-0000-000000000011', 'razao_social': 'LOCAL B3 PARTNER'}], 'order_create': False, 'quote_respond': False, 'writers_reason': 'seller_writers_blocked_pending_live_capture'}"
+    },
+    {
+      "test": "capacidade V2: só P2",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "capacidade VB (outro tenant) sem parceiros",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor+gestor não é vendedor exclusivo",
+      "status": "FAIL",
+      "detail": "{'ready': True, 'reason': None, 'contract': 'seller_portfolio_capability_v1', 'partners': [], 'order_create': False, 'quote_respond': False, 'writers_reason': 'seller_writers_blocked_pending_live_capture'}"
+    },
+    {
+      "test": "regressão: capacidade do gestor segue aberta (pin catálogo novo)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "capacidade interna do gestor não abre para vendedor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 lê catálogo de P",
+      "status": "FAIL",
+      "detail": "(None, 'ERROR:  forbidden_partner')"
+    },
+    {
+      "test": "V1 catálogo de parceiro não atribuído",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 catálogo de P2 (de V2)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "VB catálogo de P (outro tenant)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 lê embalagens de P",
+      "status": "FAIL",
+      "detail": "(None, 'ERROR:  forbidden_role')"
+    },
+    {
+      "test": "V1 lê condições vigentes de P",
+      "status": "FAIL",
+      "detail": "(None, 'ERROR:  forbidden_role')"
+    },
+    {
+      "test": "V1 lança pedido para P (positivo apto)",
+      "status": "FAIL",
+      "detail": "ERROR:  forbidden_partner"
+    },
+    {
+      "test": "V1 não lança para parceiro não atribuído",
+      "status": "FAIL",
+      "detail": "(None, 'ERROR:  forbidden_partner')"
+    },
+    {
+      "test": "V1 não lança para P2 (outro vendedor)",
+      "status": "FAIL",
+      "detail": "(None, 'ERROR:  forbidden_partner')"
+    },
+    {
+      "test": "V1 não lança para parceiro de outro tenant",
+      "status": "FAIL",
+      "detail": "(None, 'ERROR:  forbidden_partner')"
+    },
+    {
+      "test": "VB não lança para P",
+      "status": "FAIL",
+      "detail": "(None, 'ERROR:  forbidden_partner')"
+    },
+    {
+      "test": "vendedor não publica condição",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não lista planos administrativos",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não altera atribuição de condição",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "emitente não validado: fiscal_block issuer_not_validated e order_create false, quote_respond mantido",
+      "status": "FAIL",
+      "detail": "ERROR:  H15_COMPANY_FORBIDDEN\nCONTEXT:  PL/pgSQL function h15_company_integrity() line 4 at RAISE\n"
     }
   ],
   "executed_sha256": {
     "01c-pre-writers.sql.readonly": [
       "020ae91dab7a45c7b962e6e173f246886803a860a36ca73bbd7f4af1a54d3432",
       "020ae91dab7a45c7b962e6e173f246886803a860a36ca73bbd7f4af1a54d3432"
+    ],
+    "02c-install-writers.sql.review": [
+      "e30683093bfe0686de9cb8b1d707f9edec5a0dfc8743b1a1dbaa39020caaaf8c",
+      "e30683093bfe0686de9cb8b1d707f9edec5a0dfc8743b1a1dbaa39020caaaf8c"
+    ],
+    "03c-post-writers.sql.readonly": [
+      "0478ef4a5292d528e6a095f238a0459777232d8190d7642d37dbb91bb88f3a14"
     ]
   },
   "note": "PostgreSQL descartável restaurado do espelho composto; Auth sintética; não prova JWT/RLS/Storage hospedados"

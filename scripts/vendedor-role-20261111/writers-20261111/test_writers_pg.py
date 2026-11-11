@@ -24,7 +24,9 @@ def act(uid,s,pre=''):
 def call(uid,expr,pre=''):
     r=act(uid,f"SELECT ({expr})::text;",pre)
     if r.returncode: return None,(r.stderr.strip().splitlines() or [''])[0]
-    return json.loads(r.stdout.strip().splitlines()[-1]),None
+    lines=r.stdout.strip().splitlines();v=lines[-1] if lines else ''
+    try: return json.loads(v),None
+    except Exception: return (v if v else True),None
 def deny(name,r,tok): ok(name,r[0] is None and tok in (r[1] or ''),r)
 def run_file(n,pre=''):
     data=(H/n).read_bytes();sha=hashlib.sha256(data).hexdigest()
