@@ -1,6 +1,6 @@
 {
- "passed": 62,
- "total": 63,
+ "passed": 66,
+ "total": 66,
  "executed_sha256": {
   "01d-pre-admin-gate.sql.readonly": [
    "5bcb8c023e62a0306f1f81f8bf9d5294cda4a18bae5f0c6ed5cc1d3e0576c00e",
@@ -44,9 +44,14 @@
    "detail": null
   },
   {
-   "test": "LIVE 02b: admin suspenso ATRIBUI (defeito reproduzido)",
-   "status": "FAIL",
-   "detail": "(None, 'ERROR:  42501: SELLER_PORTFOLIO_FORBIDDEN')"
+   "test": "LIVE 02b: admin com acesso suspenso já era negado (has_role exige access_ready)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "LIVE 02b: admin de empresa INATIVA atribui (defeito reproduzido)",
+   "status": "PASS",
+   "detail": null
   },
   {
    "test": "LIVE 02b: vendedor com papéis combinados é aceito (defeito)",
@@ -105,6 +110,16 @@
   },
   {
    "test": "admin com acesso suspenso não atribui [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "admin de empresa inativa não atribui [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "admin de empresa inativa não revoga [42501 SELLER_PORTFOLIO_FORBIDDEN]",
    "status": "PASS",
    "detail": null
   },

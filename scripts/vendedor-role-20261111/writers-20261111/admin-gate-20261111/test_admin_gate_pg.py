@@ -50,7 +50,10 @@ try:
     inv_cols=''
     ok('fixture: admin suspenso por rotação de acesso (access_ready=false)',r.returncode==0 and call(ADMS,f"platform_private.platform_actor_access_ready('{ADMS}')")[0]=='false',(inv_cols,r.stderr[-400:]))
     # --- Estado LIVE (02b): reproduz o defeito ---
-    r=call(ADMS,assign(V1,P));ok('LIVE 02b: admin suspenso ATRIBUI (defeito reproduzido)',r[0] is not None,r);reset(P)
+    r=call(ADMS,assign(V1,P));ok('LIVE 02b: admin com acesso suspenso já era negado (has_role exige access_ready)',r[0] is None and 'SELLER_PORTFOLIO_FORBIDDEN' in (r[1] or ''),r)
+    orgoff=lambda v: d.sql(f"SET session_replication_role=replica; UPDATE public.organizations SET ativo={v} WHERE id='{A}'; SET session_replication_role=origin;")
+    orgoff('false');r=call(ADM,assign(V1,P));orgoff('true')
+    ok('LIVE 02b: admin de empresa INATIVA atribui (defeito reproduzido)',r[0] is not None,r);reset(P);reset(P)
     ok('LIVE 02b: vendedor com papéis combinados é aceito (defeito)',call(ADM,assign(VX,P))[0] is not None);reset(P)
     pa(f"update public.partner_accounts set ativo=false where id='{P2}'")
     ok('LIVE 02b: parceiro inativo é aceito (defeito)',call(ADM,assign(V1,P2))[0] is not None);reset(P2)
@@ -67,6 +70,8 @@ try:
     for s in G.NEW: ok('helper privado sem EXECUTE de cliente '+s,d.last(f"select has_function_privilege('authenticated','{s}','EXECUTE') or has_function_privilege('anon','{s}','EXECUTE')")=='f')
     # --- Negativas do administrador ---
     deny('admin com acesso suspenso não atribui',assign(V1,P),ADMS,'42501','SELLER_PORTFOLIO_FORBIDDEN')
+    orgoff('false');deny('admin de empresa inativa não atribui',assign(V1,P),ADM,'42501','SELLER_PORTFOLIO_FORBIDDEN')
+    deny('admin de empresa inativa não revoga',revoke(old),ADM,'42501','SELLER_PORTFOLIO_FORBIDDEN');orgoff('true')
     deny('admin com perfil inativo não atribui',assign(V1,P),ADMI,'42501','SELLER_PORTFOLIO_FORBIDDEN')
     deny('admin com senha provisória não atribui',assign(V1,P),ADMP,'42501','SELLER_PORTFOLIO_FORBIDDEN')
     deny('gestor comercial não atribui',assign(V1,P),GC,'42501','SELLER_PORTFOLIO_FORBIDDEN')
