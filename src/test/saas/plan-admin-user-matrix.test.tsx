@@ -17,7 +17,8 @@ const essential = [...base, "contas_pagar", "contas_receber", "fluxo_caixa", "pa
 const management = [...essential, "envios_automaticos", "emissao_nfe_nfse"];
 const complete = [...management, "catalogo_precos", "pedidos_b2b", "simulacoes", "envase", "estoque_embalagens", "lotes_qualidade", "ordens_producao"];
 const plans = [{ name: "Base", features: base }, { name: "Essencial", features: essential }, { name: "Gestão", features: management }, { name: "Completo", features: complete }];
-const roles = ACTIVE_ROLES.filter((role) => !["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"].includes(role));
+// "vendedor" aguarda o patch revisável da Edge (scripts/vendedor-role-20261111); a tela só o oferece após o servidor comprovar.
+const roles = ACTIVE_ROLES.filter((role) => !["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico", "vendedor"].includes(role));
 const routes = inventory.routes.filter((r) => r.feature && !r.redirect);
 const items = navigation.flatMap((n) => [n, ...(n.children ?? [])]);
 const read = (path: string) => readFileSync(path, "utf8");

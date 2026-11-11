@@ -24,6 +24,7 @@ const ROLE_PRIORITY: AppRole[] = [
   "administrador",
   "gestor",
   "gestor_comercial",
+  "vendedor",
   "financeiro",
   "administrativo",
   "producao",

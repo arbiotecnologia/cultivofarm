@@ -14,7 +14,7 @@ import {
   ClipboardCheck, Clock, ArrowDownCircle, ArrowUpCircle, FolderTree, Building2,
   Layers, CreditCard, PieChart, Repeat, FileSpreadsheet, Receipt,
   TrendingUp, FileBarChart2, Siren, Handshake, Factory, AlertTriangle, Home,
-  User, Bell, BookOpen, Calculator, Boxes, ListChecks,
+  User, Bell, BookOpen, Calculator, Boxes, ListChecks, Briefcase,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { AppRole } from "@/lib/permissions";
@@ -131,6 +131,7 @@ export const navigation: NavItem[] = [
       { id: "protocolos-problemas", label: "Problemas", icon: AlertTriangle, route: "/base-tecnica?tab=problemas", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], searchKeywords: ["problemas", "alvos", "base técnica"] },
     ],
   },
+  { id: "com-minha-carteira", label: "Minha carteira", icon: Briefcase, route: "/comercial/minha-carteira", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 11, platforms: ["desktop"], searchKeywords: ["carteira", "vendedor", "meus parceiros"] },
   { id: "com-simulador", label: "Simulador", icon: Calculator, route: "/comercial/simulador", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 12, platforms: ["desktop"], searchKeywords: ["simulador", "simulação", "proposta", "orçamento"] },
   { id: "com-condicoes-pagamento", label: "Condições e Preços", icon: CreditCard, route: "/comercial/condicoes-pagamento", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 13, platforms: ["desktop"], searchKeywords: ["condição de pagamento", "condicoes de pagamento", "condições financeiras", "matriz de preços", "matriz de precos", "preço por produto", "preco por microrganismo", "à vista", "a vista", "prazo", "safra", "sob consulta", "quote only", "plano de pagamento", "tabela de preços"] },
 

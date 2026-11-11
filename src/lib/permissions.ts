@@ -10,6 +10,9 @@ export type AppRole =
   | "producao"
   | "financeiro"
   | "gestor_comercial"
+  // Vendedor interno: carteira própria atribuída explicitamente; sem aprovação,
+  // planos, condições, cobrança, estoque, entregas ou fiscal.
+  | "vendedor"
   | "parceiro_b2b"
   | "parceiro_b2b_tecnico"
   // Papel de plataforma SaaS. NÃO é administrador operacional e NÃO aparece
@@ -248,6 +251,7 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
   "/comercial/alertas": { administrador: "rw", gestor_comercial: "rw" },
   "/comercial/catalogo": { administrador: "r", gestor: "r", gestor_comercial: "r" },
   "/comercial/dashboard-consolidado": { administrador: "rw", gestor_comercial: "rw" },
+  "/comercial/minha-carteira": { administrador: "r", vendedor: "rw" },
   "/comercial/condicoes-pagamento": { administrador: "rw", financeiro: "rw", gestor_comercial: "rw" },
   "/operacao/planejamento": { administrador: "rw", gestor: "rw", producao: "rw", gestor_comercial: "r" },
   "/operacao/planejamento/:id": { administrador: "rw", gestor: "rw", producao: "rw", gestor_comercial: "r" },
@@ -331,6 +335,8 @@ export function getHomeForRole(role: string | null): string {
       return "/app";
     case "gestor_comercial":
       return "/comercial/dashboard-consolidado";
+    case "vendedor":
+      return "/comercial/minha-carteira";
     case "financeiro":
       return "/financeiro";
     case "operador_onfarm":
@@ -396,6 +402,7 @@ export const ROLE_LABELS: Record<string, string> = {
   producao: "Produção",
   financeiro: "Financeiro",
   gestor_comercial: "Gestor Comercial",
+  vendedor: "Vendedor",
   parceiro_b2b: "Parceiro B2B (Gestor)",
   parceiro_b2b_tecnico: "Parceiro B2B (Técnico)",
   superadmin: "Superadmin de Plataforma",
@@ -414,6 +421,7 @@ export const ROLE_VARIANTS: Record<string, "default" | "secondary" | "outline" |
   producao: "secondary",
   financeiro: "default",
   gestor_comercial: "default",
+  vendedor: "secondary",
   parceiro_b2b: "outline",
   parceiro_b2b_tecnico: "secondary",
   superadmin: "destructive",
@@ -431,6 +439,7 @@ export const ACTIVE_ROLES = [
   "cliente_produtor",
   "financeiro",
   "gestor_comercial",
+  "vendedor",
   "parceiro_b2b",
   "parceiro_b2b_tecnico",
 ] as const;

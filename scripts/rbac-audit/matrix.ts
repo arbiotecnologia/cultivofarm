@@ -21,6 +21,7 @@ export type AuditRole =
   | "producao"
   | "financeiro"
   | "gestor_comercial"
+  | "vendedor"
   | "parceiro_b2b"
   | "parceiro_b2b_tecnico";
 
@@ -41,6 +42,7 @@ export const AUDIT_USERS: AuditUser[] = [
   { role: "administrativo", email: "administrativo@arbio.com" },
   { role: "financeiro", email: "financeiro@arbio.com" },
   { role: "gestor_comercial", email: "comercial@arbio.com" },
+  { role: "vendedor", email: "vendedor@arbio.com" },
   { role: "cliente_produtor", email: "produtor@arbio.com" },
   { role: "parceiro_b2b", email: "parceiro@arbio.com" },
   { role: "parceiro_b2b_tecnico", email: "parceiro.tecnico@arbio.com" },

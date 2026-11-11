@@ -1,0 +1,8 @@
+SELECT CASE WHEN
+  EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON t.oid=e.enumtypid WHERE t.typname='app_role' AND e.enumlabel='vendedor')
+  AND to_regclass('platform_private.seller_portfolio_assignments') IS NOT NULL
+  AND NOT has_table_privilege('authenticated','platform_private.seller_portfolio_assignments','SELECT')
+  AND NOT has_function_privilege('anon','public.seller_portfolio_capability_v1()','EXECUTE')
+  AND NOT has_function_privilege('authenticated','platform_private.seller_partner_in_portfolio(uuid)','EXECUTE')
+  AND position('vendedor' in pg_get_functiondef('platform_private.b2b_internal_commercial_actor()'::regprocedure))=0
+THEN 'POST_PASS' ELSE 'POST_FAIL' END AS status;
