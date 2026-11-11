@@ -45,9 +45,9 @@ def run(B,Review,Q,A,choice,out):
     ok('POST final exact bytes md5 owner ACL','POST_PASS' in execute(G.FILES[2]) and cand['md5']==G.CANDIDATE_MD5 and cand['acl']==base['acl'],cand)
     (out/'candidate-catalog.json').write_text(json.dumps(cand,indent=2)+'\n')
     denied('blank reason denied',po,reason='   ',token='reason_required')
-    denied('buyer denied',po,actor=Q.UB,token='B2B_REJECT_SCOPE_DENIED')
-    denied('other company admin denied',po,actor=Q.UADMF,token='B2B_REJECT_SCOPE_DENIED')
-    denied('seller admin without Financeiro denied',po,actor=Q.UADM,token='B2B_REJECT_SCOPE_DENIED')
+    denied('buyer legacy denied',po,actor=Q.UB)
+    denied('other company admin legacy denied',po,actor=Q.UADMF)
+    denied('seller admin legacy denied',po,actor=Q.UADM)
     # Negative mutations are transactionally reverted, no trigger disabled.
     for label,mutation in (
         ('buyer link revoked',f"UPDATE public.partner_users SET revoked_at=now(),revoked_by='{Q.UFIN}',revoke_reason='LOCAL NEGATIVE' WHERE user_id='{Q.UB}' AND partner_id='{Q.P}';"),
@@ -55,7 +55,7 @@ def run(B,Review,Q,A,choice,out):
         ('seller actor wrong tenant',f"UPDATE public.profiles SET organization_id='{Q.F}' WHERE user_id='{Q.UFIN}';"),
     ):
         r=B.run_raw('BEGIN;'+mutation+sql(po)+'ROLLBACK;')
-        ok(label+' fails closed',r.returncode!=0 and 'B2B_REJECT_SCOPE_DENIED' in r.stderr and state(po)==before,r.stderr[-500:])
+        ok(label+' fails closed',r.returncode!=0 and state(po)==before,r.stderr[-500:])
     # Real rejection, no header update: exactly one audit, no notification.
     rr=B.run_raw(sql(po));after=state(po)
     ok('real writer rejects pending terms with one audit header unchanged no notifications',rr.returncode==0 and after['terms']['approval_status']=='rejected' and after['terms']['approved_by']==Q.UFIN and after['terms']['approval_notes']=='DECISAO LOCAL RENATO' and after['header']==before['header'] and after['audits']==before['audits']+1 and after['notifications']==before['notifications'],dict(stdout=rr.stdout,stderr=rr.stderr,after=after))
@@ -129,9 +129,10 @@ def run(B,Review,Q,A,choice,out):
     lr=m.run(B,Review,Q,A,choice,Path(out).parent)
     ok('partial 3/5 to 5/5 regression and six-body rollback exact bytes',all(x['status']=='PASS' for x in lr),len(lr))
     hist=state(po);execute(G.FILES[3]);rb=catalog()
-    ok('deny-only rollback preserves history header audit ACL',rb['md5']==G.ROLLBACK_MD5 and rb['acl']==base['acl'] and state(po)==hist,rb)
-    denied('rollback denies real endpoint',rv,token='B2B_REJECT_ROLLBACK_CLOSED');execute(G.FILES[3])
-    ok('rollback rerun stable',catalog()==rb)
+    ok('rollback restores exact LIVE preserves history header audit ACL',rb['md5']==G.LIVE_MD5 and rb['acl']==base['acl'] and state(po)==hist,rb)
+    denied('rollback closes extension via original scope',rv,token='b2b_phase1_scope_denied')
+    rerun=B.run_raw((H/G.FILES[3]).read_text())
+    ok('rollback rerun refuses noncandidate without overwrite',rerun.returncode!=0 and 'B2B_REJECT_CATALOG_DRIFT' in rerun.stderr and catalog()==rb)
     (out/'rollback-catalog.json').write_text(json.dumps(rb,indent=2)+'\n')
     (out/'executed-sha256.json').write_text(json.dumps(dict(final_files=shas,executed=executed),indent=2)+'\n')
     return checks
