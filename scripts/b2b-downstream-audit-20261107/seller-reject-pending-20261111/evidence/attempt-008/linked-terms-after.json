@@ -1,0 +1,5 @@
+{
+  "stdout": "{\"ok\": true, \"os_id\": \"549d2c1b-480b-4f48-8b81-7ed9e65f1885\", \"replay\": false, \"contract\": \"B2B_RESALE_OS_V1\", \"order_id\": \"bcc3663b-d6d3-42f4-89f7-2dd6a36cc9ae\", \"order_item_id\": \"cb9b45f6-7b5d-47e8-b038-1dab28fd650b\"}\n",
+  "stderr": "",
+  "exit": 0
+}
