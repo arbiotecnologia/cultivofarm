@@ -8,7 +8,10 @@ el=m.call(X.UADM,f"public.fn_fiscal_invoice_eligibility('PARTNER_ORDER','{PO}')"
 # Rascunho de NF pelo writer normal (sem emissão): uma por entrega, R$10.
 FIN=[]
 for i,dl in enumerate(DL,1):
-    r=m.call(X.UADM,f"public.rpc_fiscal_draft_save(NULL,'{js({'source_type':'ENTREGA','source_id':dl,'document_model':'NFE','partner_order_id':PO,'delivery_id':dl,'total_amount':10})}'::jsonb,'[]'::jsonb,NULL)")
+    cust=d.last(f"SELECT coalesce((SELECT cliente_id::text FROM public.entregas WHERE id='{dl}'),'')") or None
+    inv={'invoice_type':'NFE','document_model':'NFE','environment':'HOMOLOGATION','delivery_id':dl,'customer_id':cust,'series':'1'}
+    items=[{'item_kind':'PRODUCT','product_id':PROD,'quantity':1,'unit_value':10,'description':'Embalagem 25 kg'}]
+    r=m.call(X.UADM,f"public.rpc_fiscal_draft_save(NULL,'{js(inv)}'::jsonb,'{js(items)}'::jsonb,NULL)")
     rec(SCN_F,f'rascunho de NF da entrega {i} pelo writer normal','PASS' if r[0] is not None else 'BLOCKED',r);FIN.append(r)
 FINDINGS.append('Rascunho/emissão de NF por entrega: '+json.dumps([ (x[0] is not None, (x[1] or '')[:160]) for x in FIN],ensure_ascii=False))
 # Rotas efetivas de título após entrega (características, não sucesso fiscal):
@@ -25,4 +28,10 @@ rec(SCN_F,'fn_generate_receivable_from_entrega (por entrega) sem NF','INFO',gd)
 if gd[0] is not None:
     FINDINGS.append('ACHADO: fn_generate_receivable_from_entrega gerou título por entrega sem NF autorizada (fiscal PENDING).')
     rec(SCN_F,'título por entrega sem NF autorizada','FINDING',gd)
+va=m.call(X.UADM,"public.rpc_fiscal_emitter_accounting_validate('validacao contabil sintetica do espelho descartavel')")
+rec(SCN_F,'validação contábil da emitente pelo writer normal (admin)','INFO',va)
+for who in (X.UGC,X.UFIN):
+    pass
+deny(SCN_C2,'PB após tentativa de validação contábil da emitente: LIVE approve continua bloqueado (snapshot C2 imutável, sem transição formal)',lambda: m.call(X.UGC,f"public.approve_partner_order('{PB}',NULL)"),'C2_ACCOUNTING_PENDING')
+ok(SCN_C2,'PB final: previsão 20/20, 0 NF, 0 título, pedido inalterado',forecast(PB)==f0 and nfi(PB)==0 and ar_for(PB)==0)
 rec(SCN_F,'positivo NF autorizada → 2 títulos/residual 20→10→0','BLOCKED','Transição não suportada pelas rotinas efetivas: não há evento de autorização na previsão, apply_authorization é service-only e não cria título; B4 por documento não está instalado. Não simulado por inserção.')
