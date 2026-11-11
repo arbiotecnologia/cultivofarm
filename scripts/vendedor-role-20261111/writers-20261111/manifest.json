@@ -90,12 +90,6 @@
       "candidate": "964b79ecd6f293c4bf81fd8ee5f5bbf5",
       "auditor_confirmed": true,
       "acl": "postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f,postgres>service_role:EXECUTE:f|postgres"
-    },
-    "public.c2_internal_order_entry_capability_v1()": {
-      "live": "e2619c71becfebf38c8d03562ff11ce2",
-      "candidate": "7ec80e2596cac468063dc167f2f90165",
-      "auditor_confirmed": true,
-      "acl": "postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f,postgres>service_role:EXECUTE:f|postgres"
     }
   },
   "catalog_reconciliation": {
@@ -107,6 +101,25 @@
     ],
     "seller_fn_md5": "58c22f724e6e13752b8ead361da4ae7f",
     "item_price_md5": "61e545e6138485ba995f989d2011590a",
+    "price_layer": {
+      "platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)": {
+        "md5": "8484e0259f2e5800c072d5ce907baf9d",
+        "acl": "postgres>postgres:EXECUTE:f|postgres"
+      },
+      "platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)": {
+        "md5": "7b7f90ddb519a281b4411c528813d927",
+        "acl": "postgres>postgres:EXECUTE:f|postgres"
+      },
+      "public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)": {
+        "md5": "87418209039589320959c9891e97916c",
+        "acl": "postgres>postgres:EXECUTE:f,postgres>service_role:EXECUTE:f|postgres"
+      },
+      "public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)": {
+        "md5": "b201e49e0158bde0140e018282c047fc",
+        "acl": "postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f,postgres>service_role:EXECUTE:f|postgres"
+      }
+    },
+    "byte_identical_to_capture": "scripts/b2b-cart-catalog-fence-20261106/captured/public.get_partner_catalog_secure.6b56cfb1.live-20261106.sql",
     "reader_md5": "bd985484b69c8fa6e63a920eff518369",
     "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}|postgres",
     "source": [
@@ -163,16 +176,21 @@
     "platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)": "postgres>postgres:EXECUTE:f|postgres"
   },
   "seller_cap_02b": "1d55a8e4ba15dac634461867fa6b5c24",
+  "gestor_capability_unchanged": {
+    "sig": "public.c2_internal_order_entry_capability_v1()",
+    "md5": "e2619c71becfebf38c8d03562ff11ce2",
+    "note": "pina catálogo b5684d35; com catálogo de produção 6b56cfb1 responde catalog_reader_pending (estado LIVE preservado)"
+  },
   "shared_helpers_unchanged": [
     "platform_private.b2b_internal_commercial_actor()",
     "platform_private.c2_internal_order_target_reason(uuid,uuid)",
     "public.fn_cc_can_prepare(uuid)"
   ],
   "files": {
-    "01c-pre-writers.sql.readonly": "94635f058be178a161b244ba69c5d64b143bbffda57df49154c3eeec5e58ab3b",
-    "02c-install-writers.sql.review": "a62a7d4ad4e5f046d8a82995bfea9a4fba582871862c50477b7a2ed02293de0c",
-    "03c-post-writers.sql.readonly": "f656006ea43f7ed8299b737b1e7b282554ac51a874b93c4df78fc33daf910393",
-    "04c-rollback-writers.sql.review": "2801181d4089ef6f92faff23e6e9da2fa1848db13e875fd11cf9eaa49de1b748"
+    "01c-pre-writers.sql.readonly": "b55769c0694673bdca06dec087a7b0bce9844ab265f31b044d3bdc2d12d1a4b8",
+    "02c-install-writers.sql.review": "7ac5113e4221bb779c4261c051b8efb4fec0f35e3b4fd1a6758e8c2b5e919f7a",
+    "03c-post-writers.sql.readonly": "38c19bd0c23446ab0c2a38e606ef49fb8a413893ac75e6e93ac792d5bebc6a33",
+    "04c-rollback-writers.sql.review": "abbb0f6a89c244a7189aaed9c6927abd561a681aba60c18cc393a50a908f211d"
   },
   "helpers_sha256": "9030969dfdf53563d3e8ec15ac4e8907b8169764f9fab5e6ee2938e8f1b16f11"
 }

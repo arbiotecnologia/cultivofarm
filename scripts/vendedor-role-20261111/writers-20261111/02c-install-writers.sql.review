@@ -36,8 +36,6 @@ DO $pre$ BEGIN
  IF (SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)'::regprocedure) IS DISTINCT FROM 'postgres>postgres:EXECUTE:f,postgres>service_role:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDW_PRE_ACL_DRIFT:platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)'; END IF;
  IF md5(pg_get_functiondef('public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'::regprocedure)) IS DISTINCT FROM '97bcdb9884b54adb3bd4aae4915e32d0' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'; END IF;
  IF (SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'::regprocedure) IS DISTINCT FROM 'postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f,postgres>service_role:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDW_PRE_ACL_DRIFT:public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'; END IF;
- IF md5(pg_get_functiondef('public.c2_internal_order_entry_capability_v1()'::regprocedure)) IS DISTINCT FROM 'e2619c71becfebf38c8d03562ff11ce2' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:public.c2_internal_order_entry_capability_v1()'; END IF;
- IF (SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='public.c2_internal_order_entry_capability_v1()'::regprocedure) IS DISTINCT FROM 'postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f,postgres>service_role:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDW_PRE_ACL_DRIFT:public.c2_internal_order_entry_capability_v1()'; END IF;
  IF to_regprocedure('platform_private.seller_commercial_actor()') IS NOT NULL THEN RAISE EXCEPTION 'VENDW_PRE_ALREADY_PRESENT:platform_private.seller_commercial_actor()'; END IF;
  IF to_regprocedure('platform_private.seller_commercial_target_reason(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'VENDW_PRE_ALREADY_PRESENT:platform_private.seller_commercial_target_reason(uuid,uuid)'; END IF;
  IF to_regprocedure('platform_private.seller_portfolio_lock(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'VENDW_PRE_ALREADY_PRESENT:platform_private.seller_portfolio_lock(uuid,uuid)'; END IF;
@@ -46,6 +44,7 @@ DO $pre$ BEGIN
  IF to_regprocedure('platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'VENDW_PRE_ALREADY_PRESENT:platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_partner_catalog_reader(uuid)'::regprocedure)) IS DISTINCT FROM 'bd985484b69c8fa6e63a920eff518369' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:platform_private.b2b_partner_catalog_reader(uuid)'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)'::regprocedure)) IS DISTINCT FROM '61e545e6138485ba995f989d2011590a' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)'; END IF;
+ IF md5(pg_get_functiondef('public.c2_internal_order_entry_capability_v1()'::regprocedure)) IS DISTINCT FROM 'e2619c71becfebf38c8d03562ff11ce2' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:public.c2_internal_order_entry_capability_v1()'; END IF;
  IF md5(pg_get_functiondef('platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'::regprocedure)) IS DISTINCT FROM '999e5e9fd9887595e252523fb2142726' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:c2_external_origin_assert'; END IF;
 END $pre$;
 
@@ -2077,38 +2076,6 @@ BEGIN
   DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope IN ('seller_quote_respond','seller_quote_respond_locked') AND target=p_order_id;
   RETURN v_result;
 END $function$;
-CREATE OR REPLACE FUNCTION public.c2_internal_order_entry_capability_v1()
- RETURNS jsonb
- LANGUAGE plpgsql
- STABLE SECURITY DEFINER
- SET search_path TO ''
-AS $function$
-DECLARE uid uuid := auth.uid(); org uuid; r text; n integer; validated boolean; partners jsonb := '[]'::jsonb;
-BEGIN
-  IF uid IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
-  r := platform_private.c2_internal_order_target_reason(uid, NULL);
-  IF r IS NULL THEN
-    org := public.h15_actor_organization();
-    -- Same issuer predicate as LIVE b2b_internal_order_snapshot_guard; read only, no lock.
-    SELECT count(*), bool_and(c.configuration_status='VALIDATED' AND c.accounting_validated_at IS NOT NULL
-             AND nullif(btrim(c.legal_name),'') IS NOT NULL AND nullif(btrim(c.cnpj),'') IS NOT NULL)
-      INTO n, validated FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active IS TRUE;
-    IF n<>1 THEN r := 'issuer_ambiguous'; ELSIF validated IS NOT TRUE THEN r := 'issuer_not_validated'; END IF;
-    SELECT COALESCE(jsonb_agg(jsonb_build_object('partner_id',p.id,'razao_social',p.razao_social,
-             'commercial_owner_organization_id',p.commercial_owner_organization_id) ORDER BY p.razao_social, p.id),'[]'::jsonb)
-      INTO partners FROM public.partner_accounts p
-     WHERE platform_private.c2_internal_order_target_reason(uid,p.id) IS NULL;
-    IF r IS NULL AND jsonb_array_length(partners)=0 THEN r := 'no_partner_in_scope'; END IF;
-    -- Same catalogue feature as the canonical reader (b2b_actor_scope.has_catalog / catalogo_precos).
-    IF r IS NULL AND NOT EXISTS (SELECT 1 FROM platform_private.b2b_actor_scope(uid) x WHERE x.has_catalog IS TRUE) THEN r := 'catalog_feature_disabled'; END IF;
-    -- Catalogue reader must be exactly the reviewed portfolio-aware body; any drift closes order entry.
-    IF r IS NULL AND md5(pg_get_functiondef('public.get_partner_catalog_secure(uuid)'::regprocedure)) IS DISTINCT FROM '66899286c74a3a2c662abf5a0b275d5a' THEN r := 'catalog_reader_pending'; END IF;
-  END IF;
-  RETURN jsonb_build_object('contract','C2_INTERNAL_ORDER_ENTRY_V1','organization_id',org,
-    'profile_ok', r IS DISTINCT FROM 'inactive_scope' AND r IS DISTINCT FROM 'actor_not_allowed',
-    'order_create', r IS NULL, 'reason', r,
-    'partners', CASE WHEN org IS NULL THEN '[]'::jsonb ELSE partners END);
-END $function$;
 -- READ ONLY
 DO $post$ BEGIN
  IF md5(pg_get_functiondef('platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '0e4ba648e32098180c15be974cb0a183' THEN RAISE EXCEPTION 'VENDW_POST_DRIFT:platform_private.c2_order_actor_scope(uuid,uuid)'; END IF;
@@ -2141,8 +2108,6 @@ DO $post$ BEGIN
  IF (SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)'::regprocedure) IS DISTINCT FROM 'postgres>postgres:EXECUTE:f,postgres>service_role:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)'; END IF;
  IF md5(pg_get_functiondef('public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'::regprocedure)) IS DISTINCT FROM '964b79ecd6f293c4bf81fd8ee5f5bbf5' THEN RAISE EXCEPTION 'VENDW_POST_DRIFT:public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'; END IF;
  IF (SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'::regprocedure) IS DISTINCT FROM 'postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f,postgres>service_role:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'; END IF;
- IF md5(pg_get_functiondef('public.c2_internal_order_entry_capability_v1()'::regprocedure)) IS DISTINCT FROM '7ec80e2596cac468063dc167f2f90165' THEN RAISE EXCEPTION 'VENDW_POST_DRIFT:public.c2_internal_order_entry_capability_v1()'; END IF;
- IF (SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='public.c2_internal_order_entry_capability_v1()'::regprocedure) IS DISTINCT FROM 'postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f,postgres>service_role:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:public.c2_internal_order_entry_capability_v1()'; END IF;
  IF md5(pg_get_functiondef('platform_private.seller_commercial_actor()'::regprocedure)) IS DISTINCT FROM 'c992f81c85c2ed9cc91d68cf0dcdfb7e' THEN RAISE EXCEPTION 'VENDW_POST_DRIFT:platform_private.seller_commercial_actor()'; END IF;
  IF (SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='platform_private.seller_commercial_actor()'::regprocedure) IS DISTINCT FROM 'postgres>postgres:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:platform_private.seller_commercial_actor()'; END IF;
  IF md5(pg_get_functiondef('platform_private.seller_commercial_target_reason(uuid,uuid)'::regprocedure)) IS DISTINCT FROM 'a8334c62a2529f1b71b92a9dfe16ee50' THEN RAISE EXCEPTION 'VENDW_POST_DRIFT:platform_private.seller_commercial_target_reason(uuid,uuid)'; END IF;
@@ -2157,6 +2122,7 @@ DO $post$ BEGIN
  IF (SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='public.admin_seller_portfolio_overview_v1()'::regprocedure) IS DISTINCT FROM 'postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:public.admin_seller_portfolio_overview_v1()'; END IF;
  IF md5(pg_get_functiondef('platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)'::regprocedure)) IS DISTINCT FROM '74d5856cdcec7996c0aa710cdb595ed7' THEN RAISE EXCEPTION 'VENDW_POST_DRIFT:platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)'; END IF;
  IF (SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)'::regprocedure) IS DISTINCT FROM 'postgres>postgres:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.c2_internal_order_entry_capability_v1()'::regprocedure)) IS DISTINCT FROM 'e2619c71becfebf38c8d03562ff11ce2' THEN RAISE EXCEPTION 'VENDW_POST_GESTOR_CAPABILITY_CHANGED'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_internal_commercial_actor()'::regprocedure)) IS DISTINCT FROM '6555396c4f8fe914177d2ccfc3891279' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;
  IF md5(pg_get_functiondef('platform_private.c2_internal_order_target_reason(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '07d7c9002cbfe17497c9ee4a92d5a928' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;
  IF md5(pg_get_functiondef('public.fn_cc_can_prepare(uuid)'::regprocedure)) IS DISTINCT FROM '439d9c28f69029b9c71fddbef1054e57' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;
