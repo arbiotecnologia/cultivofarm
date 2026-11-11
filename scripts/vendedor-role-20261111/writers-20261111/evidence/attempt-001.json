@@ -1,7 +1,7 @@
 {
   "attempt": 1,
-  "pass_": 105,
-  "fail": 0,
+  "pass_": 97,
+  "fail": 51,
   "checks": [
     {
       "test": "restore sem erros além das FKs auth conhecidas",
@@ -64,19 +64,19 @@
       "detail": null
     },
     {
-      "test": "vendedor não atribui carteira",
-      "status": "PASS",
-      "detail": null
+      "test": "vendedor não atribui carteira [? SELLER_PORTFOLIO_FORBIDDEN]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: SELLER_PORTFOLIO_FORBIDDEN'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
-      "test": "gestor comercial não atribui carteira",
-      "status": "PASS",
-      "detail": null
+      "test": "gestor comercial não atribui carteira [? SELLER_PORTFOLIO_FORBIDDEN]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: SELLER_PORTFOLIO_FORBIDDEN'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
-      "test": "admin A não atribui vendedor de F",
-      "status": "PASS",
-      "detail": null
+      "test": "admin A não atribui vendedor de F [? SELLER_PORTFOLIO_SELLER_INVALID]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  22023: SELLER_PORTFOLIO_SELLER_INVALID'), 'sqlstate': '22023', 'effects_changed': False}"
     },
     {
       "test": "INSTALL transação única",
@@ -99,14 +99,14 @@
       "detail": null
     },
     {
-      "test": "gestor comercial não lê visão de carteiras",
-      "status": "PASS",
-      "detail": null
+      "test": "gestor comercial não lê visão de carteiras [? SELLER_PORTFOLIO_FORBIDDEN]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: SELLER_PORTFOLIO_FORBIDDEN'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
-      "test": "vendedor não lê visão de carteiras",
-      "status": "PASS",
-      "detail": null
+      "test": "vendedor não lê visão de carteiras [? SELLER_PORTFOLIO_FORBIDDEN]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: SELLER_PORTFOLIO_FORBIDDEN'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
       "test": "capacidade V1: só P, order_create e quote_respond",
@@ -144,19 +144,19 @@
       "detail": null
     },
     {
-      "test": "V1 catálogo de parceiro não atribuído",
-      "status": "PASS",
-      "detail": null
+      "test": "V1 catálogo de parceiro não atribuído [? forbidden_partner]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: forbidden_partner'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
-      "test": "V1 catálogo de P2 (de V2)",
-      "status": "PASS",
-      "detail": null
+      "test": "V1 catálogo de P2 (de V2) [? forbidden_partner]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: forbidden_partner'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
-      "test": "VB catálogo de P (outro tenant)",
-      "status": "PASS",
-      "detail": null
+      "test": "VB catálogo de P (outro tenant) [? forbidden]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: forbidden_partner'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
       "test": "V1 lê embalagens de P",
@@ -164,19 +164,49 @@
       "detail": null
     },
     {
-      "test": "V1 lista planos da carteira",
+      "test": "planos V1 = planos publicados/vigentes da empresa atribuídos a P (carteira)",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "V2 vê P3 só via própria carteira (P2 atribuído)",
+      "test": "planos V2 = só os de P2; nenhum plano exclusivo de P (outra carteira)",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "VB (outro tenant) sem planos de A",
+      "test": "plano só em rascunho não aparece ao vendedor",
       "status": "PASS",
       "detail": null
+    },
+    {
+      "test": "VB (outro tenant) não vê planos de A",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "atribuição de plano vencida (transação revertida) some da lista do vendedor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "detalhe: condições de plano para parceiro de outra carteira [? ]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: forbidden_role'), 'sqlstate': '42501', 'effects_changed': False}"
+    },
+    {
+      "test": "detalhe: simulação para parceiro de outra carteira [? ]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: C2_SELLER_TARGET_DENIED:not_assigned'), 'sqlstate': '42501', 'effects_changed': False}"
+    },
+    {
+      "test": "detalhe: condições para parceiro de outro tenant [? ]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: forbidden_role'), 'sqlstate': '42501', 'effects_changed': False}"
+    },
+    {
+      "test": "detalhe: VB não lê condições de P [? ]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: forbidden_role'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
       "test": "V1 lê condições vigentes de P",
@@ -209,9 +239,9 @@
       "detail": null
     },
     {
-      "test": "vendedor não aprova pedido",
-      "status": "PASS",
-      "detail": null
+      "test": "vendedor não aprova pedido [? ]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: b2b_phase1_scope_denied'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
       "test": "status preservado após tentativa de aprovação",
@@ -219,14 +249,14 @@
       "detail": null
     },
     {
-      "test": "vendedor não aprova termos financeiros",
-      "status": "PASS",
-      "detail": null
+      "test": "vendedor não aprova termos financeiros [? ]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: b2b_phase1_scope_denied'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
-      "test": "vendedor não rejeita termos financeiros",
-      "status": "PASS",
-      "detail": null
+      "test": "vendedor não rejeita termos financeiros [? ]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: b2b_phase1_scope_denied'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
       "test": "V1 lê o pedido na carteira",
@@ -239,39 +269,39 @@
       "detail": null
     },
     {
-      "test": "V1 não lança para parceiro não atribuído",
-      "status": "PASS",
-      "detail": null
+      "test": "V1 não lança para parceiro não atribuído [? C2_SELLER_TARGET_DENIED:not_assigned]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: C2_SELLER_TARGET_DENIED:not_assigned'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
-      "test": "V1 não lança para P2 (outro vendedor)",
-      "status": "PASS",
-      "detail": null
+      "test": "V1 não lança para P2 (outro vendedor) [? C2_SELLER_TARGET_DENIED:not_assigned]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: C2_SELLER_TARGET_DENIED:not_assigned'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
-      "test": "V1 não lança para parceiro de outro tenant",
-      "status": "PASS",
-      "detail": null
+      "test": "V1 não lança para parceiro de outro tenant [? C2_SELLER_TARGET_DENIED:target_outside_portfolio]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: C2_SELLER_TARGET_DENIED:target_outside_portfolio'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
-      "test": "VB não lança para P",
-      "status": "PASS",
-      "detail": null
+      "test": "VB não lança para P [? C2_SELLER_TARGET_DENIED]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: C2_SELLER_TARGET_DENIED:target_outside_portfolio'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
-      "test": "vendedor não publica condição",
-      "status": "PASS",
-      "detail": null
+      "test": "vendedor não publica condição [? ]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: forbidden'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
-      "test": "vendedor não lista planos administrativos",
-      "status": "PASS",
-      "detail": null
+      "test": "vendedor não lista planos administrativos [? ]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  P0001: not_authorized'), 'sqlstate': 'P0001', 'effects_changed': False}"
     },
     {
-      "test": "vendedor não altera atribuição de condição",
-      "status": "PASS",
-      "detail": null
+      "test": "vendedor não altera atribuição de condição [? ]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: forbidden'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
       "test": "emitente não validado: fiscal_block issuer_not_validated e order_create false, quote_respond mantido",
@@ -294,52 +324,127 @@
       "detail": null
     },
     {
-      "test": "comprador cria pedido sob consulta pela via normal",
+      "test": "comprador cria dois pedidos sob consulta (Q1,Q2) pela via normal",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "V1 vê cotação pendente com itens",
+      "test": "comprador cria pedido externo comum (não cotação) de P",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "V2 não responde cotação de P",
+      "test": "V1 vê Q1 e Q2 com itens",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "VB não responde cotação de P",
+      "test": "pacote não usa ticket: nenhum corpo instalado menciona seller_quote_respond",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "financeiro não responde cotação",
+      "test": "validador compartilhado permanece com corpo LIVE",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "V1 responde cotação de P (transição aguardando_cotacao → análise/crédito)",
+      "test": "V2 (outro vendedor) não responde Q1 [42501 C2_SELLER_TARGET_DENIED:not_assigned]",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "ticket do vendedor não persiste após a transação",
+      "test": "VB (outro tenant) não responde Q1 [42501 C2_SELLER_TARGET_DENIED:tenant]",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "segunda resposta: replay idempotente ou recusa explícita, sem duplicar termos",
+      "test": "financeiro não responde cotação [? ]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  P0001: forbidden_quote_response'), 'sqlstate': 'P0001', 'effects_changed': False}"
+    },
+    {
+      "test": "vendedor não chama o despachante privado diretamente [42501 permission denied]",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "vendedor não aprova o pedido respondido",
+      "test": "vendedor não usa a resposta de cotação num pedido externo comum [42501 SELLER_QUOTE_STATE_DENIED]",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "resposta de cotação sem NF/recebível/reserva/entrega/envio",
+      "test": "falha de validação da resposta (linhas vazias) sem efeitos [? quote_incomplete]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  P0001: quote_incomplete'), 'sqlstate': 'P0001', 'effects_changed': False}"
+    },
+    {
+      "test": "mesma transação: validador compartilhado nega vendedor para Q2 após responder Q1, e tudo é revertido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "mesma transação: validador compartilhado nega vendedor para Q1 após responder Q1, e tudo é revertido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "resposta revertida (ROLLBACK): Q1 continua aguardando, sem termos e sem recibo",
+      "status": "FAIL",
+      "detail": "shot          = 'quote_manual',\n      base_price_snapshot            = v_price,\n      condition_price_snapshot       = v_price,\n      plan_discount_percent_snapshot = 0\n    WHERE id = v_item.id\"\nPL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 129 at SQL statement\n"
+    },
+    {
+      "test": "V1 responde Q1 (aguardando_cotacao → análise/crédito)",
+      "status": "FAIL",
+      "detail": "('ERROR:  42501: C2_EXTERNAL_OWNER_DENIED', 'aguardando_cotacao|quote_required')"
+    },
+    {
+      "test": "Q2 intocado pela resposta de Q1",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "nenhum ticket criado ou retido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "replay por recibo (retorno antecipado) não abre o validador compartilhado",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "replay idempotente devolve o mesmo resultado, sem duplicar termos",
+      "status": "FAIL",
+      "detail": "(None, 'ERROR:  42501: C2_EXTERNAL_OWNER_DENIED')"
+    },
+    {
+      "test": "preço diferente após resposta: conflito explícito [PT409 quote_idempotency_conflict]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: C2_EXTERNAL_OWNER_DENIED'), 'sqlstate': '42501', 'effects_changed': False}"
+    },
+    {
+      "test": "outro vendedor não reaproveita o recibo de Q1 [42501 C2_SELLER_TARGET_DENIED:not_assigned]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não aprova o pedido respondido [? ]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: b2b_phase1_scope_denied'), 'sqlstate': '42501', 'effects_changed': False}"
+    },
+    {
+      "test": "concorrência: as duas respostas idênticas de Q2 devolvem o mesmo resultado; um termo e um recibo",
+      "status": "FAIL",
+      "detail": "('e_snapshot       = v_price,\\n      plan_discount_percent_snapshot = 0\\n    WHERE id = v_item.id\"\\nPL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 129 at SQL statement\\n', 'e_snapshot       = v_price,\\n      plan_discount_percent_snapshot = 0\\n    WHERE id = v_item.id\"\\nPL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 129 at SQL statement\\n')"
+    },
+    {
+      "test": "concorrência sem ticket residual",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "respostas de cotação sem NF/recebível/reserva/entrega/envio",
       "status": "PASS",
       "detail": null
     },
@@ -369,12 +474,27 @@
       "detail": null
     },
     {
-      "test": "após revogação: criação negada",
+      "test": "após revogação: criação negada [? C2_SELLER_TARGET_DENIED:not_assigned]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: C2_SELLER_TARGET_DENIED:not_assigned'), 'sqlstate': '42501', 'effects_changed': False}"
+    },
+    {
+      "test": "após revogação: catálogo negado [? forbidden_partner]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: forbidden_partner'), 'sqlstate': '42501', 'effects_changed': False}"
+    },
+    {
+      "test": "após revogação: nenhum plano listado ao vendedor",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "após revogação: catálogo negado",
+      "test": "após revogação: condições de P negadas [? ]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: forbidden_role'), 'sqlstate': '42501', 'effects_changed': False}"
+    },
+    {
+      "test": "após revogação: pedidos de P somem da carteira",
       "status": "PASS",
       "detail": null
     },
@@ -389,9 +509,44 @@
       "detail": null
     },
     {
-      "test": "perfil inativo: criação negada",
+      "test": "parceiro desativado: sai da capability, dos pedidos e dos planos do vendedor",
       "status": "PASS",
       "detail": null
+    },
+    {
+      "test": "parceiro desativado: admin vê atribuição marcada partner_active=false e fora da lista de parceiros atribuíveis",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "parceiro desativado: criação negada pelo servidor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor suspenso: lista de planos negada ou vazia",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor suspenso: pedidos da carteira negados [42501 SELLER_SCOPE_DENIED]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor suspenso: admin vê atribuição com seller_active=false e vendedor fora da lista atribuível",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor suspenso: admin não atribui novo parceiro a ele [? SELLER_PORTFOLIO_SELLER_INVALID]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  22023: SELLER_PORTFOLIO_SELLER_INVALID'), 'sqlstate': '22023', 'effects_changed': False}"
+    },
+    {
+      "test": "perfil inativo: criação negada [? ]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: inactive_scope'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
       "test": "perfil inativo: capacidade fechada",
@@ -399,7 +554,72 @@
       "detail": null
     },
     {
-      "test": "papel revogado: criação negada",
+      "test": "papel revogado: criação negada [? ]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: forbidden_partner'), 'sqlstate': '42501', 'effects_changed': False}"
+    },
+    {
+      "test": "provisionamento cria usuário só com o papel vendedor",
+      "status": "FAIL",
+      "detail": "quire_service_role()\n               ^\nQUERY:  SELECT platform_private.require_service_role()\nCONTEXT:  PL/pgSQL function public.admin_provision_user_profile_v1(uuid,text,text,public.app_role[],uuid[],uuid,uuid,text,text,text,text,text,text) line 8 at PERFORM\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+    },
+    {
+      "test": "reprovisionamento recusado (user_not_ready_for_provisioning)",
+      "status": "FAIL",
+      "detail": ":  PL/pgSQL function public.admin_provision_user_profile_v1(uuid,text,text,public.app_role[],uuid[],uuid,uuid,text,text,text,text,text,text) line 8 at PERFORM\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+    },
+    {
+      "test": "administrador não chama o provisionamento direto (só serviço)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "novo vendedor: pronto, carteira vazia (negação por padrão)",
+      "status": "FAIL",
+      "detail": "{'ready': False, 'reason': 'not_seller', 'version': 2, 'contract': 'seller_portfolio_capability_v1', 'partners': [], 'fiscal_block': None, 'order_create': False, 'quote_respond': False}"
+    },
+    {
+      "test": "novo vendedor sem atribuição não lança [42501 C2_SELLER_TARGET_DENIED:not_assigned]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: forbidden_partner'), 'sqlstate': '42501', 'effects_changed': False}"
+    },
+    {
+      "test": "admin atribui PNA ao novo vendedor",
+      "status": "FAIL",
+      "detail": "ERROR:  22023: SELLER_PORTFOLIO_SELLER_INVALID"
+    },
+    {
+      "test": "novo vendedor vê só PNA",
+      "status": "FAIL",
+      "detail": "{'ready': False, 'reason': 'not_seller', 'version': 2, 'contract': 'seller_portfolio_capability_v1', 'partners': [], 'fiscal_block': None, 'order_create': False, 'quote_respond': False}"
+    },
+    {
+      "test": "edição pelo admin acrescenta financeiro: deixa de ser vendedor exclusivo",
+      "status": "FAIL",
+      "detail": "(None, 'ERROR:  42883: function public.admin_edit_user_profile_v1(unknown, timestamp with time zone, jsonb, app_role[]) does not exist', {'ready': False, 'reason': 'not_seller', 'version': 2, 'contract': 'seller_portfolio_capability_v1', 'partners': [], 'fiscal_block': None, 'order_create': False, 'quote_respond': False}, None)"
+    },
+    {
+      "test": "edição volta a vendedor exclusivo: carteira PNA preservada",
+      "status": "FAIL",
+      "detail": "(None, 'ERROR:  42883: function public.admin_edit_user_profile_v1(unknown, timestamp with time zone, jsonb, app_role[]) does not exist', {'ready': False, 'reason': 'not_seller', 'version': 2, 'contract': 'seller_portfolio_capability_v1', 'partners': [], 'fiscal_block': None, 'order_create': False, 'quote_respond': False}, None)"
+    },
+    {
+      "test": "edição com carimbo antigo: conflito [PT409 user_edit_conflict]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42883: function public.admin_edit_user_profile_v1(unknown, timestamp with time zone, jsonb, app_role[]) does not exist'), 'sqlstate': '42883', 'effects_changed': False}"
+    },
+    {
+      "test": "admin de outra empresa não edita o vendedor [42501 user_edit_forbidden]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42883: function public.admin_edit_user_profile_v1(unknown, timestamp with time zone, jsonb, app_role[]) does not exist'), 'sqlstate': '42883', 'effects_changed': False}"
+    },
+    {
+      "test": "admin revoga PNA do novo vendedor",
+      "status": "FAIL",
+      "detail": "ERROR:  22P02: invalid input syntax for type uuid: \"None\""
+    },
+    {
+      "test": "após revogação: novo vendedor sem parceiros",
       "status": "PASS",
       "detail": null
     },
@@ -414,14 +634,14 @@
       "detail": null
     },
     {
-      "test": "regressão: técnico de parceiro segue negado",
-      "status": "PASS",
-      "detail": null
+      "test": "regressão: técnico de parceiro segue negado [? ]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: forbidden_financial_terms'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
-      "test": "regressão: financeiro não vira vendedor",
-      "status": "PASS",
-      "detail": null
+      "test": "regressão: financeiro não vira vendedor [? SELLER_SCOPE_DENIED]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: SELLER_SCOPE_DENIED'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
       "test": "ROLLBACK restaura corpos LIVE",
@@ -445,11 +665,6 @@
     },
     {
       "test": "rollback md5 LIVE public.rpc_b2b_list_selectable_payment_plans()",
-      "status": "PASS",
-      "detail": null
-    },
-    {
-      "test": "rollback md5 LIVE platform_private.c2_external_origin_assert(jsonb,uuid,uuid)",
       "status": "PASS",
       "detail": null
     },
@@ -509,14 +724,14 @@
       "detail": null
     },
     {
-      "test": "após rollback: vendedor sem writers",
-      "status": "PASS",
-      "detail": null
+      "test": "após rollback: vendedor sem writers [? ]",
+      "status": "FAIL",
+      "detail": "{'result': (None, 'ERROR:  42501: forbidden_partner'), 'sqlstate': '42501', 'effects_changed': False}"
     },
     {
       "test": "após rollback: pedidos e atribuições preservados",
-      "status": "PASS",
-      "detail": null
+      "status": "FAIL",
+      "detail": "None"
     },
     {
       "test": "rollback repetido recusa drift",
@@ -531,19 +746,19 @@
   ],
   "executed_sha256": {
     "01c-pre-writers.sql.readonly": [
-      "0049852019b5467c7a59b0b269d0bbd8ae9774533201705d26b2335171caf583",
-      "0049852019b5467c7a59b0b269d0bbd8ae9774533201705d26b2335171caf583"
+      "d733d83e56092aa6e3b7237a7bae3b2b53996d018cecd352c9e1ae6dde85ee22",
+      "d733d83e56092aa6e3b7237a7bae3b2b53996d018cecd352c9e1ae6dde85ee22"
     ],
     "02c-install-writers.sql.review": [
-      "a0fe37f87930a87fd069550a799893dc67ec69e1b5d5695735589aba8d9852ff",
-      "a0fe37f87930a87fd069550a799893dc67ec69e1b5d5695735589aba8d9852ff"
+      "9098009c5c520287aea1eeebb5b0be0b28deb8378fbf3b54c674306596eddff2",
+      "9098009c5c520287aea1eeebb5b0be0b28deb8378fbf3b54c674306596eddff2"
     ],
     "03c-post-writers.sql.readonly": [
-      "372cd808bc7883e511858e91ab2b92be6b04ec81f69183b5381a92d5d95ae1dd"
+      "3604c21b479537f3e4001a74e5897f4d4523fdf639e7fd974a7d450161b07362"
     ],
     "04c-rollback-writers.sql.review": [
-      "47c93b09597b6ddf3c704f2cb404b4eee3d305eea2e92f1adc2864f0de943439",
-      "47c93b09597b6ddf3c704f2cb404b4eee3d305eea2e92f1adc2864f0de943439"
+      "c0703fcc30c61924a4a48622ffdddb8e88cd6cb069aa4f9461a0c450a608ff6a",
+      "c0703fcc30c61924a4a48622ffdddb8e88cd6cb069aa4f9461a0c450a608ff6a"
     ]
   },
   "note": "PostgreSQL descartável restaurado do espelho composto; Auth sintética; não prova JWT/RLS/Storage hospedados"
