@@ -1,6 +1,6 @@
 -- Estrutura mínima sintética (espelho descartável); NÃO é prova de JWT/RLS real.
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
-CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN;
+CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN; ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO service_role;
 CREATE SCHEMA auth; CREATE SCHEMA platform_private;
 GRANT USAGE ON SCHEMA public, auth, platform_private TO authenticated, anon;
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;

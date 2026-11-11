@@ -153,7 +153,7 @@ BEGIN
    WHERE p.commercial_owner_organization_id=org
      AND platform_private.seller_commercial_target_reason(uid,o.partner_id) IS NULL),'[]'::jsonb));
 END $f$;
-REVOKE ALL ON FUNCTION public.seller_portfolio_orders_v1() FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.seller_portfolio_orders_v1() FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION public.seller_portfolio_orders_v1() TO authenticated;
 
 -- Visão do administrador para atribuir carteira pela interface: vendedores, parceiros e atribuições da PRÓPRIA empresa.
@@ -175,7 +175,7 @@ BEGIN
         'partner_active',EXISTS(SELECT 1 FROM public.partner_accounts pp WHERE pp.id=a.partner_id AND pp.ativo IS TRUE AND pp.deleted_at IS NULL)) ORDER BY a.assigned_at DESC, a.id)
       FROM platform_private.seller_portfolio_assignments a WHERE a.organization_id=v_org),'[]'::jsonb));
 END $f$;
-REVOKE ALL ON FUNCTION public.admin_seller_portfolio_overview_v1() FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.admin_seller_portfolio_overview_v1() FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION public.admin_seller_portfolio_overview_v1() TO authenticated;
 
 -- Despachante dedicado da resposta de cotação. Não vendedor: chama o validador compartilhado LIVE, inalterado.

@@ -67,6 +67,11 @@ try:
     r=run_file('02d-install-admin-gate.sql.review');ok('INSTALL transação única',r.returncode==0,r.stderr[-600:])
     r=run_file('02d-install-admin-gate.sql.review');ok('reinstalação recusada',r.returncode and 'VENDA_PRE' in r.stderr)
     r=run_file('03d-post-admin-gate.sql.readonly');ok('POST_PASS',r.returncode==0 and 'VENDA_POST_PASS' in r.stderr,r.stderr[-300:])
+    NEWPUB=['public.admin_assign_seller_portfolio_v1(uuid,uuid,text)','public.admin_revoke_seller_portfolio_v1(uuid,text)','public.admin_list_seller_portfolio_v1()',
+            'public.seller_portfolio_capability_v1()','public.seller_portfolio_orders_v1()','public.admin_seller_portfolio_overview_v1()']
+    ok('espelho emula default de produção (função nova em public ganha service_role)',d.last("select count(*) from pg_default_acl where defaclnamespace='public'::regnamespace")!='0')
+    for s in NEWPUB: ok('ACL instalada: só authenticated+owner, sem service_role/anon/PUBLIC '+s,d.last(f"select {G.C.acl_set_sql(s)}")=='postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f|postgres',d.last(f"select {G.C.acl_set_sql(s)}"))
+    for s,x in G.C.PROD_ACL.items(): ok('preexistente com ACL de produção intacta '+s,G.C.acl_set(d,s)==G.C.acl_text_to_set(d,x))
     for s in G.NEW: ok('helper privado sem EXECUTE de cliente '+s,d.last(f"select has_function_privilege('authenticated','{s}','EXECUTE') or has_function_privilege('anon','{s}','EXECUTE')")=='f')
     # --- Negativas do administrador ---
     deny('admin com acesso suspenso não atribui',assign(V1,P),ADMS,'42501','SELLER_PORTFOLIO_FORBIDDEN')

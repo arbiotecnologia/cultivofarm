@@ -15,6 +15,8 @@ class DB:
         s.sql(''.join(f"DO $$BEGIN CREATE ROLE {r} NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END$$;" for r in roles))
         r=subprocess.run([str(PG/'pg_restore'),'-h',str(s.root),'-p',s.port,'-U','postgres','-d','postgres','--no-comments',str(DUMP)],capture_output=True,text=True)
         s.restore_errors=[l for l in r.stderr.splitlines() if 'ERROR' in l]
+        # Produção: funções novas em public recebem EXECUTE para service_role por default privileges (verificado na instalação).
+        s.sql("ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO service_role;")
     def psql(s): return [str(PG/'psql'),'-X','-h',str(s.root),'-p',s.port,'-U','postgres','-qAt','-v','ON_ERROR_STOP=1','postgres']
     def raw(s,sql): return subprocess.run(s.psql(),input=sql,capture_output=True,text=True,timeout=120)
     def sql(s,sql):
