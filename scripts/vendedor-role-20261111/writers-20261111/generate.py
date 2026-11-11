@@ -23,9 +23,6 @@ TARGETS=[
   "  IF NOT (v_admin OR public.has_role(v_uid,'parceiro_b2b'::app_role) OR platform_private.seller_commercial_actor() IS TRUE) THEN",1),
  ("    AND ((v_admin AND p.organization_id = v_org) OR platform_private.commercial_plan_buyer_visible(p.id, v_uid))",
   "    AND ((v_admin AND p.organization_id = v_org) OR platform_private.commercial_plan_buyer_visible(p.id, v_uid)\n      -- seller_portfolio_v1: somente planos publicados para parceiros da carteira própria.\n      OR (platform_private.seller_commercial_actor() IS TRUE AND p.organization_id = public.h15_actor_organization() AND EXISTS(\n        SELECT 1 FROM public.commercial_payment_plan_assignments sa WHERE sa.plan_id=p.id AND sa.buyer_scope='partner' AND sa.status='published'\n        AND sa.valid_from<=CURRENT_DATE AND (sa.valid_until IS NULL OR sa.valid_until>=CURRENT_DATE)\n        AND platform_private.seller_commercial_target_reason(v_uid, sa.partner_id) IS NULL)))",1)]),
-("platform_private.c2_external_origin_assert(jsonb,uuid,uuid)","999e5e9fd9887595e252523fb2142726",False,[
- ("  IF public.h15_actor_organization() IS DISTINCT FROM org OR NOT platform_private.c2p1_settings_allowed(partner,true)\n",
-  "  IF public.h15_actor_organization() IS DISTINCT FROM org OR NOT (platform_private.c2p1_settings_allowed(partner,true)\n     -- seller_portfolio_v1: só dentro da transação de resposta de cotação do vendedor (ticket txid) e com vínculo vigente.\n     OR (platform_private.has_ticket('seller_quote_respond',partner) AND "+P('uid','partner')+"))\n",1)]),
 ("public.get_partner_catalog_secure(uuid)","b5684d350603d1db77ab9f1db0f4b253",False,[
  ("                AND platform_private.c2_internal_order_target_reason(v_uid, p_partner_id) IS NULL) THEN",
   "                AND platform_private.c2_internal_order_target_reason(v_uid, p_partner_id) IS NULL)\n       AND NOT "+P('v_uid','p_partner_id')+" THEN",1),
@@ -68,10 +65,7 @@ TARGETS=[
   "  v_is_gestor := has_role(v_uid,'gestor_comercial'::app_role) OR "+P('v_uid',PO)+"; -- seller_portfolio_v1\n",1),
  ("v_is_admin := has_role(v_uid,'administrador'::app_role); v_is_gestor := has_role(v_uid,'gestor_comercial'::app_role);",
   "v_is_admin := has_role(v_uid,'administrador'::app_role); v_is_gestor := has_role(v_uid,'gestor_comercial'::app_role) OR "+P('v_uid','v_order.partner_id')+";\n  -- seller_portfolio_v1: após FOR UPDATE do pedido, trava e revalida o vínculo da carteira.\n  IF platform_private.seller_commercial_actor() IS TRUE THEN\n    PERFORM platform_private.seller_portfolio_lock(v_uid, v_order.partner_id);\n  END IF;",1),
- ("  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;\n  -- Origem externa e interna",
-  "  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;\n  -- seller_portfolio_v1: ticket txid só para o vendedor exclusivo; a origem externa ainda exige vínculo vigente da carteira.\n  IF platform_private.seller_commercial_actor() IS TRUE THEN\n    INSERT INTO platform_private.authz_tickets(txid,scope,target) SELECT txid_current(),'seller_quote_respond',po_t.partner_id FROM public.partner_orders po_t WHERE po_t.id=p_order_id;\n  END IF;\n  -- Origem externa e interna",1),
- ("      RETURN v_result;","      DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='seller_quote_respond';\n      RETURN v_result;",1),
- ("  RETURN v_result;\nEND","  DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='seller_quote_respond';\n  RETURN v_result;\nEND",1),
+ ("PERFORM platform_private.c2_external_origin_assert(","PERFORM platform_private.seller_quote_origin_dispatch(p_order_id,",3),
  ("    IF NOT (has_role(v_uid,'administrador'::app_role) OR has_role(v_uid,'gestor_comercial'::app_role)) THEN",
   "    IF NOT (has_role(v_uid,'administrador'::app_role) OR has_role(v_uid,'gestor_comercial'::app_role) OR "+P('v_uid','v_order.partner_id')+") THEN",1)]),
 ]
@@ -101,7 +95,7 @@ def main():
     cnew=cb.replace("'b5684d350603d1db77ab9f1db0f4b253'","'"+cat_new+"'");db.sql(cnew)
     pt[CAP[0]]=dict(orig=cb,new=cnew,live=CAP[1],auditor_confirmed=True,candidate=db.md5(CAP[0]))
     acl={sig:db.last(f"SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='{sig}'::regprocedure;") for sig in pt}
-    newf=['platform_private.seller_commercial_actor()','platform_private.seller_commercial_target_reason(uuid,uuid)','platform_private.seller_portfolio_lock(uuid,uuid)','public.seller_portfolio_capability_v1()','public.seller_portfolio_orders_v1()','public.admin_seller_portfolio_overview_v1()']
+    newf=['platform_private.seller_commercial_actor()','platform_private.seller_commercial_target_reason(uuid,uuid)','platform_private.seller_portfolio_lock(uuid,uuid)','public.seller_portfolio_capability_v1()','public.seller_portfolio_orders_v1()','public.admin_seller_portfolio_overview_v1()','platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)']
     newm={s:db.md5(s) for s in newf}
     newacl={s:db.last(f"SELECT coalesce(proacl::text,'NULL') FROM pg_proc WHERE oid='{s}'::regprocedure;") for s in newf}
     # Prior seller capability (02b) pin for PRE/rollback.
@@ -118,6 +112,7 @@ def main():
         a,o=acl[sig].split('|');pre.append(f" IF (SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='{sig}'::regprocedure) IS DISTINCT FROM '{acl[sig]}' THEN RAISE EXCEPTION 'VENDW_PRE_ACL_DRIFT:{sig}'; END IF;")
     for s in newf[:3]+newf[4:]:
         pre.append(f" IF to_regprocedure('{s}') IS NOT NULL THEN RAISE EXCEPTION 'VENDW_PRE_ALREADY_PRESENT:{s}'; END IF;")
+    pre.append(" IF md5(pg_get_functiondef('platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'::regprocedure)) IS DISTINCT FROM '999e5e9fd9887595e252523fb2142726' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:c2_external_origin_assert'; END IF;")
     pre.append("END $pre$;\nSELECT 'VENDW_PRE_PASS';")
     pre_sql='\n'.join(pre)+'\n'
     post=["-- READ ONLY","DO $post$ BEGIN"]
@@ -130,6 +125,8 @@ def main():
     post.append(" IF md5(pg_get_functiondef('platform_private.b2b_internal_commercial_actor()'::regprocedure)) IS DISTINCT FROM '6555396c4f8fe914177d2ccfc3891279' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
     post.append(" IF md5(pg_get_functiondef('platform_private.c2_internal_order_target_reason(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '07d7c9002cbfe17497c9ee4a92d5a928' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
     post.append(" IF md5(pg_get_functiondef('public.fn_cc_can_prepare(uuid)'::regprocedure)) IS DISTINCT FROM '"+db.md5('public.fn_cc_can_prepare(uuid)')+"' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
+    post.append(" IF md5(pg_get_functiondef('platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'::regprocedure)) IS DISTINCT FROM '999e5e9fd9887595e252523fb2142726' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
+    post.append(" IF EXISTS(SELECT 1 FROM pg_proc p WHERE pg_get_functiondef(p.oid) LIKE '%seller_quote_respond%') THEN RAISE EXCEPTION 'VENDW_POST_TICKET_PRESENT'; END IF;")
     post.append("END $post$;\nSELECT 'VENDW_POST_PASS';")
     post_sql='\n'.join(post)+'\n'
     inst=["-- REVIEW ONLY / INATIVO. Aplicar somente pelo auditor após VENDW_PRE_PASS no ref swzpzcwiasxmjutrmvkm.","BEGIN;","SET LOCAL lock_timeout='5s';",pre_sql.replace("SELECT 'VENDW_PRE_PASS';",""),HELPERS]
@@ -144,7 +141,7 @@ def main():
     for sig,v in pt.items(): rb.append(v['orig'].rstrip()+';')
     rb.append(cap02b_body.rstrip()+';')
     rb.append("REVOKE ALL ON FUNCTION public.seller_portfolio_capability_v1() FROM PUBLIC, anon; GRANT EXECUTE ON FUNCTION public.seller_portfolio_capability_v1() TO authenticated;")
-    rb.append("DROP FUNCTION public.admin_seller_portfolio_overview_v1();\nDROP FUNCTION public.seller_portfolio_orders_v1();\nDROP FUNCTION platform_private.seller_portfolio_lock(uuid,uuid);\nDROP FUNCTION platform_private.seller_commercial_target_reason(uuid,uuid);\nDROP FUNCTION platform_private.seller_commercial_actor();")
+    rb.append("DROP FUNCTION platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid);\nDROP FUNCTION public.admin_seller_portfolio_overview_v1();\nDROP FUNCTION public.seller_portfolio_orders_v1();\nDROP FUNCTION platform_private.seller_portfolio_lock(uuid,uuid);\nDROP FUNCTION platform_private.seller_commercial_target_reason(uuid,uuid);\nDROP FUNCTION platform_private.seller_commercial_actor();")
     rb.append("DO $rbp$ BEGIN")
     for sig,v in pt.items():
         rb.append(f" IF md5(pg_get_functiondef('{sig}'::regprocedure)) IS DISTINCT FROM '{v['live']}' THEN RAISE EXCEPTION 'VENDW_RB_POST:{sig}'; END IF;")
