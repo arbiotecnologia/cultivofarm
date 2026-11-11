@@ -18,19 +18,30 @@ Ocorre no overload `(text,uuid)` (md5 6b3dde2b…); o `(text,uuid,uuid)` (c920cc
 Reproduzido no espelho completo com os hashes LIVE acima. O MD5 de produção destas duas sobrecargas NÃO foi medido:
 o PRE fixa 6b3dde2b…/c920cc8f…; se divergir, aborta.
 
-## Correção (3 âncoras, candidato 4d37996a…)
-`ent.status::text` nas duas comparações e na mensagem. Nada mais muda.
+## Correção (7 âncoras, candidato 70dba088…)
+1. `ent.status::text` nas duas comparações e na mensagem.
+2. Escopo vendedor na leitura da origem (complemento de revisão): empresa do ator = `h15_actor_organization()`.
+   - PARTNER_ORDER: dono = `partner_accounts.commercial_owner_organization_id` do parceiro; ausente/alheio → mesma resposta de inexistente
+     (`FISCAL_ORDER_NOT_FOUND`, `orderId`/`debtorPartnerId` nulos).
+   - ENTREGA: `entregas.organization_id` alheio → mesma resposta de inexistente (`FISCAL_DELIVERY_NOT_FOUND`, sem IDs).
+   - Pedido vinculado com dono ausente/diferente da empresa da entrega → `FISCAL_DELIVERY_TENANT_MISMATCH`, inelegível, IDs nulos.
+   - Não havia caminho de superadmin nesta função (`h15_require_staff` exige empresa ativa); nenhum foi criado.
+   Regras de elegibilidade, 3-arg, autorização/ponte/alocação/reconciliação inalteradas.
 
 ## Arquivos
 - `01-pre.sql.readonly`, `02-install.sql.review`, `03-post.sql.readonly`, `04-rollback.sql.review` (exigem `SET fiscal_elig_fix.review_project_ref='swzpzcwiasxmjutrmvkm'`)
 - `generate.py` (`--verify`), `candidate.sql`, `candidate-md5.json`, `live-capture/`, `test_pg.py`, `SHA256SUMS`
 
 ## Teste
-Banco descartável restaurado do pg_dump do espelho completo; `python3 test_pg.py` → `evidence/attempt-001`: 74/74 PASS.
+Banco descartável restaurado do pg_dump do espelho completo; `python3 test_pg.py`.
+`evidence/attempt-001`: 74/74 (só enum, mantida). `evidence/attempt-002`: 216/216 (enum + escopo).
 Cobre: reprodução antes (2 e 3 args); PRE/drift ACL; install sem ref; reinstalação aborta; POST; 3-arg, ACL e as 4 rotinas fiscais intocadas;
 12 entregas concluídas (9 parciais de pedidos com >1 entrega) sem NOT_COMPLETED; 3 canceladas negadas; `separado`/`em_rota` negadas
 (estado criado só em transação revertida com triggers em réplica — costura declarada); inexistente; anon e ator sem empresa negados;
 origem PARTNER_ORDER idêntica antes/depois em todos os pedidos; rollback exato, reinstalação e rollback final.
+Escopo (attempt-002): admins de FSF (0..02) e B (10..01), empresas fictícias da composição, recebem para cada entrega/pedido de A
+resposta idêntica à de UUID inexistente sem IDs (2 e 3 args); A não lê entregas de B; B lê as próprias; inconsistência entrega↔pedido
+nos dois sentidos → TENANT_MISMATCH sem IDs (inconsistência impossível pelos writers normais, criada só em transação revertida — costura).
 Auth por claims SQL é sintética: não prova JWT/RLS/Storage.
 
 ## Cobertura fiscal parcial no espelho (attempt-221) e o que NÃO foi executado
