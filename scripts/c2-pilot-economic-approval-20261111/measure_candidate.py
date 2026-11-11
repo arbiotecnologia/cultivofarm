@@ -14,4 +14,4 @@ try:
           "public.c2_pilot_economic_approve_v1(uuid,text,text,text,text)","public.c2_pilot_economic_state_v1(uuid)"]
     (H/'candidate-md5.json').write_text(json.dumps({s:d.md5(s) for s in sigs},indent=1)+"\n");print((H/'candidate-md5.json').read_text())
 finally:
-    d.stop() if hasattr(d,'stop') else None
+    pass
