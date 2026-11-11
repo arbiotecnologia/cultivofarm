@@ -43,6 +43,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { AlertCircle, Loader2, Plus, Send, CheckCircle2, Archive } from "lucide-react";
 import { formatDateDisplay } from "@/lib/date-utils";
+import { readCivilDateInput } from "@/lib/civil-date-input";
+import { Pencil } from "lucide-react";
 
 const STATUS_LABEL: Record<string, string> = {
   draft: "Rascunho",
@@ -99,6 +101,8 @@ export function AtribuicoesPlanosTab() {
   const [publishError, setPublishError] = useState<string | null>(null);
   const publishOpening = useRef<(() => boolean) | null>(null);
   const publishLock = useRef(false);
+  const validFromRef = useRef<HTMLInputElement>(null);
+  const validUntilRef = useRef<HTMLInputElement>(null);
 
   const planName = useMemo(() => {
     const m = new Map<string, string>();
@@ -176,7 +180,17 @@ export function AtribuicoesPlanosTab() {
       toast.error("Selecione o parceiro.");
       return;
     }
-    save.mutate(form, {
+    const payload: AssignmentInput = {
+      ...form,
+      valid_from: readCivilDateInput(validFromRef, form.valid_from),
+      valid_until: readCivilDateInput(validUntilRef, form.valid_until),
+    };
+    if (payload.valid_from && payload.valid_until && payload.valid_until < payload.valid_from) {
+      toast.error("A vigência final deve ser igual ou posterior à inicial.");
+      return;
+    }
+    setForm(payload);
+    save.mutate(payload, {
       onSuccess: () => {
         toast.success("Atribuição salva em rascunho — não elegível até publicação.");
         setOpen(false);
@@ -186,8 +200,27 @@ export function AtribuicoesPlanosTab() {
     });
   }
 
+  function openEdit(a: PlanAssignment) {
+    setForm({
+      id: a.id,
+      plan_id: a.plan_id,
+      buyer_scope: a.buyer_scope,
+      partner_id: a.partner_id,
+      customer_id: a.customer_id,
+      valid_from: a.valid_from ? a.valid_from.slice(0, 10) : null,
+      valid_until: a.valid_until ? a.valid_until.slice(0, 10) : null,
+      motivo: a.motivo,
+    });
+    setOpen(true);
+  }
+
   function assignmentActions(a: PlanAssignment) {
-    return <>                      {a.status === "draft" && (
+    return <>{a.status === "draft" && (
+                        <Button size="sm" variant="ghost" disabled={save.isPending}
+                          aria-label="Editar atribuição" onClick={() => openEdit(a)}>
+                          <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
+                        </Button>
+                      )}                      {a.status === "draft" && (
                         <Button
                           size="sm" disabled={submit.isPending || publish.isPending || archive.isPending}
                           variant="outline"
@@ -336,7 +369,7 @@ export function AtribuicoesPlanosTab() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nova atribuição</DialogTitle>
+            <DialogTitle>{form.id ? "Editar atribuição (rascunho)" : "Nova atribuição"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div>
@@ -383,16 +416,20 @@ export function AtribuicoesPlanosTab() {
                 <Label htmlFor="assignment-field-4">Vigência inicial</Label>
                 <Input id="assignment-field-4"
                   type="date"
+                  ref={validFromRef}
                   value={form.valid_from ?? ""}
-                  onChange={(e) => setForm({ ...form, valid_from: e.target.value || null })}
+                  onChange={(e) => { const v = e.target.value || null; setForm((f) => ({ ...f, valid_from: v })); }}
+                  onInput={(e) => { const v = (e.target as HTMLInputElement).value || null; setForm((f) => ({ ...f, valid_from: v })); }}
                 />
               </div>
               <div>
                 <Label htmlFor="assignment-field-5">Vigência final</Label>
                 <Input id="assignment-field-5"
                   type="date"
+                  ref={validUntilRef}
                   value={form.valid_until ?? ""}
-                  onChange={(e) => setForm({ ...form, valid_until: e.target.value || null })}
+                  onChange={(e) => { const v = e.target.value || null; setForm((f) => ({ ...f, valid_until: v })); }}
+                  onInput={(e) => { const v = (e.target as HTMLInputElement).value || null; setForm((f) => ({ ...f, valid_until: v })); }}
                 />
               </div>
             </div>

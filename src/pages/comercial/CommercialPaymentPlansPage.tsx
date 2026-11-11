@@ -151,8 +151,13 @@ export default function CommercialPaymentPlansPage() {
   function submit() {
     if (saving || Object.keys(errors).length > 0) return;
     const onError = (e: unknown) => toast.error(planErrorMessage(e));
+    const payload: PaymentPlanPayload = mode === "metadata" ? form : {
+      ...form,
+      valid_from: readCivilDateInput(planValidFromRef, form.valid_from),
+      valid_until: readCivilDateInput(planValidUntilRef, form.valid_until),
+    };
     if (mode === "create") {
-      create.mutate(form, {
+      create.mutate(payload, {
         onSuccess: () => {
           toast.success("Plano criado");
           setOpen(false);
@@ -161,7 +166,7 @@ export default function CommercialPaymentPlansPage() {
       });
     } else if (mode === "version" && current) {
       version.mutate(
-        { planId: current.id, payload: form, motivo: form.motivo },
+        { planId: current.id, payload, motivo: form.motivo },
         {
           onSuccess: () => {
             toast.success(`Nova versão criada (v${current.version + 1})`);
@@ -630,8 +635,10 @@ export default function CommercialPaymentPlansPage() {
                   <Input id="plan-valid_from" aria-invalid={!!errors.valid_from} aria-describedby="plan-valid_from-error"
                     type="date"
                     disabled={mode === "metadata"}
+                    ref={planValidFromRef}
                     value={form.valid_from?.slice(0, 10) ?? ""}
-                    onChange={(e) => setForm({ ...form, valid_from: e.target.value || null })}
+                    onChange={(e) => { const v = e.target.value || null; setForm((f) => ({ ...f, valid_from: v })); }}
+                    onInput={(e) => { const v = (e.target as HTMLInputElement).value || null; setForm((f) => ({ ...f, valid_from: v })); }}
                   />
                 {fieldError("valid_from")}
 </div>
@@ -640,8 +647,10 @@ export default function CommercialPaymentPlansPage() {
                   <Input id="plan-valid_until" aria-invalid={!!errors.valid_until} aria-describedby="plan-valid_until-error"
                     type="date"
                     disabled={mode === "metadata"}
+                    ref={planValidUntilRef}
                     value={form.valid_until?.slice(0, 10) ?? ""}
-                    onChange={(e) => setForm({ ...form, valid_until: e.target.value || null })}
+                    onChange={(e) => { const v = e.target.value || null; setForm((f) => ({ ...f, valid_until: v })); }}
+                    onInput={(e) => { const v = (e.target as HTMLInputElement).value || null; setForm((f) => ({ ...f, valid_until: v })); }}
                   />
                 {fieldError("valid_until")}
 </div>
