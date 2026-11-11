@@ -33,7 +33,12 @@ class Mirror:
         """Estado reportado instalado em produção: Vendedor 02a+02b+02c+02d (bytes finais, SHA conferido pelos manifestos)."""
         V=ROOT/'scripts/vendedor-role-20261111';W=V/'writers-20261111';G=W/'admin-gate-20261111'
         out={}
+        import catalog_reconcile as C
         for f in (V/'02a-install-enum.sql.review',V/'02b-install.sql.review',W/'02c-install-writers.sql.review',G/'02d-install-admin-gate.sql.review'):
+            if f.name.startswith('02c'):
+                # Catálogo de produção 6b56cfb1 e ACL real reconstituídos pelo mesmo reconciliador do pacote writers-20261111.
+                C.reconcile(s.d);C.align_acl(s.d)
+                if s.d.md5(C.SIG)!=C.PROD_MD5: raise RuntimeError('CATALOG_NOT_PRODUCTION')
             b=f.read_bytes();r=s.d.raw("SET app.expected_ref='swzpzcwiasxmjutrmvkm';"+b.decode())
             if r.returncode: raise RuntimeError((f.name,r.stderr[-800:]))
             import hashlib;out[str(f.relative_to(ROOT))]=hashlib.sha256(b).hexdigest()
