@@ -4,3 +4,4 @@
 - A barreira de INSERT em b2b_financial_forecasts nega qualquer entrada para pedidos C2 pendentes ou listados no piloto, salvo ticket da própria transação emitido pelo core; rollback é deny-only e mantém barreira, ledger e previsões.
 - Conferência (01–04) e habilitação estreita (05/06) são etapas separadas; 05 usa settings explícitos e falha fechada — evita ativar ao instalar.
 - Arquivos finais só via generate.py (pins fixados, --verify); auth por claims SQL no espelho não prova JWT/RLS/Storage.
+- Leitor do piloto só devolve payload (evidência/autores/previsão) com gate ligado e concessão vigente do próprio ator; core comprova escopo/gate/concessão sem lock antes de travar e responde replay só após revalidar — evita vazamento e recibo com autoridade vencida.

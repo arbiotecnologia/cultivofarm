@@ -10,6 +10,7 @@ e **um** evento `PREVISION_CREATED`. Nada muda no pedido; NF, recebível, cobran
 | arquivo | papel |
 |---|---|
 | `candidate.sql` | fonte do candidato |
+| `00-default-acl-probe.sql.readonly` | sonda somente leitura das ACLs padrão reais (pg_default_acl, schema) — o auditor anexa a saída |
 | `01-pre.sql.readonly` | PRE somente leitura (ref, pins das dependências, ausência) |
 | `02-install.sql.review` | instalação em transação única, instala FECHADO |
 | `03-post.sql.readonly` | POST (MD5 candidato, ACL por conjunto, barreiras, dependências) |
@@ -25,7 +26,8 @@ e **um** evento `PREVISION_CREATED`. Nada muda no pedido; NF, recebível, cobran
 # espelho compatível (cópia temporária; não reescreve evidências do projeto)
 rm -rf /tmp/pb && mkdir -p /tmp/pb/proj && cp -r scripts /tmp/pb/proj/ && rm -rf /tmp/pb/proj/scripts/vendedor-role-20261111/writers-20261111/evidence/measure
 (cd /tmp/pb/proj && python3 scripts/vendedor-role-20261111/writers-20261111/measure_live.py)   # gera /tmp/vendedor-mirror.dump
-python3 scripts/c2-pilot-economic-approval-20261111/generate.py --verify
+python3 scripts/c2-pilot-economic-approval-20261111/measure_candidate.py   # regrava candidate-md5.json
+python3 scripts/c2-pilot-economic-approval-20261111/generate.py && python3 scripts/c2-pilot-economic-approval-20261111/generate.py --verify
 python3 scripts/c2-pilot-economic-approval-20261111/test_pilot_pg.py
 bunx vitest run src/test/b2b/c2PilotEconomicApproval.test.tsx
 ```
@@ -49,3 +51,16 @@ Negativas de evidência mutam dados apenas em transação revertida.
 - Decisão de segregação: o mesmo administrador pode aprovar os dois tipos se tiver ambas as concessões; restringir se desejado.
 - Prova JWT/RLS/Storage e navegador real após instalação.
 - Leitor Financeiro instalado (`get_b2b_seller_finance_order_review_v1`) não está no dump; o painel é independente dele.
+
+## Revisão 2 (após PRE hospedado aprovado; 01 byte-idêntico)
+- Leitor `c2_pilot_economic_state_v1`: com gate desligado ou sem concessão vigente do próprio ator para o pedido, devolve só
+  `{contract, order_id, available:false, reason}` (PILOT_DISABLED|NOT_GRANTED) — sem evidência, autores, hashes ou previsão;
+  só mostra previsão de origem `C2_PILOT_ECONOMIC_APPROVAL_V1`. Não substitui nem amplia o leitor financeiro.
+- Core: papel, escopo do tenant, gate e concessão vigente são comprovados sem lock antes de travar o pedido; após as esperas
+  reautoriza e revalida gate/concessão; o replay só é respondido depois disso (concessão revogada ou gate off ⇒ negado, sem forecast_id).
+- Evidência: termos `approved` exigem autor+data; dispensa só `not_required` sem autor, `requires_financial_approval=false`
+  e cabeçalho fora de pending/rejected; comparações monetárias com nulos falham fechado.
+- ACL padrão: produção não foi consultada daqui. O espelho emula o pior caso (tabelas/funções novas em public e platform_private
+  abertas a anon/authenticated/service_role); 02 revoga explicitamente e 03 exige conjunto exato (tabelas: só o dono).
+  O auditor roda `00-default-acl-probe.sql.readonly` e anexa a saída real.
+- Evidência: `evidence/attempt-005` (attempt-003 com falhas de teste e attempt-004 preservadas).

@@ -14,12 +14,12 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
 } }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 import { C2PilotEconomicApproval } from "@/components/pedidos-b2b/C2PilotEconomicApproval";
-import { parseC2PilotState } from "@/hooks/useC2PilotEconomicApproval";
+import { parseC2PilotRead, parseC2PilotState } from "@/hooks/useC2PilotEconomicApproval";
 
 const ORDER = "11111111-2222-4333-8444-555555555555";
 const H = "a".repeat(32);
 const state = (o: Record<string, unknown> = {}) => ({
-  contract: "C2_PILOT_ECON_STATE_V1", order_id: ORDER, pilot_enabled: true,
+  contract: "C2_PILOT_ECON_STATE_V1", order_id: ORDER, available: true, pilot_enabled: true,
   evidence: { evidence_hash: H, financed_total: 20, method: "boleto", due_basis: "nf_issue", estimated: true,
     schedule: [{ installment_number: 1, amount: 20, due_date: "2026-12-11" }], items: [{ id: "i1", quantidade: 2, preco_unitario: 10, subtotal: 20 }] },
   evidence_block_reason: null, approvals: [], can_approve_commercial: false, can_approve_credit: true, forecast: null,
@@ -82,6 +82,9 @@ it.each([
   ["negado pelo servidor", () => fail("C2_PILOT_ECON_DENIED:role", "42501")],
   ["contrato inválido", () => ok({ ...state(), fiscal_blocked: false })],
   ["piloto desligado sem histórico", () => ok(state({ pilot_enabled: false, evidence: null, can_approve_credit: false }))],
+  ["fora do piloto/sem concessão (indisponível)", () => ok({ contract: "C2_PILOT_ECON_STATE_V1", order_id: ORDER, available: false, reason: "NOT_GRANTED" })],
+  ["piloto desligado (indisponível)", () => ok({ contract: "C2_PILOT_ECON_STATE_V1", order_id: ORDER, available: false, reason: "PILOT_DISABLED" })],
+  ["indisponível com autores vazados", () => ok({ contract: "C2_PILOT_ECON_STATE_V1", order_id: ORDER, available: false, reason: "NOT_GRANTED", approvals: [{ kind: "credit", approved_by: "x", approved_at: "t", evidence_hash: H }] })],
 ])("%s: nada é montado nem gravado", async (_l, r) => {
   s.rpc.mockImplementation(() => r());
   mount();
@@ -103,4 +106,12 @@ it("parser recusa ação sem evidência ou com piloto desligado", () => {
   expect(() => parseC2PilotState(state({ pilot_enabled: false }), ORDER)).toThrow();
   expect(() => parseC2PilotState(state(), "outro")).toThrow();
   expect(parseC2PilotState(state(), ORDER).can_approve_credit).toBe(true);
+});
+
+it("parser: indisponível só sem payload financeiro/autor; disponível exige available=true", () => {
+  expect(parseC2PilotRead({ contract: "C2_PILOT_ECON_STATE_V1", order_id: ORDER, available: false, reason: "NOT_GRANTED" }, ORDER)).toEqual({ state: "unavailable" });
+  expect(() => parseC2PilotRead({ contract: "C2_PILOT_ECON_STATE_V1", order_id: ORDER, available: false, reason: "NOT_GRANTED", forecast: { forecast_id: "f" } }, ORDER)).toThrow();
+  expect(() => parseC2PilotRead({ contract: "C2_PILOT_ECON_STATE_V1", order_id: ORDER, available: false, reason: "OUTRO" }, ORDER)).toThrow();
+  expect(() => parseC2PilotState(state({ available: undefined }), ORDER)).toThrow();
+  expect(parseC2PilotRead(state(), ORDER).state).toBe("ready");
 });
