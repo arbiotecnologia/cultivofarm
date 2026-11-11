@@ -115,9 +115,15 @@ def run(B,Review,Q,A,choice,out):
     anchor='    k1 = f"lla-res1-{rid}"; r1 = json.loads(B.last(reserve_sql(lot1, 3, k1))); s1 = r1["itens"][0]; m_after1 = mv()'
     assert temp.count(anchor)==1
     replacement='''    k1 = f"lla-res1-{rid}"
-    holder=B.T.session("SET application_name='reject_reserve_holder';BEGIN;"+reserve_sql(lot1,3,k1));time.sleep(.12)
-    pid=B.last("SELECT pid FROM pg_stat_activity WHERE state='idle in transaction' AND application_name='reject_reserve_holder';")
-    assert pid
+    holder=B.T.session("SET application_name='reject_reserve_holder';BEGIN;"+reserve_sql(lot1,3,k1))
+    deadline=time.monotonic()+3;pid=''
+    while time.monotonic()<deadline:
+        pid=B.last("SELECT coalesce((SELECT pid::text FROM pg_stat_activity WHERE state='idle in transaction' AND application_name='reject_reserve_holder'),'');") if False else B.sql("SELECT coalesce((SELECT pid::text FROM pg_stat_activity WHERE state='idle in transaction' AND application_name='reject_reserve_holder'),'NONE');").strip()
+        if pid!='NONE':break
+        time.sleep(.03)
+    if pid=='NONE':
+        ho,he=B.T.finish(holder,'ROLLBACK;')
+        raise AssertionError(('RESERVE_HOLDER_FAILED',ho,he))
     waiter=B.T.session(reject_sql(order));evidence=reject_wait(pid)
     ho,he=B.T.finish(holder,"COMMIT;");wo,we=B.T.finish(waiter)
     assert not he,he
