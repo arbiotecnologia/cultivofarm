@@ -1,5 +1,7 @@
 # Auditoria PB-001042 — espelho r12, sem produção
 
+**Atualização aditiva 23:20:** ver `FOLLOWUP-20261111-2320.md` e `followup-manifest.json`; confirmações de pins pelo auditor, painel conectado, revogação determinística e pagamento persistido. Pendências antigas abaixo são históricas; nenhuma política material foi decidida nem instalação autorizada.
+
 ## Resultado e prontidão
 
 **Diagnóstico econômico:** delta local testado. `economicDiagnosis` distingue aprovação comercial/crédito explícita vigente e pendência operacional/contábil. Não altera `eligible`, códigos de `reasons`, IDs antigos, `approved_*`, previsão, estoque ou portas. Não retorna autor/hash/ID da previsão. Usa a autorização do leitor canônico do piloto; gate off, concessão revogada/expirada e aprovador revogado não são tratados como aprovação vigente. Indisponível não significa inexistência histórica.

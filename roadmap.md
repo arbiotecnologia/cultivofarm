@@ -1,8 +1,9 @@
 ## 11/11 23:20 — Continuação local independente de política comercial
-- [ ] Conectar diagnóstico no painel temporário; testar dois eixos, indisponibilidade e revogação sem chamadas remotas.
-- [ ] Provar revogação ator/empresa durante lock em conexões separadas; reexecução/rollback/controle.
-- [ ] Persistir pagamento parcial real antes de cancelamento em outra transação e concorrência.
-- [ ] Caracterizar preparo: autorização efetiva versus retorno/financeiro pendentes; evidências e limites sem automação.
+- [x] Conectar diagnóstico no painel temporário; testes 00/10/01/11, indisponibilidade/revogação e somente dois leitores, sem chamadas remotas.
+- [x] Revogação ator/empresa: holder/waiter+lock comprovados, negação pós-espera/reexecução e rollback/controle; attempt-015.
+- [x] Pagamento real R$1 persistido, cancelamento posterior negado, replay/novo pagamento concorrente R$2; financeiro sem estorno automático.
+- [x] Preparo distingue falta de protocolo, mas aceita autorização efetiva close-pending sem título próprio; 26 PASS, limites documentados em FOLLOWUP-20261111-2320.md.
+- [ ] Decisão externa: política cancelamento comercial/reconciliação/estorno/reposição; nenhum novo efeito autorizado. Primeiro callback da própria NF após pagamento não homologado (apenas replay dessa NF e callback novo de outra NF do mesmo pedido).
 - [x] Pins dos dois PRE confirmados em produção conforme relato do auditor; nenhuma consulta remota pelo agente.
 
 ## 11/11 22:50 — Semântica econômica C2 e auditoria de cancelamentos (somente local)
