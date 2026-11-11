@@ -1,0 +1,157 @@
+CREATE OR REPLACE FUNCTION public.fn_fiscal_invoice_eligibility(_source_type text, _source_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+DECLARE
+  reasons jsonb := '[]'::jsonb;
+  po public.partner_orders%ROWTYPE;
+  ent public.entregas%ROWTYPE;
+  st text;
+  v_order_id uuid;
+  v_debtor uuid;
+  n_items int := 0; n_quote int := 0; n_no_snapshot int := 0;
+  canceled boolean := false;
+  allowed text[];
+BEGIN
+  PERFORM public.h15_require_staff();
+
+  IF _source_type IS NULL OR _source_id IS NULL THEN
+    RETURN jsonb_build_object('eligible', false, 'reasons',
+      jsonb_build_array(jsonb_build_object('code','FISCAL_SOURCE_MISSING','severity','BLOCK',
+        'message','Origem fiscal (pedido/entrega) obrigatoria.')));
+  END IF;
+
+  IF _source_type = 'PARTNER_ORDER' THEN
+    SELECT * INTO po FROM public.partner_orders WHERE id = _source_id;
+    IF NOT FOUND THEN
+      reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_NOT_FOUND','severity','BLOCK','message','Pedido inexistente.');
+    ELSE
+      v_order_id := po.id;
+      st := po.status::text;
+      allowed := public.fn_fiscal_billing_allowed_order_status();
+
+      IF st = 'cancelado' THEN
+        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_CANCELED','severity','BLOCK','message','Pedido cancelado; emissao bloqueada.');
+      ELSIF st IN ('reprovado','reprovado_sem_itens') THEN
+        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_REJECTED','severity','BLOCK','message','Pedido reprovado; emissao bloqueada.');
+      ELSIF st = 'aguardando_cotacao' THEN
+        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_QUOTE_PENDING','severity','BLOCK','message','Pedido aguardando cotacao; emissao bloqueada.');
+      ELSIF st = 'faturado' THEN
+        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_ALREADY_INVOICED','severity','BLOCK','message','Pedido ja faturado.');
+      ELSIF NOT (st = ANY (allowed)) THEN
+        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_STATUS_NOT_BILLABLE','severity','BLOCK',
+          'message','Status do pedido nao habilitado para faturamento: '||st);
+      END IF;
+
+      -- Aprovacao comercial obrigatoria.
+      IF po.approved_at IS NULL OR po.approved_by IS NULL THEN
+        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING','severity','BLOCK',
+          'message','Pedido sem aprovacao comercial registrada.');
+      END IF;
+
+      -- Aprovacao financeira quando exigida.
+      IF coalesce(po.requires_financial_approval,false)
+         AND coalesce(po.financial_approval_status,'pending') <> 'approved' THEN
+        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_FINANCIAL_APPROVAL_MISSING','severity','BLOCK',
+          'message','Pedido exige aprovacao financeira e ela nao foi concedida.');
+      END IF;
+
+      -- Condicao de pagamento aceita/definida.
+      IF coalesce(po.payment_condition_status,'') NOT IN ('defined','accepted','aceita') THEN
+        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_PAYMENT_CONDITION_NOT_ACCEPTED','severity','BLOCK',
+          'message','Condicao de pagamento nao aceita/definida.');
+      END IF;
+
+      -- Devedor correto: parceiro B2B, nunca o produtor final vinculado.
+      IF po.partner_id IS NULL THEN
+        reasons := reasons || jsonb_build_object('code','FISCAL_DEBTOR_UNRESOLVED','severity','BLOCK',
+          'message','Parceiro devedor do pedido nao identificado.');
+      ELSE
+        v_debtor := po.partner_id;
+      END IF;
+
+      -- Snapshot de preco/condicao e ausencia de itens sob consulta.
+      SELECT count(*),
+             count(*) FILTER (WHERE coalesce(pricing_mode_snapshot,'') = 'quote_only'),
+             count(*) FILTER (WHERE preco_unitario_final_snapshot IS NULL
+                                 OR price_source_snapshot IS NULL)
+        INTO n_items, n_quote, n_no_snapshot
+        FROM public.partner_order_items WHERE order_id = _source_id;
+
+      IF n_items = 0 THEN
+        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_NO_ITEMS','severity','BLOCK','message','Pedido sem itens.');
+      END IF;
+      IF n_quote > 0 THEN
+        reasons := reasons || jsonb_build_object('code','FISCAL_QUOTE_ONLY_BLOCKED','severity','BLOCK',
+          'message','Pedido possui itens sob consulta (quote_only); emissao bloqueada sem efeito colateral.');
+      END IF;
+      IF n_no_snapshot > 0 THEN
+        reasons := reasons || jsonb_build_object('code','FISCAL_PRICE_SNAPSHOT_MISSING','severity','BLOCK',
+          'message','Itens sem snapshot de preco/condicao comercial.');
+      END IF;
+    END IF;
+
+  ELSIF _source_type = 'ENTREGA' THEN
+    SELECT * INTO ent FROM public.entregas WHERE id = _source_id;
+    IF NOT FOUND THEN
+      reasons := reasons || jsonb_build_object('code','FISCAL_DELIVERY_NOT_FOUND','severity','BLOCK','message','Entrega inexistente.');
+    ELSE
+      IF ent.cancelada_em IS NOT NULL OR coalesce(ent.status::text,'') = 'cancelada'
+         OR coalesce(ent.financial_status,'') = 'CANCELED' THEN
+        reasons := reasons || jsonb_build_object('code','FISCAL_DELIVERY_CANCELED','severity','BLOCK','message','Entrega cancelada.');
+      END IF;
+      IF NOT (coalesce(ent.status::text,'') = ANY (public.fn_fiscal_billing_allowed_delivery_status())) THEN
+        reasons := reasons || jsonb_build_object('code','FISCAL_DELIVERY_NOT_COMPLETED','severity','BLOCK',
+          'message','Entrega nao concluida/aceita. Status atual: '||coalesce(ent.status::text,'-'));
+      END IF;
+      IF ent.recebimento_confirmado_em IS NULL AND ent.confirmada_em IS NULL AND ent.entregue_em IS NULL THEN
+        reasons := reasons || jsonb_build_object('code','FISCAL_DELIVERY_RECEIPT_MISSING','severity','BLOCK',
+          'message','Entrega sem aceite/recebimento registrado.');
+      END IF;
+      IF ent.partner_order_id IS NULL THEN
+        reasons := reasons || jsonb_build_object('code','FISCAL_DELIVERY_ORDER_LINK_MISSING','severity','BLOCK',
+          'message','Entrega sem vinculo inequivoco a pedido B2B.');
+      ELSE
+        v_order_id := ent.partner_order_id;
+        SELECT partner_id, status::text INTO v_debtor, st FROM public.partner_orders WHERE id = ent.partner_order_id;
+        IF v_debtor IS NULL THEN
+          reasons := reasons || jsonb_build_object('code','FISCAL_DEBTOR_UNRESOLVED','severity','BLOCK',
+            'message','Parceiro devedor da entrega nao identificado.');
+        END IF;
+        IF st IS NULL OR NOT (st = ANY (public.fn_fiscal_billing_allowed_order_status())) THEN
+          reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_STATUS_NOT_BILLABLE','severity','BLOCK',
+            'message','Pedido vinculado a entrega nao esta habilitado para faturamento: '||coalesce(st,'-'));
+        END IF;
+      END IF;
+    END IF;
+
+  ELSE
+    reasons := reasons || jsonb_build_object('code','FISCAL_SOURCE_TYPE_UNSUPPORTED','severity','BLOCK',
+      'message','Escopo fiscal nao suportado nesta fase: '||_source_type);
+  END IF;
+
+  -- Duplicidade fiscal: documento vivo para a mesma origem.
+  IF EXISTS (SELECT 1 FROM (SELECT * FROM public.fiscal_invoices WHERE public.h15_company_access(company_settings_id)) fi
+             WHERE fi.source_type = _source_type AND fi.source_id = _source_id
+               AND fi.document_model = 'NFE'
+               AND fi.status NOT IN ('CANCELED','REJECTED')
+               AND fi.access_key IS NOT NULL) THEN
+    reasons := reasons || jsonb_build_object('code','FISCAL_DUPLICATE_DOCUMENT','severity','BLOCK',
+      'message','Ja existe documento fiscal vigente para esta origem.');
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1 FROM (SELECT * FROM public.fiscal_invoices WHERE public.h15_company_access(company_settings_id)) fi
+    WHERE fi.source_type = _source_type AND fi.source_id = _source_id
+      AND fi.document_model = 'NFE' AND fi.status = 'CANCELED') INTO canceled;
+
+  RETURN jsonb_build_object(
+    'eligible', jsonb_array_length(reasons) = 0,
+    'reasons', reasons,
+    'sourceType', _source_type,
+    'orderId', v_order_id,
+    'debtorPartnerId', v_debtor,
+    'has_canceled_history', canceled);
+END $function$
