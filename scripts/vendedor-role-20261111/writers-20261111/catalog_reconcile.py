@@ -11,6 +11,7 @@ READER=('platform_private.b2b_partner_catalog_reader(uuid)','bd985484b69c8fa6e63
 PRICE=('platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)','61e545e6138485ba995f989d2011590a')
 SELLER_SIG='platform_private.catalog_tenant_seller(uuid)'
 SELLER_FN=re.search(r"CREATE FUNCTION platform_private\.catalog_tenant_seller.*?\$f\$;",(ROOT/'tenant-exclusive-catalog-20261101/homolog-clean/01-migrate.homolog-clean.sql.review').read_text(),re.S).group(0)
+PRICE_FN=(ROOT/'b2b-cart-catalog-fence-20261106/captured/platform_private.b2b_partner_catalog_item_price.61e545e6.live-20261106.sql').read_text()
 AE=[('WHERE p.ativo = true AND p.b2b_enabled = true AND','WHERE p.ativo = true AND p.b2b_enabled = true AND p.owner_organization_id = platform_private.catalog_tenant_seller(p_partner_id) AND',1),
     ('WHERE m.ativo = true AND m.b2b_enabled = true AND','WHERE m.ativo = true AND m.b2b_enabled = true AND m.owner_organization_id = platform_private.catalog_tenant_seller(p_partner_id) AND',1)]
 A2="  IF v_uid IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;\n"
@@ -33,14 +34,17 @@ def reconcile(db):
     m=db.md5(SIG)
     if m==PROD_MD5: return dict(already=True)
     assert m==MIRROR_MD5,('CATALOG_BASE_UNKNOWN',m)
-    for s,h in (READER,PRICE): assert db.md5(s)==h,('DEP_DRIFT',s)
+    assert db.md5(READER[0])==READER[1],('DEP_DRIFT',READER[0])
+    if db.last(f"SELECT to_regprocedure('{PRICE[0]}') IS NULL")=='t':
+        db.sql(PRICE_FN);db.sql(f"REVOKE ALL ON FUNCTION {PRICE[0]} FROM PUBLIC, anon, authenticated, service_role;")
+    assert db.md5(PRICE[0])==PRICE[1],('DEP_DRIFT',PRICE[0])
     if db.last(f"SELECT to_regprocedure('{SELLER_SIG}') IS NULL")=='t':
         db.sql(SELLER_FN);db.sql(f"REVOKE ALL ON FUNCTION {SELLER_SIG} FROM PUBLIC, anon, authenticated, service_role;")
     apply(db,db.body(SIG),AE);assert db.md5(SIG)==AE_MD5
     apply(db,db.body(SIG),V2);assert db.md5(SIG)==PROD_MD5
     acl1=db.last(f"SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='{SIG}'::regprocedure")
     assert acl0==acl1
-    return dict(already=False,chain=[MIRROR_MD5,AE_MD5,PROD_MD5],seller_fn_md5=db.md5(SELLER_SIG),acl=acl1)
+    return dict(already=False,chain=[MIRROR_MD5,AE_MD5,PROD_MD5],seller_fn_md5=db.md5(SELLER_SIG),item_price_md5=db.md5(PRICE[0]),reader_md5=db.md5(READER[0]),acl=acl1)
 def acl_set_sql(sig):
     "Conjunto canônico ordenado de (grantor,grantee,privilégio,grant_option) + owner; PUBLIC=grantee 0."
     return (f"(SELECT coalesce(string_agg(format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable),',' ORDER BY 1),'')"
