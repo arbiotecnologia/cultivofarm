@@ -8,3 +8,4 @@ Gerado por `generate.py` (medido no espelho); testado por `test_admin_gate_pg.py
 - Travas: perfis (ordem por user_id) → papéis → parceiro. Desativação concorrente espera ou vence e a revalidação nega. Papel conflitante inserido em paralelo não é travável por linha: `seller_commercial_actor` continua negando no uso.
 - Revogar/listar/visão: só admin vigente; revogação não valida alvo.
 - Achado: o 02b já negava admin com acesso suspenso (has_role exige access_ready); a falha real era empresa inativa, parceiro inativo/excluído e vendedor com papéis combinados.
+- Reversão em cadeia: 04d antes de 04c; com 02d instalado o 04c recusa por drift (pin 53dca32d da visão) — sem sobrescrita silenciosa.
