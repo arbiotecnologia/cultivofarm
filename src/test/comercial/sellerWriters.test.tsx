@@ -64,6 +64,8 @@ describe("capability do vendedor v2", () => {
   });
   it("mensagens de carteira não vazam erro cru", () => {
     expect(portfolioErrorText("SELLER_PORTFOLIO_ALREADY_ASSIGNED")).toMatch(/já está na carteira/);
+    expect(portfolioErrorText("SELLER_PORTFOLIO_PARTNER_INVALID")).toMatch(/inativo ou excluído/);
+    expect(portfolioErrorText("SELLER_PORTFOLIO_SELLER_INVALID")).toMatch(/exclusivo/);
     expect(portfolioErrorText("boom")).toBe("Não foi possível concluir. Nada foi alterado.");
   });
 });
