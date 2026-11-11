@@ -47,3 +47,16 @@ Auth por claims SQL é sintética: não prova JWT/RLS/Storage.
 Mesmos resultados da attempt-001: comercial/crédito/recebível negados `C2_ACCOUNTING_PENDING`, elegibilidade fiscal inelegível, sync
 `B2B_FORECAST_FISCAL_SOURCE_UNPROVEN`, NF sintética autorizada fica DRAFT/close-pending, zero título/alocação, residual 20.
 Entrega: nenhuma OS/entrega existe para o PB (impressão digital inalterada); criação de entrega não foi tentada nesta rodada.
+
+## Negativa C2 v2 — attempt-006: 20 PASS, 0 FAIL (espelho isolado do dump r12, SHA-256 f595c0b9…)
+- `prep_restore.sh`: restauração pre-data → data → **S-AUTH** (10 usuários fictícios de profiles/user_roles em auth.users) → post-data,
+  tudo com `--exit-on-error` (zero erros); `profiles_user_id_fkey` e `user_roles_user_id_fkey` presentes e `convalidated=true`
+  (`evidence/attempt-006/prep/`). Substitui a restauração da attempt-002 (2 FKs não criadas).
+- `c2_negative_fiscal_final_v2.py`: os 16 checks originais + 4 de entrada logística (ponto real `rpc_b2b_resale_os_create_v1`, pré-requisito de toda entrega de revenda):
+  1. estado contido: endpoint sem EXECUTE para authenticated (`permission denied`);
+  2. **S-OS** (somente em transações revertidas, idênticas para PB e controle: GRANT do os_endpoint + gate + concessão `os_create` exata do piloto):
+     PB negado `PT409 B2B_RESALE_ORDER_CONFLICT` (status `em_analise_comercial` ≠ `aprovado`, CAS com updated_at atual), repetição idem;
+  3. controle positivo, mesmo ator 00…024: pedido aprovado sem OS 77b2c9a1… cria 1 OS dentro da transação (revertida, 0 persistida);
+  4. nova conexão: PB e global inalterados — residual 20, títulos/parcelas, OS, entregas, movimentos e saldo de estoque (`effects.json`); gate OFF e ACL restaurados.
+- Tentativas 003–005 preservadas (falhas do roteiro de teste/contenção do piloto antes de controle equivalente; ver NOTE.txt).
+- Defeito real: nenhum. Observação: o código de negativa é o conflito genérico do endpoint, não um código C2 específico.

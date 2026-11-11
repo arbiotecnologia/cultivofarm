@@ -1,0 +1,6 @@
+{
+ "scripts/vendedor-role-20261111/02a-install-enum.sql.review": "45c0ec6c6171fa853581ab2de675268e9ec21959d4371f13d6e94bf742e90f7c",
+ "scripts/vendedor-role-20261111/02b-install.sql.review": "b4cb46b9d9ee18bcfea24abdbd208e64b8e3c2c4c3a0eeb28bccd97d79820ff4",
+ "scripts/vendedor-role-20261111/writers-20261111/02c-install-writers.sql.review": "80550e8cb6ca6f3b9f892861c2c6528a5e45912699b63d3e9a80304b9d37b7f3",
+ "scripts/vendedor-role-20261111/writers-20261111/admin-gate-20261111/02d-install-admin-gate.sql.review": "fa19d3dc7ae1b9f8c896715e96a3f7f9050e2cf4eb65f961b688ef42dbdd445d"
+}
