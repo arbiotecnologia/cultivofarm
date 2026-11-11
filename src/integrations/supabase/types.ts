@@ -22585,6 +22585,10 @@ export type Database = {
           razao_social: string
         }[]
       }
+      get_b2b_seller_finance_order_review_v1: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
       get_b2b_technician_client_detail_secure: {
         Args: { p_cliente_id: string }
         Returns: {

@@ -1,0 +1,130 @@
+{
+  "base": "pg_get_functiondef no espelho composto (compose_current.py) restaurado; seis assinaturas conferem com MD5 do auditor",
+  "patched": {
+    "platform_private.c2_order_actor_scope(uuid,uuid)": {
+      "live": "54c4327d63f48e39f598129ff9dd8f09",
+      "candidate": "0e4ba648e32098180c15be974cb0a183",
+      "auditor_confirmed": false,
+      "acl": "{postgres=X/postgres}|postgres"
+    },
+    "platform_private.c2_owner_order_guard(uuid,uuid,uuid)": {
+      "live": "01d6cb10289af56ecfdbb38e43646e3a",
+      "candidate": "1cece91f0d4ac29d8a2f0d09363e3ee1",
+      "auditor_confirmed": false,
+      "acl": "{postgres=X/postgres}|postgres"
+    },
+    "platform_private.commercial_plan_partner_visible(uuid,uuid)": {
+      "live": "df00b1478d8214bc9a17d63d841b24c4",
+      "candidate": "029abbe0fa877743bddf08a10179f925",
+      "auditor_confirmed": false,
+      "acl": "{postgres=X/postgres}|postgres"
+    },
+    "public.rpc_b2b_list_selectable_payment_plans()": {
+      "live": "5bceeda188eee7525172eadeed17f7c0",
+      "candidate": "754a458a2a6f09f90faa0cffb6777cc0",
+      "auditor_confirmed": false,
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}|postgres"
+    },
+    "platform_private.c2_external_origin_assert(jsonb,uuid,uuid)": {
+      "live": "999e5e9fd9887595e252523fb2142726",
+      "candidate": "36930a875f8f3f073bbbc684a5b4a64c",
+      "auditor_confirmed": false,
+      "acl": "{postgres=X/postgres}|postgres"
+    },
+    "public.get_partner_catalog_secure(uuid)": {
+      "live": "b5684d350603d1db77ab9f1db0f4b253",
+      "candidate": "b5d8b3e96c6814ae868dc684cd1f3751",
+      "auditor_confirmed": false,
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}|postgres"
+    },
+    "platform_private.b2b_partner_catalog_reader(uuid)": {
+      "live": "bd985484b69c8fa6e63a920eff518369",
+      "candidate": "2988e5e919f9a692071c7bbfb42d7e1e",
+      "auditor_confirmed": false,
+      "acl": "{postgres=X/postgres}|postgres"
+    },
+    "platform_private.c2_partner_order_attempt_authz(uuid,uuid)": {
+      "live": "e15d9fccd42c67caf51b15122a61270d",
+      "candidate": "c0c428f4e3569df9c340fff6cc70ad17",
+      "auditor_confirmed": false,
+      "acl": "{postgres=X/postgres}|postgres"
+    },
+    "public.simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb)": {
+      "live": "06ea0933992a05a0d2a7fb78c6881bcf",
+      "candidate": "08e551efc52f2fe34e9aecbb9caf74b3",
+      "auditor_confirmed": false,
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}|postgres"
+    },
+    "public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": {
+      "live": "6e81e29397a9bd633f2fe6ec364d8cf3",
+      "candidate": "12b5ccccd70b3ba2b5acbe210b3774fb",
+      "auditor_confirmed": false,
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}|postgres"
+    },
+    "public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)": {
+      "live": "e86385fefb25c68d9dd4d0fef6619f27",
+      "candidate": "eb9f04a35fa719fe3df68a12d6aee20b",
+      "auditor_confirmed": true,
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}|postgres"
+    },
+    "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": {
+      "live": "fe82f5381d426136f2627803f3b0005d",
+      "candidate": "af9d3b1c442ab741370f543044f0182d",
+      "auditor_confirmed": true,
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}|postgres"
+    },
+    "platform_private.b2b_internal_order_snapshot_guard()": {
+      "live": "1c342be2cdaf7bf458a3cd1aa15e7ba5",
+      "candidate": "cac1843af110621fc30edb488fff2c6d",
+      "auditor_confirmed": false,
+      "acl": "{postgres=X/postgres}|postgres"
+    },
+    "platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)": {
+      "live": "6bbb61aa5899b18d13ac55d4f76f45e1",
+      "candidate": "03ff648ab3fbe7fb6d6cfb5410d5a36a",
+      "auditor_confirmed": false,
+      "acl": "{postgres=X/postgres}|postgres"
+    },
+    "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": {
+      "live": "97bcdb9884b54adb3bd4aae4915e32d0",
+      "candidate": "0d62c5761e36ae7848df98d0eb36f9d8",
+      "auditor_confirmed": true,
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}|postgres"
+    },
+    "public.c2_internal_order_entry_capability_v1()": {
+      "live": "e2619c71becfebf38c8d03562ff11ce2",
+      "candidate": "e1fdc878899be5d1880ad3c6cb316542",
+      "auditor_confirmed": true,
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}|postgres"
+    }
+  },
+  "new": {
+    "platform_private.seller_commercial_actor()": "c992f81c85c2ed9cc91d68cf0dcdfb7e",
+    "platform_private.seller_commercial_target_reason(uuid,uuid)": "a8334c62a2529f1b71b92a9dfe16ee50",
+    "platform_private.seller_portfolio_lock(uuid,uuid)": "996aae96c23e94742ace7395b8c2e0ad",
+    "public.seller_portfolio_capability_v1()": "21b1683d561f599bd3b349c2a4e6ecb9",
+    "public.seller_portfolio_orders_v1()": "7448e15784ff66e55b8eed1a06d0665b",
+    "public.admin_seller_portfolio_overview_v1()": "f5afeaca56abebd40309385112c1a611"
+  },
+  "new_acl": {
+    "platform_private.seller_commercial_actor()": "{postgres=X/postgres}",
+    "platform_private.seller_commercial_target_reason(uuid,uuid)": "{postgres=X/postgres}",
+    "platform_private.seller_portfolio_lock(uuid,uuid)": "{postgres=X/postgres}",
+    "public.seller_portfolio_capability_v1()": "{postgres=X/postgres,authenticated=X/postgres}",
+    "public.seller_portfolio_orders_v1()": "{postgres=X/postgres,authenticated=X/postgres}",
+    "public.admin_seller_portfolio_overview_v1()": "{postgres=X/postgres,authenticated=X/postgres}"
+  },
+  "seller_cap_02b": "1d55a8e4ba15dac634461867fa6b5c24",
+  "shared_helpers_unchanged": [
+    "platform_private.b2b_internal_commercial_actor()",
+    "platform_private.c2_internal_order_target_reason(uuid,uuid)",
+    "public.fn_cc_can_prepare(uuid)"
+  ],
+  "files": {
+    "01c-pre-writers.sql.readonly": "0049852019b5467c7a59b0b269d0bbd8ae9774533201705d26b2335171caf583",
+    "02c-install-writers.sql.review": "a0fe37f87930a87fd069550a799893dc67ec69e1b5d5695735589aba8d9852ff",
+    "03c-post-writers.sql.readonly": "372cd808bc7883e511858e91ab2b92be6b04ec81f69183b5381a92d5d95ae1dd",
+    "04c-rollback-writers.sql.review": "47c93b09597b6ddf3c704f2cb404b4eee3d305eea2e92f1adc2864f0de943439"
+  },
+  "helpers_sha256": "03de7e92200abd1e54e2d39427e0dbe6d58b1e318d8b6cbcfb245f04ad7fd79c"
+}

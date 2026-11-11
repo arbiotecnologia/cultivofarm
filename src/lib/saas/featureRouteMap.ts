@@ -17,6 +17,7 @@ const PREFIXOS: ReadonlyArray<readonly [string, string]> = [
   ["/base-tecnica", "catalogo_precos"],
   ["/comercial/condicoes-pagamento", "catalogo_precos"],
   ["/comercial/pedidos-b2b", "pedidos_b2b"],
+  ["/comercial/minha-carteira/pedido", "pedidos_b2b"],
   ["/comercial/minha-carteira", "pedidos_b2b"],
   ["/comercial/solicitacoes-b2b", "pedidos_b2b"],
   ["/comercial/simulador", "simulacoes"],

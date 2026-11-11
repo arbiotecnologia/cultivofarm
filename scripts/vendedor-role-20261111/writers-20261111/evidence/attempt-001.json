@@ -1,0 +1,550 @@
+{
+  "attempt": 1,
+  "pass_": 105,
+  "fail": 0,
+  "checks": [
+    {
+      "test": "restore sem erros além das FKs auth conhecidas",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base reconstituída = MD5 auditor public.c2_internal_order_entry_capability_v1()",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base reconstituída = MD5 auditor public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base reconstituída = MD5 auditor public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base reconstituída = MD5 auditor platform_private.b2b_internal_commercial_actor()",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base reconstituída = MD5 auditor platform_private.c2_internal_order_target_reason(uuid,uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base reconstituída = MD5 auditor public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "LIVE: vendedor sem delta não cria pedido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "PRE ref divergente falha fechada",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "PRE_PASS",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "admin atribui P a V1",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "admin atribui P2 a V2",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não atribui carteira",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "gestor comercial não atribui carteira",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "admin A não atribui vendedor de F",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "INSTALL transação única",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "POST_PASS",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "reinstalação recusada (PRE interno)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "admin vê vendedores e atribuições só da própria empresa",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "gestor comercial não lê visão de carteiras",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não lê visão de carteiras",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "capacidade V1: só P, order_create e quote_respond",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "capacidade V2: só P2",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "capacidade VB (outro tenant) sem parceiros",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor+gestor não é vendedor exclusivo",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "regressão: capacidade do gestor segue aberta (pin catálogo novo)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "capacidade interna do gestor não abre para vendedor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 lê catálogo de P",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 catálogo de parceiro não atribuído",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 catálogo de P2 (de V2)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "VB catálogo de P (outro tenant)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 lê embalagens de P",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 lista planos da carteira",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V2 vê P3 só via própria carteira (P2 atribuído)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "VB (outro tenant) sem planos de A",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 lê condições vigentes de P",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 lança pedido para P (positivo apto)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "pedido com origem interna server-side do vendedor, aguardando análise",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "sem NF, recebível, reserva, entrega ou envio",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "replay mesma chave devolve o mesmo pedido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "replay sem novas escritas",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não aprova pedido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "status preservado após tentativa de aprovação",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não aprova termos financeiros",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não rejeita termos financeiros",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 lê o pedido na carteira",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V2 não vê pedido de P",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 não lança para parceiro não atribuído",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 não lança para P2 (outro vendedor)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 não lança para parceiro de outro tenant",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "VB não lança para P",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não publica condição",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não lista planos administrativos",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não altera atribuição de condição",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "emitente não validado: fiscal_block issuer_not_validated e order_create false, quote_respond mantido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "emitente não validado: criação bloqueada B2B_INTERNAL_ISSUER_NOT_VALIDATED",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "fixture: admin publica condição Pix do plano sob consulta",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "fixture: admin atribui condição a P",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "comprador cria pedido sob consulta pela via normal",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 vê cotação pendente com itens",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V2 não responde cotação de P",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "VB não responde cotação de P",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "financeiro não responde cotação",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 responde cotação de P (transição aguardando_cotacao → análise/crédito)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "ticket do vendedor não persiste após a transação",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "segunda resposta: replay idempotente ou recusa explícita, sem duplicar termos",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não aprova o pedido respondido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "resposta de cotação sem NF/recebível/reserva/entrega/envio",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "revogação concorrente espera o writer (lock_timeout) e o pedido do writer conclui",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "writer após espera é negado pela revalidação (SELLER_PORTFOLIO_REVOKED)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "nenhum pedido criado pela tentativa negada",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vínculo revogado pelo administrador",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "após revogação: carteira vazia",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "após revogação: criação negada",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "após revogação: catálogo negado",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "histórico de atribuição preservado",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "reatribuição cria novo vínculo",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "perfil inativo: criação negada",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "perfil inativo: capacidade fechada",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "papel revogado: criação negada",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "regressão: gestor comercial lança para P",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "regressão: comprador externo lança próprio pedido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "regressão: técnico de parceiro segue negado",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "regressão: financeiro não vira vendedor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "ROLLBACK restaura corpos LIVE",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE platform_private.c2_order_actor_scope(uuid,uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE platform_private.c2_owner_order_guard(uuid,uuid,uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE platform_private.commercial_plan_partner_visible(uuid,uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE public.rpc_b2b_list_selectable_payment_plans()",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE platform_private.c2_external_origin_assert(jsonb,uuid,uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE public.get_partner_catalog_secure(uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE platform_private.b2b_partner_catalog_reader(uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE platform_private.c2_partner_order_attempt_authz(uuid,uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE public.simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE platform_private.b2b_internal_order_snapshot_guard()",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE public.c2_internal_order_entry_capability_v1()",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "após rollback: vendedor sem writers",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "após rollback: pedidos e atribuições preservados",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback repetido recusa drift",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "após rollback: gestor segue aberto",
+      "status": "PASS",
+      "detail": null
+    }
+  ],
+  "executed_sha256": {
+    "01c-pre-writers.sql.readonly": [
+      "0049852019b5467c7a59b0b269d0bbd8ae9774533201705d26b2335171caf583",
+      "0049852019b5467c7a59b0b269d0bbd8ae9774533201705d26b2335171caf583"
+    ],
+    "02c-install-writers.sql.review": [
+      "a0fe37f87930a87fd069550a799893dc67ec69e1b5d5695735589aba8d9852ff",
+      "a0fe37f87930a87fd069550a799893dc67ec69e1b5d5695735589aba8d9852ff"
+    ],
+    "03c-post-writers.sql.readonly": [
+      "372cd808bc7883e511858e91ab2b92be6b04ec81f69183b5381a92d5d95ae1dd"
+    ],
+    "04c-rollback-writers.sql.review": [
+      "47c93b09597b6ddf3c704f2cb404b4eee3d305eea2e92f1adc2864f0de943439",
+      "47c93b09597b6ddf3c704f2cb404b4eee3d305eea2e92f1adc2864f0de943439"
+    ]
+  },
+  "note": "PostgreSQL descartável restaurado do espelho composto; Auth sintética; não prova JWT/RLS/Storage hospedados"
+}
