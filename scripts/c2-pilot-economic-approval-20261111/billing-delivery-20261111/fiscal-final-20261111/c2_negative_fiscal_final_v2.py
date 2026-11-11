@@ -87,7 +87,7 @@ def effects(o):
      'entregas',(SELECT count(*) FROM public.entregas WHERE partner_order_id='{o}'),
      'all_os',(SELECT count(*) FROM public.ordens_servico),'all_entregas',(SELECT count(*) FROM public.entregas),
      'stock_moves',(SELECT count(*) FROM public.estoque_movimentacoes),
-     'stock_sum',(SELECT coalesce(sum(quantidade_disponivel),0)::text||'/'||coalesce(sum(quantidade_reservada),0)::text FROM public.estoque_produto),
+     'stock_sum',(SELECT coalesce(sum(quantidade),0)::text||'/'||coalesce(sum(quantidade_reservada),0)::text FROM public.estoque_produto),
      'all_titles',(SELECT count(*) FROM public.accounts_receivable),'all_installments',(SELECT count(*) FROM public.accounts_receivable_installments))::text"""))
 def os_call(uid,o,it,exp,key):
     return d.raw("\\set VERBOSITY verbose\n"+m.claims(uid)+f"SELECT public.rpc_b2b_resale_os_create_v1('{o}','{it}','{exp}'::timestamptz,'{key}');")
