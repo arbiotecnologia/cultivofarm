@@ -97,10 +97,10 @@ BEGIN
  IF sched IS NULL OR sched IS DISTINCT FROM qrows OR (SELECT sum((x->>'amount')::numeric) FROM jsonb_array_elements(qrows)x)<>q.financed_total
     OR EXISTS(SELECT 1 FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=po.id AND s.receivable_installment_id IS NOT NULL) THEN
   RAISE EXCEPTION 'C2_PILOT_ECON_EVIDENCE_INCOMPLETE:schedule' USING ERRCODE='42501';END IF;
- SELECT jsonb_agg(jsonb_build_object('id',i.id,'item_id',i.item_id,'packaging_id',i.packaging_id,'quantidade',i.quantidade,'preco_unitario',i.preco_unitario,'subtotal',i.subtotal) ORDER BY i.id),
+ SELECT jsonb_agg(jsonb_build_object('id',i.id,'product_id',i.product_id,'packaging_id',i.packaging_id_snapshot,'quantidade',i.quantidade,'preco_unitario',i.preco_unitario,'subtotal',i.subtotal) ORDER BY i.id),
         sum(i.subtotal) INTO items,isum FROM public.partner_order_items i WHERE i.order_id=po.id;
  IF items IS NULL OR isum IS DISTINCT FROM q.principal
-    OR EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=po.id AND (i.preco_unitario IS NULL OR i.preco_unitario<=0 OR i.quantidade IS NULL OR i.quantidade<=0
+    OR EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=po.id AND (i.packaging_id_snapshot IS NULL OR i.preco_unitario IS NULL OR i.preco_unitario<=0 OR i.quantidade IS NULL OR i.quantidade<=0
        OR i.quantidade<>trunc(i.quantidade) OR i.subtotal IS DISTINCT FROM round(i.quantidade*i.preco_unitario,2))) THEN
   RAISE EXCEPTION 'C2_PILOT_ECON_EVIDENCE_INCOMPLETE:items' USING ERRCODE='42501';END IF;
  ev:=jsonb_build_object('contract','C2_PILOT_ECONOMIC_EVIDENCE_V1','order_id',po.id,'organization_id',org,'partner_id',po.partner_id,
