@@ -1,9 +1,12 @@
 # Entregas parciais 1+1 pelas rotinas efetivas (exec pelo runner).
 def mv(stock): return cnt(f"SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id='{stock}'")
 def stock_row(s): return json.loads(d.last(f"SELECT to_jsonb(e)::text FROM public.estoque_produto e WHERE id='{s}'"))
+GARGS={}
 def group(stock,q,k):
-    grant('b2b_resale','delivery_create',X.P,PO,IT['id'],PROD,stock)
-    oo=d.last(f"SELECT updated_at FROM public.ordens_servico WHERE id='{OS}'");os_=d.last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{stock}'")
+    if k in GARGS: oo,os_=GARGS[k]
+    else:
+        grant('b2b_resale','delivery_create',X.P,PO,IT['id'],PROD,stock)
+        oo=d.last(f"SELECT updated_at FROM public.ordens_servico WHERE id='{OS}'");os_=d.last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{stock}'");GARGS[k]=(oo,os_)
     return m.call(X.UADM,f"public.rpc_cockpit_criar_entrega_v1('{OS}','b2b','{js([{'item_id':stock,'quantidade':q,'observed_updated_at':os_}])}'::jsonb,'{k}','{{}}'::jsonb,'{oo}'::timestamptz)")
 def grants_for(stock,dl):
     for op in ('send','proof','confirm','cancel'): grant('b2b_resale',op,X.P,PO,IT['id'],PROD,stock,dl)
@@ -32,6 +35,7 @@ for i in (1,2):
         procs=[subprocess.Popen(d.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True) for _ in range(2)]
         for p_ in procs: p_.stdin.write(m.claims(X.UADM)+confirm_sql(dl,kc,o)+";\n");p_.stdin.close()
         outs=[(p_.stdout.read(),p_.stderr.read()) for p_ in procs]
+        (att/'concurrent-confirm.txt').write_text(json.dumps(outs,indent=1))
         succ=[json.loads(o_.strip().splitlines()[-1]) for o_,e_ in outs if not e_.strip() or 'ERROR' not in e_]
         ok(SCN_P,'entrega 2: confirmação concorrente em 2 conexões ⇒ uma saída de estoque; perdedora replay/erro explícito',len(succ)>=1 and mv(src)>=0,outs)
         c=succ[0] if succ else None
