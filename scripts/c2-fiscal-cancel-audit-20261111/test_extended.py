@@ -8,7 +8,7 @@ d=db.DB('c2');m=X.Mirror.__new__(X.Mirror);m.d=d;X.A=X.u(1)
 m.claims=lambda uid:f"SET ROLE authenticated;SET request.jwt.claim.sub='{uid}';SET request.jwt.claims='{json.dumps({'sub':uid,'role':'authenticated','iat':1,'exp':4102444800})}';"
 E=H/'evidence';out=E/f"attempt-{max(int(p.name[-3:]) for p in E.glob('attempt-*'))+1:03d}";out.mkdir();rows=[];calls=[]
 def run(uid,q,service=False,pre='',post=''):
- r=d.raw('\\set VERBOSITY verbose\n'+pre+m.claims(uid).replace('SET ROLE authenticated','SET ROLE service_role' if service else 'SET ROLE authenticated')+q+post);calls.append(dict(actor=uid,sql=pre+q+post,exit=r.returncode,out=r.stdout,err=r.stderr));return r
+ r=d.raw('\\set VERBOSITY verbose\n'+m.claims(uid).replace('SET ROLE authenticated','SET ROLE service_role' if service else 'SET ROLE authenticated')+pre+q+post);calls.append(dict(actor=uid,sql=pre+q+post,exit=r.returncode,out=r.stdout,err=r.stderr));return r
 def val(r):
  a=[l for l in r.stdout.splitlines() if l.startswith('{')];return json.loads(a[-1]) if a else None
 def ok(n,c,detail=None):rows.append(dict(test=n,status='PASS' if c else 'FAIL',detail=detail));print(rows[-1]['status'],n,flush=True)
@@ -50,7 +50,7 @@ class Q:
  UADM=X.UADM;A=X.A;u=staticmethod(X.u)
 item=d.last(f"SELECT id FROM public.partner_order_items WHERE order_id='{O}' LIMIT 1");partner=d.last(f"SELECT partner_id FROM public.partner_orders WHERE id='{O}'");company=d.last(f"SELECT company_settings_id FROM public.fiscal_invoices WHERE id='{INV}'")
 # Existing first NF allocated one package of two; second synthetic document uses the real remaining quantity.
-nf=S.insert_invoice(B,Q,O,partner,company,item,10,4501,'2027-02-02')
+nf=dict(invoice=X.u(4501),xml_run=X.u(4502),tx=X.u(4503),access_key=S._key(4501)) if d.last(f"SELECT count(*) FROM public.fiscal_invoices WHERE id='{X.u(4501)}'")=='1' else S.insert_invoice(B,Q,O,partner,company,item,10,4501,'2027-02-02')
 auth=S.authorize(B,nf,nf['tx'],'LOCAL-SECOND-NF','2027-02-02T12:00:00Z');ok('NF2 entrada sintética autorização pelo callback real',auth.returncode==0 and val(auth).get('reconciliationPending') is False,dict(err=auth.stderr,out=auth.stdout))
 def prepare2(key):return f"SELECT public.rpc_fiscal_event_sefaz_prepare_v1('{nf['invoice']}','CANCELLATION','LOCAL CONCURRENT CANCEL REASON','{key}','{X.UFIN}');"
 with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:res=list(pool.map(lambda k:run(X.UFIN,prepare2('distinct-'+k),True),[uuid.uuid4().hex,uuid.uuid4().hex]))
