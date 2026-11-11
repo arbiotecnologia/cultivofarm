@@ -1,5 +1,6 @@
 import { validatePlan, planFinancialErrors } from "@/lib/comercial/validation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { readCivilDateInput } from "@/lib/civil-date-input";
 import {
   useAdminCommercialPlans,
   useCreateCommercialPlan,
@@ -104,6 +105,8 @@ export default function CommercialPaymentPlansPage() {
   const saving = create.isPending || version.isPending || metadata.isPending;
 
   const [open, setOpen] = useState(false);
+  const planValidFromRef = useRef<HTMLInputElement>(null);
+  const planValidUntilRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<Mode>("create");
   const [current, setCurrent] = useState<AdminCommercialPlanRow | null>(null);
   const [form, setForm] = useState<PaymentPlanPayload>(empty);
