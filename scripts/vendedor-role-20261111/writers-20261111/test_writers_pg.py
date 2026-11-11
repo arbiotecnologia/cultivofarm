@@ -135,36 +135,55 @@ try:
     s,_=sim(V1,P);jr,_=attempt(V1,P)
     r=act(V1,f"SELECT public.create_partner_order_condition_secure('{P}',NULL,'{js(ITEMS)}'::jsonb,NULL,'{P3}','{s['cart_hash']}','{jr['key']}','{js(CH)}'::jsonb)::text; ROLLBACK;",pre_draft)
     ok('emitente não validado: criação bloqueada B2B_INTERNAL_ISSUER_NOT_VALIDATED',r.returncode!=0 and 'B2B_INTERNAL_ISSUER_NOT_VALIDATED' in r.stderr,r.stderr[-300:])
-    # Cotação: comprador externo cria pedido sob consulta; vendedor responde
+    # Cotação: fixture pela via administrativa normal (publicar/atribuir condição sob consulta). Costura declarada:
+    # plano legado global 'Sob consulta TESTE' adotado pela empresa A só neste banco descartável.
+    d.sql(f"SET session_replication_role=replica; UPDATE public.commercial_payment_plans SET organization_id='{A}' WHERE id='{PLQ}'; SET session_replication_role=origin;")
+    pq,e=call(UADM,f"public.b2b_payment_condition_publish('{PLQ}','pix','{u(91)}','{u(97)}',5,1,0::numeric,0)");ok('fixture: admin publica condição Pix do plano sob consulta',pq is not None,e)
+    aq,e=call(UADM,f"public.b2b_payment_condition_assign('{P}','{PLQ}','pix',1,true)");ok('fixture: admin atribui condição a P',aq is not None,e)
+    QCH={"payment_method":"pix","payment_condition_version":1,"payment_deadline_days":5}
     q0=counts()
-    sq,e=call(UB,f"public.simulate_b2b_payment_plan_secure('{P}','{PLQ}','{js(ITEMS)}'::jsonb)")
-    jrq,e2=attempt(UB,P)
-    cq,e3=call(UB,f"public.create_partner_order_secure('{P}',NULL,'{js(ITEMS)}'::jsonb,NULL,'{PLQ}',NULL,NULL,'{(sq or {}).get('cart_hash')}','{(jrq or {}).get('key')}')") if sq and jrq else (None,e or e2)
-    ok('comprador cria pedido sob consulta',cq is not None and d.last(f"select status from public.partner_orders where id='{cq['id']}'")=='aguardando_cotacao',cq or e3)
+    sq,e=sim(UB,P,PLQ,QCH);jrq,e2=attempt(UB,P)
+    cq,e3=create(UB,P,sq['cart_hash'],jrq['key'],PLQ,QCH) if sq and jrq else (None,e or e2)
+    ok('comprador cria pedido sob consulta pela via normal',cq is not None and d.last(f"select status from public.partner_orders where id='{cq['id']}'")=='aguardando_cotacao',cq or e3)
     if cq:
         qid=cq['id']
         ords,e=call(V1,"public.seller_portfolio_orders_v1()");qo=[x for x in (ords or {}).get('orders',[]) if x['id']==qid]
         ok('V1 vê cotação pendente com itens',qo and qo[0]['items'],ords or e)
-        lines=[{"item_id":it['id'],"preco_unitario":10} for it in (qo[0]['items'] if qo else [])]
-        deny('V2 não responde cotação de P',call(V2,f"public.respond_b2b_order_quote_secure('{qid}','{js(lines)}'::jsonb,NULL,NULL,NULL)"),'')
-        deny('VB não responde cotação de P',call(VB,f"public.respond_b2b_order_quote_secure('{qid}','{js(lines)}'::jsonb,NULL,NULL,NULL)"),'')
-        rr,e=call(V1,f"public.respond_b2b_order_quote_secure('{qid}','{js(lines)}'::jsonb,NULL,NULL,NULL)")
-        if rr is None and 'quote' in (e or '') and 'line' in (e or ''): pass
-        ok('V1 responde cotação de P',rr is not None and d.last(f"select status from public.partner_orders where id='{qid}'")!='aguardando_cotacao',rr or e)
-        rr2,e=call(V1,f"public.respond_b2b_order_quote_secure('{qid}','{js(lines)}'::jsonb,NULL,NULL,NULL)")
-        ok('segunda resposta não duplica (replay ou recusa explícita)',(rr2 is not None and rr2.get('order_id',rr2.get('id'))==(rr or {}).get('order_id',(rr or {}).get('id'))) or (rr2 is None and e),rr2 or e)
+        lines=[{"item_id":it['id'],"unit_price":90} for it in (qo[0]['items'] if qo else [])]
+        rq=lambda uid: call(uid,f"public.respond_b2b_order_quote_secure('{qid}','{js(lines)}'::jsonb,NULL,NULL,NULL)")
+        deny('V2 não responde cotação de P',rq(V2),'b2b_phase1_scope_denied')
+        deny('VB não responde cotação de P',rq(VB),'')
+        deny('financeiro não responde cotação',rq(UFIN),'')
+        rr,e=rq(V1)
+        st=d.last(f"select status||'|'||coalesce(payment_condition_status,'') from public.partner_orders where id='{qid}'")
+        ok('V1 responde cotação de P (transição aguardando_cotacao → análise/crédito)',rr is not None and st.split('|')[0] in ('em_analise_comercial','aguardando_aprovacao_credito') and st.split('|')[1]=='defined',(rr or e,st))
+        rr2,e=rq(V1)
+        ok('segunda resposta: replay idempotente ou recusa explícita, sem duplicar termos',d.last(f"select count(*) from public.partner_order_payment_terms where partner_order_id='{qid}'")=='1',(rr2,e))
+        deny('vendedor não aprova o pedido respondido',call(V1,f"public.approve_partner_order('{qid}',NULL)"),'')
         q1=counts();ok('resposta de cotação sem NF/recebível/reserva/entrega/envio',all(q1[k]==q0[k] for k in q0),(q0,q1))
-    # Revalidação transacional: lock do vínculo serializa revogação
-    hold=d.root
+        # Cotação de P2 não pode ser respondida por V1
+    # Revalidação transacional (1): writer em curso segura o vínculo; revogação espera.
     import subprocess
-    p1=subprocess.Popen(d.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
-    p1.stdin.write(f"BEGIN; SET ROLE authenticated; SET request.jwt.claim.sub='{V1}'; SET request.jwt.claims='{{\"sub\":\"{V1}\",\"role\":\"authenticated\",\"iat\":1}}'; SELECT platform_private.seller_portfolio_lock('{V1}','{P}'); SELECT pg_sleep(4); COMMIT;\n");p1.stdin.close()
-    time.sleep(1.2)
+    def session(uid,body):
+        p=subprocess.Popen(d.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        p.stdin.write(f"SET ROLE authenticated; SET request.jwt.claim.sub='{uid}'; SET request.jwt.claims='{{\"sub\":\"{uid}\",\"role\":\"authenticated\",\"iat\":1}}';"+body+"\n");p.stdin.close();return p
+    s1,_=sim(V1,P);j1,_=attempt(V1,P)
+    p1=session(V1,f"BEGIN; SELECT public.create_partner_order_condition_secure('{P}',NULL,'{js(ITEMS)}'::jsonb,NULL,'{P3}','{s1['cart_hash']}','{j1['key']}','{js(CH)}'::jsonb)::text; SELECT pg_sleep(4); COMMIT;")
+    time.sleep(1.5)
     r=act(UADM,f"SET lock_timeout='800ms'; SELECT public.admin_revoke_seller_portfolio_v1('{a1}','revogacao concorrente');")
-    p1.wait(timeout=20)
-    ok('revogação espera o vínculo travado pelo writer (lock_timeout)',r.returncode!=0 and 'lock timeout' in r.stderr,r.stderr[-200:])
+    o1,e1=p1.communicate(timeout=30)
+    ok('revogação concorrente espera o writer (lock_timeout) e o pedido do writer conclui',r.returncode!=0 and 'lock timeout' in r.stderr and p1.returncode==0 and '"id"' in o1,(r.stderr[-200:],o1[-200:],e1[-300:]))
+    # (2): revogação em curso; writer espera e é negado após a espera.
+    s2,_=sim(V1,P);j2,_=attempt(V1,P)
+    p2=subprocess.Popen(d.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    p2.stdin.write(f"BEGIN; SET LOCAL ROLE authenticated; SET LOCAL request.jwt.claim.sub='{UADM}'; SET LOCAL request.jwt.claims='{{\"sub\":\"{UADM}\",\"role\":\"authenticated\",\"iat\":1}}'; SELECT public.admin_revoke_seller_portfolio_v1('{a1}','revogacao antes do writer'); RESET ROLE; SELECT pg_sleep(3); COMMIT;\n");p2.stdin.close()
+    time.sleep(1.2)
+    w=create(V1,P,s2['cart_hash'],j2['key'])
+    p2.communicate(timeout=30)
+    ok('writer após espera é negado pela revalidação (SELLER_PORTFOLIO_REVOKED)',w[0] is None and 'SELLER_PORTFOLIO_REVOKED' in (w[1] or ''),w)
+    ok('nenhum pedido criado pela tentativa negada',d.last(f"select count(*) from public.partner_order_idempotency where idempotency_key='{j2['key']}'")=='0')
     # Revogação efetiva
-    r,e=call(UADM,f"public.admin_revoke_seller_portfolio_v1('{a1}','fim da carteira')");ok('admin revoga P de V1',e is None,e)
+    ok('vínculo revogado pelo administrador',d.last(f"select revoked_at is not null from platform_private.seller_portfolio_assignments where id='{a1}'")=='t')
     c,e=call(V1,"public.seller_portfolio_capability_v1()");ok('após revogação: carteira vazia',c and c['partners']==[] and c['order_create'] is False and c['reason']=='no_partner_in_scope',c or e)
     deny('após revogação: criação negada',full_create(V1,P),'C2_SELLER_TARGET_DENIED:not_assigned')
     deny('após revogação: catálogo negado',call(V1,f"public.get_partner_catalog_secure('{P}')"),'forbidden_partner')
@@ -188,7 +207,7 @@ try:
     for sig,v in json.loads((H/'manifest.json').read_text())['patched'].items():
         ok('rollback md5 LIVE '+sig,d.md5(sig)==v['live'],d.md5(sig))
     deny('após rollback: vendedor sem writers',full_create(V1,P),'')
-    ok('após rollback: pedidos e atribuições preservados',d.last(f"select count(*) from public.partner_orders where created_by='{V1}'")=='1' and d.last("select count(*) from platform_private.seller_portfolio_assignments")=='3')
+    ok('após rollback: pedidos e atribuições preservados',d.last(f"select count(*) from public.partner_orders where created_by='{V1}'")=='2' and d.last("select count(*) from platform_private.seller_portfolio_assignments")=='3')
     r=run_file('04c-rollback-writers.sql.review');ok('rollback repetido recusa drift',r.returncode!=0 and 'VENDW_RB_DRIFT' in r.stderr,r.stderr[-200:])
     c,e=call(UGC,"public.c2_internal_order_entry_capability_v1()");ok('após rollback: gestor segue aberto',c and c['order_create'] is True,c or e)
 finally:

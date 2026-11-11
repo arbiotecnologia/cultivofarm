@@ -95,7 +95,7 @@ BEGIN
     SELECT jsonb_agg(jsonb_build_object('id',o.id,'numero',o.numero,'partner_id',o.partner_id,'razao_social',p.razao_social,
       'status',o.status,'total',o.total,'created_at',o.created_at,'created_by_me',o.created_by=uid,
       'items',CASE WHEN o.status='aguardando_cotacao' THEN COALESCE((SELECT jsonb_agg(jsonb_build_object('id',i.id,'quantidade',i.quantidade,
-          'item_id',i.item_id,'item_tipo',i.item_tipo,'unidade_medida',i.unidade_medida) ORDER BY i.id)
+          'product_id',i.product_id,'microrganismo_id',i.microrganismo_id,'produto_nome_snapshot',i.produto_nome_snapshot,'unidade_medida',i.unidade_medida,'volume_ml',i.volume_ml) ORDER BY i.id)
         FROM public.partner_order_items i WHERE i.order_id=o.id),'[]'::jsonb) ELSE '[]'::jsonb END)
       ORDER BY o.created_at DESC, o.id)
     FROM public.partner_orders o JOIN public.partner_accounts p ON p.id=o.partner_id
