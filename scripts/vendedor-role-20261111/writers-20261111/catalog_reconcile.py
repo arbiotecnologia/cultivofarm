@@ -12,6 +12,14 @@ PRICE=('platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,nume
 SELLER_SIG='platform_private.catalog_tenant_seller(uuid)'
 SELLER_FN=re.search(r"CREATE FUNCTION platform_private\.catalog_tenant_seller.*?\$f\$;",(ROOT/'tenant-exclusive-catalog-20261101/homolog-clean/01-migrate.homolog-clean.sql.review').read_text(),re.S).group(0)
 PRICE_FN=(ROOT/'b2b-cart-catalog-fence-20261106/captured/platform_private.b2b_partner_catalog_item_price.61e545e6.live-20261106.sql').read_text()
+CAP_DIR=ROOT/'b2b-cart-catalog-fence-20261106/captured'
+CAPTURED_6B56=(CAP_DIR/'public.get_partner_catalog_secure.6b56cfb1.live-20261106.sql').read_text()
+# Camada de preço cercada de PRODUÇÃO (capturas LIVE 20261106), exigida pelo item-price 61e545e6. (sig, md5, arquivo, privado)
+PRICE_LAYER=[
+ ('platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)','8484e025','platform_private.fn_b2b_resolve_base_unit_price__tenant_core.8484e025.live-20261106.sql',True),
+ ('platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)','7b7f90dd','platform_private.fn_catalogo_preco_canonico__tenant_core.7b7f90dd.live-20261106.sql',True),
+ ('public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)','87418209','public.fn_b2b_resolve_base_unit_price.87418209.live-20261106.sql',False),
+ ('public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)','b201e49e','public.fn_catalogo_preco_canonico.b201e49e.live-20261106.sql',False)]
 AE=[('WHERE p.ativo = true AND p.b2b_enabled = true AND','WHERE p.ativo = true AND p.b2b_enabled = true AND p.owner_organization_id = platform_private.catalog_tenant_seller(p_partner_id) AND',1),
     ('WHERE m.ativo = true AND m.b2b_enabled = true AND','WHERE m.ativo = true AND m.b2b_enabled = true AND m.owner_organization_id = platform_private.catalog_tenant_seller(p_partner_id) AND',1)]
 A2="  IF v_uid IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;\n"
@@ -35,6 +43,15 @@ def reconcile(db):
     if m==PROD_MD5: return dict(already=True)
     assert m==MIRROR_MD5,('CATALOG_BASE_UNKNOWN',m)
     assert db.md5(READER[0])==READER[1],('DEP_DRIFT',READER[0])
+    layer={}
+    for s,h,f,priv in PRICE_LAYER:
+        acl_before=acl_set(db,s) if db.last(f"SELECT to_regprocedure('{s}') IS NOT NULL")=='t' else None
+        if acl_before is None or not db.md5(s).startswith(h):
+            db.sql((CAP_DIR/f).read_text())
+            if priv: db.sql(f"REVOKE ALL ON FUNCTION {s} FROM PUBLIC, anon, authenticated, service_role;")
+        assert db.md5(s).startswith(h),('PRICE_LAYER',s,db.md5(s))
+        if acl_before is not None: assert acl_set(db,s)==acl_before,('WRAPPER_ACL_CHANGED',s)
+        layer[s]=dict(md5=db.md5(s),acl=acl_set(db,s))
     if db.last(f"SELECT to_regprocedure('{PRICE[0]}') IS NULL")=='t':
         db.sql(PRICE_FN);db.sql(f"REVOKE ALL ON FUNCTION {PRICE[0]} FROM PUBLIC, anon, authenticated, service_role;")
     assert db.md5(PRICE[0])==PRICE[1],('DEP_DRIFT',PRICE[0])
@@ -42,9 +59,10 @@ def reconcile(db):
         db.sql(SELLER_FN);db.sql(f"REVOKE ALL ON FUNCTION {SELLER_SIG} FROM PUBLIC, anon, authenticated, service_role;")
     apply(db,db.body(SIG),AE);assert db.md5(SIG)==AE_MD5
     apply(db,db.body(SIG),V2);assert db.md5(SIG)==PROD_MD5
+    assert db.body(SIG).rstrip('\n')==CAPTURED_6B56.rstrip('\n'),'CAPTURE_MISMATCH'
     acl1=db.last(f"SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='{SIG}'::regprocedure")
     assert acl0==acl1
-    return dict(already=False,chain=[MIRROR_MD5,AE_MD5,PROD_MD5],seller_fn_md5=db.md5(SELLER_SIG),item_price_md5=db.md5(PRICE[0]),reader_md5=db.md5(READER[0]),acl=acl1)
+    return dict(already=False,chain=[MIRROR_MD5,AE_MD5,PROD_MD5],seller_fn_md5=db.md5(SELLER_SIG),item_price_md5=db.md5(PRICE[0]),price_layer=layer,byte_identical_to_capture='scripts/b2b-cart-catalog-fence-20261106/captured/public.get_partner_catalog_secure.6b56cfb1.live-20261106.sql',reader_md5=db.md5(READER[0]),acl=acl1)
 ITEM="format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable)"
 def acl_set_sql(sig):
     "Conjunto canônico (ordenado lexicograficamente) de (grantor>grantee:privilégio:grant_option) + owner; ACL NULL expande acldefault; PUBLIC explícito."
