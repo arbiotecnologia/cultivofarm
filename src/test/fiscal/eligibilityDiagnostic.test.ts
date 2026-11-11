@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-const rpc = vi.fn();
-const from = vi.fn();
-const functions = { invoke: vi.fn() };
+const { rpc, from, functions } = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn(), functions: { invoke: vi.fn() } }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc, from, functions } }));
 import { runEligibilityDiagnostic, isPreviewHost, isDiagnosticOpen, summarize } from "@/lib/fiscal/eligibilityDiagnostic";
 
