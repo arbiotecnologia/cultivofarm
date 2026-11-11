@@ -1,0 +1,5 @@
+- Local preparation only; no hosted SQL, deployment, publication, fiscal, collections or external communication — keeps the owner's execution boundary.
+- Generate the single-function delta from the md5-pinned LIVE reject capture; final PRE/INSTALL/POST/deny-only rollback pin owner and sorted full ACL items without grants — avoids permission drift and vulnerable rollback.
+- The new external path is limited to the captured seller UUID, canonical active internal Financeiro and exact order/creator/partner tenant lineage; other external sellers gain no access — prevents global widening.
+- Lock shared stock gate before order before linked terms, revalidate authority and observed linkage/revision after waits, and reject only pending terms before commercial approval and any historical reservation; never mutate the frozen header or dispatch notifications — prevents reversal and duplicate audit.
+- Tests run the exact final bytes in the current disposable composition with all 38 captured triggers enabled; actor/schema/Storage seams are synthetic, never JWT or hosted proof.
