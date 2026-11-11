@@ -1,0 +1,8 @@
+{
+  "customer_id": "00000000-0000-0000-0000-000000000301",
+  "partner_id": "00000000-0000-0000-0000-000000000011",
+  "organization_id": "007bb519-cba0-4704-be2c-cb93ad010048",
+  "synthetic": true,
+  "hosted": false,
+  "reason": "B4 requires partner_accounts.client_id; same fixture seam as strict battery"
+}
