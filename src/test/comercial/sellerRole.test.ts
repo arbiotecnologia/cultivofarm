@@ -13,12 +13,12 @@ describe("perfil Vendedor", () => {
     "/comercial/pedidos-b2b", "/comercial/solicitacoes-b2b", "/comercial/condicoes-pagamento",
     "/comercial/simulador", "/financeiro", "/financeiro/receber", "/estoque", "/fiscal", "/configuracoes",
   ])("não acessa %s", (path) => {
-    expect(canAccess(["vendedor"] as any, path)).toBe(false);
+    expect(canAccess("vendedor", path)).toBe(false);
   });
   it("acessa só a própria carteira; gestor comercial não herda", () => {
-    expect(canAccess(["vendedor"] as any, "/comercial/minha-carteira")).toBe(true);
-    expect(canAccess(["gestor_comercial"] as any, "/comercial/minha-carteira")).toBe(false);
-    expect(canAccess(["gestor_comercial"] as any, "/comercial/pedidos-b2b")).toBe(true);
+    expect(canAccess("vendedor", "/comercial/minha-carteira")).toBe(true);
+    expect(canAccess("gestor_comercial", "/comercial/minha-carteira")).toBe(false);
+    expect(canAccess("gestor_comercial", "/comercial/pedidos-b2b")).toBe(true);
   });
   it("carteira exige o plano de pedidos B2B", () => {
     expect(isPathEntitled("/comercial/minha-carteira", { status: "ready", features: new Set() } as any)).toBe(false);

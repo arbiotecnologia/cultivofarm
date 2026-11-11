@@ -38,10 +38,13 @@ export function parseSellerCapability(data: unknown): SellerPortfolioCapability 
 }
 
 export function useSellerPortfolio(enabled = true) {
-  const { user, authzEpoch } = useAuth() as any;
+  const { user, profile, roles, authzReady, authzEpoch } = useAuth() as any;
+  const org = profile?.organization_id ?? null;
+  const roleKey = [...(roles ?? [])].sort().join(",");
   return useQuery({
-    queryKey: ["seller-portfolio-capability", user?.id ?? null, authzEpoch ?? 0],
-    enabled: enabled && !!user?.id,
+    // Chave por identidade/empresa/papéis/época: revogação ou troca nunca reaproveita resposta antiga.
+    queryKey: ["seller-portfolio-capability", user?.id ?? null, org, roleKey, authzEpoch ?? 0],
+    enabled: enabled && !!user?.id && !!org && authzReady === true && profile?.ativo !== false,
     retry: false,
     staleTime: 15_000,
     queryFn: async (): Promise<SellerPortfolioCapability> => {
