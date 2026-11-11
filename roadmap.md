@@ -1,3 +1,10 @@
+## 11/11 23:20 — Continuação local independente de política comercial
+- [ ] Conectar diagnóstico no painel temporário; testar dois eixos, indisponibilidade e revogação sem chamadas remotas.
+- [ ] Provar revogação ator/empresa durante lock em conexões separadas; reexecução/rollback/controle.
+- [ ] Persistir pagamento parcial real antes de cancelamento em outra transação e concorrência.
+- [ ] Caracterizar preparo: autorização efetiva versus retorno/financeiro pendentes; evidências e limites sem automação.
+- [x] Pins dos dois PRE confirmados em produção conforme relato do auditor; nenhuma consulta remota pelo agente.
+
 ## 11/11 22:50 — Semântica econômica C2 e auditoria de cancelamentos (somente local)
 - [x] Consumidores auditados; delta diagnóstico local distingue econômica vigente de operacional sem mudar eligible/reasons/approved_*; painel runtime não alterado.
 - [x] r12 reconstituído; restauração limpa com duas FKs validadas e pin 70dba08838cd4d5eea29f37f5f8a3373; positivo histórico preservado.
