@@ -83,7 +83,7 @@ def run(B,Review,Q,A,choice,out):
         checks.append(dict(test='dispensed new order keeps not_required',status='BLOCKED',detail=u.stderr[-400:]));print('REVIEW_BLOCKED dispensed',flush=True)
     else:
         try: pd=pending()
-        finally: B.sql(f"UPDATE public.commercial_payment_plans SET requires_financial_approval={flag} WHERE id='{Q.P3}';")
+        finally: B.sql(f"UPDATE public.commercial_payment_plans SET requires_financial_approval='{flag}'::boolean WHERE id='{Q.P3}';")
         r,v=read(pd);w=reject(pd)
         ok('dispensed new order: terms not_required, new-order path, writer denied, no audit',v and v['terms']['approval_status']=='not_required' and v['reject_block_reason']=='terms_not_required' and v['terms_review_path']=='new_order_with_financial_approval_plan' and w.returncode!=0 and audits(pd)==0,dict(v=v,w=w.stderr[-200:]))
     # (4) Existing reservation blocks rejection (order reserved earlier by the composed flow through rpc_estoque_reservar_v1).
