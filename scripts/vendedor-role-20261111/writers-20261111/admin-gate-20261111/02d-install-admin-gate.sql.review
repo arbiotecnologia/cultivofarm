@@ -1,0 +1,134 @@
+-- REVISÃO: aplicar só pelo auditor após VENDA_PRE_PASS. Transação única; recusa reexecução.
+BEGIN;
+SET LOCAL lock_timeout='3s';
+DO $pre$ BEGIN
+ IF current_setting('app.expected_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'VENDA_PRE_REF_UNPROVEN'; END IF;
+ IF md5(pg_get_functiondef('public.admin_assign_seller_portfolio_v1(uuid,uuid,text)'::regprocedure)) IS DISTINCT FROM 'ba9f3f32d92f027642a40e78d38c09e9' THEN RAISE EXCEPTION 'VENDA_PRE_DRIFT:public.admin_assign_seller_portfolio_v1(uuid,uuid,text)'; END IF;
+ IF ((SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='public.admin_assign_seller_portfolio_v1(uuid,uuid,text)'::regprocedure)) IS DISTINCT FROM 'postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDA_PRE_ACL_DRIFT:public.admin_assign_seller_portfolio_v1(uuid,uuid,text)'; END IF;
+ IF md5(pg_get_functiondef('public.admin_revoke_seller_portfolio_v1(uuid,text)'::regprocedure)) IS DISTINCT FROM '95a65f60521d4346ba377d1918f5dd48' THEN RAISE EXCEPTION 'VENDA_PRE_DRIFT:public.admin_revoke_seller_portfolio_v1(uuid,text)'; END IF;
+ IF ((SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='public.admin_revoke_seller_portfolio_v1(uuid,text)'::regprocedure)) IS DISTINCT FROM 'postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDA_PRE_ACL_DRIFT:public.admin_revoke_seller_portfolio_v1(uuid,text)'; END IF;
+ IF md5(pg_get_functiondef('public.admin_list_seller_portfolio_v1()'::regprocedure)) IS DISTINCT FROM '907f4d1eb2d5909587d082b7ad9bb900' THEN RAISE EXCEPTION 'VENDA_PRE_DRIFT:public.admin_list_seller_portfolio_v1()'; END IF;
+ IF ((SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='public.admin_list_seller_portfolio_v1()'::regprocedure)) IS DISTINCT FROM 'postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDA_PRE_ACL_DRIFT:public.admin_list_seller_portfolio_v1()'; END IF;
+ IF md5(pg_get_functiondef('public.admin_seller_portfolio_overview_v1()'::regprocedure)) IS DISTINCT FROM '53dca32d7f12458c194cf852e47ad92f' THEN RAISE EXCEPTION 'VENDA_PRE_DRIFT:public.admin_seller_portfolio_overview_v1()'; END IF;
+ IF ((SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='public.admin_seller_portfolio_overview_v1()'::regprocedure)) IS DISTINCT FROM 'postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDA_PRE_ACL_DRIFT:public.admin_seller_portfolio_overview_v1()'; END IF;
+ IF to_regprocedure('platform_private.seller_admin_actor_org()') IS NOT NULL THEN RAISE EXCEPTION 'VENDA_PRE_ALREADY_PRESENT:platform_private.seller_admin_actor_org()'; END IF;
+ IF to_regprocedure('platform_private.seller_assignee_eligible(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'VENDA_PRE_ALREADY_PRESENT:platform_private.seller_assignee_eligible(uuid,uuid)'; END IF;
+END $pre$;
+-- Ator administrativo vigente: sessão interna pronta (h15: perfil ativo, empresa ativa, acesso não suspenso/sem rotação pendente),
+-- papel administrador real da MESMA empresa, sem papel/vínculo externo. Nunca claims/GUC.
+CREATE FUNCTION platform_private.seller_admin_actor_org() RETURNS uuid
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $f$
+  SELECT o FROM (SELECT public.h15_actor_organization() AS o) h
+   WHERE h.o IS NOT NULL AND auth.uid() IS NOT NULL
+     AND platform_private.platform_actor_access_ready(auth.uid())
+     AND platform_private.seller_actor_org('administrador'::public.app_role) IS NOT DISTINCT FROM h.o
+     AND NOT EXISTS (SELECT 1 FROM public.partner_users pu WHERE pu.user_id=auth.uid() AND pu.revoked_at IS NULL)
+$f$;
+REVOKE ALL ON FUNCTION platform_private.seller_admin_actor_org() FROM PUBLIC, anon, authenticated;
+
+-- Vendedor elegível para RECEBER carteira: perfil ativo da empresa, papel vendedor exclusivo (mesmo conjunto negado por
+-- seller_commercial_actor), sem vínculo externo vigente. Revogação não usa este predicado.
+CREATE FUNCTION platform_private.seller_assignee_eligible(_seller uuid, _org uuid) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $f$
+  SELECT _seller IS NOT NULL AND _org IS NOT NULL
+    AND EXISTS (SELECT 1 FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE
+                 WHERE p.user_id=_seller AND p.organization_id=_org AND p.ativo IS TRUE)
+    AND EXISTS (SELECT 1 FROM public.user_roles r WHERE r.user_id=_seller AND r.role='vendedor'::public.app_role)
+    AND NOT EXISTS (SELECT 1 FROM public.user_roles r WHERE r.user_id=_seller
+          AND r.role::text IN ('administrador','gestor_comercial','financeiro','parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor','superadmin'))
+    AND NOT EXISTS (SELECT 1 FROM public.partner_users pu WHERE pu.user_id=_seller AND pu.revoked_at IS NULL)
+$f$;
+REVOKE ALL ON FUNCTION platform_private.seller_assignee_eligible(uuid,uuid) FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION public.admin_assign_seller_portfolio_v1(p_seller uuid, p_partner uuid, p_reason text)
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $f$
+DECLARE v_org uuid := platform_private.seller_admin_actor_org(); v_id uuid;
+BEGIN
+  IF v_org IS NULL THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF nullif(btrim(coalesce(p_reason,'')),'') IS NULL THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_REASON_REQUIRED' USING ERRCODE='22023'; END IF;
+  -- Ordem fixa de travas: perfis (por user_id) → papéis do vendedor → parceiro. Desativação concorrente espera este commit
+  -- ou vence antes; em ambos os casos a revalidação abaixo (novo snapshot após a espera) decide.
+  PERFORM 1 FROM public.profiles WHERE user_id IN (auth.uid(), p_seller) ORDER BY user_id FOR SHARE;
+  PERFORM 1 FROM public.user_roles WHERE user_id IN (auth.uid(), p_seller) ORDER BY user_id, role FOR SHARE;
+  PERFORM 1 FROM public.partner_accounts WHERE id=p_partner AND commercial_owner_organization_id=v_org FOR SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF platform_private.seller_admin_actor_org() IS DISTINCT FROM v_org THEN
+    RAISE EXCEPTION 'SELLER_PORTFOLIO_FORBIDDEN' USING ERRCODE='42501';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.partner_accounts WHERE id=p_partner AND commercial_owner_organization_id=v_org
+                   AND ativo IS TRUE AND deleted_at IS NULL) THEN
+    RAISE EXCEPTION 'SELLER_PORTFOLIO_PARTNER_INVALID' USING ERRCODE='22023';
+  END IF;
+  IF platform_private.seller_assignee_eligible(p_seller, v_org) IS NOT TRUE THEN
+    RAISE EXCEPTION 'SELLER_PORTFOLIO_SELLER_INVALID' USING ERRCODE='22023';
+  END IF;
+  IF EXISTS (SELECT 1 FROM platform_private.seller_portfolio_assignments
+              WHERE organization_id=v_org AND partner_id=p_partner AND revoked_at IS NULL) THEN
+    RAISE EXCEPTION 'SELLER_PORTFOLIO_ALREADY_ASSIGNED' USING ERRCODE='P0409';
+  END IF;
+  INSERT INTO platform_private.seller_portfolio_assignments(organization_id,seller_user_id,partner_id,assigned_by,reason)
+  VALUES (v_org,p_seller,p_partner,auth.uid(),btrim(p_reason)) RETURNING id INTO v_id;
+  INSERT INTO platform_private.seller_portfolio_audit(assignment_id,action,actor,snapshot)
+  SELECT v_id,'assign',auth.uid(),to_jsonb(a) FROM platform_private.seller_portfolio_assignments a WHERE a.id=v_id;
+  RETURN v_id;
+END $f$;
+
+-- Revogação: exige administrador vigente, mas NÃO valida o alvo — atribuições antigas de vendedor/parceiro desativado continuam revogáveis.
+CREATE OR REPLACE FUNCTION public.admin_revoke_seller_portfolio_v1(p_assignment uuid, p_reason text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $f$
+DECLARE v_org uuid := platform_private.seller_admin_actor_org();
+BEGIN
+  IF v_org IS NULL THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF nullif(btrim(coalesce(p_reason,'')),'') IS NULL THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_REASON_REQUIRED' USING ERRCODE='22023'; END IF;
+  PERFORM 1 FROM public.profiles WHERE user_id=auth.uid() FOR SHARE;
+  IF platform_private.seller_admin_actor_org() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  UPDATE platform_private.seller_portfolio_assignments
+     SET revoked_at=now(), revoked_by=auth.uid(), revoke_reason=btrim(p_reason)
+   WHERE id=p_assignment AND organization_id=v_org AND revoked_at IS NULL;
+  IF NOT FOUND THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  INSERT INTO platform_private.seller_portfolio_audit(assignment_id,action,actor,snapshot)
+  SELECT p_assignment,'revoke',auth.uid(),to_jsonb(a) FROM platform_private.seller_portfolio_assignments a WHERE a.id=p_assignment;
+END $f$;
+
+CREATE OR REPLACE FUNCTION public.admin_list_seller_portfolio_v1()
+RETURNS TABLE(id uuid, seller_user_id uuid, partner_id uuid, assigned_at timestamptz, reason text, revoked_at timestamptz)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $f$
+DECLARE v_org uuid := platform_private.seller_admin_actor_org();
+BEGIN
+  IF v_org IS NULL THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  RETURN QUERY SELECT a.id,a.seller_user_id,a.partner_id,a.assigned_at,a.reason,a.revoked_at
+    FROM platform_private.seller_portfolio_assignments a WHERE a.organization_id=v_org ORDER BY a.assigned_at DESC;
+END $f$;
+
+-- Visão: só vendedores elegíveis e parceiros ativos como opções; atribuições antigas (inclusive de alvo inválido) seguem listadas para revogação.
+CREATE OR REPLACE FUNCTION public.admin_seller_portfolio_overview_v1()
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $f$
+DECLARE v_org uuid := platform_private.seller_admin_actor_org();
+BEGIN
+  IF v_org IS NULL THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  RETURN jsonb_build_object('contract','admin_seller_portfolio_overview_v1','organization_id',v_org,
+    'sellers',COALESCE((SELECT jsonb_agg(jsonb_build_object('user_id',pr.user_id,'nome',pr.nome) ORDER BY pr.nome, pr.user_id)
+      FROM public.profiles pr WHERE pr.organization_id=v_org AND platform_private.seller_assignee_eligible(pr.user_id, v_org)),'[]'::jsonb),
+    'partners',COALESCE((SELECT jsonb_agg(jsonb_build_object('partner_id',p.id,'razao_social',p.razao_social) ORDER BY p.razao_social, p.id)
+      FROM public.partner_accounts p WHERE p.commercial_owner_organization_id=v_org AND p.ativo IS TRUE AND p.deleted_at IS NULL),'[]'::jsonb),
+    'assignments',COALESCE((SELECT jsonb_agg(jsonb_build_object('id',a.id,'seller_user_id',a.seller_user_id,'partner_id',a.partner_id,
+        'assigned_at',a.assigned_at,'reason',a.reason,'revoked_at',a.revoked_at,'revoke_reason',a.revoke_reason,
+        'seller_active',platform_private.seller_assignee_eligible(a.seller_user_id, v_org),
+        'partner_active',EXISTS(SELECT 1 FROM public.partner_accounts pp WHERE pp.id=a.partner_id AND pp.ativo IS TRUE AND pp.deleted_at IS NULL)) ORDER BY a.assigned_at DESC, a.id)
+      FROM platform_private.seller_portfolio_assignments a WHERE a.organization_id=v_org),'[]'::jsonb));
+END $f$;
+DO $post$ BEGIN
+ IF md5(pg_get_functiondef('public.admin_assign_seller_portfolio_v1(uuid,uuid,text)'::regprocedure)) IS DISTINCT FROM '0801c96ab15e001f58a68cc925fd3d34' THEN RAISE EXCEPTION 'VENDA_POST_DRIFT:public.admin_assign_seller_portfolio_v1(uuid,uuid,text)'; END IF;
+ IF ((SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='public.admin_assign_seller_portfolio_v1(uuid,uuid,text)'::regprocedure)) IS DISTINCT FROM 'postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDA_POST_ACL_DRIFT:public.admin_assign_seller_portfolio_v1(uuid,uuid,text)'; END IF;
+ IF md5(pg_get_functiondef('public.admin_revoke_seller_portfolio_v1(uuid,text)'::regprocedure)) IS DISTINCT FROM '19b3c497d55f89a60cac6c14ac5c1131' THEN RAISE EXCEPTION 'VENDA_POST_DRIFT:public.admin_revoke_seller_portfolio_v1(uuid,text)'; END IF;
+ IF ((SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='public.admin_revoke_seller_portfolio_v1(uuid,text)'::regprocedure)) IS DISTINCT FROM 'postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDA_POST_ACL_DRIFT:public.admin_revoke_seller_portfolio_v1(uuid,text)'; END IF;
+ IF md5(pg_get_functiondef('public.admin_list_seller_portfolio_v1()'::regprocedure)) IS DISTINCT FROM '6600f59aa60b3afa65f3dd742c5e7e34' THEN RAISE EXCEPTION 'VENDA_POST_DRIFT:public.admin_list_seller_portfolio_v1()'; END IF;
+ IF ((SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='public.admin_list_seller_portfolio_v1()'::regprocedure)) IS DISTINCT FROM 'postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDA_POST_ACL_DRIFT:public.admin_list_seller_portfolio_v1()'; END IF;
+ IF md5(pg_get_functiondef('public.admin_seller_portfolio_overview_v1()'::regprocedure)) IS DISTINCT FROM '38586b590f99ade2f7f6df26474d3bd6' THEN RAISE EXCEPTION 'VENDA_POST_DRIFT:public.admin_seller_portfolio_overview_v1()'; END IF;
+ IF ((SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='public.admin_seller_portfolio_overview_v1()'::regprocedure)) IS DISTINCT FROM 'postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDA_POST_ACL_DRIFT:public.admin_seller_portfolio_overview_v1()'; END IF;
+ IF md5(pg_get_functiondef('platform_private.seller_admin_actor_org()'::regprocedure)) IS DISTINCT FROM '5e689ed6892b9c72f48b6c931d875062' THEN RAISE EXCEPTION 'VENDA_POST_DRIFT:platform_private.seller_admin_actor_org()'; END IF;
+ IF ((SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='platform_private.seller_admin_actor_org()'::regprocedure)) IS DISTINCT FROM 'postgres>postgres:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDA_POST_ACL_DRIFT:platform_private.seller_admin_actor_org()'; END IF;
+ IF md5(pg_get_functiondef('platform_private.seller_assignee_eligible(uuid,uuid)'::regprocedure)) IS DISTINCT FROM 'f97bdf93d60ec49ace5d9dda59fd4b0d' THEN RAISE EXCEPTION 'VENDA_POST_DRIFT:platform_private.seller_assignee_eligible(uuid,uuid)'; END IF;
+ IF ((SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='platform_private.seller_assignee_eligible(uuid,uuid)'::regprocedure)) IS DISTINCT FROM 'postgres>postgres:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'VENDA_POST_ACL_DRIFT:platform_private.seller_assignee_eligible(uuid,uuid)'; END IF;
+END $post$;
+COMMIT;

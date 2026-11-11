@@ -1,0 +1,54 @@
+{
+ "base": "02b+02c instalados no espelho composto (catálogo 6b56cfb1, ACL de produção)",
+ "live": {
+  "public.admin_assign_seller_portfolio_v1(uuid,uuid,text)": {
+   "md5": "ba9f3f32d92f027642a40e78d38c09e9",
+   "acl": "postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f|postgres"
+  },
+  "public.admin_revoke_seller_portfolio_v1(uuid,text)": {
+   "md5": "95a65f60521d4346ba377d1918f5dd48",
+   "acl": "postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f|postgres"
+  },
+  "public.admin_list_seller_portfolio_v1()": {
+   "md5": "907f4d1eb2d5909587d082b7ad9bb900",
+   "acl": "postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f|postgres"
+  },
+  "public.admin_seller_portfolio_overview_v1()": {
+   "md5": "53dca32d7f12458c194cf852e47ad92f",
+   "acl": "postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f|postgres"
+  }
+ },
+ "candidate": {
+  "public.admin_assign_seller_portfolio_v1(uuid,uuid,text)": {
+   "md5": "0801c96ab15e001f58a68cc925fd3d34",
+   "acl": "postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f|postgres"
+  },
+  "public.admin_revoke_seller_portfolio_v1(uuid,text)": {
+   "md5": "19b3c497d55f89a60cac6c14ac5c1131",
+   "acl": "postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f|postgres"
+  },
+  "public.admin_list_seller_portfolio_v1()": {
+   "md5": "6600f59aa60b3afa65f3dd742c5e7e34",
+   "acl": "postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f|postgres"
+  },
+  "public.admin_seller_portfolio_overview_v1()": {
+   "md5": "38586b590f99ade2f7f6df26474d3bd6",
+   "acl": "postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f|postgres"
+  },
+  "platform_private.seller_admin_actor_org()": {
+   "md5": "5e689ed6892b9c72f48b6c931d875062",
+   "acl": "postgres>postgres:EXECUTE:f|postgres"
+  },
+  "platform_private.seller_assignee_eligible(uuid,uuid)": {
+   "md5": "f97bdf93d60ec49ace5d9dda59fd4b0d",
+   "acl": "postgres>postgres:EXECUTE:f|postgres"
+  }
+ },
+ "candidate_sql_sha256": "ad2da69bfc84c3647da87a1b0aa6abd80224218dbc6ce39f72f21e9da602b90d",
+ "files": {
+  "01d-pre-admin-gate.sql.readonly": "5bcb8c023e62a0306f1f81f8bf9d5294cda4a18bae5f0c6ed5cc1d3e0576c00e",
+  "02d-install-admin-gate.sql.review": "fa19d3dc7ae1b9f8c896715e96a3f7f9050e2cf4eb65f961b688ef42dbdd445d",
+  "03d-post-admin-gate.sql.readonly": "03b22157607da34d21ab0d8939aa7e2805d5d98cb134073f753416935df747f3",
+  "04d-rollback-admin-gate.sql.review": "84cb5ca1b6346673ef93440a7f267e4bc320ceaa3fc68f56846c47803e31172f"
+ }
+}
