@@ -1,7 +1,7 @@
 {
   "attempt": 1,
-  "pass_": 155,
-  "fail": 2,
+  "pass_": 156,
+  "fail": 1,
   "checks": [
     {
       "test": "restore sem erros além das FKs auth conhecidas",
@@ -464,9 +464,9 @@
       "detail": null
     },
     {
-      "test": "outro vendedor não reaproveita o recibo de Q1 [42501 C2_SELLER_TARGET_DENIED:not_assigned]",
-      "status": "FAIL",
-      "detail": "{'result': (None, 'ERROR:  42501: SELLER_QUOTE_STATE_DENIED'), 'sqlstate': '42501', 'effects_changed': False}"
+      "test": "outro vendedor não reaproveita o recibo de Q1 [42501 SELLER_QUOTE_STATE_DENIED]",
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "vendedor não aprova o pedido respondido [42501 b2b_phase1_scope_denied]",
