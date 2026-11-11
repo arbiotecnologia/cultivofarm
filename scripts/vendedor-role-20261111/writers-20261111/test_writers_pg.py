@@ -199,7 +199,28 @@ try:
         rq=lambda uid,q=None: call(uid,rqs(q or qid,L(q or qid)))
         tk=lambda: d.last("select count(*) from platform_private.authz_tickets")
         tk0=tk()
-        ok('pacote não usa ticket: nenhum corpo instalado menciona seller_quote_respond',d.last("select count(*) from pg_proc p where p.prokind='f' and pg_get_functiondef(p.oid) like '%seller_quote_respond%'")=='0')
+        ok('marcador seller_quote_respond aparece só na resposta de cotação e no despachante dedicado',d.sql("select string_agg(p.oid::regprocedure::text,',' order by 1) from pg_proc p where p.prokind='f' and pg_get_functiondef(p.oid) like '%seller_quote_respond%'")=='platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid),respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)')
+        ok('cobrança B2B continua no validador LIVE (não usa o despachante)',"seller_quote_origin_dispatch" not in d.body('public.generate_b2b_receivable_secure_impl(uuid)'))
+        # Costura declarada: marcador de Q1 inserido manualmente (simula o meio da resposta de Q1) em transação revertida.
+        cl1=d.last(f"select coalesce(cliente_id::text,'') from public.partner_orders where id='{qid}'")
+        cl1s=f"'{cl1}'::uuid" if cl1 else "NULL::uuid"
+        def mid(sqlcall):
+            return d.raw("\\set VERBOSITY verbose\nBEGIN; SET LOCAL request.jwt.claim.sub='"+V1+"'; SET LOCAL request.jwt.claims='"+json.dumps({'sub':V1,'role':'authenticated','iat':1})+"';"
+                         f"INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'seller_quote_respond','{qid}');"+sqlcall+" ROLLBACK;")
+        sq1=lambda q: js(json.loads(d.last(f"select c2_external_origin_snapshot::text from public.partner_orders where id='{q}'")))
+        r=mid(f"SELECT platform_private.seller_quote_origin_dispatch('{qid}','{sq1(qid)}'::jsonb,'{P}',{cl1s});")
+        ok('marcador de Q1 autoriza o despachante só para Q1',r.returncode==0,r.stderr[-300:])
+        r=mid(f"SELECT platform_private.seller_quote_origin_dispatch('{qid2}','{sq1(qid2)}'::jsonb,'{P}',{cl1s});")
+        ok('marcador de Q1 NÃO autoriza Q2 do mesmo parceiro (SELLER_QUOTE_FLOW_REQUIRED)',r.returncode!=0 and '42501' in r.stderr and 'SELLER_QUOTE_FLOW_REQUIRED' in r.stderr,r.stderr[-300:])
+        r=mid(f"SELECT platform_private.c2_external_origin_assert('{sq1(qid)}'::jsonb,'{P}',{cl1s});")
+        ok('marcador de Q1 NÃO abre o validador compartilhado (outros escritores) nem para Q1',r.returncode!=0 and 'C2_EXTERNAL_OWNER_DENIED' in r.stderr,r.stderr[-300:])
+        r=mid(f"SELECT platform_private.seller_quote_origin_dispatch('{qid}','{sq1(qid2)}'::jsonb,'{P}',{cl1s});")
+        ok('marcador de Q1 com snapshot de outro pedido: SELLER_QUOTE_ORIGIN_DENIED',r.returncode!=0 and 'SELLER_QUOTE_ORIGIN_DENIED' in r.stderr,r.stderr[-300:])
+        r=d.raw("\\set VERBOSITY verbose\nBEGIN; SET LOCAL request.jwt.claim.sub='"+V2+"'; SET LOCAL request.jwt.claims='"+json.dumps({'sub':V2,'role':'authenticated','iat':1})+"';"
+                f"INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'seller_quote_respond','{qid}'); SELECT platform_private.seller_quote_origin_dispatch('{qid}','{sq1(qid)}'::jsonb,'{P}',{cl1s}); ROLLBACK;")
+        ok('marcador não substitui a carteira: V2 com marcador de Q1 segue negado',r.returncode!=0 and 'C2_SELLER_TARGET_DENIED:not_assigned' in r.stderr,r.stderr[-300:])
+        r=act(V1,f"INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'seller_quote_respond','{qid2}');","\\set VERBOSITY verbose\n")
+        ok('cliente autenticado não emite marcador',r.returncode!=0 and '42501' in r.stderr,r.stderr[-200:])
         ok('validador compartilhado permanece com corpo LIVE',d.md5('platform_private.c2_external_origin_assert(jsonb,uuid,uuid)')=='999e5e9fd9887595e252523fb2142726')
         deny('V2 (outro vendedor) não responde Q1',lambda: rq(V2),'42501','C2_SELLER_TARGET_DENIED:not_assigned')
         deny('VB (outro tenant) não responde Q1',lambda: rq(VB),'42501','C2_SELLER_TARGET_DENIED:tenant')
@@ -306,26 +327,28 @@ try:
     # Provisionamento (contrato SQL usado pela Edge create-user) com papel independente, e edição pelo admin
     NV=u(906)
     d.sql(f"INSERT INTO public.profiles(id,user_id,nome,ativo,organization_id,senha_provisoria) VALUES(gen_random_uuid(),'{NV}','x',true,'{A}',true);")
-    svc="SET ROLE service_role; SET request.jwt.claims='{\"role\":\"service_role\"}';"
+    # Costura declarada: a Edge chama com service_role; aqui o papel de serviço vem só das claims (sem SET ROLE), pois o dump não traz ACL de platform_private para service_role.
+    svc="SET request.jwt.claim.role='service_role'; SET request.jwt.claims='{\"role\":\"service_role\"}';"
     r=d.raw("\\set VERBOSITY verbose\n"+svc+f"SELECT public.admin_provision_user_profile_v1('{NV}','novo.vendedor@example.invalid','Novo Vendedor',ARRAY['vendedor']::public.app_role[]);")
     ok('provisionamento cria usuário só com o papel vendedor',r.returncode==0 and d.last(f"select string_agg(role::text,',') from public.user_roles where user_id='{NV}'")=='vendedor',r.stderr[-300:])
     r=d.raw("\\set VERBOSITY verbose\n"+svc+f"SELECT public.admin_provision_user_profile_v1('{NV}','e','n',ARRAY['vendedor']::public.app_role[]);")
     ok('reprovisionamento recusado (user_not_ready_for_provisioning)',r.returncode!=0 and '23514' in r.stderr and 'user_not_ready_for_provisioning' in r.stderr,r.stderr[-200:])
     r=act(UADM,f"SELECT public.admin_provision_user_profile_v1('{NV}','e','n',ARRAY['vendedor']::public.app_role[]);","\\set VERBOSITY verbose\n")
     ok('administrador não chama o provisionamento direto (só serviço)',r.returncode!=0 and '42501' in r.stderr,r.stderr[-200:])
+    d.sql(f"UPDATE public.profiles SET senha_provisoria=false WHERE user_id='{NV}'")  # primeiro acesso concluído (costura declarada)
     c,e=call(NV,"public.seller_portfolio_capability_v1()");ok('novo vendedor: pronto, carteira vazia (negação por padrão)',c and c['ready'] and c['partners']==[] and c['order_create'] is False,c or e)
     deny('novo vendedor sem atribuição não lança',lambda: full_create(NV,PNA),'42501','C2_SELLER_TARGET_DENIED:not_assigned')
     an,e=call(UADM,f"public.admin_assign_seller_portfolio_v1('{NV}','{PNA}','novo vendedor')");ok('admin atribui PNA ao novo vendedor',an is not None,e)
     c,e=call(NV,"public.seller_portfolio_capability_v1()");ok('novo vendedor vê só PNA',c and [p['partner_id'] for p in c['partners']]==[PNA],c or e)
     stamp=lambda: d.last(f"select updated_at from public.profiles where user_id='{NV}'")
-    ed,e=call(UADM,f"public.admin_edit_user_profile_v1('{NV}','{stamp()}'::timestamptz,'{{\"nome\":\"Novo Vendedor\"}}'::jsonb,ARRAY['vendedor','financeiro']::public.app_role[])")
+    ed,e=call(UADM,f"public.admin_edit_user_profile_v1('{NV}','{stamp()}'::timestamptz,'{{\"nome\":\"Novo Vendedor\"}}'::jsonb,ARRAY['vendedor','financeiro']::public.app_role[],ARRAY[]::uuid[],NULL::uuid,NULL::uuid)")
     c,e2=call(NV,"public.seller_portfolio_capability_v1()")
     ok('edição pelo admin acrescenta financeiro: deixa de ser vendedor exclusivo',ed is not None and c and c['ready'] is False and c['reason']=='not_seller',(ed,e,c,e2))
-    ed,e=call(UADM,f"public.admin_edit_user_profile_v1('{NV}','{stamp()}'::timestamptz,'{{\"nome\":\"Novo Vendedor\"}}'::jsonb,ARRAY['vendedor']::public.app_role[])")
+    ed,e=call(UADM,f"public.admin_edit_user_profile_v1('{NV}','{stamp()}'::timestamptz,'{{\"nome\":\"Novo Vendedor\"}}'::jsonb,ARRAY['vendedor']::public.app_role[],ARRAY[]::uuid[],NULL::uuid,NULL::uuid)")
     c,e2=call(NV,"public.seller_portfolio_capability_v1()")
     ok('edição volta a vendedor exclusivo: carteira PNA preservada',ed is not None and c and c['ready'] and [p['partner_id'] for p in c['partners']]==[PNA],(ed,e,c,e2))
-    deny('edição com carimbo antigo: conflito',lambda: call(UADM,f"public.admin_edit_user_profile_v1('{NV}','2000-01-01'::timestamptz,'{{\"nome\":\"X Y\"}}'::jsonb,ARRAY['vendedor']::public.app_role[])"),'PT409','user_edit_conflict')
-    deny('admin de outra empresa não edita o vendedor',lambda: call(UADMF,f"public.admin_edit_user_profile_v1('{NV}','{stamp()}'::timestamptz,'{{\"nome\":\"X Y\"}}'::jsonb,ARRAY['vendedor']::public.app_role[])"),'42501','user_edit_forbidden')
+    deny('edição com carimbo antigo: conflito',lambda: call(UADM,f"public.admin_edit_user_profile_v1('{NV}','2000-01-01'::timestamptz,'{{\"nome\":\"X Y\"}}'::jsonb,ARRAY['vendedor']::public.app_role[],ARRAY[]::uuid[],NULL::uuid,NULL::uuid)"),'PT409','user_edit_conflict')
+    deny('admin de outra empresa não edita o vendedor',lambda: call(UADMF,f"public.admin_edit_user_profile_v1('{NV}','{stamp()}'::timestamptz,'{{\"nome\":\"X Y\"}}'::jsonb,ARRAY['vendedor']::public.app_role[],ARRAY[]::uuid[],NULL::uuid,NULL::uuid)"),'42501','user_edit_forbidden')
     rv,e=call(UADM,f"public.admin_revoke_seller_portfolio_v1('{an}','teste revogação')");ok('admin revoga PNA do novo vendedor',rv is not None or e is None,e)
     c,e=call(NV,"public.seller_portfolio_capability_v1()");ok('após revogação: novo vendedor sem parceiros',c and c['partners']==[],c or e)
     # Regressões
@@ -338,6 +361,7 @@ try:
     for sig,v in json.loads((H/'manifest.json').read_text())['patched'].items():
         ok('rollback md5 LIVE '+sig,d.md5(sig)==v['live'],d.md5(sig))
     deny('após rollback: vendedor sem writers',lambda: full_create(V1,P),'42501','forbidden_partner')
+    print('DBG',d.last(f"select count(*) from public.partner_orders where created_by='{V1}'"),d.last("select count(*) from platform_private.seller_portfolio_assignments"))
     ok('após rollback: pedidos e atribuições preservados',d.last(f"select count(*) from public.partner_orders where created_by='{V1}'")=='2' and d.last("select count(*) from platform_private.seller_portfolio_assignments")=='4')
     r=run_file('04c-rollback-writers.sql.review');ok('rollback repetido recusa drift',r.returncode!=0 and 'VENDW_RB_DRIFT' in r.stderr,r.stderr[-200:])
     c,e=call(UGC,"public.c2_internal_order_entry_capability_v1()");ok('após rollback: gestor segue aberto',c and c['order_create'] is True,c or e)
