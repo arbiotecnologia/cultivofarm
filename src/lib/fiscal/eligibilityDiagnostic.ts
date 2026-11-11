@@ -51,10 +51,11 @@ export function summarize(overload: OverloadSummary["overload"], type: Eligibili
 export async function runEligibilityDiagnostic(type: EligibilitySourceType, rawId: string): Promise<OverloadSummary[]> {
   const id = rawId.trim();
   if (!ELIGIBILITY_SOURCE_TYPES.includes(type) || !isValidUuid(id)) throw new Error("ENTRADA_INVALIDA");
-  const two = await supabase.rpc("fn_fiscal_invoice_eligibility", { _source_type: type, _source_id: id });
-  const three = await supabase.rpc("fn_fiscal_invoice_eligibility", {
-    _source_type: type, _source_id: id, _current_invoice_id: null as unknown as string,
-  });
+  // Tipagem gerada da sobrecarga não resolve a união; a chamada é a RPC normal do cliente da sessão.
+  const rpc = supabase.rpc.bind(supabase) as unknown as (fn: string, args: Record<string, unknown>) =>
+    Promise<{ data: unknown; error: { code?: string; message?: string } | null }>;
+  const two = await rpc("fn_fiscal_invoice_eligibility", { _source_type: type, _source_id: id });
+  const three = await rpc("fn_fiscal_invoice_eligibility", { _source_type: type, _source_id: id, _current_invoice_id: null });
   return [
     summarize("2-args", type, id, two.data, two.error),
     summarize("3-args(_current_invoice_id=null)", type, id, three.data, three.error),

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 const { rpc, from, functions } = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn(), functions: { invoke: vi.fn() } }));
-vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc, from, functions } }));
+rpc.mockImplementation(() => Promise.resolve({ data: null, error: null }));
+vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc, from, functions, bind: undefined } }));
 import { runEligibilityDiagnostic, isPreviewHost, isDiagnosticOpen, summarize } from "@/lib/fiscal/eligibilityDiagnostic";
 
 const ID = "11111111-2222-4333-8444-555555555555";
