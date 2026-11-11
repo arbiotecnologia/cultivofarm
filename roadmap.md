@@ -1,3 +1,8 @@
+## 11/11 03:27 — Rejeição financeira externa ARBio (local)
+- [ ] Gerar delta do reject LIVE 40777d0c: vendedor estrito, termos pendentes, antes da aprovação comercial/reserva, locks e revalidação; cabeçalho preservado/auditoria única.
+- [ ] Executar PRE/INSTALL/POST/rollback exatos no espelho; negativas, concorrência aprovação/reserva e regressão 3/5→5/5; guardar bytes/ACL/SHA e limitações.
+- [ ] Validar entrada canônica do aplicativo sem rede hospedada; nenhuma implantação/publicação/fiscal/envio/cobrança.
+
 ## 10/11 03:23 — Complemento 8dd6e29b, mesma revisão inativa
 - [ ] Complemento 03:42: separar autorização CANCEL→PT409 in-flight de sucesso funcional em referência PC reconciliada; revogações exigem holder/waiter provados por pg_stat_activity/pg_locks antes da mutação. Avaliar acoplamento lifecycle/logística antes de piloto hosted, sem abrir gate global.
 - [x] 193/194 sequenciais exit 1: 48 contenções e 12 barreiras reais cada; CANCEL PT409 preservado e classificado só como autorização. Dois testes focados passaram. Configuração local de homologação no INSERT não eliminou FISCAL_PRODUCTION_ENDPOINT_BLOCKED: cadeia/controle PC/rollback final ainda pendentes, sem GO; riscos do gate logístico documentados.
