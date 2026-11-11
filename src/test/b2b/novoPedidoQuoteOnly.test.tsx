@@ -238,7 +238,7 @@ it("tentativa anterior registrada (journal durável): cotação bloqueada com o 
   const b = await quoteBtn();
   await waitFor(() => expect(screen.getByTestId("submit-block-reason")).toHaveTextContent("tentativa anterior"));
   expect(b).toBeDisabled();
-  const dialog = screen.getByRole("dialog");
+  const dialog = screen.getByRole("dialog"); console.log("DLG", dialog.textContent?.slice(0,1500));
   expect(within(dialog).getByText(/Pedido PB-ANTERIOR já registrado/)).toBeInTheDocument();
   expect(within(dialog).getByRole("button", { name: "Confirmar pedido existente e iniciar novo" })).toBeInTheDocument();
   fireEvent.click(b);
