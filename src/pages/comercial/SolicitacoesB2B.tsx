@@ -35,6 +35,7 @@ import { DetalheSimulacaoDrawer } from "@/components/pedidos-b2b/DetalheSimulaca
 import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 import { useAuth } from "@/hooks/useAuth";
 import { SellerFinanceOrderReview } from "@/components/pedidos-b2b/SellerFinanceOrderReview";
+import { C2PilotEconomicApproval } from "@/components/pedidos-b2b/C2PilotEconomicApproval";
 
 const SIM_STATUS_LABEL: Record<string, string> = {
   rascunho: "Rascunho",
@@ -551,6 +552,7 @@ export default function SolicitacoesB2B() {
         open={!!openPedido}
         onOpenChange={(o) => !o && setOpenPedido(null)}
         viewerScope="comercial"
+        extra={openedOrder?.c2_external_origin_snapshot ? <C2PilotEconomicApproval orderId={openPedido} /> : undefined}
       />}</WithTenantName>}
       <DetalheSimulacaoDrawer
         simulationId={openSim}
