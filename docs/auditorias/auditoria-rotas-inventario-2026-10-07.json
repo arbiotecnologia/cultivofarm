@@ -4699,6 +4699,37 @@
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
+      "path": "/comercial/minha-carteira",
+      "line": 625,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "MinhaCarteiraVendedor"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "pedidos_b2b",
+      "profiles": [
+        "administrador",
+        "vendedor"
+      ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
+      "navigation": [
+        "navigation:com-minha-carteira:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts"
+      ],
+      "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
       "path": "/comercial/simulador",
       "line": 625,
       "index": false,
@@ -5503,7 +5534,6 @@
       "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
-
     {
       "path": "/configuracoes/fiscal/produtos",
       "line": 650,
@@ -6121,6 +6151,12 @@
     {
       "id": "protocolos-problemas",
       "route": "/base-tecnica?tab=problemas",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "com-minha-carteira",
+      "route": "/comercial/minha-carteira",
       "source": "navigation",
       "audience": "desktop"
     },

@@ -251,7 +251,7 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
   "/comercial/alertas": { administrador: "rw", gestor_comercial: "rw" },
   "/comercial/catalogo": { administrador: "r", gestor: "r", gestor_comercial: "r" },
   "/comercial/dashboard-consolidado": { administrador: "rw", gestor_comercial: "rw" },
-  "/comercial/minha-carteira": { vendedor: "rw" },
+  "/comercial/minha-carteira": { administrador: "r", vendedor: "rw" },
   "/comercial/condicoes-pagamento": { administrador: "rw", financeiro: "rw", gestor_comercial: "rw" },
   "/operacao/planejamento": { administrador: "rw", gestor: "rw", producao: "rw", gestor_comercial: "r" },
   "/operacao/planejamento/:id": { administrador: "rw", gestor: "rw", producao: "rw", gestor_comercial: "r" },

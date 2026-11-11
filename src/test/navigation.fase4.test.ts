@@ -10,7 +10,7 @@ describe("Fase 4 — reorganização declarativa Comercial/Campo/Produção", ()
       "com-consolidado", "com-indicadores", "com-alertas",
       "clientes", "fazendas",
       "solicitacoes", "com-pedidos-b2b", "com-solicitacoes-b2b", "com-campanhas",
-      "protocolos", "com-simulador", "com-condicoes-pagamento",
+      "protocolos", "com-minha-carteira", "com-simulador", "com-condicoes-pagamento",
     ]);
     const sub = (id: string) => g.items.find((i) => i.id === id)!.subSection;
     expect(sub("com-consolidado")).toBe("Visão Comercial");
