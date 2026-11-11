@@ -1,0 +1,135 @@
+PASS restore sem erros além das FKs auth conhecidas 
+PASS estado reportado de produção: Vendedor 02a/02b/02c/02d aplicados (bytes finais) 
+PASS dependência = pin public.approve_partner_order(uuid,text,date) 
+PASS dependência = pin public.approve_b2b_credit(uuid,text) 
+PASS dependência = pin public.approve_b2b_payment_terms_secure(uuid,text) 
+PASS dependência = pin platform_private.c2_accounting_pending_guard() 
+PASS dependência = pin platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb) 
+PASS dependência = pin platform_private.c2_external_origin_contract_valid(jsonb) 
+PASS dependência = pin platform_private.c2p1_internal_actor(public.app_role[]) 
+PASS dependência = pin public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) 
+PASS dependência = pin platform_private.b2b_financial_forecast_guard() 
+PASS dependência = pin platform_private.has_ticket(text,uuid) 
+PASS dependência = pin public.get_b2b_financial_forecast_secure(uuid) 
+PASS dependência = pin public.h15_actor_organization() 
+PASS fixture: resposta cotada pelo writer real 
+PASS pedido fiel ao PB-001042: em_analise_comercial, C2 pendente contábil, total 20, snapshot econômico nulo, condição definida 
+PASS cotação: boleto, due_basis nf_issue, estimado, principal=total=20, 1 parcela 
+PASS itens: 1 linha, 2 embalagens inteiras de 25 kg a R$10 
+PASS evento quote_responded único no histórico 
+PASS LIVE approve_partner_order bloqueado para o contrato C2 [42501 C2_ACCOUNTING_PENDING] 
+PASS LIVE approve_b2b_credit bloqueado para o contrato C2 [42501 C2_ACCOUNTING_PENDING] 
+PASS PRE ref divergente falha fechada 
+PASS PRE_PASS 
+PASS INSTALL sem ref recusado 
+PASS INSTALL transação única 
+PASS POST_PASS 
+PASS reinstalação recusada 
+PASS pós-instalação: corpo LIVE intocado public.approve_partner_order(uuid,text,date) 
+PASS pós-instalação: corpo LIVE intocado public.approve_b2b_credit(uuid,text) 
+PASS pós-instalação: corpo LIVE intocado public.approve_b2b_payment_terms_secure(uuid,text) 
+PASS pós-instalação: corpo LIVE intocado platform_private.c2_accounting_pending_guard() 
+PASS pós-instalação: corpo LIVE intocado platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb) 
+PASS pós-instalação: corpo LIVE intocado platform_private.c2_external_origin_contract_valid(jsonb) 
+PASS pós-instalação: corpo LIVE intocado platform_private.c2p1_internal_actor(public.app_role[]) 
+PASS pós-instalação: corpo LIVE intocado public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) 
+PASS pós-instalação: corpo LIVE intocado platform_private.b2b_financial_forecast_guard() 
+PASS pós-instalação: corpo LIVE intocado platform_private.has_ticket(text,uuid) 
+PASS pós-instalação: corpo LIVE intocado public.get_b2b_financial_forecast_secure(uuid) 
+PASS pós-instalação: corpo LIVE intocado public.h15_actor_organization() 
+PASS instalado fechado: gate false, allowlist vazia 
+PASS fechado: leitor informa piloto desligado, sem evidência e sem ação 
+PASS fechado: aprovação comercial recusada [42501 C2_PILOT_ECON_DISABLED] 
+PASS habilitação recusa vendedor como aprovador comercial 
+PASS habilitação recusa gestor comercial como aprovador de crédito 
+PASS habilitação recusa validade > 24h 
+PASS habilitação recusa pedido sem resposta cotada (falha fechada) 
+PASS habilitação sem parâmetros recusada 
+PASS habilitação estreita do pedido ad9a2f20 
+PASS habilitação estreita do pedido 3d3590a4 
+PASS habilitação estreita do pedido 94ee0d92 
+PASS habilitação estreita do pedido 49beaab4 
+PASS habilitação estreita do pedido 0a0bd2bb 
+PASS habilitação estreita do pedido 249a138b 
+PASS UGC: evidência completa, pode aprovar comercial e não crédito 
+PASS Financeiro: pode aprovar crédito e não comercial 
+PASS admin sem concessão: lê estado, sem evidência nem ação 
+PASS leitor nega comprador [42501 C2_PILOT_ECON_DENIED:role] 
+PASS leitor nega vendedor [42501 C2_PILOT_ECON_DENIED:role] 
+PASS leitor nega técnico externo [42501 C2_PILOT_ECON_DENIED:role] 
+PASS leitor nega admin de outro tenant [42501 C2_PILOT_ECON_DENIED:scope] 
+PASS aprovação negada: comprador [42501 C2_PILOT_ECON_DENIED:role] 
+PASS aprovação negada: vendedor [42501 C2_PILOT_ECON_DENIED:role] 
+PASS aprovação negada: Financeiro como comercial [42501 C2_PILOT_ECON_DENIED:role] 
+PASS aprovação negada: gestor comercial como crédito [42501 C2_PILOT_ECON_DENIED:role] 
+PASS aprovação negada: admin de outro tenant [42501 C2_PILOT_ECON_DENIED:scope] 
+PASS aprovação negada: admin do tenant sem concessão [42501 C2_PILOT_ECON_NOT_GRANTED] 
+PASS hash de evidência divergente [PT409 C2_PILOT_ECON_EVIDENCE_CHANGED] 
+PASS chave curta [22023 C2_PILOT_ECON_KEY_INVALID] 
+PASS tipo inválido [22023 C2_PILOT_ECON_KIND_INVALID] 
+PASS concessão de O1 não vale para O7 [42501 C2_PILOT_ECON_NOT_GRANTED] 
+PASS evidência incompleta falha fechada: snapshot da cotação ausente 
+PASS evidência incompleta falha fechada: evento quote_responded ausente 
+PASS evidência incompleta falha fechada: meio de pagamento inativo 
+PASS evidência incompleta falha fechada: cronograma divergente 
+PASS evidência incompleta falha fechada: termos rejeitados 
+PASS evidência incompleta falha fechada: parceiro inativo 
+PASS negativas sem efeitos persistidos 
+PASS 00: sem aprovações e sem previsão 
+PASS 10: aprovação comercial explícita com autor/data, sem previsão 
+PASS 10: replay mesma chave devolve o mesmo registro 
+PASS 10: segunda aprovação comercial (outra chave) [PT409 C2_PILOT_ECON_ALREADY_APPROVED] 
+PASS 10: chave reaproveitada para crédito [PT409 C2_PILOT_ECON_IDEMPOTENCY_CONFLICT] 
+PASS 10: LIVE approve_b2b_credit continua bloqueado [42501 C2_ACCOUNTING_PENDING] 
+PASS 11: crédito explícito cria exatamente uma previsão e um evento 
+PASS 11: replay devolve a mesma previsão, sem duplicar 
+PASS previsão: total 20 não exigível (aguardando_fiscal), autores explícitos, crédito sem reason_code automático 
+PASS 11: LIVE approve_partner_order continua bloqueado [42501 C2_ACCOUNTING_PENDING] 
+PASS 01: crédito antes do comercial, sem previsão 
+PASS 01→11: comercial depois cria uma previsão e um evento 
+PASS pedidos inalterados (status/aprovações/snapshot/flags) após 10/01/11 
+PASS leitor: duas aprovações com autor/data e previsão; operação/fiscal/cobrança/envio bloqueados 
+PASS concorrência mesma chave: mesmo registro, uma previsão e um evento 
+PASS concorrência comercial×crédito em conexões distintas: ambos gravam, exatamente uma previsão e um evento 
+PASS concorrência chaves distintas: um grava, outro PT409 ALREADY_APPROVED; uma previsão/um evento 
+PASS núcleo legado com reason_code OK não cria previsão para pedido do piloto 
+PASS inserção direta privilegiada (reason_code OK, sem assinatura) negada mesmo com gate global aberto 
+PASS pedido C2 sem aprovações: barreira só aceita o ticket da própria transação (núcleo do piloto) 
+PASS cliente autenticado não forja ticket 
+PASS cliente não chama o leitor privado de evidência 
+PASS cliente não lê o ledger 
+PASS ledger imutável (UPDATE) 
+PASS ledger imutável (DELETE) 
+PASS concessão revogada [42501 C2_PILOT_ECON_NOT_GRANTED] 
+PASS desligamento do piloto 
+PASS após desligar: crédito recusado [42501 C2_PILOT_ECON_DISABLED] 
+PASS após desligar: replay de registro existente ainda reautoriza e devolve recibo 
+PASS pedidos inalterados ao final 
+PASS sem recebível, NF, estoque, entrega, notificação ou envio 
+FAIL previsões totais = 4 pedidos com 11 (O1,O2,O3,O4,O5→5) None
+PASS leitor existente de previsão lê a previsão do piloto (estimada, total 20) 
+PASS leitor existente nega outro tenant 
+PASS ROLLBACK sem ref recusado 
+PASS ROLLBACK_PASS (deny-only) 
+PASS ROLLBACK idempotente 
+PASS rollback preserva ledger, previsões e eventos 
+PASS após rollback: RPC sem EXECUTE 
+PASS após rollback: leitor sem EXECUTE 
+PASS após rollback: barreira mantida contra inserção direta 
+PASS POST após rollback falha (ACL fechada detectada) 
+PASS após rollback: habilitação recusada (ACL fechada) 
+PASS após rollback: corpo LIVE intocado public.approve_partner_order(uuid,text,date) 
+PASS após rollback: corpo LIVE intocado public.approve_b2b_credit(uuid,text) 
+PASS após rollback: corpo LIVE intocado public.approve_b2b_payment_terms_secure(uuid,text) 
+PASS após rollback: corpo LIVE intocado platform_private.c2_accounting_pending_guard() 
+PASS após rollback: corpo LIVE intocado platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb) 
+PASS após rollback: corpo LIVE intocado platform_private.c2_external_origin_contract_valid(jsonb) 
+PASS após rollback: corpo LIVE intocado platform_private.c2p1_internal_actor(public.app_role[]) 
+PASS após rollback: corpo LIVE intocado public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) 
+PASS após rollback: corpo LIVE intocado platform_private.b2b_financial_forecast_guard() 
+PASS após rollback: corpo LIVE intocado platform_private.has_ticket(text,uuid) 
+PASS após rollback: corpo LIVE intocado public.get_b2b_financial_forecast_secure(uuid) 
+PASS após rollback: corpo LIVE intocado public.h15_actor_organization() 
+PASS após rollback: LIVE approve_partner_order segue bloqueado [42501 C2_ACCOUNTING_PENDING] 
+PASS bytes executados = SHA256SUMS 
+SUMMARY PASS=133 FAIL=1 -> /dev-server/scripts/c2-pilot-economic-approval-20261111/evidence/attempt-001
