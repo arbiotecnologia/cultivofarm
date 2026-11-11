@@ -21,6 +21,8 @@ const rpc = vi.fn();
 const auth: any = { user: { id: V1 }, profile: { user_id: V1, organization_id: ORG, ativo: true }, roles: ["vendedor"], authzReady: true, authzEpoch: 1 };
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...a) } }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
+const toastErr = vi.fn();
+vi.mock("sonner", () => ({ toast: { error: (m: string) => toastErr(m), success: () => {} } }));
 const { parseSellerCapability, parseSellerOrders, portfolioErrorText } = await import("@/hooks/useSellerPortfolio");
 const { default: MinhaCarteira } = await import("@/pages/comercial/MinhaCarteiraVendedor");
 const { default: VendedorNovoPedido } = await import("@/pages/comercial/VendedorNovoPedido");
@@ -167,7 +169,8 @@ describe("Carteiras dos vendedores (administrador)", () => {
     fireEvent.click(await screen.findByRole("option", { name: "Parceiro Um" }));
     fireEvent.change(screen.getByLabelText("Motivo"), { target: { value: "x" } });
     fireEvent.click(screen.getByRole("button", { name: "Atribuir" }));
-    expect(await screen.findByText(/já está na carteira/)).toBeTruthy();
+    await waitFor(() => expect(toastErr).toHaveBeenCalledWith(expect.stringMatching(/já está na carteira/)));
+    expect(toastErr.mock.calls.flat().join(" ")).not.toMatch(/SELLER_PORTFOLIO/);
   });
   it("marca vendedor suspenso e parceiro desativado nas vigentes", async () => {
     auth.roles = ["administrador"];
