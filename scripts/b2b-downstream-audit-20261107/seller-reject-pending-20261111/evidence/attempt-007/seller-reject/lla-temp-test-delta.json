@@ -1,0 +1,6 @@
+{
+  "original_sha": "85d02510031df8c4e348e672a87baf7fc2acb0a3a9ac8132185845a2b34185e4",
+  "temp_sha": "2c85c9b87e337b15f1127fd9a3e859a142c40dd6cc67c1159eafc63934829920",
+  "candidate_sql_unchanged": true,
+  "reason": "replace obsolete BLOCKED scenario and instrument actual reserve/reject race only in temporary harness"
+}
