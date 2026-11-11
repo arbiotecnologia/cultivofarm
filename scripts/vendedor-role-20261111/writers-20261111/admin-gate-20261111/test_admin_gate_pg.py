@@ -97,7 +97,7 @@ try:
     r=call(ADM,revoke(old));ok('revoga atribuição antiga com vendedor e parceiro desativados',r[1] is None and d.last(f"select revoked_at is not null from platform_private.seller_portfolio_assignments where id='{old}'")=='t',r)
     ok('revogação auditada uma vez',d.last(f"select count(*) from platform_private.seller_portfolio_audit where assignment_id='{old}' and action='revoke'")=='1')
     deny('revogação repetida negada sem efeito',revoke(old),ADM,'42501','SELLER_PORTFOLIO_FORBIDDEN')
-    pa(f"update public.partner_accounts set deleted_at=null where id='{P2}'; update public.profiles set ativo=true where user_id='{V2}'")
+    pa(f"update public.partner_accounts set deleted_at=null where id='{P2}'"); d.sql(f"update public.profiles set ativo=true where user_id='{V2}'")
     # --- Positivo ---
     r=call(ADM,assign(V1,P));aid=r[0];ok('positivo: admin vigente atribui vendedor elegível a parceiro ativo',aid is not None,r)
     ok('positivo: auditoria assign única',d.last(f"select count(*) from platform_private.seller_portfolio_audit where assignment_id='{aid}' and action='assign'")=='1')
@@ -112,7 +112,8 @@ try:
             if first_assign:
                 out['h']=d.raw(sess(ADM,f"BEGIN; SELECT {assign(V1,P)}; SELECT pg_sleep({sleep}); COMMIT;"))
             else:
-                out['h']=d.raw(f"BEGIN; {lock_sql}; SELECT pg_sleep({sleep}); COMMIT;")
+                body=lock_sql.replace("SET ROLE","BEGIN; SET ROLE",1) if "SET ROLE" in lock_sql else "BEGIN; "+lock_sql
+                out['h']=d.raw(body+f"; SELECT pg_sleep({sleep}); COMMIT;")
         t=threading.Thread(target=holder);t.start();time.sleep(0.6);t0=time.time()
         if first_assign: out['o']=d.raw(lock_sql)
         else: out['o']=d.raw(sess(ADM,f"SELECT {assign(V1,P)};"))
