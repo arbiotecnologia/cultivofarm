@@ -1,0 +1,466 @@
+{
+  "pb": "fb7e6c65-a016-40d8-9298-ea8601b0a979",
+  "control": "ec29a271-3154-4f2d-8969-9becb6cfc2ce",
+  "checks": [
+    {
+      "test": "gestor comercial não ganha acesso fiscal pelo diagnóstico",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "diagnóstico econômico válido ator 29 overload False",
+      "status": "PASS",
+      "detail": {
+        "orderId": "fb7e6c65-a016-40d8-9298-ea8601b0a979",
+        "reasons": [
+          {
+            "code": "FISCAL_ORDER_STATUS_NOT_BILLABLE",
+            "message": "Status do pedido nao habilitado para faturamento: em_analise_comercial",
+            "severity": "BLOCK"
+          },
+          {
+            "code": "FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING",
+            "message": "Pedido sem aprovacao comercial registrada.",
+            "severity": "BLOCK"
+          }
+        ],
+        "eligible": false,
+        "sourceType": "PARTNER_ORDER",
+        "debtorPartnerId": "00000000-0000-0000-0000-000000000011",
+        "economicDiagnosis": {
+          "available": true,
+          "fiscal_blocked": true,
+          "credit_explicit": true,
+          "accounting_pending": true,
+          "commercial_explicit": true,
+          "operational_blocked": true,
+          "operational_commercial_registered": false
+        },
+        "has_canceled_history": false
+      }
+    },
+    {
+      "test": "mesma elegibilidade/motivos/IDs overload False",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "diagnóstico não expõe autor/hash/previsão/IDs adicionais",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "diagnóstico econômico válido ator 29 overload True",
+      "status": "PASS",
+      "detail": {
+        "orderId": "fb7e6c65-a016-40d8-9298-ea8601b0a979",
+        "reasons": [
+          {
+            "code": "FISCAL_ORDER_STATUS_NOT_BILLABLE",
+            "message": "Status do pedido nao habilitado para faturamento: em_analise_comercial",
+            "severity": "BLOCK"
+          },
+          {
+            "code": "FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING",
+            "message": "Pedido sem aprovacao comercial registrada.",
+            "severity": "BLOCK"
+          }
+        ],
+        "eligible": false,
+        "sourceType": "PARTNER_ORDER",
+        "debtorPartnerId": "00000000-0000-0000-0000-000000000011",
+        "economicDiagnosis": {
+          "available": true,
+          "fiscal_blocked": true,
+          "credit_explicit": true,
+          "accounting_pending": true,
+          "commercial_explicit": true,
+          "operational_blocked": true,
+          "operational_commercial_registered": false
+        },
+        "has_canceled_history": false
+      }
+    },
+    {
+      "test": "mesma elegibilidade/motivos/IDs overload True",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "diagnóstico não expõe autor/hash/previsão/IDs adicionais",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "gate-off não reconhece aprovação vigente",
+      "status": "PASS",
+      "detail": {
+        "orderId": "fb7e6c65-a016-40d8-9298-ea8601b0a979",
+        "reasons": [
+          {
+            "code": "FISCAL_ORDER_STATUS_NOT_BILLABLE",
+            "message": "Status do pedido nao habilitado para faturamento: em_analise_comercial",
+            "severity": "BLOCK"
+          },
+          {
+            "code": "FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING",
+            "message": "Pedido sem aprovacao comercial registrada.",
+            "severity": "BLOCK"
+          }
+        ],
+        "eligible": false,
+        "sourceType": "PARTNER_ORDER",
+        "debtorPartnerId": "00000000-0000-0000-0000-000000000011",
+        "economicDiagnosis": {
+          "available": false,
+          "fiscal_blocked": true,
+          "credit_explicit": null,
+          "accounting_pending": true,
+          "commercial_explicit": null,
+          "operational_blocked": true,
+          "operational_commercial_registered": false
+        },
+        "has_canceled_history": false
+      }
+    },
+    {
+      "test": "revoked-viewer não reconhece aprovação vigente",
+      "status": "PASS",
+      "detail": {
+        "orderId": "fb7e6c65-a016-40d8-9298-ea8601b0a979",
+        "reasons": [
+          {
+            "code": "FISCAL_ORDER_STATUS_NOT_BILLABLE",
+            "message": "Status do pedido nao habilitado para faturamento: em_analise_comercial",
+            "severity": "BLOCK"
+          },
+          {
+            "code": "FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING",
+            "message": "Pedido sem aprovacao comercial registrada.",
+            "severity": "BLOCK"
+          }
+        ],
+        "eligible": false,
+        "sourceType": "PARTNER_ORDER",
+        "debtorPartnerId": "00000000-0000-0000-0000-000000000011",
+        "economicDiagnosis": {
+          "available": false,
+          "fiscal_blocked": true,
+          "credit_explicit": null,
+          "accounting_pending": true,
+          "commercial_explicit": null,
+          "operational_blocked": true,
+          "operational_commercial_registered": false
+        },
+        "has_canceled_history": false
+      }
+    },
+    {
+      "test": "revoked-approver não reconhece aprovação vigente",
+      "status": "PASS",
+      "detail": {
+        "orderId": "fb7e6c65-a016-40d8-9298-ea8601b0a979",
+        "reasons": [
+          {
+            "code": "FISCAL_ORDER_STATUS_NOT_BILLABLE",
+            "message": "Status do pedido nao habilitado para faturamento: em_analise_comercial",
+            "severity": "BLOCK"
+          },
+          {
+            "code": "FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING",
+            "message": "Pedido sem aprovacao comercial registrada.",
+            "severity": "BLOCK"
+          }
+        ],
+        "eligible": false,
+        "sourceType": "PARTNER_ORDER",
+        "debtorPartnerId": "00000000-0000-0000-0000-000000000011",
+        "economicDiagnosis": {
+          "available": true,
+          "fiscal_blocked": true,
+          "credit_explicit": true,
+          "accounting_pending": true,
+          "commercial_explicit": false,
+          "operational_blocked": true,
+          "operational_commercial_registered": false
+        },
+        "has_canceled_history": false
+      }
+    },
+    {
+      "test": "expired não reconhece aprovação vigente",
+      "status": "PASS",
+      "detail": {
+        "orderId": "fb7e6c65-a016-40d8-9298-ea8601b0a979",
+        "reasons": [
+          {
+            "code": "FISCAL_ORDER_STATUS_NOT_BILLABLE",
+            "message": "Status do pedido nao habilitado para faturamento: em_analise_comercial",
+            "severity": "BLOCK"
+          },
+          {
+            "code": "FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING",
+            "message": "Pedido sem aprovacao comercial registrada.",
+            "severity": "BLOCK"
+          }
+        ],
+        "eligible": false,
+        "sourceType": "PARTNER_ORDER",
+        "debtorPartnerId": "00000000-0000-0000-0000-000000000011",
+        "economicDiagnosis": {
+          "available": false,
+          "fiscal_blocked": true,
+          "credit_explicit": null,
+          "accounting_pending": true,
+          "commercial_explicit": null,
+          "operational_blocked": true,
+          "operational_commercial_registered": false
+        },
+        "has_canceled_history": false
+      }
+    },
+    {
+      "test": "estrangeiro e inexistente uniformes sem IDs ou diagnóstico",
+      "status": "PASS",
+      "detail": {
+        "orderId": null,
+        "reasons": [
+          {
+            "code": "FISCAL_ORDER_NOT_FOUND",
+            "message": "Pedido inexistente.",
+            "severity": "BLOCK"
+          }
+        ],
+        "eligible": false,
+        "sourceType": "PARTNER_ORDER",
+        "debtorPartnerId": null,
+        "has_canceled_history": false
+      }
+    },
+    {
+      "test": "diagnóstico sem efeito no cabeçalho/previsão/estoque",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "C2 nega entrada real da entrega",
+      "status": "PASS",
+      "detail": {
+        "exit": 3,
+        "error": "ERROR:  PT409: B2B_RESALE_ORDER_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 38 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      }
+    },
+    {
+      "test": "OS/entrega/saldo sem efeitos persistentes",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "OS controle positivo revertido",
+      "status": "PASS",
+      "detail": {
+        "exit": 0,
+        "error": ""
+      }
+    },
+    {
+      "test": "OS/entrega/saldo sem efeitos persistentes",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "reprovação C2 pós-previsão isolada/atômica",
+      "status": "PASS",
+      "detail": {
+        "exit": 3,
+        "error": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "result": ""
+      }
+    },
+    {
+      "test": "resultado real reprovação C2 pós-previsão",
+      "status": "INFO",
+      "detail": {
+        "actor": "00000000-0000-0000-0000-000000000030",
+        "exit": 3,
+        "error": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "result": ""
+      }
+    },
+    {
+      "test": "reprovação C2 pós-previsão isolada/atômica",
+      "status": "PASS",
+      "detail": {
+        "exit": 3,
+        "error": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "result": ""
+      }
+    },
+    {
+      "test": "resultado real reprovação C2 pós-previsão",
+      "status": "INFO",
+      "detail": {
+        "actor": "00000000-0000-0000-0000-000000000025",
+        "exit": 3,
+        "error": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "result": ""
+      }
+    },
+    {
+      "test": "cancelamento cobrança B2B fechado C2 pós-previsão",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "cancelamento residual porta vigente C2 pós-previsão",
+      "status": "INFO",
+      "detail": {
+        "exit": 3,
+        "error": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "out": ""
+      }
+    },
+    {
+      "test": "cancelamento residual fechado/revertido C2 pós-previsão",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "reprovação aprovado isolada/atômica",
+      "status": "PASS",
+      "detail": {
+        "exit": 3,
+        "error": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "result": ""
+      }
+    },
+    {
+      "test": "resultado real reprovação aprovado",
+      "status": "INFO",
+      "detail": {
+        "actor": "00000000-0000-0000-0000-000000000030",
+        "exit": 3,
+        "error": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "result": ""
+      }
+    },
+    {
+      "test": "reprovação aprovado isolada/atômica",
+      "status": "PASS",
+      "detail": {
+        "exit": 3,
+        "error": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "result": ""
+      }
+    },
+    {
+      "test": "resultado real reprovação aprovado",
+      "status": "INFO",
+      "detail": {
+        "actor": "00000000-0000-0000-0000-000000000025",
+        "exit": 3,
+        "error": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "result": ""
+      }
+    },
+    {
+      "test": "cancelamento cobrança B2B fechado aprovado",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "cancelamento residual porta vigente aprovado",
+      "status": "INFO",
+      "detail": {
+        "exit": 3,
+        "error": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "out": ""
+      }
+    },
+    {
+      "test": "cancelamento residual fechado/revertido aprovado",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "reprovação parcial autorizado isolada/atômica",
+      "status": "PASS",
+      "detail": {
+        "exit": 3,
+        "error": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "result": ""
+      }
+    },
+    {
+      "test": "resultado real reprovação parcial autorizado",
+      "status": "INFO",
+      "detail": {
+        "actor": "00000000-0000-0000-0000-000000000030",
+        "exit": 3,
+        "error": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "result": ""
+      }
+    },
+    {
+      "test": "reprovação parcial autorizado isolada/atômica",
+      "status": "PASS",
+      "detail": {
+        "exit": 3,
+        "error": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "result": ""
+      }
+    },
+    {
+      "test": "resultado real reprovação parcial autorizado",
+      "status": "INFO",
+      "detail": {
+        "actor": "00000000-0000-0000-0000-000000000025",
+        "exit": 3,
+        "error": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "result": ""
+      }
+    },
+    {
+      "test": "cancelamento cobrança B2B fechado parcial autorizado",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "cancelamento residual porta vigente parcial autorizado",
+      "status": "INFO",
+      "detail": {
+        "exit": 0,
+        "error": "",
+        "out": "{\"actor\": \"00000000-0000-0000-0000-000000000029\", \"state\": \"cancelado_residual\", \"version\": 9, \"order_id\": \"76587cd2-154d-49b2-a3aa-d852965046d5\", \"forecast_id\": \"0cc33044-bc4d-4578-9f66-cb34e48ce75e\"}\n"
+      }
+    },
+    {
+      "test": "cancelamento residual fechado/revertido parcial autorizado",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "preparo evento direto authenticated negado",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "preparo evento estrangeiro negado",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "preparo evento por backend com ator real",
+      "status": "FAIL",
+      "detail": {
+        "err": "ERROR:  42501: FISCAL_FORBIDDEN\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "result": null
+      }
+    },
+    {
+      "test": "C2 preservado com residual 20 zero título/OS/entrega",
+      "status": "PASS",
+      "detail": null
+    }
+  ]
+}
