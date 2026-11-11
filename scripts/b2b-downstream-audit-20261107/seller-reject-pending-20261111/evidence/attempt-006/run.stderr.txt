@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/tmp/seller-reject-mirror-ock9tuhb/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 511, in main
+    results=SR.run(B,Review70.Review,Q,A,choice,OUT)
+  File "/tmp/seller-reject-mirror-ock9tuhb/project/scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/mirror_flow.py", line 97, in run
+    B.sql(f"UPDATE public.profiles SET ativo=false WHERE user_id='{Q.UFIN}';");B.T.finish(holder,'COMMIT;');wo,we=B.T.finish(waiter)
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/seller-reject-mirror-ock9tuhb/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 56, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/seller-reject-mirror-ock9tuhb/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  canceling statement due to lock timeout
+CONTEXT:  SQL statement "UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton"
+PL/pgSQL function cf_user_guards_v1.acquire_gate() line 5 at SQL statement
+

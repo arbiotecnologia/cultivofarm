@@ -1,6 +1,6 @@
 BEGIN;
 DO $$DECLARE p oid:=to_regprocedure('public.reject_b2b_payment_terms_secure(uuid,text)'); BEGIN
- IF p IS NULL OR md5(pg_get_functiondef(p)) NOT IN ('40777d0cec6a7d8a8d4dfcb3370b08b6','988935a5dfdbaa3914954f4b2fa66ec7','dae0d60c90d283401217bd4c7050397c') OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p) IS DISTINCT FROM 'postgres'
+ IF p IS NULL OR md5(pg_get_functiondef(p)) NOT IN ('781427080999234bfe74b04e2b8e7ffd') OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p) IS DISTINCT FROM 'postgres'
  OR (SELECT array_agg(a::text ORDER BY a::text) FROM pg_proc,unnest(proacl) a WHERE oid=p) IS DISTINCT FROM ARRAY['authenticated=X/postgres','postgres=X/postgres','service_role=X/postgres']::text[] THEN
  RAISE EXCEPTION 'B2B_REJECT_CATALOG_DRIFT'; END IF;END$$;
 CREATE OR REPLACE FUNCTION public.reject_b2b_payment_terms_secure(p_partner_order_id uuid, p_reason text)
@@ -9,13 +9,68 @@ CREATE OR REPLACE FUNCTION public.reject_b2b_payment_terms_secure(p_partner_orde
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_terms_id uuid;
+  v_created_by uuid;
+  v_numero text;
 BEGIN
- RAISE EXCEPTION 'B2B_REJECT_ROLLBACK_CLOSED' USING ERRCODE='42501';
+
+  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+  IF NOT (public.has_role(v_uid,'administrador')
+       OR public.has_role(v_uid,'financeiro')
+       OR public.has_role(v_uid,'gestor_comercial')) THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+  IF p_reason IS NULL OR btrim(p_reason) = '' THEN
+    RAISE EXCEPTION 'reason_required';
+  END IF;
+
+  SELECT po.payment_terms_id, po.created_by, po.numero
+    INTO v_terms_id, v_created_by, v_numero
+  FROM public.partner_orders po
+  WHERE po.id = p_partner_order_id;
+
+  IF v_terms_id IS NULL THEN
+    RAISE EXCEPTION 'payment_terms_not_defined';
+  END IF;
+
+  UPDATE public.partner_order_payment_terms
+     SET approval_status = 'rejected',
+         approved_by = v_uid,
+         approved_at = now(),
+         approval_notes = p_reason,
+         updated_at = now()
+   WHERE id = v_terms_id;
+
+  UPDATE public.partner_orders
+     SET financial_approval_status = 'rejected',
+         payment_condition_status = 'rejected',
+         updated_at = now()
+   WHERE id = p_partner_order_id;
+
+  INSERT INTO public.partner_order_audit_logs(order_id, acao, usuario_id, dados_novos)
+  VALUES (p_partner_order_id, 'payment_terms_rejected', v_uid,
+          jsonb_build_object('reason', p_reason));
+
+  IF v_created_by IS NOT NULL THEN
+    INSERT INTO public.notificacoes_operacionais(usuario_id, tipo, titulo, mensagem, link)
+    VALUES (v_created_by, 'b2b_payment_terms',
+            'Condição financeira reprovada',
+            format('Pedido %s teve a condição de pagamento reprovada: %s',
+                   COALESCE(v_numero,'B2B'), p_reason),
+            '/comercial/pedidos-b2b');
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'status', 'rejected');
 END;
 $function$
 ;
 DO $$DECLARE p oid:=to_regprocedure('public.reject_b2b_payment_terms_secure(uuid,text)'); BEGIN
- IF p IS NULL OR md5(pg_get_functiondef(p)) NOT IN ('dae0d60c90d283401217bd4c7050397c') OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p) IS DISTINCT FROM 'postgres'
+ IF p IS NULL OR md5(pg_get_functiondef(p)) NOT IN ('40777d0cec6a7d8a8d4dfcb3370b08b6') OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p) IS DISTINCT FROM 'postgres'
  OR (SELECT array_agg(a::text ORDER BY a::text) FROM pg_proc,unnest(proacl) a WHERE oid=p) IS DISTINCT FROM ARRAY['authenticated=X/postgres','postgres=X/postgres','service_role=X/postgres']::text[] THEN
  RAISE EXCEPTION 'B2B_REJECT_CATALOG_DRIFT'; END IF;END$$;
 COMMIT;

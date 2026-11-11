@@ -1,0 +1,324 @@
+[
+ {
+  "test": "6 consumers aligned verbatim to frozen production artifacts with LIVE md5 and ACL unchanged",
+  "status": "PASS",
+  "detail": {
+   "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)": {
+    "mirror_md5": "a317c4945f3b933a3b0cfacb0e049e02",
+    "live_md5_after": "804e2a33cdf204ed9fa179f2afa2bf6e",
+    "acl_unchanged": true
+   },
+   "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)": {
+    "mirror_md5": "21110263f68c54278e0874d677cd0418",
+    "live_md5_after": "7cd8ee22794bf57e6592867259c9397e",
+    "acl_unchanged": true
+   },
+   "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)": {
+    "mirror_md5": "49917dec96489dba3b10b8962af245ee",
+    "live_md5_after": "bd76345c3bceaa5e6203013920427df4",
+    "acl_unchanged": true
+   },
+   "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": {
+    "mirror_md5": "22f5c581afab10aa206d1919fe028105",
+    "live_md5_after": "c5b1da90e1f649fe0eeb99deac7094ee",
+    "acl_unchanged": true
+   },
+   "public.rpc_b2b_resale_os_availability_v1(uuid)": {
+    "mirror_md5": "5cb42bd5ff0f7e2a93ad4d8d79d8c22e",
+    "live_md5_after": "e9767fcbcbfb831b92ee7f1523b1262e",
+    "acl_unchanged": true
+   },
+   "public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": {
+    "mirror_md5": "a7eeeff264d350219f1519ddb15c730f",
+    "live_md5_after": "6a249b41a6e729835ff86cfc2b40e25b",
+    "acl_unchanged": true
+   }
+  }
+ },
+ {
+  "test": "mirror ACL equals pinned ACL (no rewrite of package)",
+  "status": "PASS",
+  "detail": {
+   "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)": "{postgres=X/postgres}",
+   "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)": "{postgres=X/postgres}",
+   "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)": "{postgres=X/postgres}",
+   "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "{postgres=X/postgres}",
+   "public.rpc_b2b_resale_os_availability_v1(uuid)": "{postgres=X/postgres,authenticated=X/postgres}",
+   "public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "{postgres=X/postgres,authenticated=X/postgres}"
+  }
+ },
+ {
+  "test": "PROBE: all non-financial conditions hold (scope grant, owner, family, integer whole packs, weight rule, snapshots)",
+  "status": "PASS",
+  "detail": {
+   "item": {
+    "qty": 5.0,
+    "pack": true,
+    "integer": true,
+    "peso_kg": 25.0,
+    "unidade": "unidade",
+    "conteudo": "kg",
+    "pack_version": 1,
+    "peso_rule_ok": true,
+    "product_family": "fertilizante_adubo",
+    "product_owner_ok": true
+   },
+   "status": "aprovado",
+   "approved_at": true,
+   "approved_by": true,
+   "terms_linked": {
+    "same_order": true,
+    "approved_at": true,
+    "approved_by": true,
+    "approval_status": "approved"
+   },
+   "c2_origin_valid": true,
+   "os_create_grant": 1,
+   "partner_owner_ok": true,
+   "economic_snapshot": true,
+   "credit_approved_pair": true,
+   "internal_origin_null": true,
+   "ready_for_production": false,
+   "receivable_generated": false,
+   "payment_condition_status": "defined",
+   "financial_approval_status": "pending",
+   "requires_financial_approval": true
+  }
+ },
+ {
+  "test": "PROBE: only failing condition is frozen header (financial_approval_status pending) while linked terms are approved",
+  "status": "PASS",
+  "detail": {
+   "item": {
+    "qty": 5.0,
+    "pack": true,
+    "integer": true,
+    "peso_kg": 25.0,
+    "unidade": "unidade",
+    "conteudo": "kg",
+    "pack_version": 1,
+    "peso_rule_ok": true,
+    "product_family": "fertilizante_adubo",
+    "product_owner_ok": true
+   },
+   "status": "aprovado",
+   "approved_at": true,
+   "approved_by": true,
+   "terms_linked": {
+    "same_order": true,
+    "approved_at": true,
+    "approved_by": true,
+    "approval_status": "approved"
+   },
+   "c2_origin_valid": true,
+   "os_create_grant": 1,
+   "partner_owner_ok": true,
+   "economic_snapshot": true,
+   "credit_approved_pair": true,
+   "internal_origin_null": true,
+   "ready_for_production": false,
+   "receivable_generated": false,
+   "payment_condition_status": "defined",
+   "financial_approval_status": "pending",
+   "requires_financial_approval": true
+  }
+ },
+ {
+  "test": "LIVE consumer denies OS creation for canonically approved order",
+  "status": "PASS",
+  "detail": "ERROR:  PT409: B2B_RESALE_ORDER_CONFLICT"
+ },
+ {
+  "test": "PRE PASS (exact final bytes)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "installed candidate md5 equals pinned attempt-234 md5",
+  "status": "PASS",
+  "detail": {
+   "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)": "b37a9d5555f82fb4c5bf922d5cc8bc3f",
+   "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)": "5900213e18ecdf01c5d0cf53bcb91892",
+   "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)": "8c2cc49c13c18a172c882f6d58c3529f",
+   "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "7ed7bfeb8fea7e912d8aa051cfd773ec",
+   "public.rpc_b2b_resale_os_availability_v1(uuid)": "eb1809572a26bcfad39e2e080c3c06e2",
+   "public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "61c35d679563f96b9dc2a8af7e6d3d95"
+  }
+ },
+ {
+  "test": "POST PASS (exact final bytes, no substitution)",
+  "status": "PASS",
+  "detail": {
+   "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)": "b37a9d5555f82fb4c5bf922d5cc8bc3f",
+   "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)": "5900213e18ecdf01c5d0cf53bcb91892",
+   "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)": "8c2cc49c13c18a172c882f6d58c3529f",
+   "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "7ed7bfeb8fea7e912d8aa051cfd773ec",
+   "public.rpc_b2b_resale_os_availability_v1(uuid)": "eb1809572a26bcfad39e2e080c3c06e2",
+   "public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)": "61c35d679563f96b9dc2a8af7e6d3d95"
+  }
+ },
+ {
+  "test": "install rerun refused by PRE pins",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "candidate: OS created from linked approved terms",
+  "status": "PASS",
+  "detail": {
+   "ok": true,
+   "os_id": "32cea00c-4544-46bb-98ea-4df6c4ca46b4",
+   "replay": false,
+   "contract": "B2B_RESALE_OS_V1",
+   "order_id": "bc388247-c836-4d5e-9a48-749b622c3edf",
+   "order_item_id": "b9b0c32c-7e6a-40a8-9c17-b8c15b7391f0"
+  }
+ },
+ {
+  "test": "OS replay same key",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "canonical predicate: control true; pending/rejected/no actor/absent/divergent link/header rejected/no commercial/credit inconsistent all false",
+  "status": "PASS",
+  "detail": {
+   "control_no_mutation": "true,true",
+   "terms_pending_real": "false,false",
+   "terms_rejected": "false,false",
+   "terms_approved_without_actor": "false,false",
+   "link_absent": "false,false",
+   "link_divergent_other_order": "false,false",
+   "header_rejected": "false,false",
+   "commercial_approval_absent": "false,false",
+   "credit_pair_inconsistent": "false,false",
+   "terms_approved_without_date": "false,false",
+   "commercial_approval_without_date": "false,false",
+   "partner_owner_other_tenant": "false,false",
+   "terms_and_header_rejected_as_writer_does": "false,false",
+   "waived_terms_not_required": "true,true",
+   "waived_terms_rejected": "false,false",
+   "waived_terms_pending_adjustment": "false,false",
+   "waived_terms_absent": "false,false",
+   "waived_terms_link_other_order": "false,false",
+   "required_terms_not_required": "false,false",
+   "waived_but_header_pending": "false,false",
+   "waived_but_header_rejected": "false,false",
+   "waived_without_commercial_approver": "false,false"
+  }
+ },
+ {
+  "test": "buyer/foreign actor denied on availability reader",
+  "status": "PASS",
+  "detail": "ERROR:  42501: B2B_RESALE_ACTOR_DENIED"
+ },
+ {
+  "test": "real rejected terms deny OS with exact grant",
+  "status": "PASS",
+  "detail": "ERROR:  PT409: B2B_RESALE_ORDER_CONFLICT"
+ },
+ {
+  "test": "two distinct purchased lots",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "reserve vs reject waits on same stock gate and cannot undo approval/reservation",
+  "status": "PASS",
+  "detail": {
+   "wait": [
+    {
+     "pid": 64315,
+     "blocking": [
+      64305
+     ],
+     "ungranted": true
+    }
+   ],
+   "error": "ERROR:  B2B_REJECT_STATE_CONFLICT\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 189 at RAISE\n"
+  }
+ },
+ {
+  "test": "reserve lot1 replay: same receipt, no new movement",
+  "status": "PASS",
+  "detail": {
+   "ok": true,
+   "itens": [
+    "e7e2be45-075a-4af3-8efc-1c4c8e9b981f"
+   ],
+   "replay": true
+  }
+ },
+ {
+  "test": "concurrent same-key reserve (2 real sessions, proven wait): exactly one reservation; loser is exact replay or explicit error; later exact replay returns same receipt",
+  "status": "PASS",
+  "detail": {
+   "outs": [
+    {
+     "ok": true,
+     "itens": [
+      "8dd4d51e-1ee4-4521-8ad7-e96de08bd448"
+     ],
+     "replay": false
+    },
+    {
+     "ok": true,
+     "itens": [
+      "8dd4d51e-1ee4-4521-8ad7-e96de08bd448"
+     ],
+     "replay": true
+    }
+   ],
+   "errs": []
+  }
+ },
+ {
+  "test": "no over-reservation beyond purchased lot",
+  "status": "PASS",
+  "detail": "ERROR:  23514: ESTQ_STATUS_INVALIDO: item n\u00e3o est\u00e1 dispon\u00edvel (reservado)."
+ },
+ {
+  "test": "partial delivery 3/5 confirmed; order NOT concluded",
+  "status": "PASS",
+  "detail": "aprovado"
+ },
+ {
+  "test": "confirm replay same key: no new stock movement (no double exit)",
+  "status": "PASS",
+  "detail": [
+   3,
+   "ERROR:  PT409: DELIVERY_CONFIRM_LEGACY_REVIEW_REQUIRED"
+  ]
+ },
+ {
+  "test": "final: 5/5 delivered over two lots, zero reserved left, no receivable created, header untouched (pending)",
+  "status": "PASS",
+  "detail": {
+   "delivered": 5,
+   "receivables": 1,
+   "order_status": "entregue",
+   "reserved_left": 0,
+   "header_financial": "pending"
+  }
+ },
+ {
+  "test": "rollback ACL unchanged vs pinned",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "rollback: LIVE md5 restored, deliveries kept",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "after rollback canonical-terms order is closed again (fail closed)",
+  "status": "PASS",
+  "detail": "ERROR:  PT409: B2B_RESALE_ORDER_CONFLICT"
+ },
+ {
+  "test": "rollback rerun is idempotent (LIVE pins still hold)",
+  "status": "PASS",
+  "detail": null
+ }
+]

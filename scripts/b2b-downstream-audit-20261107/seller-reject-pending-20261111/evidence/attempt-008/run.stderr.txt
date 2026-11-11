@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/tmp/seller-reject-mirror-_ou6lqza/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 511, in main
+    results=SR.run(B,Review70.Review,Q,A,choice,OUT)
+  File "/tmp/seller-reject-mirror-_ou6lqza/project/scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/mirror_flow.py", line 131, in run
+    lr=m.run(B,Review,Q,A,choice,Path(out).parent)
+  File "/tmp/seller-reject-mirror-_ou6lqza/project/scripts/b2b-downstream-audit-20261107/logistics-linked-approval-20261110/mirror_flow.py", line 157, in run
+    pid=B.last("SELECT pid FROM pg_stat_activity WHERE state='idle in transaction' AND application_name='reject_reserve_holder';")
+  File "/tmp/seller-reject-mirror-_ou6lqza/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 60, in last
+    return sql(statement).splitlines()[-1]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^
+IndexError: list index out of range
