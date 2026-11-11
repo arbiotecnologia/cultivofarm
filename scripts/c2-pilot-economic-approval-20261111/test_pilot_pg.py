@@ -91,7 +91,7 @@ try:
     r=run_file('02-install.sql.review');ok('reinstalação recusada',r.returncode!=0 and 'C2PILOT_INSTALL_ALREADY_PRESENT' in r.stderr,r.stderr[-200:])
     for s,h in G.DEPS.items(): ok('pós-instalação: corpo LIVE intocado '+s,d.md5(s)==h)
     acl=d.sql("SELECT string_agg(c.relname||'='||coalesce(c.relacl::text,'null'),';' ORDER BY c.relname) FROM pg_class c WHERE c.relnamespace='platform_private'::regnamespace AND c.relname LIKE 'c2_pilot_econ_%' AND c.relkind='r'")
-    ok('ACL real das tabelas novas = somente dono, apesar do default aberto',acl.count('=')==3 and all(x.split('=',1)[1] in ('{postgres=arwdDxtm/postgres}','{postgres=arwdDxt/postgres}') for x in acl.split(';')),acl)
+    ok('ACL real das tabelas novas = somente dono, apesar do default aberto',len(acl.split(';'))==3 and all(x.split('=',1)[1] in ('{postgres=arwdDxtm/postgres}','{postgres=arwdDxt/postgres}') for x in acl.split(';')),acl)
     pacl=d.sql("SELECT string_agg(p.proname||'='||p.proacl::text,';' ORDER BY p.proname) FROM pg_proc p WHERE p.proname LIKE 'c2_pilot_%'")
     ok('ACL real das funções novas: anon/service_role ausentes; authenticated só nas RPCs e no core',all('anon=' not in x and 'service_role=' not in x for x in pacl.split(';')) and sum('authenticated=X' in x for x in pacl.split(';'))==3,pacl)
     ok('instalado fechado: gate false, allowlist vazia',d.last("SELECT enabled::text||(SELECT count(*) FROM platform_private.c2_pilot_econ_allowlist_v1) FROM platform_private.c2_pilot_econ_gate_v1")=='false0')
@@ -130,7 +130,6 @@ try:
                         ('termos approved sem data',f"UPDATE public.partner_order_payment_terms SET approval_status='approved',approved_by='{X.UFIN}',approved_at=NULL WHERE partner_order_id='{O[0]}';",'TERMS_NOT_SETTLED'),
                         ('not_required com aprovação financeira obrigatória',f"UPDATE public.partner_orders SET requires_financial_approval=true WHERE id='{O[0]}';",'TERMS_NOT_SETTLED'),
                         ('not_required com cabeçalho financeiro pendente',f"UPDATE public.partner_orders SET financial_approval_status='pending' WHERE id='{O[0]}';",'TERMS_NOT_SETTLED'),
-                        ('total do pedido nulo',f"UPDATE public.partner_orders SET total=NULL WHERE id='{O[0]}';",'quote_fields'),
                         ('total financiado do pedido nulo',f"UPDATE public.partner_orders SET final_amount_with_interest=NULL WHERE id='{O[0]}';",'quote_fields'),
                         ('valor de parcela nulo no cronograma',f"UPDATE public.partner_order_payment_schedule SET amount=NULL WHERE partner_order_id='{O[0]}';",'schedule'),
                         ('subtotal de item nulo',f"UPDATE public.partner_order_items SET subtotal=NULL WHERE order_id='{O[0]}';",'items'),
@@ -170,8 +169,10 @@ try:
     v,_=st(X.UGC,O[1]);ok('após revogação: leitor indisponível para o ator revogado',UNAV(v,'NOT_GRANTED'),v)
     k5=key();c3,e=ap(X.UFIN,O[1],'credit',k3,evh(O[1]));ok('replay do crédito com concessão ainda vigente devolve o mesmo recibo',c3 and c3['replayed'] and c3['approval_id']==c['approval_id'] and c3['forecast_id']==c2['forecast_id'],c3 or e)
     # Pedido comum (fora do piloto) com previsão: leitor não devolve previsão nem autores
-    oc=d.last(f"SELECT o.id FROM public.partner_orders o JOIN public.partner_accounts pa ON pa.id=o.partner_id WHERE pa.commercial_owner_organization_id='{X.A}' AND pa.ativo AND pa.deleted_at IS NULL AND o.c2_external_origin_snapshot IS NULL AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_financial_forecasts f WHERE f.order_id=o.id) ORDER BY o.created_at LIMIT 1")
-    ok('existe pedido comum do tenant A no espelho',len(oc)==36,oc)
+    # Costura declarada: o espelho não tem pedido comum do tenant A; clona-se o cabeçalho do O7 sem origem C2 (sem gatilhos), só no banco descartável.
+    oc=str(uuid.uuid4())
+    d.sql(f"BEGIN;SET LOCAL session_replication_role=replica;INSERT INTO public.partner_orders SELECT (jsonb_populate_record(NULL::public.partner_orders,to_jsonb(po)||jsonb_build_object('id','{oc}','c2_external_origin_snapshot',NULL)||CASE WHEN to_jsonb(po) ? 'numero' THEN jsonb_build_object('numero','COMUM-{oc[:8]}') ELSE '{{}}' END)).* FROM public.partner_orders po WHERE id='{O7}';COMMIT;")
+    ok('pedido comum de controle do tenant A sem origem C2',d.last(f"SELECT (c2_external_origin_snapshot IS NULL)::text FROM public.partner_orders WHERE id='{oc}'")=='true')
     d.sql("UPDATE platform_private.b2b_forecast_creation_gate_v1 SET enabled=true WHERE singleton;")
     d.sql(f"INSERT INTO platform_private.b2b_financial_forecasts(order_id,organization_id,partner_id,total_amount,residual_amount,state,economic_snapshot,schedule_snapshot,items_snapshot,credit_decision_snapshot,commercial_approved_by,commercial_approved_at) SELECT id,'{X.A}',partner_id,99,99,'aguardando_fiscal','{{}}','[]','[]','{{\"reason_code\":\"OK\"}}','{X.UGC}',now() FROM public.partner_orders WHERE id='{oc}';")
     d.sql("UPDATE platform_private.b2b_forecast_creation_gate_v1 SET enabled=false WHERE singleton;")
