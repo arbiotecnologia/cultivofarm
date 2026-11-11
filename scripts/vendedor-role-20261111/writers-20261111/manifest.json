@@ -69,7 +69,7 @@
     },
     "platform_private.b2b_internal_order_snapshot_guard()": {
       "live": "1c342be2cdaf7bf458a3cd1aa15e7ba5",
-      "candidate": "cac1843af110621fc30edb488fff2c6d",
+      "candidate": "1f82005554748b8545403372160e68a9",
       "auditor_confirmed": false,
       "acl": "{postgres=X/postgres}|postgres"
     },
@@ -81,7 +81,7 @@
     },
     "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": {
       "live": "97bcdb9884b54adb3bd4aae4915e32d0",
-      "candidate": "2940102f053123d64b9ed6724832ab3f",
+      "candidate": "9912e3dc000c3b91c94a2dd4f7427b4a",
       "auditor_confirmed": true,
       "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}|postgres"
     },
@@ -99,7 +99,7 @@
     "public.seller_portfolio_capability_v1()": "21b1683d561f599bd3b349c2a4e6ecb9",
     "public.seller_portfolio_orders_v1()": "7448e15784ff66e55b8eed1a06d0665b",
     "public.admin_seller_portfolio_overview_v1()": "53dca32d7f12458c194cf852e47ad92f",
-    "platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)": "271aba99a49f475135e3e4726375a6e6"
+    "platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)": "f5d8e6645dac2527e830a3eac27d3978"
   },
   "new_acl": {
     "platform_private.seller_commercial_actor()": "{postgres=X/postgres}",
@@ -118,9 +118,9 @@
   ],
   "files": {
     "01c-pre-writers.sql.readonly": "d733d83e56092aa6e3b7237a7bae3b2b53996d018cecd352c9e1ae6dde85ee22",
-    "02c-install-writers.sql.review": "9098009c5c520287aea1eeebb5b0be0b28deb8378fbf3b54c674306596eddff2",
-    "03c-post-writers.sql.readonly": "3604c21b479537f3e4001a74e5897f4d4523fdf639e7fd974a7d450161b07362",
-    "04c-rollback-writers.sql.review": "c0703fcc30c61924a4a48622ffdddb8e88cd6cb069aa4f9461a0c450a608ff6a"
+    "02c-install-writers.sql.review": "f7c7857685ec165e03a9593647f5cda7f10c7e866e9b8199f2af4f75dd1d572f",
+    "03c-post-writers.sql.readonly": "e462376cad13696cff37c5e1855554af9dd16a0ef7801a71ff281286599efec6",
+    "04c-rollback-writers.sql.review": "c899fe5746d719757718712431698dea893d5d6f0492abb2d7b4c33f97f31722"
   },
-  "helpers_sha256": "428ad60278025fa93bc40551a8205c6f7504deb9cfe23f552a530181885c2dcf"
+  "helpers_sha256": "dc04738acc9599737bc8e5eb12646698b03a9e30fafa1107d9e44985bbd80322"
 }
