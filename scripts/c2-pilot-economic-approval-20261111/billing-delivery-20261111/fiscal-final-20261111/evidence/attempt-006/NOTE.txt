@@ -1,0 +1,1 @@
+21 checks 1 FAIL: controle e11dd06e já tinha OS; replay com outro expected → B2B_RESALE_REPLAY_CONFLICT (comportamento correto); controle trocado para pedido aprovado sem OS

@@ -1,0 +1,47 @@
+{
+ "before": {
+  "os": 0,
+  "all_os": 23,
+  "titles": 0,
+  "entregas": 0,
+  "residual": 20.0,
+  "stock_sum": "53/20",
+  "all_titles": 2,
+  "stock_moves": 56,
+  "all_entregas": 16,
+  "all_installments": 2
+ },
+ "after_negative": {
+  "os": 0,
+  "all_os": 23,
+  "titles": 0,
+  "entregas": 0,
+  "residual": 20.0,
+  "stock_sum": "53/20",
+  "all_titles": 2,
+  "stock_moves": 56,
+  "all_entregas": 16,
+  "all_installments": 2
+ },
+ "after_positive_control": {
+  "os": 0,
+  "all_os": 23,
+  "titles": 0,
+  "entregas": 0,
+  "residual": 20.0,
+  "stock_sum": "53/20",
+  "all_titles": 2,
+  "stock_moves": 56,
+  "all_entregas": 16,
+  "all_installments": 2
+ },
+ "negative": [
+  "ERROR:  42501: permission denied for function rpc_b2b_resale_os_create_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n",
+  "ERROR:  42501: permission denied for function rpc_b2b_resale_os_create_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+ ],
+ "positive": {
+  "rc": 3,
+  "out": "",
+  "err": "ERROR:  42501: permission denied for function rpc_b2b_resale_os_create_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+ }
+}

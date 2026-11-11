@@ -1,0 +1,44 @@
+PASS cotação respondida pelo writer real (R$10) 
+PASS PB-like: em_analise_comercial, C2 pendente contábil, total 20, snapshot nulo 
+PASS piloto 01-pre.sql.readonly sobre a composição fiscal final 
+PASS piloto 02-install.sql.review sobre a composição fiscal final 
+PASS piloto 03-post.sql.readonly sobre a composição fiscal final 
+PASS 05 habilitação estreita do PB 
+PASS duas aprovações explícitas → previsão 20/20 aguardando_fiscal 
+PASS approve_partner_order LIVE [C2_ACCOUNTING_PENDING] 
+PASS approve_b2b_credit LIVE [C2_ACCOUNTING_PENDING] 
+PASS generate_b2b_receivable_secure (Financeiro) [C2_ACCOUNTING_PENDING] 
+PASS elegibilidade fiscal do PB: não elegível 
+INFO motivos {'orderId': 'af7970d1-59f3-413b-b26a-0ef765566613', 'reasons': [{'code': 'FISCAL_ORDER_STATUS_NOT_BILLABLE', 'message': 'Status do pedido nao habilitado para faturamento: em_analise_comercial', 'severity': 'BLOCK'}, {'code': 'FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING', 'message': 'Pedido sem aprovaca
+INFO inserção do documento sintético (pode ser negada por guardas reais) {'rc': 0, 'err': ''}
+INFO sync de início de emissão da previsão do PB (None, 'ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN')
+INFO callback autorizado H13 + replay [{'rc': 0, 'out': '{"nRec": null, "cStat": "104", "chNFe": "35262222222222222222222222222222222222004242", "nProt": "PB-NEG-PROT", "state": "SUCCEEDED", "outcome": "AUTHORIZED", "xMotivo": "LOTE PROCESSADO; PROTOCOLO AUTORIZADO", "protocolCStat": "100", "transmissionId": "86e5db77-199e-402c-aa76-bdc
+PASS após callback autorizado: nenhum título para a NF do PB 
+PASS previsão do PB não reduz (residual 20) e nenhum FISCAL_CONFIRMED 
+PASS nenhuma alocação de documento para o PB 
+INFO estado final da NF sintética do PB {'inv_status': 'DRAFT', 'receivable': None}
+PASS PB: zero título (por pedido e por documento) 
+PASS PB: pedido idêntico ao estado após aprovações (cabeçalho) 
+Traceback (most recent call last):
+  File "/dev-server/scripts/c2-pilot-economic-approval-20261111/billing-delivery-20261111/fiscal-final-20261111/c2_negative_fiscal_final_v2.py", line 95, in <module>
+    e0=effects(PB);g0=fp(PB)
+  File "/dev-server/scripts/c2-pilot-economic-approval-20261111/billing-delivery-20261111/fiscal-final-20261111/c2_negative_fiscal_final_v2.py", line 83, in effects
+    return json.loads(d.last(f"""SELECT jsonb_build_object(
+                      ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     'residual',(SELECT residual_amount FROM platform_private.b2b_financial_forecasts WHERE order_id='{o}'),
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+     'stock_sum',(SELECT coalesce(sum(quantidade_disponivel),0)::text||'/'||coalesce(sum(quantidade_reservada),0)::text FROM public.estoque_produto),
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     'all_titles',(SELECT count(*) FROM public.accounts_receivable),'all_installments',(SELECT count(*) FROM public.accounts_receivable_installments))::text"""))
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/c2neg/db.py", line 13, in last
+    def last(s,sql): return (s.sql(sql).splitlines() or [''])[-1]
+                             ~~~~~^^^^^
+  File "/tmp/c2neg/db.py", line 11, in sql
+    if r.returncode: raise RuntimeError(r.stderr[-3000:])
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: ERROR:  column "quantidade_disponivel" does not exist
+LINE 8:      'stock_sum',(SELECT coalesce(sum(quantidade_disponivel)...
+                                              ^
+
