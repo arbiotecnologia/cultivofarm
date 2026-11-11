@@ -1,3 +1,4 @@
+import 'fake-indexeddb/auto';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { withPaymentMethod, pickTestPix, TEST_PIX, TEST_PIX_OPTION, TEST_CONTRACT, condEnvelope } from "@/test/helpers/b2bPaymentMethodMock";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
