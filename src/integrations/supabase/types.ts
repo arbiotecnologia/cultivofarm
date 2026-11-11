@@ -21390,6 +21390,10 @@ export type Database = {
         Args: { p_note: string; p_partner_order_id: string }
         Returns: Json
       }
+      admin_assign_seller_portfolio_v1: {
+        Args: { p_partner: string; p_reason: string; p_seller: string }
+        Returns: string
+      }
       admin_can_update_user_password_server: {
         Args: { p_actor_id: string; p_target_id: string }
         Returns: boolean
@@ -21405,6 +21409,17 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      admin_list_seller_portfolio_v1: {
+        Args: never
+        Returns: {
+          assigned_at: string
+          id: string
+          partner_id: string
+          reason: string
+          revoked_at: string
+          seller_user_id: string
+        }[]
       }
       admin_provision_user_profile_v1: {
         Args: {
@@ -21424,6 +21439,11 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_revoke_seller_portfolio_v1: {
+        Args: { p_assignment: string; p_reason: string }
+        Returns: undefined
+      }
+      admin_seller_portfolio_overview_v1: { Args: never; Returns: Json }
       aplicacao_storage_path_permitido: {
         Args: { _modo: string; _name: string }
         Returns: boolean
@@ -26596,6 +26616,8 @@ export type Database = {
         }
         Returns: undefined
       }
+      seller_portfolio_capability_v1: { Args: never; Returns: Json }
+      seller_portfolio_orders_v1: { Args: never; Returns: Json }
       send_partner_simulation_to_manager_secure: {
         Args: { p_simulation_id: string }
         Returns: undefined
@@ -27015,6 +27037,7 @@ export type Database = {
         | "parceiro_b2b"
         | "parceiro_b2b_tecnico"
         | "superadmin"
+        | "vendedor"
       categoria_arquivo_consultor:
         | "praga"
         | "doenca"
@@ -27422,6 +27445,7 @@ export const Constants = {
         "parceiro_b2b",
         "parceiro_b2b_tecnico",
         "superadmin",
+        "vendedor",
       ],
       categoria_arquivo_consultor: [
         "praga",
