@@ -109,7 +109,6 @@ def main():
     for s in newf:
         post.append(f" IF md5(pg_get_functiondef('{s}'::regprocedure)) IS DISTINCT FROM '{newm[s]}' THEN RAISE EXCEPTION 'VENDW_POST_DRIFT:{s}'; END IF;")
         post.append(f" IF (SELECT coalesce(proacl::text,'NULL') FROM pg_proc WHERE oid='{s}'::regprocedure) IS DISTINCT FROM '{newacl[s]}' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:{s}'; END IF;")
-    post.append(" IF platform_private.b2b_internal_commercial_actor() IS NOT DISTINCT FROM NULL AND false THEN NULL; END IF;")
     post.append(" IF md5(pg_get_functiondef('platform_private.b2b_internal_commercial_actor()'::regprocedure)) IS DISTINCT FROM '6555396c4f8fe914177d2ccfc3891279' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
     post.append(" IF md5(pg_get_functiondef('platform_private.c2_internal_order_target_reason(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '07d7c9002cbfe17497c9ee4a92d5a928' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
     post.append(" IF md5(pg_get_functiondef('public.fn_cc_can_prepare(uuid)'::regprocedure)) IS DISTINCT FROM '"+db.md5('public.fn_cc_can_prepare(uuid)')+"' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
