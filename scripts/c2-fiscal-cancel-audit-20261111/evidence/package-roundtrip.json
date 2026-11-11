@@ -1,0 +1,44 @@
+[
+  {
+    "file": "diagnostic/03-post.sql.readonly",
+    "sha256": "e06efa9b671dfc5eb399df8ad678a00a26d46bf2b85b140c6c3b78fabfbd98b5",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "diagnostic/04-rollback.sql.review",
+    "sha256": "b3e8e322ad8e674472e92514720cac940e0df3be25093eebefed95c38549fd7b",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "diagnostic/01-pre.sql.readonly",
+    "sha256": "aca994d21122f4e0d1522c41266fdc55798cfaf80d1d06dd9df2b7ecc0f50a53",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "diagnostic/02-install.sql.review",
+    "sha256": "ded2e264482cc486bb9239e4198a01397575f801f52489a77f2827f9b80b6b99",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "diagnostic/03-post.sql.readonly",
+    "sha256": "e06efa9b671dfc5eb399df8ad678a00a26d46bf2b85b140c6c3b78fabfbd98b5",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "event-sequence/03-post.sql.readonly",
+    "sha256": "015cdd107afcdf0a27b2d77886fc80d794ea7f7e5c2c855ab16592831bc0b511",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "event-sequence/04-rollback-deny.sql.review",
+    "sha256": "fb8d95ef7924cdaa1efc9dfb9d283158a016224b44728a2a59f697c4974c9f3f",
+    "exit": 0,
+    "stderr": ""
+  }
+]

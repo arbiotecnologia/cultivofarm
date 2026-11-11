@@ -1,0 +1,12 @@
+{
+  "acl": [
+    "postgres=X/postgres",
+    "service_role=X/postgres"
+  ],
+  "md5": "9af2e91f3dbea476bffb4328fa288b2f",
+  "owner": "postgres",
+  "config": [
+    "search_path=public, pg_temp"
+  ],
+  "secdef": true
+}

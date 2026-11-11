@@ -1,0 +1,17 @@
+{
+  "candidate_md5": "aa4153c528a3c73311969e07cabf3fd4",
+  "invoice": "4a63384a-513b-481b-bbef-d6cbfa616a73",
+  "results": [
+    {
+      "exit": 0,
+      "out": "{\"reason\": \"LOCAL SERIALIZATION REGRESSION\", \"eventId\": \"360ffd72-faea-48ef-9181-f916aa16253b\", \"protocol\": \"PB-NEG-PROT\", \"accessKey\": \"35262222222222222222222222222222222222004242\", \"eventCode\": \"110111\", \"seqEvento\": 2, \"idempotentReplay\": false, \"companySettingsId\": \"0a757cd6-26ec-4920-94ba-81499af7ee70\"}\n",
+      "err": ""
+    },
+    {
+      "exit": 0,
+      "out": "{\"reason\": \"LOCAL SERIALIZATION REGRESSION\", \"eventId\": \"62a56aa6-5d21-4058-a9d5-209af044f32a\", \"protocol\": \"PB-NEG-PROT\", \"accessKey\": \"35262222222222222222222222222222222222004242\", \"eventCode\": \"110111\", \"seqEvento\": 1, \"idempotentReplay\": false, \"companySettingsId\": \"0a757cd6-26ec-4920-94ba-81499af7ee70\"}\n",
+      "err": ""
+    }
+  ],
+  "distinct_sequences": true
+}
