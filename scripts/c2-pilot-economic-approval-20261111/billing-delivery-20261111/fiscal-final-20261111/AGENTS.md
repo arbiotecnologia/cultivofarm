@@ -1,0 +1,4 @@
+- Somente espelho descartável; nunca SQL hospedado, publicação, emissão, cobrança ou envio.
+- Variantes do harness 851b14f9 alteram só DADOS DE ENTRADA (desconto do plano, quantidades de reserva/entrega) e asserções correspondentes; diffs exatos em harness-diff/ — resultados nunca inseridos por SQL.
+- NF sintética = documento só; autorização/títulos/residual vêm do callback H13 e da ponte reais.
+- Negativa C2 roda na composição fiscal final + Vendedor 02a–02d + piloto 01/02/03/05 com bytes SHA conferidos; PB-like fixture, não o PB real.
