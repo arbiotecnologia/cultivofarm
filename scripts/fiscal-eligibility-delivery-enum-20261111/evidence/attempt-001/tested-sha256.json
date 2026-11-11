@@ -1,0 +1,11 @@
+{
+ "01-pre.sql.readonly": "ff47143b0eb857c2a25ea63843415f42a756dd4ba728557dbaa552128af30b90",
+ "02-install.sql.review": "6fa69751f8967388052f4715754b15eba7b9c0b35b8810a1d290aca9147abb6f",
+ "03-post.sql.readonly": "bf0c66592ec058cea1a7159aec8bd72b09a8a896741a8343ee943e606354ef99",
+ "04-rollback.sql.review": "667f9c31f4e862ce17e86a8d50355838b8f81a523a356f6b65fee53a2234e11a",
+ "candidate.sql": "797dc0841df31a60d231baa5c1884434380f1640941ed7633c36be4cb51ec17e",
+ "generate.py": "fa9b89c86400cc38a46e913be8bd707a7f8ec351f3d8862491f2ecc41f10a44b",
+ "test_pg.py": "ced999075ad68336c7bacfb81514b979e587663666ff4ebb77d0c0900a251dfe",
+ "live-capture/eligibility-2arg.sql": "24eb8ab6ae444c0f431b2dda1b89fd5ba00318ed1632e2d89adae7925f89f84c",
+ "live-capture/pins.json": "7c7cff630955798612f561a84a881cbce091df54cb07d7a1e8f5b37da07b1d48"
+}

@@ -20,7 +20,8 @@ def ok(name,cond,detail=None):
 def as_adm(s): return f"""SET ROLE authenticated; SET request.jwt.claim.sub='{ADM}'; SET request.jwt.claims='{json.dumps({"sub":ADM,"role":"authenticated","exp":4102444800})}';"""+s
 def elig(src,i,three=False):
     return run(as_adm(f"SELECT public.fn_fiscal_invoice_eligibility('{src}','{i}'{',NULL' if three else ''})::text;"))
-def codes(o): return sorted({r['code'] for r in json.loads(o.splitlines()[-1])['reasons']})
+def J(o): return json.loads([l for l in o.splitlines() if l.startswith('{')][-1])
+def codes(o): return sorted({r['code'] for r in J(o)['reasons']})
 def f(n): return (H/n).read_text()
 md5=lambda sig:last(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure));")
 S2='public.fn_fiscal_invoice_eligibility(text,uuid)';S3='public.fn_fiscal_invoice_eligibility(text,uuid,uuid)'
@@ -74,7 +75,7 @@ for sig3 in (False,True):
     for st in ('separado','em_rota'):
         # SEAM: estado não concluído só existe em transação revertida (triggers de entrega ignorados via replica); nada persiste.
         c,o,e=run(f"BEGIN;SET session_replication_role=replica;UPDATE public.entregas SET status='{st}',entregue_em=NULL,confirmada_em=NULL,recebimento_confirmado_em=NULL WHERE id='{DONE[0]}';SET session_replication_role=origin;"+as_adm(f"SELECT public.fn_fiscal_invoice_eligibility('ENTREGA','{DONE[0]}'{',NULL' if sig3 else ''})::text;")+"ROLLBACK;")
-        ok(f'DEPOIS ({n} args) entrega não concluída ({st}) nega NOT_COMPLETED + RECEIPT_MISSING, ineligible',c==0 and {'FISCAL_DELIVERY_NOT_COMPLETED','FISCAL_DELIVERY_RECEIPT_MISSING'}<=set(codes(o)) and json.loads(o.splitlines()[-1])['eligible'] is False,(c,e,o[-300:]))
+        ok(f'DEPOIS ({n} args) entrega não concluída ({st}) nega NOT_COMPLETED + RECEIPT_MISSING, ineligible',c==0 and {'FISCAL_DELIVERY_NOT_COMPLETED','FISCAL_DELIVERY_RECEIPT_MISSING'}<=set(codes(o)) and J(o)['eligible'] is False,(c,e,o[-300:]))
     c,o,e=elig('ENTREGA','00000000-0000-0000-0000-00000000dead',sig3);ok(f'({n} args) entrega inexistente nega NOT_FOUND',c==0 and 'FISCAL_DELIVERY_NOT_FOUND' in codes(o),e)
 ok('entrega revertida voltou a entregue (sem efeito persistido)',last(f"SELECT status FROM public.entregas WHERE id='{DONE[0]}'")=='entregue')
 c,o,e=run(f"SET ROLE anon;SELECT public.fn_fiscal_invoice_eligibility('ENTREGA','{DONE[0]}');");ok('anon continua sem EXECUTE',c!=0 and 'permission denied' in e,e[:200])
