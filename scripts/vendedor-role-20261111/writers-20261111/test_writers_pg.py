@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Testes do delta de writers do Vendedor no espelho composto restaurado (PostgreSQL descartável).
 Executa os bytes finais 01c/02c/03c/04c com SHA conferido. Auth sintética: não prova JWT/RLS/Storage hospedados."""
-import hashlib,json,sys,threading,time
+import hashlib,json,subprocess,sys,threading,time
 from pathlib import Path
 H=Path(__file__).resolve().parent;sys.path.insert(0,str(H))
 import mirror_db
@@ -162,29 +162,76 @@ try:
     aq,e=call(UADM,f"public.b2b_payment_condition_assign('{P}','{PLQ}','pix',1,true)");ok('fixture: admin atribui condição a P',aq is not None,e)
     QCH={"payment_method":"pix","payment_condition_version":1,"payment_deadline_days":5}
     q0=counts()
-    sq,e=sim(UB,P,PLQ,QCH);jrq,e2=attempt(UB,P)
-    cq,e3=create(UB,P,sq['cart_hash'],jrq['key'],PLQ,QCH) if sq and jrq else (None,e or e2)
-    ok('comprador cria pedido sob consulta pela via normal',cq is not None and d.last(f"select status from public.partner_orders where id='{cq['id']}'")=='aguardando_cotacao',cq or e3)
-    if cq:
-        qid=cq['id']
-        ords,e=call(V1,"public.seller_portfolio_orders_v1()");qo=[x for x in (ords or {}).get('orders',[]) if x['id']==qid]
-        ok('V1 vê cotação pendente com itens',qo and qo[0]['items'],ords or e)
-        lines=[{"item_id":it['id'],"unit_price":90} for it in (qo[0]['items'] if qo else [])]
-        rq=lambda uid: call(uid,f"public.respond_b2b_order_quote_secure('{qid}','{js(lines)}'::jsonb,NULL,NULL,NULL)")
-        deny('V2 não responde cotação de P',lambda: rq(V2),'?','DENIED')
-        deny('VB não responde cotação de P',lambda: rq(VB),'?','')
+    def buyer_quote():
+        sq,e=sim(UB,P,PLQ,QCH);jrq,e2=attempt(UB,P)
+        return create(UB,P,sq['cart_hash'],jrq['key'],PLQ,QCH) if sq and jrq else (None,e or e2)
+    cq,e3=buyer_quote();cq2,e4=buyer_quote()
+    ok('comprador cria dois pedidos sob consulta (Q1,Q2) pela via normal',cq and cq2 and cq['id']!=cq2['id'] and
+       d.last(f"select count(*) from public.partner_orders where id in ('{cq['id']}','{cq2['id']}') and status='aguardando_cotacao'")=='2',(cq or e3,cq2 or e4))
+    oext,e=full_create(UB,P);ok('comprador cria pedido externo comum (não cotação) de P',oext is not None,e)
+    if cq and cq2:
+        qid,qid2=cq['id'],cq2['id']
+        ords,e=call(V1,"public.seller_portfolio_orders_v1()")
+        items=lambda q:[x for x in (ords or {}).get('orders',[]) if x['id']==q]
+        ok('V1 vê Q1 e Q2 com itens',items(qid) and items(qid)[0]['items'] and items(qid2) and items(qid2)[0]['items'],ords or e)
+        L=lambda q:[{"item_id":it['id'],"unit_price":90} for it in items(q)[0]['items']]
+        rqs=lambda q,lines: f"public.respond_b2b_order_quote_secure('{q}','{js(lines)}'::jsonb,NULL,NULL,NULL)"
+        rq=lambda uid,q=None: call(uid,rqs(q or qid,L(q or qid)))
+        tk=lambda: d.last("select count(*) from platform_private.authz_tickets")
+        tk0=tk()
+        ok('pacote não usa ticket: nenhum corpo instalado menciona seller_quote_respond',d.last("select count(*) from pg_proc p where p.prokind='f' and pg_get_functiondef(p.oid) like '%seller_quote_respond%'")=='0')
+        ok('validador compartilhado permanece com corpo LIVE',d.md5('platform_private.c2_external_origin_assert(jsonb,uuid,uuid)')=='999e5e9fd9887595e252523fb2142726')
+        deny('V2 (outro vendedor) não responde Q1',lambda: rq(V2),'42501','C2_SELLER_TARGET_DENIED:not_assigned')
+        deny('VB (outro tenant) não responde Q1',lambda: rq(VB),'42501','C2_SELLER_TARGET_DENIED:tenant')
         deny('financeiro não responde cotação',lambda: rq(UFIN),'?','')
+        deny('vendedor não chama o despachante privado diretamente',lambda: call(V1,f"platform_private.seller_quote_origin_dispatch('{qid}',NULL,'{P}',NULL)"),'42501','permission denied')
+        deny('vendedor não usa a resposta de cotação num pedido externo comum',lambda: call(V1,rqs(oext['order']['id'],[{"item_id":u(1),"unit_price":1}])),'42501','SELLER_QUOTE_STATE_DENIED')
+        deny('falha de validação da resposta (linhas vazias) sem efeitos',lambda: call(V1,rqs(qid,[])),'?','quote_incomplete')
+        # Mesmo transação: após a resposta de Q1, o validador compartilhado continua negando o vendedor (Q1, Q2) — nenhuma autoridade residual.
+        snap=lambda q: d.last(f"select c2_external_origin_snapshot::text from public.partner_orders where id='{q}'")
+        cli=d.last(f"select coalesce(cliente_id::text,'') from public.partner_orders where id='{qid2}'")
+        clis=f"'{cli}'::uuid" if cli else "NULL::uuid"
+        claims=json.dumps({'sub':V1,'role':'authenticated','iat':1})
+        for label,q in (('Q2',qid2),('Q1',qid)):
+            sql=("\\set VERBOSITY verbose\nBEGIN; SET LOCAL ROLE authenticated; SET LOCAL request.jwt.claim.sub='"+V1+"'; SET LOCAL request.jwt.claims='"+claims+"';"
+                 f"SELECT ({rqs(qid,L(qid))})::text; RESET ROLE; SELECT platform_private.c2_external_origin_assert('{js(json.loads(snap(q)))}'::jsonb,'{P}',{clis}); COMMIT;")
+            r=d.raw(sql)
+            ok(f'mesma transação: validador compartilhado nega vendedor para {label} após responder Q1, e tudo é revertido',r.returncode!=0 and '42501' in r.stderr and 'C2_EXTERNAL_OWNER_DENIED' in r.stderr
+               and d.last(f"select status from public.partner_orders where id='{qid}'")=='aguardando_cotacao' and tk()==tk0,r.stderr[-300:])
+        # Rollback explícito da resposta
+        r=d.raw("BEGIN; SET LOCAL ROLE authenticated; SET LOCAL request.jwt.claim.sub='"+V1+"'; SET LOCAL request.jwt.claims='"+claims+"';"+f"SELECT ({rqs(qid,L(qid))})::text; ROLLBACK;")
+        ok('resposta revertida (ROLLBACK): Q1 continua aguardando, sem termos e sem recibo',r.returncode==0 and d.last(f"select status from public.partner_orders where id='{qid}'")=='aguardando_cotacao'
+           and d.last(f"select count(*) from platform_private.b2b_quote_response_receipts where order_id='{qid}'")=='0' and tk()==tk0,r.stderr[-300:])
+        # Positivo isolado
         rr,e=rq(V1)
         st=d.last(f"select status||'|'||coalesce(payment_condition_status,'') from public.partner_orders where id='{qid}'")
-        ok('V1 responde cotação de P (transição aguardando_cotacao → análise/crédito)',rr is not None and st.split('|')[0] in ('em_analise_comercial','aguardando_aprovacao_credito') and st.split('|')[1]=='defined',(rr or e,st))
-        ok('ticket do vendedor não persiste após a transação',d.last("select count(*) from platform_private.authz_tickets where scope='seller_quote_respond'")=='0')
+        ok('V1 responde Q1 (aguardando_cotacao → análise/crédito)',rr is not None and st.split('|')[0] in ('em_analise_comercial','aguardando_aprovacao_credito') and st.split('|')[1]=='defined',(rr or e,st))
+        ok('Q2 intocado pela resposta de Q1',d.last(f"select status from public.partner_orders where id='{qid2}'")=='aguardando_cotacao' and d.last(f"select count(*) from public.partner_order_payment_terms where partner_order_id='{qid2}'")=='0')
+        ok('nenhum ticket criado ou retido',tk()==tk0)
+        # Retorno antecipado (replay do recibo) e validador compartilhado na mesma transação
+        r=d.raw("\\set VERBOSITY verbose\nBEGIN; SET LOCAL ROLE authenticated; SET LOCAL request.jwt.claim.sub='"+V1+"'; SET LOCAL request.jwt.claims='"+claims+"';"
+                +f"SELECT ({rqs(qid,L(qid))})::text; RESET ROLE; SELECT platform_private.c2_external_origin_assert('{js(json.loads(snap(qid2)))}'::jsonb,'{P}',{clis}); COMMIT;")
+        ok('replay por recibo (retorno antecipado) não abre o validador compartilhado',r.returncode!=0 and 'C2_EXTERNAL_OWNER_DENIED' in r.stderr,r.stderr[-300:])
         rr2,e=rq(V1)
-        ok('segunda resposta: replay idempotente ou recusa explícita, sem duplicar termos',d.last(f"select count(*) from public.partner_order_payment_terms where partner_order_id='{qid}'")=='1',(rr2,e))
+        ok('replay idempotente devolve o mesmo resultado, sem duplicar termos',rr2==rr and d.last(f"select count(*) from public.partner_order_payment_terms where partner_order_id='{qid}'")=='1',(rr2,e))
+        deny('preço diferente após resposta: conflito explícito',lambda: call(V1,rqs(qid,[{**x,'unit_price':91} for x in L(qid)])),'PT409','quote_idempotency_conflict')
+        deny('outro vendedor não reaproveita o recibo de Q1',lambda: rq(V2),'42501','C2_SELLER_TARGET_DENIED:not_assigned')
         deny('vendedor não aprova o pedido respondido',lambda: call(V1,f"public.approve_partner_order('{qid}',NULL)"),'?','')
-        q1=counts();ok('resposta de cotação sem NF/recebível/reserva/entrega/envio',all(q1[k]==q0[k] for k in q0),(q0,q1))
-        # Cotação de P2 não pode ser respondida por V1
+        # Concorrência: duas respostas idênticas a Q2
+        import subprocess
+        def sess(uid,body):
+            p=subprocess.Popen(d.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+            p.stdin.write(f"SET ROLE authenticated; SET request.jwt.claim.sub='{uid}'; SET request.jwt.claims='{{\"sub\":\"{uid}\",\"role\":\"authenticated\",\"iat\":1}}';"+body+"\n");p.stdin.close();return p
+        body=f"SELECT ({rqs(qid2,L(qid2))})::text;"
+        pa=sess(V1,"BEGIN;"+body+"SELECT pg_sleep(1.5); COMMIT;");time.sleep(0.4);pb=sess(V1,body)
+        oa,ea=pa.communicate(timeout=60);ob,eb=pb.communicate(timeout=60)
+        ja=[l for l in oa.splitlines() if l.startswith('{')];jb=[l for l in ob.splitlines() if l.startswith('{')]
+        ok('concorrência: as duas respostas idênticas de Q2 devolvem o mesmo resultado; um termo e um recibo',pa.returncode==0 and pb.returncode==0 and ja and jb and json.loads(ja[-1])==json.loads(jb[-1])
+           and d.last(f"select count(*) from public.partner_order_payment_terms where partner_order_id='{qid2}'")=='1'
+           and d.last(f"select count(*) from platform_private.b2b_quote_response_receipts where order_id='{qid2}'")=='1',(ea[-200:],eb[-200:]))
+        ok('concorrência sem ticket residual',tk()==tk0)
+        q1=counts();ok('respostas de cotação sem NF/recebível/reserva/entrega/envio',all(q1[k]==q0[k] for k in q0),(q0,q1))
     # Revalidação transacional (1): writer em curso segura o vínculo; revogação espera.
-    import subprocess
     def session(uid,body):
         p=subprocess.Popen(d.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         p.stdin.write(f"SET ROLE authenticated; SET request.jwt.claim.sub='{uid}'; SET request.jwt.claims='{{\"sub\":\"{uid}\",\"role\":\"authenticated\",\"iat\":1}}';"+body+"\n");p.stdin.close();return p
