@@ -1,10 +1,11 @@
+import { pgBatteryTestTimeout, runPgBattery } from "@/test/helpers/pgBatterySlot";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { expect, it } from "vitest";
 
 it("integrates reconciled origin, receipt lock order and the LIVE manual installments correction", async () => {
   const directory = "scripts/owner-orders-20261023/credit-numeric-20261024/final-integrated-manual-20261024";
-  const { stdout } = await promisify(execFile)("python3", [`${directory}/origin/test-local.py`], { timeout: 470_000 });
+  const { stdout } = await runPgBattery("python3", [`${directory}/origin/test-local.py`], { timeout: 470_000 });
   expect(stdout).toContain("LIVE manual correction bodies and private context table reproduce deployed MD5s");
   expect(stdout).toContain("composed manual receivable 1/3 exact .34/.33/.33 inserted first");
   expect(stdout).toContain("composed manual payable 1/3 exact .34/.33/.33 inserted first");
@@ -30,4 +31,4 @@ it("integrates reconciled origin, receipt lock order and the LIVE manual install
   expect(stdout).toContain("inactive candidate applied directly with validated synthetic owner");
   expect(stdout).toContain("TOTAL 127 PASS");
   expect(stdout).toContain("synthetic Auth, no hosted JWT/RLS certification");
-}, 480_000);
+}, pgBatteryTestTimeout(480_000));

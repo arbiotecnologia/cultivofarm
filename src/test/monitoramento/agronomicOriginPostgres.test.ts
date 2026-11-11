@@ -1,8 +1,9 @@
+import { pgBatteryTestTimeout, runPgBattery } from "@/test/helpers/pgBatterySlot";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { expect, it } from "vitest";
 it("origem agronômica e reprogramação: PostgreSQL descartável/Auth sintética, duas ordens de revogação", async () => {
-  const { stdout: output } = await promisify(execFile)("python3", ["scripts/visit-monitoring-plan-20261027/agronomic-origin/test-local.py"], { encoding: "utf8" });
+  const { stdout: output } = await runPgBattery("python3", ["scripts/visit-monitoring-plan-20261027/agronomic-origin/test-local.py"], { encoding: "utf8" });
   expect(output).toContain("PASS incompatible talhão rejected 22023");
   expect(output).toContain("PASS alert CAS differs by one microsecond PT409");
   expect(output).toContain("PASS old v1 caller with origin fails safely PT428");
@@ -26,4 +27,4 @@ it("origem agronômica e reprogramação: PostgreSQL descartável/Auth sintétic
   expect(total).toBeGreaterThanOrEqual(87);
   expect(output.split("\n").filter(l => l.startsWith("PASS ")).length).toBe(total);
   expect(output).not.toMatch(/^(FAIL|ERROR)/m);
-}, 120_000);
+}, pgBatteryTestTimeout(120_000));
