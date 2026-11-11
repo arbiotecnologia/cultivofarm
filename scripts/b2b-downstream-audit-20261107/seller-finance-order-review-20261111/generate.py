@@ -3,7 +3,7 @@ import hashlib, json
 from pathlib import Path
 H=Path(__file__).resolve().parent
 SIG='public.get_b2b_seller_finance_order_review_v1(uuid)'
-CANDIDATE_MD5=''  # measured in disposable mirror only
+CANDIDATE_MD5='451db4ab6cd9e8d87e036b7a9c828238'
 FILES=('01-pre.sql.readonly','02-install.sql.review','03-post.sql.readonly','04-rollback.sql.review')
 def body(): return (H/'candidate.sql').read_text()
 def pin(expect_absent=False):
