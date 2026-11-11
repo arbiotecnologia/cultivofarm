@@ -49,7 +49,7 @@ for i in (1,2):
     rec(SCN_P,f'status do pedido após entrega {i}','INFO',ordst)
     if i==1: ok(SCN_P,'após 1/2: pedido NÃO concluído',ordst!='entregue',ordst)
 fin=json.loads(d.last(f"""SELECT jsonb_build_object('order',(SELECT status FROM public.partner_orders WHERE id='{PO}'),
- 'delivered',(SELECT coalesce(sum(quantidade),0) FROM public.entregas WHERE ordem_servico_id='{OS}' AND status::text='entregue'),
+ 'delivered',(SELECT coalesce(sum(quantidade_entregue),0) FROM public.entregas WHERE ordem_servico_id='{OS}' AND status::text='entregue'),
  'stock',(SELECT jsonb_agg(jsonb_build_object('id',id,'q',quantidade,'st',status)) FROM public.estoque_produto WHERE lote_id='{LOT}'),
  'mov',(SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id IN (SELECT id FROM public.estoque_produto WHERE lote_id='{LOT}')))::text"""))
 rec(SCN_P,'estado físico final','INFO',fin)
