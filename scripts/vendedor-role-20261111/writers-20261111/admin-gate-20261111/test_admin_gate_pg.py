@@ -31,6 +31,9 @@ revoke=lambda i: f"public.admin_revoke_seller_portfolio_v1('{i}','revogar')"
 def active(p): return d.last(f"select id from platform_private.seller_portfolio_assignments where partner_id='{p}' and revoked_at is null")
 def reset(p):
     d.sql(f"update platform_private.seller_portfolio_assignments set revoked_at=now(),revoked_by='{ADM}',revoke_reason='reset' where partner_id='{p}' and revoked_at is null")
+def pa(q):
+    r=d.raw(sess(ADM,q+';'))
+    if r.returncode: raise RuntimeError(r.stderr[-800:])
 def mk(uid,org,roles,ativo=True,prov=False):
     d.sql(f"INSERT INTO public.profiles(id,user_id,nome,ativo,organization_id,senha_provisoria) VALUES(gen_random_uuid(),'{uid}','SINT {uid[-3:]}',{str(ativo).lower()},'{org}',{str(prov).lower()});"
           +"".join(f"INSERT INTO public.user_roles(user_id,role) VALUES('{uid}','{r}');" for r in roles))
@@ -41,16 +44,17 @@ try:
     mk(ADMF,F,['administrador']);mk(GC,A,['gestor_comercial'])
     mk(V1,A,['vendedor']);mk(V2,A,['vendedor']);mk(VX,A,['vendedor','gestor_comercial']);mk(VI,A,['vendedor'],ativo=False);mk(VE,F,['vendedor']);mk(VR,A,['tecnico_agronomo'])
     # Admin suspenso: rotação de acesso posterior ao iat da sessão (controle vigente platform_actor_access_ready).
-    inv_cols=d.last("select string_agg(column_name||':'||is_nullable||':'||coalesce(column_default,''),' ; ') from information_schema.columns where table_schema='public' and table_name='platform_org_admin_invites' and is_nullable='NO' and column_default is null")
-    r=d.raw(f"INSERT INTO public.platform_org_admin_invites(id,user_id,organization_id,access_valid_after) SELECT gen_random_uuid(),'{ADMS}','{A}',now()")
-    if r.returncode: r=d.raw(f"ALTER TABLE public.platform_org_admin_invites DISABLE TRIGGER USER; INSERT INTO public.platform_org_admin_invites SELECT (jsonb_populate_record(null::public.platform_org_admin_invites, (select to_jsonb(i) from public.platform_org_admin_invites i limit 1) || jsonb_build_object('id',gen_random_uuid(),'user_id','{ADMS}','organization_id','{A}','access_valid_after',now(),'access_operation_status',null))).*; ALTER TABLE public.platform_org_admin_invites ENABLE TRIGGER USER;")
+    # Fixture apenas no espelho: convite com rotação (access_valid_after > iat da sessão). Gatilhos do convite exigem fluxo Edge;
+    # replica só nesta inserção de fixture, nunca em pacote.
+    r=d.raw(f"SET session_replication_role=replica; INSERT INTO public.platform_org_admin_invites(id,user_id,organization_id,email,nome,modo_acesso,invited_by,access_valid_after) VALUES(gen_random_uuid(),'{ADMS}','{A}','sint951@example.invalid','SINT','link','{ADM}',now()); SET session_replication_role=origin;")
+    inv_cols=''
     ok('fixture: admin suspenso por rotação de acesso (access_ready=false)',r.returncode==0 and d.last(f"select platform_private.platform_actor_access_ready('{ADMS}')")=='f',(inv_cols,r.stderr[-400:]))
     # --- Estado LIVE (02b): reproduz o defeito ---
     ok('LIVE 02b: admin suspenso ATRIBUI (defeito reproduzido)',call(ADMS,assign(V1,P))[0] is not None);reset(P)
     ok('LIVE 02b: vendedor com papéis combinados é aceito (defeito)',call(ADM,assign(VX,P))[0] is not None);reset(P)
-    d.sql(f"update public.partner_accounts set ativo=false where id='{P2}'")
+    pa(f"update public.partner_accounts set ativo=false where id='{P2}'")
     ok('LIVE 02b: parceiro inativo é aceito (defeito)',call(ADM,assign(V1,P2))[0] is not None);reset(P2)
-    d.sql(f"update public.partner_accounts set ativo=true where id='{P2}'")
+    pa(f"update public.partner_accounts set ativo=true where id='{P2}'")
     # Atribuição antiga que ficará com alvo desativado (para provar revogação preservada)
     old=call(ADM,assign(V2,P2))[0];ok('LIVE: atribuição antiga V2→P2 criada',old is not None)
     # --- PRE/INSTALL ---
@@ -78,9 +82,9 @@ try:
     deny('vendedor inativo recusado',assign(VI,P),ADM,'22023','SELLER_PORTFOLIO_SELLER_INVALID')
     deny('vendedor de outro tenant recusado',assign(VE,P),ADM,'22023','SELLER_PORTFOLIO_SELLER_INVALID')
     deny('usuário sem papel vendedor recusado',assign(VR,P),ADM,'22023','SELLER_PORTFOLIO_SELLER_INVALID')
-    d.sql(f"update public.partner_accounts set ativo=false where id='{P2}'")
+    pa(f"update public.partner_accounts set ativo=false where id='{P2}'")
     deny('parceiro inativo recusado',assign(V1,P2),ADM,'22023','SELLER_PORTFOLIO_PARTNER_INVALID')
-    d.sql(f"update public.partner_accounts set ativo=true, deleted_at=now() where id='{P2}'")
+    pa(f"update public.partner_accounts set ativo=true, deleted_at=now() where id='{P2}'")
     deny('parceiro excluído recusado',assign(V1,P2),ADM,'22023','SELLER_PORTFOLIO_PARTNER_INVALID')
     ov=json.loads(call(ADM,"public.admin_seller_portfolio_overview_v1()")[0])
     ids={s['user_id'] for s in ov['sellers']}
@@ -93,7 +97,7 @@ try:
     r=call(ADM,revoke(old));ok('revoga atribuição antiga com vendedor e parceiro desativados',r[1] is None and d.last(f"select revoked_at is not null from platform_private.seller_portfolio_assignments where id='{old}'")=='t',r)
     ok('revogação auditada uma vez',d.last(f"select count(*) from platform_private.seller_portfolio_audit where assignment_id='{old}' and action='revoke'")=='1')
     deny('revogação repetida negada sem efeito',revoke(old),ADM,'42501','SELLER_PORTFOLIO_FORBIDDEN')
-    d.sql(f"update public.partner_accounts set deleted_at=null where id='{P2}'; update public.profiles set ativo=true where user_id='{V2}'")
+    pa(f"update public.partner_accounts set deleted_at=null where id='{P2}'; update public.profiles set ativo=true where user_id='{V2}'")
     # --- Positivo ---
     r=call(ADM,assign(V1,P));aid=r[0];ok('positivo: admin vigente atribui vendedor elegível a parceiro ativo',aid is not None,r)
     ok('positivo: auditoria assign única',d.last(f"select count(*) from platform_private.seller_portfolio_audit where assignment_id='{aid}' and action='assign'")=='1')
@@ -116,9 +120,9 @@ try:
     o=race(f"update public.profiles set ativo=false where user_id='{V1}'",False)
     ok('corrida: desativação do vendedor vence → atribuição espera e é negada',o['wait']>1.0 and o['o'].returncode and 'SELLER_PORTFOLIO_SELLER_INVALID' in o['o'].stderr and not active(P),o)
     d.sql(f"update public.profiles set ativo=true where user_id='{V1}'")
-    o=race(f"update public.partner_accounts set ativo=false where id='{P}'",False)
+    o=race(sess(ADM,f"update public.partner_accounts set ativo=false where id='{P}'"),False)
     ok('corrida: desativação do parceiro vence → atribuição espera e é negada',o['wait']>1.0 and 'SELLER_PORTFOLIO_PARTNER_INVALID' in o['o'].stderr and not active(P),o)
-    d.sql(f"update public.partner_accounts set ativo=true where id='{P}'")
+    pa(f"update public.partner_accounts set ativo=true where id='{P}'")
     o=race(f"update public.profiles set ativo=false where user_id='{ADM}'",False)
     ok('corrida: suspensão do admin vence → atribuição espera e é negada',o['wait']>1.0 and 'SELLER_PORTFOLIO_FORBIDDEN' in o['o'].stderr and not active(P),o)
     d.sql(f"update public.profiles set ativo=true where user_id='{ADM}'")
