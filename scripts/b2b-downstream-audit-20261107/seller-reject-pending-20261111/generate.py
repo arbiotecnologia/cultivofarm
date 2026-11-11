@@ -8,7 +8,7 @@ SIG = 'public.reject_b2b_payment_terms_secure(uuid,text)'
 LIVE_MD5 = '40777d0cec6a7d8a8d4dfcb3370b08b6'
 SELLER = '007bb519-cba0-4704-be2c-cb93ad010048'
 ACL = ['authenticated=X/postgres', 'postgres=X/postgres', 'service_role=X/postgres']
-CANDIDATE_MD5 = ''
+CANDIDATE_MD5 = '781427080999234bfe74b04e2b8e7ffd'
 ROLLBACK_MD5 = LIVE_MD5
 FILES = ('01-pre.sql.readonly','02-install.sql.review','03-post.sql.readonly','04-rollback-deny.sql.review')
 
