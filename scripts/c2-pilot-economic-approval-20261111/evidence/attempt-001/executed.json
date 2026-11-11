@@ -1,0 +1,64 @@
+{
+  "executed": [
+    {
+      "file": "01-pre.sql.readonly",
+      "sha256": "87d58d7145126e0be6185e3fd749c1172b15ff60882cc2e0fa6dfc1ff783c991"
+    },
+    {
+      "file": "01-pre.sql.readonly",
+      "sha256": "87d58d7145126e0be6185e3fd749c1172b15ff60882cc2e0fa6dfc1ff783c991"
+    },
+    {
+      "file": "02-install.sql.review",
+      "sha256": "5d90eb0bb7adcd44f9b5eeef0db44f7578c18b0be9f2955b03f1f713803a692d"
+    },
+    {
+      "file": "02-install.sql.review",
+      "sha256": "5d90eb0bb7adcd44f9b5eeef0db44f7578c18b0be9f2955b03f1f713803a692d"
+    },
+    {
+      "file": "03-post.sql.readonly",
+      "sha256": "ddc5fdfe39f0b266937870786706bb5069842d1edcfab63bae57a7a944001064"
+    },
+    {
+      "file": "02-install.sql.review",
+      "sha256": "5d90eb0bb7adcd44f9b5eeef0db44f7578c18b0be9f2955b03f1f713803a692d"
+    }
+  ],
+  "sha256sums": {
+    "01-pre.sql.readonly": "87d58d7145126e0be6185e3fd749c1172b15ff60882cc2e0fa6dfc1ff783c991",
+    "02-install.sql.review": "5d90eb0bb7adcd44f9b5eeef0db44f7578c18b0be9f2955b03f1f713803a692d",
+    "03-post.sql.readonly": "ddc5fdfe39f0b266937870786706bb5069842d1edcfab63bae57a7a944001064",
+    "04-rollback-deny.sql.review": "951cb63c6a6d726bed2f08e5b27775eafe5d9a8825e9748cbb0983d4ebbb1b38",
+    "05-pilot-enable.sql.review": "344e1c6181b7857d1034b32d3a08a5170b5e3f34467b768aa91aca3a6a24829c",
+    "06-pilot-disable.sql.review": "85f256f1dc8cc1497b96f3c459912060281cf77922de1778279167cf29247406",
+    "candidate.sql": "b270de864e0180cb36da106a7c779c749822cdab855c3ad18ce0aedbea468828",
+    "candidate-md5.json": "cb81c0614b820c2b060acdb12e73303e1249c3758f071f0c9fad21590610be91",
+    "generate.py": "69fc218c18749f83b81150a8240fc55a7c3aad2a34af003965cfe42605647e49",
+    "fixture.py": "21c169e0172b01a2cab6c553d3c49fb8cc409c37b01165ac36a5ef6ad9baea0e",
+    "test_pilot_pg.py": "c9af28a59e2f657ce96790737d59876bc9c6729e760bda147ae3b19bfa3d3dd6"
+  },
+  "deps": {
+    "public.approve_partner_order(uuid,text,date)": "0d3b85049e3b3b799ba81b4cb95be0da",
+    "public.approve_b2b_credit(uuid,text)": "26c77e55dfcb2b48fdb63cbc5b2819ed",
+    "public.approve_b2b_payment_terms_secure(uuid,text)": "28e65625e0a481b93af85cc37cb0af5f",
+    "platform_private.c2_accounting_pending_guard()": "669b19490a7a9700f0158db4b31885ad",
+    "platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb)": "80c808dd095746213ddb37fbca44b525",
+    "platform_private.c2_external_origin_contract_valid(jsonb)": "369fd07cd9c659b87941b9a3bf972868",
+    "platform_private.c2p1_internal_actor(public.app_role[])": "97bab97591a9f662bad7b1ccf837bfcd",
+    "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": "964b79ecd6f293c4bf81fd8ee5f5bbf5",
+    "platform_private.b2b_financial_forecast_guard()": "2a28194f419c5e7627cb9ec04bb8bebe",
+    "platform_private.has_ticket(text,uuid)": "29adae3347e8a5ff23327fa86fceb54b",
+    "public.get_b2b_financial_forecast_secure(uuid)": "c0d3cfff6ef757498b27009ae50950c3",
+    "public.h15_actor_organization()": "55edafec08bcc84a00f1526c14334a2c"
+  },
+  "candidate": {
+    "platform_private.c2_pilot_econ_immutable_v1()": "b97e592e1b820be6edce6e85f35a78ac",
+    "platform_private.c2_pilot_forecast_insert_barrier_v1()": "7064ddc0a6c7dae3efedf8558254ccca",
+    "platform_private.c2_pilot_econ_evidence_v1(uuid)": "2259e1159c3645b7aae58df06e656fa9",
+    "platform_private.c2_pilot_econ_actor_v1(text)": "d323852c7135c75a8edee28bc53ddc6f",
+    "platform_private.c2_pilot_econ_approve_core_v1(uuid,text,text,text,text)": "63f096b7e6e5c5dc944b378c1d97650a",
+    "public.c2_pilot_economic_approve_v1(uuid,text,text,text,text)": "b08c17be53381782a446c5a2fbd12505",
+    "public.c2_pilot_economic_state_v1(uuid)": "d87e12d2cdef8b9619677cfc3935bbc0"
+  }
+}

@@ -1,0 +1,202 @@
+[
+  {
+    "test": "restore sem erros al\u00e9m das FKs auth conhecidas",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "estado reportado de produ\u00e7\u00e3o: Vendedor 02a/02b/02c/02d aplicados (bytes finais)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "depend\u00eancia = pin public.approve_partner_order(uuid,text,date)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "depend\u00eancia = pin public.approve_b2b_credit(uuid,text)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "depend\u00eancia = pin public.approve_b2b_payment_terms_secure(uuid,text)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "depend\u00eancia = pin platform_private.c2_accounting_pending_guard()",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "depend\u00eancia = pin platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "depend\u00eancia = pin platform_private.c2_external_origin_contract_valid(jsonb)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "depend\u00eancia = pin platform_private.c2p1_internal_actor(public.app_role[])",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "depend\u00eancia = pin public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "depend\u00eancia = pin platform_private.b2b_financial_forecast_guard()",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "depend\u00eancia = pin platform_private.has_ticket(text,uuid)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "depend\u00eancia = pin public.get_b2b_financial_forecast_secure(uuid)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "depend\u00eancia = pin public.h15_actor_organization()",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "fixture: resposta cotada pelo writer real",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "pedido fiel ao PB-001042: em_analise_comercial, C2 pendente cont\u00e1bil, total 20, snapshot econ\u00f4mico nulo, condi\u00e7\u00e3o definida",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "cota\u00e7\u00e3o: boleto, due_basis nf_issue, estimado, principal=total=20, 1 parcela",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "itens: 1 linha, 2 embalagens inteiras de 25 kg a R$10",
+    "status": "FAIL",
+    "detail": "1|2.00|10.00|25.000"
+  },
+  {
+    "test": "evento quote_responded \u00fanico no hist\u00f3rico",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "LIVE approve_partner_order bloqueado para o contrato C2 [42501 C2_ACCOUNTING_PENDING]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "LIVE approve_b2b_credit bloqueado para o contrato C2 [42501 C2_ACCOUNTING_PENDING]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "PRE ref divergente falha fechada",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "PRE_PASS",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "INSTALL sem ref recusado",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "INSTALL transa\u00e7\u00e3o \u00fanica",
+    "status": "FAIL",
+    "detail": "ERROR:  C2PILOT_INSTALL_ACL_DRIFT:public.c2_pilot_economic_approve_v1(uuid,text,text,text,text)\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\n"
+  },
+  {
+    "test": "POST_PASS",
+    "status": "FAIL",
+    "detail": "v1()') IS NULL OR md5(pg_get_functiondef('platform_...\n                                                             ^\nQUERY:  to_regprocedure('platform_private.c2_pilot_econ_immutable_v1()') IS NULL OR md5(pg_get_functiondef('platform_private.c2_pilot_econ_immutable_v1()'::regprocedure)) IS DISTINCT FROM 'b97e592e1b820be6edce6e85f35a78ac'\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at IF\n"
+  },
+  {
+    "test": "reinstala\u00e7\u00e3o recusada",
+    "status": "FAIL",
+    "detail": "ERROR:  C2PILOT_INSTALL_ACL_DRIFT:public.c2_pilot_economic_approve_v1(uuid,text,text,text,text)\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\n"
+  },
+  {
+    "test": "p\u00f3s-instala\u00e7\u00e3o: corpo LIVE intocado public.approve_partner_order(uuid,text,date)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "p\u00f3s-instala\u00e7\u00e3o: corpo LIVE intocado public.approve_b2b_credit(uuid,text)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "p\u00f3s-instala\u00e7\u00e3o: corpo LIVE intocado public.approve_b2b_payment_terms_secure(uuid,text)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "p\u00f3s-instala\u00e7\u00e3o: corpo LIVE intocado platform_private.c2_accounting_pending_guard()",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "p\u00f3s-instala\u00e7\u00e3o: corpo LIVE intocado platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "p\u00f3s-instala\u00e7\u00e3o: corpo LIVE intocado platform_private.c2_external_origin_contract_valid(jsonb)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "p\u00f3s-instala\u00e7\u00e3o: corpo LIVE intocado platform_private.c2p1_internal_actor(public.app_role[])",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "p\u00f3s-instala\u00e7\u00e3o: corpo LIVE intocado public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "p\u00f3s-instala\u00e7\u00e3o: corpo LIVE intocado platform_private.b2b_financial_forecast_guard()",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "p\u00f3s-instala\u00e7\u00e3o: corpo LIVE intocado platform_private.has_ticket(text,uuid)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "p\u00f3s-instala\u00e7\u00e3o: corpo LIVE intocado public.get_b2b_financial_forecast_secure(uuid)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "p\u00f3s-instala\u00e7\u00e3o: corpo LIVE intocado public.h15_actor_organization()",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "bytes executados = SHA256SUMS",
+    "status": "PASS",
+    "detail": null
+  }
+]
