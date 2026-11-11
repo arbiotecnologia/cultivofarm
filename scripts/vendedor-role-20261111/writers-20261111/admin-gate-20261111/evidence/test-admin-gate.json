@@ -1,5 +1,5 @@
 {
- "passed": 61,
+ "passed": 62,
  "total": 63,
  "executed_sha256": {
   "01d-pre-admin-gate.sql.readonly": [
@@ -40,13 +40,13 @@
   },
   {
    "test": "fixture: admin suspenso por rotação de acesso (access_ready=false)",
-   "status": "FAIL",
-   "detail": "('', '')"
+   "status": "PASS",
+   "detail": null
   },
   {
    "test": "LIVE 02b: admin suspenso ATRIBUI (defeito reproduzido)",
    "status": "FAIL",
-   "detail": "None"
+   "detail": "(None, 'ERROR:  42501: SELLER_PORTFOLIO_FORBIDDEN')"
   },
   {
    "test": "LIVE 02b: vendedor com papéis combinados é aceito (defeito)",

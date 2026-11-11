@@ -48,9 +48,9 @@ try:
     # replica só nesta inserção de fixture, nunca em pacote.
     r=d.raw(f"SET session_replication_role=replica; INSERT INTO public.platform_org_admin_invites(id,user_id,organization_id,email,nome,modo_acesso,invited_by,access_valid_after) VALUES(gen_random_uuid(),'{ADMS}','{A}','sint951@example.invalid','SINT','link','{ADM}',now()); SET session_replication_role=origin;")
     inv_cols=''
-    ok('fixture: admin suspenso por rotação de acesso (access_ready=false)',r.returncode==0 and d.last(f"select platform_private.platform_actor_access_ready('{ADMS}')")=='f',(inv_cols,r.stderr[-400:]))
+    ok('fixture: admin suspenso por rotação de acesso (access_ready=false)',r.returncode==0 and call(ADMS,f"platform_private.platform_actor_access_ready('{ADMS}')")[0]=='false',(inv_cols,r.stderr[-400:]))
     # --- Estado LIVE (02b): reproduz o defeito ---
-    ok('LIVE 02b: admin suspenso ATRIBUI (defeito reproduzido)',call(ADMS,assign(V1,P))[0] is not None);reset(P)
+    r=call(ADMS,assign(V1,P));ok('LIVE 02b: admin suspenso ATRIBUI (defeito reproduzido)',r[0] is not None,r);reset(P)
     ok('LIVE 02b: vendedor com papéis combinados é aceito (defeito)',call(ADM,assign(VX,P))[0] is not None);reset(P)
     pa(f"update public.partner_accounts set ativo=false where id='{P2}'")
     ok('LIVE 02b: parceiro inativo é aceito (defeito)',call(ADM,assign(V1,P2))[0] is not None);reset(P2)
