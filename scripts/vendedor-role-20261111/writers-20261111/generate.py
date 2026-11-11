@@ -126,7 +126,7 @@ def main():
     post.append(" IF md5(pg_get_functiondef('platform_private.c2_internal_order_target_reason(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '07d7c9002cbfe17497c9ee4a92d5a928' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
     post.append(" IF md5(pg_get_functiondef('public.fn_cc_can_prepare(uuid)'::regprocedure)) IS DISTINCT FROM '"+db.md5('public.fn_cc_can_prepare(uuid)')+"' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
     post.append(" IF md5(pg_get_functiondef('platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'::regprocedure)) IS DISTINCT FROM '999e5e9fd9887595e252523fb2142726' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
-    post.append(" IF EXISTS(SELECT 1 FROM pg_proc p WHERE pg_get_functiondef(p.oid) LIKE '%seller_quote_respond%') THEN RAISE EXCEPTION 'VENDW_POST_TICKET_PRESENT'; END IF;")
+    post.append(" IF EXISTS(SELECT 1 FROM pg_proc p WHERE p.prokind='f' AND pg_get_functiondef(p.oid) LIKE '%seller_quote_respond%') THEN RAISE EXCEPTION 'VENDW_POST_TICKET_PRESENT'; END IF;")
     post.append("END $post$;\nSELECT 'VENDW_POST_PASS';")
     post_sql='\n'.join(post)+'\n'
     inst=["-- REVIEW ONLY / INATIVO. Aplicar somente pelo auditor após VENDW_PRE_PASS no ref swzpzcwiasxmjutrmvkm.","BEGIN;","SET LOCAL lock_timeout='5s';",pre_sql.replace("SELECT 'VENDW_PRE_PASS';",""),HELPERS]
