@@ -118,8 +118,52 @@ BEGIN
     'partners',COALESCE((SELECT jsonb_agg(jsonb_build_object('partner_id',p.id,'razao_social',p.razao_social) ORDER BY p.razao_social, p.id)
       FROM public.partner_accounts p WHERE p.commercial_owner_organization_id=v_org AND p.ativo IS TRUE AND p.deleted_at IS NULL),'[]'::jsonb),
     'assignments',COALESCE((SELECT jsonb_agg(jsonb_build_object('id',a.id,'seller_user_id',a.seller_user_id,'partner_id',a.partner_id,
-        'assigned_at',a.assigned_at,'reason',a.reason,'revoked_at',a.revoked_at,'revoke_reason',a.revoke_reason) ORDER BY a.assigned_at DESC, a.id)
+        'assigned_at',a.assigned_at,'reason',a.reason,'revoked_at',a.revoked_at,'revoke_reason',a.revoke_reason,
+        'seller_active',EXISTS(SELECT 1 FROM public.profiles sp WHERE sp.user_id=a.seller_user_id AND sp.organization_id=v_org AND sp.ativo IS TRUE)
+          AND EXISTS(SELECT 1 FROM public.user_roles sr WHERE sr.user_id=a.seller_user_id AND sr.role='vendedor'::public.app_role),
+        'partner_active',EXISTS(SELECT 1 FROM public.partner_accounts pp WHERE pp.id=a.partner_id AND pp.ativo IS TRUE AND pp.deleted_at IS NULL)) ORDER BY a.assigned_at DESC, a.id)
       FROM platform_private.seller_portfolio_assignments a WHERE a.organization_id=v_org),'[]'::jsonb));
 END $f$;
 REVOKE ALL ON FUNCTION public.admin_seller_portfolio_overview_v1() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_seller_portfolio_overview_v1() TO authenticated;
+
+-- Despachante dedicado da resposta de cotação. Não vendedor: chama o validador compartilhado LIVE, inalterado.
+-- Vendedor exclusivo: só o pedido informado, mesma linhagem gravada, mesmas checagens estruturais e carteira vigente.
+-- Exige o marcador txid emitido pela resposta de cotação para ESTE pedido; outros escritores (ex.: cobrança) seguem no validador LIVE.
+CREATE FUNCTION platform_private.seller_quote_origin_dispatch(p_order uuid, s jsonb, partner uuid, client uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $f$
+DECLARE uid uuid := auth.uid(); o record; p public.partner_accounts; org uuid; r text;
+BEGIN
+  IF uid IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+  IF platform_private.seller_commercial_actor() IS NOT TRUE THEN
+    PERFORM platform_private.c2_external_origin_assert(s,partner,client);
+    RETURN;
+  END IF;
+  SELECT po.partner_id, po.cliente_id, po.c2_external_origin_snapshot AS snap, po.status::text AS status INTO o
+    FROM public.partner_orders po WHERE po.id=p_order;
+  IF NOT FOUND OR o.partner_id IS DISTINCT FROM partner OR o.cliente_id IS DISTINCT FROM client OR o.snap IS DISTINCT FROM s THEN
+    RAISE EXCEPTION 'SELLER_QUOTE_ORIGIN_DENIED' USING ERRCODE='42501';
+  END IF;
+  IF NOT platform_private.has_ticket('seller_quote_respond',p_order) THEN
+    RAISE EXCEPTION 'SELLER_QUOTE_FLOW_REQUIRED' USING ERRCODE='42501';
+  END IF;
+  -- Só cotação pendente, ou replay do próprio recibo deste vendedor para este pedido.
+  IF o.status <> 'aguardando_cotacao' AND NOT platform_private.has_ticket('seller_quote_respond_locked',p_order) AND NOT EXISTS (SELECT 1 FROM platform_private.b2b_quote_response_receipts rr
+       WHERE rr.order_id=p_order AND rr.actor_id=uid) THEN
+    RAISE EXCEPTION 'SELLER_QUOTE_STATE_DENIED' USING ERRCODE='42501';
+  END IF;
+  SELECT * INTO p FROM public.partner_accounts WHERE id=partner FOR SHARE;
+  org := p.commercial_owner_organization_id;
+  IF NOT FOUND OR p.ativo IS NOT TRUE OR p.deleted_at IS NOT NULL OR org IS NULL
+   OR NOT EXISTS(SELECT 1 FROM public.organizations og WHERE og.id=org AND og.ativo AND og.status='ativa')
+   OR EXISTS(SELECT 1 FROM public.organizations og WHERE og.partner_account_id=partner)
+   OR NOT platform_private.c2_external_origin_contract_valid(s)
+   OR s->>'organization_id' IS DISTINCT FROM org::text OR s->>'partner_id' IS DISTINCT FROM partner::text
+  THEN RAISE EXCEPTION 'C2_EXTERNAL_ORIGIN_DENIED' USING ERRCODE='42501'; END IF;
+  IF client IS DISTINCT FROM p.client_id OR (client IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.clientes c WHERE c.id=client AND c.organization_id=org))
+  THEN RAISE EXCEPTION 'C2_EXTERNAL_CLIENT_DENIED' USING ERRCODE='42501'; END IF;
+  IF public.h15_actor_organization() IS DISTINCT FROM org THEN RAISE EXCEPTION 'C2_SELLER_TARGET_DENIED:tenant' USING ERRCODE='42501'; END IF;
+  r := platform_private.seller_commercial_target_reason(uid, partner);
+  IF r IS NOT NULL THEN RAISE EXCEPTION 'C2_SELLER_TARGET_DENIED:%', r USING ERRCODE='42501'; END IF;
+END $f$;
+REVOKE ALL ON FUNCTION platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid) FROM PUBLIC, anon, authenticated;

@@ -1,6 +1,6 @@
 {
   "attempt": 1,
-  "pass_": 105,
+  "pass_": 157,
   "fail": 0,
   "checks": [
     {
@@ -64,17 +64,17 @@
       "detail": null
     },
     {
-      "test": "vendedor não atribui carteira",
+      "test": "vendedor não atribui carteira [42501 SELLER_PORTFOLIO_FORBIDDEN]",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "gestor comercial não atribui carteira",
+      "test": "gestor comercial não atribui carteira [42501 SELLER_PORTFOLIO_FORBIDDEN]",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "admin A não atribui vendedor de F",
+      "test": "admin A não atribui vendedor de F [22023 SELLER_PORTFOLIO_SELLER_INVALID]",
       "status": "PASS",
       "detail": null
     },
@@ -99,12 +99,12 @@
       "detail": null
     },
     {
-      "test": "gestor comercial não lê visão de carteiras",
+      "test": "gestor comercial não lê visão de carteiras [42501 SELLER_PORTFOLIO_FORBIDDEN]",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "vendedor não lê visão de carteiras",
+      "test": "vendedor não lê visão de carteiras [42501 SELLER_PORTFOLIO_FORBIDDEN]",
       "status": "PASS",
       "detail": null
     },
@@ -144,17 +144,17 @@
       "detail": null
     },
     {
-      "test": "V1 catálogo de parceiro não atribuído",
+      "test": "V1 catálogo de parceiro não atribuído [42501 forbidden_partner]",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "V1 catálogo de P2 (de V2)",
+      "test": "V1 catálogo de P2 (de V2) [42501 forbidden_partner]",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "VB catálogo de P (outro tenant)",
+      "test": "VB catálogo de P (outro tenant) [42501 forbidden_partner]",
       "status": "PASS",
       "detail": null
     },
@@ -164,17 +164,47 @@
       "detail": null
     },
     {
-      "test": "V1 lista planos da carteira",
+      "test": "planos V1 = planos publicados/vigentes da empresa atribuídos a P (carteira)",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "V2 vê P3 só via própria carteira (P2 atribuído)",
+      "test": "planos V2 = só os de P2; nenhum plano exclusivo de P (outra carteira)",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "VB (outro tenant) sem planos de A",
+      "test": "plano só em rascunho não aparece ao vendedor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "VB (outro tenant) não vê planos de A",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "atribuição de plano vencida (transação revertida) some da lista do vendedor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "detalhe: condições de plano para parceiro de outra carteira [42501 forbidden_role]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "detalhe: simulação para parceiro de outra carteira [42501 C2_SELLER_TARGET_DENIED:not_assigned]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "detalhe: condições para parceiro de outro tenant [42501 forbidden_role]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "detalhe: VB não lê condições de P [42501 forbidden_role]",
       "status": "PASS",
       "detail": null
     },
@@ -209,7 +239,7 @@
       "detail": null
     },
     {
-      "test": "vendedor não aprova pedido",
+      "test": "vendedor não aprova pedido [42501 b2b_phase1_scope_denied]",
       "status": "PASS",
       "detail": null
     },
@@ -219,12 +249,12 @@
       "detail": null
     },
     {
-      "test": "vendedor não aprova termos financeiros",
+      "test": "vendedor não aprova termos financeiros [42501 b2b_phase1_scope_denied]",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "vendedor não rejeita termos financeiros",
+      "test": "vendedor não rejeita termos financeiros [42501 b2b_phase1_scope_denied]",
       "status": "PASS",
       "detail": null
     },
@@ -239,37 +269,37 @@
       "detail": null
     },
     {
-      "test": "V1 não lança para parceiro não atribuído",
+      "test": "V1 não lança para parceiro não atribuído [42501 C2_SELLER_TARGET_DENIED:not_assigned]",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "V1 não lança para P2 (outro vendedor)",
+      "test": "V1 não lança para P2 (outro vendedor) [42501 C2_SELLER_TARGET_DENIED:not_assigned]",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "V1 não lança para parceiro de outro tenant",
+      "test": "V1 não lança para parceiro de outro tenant [42501 C2_SELLER_TARGET_DENIED:target_outside_portfolio]",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "VB não lança para P",
+      "test": "VB não lança para P [42501 C2_SELLER_TARGET_DENIED:target_outside_portfolio]",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "vendedor não publica condição",
+      "test": "vendedor não publica condição [42501 forbidden]",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "vendedor não lista planos administrativos",
+      "test": "vendedor não lista planos administrativos [P0001 not_authorized]",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "vendedor não altera atribuição de condição",
+      "test": "vendedor não altera atribuição de condição [42501 forbidden]",
       "status": "PASS",
       "detail": null
     },
@@ -294,52 +324,167 @@
       "detail": null
     },
     {
-      "test": "comprador cria pedido sob consulta pela via normal",
+      "test": "comprador cria dois pedidos sob consulta (Q1,Q2) pela via normal",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "V1 vê cotação pendente com itens",
+      "test": "comprador cria pedido externo comum (não cotação) de P",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "V2 não responde cotação de P",
+      "test": "V1 vê Q1 e Q2 com itens",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "VB não responde cotação de P",
+      "test": "marcador seller_quote_respond aparece só na resposta de cotação e no despachante dedicado",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "financeiro não responde cotação",
+      "test": "cobrança B2B continua no validador LIVE (não usa o despachante)",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "V1 responde cotação de P (transição aguardando_cotacao → análise/crédito)",
+      "test": "marcador de Q1 autoriza o despachante só para Q1",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "ticket do vendedor não persiste após a transação",
+      "test": "marcador de Q1 NÃO autoriza Q2 do mesmo parceiro (SELLER_QUOTE_FLOW_REQUIRED)",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "segunda resposta: replay idempotente ou recusa explícita, sem duplicar termos",
+      "test": "marcador de Q1 NÃO abre o validador compartilhado (outros escritores) nem para Q1",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "vendedor não aprova o pedido respondido",
+      "test": "marcador de Q1 com snapshot diferente do gravado: SELLER_QUOTE_ORIGIN_DENIED",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "resposta de cotação sem NF/recebível/reserva/entrega/envio",
+      "test": "marcador não substitui a carteira: V2 com marcador de Q1 segue negado",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "marca de pedido travado sozinha não autoriza (SELLER_QUOTE_FLOW_REQUIRED)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "cliente autenticado não emite marcador",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "validador compartilhado permanece com corpo LIVE",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V2 (outro vendedor) não responde Q1 [42501 C2_SELLER_TARGET_DENIED:not_assigned]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "VB (outro tenant) não responde Q1 [42501 C2_SELLER_TARGET_DENIED:tenant]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "financeiro não responde cotação [P0001 forbidden_quote_response]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não chama o despachante privado diretamente [42501 permission denied]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não usa a resposta de cotação num pedido externo comum [42501 SELLER_QUOTE_STATE_DENIED]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "falha de validação da resposta (linhas vazias) sem efeitos [P0001 quote_incomplete]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "mesma transação: validador compartilhado nega vendedor para Q2 após responder Q1, e tudo é revertido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "mesma transação: validador compartilhado nega vendedor para Q1 após responder Q1, e tudo é revertido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "resposta revertida (ROLLBACK): Q1 continua aguardando, sem termos e sem recibo",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 responde Q1 (aguardando_cotacao → análise/crédito)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "Q2 intocado pela resposta de Q1",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "nenhum ticket criado ou retido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "replay por recibo (retorno antecipado) não abre o validador compartilhado",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "replay idempotente devolve o mesmo resultado, sem duplicar termos",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "preço diferente após resposta: conflito explícito [PT409 quote_idempotency_conflict]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "outro vendedor não reaproveita o recibo de Q1 [42501 SELLER_QUOTE_STATE_DENIED]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não aprova o pedido respondido [42501 b2b_phase1_scope_denied]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "concorrência: as duas respostas idênticas de Q2 devolvem o mesmo resultado; um termo e um recibo",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "concorrência sem ticket residual",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "respostas de cotação sem NF/recebível/reserva/entrega/envio",
       "status": "PASS",
       "detail": null
     },
@@ -369,12 +514,27 @@
       "detail": null
     },
     {
-      "test": "após revogação: criação negada",
+      "test": "após revogação: criação negada [42501 C2_SELLER_TARGET_DENIED:not_assigned]",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "após revogação: catálogo negado",
+      "test": "após revogação: catálogo negado [42501 forbidden_partner]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "após revogação: nenhum plano listado ao vendedor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "após revogação: condições de P negadas [42501 forbidden_role]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "após revogação: pedidos de P somem da carteira",
       "status": "PASS",
       "detail": null
     },
@@ -389,7 +549,42 @@
       "detail": null
     },
     {
-      "test": "perfil inativo: criação negada",
+      "test": "parceiro desativado: sai da capability, dos pedidos e dos planos do vendedor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "parceiro desativado: admin vê atribuição marcada partner_active=false e fora da lista de parceiros atribuíveis",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "parceiro desativado: criação negada pelo servidor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor suspenso: lista de planos negada ou vazia",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor suspenso: pedidos da carteira negados [42501 SELLER_SCOPE_DENIED]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor suspenso: admin vê atribuição com seller_active=false e vendedor fora da lista atribuível",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor suspenso: admin não atribui novo parceiro a ele [22023 SELLER_PORTFOLIO_SELLER_INVALID]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "perfil inativo: criação negada [42501 inactive_scope]",
       "status": "PASS",
       "detail": null
     },
@@ -399,7 +594,72 @@
       "detail": null
     },
     {
-      "test": "papel revogado: criação negada",
+      "test": "papel revogado: criação negada [42501 forbidden_partner]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "provisionamento cria usuário só com o papel vendedor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "reprovisionamento recusado (user_not_ready_for_provisioning)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "administrador não chama o provisionamento direto (só serviço)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "novo vendedor: pronto, carteira vazia (negação por padrão)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "novo vendedor sem atribuição não lança [42501 C2_SELLER_TARGET_DENIED:not_assigned]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "admin atribui PNA ao novo vendedor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "novo vendedor vê só PNA",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "edição pelo admin acrescenta financeiro: deixa de ser vendedor exclusivo",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "edição volta a vendedor exclusivo: carteira PNA preservada",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "edição com carimbo antigo: conflito [PT409 user_edit_conflict]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "admin de outra empresa não edita o vendedor [42501 user_edit_forbidden]",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "admin revoga PNA do novo vendedor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "após revogação: novo vendedor sem parceiros",
       "status": "PASS",
       "detail": null
     },
@@ -414,12 +674,12 @@
       "detail": null
     },
     {
-      "test": "regressão: técnico de parceiro segue negado",
+      "test": "regressão: técnico de parceiro segue negado [42501 forbidden_financial_terms]",
       "status": "PASS",
       "detail": null
     },
     {
-      "test": "regressão: financeiro não vira vendedor",
+      "test": "regressão: financeiro não vira vendedor [42501 SELLER_SCOPE_DENIED]",
       "status": "PASS",
       "detail": null
     },
@@ -445,11 +705,6 @@
     },
     {
       "test": "rollback md5 LIVE public.rpc_b2b_list_selectable_payment_plans()",
-      "status": "PASS",
-      "detail": null
-    },
-    {
-      "test": "rollback md5 LIVE platform_private.c2_external_origin_assert(jsonb,uuid,uuid)",
       "status": "PASS",
       "detail": null
     },
@@ -494,6 +749,11 @@
       "detail": null
     },
     {
+      "test": "rollback md5 LIVE platform_private.b2b_internal_child_snapshot_guard()",
+      "status": "PASS",
+      "detail": null
+    },
+    {
       "test": "rollback md5 LIVE platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)",
       "status": "PASS",
       "detail": null
@@ -509,7 +769,7 @@
       "detail": null
     },
     {
-      "test": "após rollback: vendedor sem writers",
+      "test": "após rollback: vendedor sem writers [42501 forbidden_partner]",
       "status": "PASS",
       "detail": null
     },
@@ -531,19 +791,19 @@
   ],
   "executed_sha256": {
     "01c-pre-writers.sql.readonly": [
-      "0049852019b5467c7a59b0b269d0bbd8ae9774533201705d26b2335171caf583",
-      "0049852019b5467c7a59b0b269d0bbd8ae9774533201705d26b2335171caf583"
+      "169f2ac6facf43eeeca59c80bdc71bb2132e9b9104a195fce1f0fae6fff86750",
+      "169f2ac6facf43eeeca59c80bdc71bb2132e9b9104a195fce1f0fae6fff86750"
     ],
     "02c-install-writers.sql.review": [
-      "a0fe37f87930a87fd069550a799893dc67ec69e1b5d5695735589aba8d9852ff",
-      "a0fe37f87930a87fd069550a799893dc67ec69e1b5d5695735589aba8d9852ff"
+      "3a8c009f6a6db5a629276d8d9e0ec7535ae7f868235f03cf43bea4cbe44abdca",
+      "3a8c009f6a6db5a629276d8d9e0ec7535ae7f868235f03cf43bea4cbe44abdca"
     ],
     "03c-post-writers.sql.readonly": [
-      "372cd808bc7883e511858e91ab2b92be6b04ec81f69183b5381a92d5d95ae1dd"
+      "4791cf191464c52bc4c46bcecfdb5e0c5e87ab18c54ce2cec5c6e394964106c9"
     ],
     "04c-rollback-writers.sql.review": [
-      "47c93b09597b6ddf3c704f2cb404b4eee3d305eea2e92f1adc2864f0de943439",
-      "47c93b09597b6ddf3c704f2cb404b4eee3d305eea2e92f1adc2864f0de943439"
+      "38613ad442136abbb50fac5d0f8bff5d6a311409864e6f1bb4053227d0483f0c",
+      "38613ad442136abbb50fac5d0f8bff5d6a311409864e6f1bb4053227d0483f0c"
     ]
   },
   "note": "PostgreSQL descartável restaurado do espelho composto; Auth sintética; não prova JWT/RLS/Storage hospedados"

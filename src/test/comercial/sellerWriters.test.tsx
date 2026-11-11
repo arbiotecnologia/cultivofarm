@@ -21,6 +21,8 @@ const rpc = vi.fn();
 const auth: any = { user: { id: V1 }, profile: { user_id: V1, organization_id: ORG, ativo: true }, roles: ["vendedor"], authzReady: true, authzEpoch: 1 };
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...a) } }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
+const toastErr = vi.fn();
+vi.mock("sonner", () => ({ toast: { error: (m: string) => toastErr(m), success: () => {} } }));
 const { parseSellerCapability, parseSellerOrders, portfolioErrorText } = await import("@/hooks/useSellerPortfolio");
 const { default: MinhaCarteira } = await import("@/pages/comercial/MinhaCarteiraVendedor");
 const { default: VendedorNovoPedido } = await import("@/pages/comercial/VendedorNovoPedido");
@@ -141,6 +143,41 @@ describe("Carteiras dos vendedores (administrador)", () => {
     fireEvent.change(screen.getByLabelText("Motivo da revogação de Parceiro Um"), { target: { value: "fim" } });
     fireEvent.click(btn);
     await waitFor(() => expect(calls).toEqual([{ p_assignment: "as-1", p_reason: "fim" }]));
+  });
+  it("atribui pela interface: escolhe vendedor e parceiro, exige motivo e chama a RPC normal", async () => {
+    auth.roles = ["administrador"];
+    const calls: any[] = [];
+    route({ admin_seller_portfolio_overview_v1: overview, admin_assign_seller_portfolio_v1: (a: unknown) => { calls.push(a); return { data: "as-2", error: null }; } });
+    page("/comercial/minha-carteira");
+    fireEvent.click(await screen.findByRole("combobox", { name: "Vendedor" }));
+    fireEvent.click(await screen.findByRole("option", { name: "Vendedora Um" }));
+    fireEvent.click(screen.getByRole("combobox", { name: "Parceiro" }));
+    fireEvent.click(await screen.findByRole("option", { name: "Parceiro Dois" }));
+    const btn = screen.getByRole("button", { name: "Atribuir" }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText("Motivo"), { target: { value: "nova carteira" } });
+    fireEvent.click(btn);
+    await waitFor(() => expect(calls).toEqual([{ p_seller: V1, p_partner: P2, p_reason: "nova carteira" }]));
+  });
+  it("recusa do servidor ao atribuir mostra motivo sem erro cru", async () => {
+    auth.roles = ["administrador"];
+    route({ admin_seller_portfolio_overview_v1: overview, admin_assign_seller_portfolio_v1: () => ({ data: null, error: { message: "SELLER_PORTFOLIO_ALREADY_ASSIGNED" } }) });
+    page("/comercial/minha-carteira");
+    fireEvent.click(await screen.findByRole("combobox", { name: "Vendedor" }));
+    fireEvent.click(await screen.findByRole("option", { name: "Vendedora Um" }));
+    fireEvent.click(screen.getByRole("combobox", { name: "Parceiro" }));
+    fireEvent.click(await screen.findByRole("option", { name: "Parceiro Um" }));
+    fireEvent.change(screen.getByLabelText("Motivo"), { target: { value: "x" } });
+    fireEvent.click(screen.getByRole("button", { name: "Atribuir" }));
+    await waitFor(() => expect(toastErr).toHaveBeenCalledWith(expect.stringMatching(/já está na carteira/)));
+    expect(toastErr.mock.calls.flat().join(" ")).not.toMatch(/SELLER_PORTFOLIO/);
+  });
+  it("marca vendedor suspenso e parceiro desativado nas vigentes", async () => {
+    auth.roles = ["administrador"];
+    route({ admin_seller_portfolio_overview_v1: { ...overview, sellers: [], assignments: [{ ...overview.assignments[0], seller_active: false, partner_active: false }] } });
+    page("/comercial/minha-carteira");
+    expect(await screen.findByText("vendedor suspenso")).toBeTruthy();
+    expect(screen.getByText("parceiro desativado")).toBeTruthy();
   });
   it("erro do servidor na leitura mantém fechado", async () => {
     auth.roles = ["administrador"];
