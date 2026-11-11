@@ -1,0 +1,16 @@
+{
+  "functions": {
+    "fn_fiscal_invoice_eligibility(text,uuid)": "70dba08838cd4d5eea29f37f5f8a3373",
+    "platform_private.b2b_allocate_document(uuid)": "cc539ca8c501af53a528d66b810aecd8",
+    "fn_fiscal_invoice_eligibility(text,uuid,uuid)": "c920cc8f80b03733f58105b083d788c2",
+    "platform_private.b2b_fiscal_invoice_bridge_v1(uuid)": "9b14fa08913075c08bc905074fb98a10",
+    "rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid)": "766fb81a3c7dafa71de7806e559f0730"
+  },
+  "objects": {
+    "alloc_pk": [
+      "PRIMARY KEY (document_id)"
+    ],
+    "b4_snapshots": true,
+    "one_title_idx": "CREATE UNIQUE INDEX b2b_one_title_per_document ON public.accounts_receivable USING btree (b2b_document_id) WHERE (b2b_document_id IS NOT NULL)"
+  }
+}

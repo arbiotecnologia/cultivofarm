@@ -1,0 +1,22 @@
+PASS cotação respondida pelo writer real (R$10) 
+PASS PB-like: em_analise_comercial, C2 pendente contábil, total 20, snapshot nulo 
+PASS piloto 01-pre.sql.readonly sobre a composição fiscal final 
+PASS piloto 02-install.sql.review sobre a composição fiscal final 
+PASS piloto 03-post.sql.readonly sobre a composição fiscal final 
+PASS 05 habilitação estreita do PB 
+PASS duas aprovações explícitas → previsão 20/20 aguardando_fiscal 
+PASS approve_partner_order LIVE [C2_ACCOUNTING_PENDING] 
+PASS approve_b2b_credit LIVE [C2_ACCOUNTING_PENDING] 
+PASS generate_b2b_receivable_secure (Financeiro) [C2_ACCOUNTING_PENDING] 
+PASS elegibilidade fiscal do PB: não elegível 
+INFO motivos {'orderId': 'f49c199e-a8c1-4a95-ac00-6debb82a53a9', 'reasons': [{'code': 'FISCAL_ORDER_STATUS_NOT_BILLABLE', 'message': 'Status do pedido nao habilitado para faturamento: em_analise_comercial', 'severity': 'BLOCK'}, {'code': 'FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING', 'message': 'Pedido sem aprovaca
+INFO inserção do documento sintético (pode ser negada por guardas reais) {'rc': 0, 'err': ''}
+INFO sync de início de emissão da previsão do PB (None, 'ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN')
+INFO callback autorizado H13 + replay [{'rc': 0, 'out': '{"nRec": null, "cStat": "104", "chNFe": "35262222222222222222222222222222222222004242", "nProt": "PB-NEG-PROT", "state": "SUCCEEDED", "outcome": "AUTHORIZED", "xMotivo": "LOTE PROCESSADO; PROTOCOLO AUTORIZADO", "protocolCStat": "100", "transmissionId": "1baae7a1-1a77-4c11-aafa-921
+PASS após callback autorizado: nenhum título para a NF do PB 
+PASS previsão do PB não reduz (residual 20) e nenhum FISCAL_CONFIRMED 
+PASS nenhuma alocação de documento para o PB 
+INFO estado final da NF sintética do PB {'inv_status': 'DRAFT', 'receivable': None}
+PASS PB: zero título (por pedido e por documento) 
+PASS PB: pedido idêntico ao estado após aprovações (cabeçalho) 
+16 PASS 0 FAIL

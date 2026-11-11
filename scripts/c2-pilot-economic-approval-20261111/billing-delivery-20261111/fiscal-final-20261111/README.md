@@ -30,3 +30,20 @@ elegibilidade inelegível; sync da emissão `B2B_FORECAST_FISCAL_SOURCE_UNPROVEN
 → `FISCAL_AUTHORIZATION_CLOSE_PENDING`, NF fica DRAFT, zero título, zero alocação, residual 20, nenhum FISCAL_CONFIRMED.
 Costuras: S0 gate OFF, S1 plano COT adotado, S2 config fiscal desativada só na criação, S3 documento NF sintético. Requer `c2neg_db.py` em `/tmp/c2neg/db.py`.
 Auth por claims SQL é sintética: não prova JWT/RLS/Storage.
+
+## r12 (attempt-220): r11 + fiscal-eligibility 02 (af435182) instalado ANTES do fluxo + recuperação fiscal a meio do pedido — 59/59 PASS
+- 02: `scripts/fiscal-eligibility-delivery-enum-20261111/02-install.sql.review` revisão `af435182215e8a1c9c1e83e5951f501dfaa9cc1b`,
+  SHA-256 `18275b2793c92c613b9cc5625b2564adecd17b125e210e823bb93802d6c9b001` (verificado no gancho; 03 POST exit 0).
+  `fn_fiscal_invoice_eligibility(text,uuid)` 6b3dde2b… → 70dba088…; `(text,uuid,uuid)` c920cc8f… inalterada. Costura: GUC `review_project_ref` na sessão do espelho.
+- Recuperação: NF1 normal → residual 10. Callback H13 real da NF2 (910) dentro de BEGIN…ROLLBACK (dentro da tx: AUTHORIZED, 1 título, residual 0).
+  Nova conexão: 1 título d88fa0e2…, 1 parcela 9cf3c4f4… R$10, 1 FISCAL_CONFIRMED, residual 10, NF2 sem título/alocação, DRAFT/PENDING — idêntico ao antes.
+- Reprocessamento (callbacks concorrentes 910/920): 920 vence, 910 close-pending; reenvio explícito NF1 e NF2 autorizadas: mesmos títulos
+  {d88fa0e2…, 076b87cb…}, mesmas parcelas {9cf3c4f4…, 565f5879…}, totais 10+10, 2 eventos FISCAL_CONFIRMED, residual 0.
+- Pedido e11dd06e…, previsão 7f7f7d24… 20→10→0; emissões 2027-02-01/02-02, vencimentos 2027-03-03/03-04; revenda 1+1 → `entregue`.
+- attempt-219: falha do meu gancho de teste (coluna `amount` inexistente; correta `original_amount`), preservada em `evidence/r12-attempt-219-harness-failure/`. Nenhum código de runtime alterado.
+- Diff: `harness-diff/r12-vs-r11.diff` (+ arquivos executados `r12-*.py`).
+
+## Negativa C2 attempt-002 (sobre dump r12 com 02 af435182 + Vendedor 02a–02d + piloto 01/02/03/05) — 16 PASS, 0 FAIL
+Mesmos resultados da attempt-001: comercial/crédito/recebível negados `C2_ACCOUNTING_PENDING`, elegibilidade fiscal inelegível, sync
+`B2B_FORECAST_FISCAL_SOURCE_UNPROVEN`, NF sintética autorizada fica DRAFT/close-pending, zero título/alocação, residual 20.
+Entrega: nenhuma OS/entrega existe para o PB (impressão digital inalterada); criação de entrega não foi tentada nesta rodada.

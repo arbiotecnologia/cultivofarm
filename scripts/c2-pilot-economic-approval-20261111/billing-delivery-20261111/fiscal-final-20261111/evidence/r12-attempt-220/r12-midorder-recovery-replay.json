@@ -1,0 +1,55 @@
+{
+  "winner": "00000000-0000-0000-0000-000000000920",
+  "after_reprocess": {
+    "tag": "after-reprocess",
+    "titles": "2",
+    "title_ids": "076b87cb-9a1a-4f19-820e-14faf4e826ac,d88fa0e2-474a-4bc2-8e14-cf302fcbf8b1",
+    "inst_ids": "565f5879-6844-4ffe-ab24-f935a974e410:10.00,9cf3c4f4-0548-4890-b276-355a3e3aca4d:10.00",
+    "confirmed_events": "2",
+    "residual": "0.00",
+    "nf2_titles": "0",
+    "nf2_alloc": "0",
+    "nf2_status": "DRAFT",
+    "nf2_tx": "AUTHORIZED"
+  },
+  "after_replay": {
+    "tag": "after-explicit-replay-nf1-nf2",
+    "titles": "2",
+    "title_ids": "076b87cb-9a1a-4f19-820e-14faf4e826ac,d88fa0e2-474a-4bc2-8e14-cf302fcbf8b1",
+    "inst_ids": "565f5879-6844-4ffe-ab24-f935a974e410:10.00,9cf3c4f4-0548-4890-b276-355a3e3aca4d:10.00",
+    "confirmed_events": "2",
+    "residual": "0.00",
+    "nf2_titles": "0",
+    "nf2_alloc": "0",
+    "nf2_status": "DRAFT",
+    "nf2_tx": "AUTHORIZED"
+  },
+  "title_amounts": "10.00,10.00",
+  "replay_nf1": {
+    "nRec": null,
+    "cStat": "104",
+    "chNFe": "35261111111111111111111111111111111111111111",
+    "nProt": "LOCAL-INTEGRATED-PROTOCOL",
+    "state": "SUCCEEDED",
+    "outcome": "AUTHORIZED",
+    "xMotivo": "LOTE PROCESSADO; PROTOCOLO AUTORIZADO",
+    "protocolCStat": "100",
+    "transmissionId": "00000000-0000-0000-0000-000000000901",
+    "reconciliationCode": null,
+    "reconciliationPending": false
+  },
+  "replay_nf2": {
+    "nRec": null,
+    "cStat": "104",
+    "chNFe": "35261111111111111111111111111111111111000920",
+    "nProt": "LOCAL-INTEGRATED-PROTOCOL-2Z",
+    "state": "SUCCEEDED",
+    "outcome": "AUTHORIZED",
+    "xMotivo": "LOTE PROCESSADO; PROTOCOLO AUTORIZADO",
+    "protocolCStat": "100",
+    "transmissionId": "00000000-0000-0000-0000-000000000922",
+    "reconciliationCode": null,
+    "reconciliationPending": false
+  },
+  "hosted": false
+}
