@@ -1,0 +1,20 @@
+{
+  "workspace": "/tmp/seller-review-mirror-duynawo1",
+  "synthetic_seams": [
+    "Auth SQL claims; schema and dependency seams inherited from current rebuild",
+    "synthetic seller fixture UUID mapped before boot; final candidate unchanged",
+    "temporary composition branch; no frozen source edits"
+  ],
+  "files": {
+    "scripts/b2b-downstream-audit-20261107/seller-finance-order-review-20261111/AGENTS.md": "3c65e17981565a65fefcc38e007e9d8d6a610e7fb7f47fa750017fd651dc4748",
+    "scripts/b2b-downstream-audit-20261107/seller-finance-order-review-20261111/candidate.sql": "c6cdf40ae3b71bb88436979a212234092aea9d47b23c09a3017063717b9ffca1",
+    "scripts/b2b-downstream-audit-20261107/seller-finance-order-review-20261111/mirror_flow.py": "815f00e5829f085911ec81cba41b7bd2721fbe5636f8269c725006c9609e5a1e",
+    "scripts/b2b-downstream-audit-20261107/seller-finance-order-review-20261111/run_mirror.py": "4fc9c7f7dfd7ad9192fa94364ea5b5140e4520fd7952d6bc596f0dbff59bfa9d",
+    "scripts/b2b-downstream-audit-20261107/seller-finance-order-review-20261111/generate.py": "0cc9eeb39bed464a1cb17be8a5d9d5802acef35a09244666815adbaf292f3675",
+    "scripts/b2b-downstream-audit-20261107/seller-finance-order-review-20261111/01-pre.sql.readonly": "0704bb8a4c6254c3f230722185d4f7b3e40678c8c3ba2188297114b62a770f86",
+    "scripts/b2b-downstream-audit-20261107/seller-finance-order-review-20261111/02-install.sql.review": "7d89bdbb921ec898687a0e05c42abb29eedf01dc4e6ebeec0f767568f07df5a8",
+    "scripts/b2b-downstream-audit-20261107/seller-finance-order-review-20261111/03-post.sql.readonly": "f8f87bc8401826499817f5e4b4871806edbe1f7e5d651a058752ec5ce7f2449e",
+    "scripts/b2b-downstream-audit-20261107/seller-finance-order-review-20261111/04-rollback.sql.review": "f1fda2ebefb83a1c4956ec8137789105d09076794919650f1111267d0cfd7330",
+    "scripts/b2b-downstream-audit-20261107/seller-finance-order-review-20261111/SHA256SUMS": "e19631bfbb6759ba1ef9ea0d5266db2fbf38e9442ca6a68db56e8deb2d99c541"
+  }
+}
