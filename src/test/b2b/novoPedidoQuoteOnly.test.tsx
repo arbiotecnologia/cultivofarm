@@ -153,8 +153,12 @@ function useServer(opts: { reply?: (a: Record<string, unknown>) => unknown; jour
   const base = wrapped();
   state.rpc.mockImplementation((n: string, a: Record<string, unknown> = {}) => {
     if (opts.journal && opts.journal !== "legacy") {
-      if (n === "partner_order_journal_capability_v1") return response({ contract: "C2_DURABLE_ORDER_ATTEMPT_V2", enabled: true, actor_id: state.actor, organization_id: state.tenant, partner_id: state.partner });
+      if (n === "partner_order_journal_capability_v1") return response({ contract: "C2_ORDER_JOURNAL_V1", enabled: true, actor_id: state.actor, organization_id: state.tenant, partner_id: state.partner });
     }
+    if (opts.journal === "committed" && n === "partner_order_attempt_status_v1") return response({ contract: "C2_ORDER_JOURNAL_V1",
+      key: "k-1", generation: 1, state: "committed", order_id: "55555555-5555-4555-8555-555555555555", numero: "PB-ANTERIOR", predecessors: [] });
+    if (opts.journal === "none" && n === "partner_order_attempt_status_v1") return response({ contract: "C2_ORDER_ATTEMPT_STATUS_V1", state: "none",
+      actor_id: state.actor, organization_id: state.tenant, partner_id: state.partner });
     if (n === "simulate_b2b_payment_condition_secure") {
       // Servidor (contrato B3 LIVE): cotação devolve envelope do meio, cronograma vazio e total 0 — nunca Price/parcelas.
       const r = opts.reply ? opts.reply(a) : { ...QUOTE_REPLY(), final_amount: 0, installment_count: 1, schedule_estimated: true, due_basis: "nf_issue",
@@ -225,4 +229,19 @@ it("preço ausente fora de quote_only segue bloqueado: sem simulação nem envio
   await new Promise((r) => setTimeout(r, 30));
   expect(calls("simulate_b2b_payment_condition_secure")).toHaveLength(0);
   expect(calls("create_partner_order_condition_secure")).toHaveLength(0);
+});
+
+it("tentativa anterior registrada (journal durável): cotação bloqueada com o motivo e a ação explícita DENTRO da janela", async () => {
+  useServer({ journal: "committed" });
+  await toPayment(); await pickTestPix();
+  await waitFor(() => expect(calls("simulate_b2b_payment_condition_secure")).toHaveLength(1));
+  const b = await quoteBtn();
+  await waitFor(() => expect(screen.getByTestId("submit-block-reason")).toHaveTextContent("tentativa anterior"));
+  expect(b).toBeDisabled();
+  const dialog = screen.getByRole("dialog");
+  expect(within(dialog).getByText(/Pedido PB-ANTERIOR já registrado/)).toBeInTheDocument();
+  expect(within(dialog).getByRole("button", { name: "Confirmar pedido existente e iniciar novo" })).toBeInTheDocument();
+  fireEvent.click(b);
+  expect(calls("create_partner_order_condition_secure")).toHaveLength(0);
+  expect(calls("recover_partner_order_attempt_v1")).toHaveLength(0);
 });
