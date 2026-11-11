@@ -1,0 +1,64 @@
+{
+  "attempt": 1,
+  "pass_": 10,
+  "fail": 0,
+  "checks": [
+    {
+      "test": "restore sem erros além das FKs auth conhecidas",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base reconstituída = MD5 auditor public.c2_internal_order_entry_capability_v1()",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base reconstituída = MD5 auditor public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base reconstituída = MD5 auditor public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base reconstituída = MD5 auditor platform_private.b2b_internal_commercial_actor()",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base reconstituída = MD5 auditor platform_private.c2_internal_order_target_reason(uuid,uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base reconstituída = MD5 auditor public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "LIVE: vendedor sem delta não cria pedido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "PRE ref divergente falha fechada",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "PRE_PASS",
+      "status": "PASS",
+      "detail": null
+    }
+  ],
+  "executed_sha256": {
+    "01c-pre-writers.sql.readonly": [
+      "020ae91dab7a45c7b962e6e173f246886803a860a36ca73bbd7f4af1a54d3432",
+      "020ae91dab7a45c7b962e6e173f246886803a860a36ca73bbd7f4af1a54d3432"
+    ]
+  },
+  "note": "PostgreSQL descartável restaurado do espelho composto; Auth sintética; não prova JWT/RLS/Storage hospedados"
+}
