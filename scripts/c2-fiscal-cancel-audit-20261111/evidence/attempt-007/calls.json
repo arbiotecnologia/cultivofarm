@@ -1,0 +1,290 @@
+[
+  {
+    "sql": "SELECT public.fn_fiscal_invoice_eligibility('PARTNER_ORDER','fb7e6c65-a016-40d8-9298-ea8601b0a979');",
+    "actor": "00000000-0000-0000-0000-000000000030",
+    "role": "authenticated",
+    "exit": 3,
+    "stdout": "",
+    "stderr": "ERROR:  42501: H15_STAFF_FORBIDDEN\nCONTEXT:  PL/pgSQL function h15_require_staff() line 5 at RAISE\nSQL statement \"SELECT public.h15_require_staff()\"\nPL/pgSQL function fn_fiscal_invoice_eligibility(text,uuid) line 16 at PERFORM\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "SELECT public.fn_fiscal_invoice_eligibility('PARTNER_ORDER','fb7e6c65-a016-40d8-9298-ea8601b0a979');",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "authenticated",
+    "exit": 0,
+    "stdout": "{\"orderId\": \"fb7e6c65-a016-40d8-9298-ea8601b0a979\", \"reasons\": [{\"code\": \"FISCAL_ORDER_STATUS_NOT_BILLABLE\", \"message\": \"Status do pedido nao habilitado para faturamento: em_analise_comercial\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING\", \"message\": \"Pedido sem aprovacao comercial registrada.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"economicDiagnosis\": {\"available\": true, \"fiscal_blocked\": true, \"credit_explicit\": true, \"accounting_pending\": true, \"commercial_explicit\": true, \"operational_blocked\": true, \"operational_commercial_registered\": false}, \"has_canceled_history\": false}\n",
+    "stderr": ""
+  },
+  {
+    "sql": "BEGIN;CREATE OR REPLACE FUNCTION public.fn_fiscal_invoice_eligibility(_source_type text, _source_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'pg_temp'\nAS $function$\nDECLARE\n  reasons jsonb := '[]'::jsonb;\n  po public.partner_orders%ROWTYPE;\n  ent public.entregas%ROWTYPE;\n  st text;\n  v_order_id uuid;\n  v_debtor uuid;\n  n_items int := 0; n_quote int := 0; n_no_snapshot int := 0;\n  canceled boolean := false;\n  allowed text[];\n  v_actor_org uuid;\n  v_owner_org uuid;\nBEGIN\n  PERFORM public.h15_require_staff();\n  v_actor_org := public.h15_actor_organization();\n\n  IF _source_type IS NULL OR _source_id IS NULL THEN\n    RETURN jsonb_build_object('eligible', false, 'reasons',\n      jsonb_build_array(jsonb_build_object('code','FISCAL_SOURCE_MISSING','severity','BLOCK',\n        'message','Origem fiscal (pedido/entrega) obrigatoria.')));\n  END IF;\n\n  IF _source_type = 'PARTNER_ORDER' THEN\n    SELECT * INTO po FROM public.partner_orders WHERE id = _source_id;\n    IF po.id IS NOT NULL THEN\n      SELECT pa.commercial_owner_organization_id INTO v_owner_org FROM public.partner_accounts pa WHERE pa.id = po.partner_id;\n    END IF;\n    -- Escopo vendedor: inexistente e de outra empresa respondem igual, sem IDs.\n    IF po.id IS NULL OR v_owner_org IS NULL OR v_owner_org IS DISTINCT FROM v_actor_org THEN\n      RETURN jsonb_build_object('eligible',false,'reasons',jsonb_build_array(jsonb_build_object('code','FISCAL_ORDER_NOT_FOUND','severity','BLOCK','message','Pedido inexistente.')),'sourceType',_source_type,'orderId',NULL::uuid,'debtorPartnerId',NULL::uuid,'has_canceled_history',false);\n    ELSE\n      v_order_id := po.id;\n      st := po.status::text;\n      allowed := public.fn_fiscal_billing_allowed_order_status();\n\n      IF st = 'cancelado' THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_CANCELED','severity','BLOCK','message','Pedido cancelado; emissao bloqueada.');\n      ELSIF st IN ('reprovado','reprovado_sem_itens') THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_REJECTED','severity','BLOCK','message','Pedido reprovado; emissao bloqueada.');\n      ELSIF st = 'aguardando_cotacao' THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_QUOTE_PENDING','severity','BLOCK','message','Pedido aguardando cotacao; emissao bloqueada.');\n      ELSIF st = 'faturado' THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_ALREADY_INVOICED','severity','BLOCK','message','Pedido ja faturado.');\n      ELSIF NOT (st = ANY (allowed)) THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_STATUS_NOT_BILLABLE','severity','BLOCK',\n          'message','Status do pedido nao habilitado para faturamento: '||st);\n      END IF;\n\n      -- Aprovacao comercial obrigatoria.\n      IF po.approved_at IS NULL OR po.approved_by IS NULL THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING','severity','BLOCK',\n          'message','Pedido sem aprovacao comercial registrada.');\n      END IF;\n\n      -- Aprovacao financeira quando exigida.\n      IF coalesce(po.requires_financial_approval,false)\n         AND coalesce(po.financial_approval_status,'pending') <> 'approved' THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_FINANCIAL_APPROVAL_MISSING','severity','BLOCK',\n          'message','Pedido exige aprovacao financeira e ela nao foi concedida.');\n      END IF;\n\n      -- Condicao de pagamento aceita/definida.\n      IF coalesce(po.payment_condition_status,'') NOT IN ('defined','accepted','aceita') THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_PAYMENT_CONDITION_NOT_ACCEPTED','severity','BLOCK',\n          'message','Condicao de pagamento nao aceita/definida.');\n      END IF;\n\n      -- Devedor correto: parceiro B2B, nunca o produtor final vinculado.\n      IF po.partner_id IS NULL THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_DEBTOR_UNRESOLVED','severity','BLOCK',\n          'message','Parceiro devedor do pedido nao identificado.');\n      ELSE\n        v_debtor := po.partner_id;\n      END IF;\n\n      -- Snapshot de preco/condicao e ausencia de itens sob consulta.\n      SELECT count(*),\n             count(*) FILTER (WHERE coalesce(pricing_mode_snapshot,'') = 'quote_only'),\n             count(*) FILTER (WHERE preco_unitario_final_snapshot IS NULL\n                                 OR price_source_snapshot IS NULL)\n        INTO n_items, n_quote, n_no_snapshot\n        FROM public.partner_order_items WHERE order_id = _source_id;\n\n      IF n_items = 0 THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_NO_ITEMS','severity','BLOCK','message','Pedido sem itens.');\n      END IF;\n      IF n_quote > 0 THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_QUOTE_ONLY_BLOCKED','severity','BLOCK',\n          'message','Pedido possui itens sob consulta (quote_only); emissao bloqueada sem efeito colateral.');\n      END IF;\n      IF n_no_snapshot > 0 THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_PRICE_SNAPSHOT_MISSING','severity','BLOCK',\n          'message','Itens sem snapshot de preco/condicao comercial.');\n      END IF;\n    END IF;\n\n  ELSIF _source_type = 'ENTREGA' THEN\n    SELECT * INTO ent FROM public.entregas WHERE id = _source_id;\n    -- Escopo vendedor: inexistente e de outra empresa respondem igual, sem IDs.\n    IF ent.id IS NULL OR ent.organization_id IS NULL OR ent.organization_id IS DISTINCT FROM v_actor_org THEN\n      RETURN jsonb_build_object('eligible',false,'reasons',jsonb_build_array(jsonb_build_object('code','FISCAL_DELIVERY_NOT_FOUND','severity','BLOCK','message','Entrega inexistente.')),'sourceType',_source_type,'orderId',NULL::uuid,'debtorPartnerId',NULL::uuid,'has_canceled_history',false);\n    ELSE\n      IF ent.cancelada_em IS NOT NULL OR coalesce(ent.status::text,'') = 'cancelada'\n         OR coalesce(ent.financial_status,'') = 'CANCELED' THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_DELIVERY_CANCELED','severity','BLOCK','message','Entrega cancelada.');\n      END IF;\n      IF NOT (coalesce(ent.status::text,'') = ANY (public.fn_fiscal_billing_allowed_delivery_status())) THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_DELIVERY_NOT_COMPLETED','severity','BLOCK',\n          'message','Entrega nao concluida/aceita. Status atual: '||coalesce(ent.status::text,'-'));\n      END IF;\n      IF ent.recebimento_confirmado_em IS NULL AND ent.confirmada_em IS NULL AND ent.entregue_em IS NULL THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_DELIVERY_RECEIPT_MISSING','severity','BLOCK',\n          'message','Entrega sem aceite/recebimento registrado.');\n      END IF;\n      IF ent.partner_order_id IS NULL THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_DELIVERY_ORDER_LINK_MISSING','severity','BLOCK',\n          'message','Entrega sem vinculo inequivoco a pedido B2B.');\n      ELSE\n        v_order_id := ent.partner_order_id;\n        SELECT o.partner_id, o.status::text, pa.commercial_owner_organization_id INTO v_debtor, st, v_owner_org\n          FROM public.partner_orders o LEFT JOIN public.partner_accounts pa ON pa.id = o.partner_id WHERE o.id = ent.partner_order_id;\n        IF v_owner_org IS NULL OR v_owner_org IS DISTINCT FROM ent.organization_id THEN\n          -- Pedido vinculado ausente/de outra empresa: nega sem expor seus IDs.\n          reasons := reasons || jsonb_build_object('code','FISCAL_DELIVERY_TENANT_MISMATCH','severity','BLOCK',\n            'message','Entrega e pedido vinculado nao pertencem a mesma empresa vendedora.');\n          v_order_id := NULL; v_debtor := NULL; st := NULL;\n        END IF;\n        IF v_debtor IS NULL THEN\n          reasons := reasons || jsonb_build_object('code','FISCAL_DEBTOR_UNRESOLVED','severity','BLOCK',\n            'message','Parceiro devedor da entrega nao identificado.');\n        END IF;\n        IF st IS NULL OR NOT (st = ANY (public.fn_fiscal_billing_allowed_order_status())) THEN\n          reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_STATUS_NOT_BILLABLE','severity','BLOCK',\n            'message','Pedido vinculado a entrega nao esta habilitado para faturamento: '||coalesce(st,'-'));\n        END IF;\n      END IF;\n    END IF;\n\n  ELSE\n    reasons := reasons || jsonb_build_object('code','FISCAL_SOURCE_TYPE_UNSUPPORTED','severity','BLOCK',\n      'message','Escopo fiscal nao suportado nesta fase: '||_source_type);\n  END IF;\n\n  -- Duplicidade fiscal: documento vivo para a mesma origem.\n  IF EXISTS (SELECT 1 FROM (SELECT * FROM public.fiscal_invoices WHERE public.h15_company_access(company_settings_id)) fi\n             WHERE fi.source_type = _source_type AND fi.source_id = _source_id\n               AND fi.document_model = 'NFE'\n               AND fi.status NOT IN ('CANCELED','REJECTED')\n               AND fi.access_key IS NOT NULL) THEN\n    reasons := reasons || jsonb_build_object('code','FISCAL_DUPLICATE_DOCUMENT','severity','BLOCK',\n      'message','Ja existe documento fiscal vigente para esta origem.');\n  END IF;\n\n  SELECT EXISTS (\n    SELECT 1 FROM (SELECT * FROM public.fiscal_invoices WHERE public.h15_company_access(company_settings_id)) fi\n    WHERE fi.source_type = _source_type AND fi.source_id = _source_id\n      AND fi.document_model = 'NFE' AND fi.status = 'CANCELED') INTO canceled;\n\n  RETURN jsonb_build_object(\n    'eligible', jsonb_array_length(reasons) = 0,\n    'reasons', reasons,\n    'sourceType', _source_type,\n    'orderId', v_order_id,\n    'debtorPartnerId', v_debtor,\n    'has_canceled_history', canceled);\nEND $function$;SELECT public.fn_fiscal_invoice_eligibility('PARTNER_ORDER','fb7e6c65-a016-40d8-9298-ea8601b0a979');ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "authenticated",
+    "exit": 0,
+    "stdout": "{\"orderId\": \"fb7e6c65-a016-40d8-9298-ea8601b0a979\", \"reasons\": [{\"code\": \"FISCAL_ORDER_STATUS_NOT_BILLABLE\", \"message\": \"Status do pedido nao habilitado para faturamento: em_analise_comercial\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING\", \"message\": \"Pedido sem aprovacao comercial registrada.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}\n",
+    "stderr": ""
+  },
+  {
+    "sql": "SELECT public.fn_fiscal_invoice_eligibility('PARTNER_ORDER','fb7e6c65-a016-40d8-9298-ea8601b0a979',NULL);",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "authenticated",
+    "exit": 0,
+    "stdout": "{\"orderId\": \"fb7e6c65-a016-40d8-9298-ea8601b0a979\", \"reasons\": [{\"code\": \"FISCAL_ORDER_STATUS_NOT_BILLABLE\", \"message\": \"Status do pedido nao habilitado para faturamento: em_analise_comercial\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING\", \"message\": \"Pedido sem aprovacao comercial registrada.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"economicDiagnosis\": {\"available\": true, \"fiscal_blocked\": true, \"credit_explicit\": true, \"accounting_pending\": true, \"commercial_explicit\": true, \"operational_blocked\": true, \"operational_commercial_registered\": false}, \"has_canceled_history\": false}\n",
+    "stderr": ""
+  },
+  {
+    "sql": "BEGIN;CREATE OR REPLACE FUNCTION public.fn_fiscal_invoice_eligibility(_source_type text, _source_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'pg_temp'\nAS $function$\nDECLARE\n  reasons jsonb := '[]'::jsonb;\n  po public.partner_orders%ROWTYPE;\n  ent public.entregas%ROWTYPE;\n  st text;\n  v_order_id uuid;\n  v_debtor uuid;\n  n_items int := 0; n_quote int := 0; n_no_snapshot int := 0;\n  canceled boolean := false;\n  allowed text[];\n  v_actor_org uuid;\n  v_owner_org uuid;\nBEGIN\n  PERFORM public.h15_require_staff();\n  v_actor_org := public.h15_actor_organization();\n\n  IF _source_type IS NULL OR _source_id IS NULL THEN\n    RETURN jsonb_build_object('eligible', false, 'reasons',\n      jsonb_build_array(jsonb_build_object('code','FISCAL_SOURCE_MISSING','severity','BLOCK',\n        'message','Origem fiscal (pedido/entrega) obrigatoria.')));\n  END IF;\n\n  IF _source_type = 'PARTNER_ORDER' THEN\n    SELECT * INTO po FROM public.partner_orders WHERE id = _source_id;\n    IF po.id IS NOT NULL THEN\n      SELECT pa.commercial_owner_organization_id INTO v_owner_org FROM public.partner_accounts pa WHERE pa.id = po.partner_id;\n    END IF;\n    -- Escopo vendedor: inexistente e de outra empresa respondem igual, sem IDs.\n    IF po.id IS NULL OR v_owner_org IS NULL OR v_owner_org IS DISTINCT FROM v_actor_org THEN\n      RETURN jsonb_build_object('eligible',false,'reasons',jsonb_build_array(jsonb_build_object('code','FISCAL_ORDER_NOT_FOUND','severity','BLOCK','message','Pedido inexistente.')),'sourceType',_source_type,'orderId',NULL::uuid,'debtorPartnerId',NULL::uuid,'has_canceled_history',false);\n    ELSE\n      v_order_id := po.id;\n      st := po.status::text;\n      allowed := public.fn_fiscal_billing_allowed_order_status();\n\n      IF st = 'cancelado' THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_CANCELED','severity','BLOCK','message','Pedido cancelado; emissao bloqueada.');\n      ELSIF st IN ('reprovado','reprovado_sem_itens') THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_REJECTED','severity','BLOCK','message','Pedido reprovado; emissao bloqueada.');\n      ELSIF st = 'aguardando_cotacao' THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_QUOTE_PENDING','severity','BLOCK','message','Pedido aguardando cotacao; emissao bloqueada.');\n      ELSIF st = 'faturado' THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_ALREADY_INVOICED','severity','BLOCK','message','Pedido ja faturado.');\n      ELSIF NOT (st = ANY (allowed)) THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_STATUS_NOT_BILLABLE','severity','BLOCK',\n          'message','Status do pedido nao habilitado para faturamento: '||st);\n      END IF;\n\n      -- Aprovacao comercial obrigatoria.\n      IF po.approved_at IS NULL OR po.approved_by IS NULL THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING','severity','BLOCK',\n          'message','Pedido sem aprovacao comercial registrada.');\n      END IF;\n\n      -- Aprovacao financeira quando exigida.\n      IF coalesce(po.requires_financial_approval,false)\n         AND coalesce(po.financial_approval_status,'pending') <> 'approved' THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_FINANCIAL_APPROVAL_MISSING','severity','BLOCK',\n          'message','Pedido exige aprovacao financeira e ela nao foi concedida.');\n      END IF;\n\n      -- Condicao de pagamento aceita/definida.\n      IF coalesce(po.payment_condition_status,'') NOT IN ('defined','accepted','aceita') THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_PAYMENT_CONDITION_NOT_ACCEPTED','severity','BLOCK',\n          'message','Condicao de pagamento nao aceita/definida.');\n      END IF;\n\n      -- Devedor correto: parceiro B2B, nunca o produtor final vinculado.\n      IF po.partner_id IS NULL THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_DEBTOR_UNRESOLVED','severity','BLOCK',\n          'message','Parceiro devedor do pedido nao identificado.');\n      ELSE\n        v_debtor := po.partner_id;\n      END IF;\n\n      -- Snapshot de preco/condicao e ausencia de itens sob consulta.\n      SELECT count(*),\n             count(*) FILTER (WHERE coalesce(pricing_mode_snapshot,'') = 'quote_only'),\n             count(*) FILTER (WHERE preco_unitario_final_snapshot IS NULL\n                                 OR price_source_snapshot IS NULL)\n        INTO n_items, n_quote, n_no_snapshot\n        FROM public.partner_order_items WHERE order_id = _source_id;\n\n      IF n_items = 0 THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_NO_ITEMS','severity','BLOCK','message','Pedido sem itens.');\n      END IF;\n      IF n_quote > 0 THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_QUOTE_ONLY_BLOCKED','severity','BLOCK',\n          'message','Pedido possui itens sob consulta (quote_only); emissao bloqueada sem efeito colateral.');\n      END IF;\n      IF n_no_snapshot > 0 THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_PRICE_SNAPSHOT_MISSING','severity','BLOCK',\n          'message','Itens sem snapshot de preco/condicao comercial.');\n      END IF;\n    END IF;\n\n  ELSIF _source_type = 'ENTREGA' THEN\n    SELECT * INTO ent FROM public.entregas WHERE id = _source_id;\n    -- Escopo vendedor: inexistente e de outra empresa respondem igual, sem IDs.\n    IF ent.id IS NULL OR ent.organization_id IS NULL OR ent.organization_id IS DISTINCT FROM v_actor_org THEN\n      RETURN jsonb_build_object('eligible',false,'reasons',jsonb_build_array(jsonb_build_object('code','FISCAL_DELIVERY_NOT_FOUND','severity','BLOCK','message','Entrega inexistente.')),'sourceType',_source_type,'orderId',NULL::uuid,'debtorPartnerId',NULL::uuid,'has_canceled_history',false);\n    ELSE\n      IF ent.cancelada_em IS NOT NULL OR coalesce(ent.status::text,'') = 'cancelada'\n         OR coalesce(ent.financial_status,'') = 'CANCELED' THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_DELIVERY_CANCELED','severity','BLOCK','message','Entrega cancelada.');\n      END IF;\n      IF NOT (coalesce(ent.status::text,'') = ANY (public.fn_fiscal_billing_allowed_delivery_status())) THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_DELIVERY_NOT_COMPLETED','severity','BLOCK',\n          'message','Entrega nao concluida/aceita. Status atual: '||coalesce(ent.status::text,'-'));\n      END IF;\n      IF ent.recebimento_confirmado_em IS NULL AND ent.confirmada_em IS NULL AND ent.entregue_em IS NULL THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_DELIVERY_RECEIPT_MISSING','severity','BLOCK',\n          'message','Entrega sem aceite/recebimento registrado.');\n      END IF;\n      IF ent.partner_order_id IS NULL THEN\n        reasons := reasons || jsonb_build_object('code','FISCAL_DELIVERY_ORDER_LINK_MISSING','severity','BLOCK',\n          'message','Entrega sem vinculo inequivoco a pedido B2B.');\n      ELSE\n        v_order_id := ent.partner_order_id;\n        SELECT o.partner_id, o.status::text, pa.commercial_owner_organization_id INTO v_debtor, st, v_owner_org\n          FROM public.partner_orders o LEFT JOIN public.partner_accounts pa ON pa.id = o.partner_id WHERE o.id = ent.partner_order_id;\n        IF v_owner_org IS NULL OR v_owner_org IS DISTINCT FROM ent.organization_id THEN\n          -- Pedido vinculado ausente/de outra empresa: nega sem expor seus IDs.\n          reasons := reasons || jsonb_build_object('code','FISCAL_DELIVERY_TENANT_MISMATCH','severity','BLOCK',\n            'message','Entrega e pedido vinculado nao pertencem a mesma empresa vendedora.');\n          v_order_id := NULL; v_debtor := NULL; st := NULL;\n        END IF;\n        IF v_debtor IS NULL THEN\n          reasons := reasons || jsonb_build_object('code','FISCAL_DEBTOR_UNRESOLVED','severity','BLOCK',\n            'message','Parceiro devedor da entrega nao identificado.');\n        END IF;\n        IF st IS NULL OR NOT (st = ANY (public.fn_fiscal_billing_allowed_order_status())) THEN\n          reasons := reasons || jsonb_build_object('code','FISCAL_ORDER_STATUS_NOT_BILLABLE','severity','BLOCK',\n            'message','Pedido vinculado a entrega nao esta habilitado para faturamento: '||coalesce(st,'-'));\n        END IF;\n      END IF;\n    END IF;\n\n  ELSE\n    reasons := reasons || jsonb_build_object('code','FISCAL_SOURCE_TYPE_UNSUPPORTED','severity','BLOCK',\n      'message','Escopo fiscal nao suportado nesta fase: '||_source_type);\n  END IF;\n\n  -- Duplicidade fiscal: documento vivo para a mesma origem.\n  IF EXISTS (SELECT 1 FROM (SELECT * FROM public.fiscal_invoices WHERE public.h15_company_access(company_settings_id)) fi\n             WHERE fi.source_type = _source_type AND fi.source_id = _source_id\n               AND fi.document_model = 'NFE'\n               AND fi.status NOT IN ('CANCELED','REJECTED')\n               AND fi.access_key IS NOT NULL) THEN\n    reasons := reasons || jsonb_build_object('code','FISCAL_DUPLICATE_DOCUMENT','severity','BLOCK',\n      'message','Ja existe documento fiscal vigente para esta origem.');\n  END IF;\n\n  SELECT EXISTS (\n    SELECT 1 FROM (SELECT * FROM public.fiscal_invoices WHERE public.h15_company_access(company_settings_id)) fi\n    WHERE fi.source_type = _source_type AND fi.source_id = _source_id\n      AND fi.document_model = 'NFE' AND fi.status = 'CANCELED') INTO canceled;\n\n  RETURN jsonb_build_object(\n    'eligible', jsonb_array_length(reasons) = 0,\n    'reasons', reasons,\n    'sourceType', _source_type,\n    'orderId', v_order_id,\n    'debtorPartnerId', v_debtor,\n    'has_canceled_history', canceled);\nEND $function$;SELECT public.fn_fiscal_invoice_eligibility('PARTNER_ORDER','fb7e6c65-a016-40d8-9298-ea8601b0a979',NULL);ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "authenticated",
+    "exit": 0,
+    "stdout": "{\"orderId\": \"fb7e6c65-a016-40d8-9298-ea8601b0a979\", \"reasons\": [{\"code\": \"FISCAL_ORDER_STATUS_NOT_BILLABLE\", \"message\": \"Status do pedido nao habilitado para faturamento: em_analise_comercial\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING\", \"message\": \"Pedido sem aprovacao comercial registrada.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}\n",
+    "stderr": ""
+  },
+  {
+    "sql": "BEGIN;UPDATE platform_private.c2_pilot_econ_gate_v1 SET enabled=false;SELECT public.fn_fiscal_invoice_eligibility('PARTNER_ORDER','fb7e6c65-a016-40d8-9298-ea8601b0a979');ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "authenticated",
+    "exit": 0,
+    "stdout": "{\"orderId\": \"fb7e6c65-a016-40d8-9298-ea8601b0a979\", \"reasons\": [{\"code\": \"FISCAL_ORDER_STATUS_NOT_BILLABLE\", \"message\": \"Status do pedido nao habilitado para faturamento: em_analise_comercial\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING\", \"message\": \"Pedido sem aprovacao comercial registrada.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"economicDiagnosis\": {\"available\": false, \"fiscal_blocked\": true, \"credit_explicit\": null, \"accounting_pending\": true, \"commercial_explicit\": null, \"operational_blocked\": true, \"operational_commercial_registered\": false}, \"has_canceled_history\": false}\n",
+    "stderr": ""
+  },
+  {
+    "sql": "BEGIN;UPDATE platform_private.c2_pilot_econ_allowlist_v1 SET revoked_at=clock_timestamp() WHERE order_id='fb7e6c65-a016-40d8-9298-ea8601b0a979' AND actor_id='00000000-0000-0000-0000-000000000029';SELECT public.fn_fiscal_invoice_eligibility('PARTNER_ORDER','fb7e6c65-a016-40d8-9298-ea8601b0a979');ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "authenticated",
+    "exit": 0,
+    "stdout": "{\"orderId\": \"fb7e6c65-a016-40d8-9298-ea8601b0a979\", \"reasons\": [{\"code\": \"FISCAL_ORDER_STATUS_NOT_BILLABLE\", \"message\": \"Status do pedido nao habilitado para faturamento: em_analise_comercial\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING\", \"message\": \"Pedido sem aprovacao comercial registrada.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"economicDiagnosis\": {\"available\": false, \"fiscal_blocked\": true, \"credit_explicit\": null, \"accounting_pending\": true, \"commercial_explicit\": null, \"operational_blocked\": true, \"operational_commercial_registered\": false}, \"has_canceled_history\": false}\n",
+    "stderr": ""
+  },
+  {
+    "sql": "BEGIN;UPDATE platform_private.c2_pilot_econ_allowlist_v1 SET revoked_at=clock_timestamp() WHERE order_id='fb7e6c65-a016-40d8-9298-ea8601b0a979' AND actor_id='00000000-0000-0000-0000-000000000030';SELECT public.fn_fiscal_invoice_eligibility('PARTNER_ORDER','fb7e6c65-a016-40d8-9298-ea8601b0a979');ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "authenticated",
+    "exit": 0,
+    "stdout": "{\"orderId\": \"fb7e6c65-a016-40d8-9298-ea8601b0a979\", \"reasons\": [{\"code\": \"FISCAL_ORDER_STATUS_NOT_BILLABLE\", \"message\": \"Status do pedido nao habilitado para faturamento: em_analise_comercial\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING\", \"message\": \"Pedido sem aprovacao comercial registrada.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"economicDiagnosis\": {\"available\": true, \"fiscal_blocked\": true, \"credit_explicit\": true, \"accounting_pending\": true, \"commercial_explicit\": false, \"operational_blocked\": true, \"operational_commercial_registered\": false}, \"has_canceled_history\": false}\n",
+    "stderr": ""
+  },
+  {
+    "sql": "BEGIN;UPDATE platform_private.c2_pilot_econ_allowlist_v1 SET valid_until=valid_from+interval '1 second' WHERE order_id='fb7e6c65-a016-40d8-9298-ea8601b0a979';SELECT public.fn_fiscal_invoice_eligibility('PARTNER_ORDER','fb7e6c65-a016-40d8-9298-ea8601b0a979');ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "authenticated",
+    "exit": 0,
+    "stdout": "{\"orderId\": \"fb7e6c65-a016-40d8-9298-ea8601b0a979\", \"reasons\": [{\"code\": \"FISCAL_ORDER_STATUS_NOT_BILLABLE\", \"message\": \"Status do pedido nao habilitado para faturamento: em_analise_comercial\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING\", \"message\": \"Pedido sem aprovacao comercial registrada.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"economicDiagnosis\": {\"available\": false, \"fiscal_blocked\": true, \"credit_explicit\": null, \"accounting_pending\": true, \"commercial_explicit\": null, \"operational_blocked\": true, \"operational_commercial_registered\": false}, \"has_canceled_history\": false}\n",
+    "stderr": ""
+  },
+  {
+    "sql": "SELECT public.fn_fiscal_invoice_eligibility('PARTNER_ORDER','fb7e6c65-a016-40d8-9298-ea8601b0a979');",
+    "actor": "00000000-0000-0000-0000-000000000025",
+    "role": "authenticated",
+    "exit": 0,
+    "stdout": "{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}\n",
+    "stderr": ""
+  },
+  {
+    "sql": "SELECT public.fn_fiscal_invoice_eligibility('PARTNER_ORDER','28644577-ce7b-4016-bdb7-7f40743b5c3a');",
+    "actor": "00000000-0000-0000-0000-000000000025",
+    "role": "authenticated",
+    "exit": 0,
+    "stdout": "{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}\n",
+    "stderr": ""
+  },
+  {
+    "sql": "BEGIN;GRANT EXECUTE ON FUNCTION public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text) TO authenticated;UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=true;INSERT INTO platform_private.resale_pilot_allowlist_v1(gate,operation,actor_id,organization_id,partner_id,order_id,order_item_id,product_id,synthetic,created_by,valid_until) SELECT 'b2b_resale','os_create','00000000-0000-0000-0000-000000000024','00000000-0000-0000-0000-000000000001',po.partner_id,po.id,i.id,i.product_id,true,'00000000-0000-0000-0000-000000000024',now()+interval '1 hour' FROM public.partner_orders po JOIN public.partner_order_items i ON i.order_id=po.id WHERE po.id='fb7e6c65-a016-40d8-9298-ea8601b0a979' AND i.id='d67bb759-108f-40ec-9344-37404e8863f0';SELECT public.rpc_b2b_resale_os_create_v1('fb7e6c65-a016-40d8-9298-ea8601b0a979','d67bb759-108f-40ec-9344-37404e8863f0','2026-11-11 23:08:39.783555+00','audit-os-2e88fab9-87e3-4f84-a1b7-c26aa449c709');ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000024",
+    "role": "authenticated",
+    "exit": 3,
+    "stdout": "",
+    "stderr": "ERROR:  PT409: B2B_RESALE_ORDER_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 38 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "BEGIN;GRANT EXECUTE ON FUNCTION public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text) TO authenticated;UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=true;INSERT INTO platform_private.resale_pilot_allowlist_v1(gate,operation,actor_id,organization_id,partner_id,order_id,order_item_id,product_id,synthetic,created_by,valid_until) SELECT 'b2b_resale','os_create','00000000-0000-0000-0000-000000000024','00000000-0000-0000-0000-000000000001',po.partner_id,po.id,i.id,i.product_id,true,'00000000-0000-0000-0000-000000000024',now()+interval '1 hour' FROM public.partner_orders po JOIN public.partner_order_items i ON i.order_id=po.id WHERE po.id='ec29a271-3154-4f2d-8969-9becb6cfc2ce' AND i.id='51a0b8ed-3092-423d-8eb0-154de35857da';SELECT public.rpc_b2b_resale_os_create_v1('ec29a271-3154-4f2d-8969-9becb6cfc2ce','51a0b8ed-3092-423d-8eb0-154de35857da','2026-11-11 23:06:43.434743+00','audit-os-881648ec-1f9c-4ae9-9a42-fd7b255058e7');ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000024",
+    "role": "authenticated",
+    "exit": 0,
+    "stdout": "{\"ok\": true, \"os_id\": \"d7b6a6c4-52bb-4fe8-b600-7cab03e34b06\", \"replay\": false, \"contract\": \"B2B_RESALE_OS_V1\", \"order_id\": \"ec29a271-3154-4f2d-8969-9becb6cfc2ce\", \"order_item_id\": \"51a0b8ed-3092-423d-8eb0-154de35857da\"}\n",
+    "stderr": ""
+  },
+  {
+    "sql": "BEGIN;SELECT public.reject_partner_order('fb7e6c65-a016-40d8-9298-ea8601b0a979','auditoria local sem efeitos');ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000030",
+    "role": "authenticated",
+    "exit": 3,
+    "stdout": "",
+    "stderr": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "BEGIN;SELECT public.reject_partner_order('fb7e6c65-a016-40d8-9298-ea8601b0a979','auditoria local sem efeitos');ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000025",
+    "role": "authenticated",
+    "exit": 3,
+    "stdout": "",
+    "stderr": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "SELECT public.cancel_b2b_receivable_secure('fb7e6c65-a016-40d8-9298-ea8601b0a979','auditoria sem efeitos');",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "authenticated",
+    "exit": 3,
+    "stdout": "",
+    "stderr": "ERROR:  42501: permission denied for function cancel_b2b_receivable_secure\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+  },
+  {
+    "sql": "BEGIN;SELECT public.rpc_b2b_forecast_cancel_residual_v1('fb7e6c65-a016-40d8-9298-ea8601b0a979',1,'auditoria local');ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "authenticated",
+    "exit": 3,
+    "stdout": "",
+    "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "BEGIN;SELECT public.reject_partner_order('ec29a271-3154-4f2d-8969-9becb6cfc2ce','auditoria local sem efeitos');ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000030",
+    "role": "authenticated",
+    "exit": 3,
+    "stdout": "",
+    "stderr": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "BEGIN;SELECT public.reject_partner_order('ec29a271-3154-4f2d-8969-9becb6cfc2ce','auditoria local sem efeitos');ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000025",
+    "role": "authenticated",
+    "exit": 3,
+    "stdout": "",
+    "stderr": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "SELECT public.cancel_b2b_receivable_secure('ec29a271-3154-4f2d-8969-9becb6cfc2ce','auditoria sem efeitos');",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "authenticated",
+    "exit": 3,
+    "stdout": "",
+    "stderr": "ERROR:  42501: permission denied for function cancel_b2b_receivable_secure\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+  },
+  {
+    "sql": "BEGIN;SELECT public.rpc_b2b_forecast_cancel_residual_v1('ec29a271-3154-4f2d-8969-9becb6cfc2ce',1,'auditoria local');ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "authenticated",
+    "exit": 3,
+    "stdout": "",
+    "stderr": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "BEGIN;SELECT public.reject_partner_order('76587cd2-154d-49b2-a3aa-d852965046d5','auditoria local sem efeitos');ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000030",
+    "role": "authenticated",
+    "exit": 3,
+    "stdout": "",
+    "stderr": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "BEGIN;SELECT public.reject_partner_order('76587cd2-154d-49b2-a3aa-d852965046d5','auditoria local sem efeitos');ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000025",
+    "role": "authenticated",
+    "exit": 3,
+    "stdout": "",
+    "stderr": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "SELECT public.cancel_b2b_receivable_secure('76587cd2-154d-49b2-a3aa-d852965046d5','auditoria sem efeitos');",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "authenticated",
+    "exit": 3,
+    "stdout": "",
+    "stderr": "ERROR:  42501: permission denied for function cancel_b2b_receivable_secure\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+  },
+  {
+    "sql": "BEGIN;SELECT public.rpc_b2b_forecast_cancel_residual_v1('76587cd2-154d-49b2-a3aa-d852965046d5',8,'auditoria local');ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "authenticated",
+    "exit": 3,
+    "stdout": "",
+    "stderr": "ERROR:  PT409: B2B_FORECAST_FISCAL_IN_FLIGHT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 39 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000000900','CANCELLATION','Justificativa sintética para auditoria local','audit-client-denied','00000000-0000-0000-0000-000000000029');",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "authenticated",
+    "exit": 3,
+    "stdout": "",
+    "stderr": "ERROR:  42501: permission denied for function rpc_fiscal_event_sefaz_prepare_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+  },
+  {
+    "sql": "SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000000900','CANCELLATION','Justificativa sintética para auditoria local','audit-foreign','00000000-0000-0000-0000-000000000029');",
+    "actor": "00000000-0000-0000-0000-000000000025",
+    "role": "service_role",
+    "exit": 3,
+    "stdout": "",
+    "stderr": "ERROR:  42501: FISCAL_FORBIDDEN\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000000900','CANCELLATION','Justificativa sintética para auditoria local','audit-event-5f48f8f698154ce3af2adf48ebc36839','00000000-0000-0000-0000-000000000029');",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "service_role",
+    "exit": 0,
+    "stdout": "{\"reason\": \"Justificativa sintética para auditoria local\", \"eventId\": \"7f021309-c561-40f7-953c-e0053ecca8be\", \"protocol\": \"LOCAL-INTEGRATED-PROTOCOL\", \"accessKey\": \"35261111111111111111111111111111111111111111\", \"eventCode\": \"110111\", \"seqEvento\": 4, \"idempotentReplay\": false, \"companySettingsId\": \"0a757cd6-26ec-4920-94ba-81499af7ee70\"}\n",
+    "stderr": ""
+  },
+  {
+    "sql": "SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000000900','CANCELLATION','Justificativa sintética para auditoria local','audit-event-5f48f8f698154ce3af2adf48ebc36839','00000000-0000-0000-0000-000000000029');",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "service_role",
+    "exit": 0,
+    "stdout": "{\"reason\": \"Justificativa sintética para auditoria local\", \"eventId\": \"7f021309-c561-40f7-953c-e0053ecca8be\", \"protocol\": \"LOCAL-INTEGRATED-PROTOCOL\", \"accessKey\": \"35261111111111111111111111111111111111111111\", \"eventCode\": \"110111\", \"seqEvento\": 4, \"idempotentReplay\": true, \"companySettingsId\": \"0a757cd6-26ec-4920-94ba-81499af7ee70\"}\n",
+    "stderr": ""
+  },
+  {
+    "sql": "SELECT public.rpc_fiscal_event_sefaz_mark_signed_v1('7f021309-c561-40f7-953c-e0053ecca8be','eventos/local/synthetic-event.xml','4e5e0900b74eace50abe30b7f651727bd583378b55983199135334c655b3d11e','00000000-0000-0000-0000-000000000029');",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "service_role",
+    "exit": 0,
+    "stdout": "{\"state\": \"SIGNED\", \"eventId\": \"7f021309-c561-40f7-953c-e0053ecca8be\", \"idempotentReplay\": false, \"signatureEventId\": \"d0ca010e-06f7-4a0a-9b38-52d9f846a562\"}\n",
+    "stderr": ""
+  },
+  {
+    "sql": "INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('d9e2eca1-3e98-4585-89c3-1e21865311df','00000000-0000-0000-0000-000000000900','7f021309-c561-40f7-953c-e0053ecca8be','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','audit-event-tx:d9e2eca1-3e98-4585-89c3-1e21865311df','4e5e0900b74eace50abe30b7f651727bd583378b55983199135334c655b3d11e','SENT','PENDING','00000000-0000-0000-0000-000000000029');",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "service_role",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "sql": "BEGIN;SELECT public.rpc_fiscal_sefaz_transmit_record_v1('d9e2eca1-3e98-4585-89c3-1e21865311df','SUCCEEDED','{\"cStat\": \"135\", \"nProt\": \"LOCAL-CANCEL-PROTOCOL\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"tpAmb\": \"2\", \"xMotivo\": \"LOCAL SYNTHETIC REGISTERED EVENT\", \"dhRecbto\": \"2027-02-02T12:00:00Z\"}'::jsonb);ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "service_role",
+    "exit": 0,
+    "stdout": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-CANCEL-PROTOCOL\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL SYNTHETIC REGISTERED EVENT\", \"protocolCStat\": \"135\", \"transmissionId\": \"d9e2eca1-3e98-4585-89c3-1e21865311df\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+    "stderr": ""
+  },
+  {
+    "sql": "SELECT public.rpc_fiscal_sefaz_transmit_record_v1('d9e2eca1-3e98-4585-89c3-1e21865311df','SUCCEEDED','{\"cStat\": \"135\", \"nProt\": \"LOCAL-CANCEL-PROTOCOL\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"tpAmb\": \"2\", \"xMotivo\": \"LOCAL SYNTHETIC REGISTERED EVENT\", \"dhRecbto\": \"2027-02-02T12:00:00Z\"}'::jsonb);",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "service_role",
+    "exit": 0,
+    "stdout": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-CANCEL-PROTOCOL\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL SYNTHETIC REGISTERED EVENT\", \"protocolCStat\": \"135\", \"transmissionId\": \"d9e2eca1-3e98-4585-89c3-1e21865311df\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+    "stderr": ""
+  },
+  {
+    "sql": "SELECT public.rpc_fiscal_sefaz_transmit_record_v1('d9e2eca1-3e98-4585-89c3-1e21865311df','SUCCEEDED','{\"cStat\": \"135\", \"nProt\": \"LOCAL-CANCEL-PROTOCOL\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"tpAmb\": \"2\", \"xMotivo\": \"LOCAL SYNTHETIC REGISTERED EVENT\", \"dhRecbto\": \"2027-02-02T12:00:00Z\"}'::jsonb);",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "service_role",
+    "exit": 0,
+    "stdout": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-CANCEL-PROTOCOL\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL SYNTHETIC REGISTERED EVENT\", \"protocolCStat\": \"135\", \"transmissionId\": \"d9e2eca1-3e98-4585-89c3-1e21865311df\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+    "stderr": ""
+  },
+  {
+    "sql": "SELECT public.rpc_fiscal_sefaz_transmit_record_v1('d9e2eca1-3e98-4585-89c3-1e21865311df','SUCCEEDED','{\"cStat\": \"135\", \"nProt\": \"LOCAL-CANCEL-PROTOCOL\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"tpAmb\": \"2\", \"xMotivo\": \"LOCAL SYNTHETIC REGISTERED EVENT\", \"dhRecbto\": \"2027-02-02T12:00:00Z\"}'::jsonb);",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "service_role",
+    "exit": 0,
+    "stdout": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-CANCEL-PROTOCOL\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL SYNTHETIC REGISTERED EVENT\", \"protocolCStat\": \"135\", \"transmissionId\": \"d9e2eca1-3e98-4585-89c3-1e21865311df\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+    "stderr": ""
+  },
+  {
+    "sql": "SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000000900','CANCELLATION','Justificativa sintética para auditoria local','new-after-registered','00000000-0000-0000-0000-000000000029');",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "role": "service_role",
+    "exit": 3,
+    "stdout": "",
+    "stderr": "ERROR:  P0001: FISCAL_EVENT_ALREADY_REGISTERED\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 18 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  }
+]
