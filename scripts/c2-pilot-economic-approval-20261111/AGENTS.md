@@ -1,0 +1,6 @@
+- Preparação local apenas: nunca aplicar 02/04/05/06 hospedado nem publicar daqui; o auditor instala só após aprovar os testes — evita mudança não revisada.
+- Aprovações do piloto vivem só no ledger privado append-only; nunca alterar partner_orders (status, approved_*, credit_*, internal_economic_snapshot, flags) nem os corpos LIVE de approve_partner_order/approve_b2b_credit/c2_accounting_pending_guard — o bloqueio C2 global permanece.
+- Crédito/termos automáticos (reason_code OK, not_required) nunca contam como aprovação; a previsão nasce só de duas linhas explícitas do ledger com a mesma evidência da cotação real — evita aprovação implícita.
+- A barreira de INSERT em b2b_financial_forecasts nega qualquer entrada para pedidos C2 pendentes ou listados no piloto, salvo ticket da própria transação emitido pelo core; rollback é deny-only e mantém barreira, ledger e previsões.
+- Conferência (01–04) e habilitação estreita (05/06) são etapas separadas; 05 usa settings explícitos e falha fechada — evita ativar ao instalar.
+- Arquivos finais só via generate.py (pins fixados, --verify); auth por claims SQL no espelho não prova JWT/RLS/Storage.
