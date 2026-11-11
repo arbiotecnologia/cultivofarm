@@ -1,0 +1,38 @@
+{
+ "passed": 5,
+ "total": 6,
+ "executed_sha256": {},
+ "checks": [
+  {
+   "test": "fixture parceiro 011 da empresa esperada e ativo",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "fixture parceiro 085 da empresa esperada e ativo",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "fixture parceiro 013 da empresa esperada e ativo",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "fixture: admin suspenso por rotação de acesso (access_ready=false)",
+   "status": "FAIL",
+   "detail": "('organization_id:NO: ; email:NO: ; nome:NO: ; modo_acesso:NO: ; invited_by:NO:', 'ERROR:  null value in column \"id\" of relation \"platform_org_admin_invites\" violates not-null constraint\\nDETAIL:  Failing row contains (null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null).\\n')"
+  },
+  {
+   "test": "LIVE 02b: admin suspenso ATRIBUI (defeito reproduzido)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "LIVE 02b: vendedor com papéis combinados é aceito (defeito)",
+   "status": "PASS",
+   "detail": null
+  }
+ ],
+ "note": "Auth sintética por claims SQL; não prova JWT/RLS/Storage hospedados."
+}
