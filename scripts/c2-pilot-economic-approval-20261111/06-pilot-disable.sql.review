@@ -1,0 +1,7 @@
+-- DESLIGAMENTO DO PILOTO: gate false e revogação das concessões vigentes; ledger/previsões preservados.
+BEGIN;
+DO $$BEGIN IF current_setting('c2pilot.expected_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'C2PILOT_DISABLE_REF_UNPROVEN';END IF;END$$;
+UPDATE platform_private.c2_pilot_econ_gate_v1 SET enabled=false,updated_at=now(),reason='PILOT_DISABLED' WHERE singleton;
+UPDATE platform_private.c2_pilot_econ_allowlist_v1 SET revoked_at=greatest(now(),valid_from),revoke_reason='PILOT_DISABLED' WHERE revoked_at IS NULL;
+SELECT 'C2PILOT_DISABLE_PASS';
+COMMIT;

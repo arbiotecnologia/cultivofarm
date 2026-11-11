@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
@@ -35,6 +36,8 @@ interface Props {
   viewerScope?: ViewerScope;
   /** Empresa fornecedora/emitente do PDF, resolvida pelo chamador (vendedor B2B autorizado ou tenant ativo). */
   empresaNome: string | null;
+  /** Conteúdo adicional montado pelo chamador (ex.: painel do piloto econômico C2). */
+  extra?: ReactNode;
 }
 
 export function DetalhePedidoDrawer({
@@ -43,6 +46,7 @@ export function DetalhePedidoDrawer({
   onOpenChange,
   viewerScope = "comercial",
   empresaNome,
+  extra,
 }: Props) {
   // Técnico B2B: bloqueado para pedidos oficiais
   if (viewerScope === "parceiro_tecnico") {
@@ -78,6 +82,7 @@ export function DetalhePedidoDrawer({
       onOpenChange={onOpenChange}
       viewerScope={viewerScope}
       empresaNome={empresaNome}
+      extra={extra}
     />
   );
 }
@@ -88,7 +93,8 @@ function InternoPedidoDrawer({
   onOpenChange,
   viewerScope,
   empresaNome,
-}: Required<Pick<Props, "orderId" | "open" | "onOpenChange" | "viewerScope">> & { empresaNome: string | null }) {
+  extra,
+}: Required<Pick<Props, "orderId" | "open" | "onOpenChange" | "viewerScope">> & { empresaNome: string | null; extra?: ReactNode }) {
   const { data, isLoading } = usePedidoFormalHeader(orderId);
   const { data: items = [] } = usePartnerOrderItems(orderId);
   const { profile, role } = useAuth();
@@ -165,6 +171,7 @@ function InternoPedidoDrawer({
                   </TableBody>
                 </Table>
               </div>
+              {extra}
             </>
           )}
         </div>

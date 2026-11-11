@@ -1,0 +1,31 @@
+-- READ-ONLY PRE. Executar com: SET c2pilot.expected_ref='swzpzcwiasxmjutrmvkm';
+BEGIN READ ONLY;
+DO $$BEGIN IF current_setting('c2pilot.expected_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'C2PILOT_PRE_REF_UNPROVEN';END IF;END$$;
+DO $$BEGIN
+ IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '0d3b85049e3b3b799ba81b4cb95be0da' THEN RAISE EXCEPTION 'C2PILOT_PRE_DEP_DRIFT:public.approve_partner_order(uuid,text,date)';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '26c77e55dfcb2b48fdb63cbc5b2819ed' THEN RAISE EXCEPTION 'C2PILOT_PRE_DEP_DRIFT:public.approve_b2b_credit(uuid,text)';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '28e65625e0a481b93af85cc37cb0af5f' THEN RAISE EXCEPTION 'C2PILOT_PRE_DEP_DRIFT:public.approve_b2b_payment_terms_secure(uuid,text)';END IF;
+ IF md5(pg_get_functiondef('platform_private.c2_accounting_pending_guard()'::regprocedure)) IS DISTINCT FROM '669b19490a7a9700f0158db4b31885ad' THEN RAISE EXCEPTION 'C2PILOT_PRE_DEP_DRIFT:platform_private.c2_accounting_pending_guard()';END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb)'::regprocedure)) IS DISTINCT FROM '80c808dd095746213ddb37fbca44b525' THEN RAISE EXCEPTION 'C2PILOT_PRE_DEP_DRIFT:platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb)';END IF;
+ IF md5(pg_get_functiondef('platform_private.c2_external_origin_contract_valid(jsonb)'::regprocedure)) IS DISTINCT FROM '369fd07cd9c659b87941b9a3bf972868' THEN RAISE EXCEPTION 'C2PILOT_PRE_DEP_DRIFT:platform_private.c2_external_origin_contract_valid(jsonb)';END IF;
+ IF md5(pg_get_functiondef('platform_private.c2p1_internal_actor(public.app_role[])'::regprocedure)) IS DISTINCT FROM '97bab97591a9f662bad7b1ccf837bfcd' THEN RAISE EXCEPTION 'C2PILOT_PRE_DEP_DRIFT:platform_private.c2p1_internal_actor(public.app_role[])';END IF;
+ IF md5(pg_get_functiondef('public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'::regprocedure)) IS DISTINCT FROM '964b79ecd6f293c4bf81fd8ee5f5bbf5' THEN RAISE EXCEPTION 'C2PILOT_PRE_DEP_DRIFT:public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)';END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_financial_forecast_guard()'::regprocedure)) IS DISTINCT FROM '2a28194f419c5e7627cb9ec04bb8bebe' THEN RAISE EXCEPTION 'C2PILOT_PRE_DEP_DRIFT:platform_private.b2b_financial_forecast_guard()';END IF;
+ IF md5(pg_get_functiondef('platform_private.has_ticket(text,uuid)'::regprocedure)) IS DISTINCT FROM '29adae3347e8a5ff23327fa86fceb54b' THEN RAISE EXCEPTION 'C2PILOT_PRE_DEP_DRIFT:platform_private.has_ticket(text,uuid)';END IF;
+ IF md5(pg_get_functiondef('public.get_b2b_financial_forecast_secure(uuid)'::regprocedure)) IS DISTINCT FROM 'c0d3cfff6ef757498b27009ae50950c3' THEN RAISE EXCEPTION 'C2PILOT_PRE_DEP_DRIFT:public.get_b2b_financial_forecast_secure(uuid)';END IF;
+ IF md5(pg_get_functiondef('public.h15_actor_organization()'::regprocedure)) IS DISTINCT FROM '55edafec08bcc84a00f1526c14334a2c' THEN RAISE EXCEPTION 'C2PILOT_PRE_DEP_DRIFT:public.h15_actor_organization()';END IF;
+END$$;
+DO $$BEGIN
+ IF to_regclass('platform_private.c2_pilot_econ_gate_v1') IS NOT NULL THEN RAISE EXCEPTION 'C2PILOT_PRE_ALREADY_PRESENT:platform_private.c2_pilot_econ_gate_v1';END IF;
+ IF to_regclass('platform_private.c2_pilot_econ_allowlist_v1') IS NOT NULL THEN RAISE EXCEPTION 'C2PILOT_PRE_ALREADY_PRESENT:platform_private.c2_pilot_econ_allowlist_v1';END IF;
+ IF to_regclass('platform_private.c2_pilot_econ_approvals_v1') IS NOT NULL THEN RAISE EXCEPTION 'C2PILOT_PRE_ALREADY_PRESENT:platform_private.c2_pilot_econ_approvals_v1';END IF;
+ IF to_regprocedure('platform_private.c2_pilot_econ_immutable_v1()') IS NOT NULL THEN RAISE EXCEPTION 'C2PILOT_PRE_ALREADY_PRESENT:platform_private.c2_pilot_econ_immutable_v1()';END IF;
+ IF to_regprocedure('platform_private.c2_pilot_forecast_insert_barrier_v1()') IS NOT NULL THEN RAISE EXCEPTION 'C2PILOT_PRE_ALREADY_PRESENT:platform_private.c2_pilot_forecast_insert_barrier_v1()';END IF;
+ IF to_regprocedure('platform_private.c2_pilot_econ_evidence_v1(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'C2PILOT_PRE_ALREADY_PRESENT:platform_private.c2_pilot_econ_evidence_v1(uuid)';END IF;
+ IF to_regprocedure('platform_private.c2_pilot_econ_actor_v1(text)') IS NOT NULL THEN RAISE EXCEPTION 'C2PILOT_PRE_ALREADY_PRESENT:platform_private.c2_pilot_econ_actor_v1(text)';END IF;
+ IF to_regprocedure('platform_private.c2_pilot_econ_approve_core_v1(uuid,text,text,text,text)') IS NOT NULL THEN RAISE EXCEPTION 'C2PILOT_PRE_ALREADY_PRESENT:platform_private.c2_pilot_econ_approve_core_v1(uuid,text,text,text,text)';END IF;
+ IF to_regprocedure('public.c2_pilot_economic_approve_v1(uuid,text,text,text,text)') IS NOT NULL THEN RAISE EXCEPTION 'C2PILOT_PRE_ALREADY_PRESENT:public.c2_pilot_economic_approve_v1(uuid,text,text,text,text)';END IF;
+ IF to_regprocedure('public.c2_pilot_economic_state_v1(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'C2PILOT_PRE_ALREADY_PRESENT:public.c2_pilot_economic_state_v1(uuid)';END IF;
+END$$;
+SELECT 'C2PILOT_PRE_PASS';
+ROLLBACK;
