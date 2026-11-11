@@ -23,7 +23,7 @@ TARGETS=[
   "  IF NOT (v_admin OR public.has_role(v_uid,'parceiro_b2b'::app_role) OR platform_private.seller_commercial_actor() IS TRUE) THEN",1),
  ("    AND ((v_admin AND p.organization_id = v_org) OR platform_private.commercial_plan_buyer_visible(p.id, v_uid))",
   "    AND ((v_admin AND p.organization_id = v_org) OR platform_private.commercial_plan_buyer_visible(p.id, v_uid)\n      -- seller_portfolio_v1: somente planos publicados para parceiros da carteira própria.\n      OR (platform_private.seller_commercial_actor() IS TRUE AND p.organization_id = public.h15_actor_organization() AND EXISTS(\n        SELECT 1 FROM public.commercial_payment_plan_assignments sa WHERE sa.plan_id=p.id AND sa.buyer_scope='partner' AND sa.status='published'\n        AND sa.valid_from<=CURRENT_DATE AND (sa.valid_until IS NULL OR sa.valid_until>=CURRENT_DATE)\n        AND platform_private.seller_commercial_target_reason(v_uid, sa.partner_id) IS NULL)))",1)]),
-("public.get_partner_catalog_secure(uuid)","b5684d350603d1db77ab9f1db0f4b253",False,[
+("public.get_partner_catalog_secure(uuid)","6b56cfb144ebc8dd947473e90e2d7768",True,[
  ("                AND platform_private.c2_internal_order_target_reason(v_uid, p_partner_id) IS NULL) THEN",
   "                AND platform_private.c2_internal_order_target_reason(v_uid, p_partner_id) IS NULL)\n       AND NOT "+P('v_uid','p_partner_id')+" THEN",1),
  ("    ELSIF NOT (public.has_role(v_uid,'administrador'::app_role) OR public.has_role(v_uid,'gestor_comercial'::app_role)) THEN",
@@ -97,7 +97,9 @@ def build(db):
 def main():
     import mirror_db
     db=mirror_db.DB(55751)
+    import catalog_reconcile as C
     for f in ['02a-install-enum.sql.review','02b-install.sql.review']: db.sql((H.parent/f).read_text())
+    recon=C.reconcile(db);aclrecon=C.align_acl(db)
     pt=build(db)
     db.sql(HELPERS)
     for sig,v in pt.items(): db.sql(v['new'])
@@ -106,13 +108,16 @@ def main():
     cb=db.body(CAP[0]);assert db.md5(CAP[0])==CAP[1];assert cb.count("'b5684d350603d1db77ab9f1db0f4b253'")==1
     cnew=cb.replace("'b5684d350603d1db77ab9f1db0f4b253'","'"+cat_new+"'");db.sql(cnew)
     pt[CAP[0]]=dict(orig=cb,new=cnew,live=CAP[1],auditor_confirmed=True,candidate=db.md5(CAP[0]))
-    acl={sig:db.last(f"SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='{sig}'::regprocedure;") for sig in pt}
+    acl={sig:C.acl_set(db,sig) for sig in pt}
+    for s,tx in C.PROD_ACL.items(): assert acl[s]==C.acl_text_to_set(db,tx),('PROD_ACL_MISMATCH',s)
+    aclq=lambda sig: C.acl_set_sql(sig)
     newf=['platform_private.seller_commercial_actor()','platform_private.seller_commercial_target_reason(uuid,uuid)','platform_private.seller_portfolio_lock(uuid,uuid)','public.seller_portfolio_capability_v1()','public.seller_portfolio_orders_v1()','public.admin_seller_portfolio_overview_v1()','platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)']
     newm={s:db.md5(s) for s in newf}
-    newacl={s:db.last(f"SELECT coalesce(proacl::text,'NULL') FROM pg_proc WHERE oid='{s}'::regprocedure;") for s in newf}
+    newacl={s:C.acl_set(db,s) for s in newf}
     # Prior seller capability (02b) pin for PRE/rollback.
     db2=mirror_db.DB(55752)
     for f in ['02a-install-enum.sql.review','02b-install.sql.review']: db2.sql((H.parent/f).read_text())
+    C.reconcile(db2);C.align_acl(db2)
     cap02b=db2.md5('public.seller_portfolio_capability_v1()');cap02b_body=db2.body('public.seller_portfolio_capability_v1()')
     pre=["-- READ ONLY. Executar com SET app.expected_ref='swzpzcwiasxmjutrmvkm'. Falha fechada em qualquer divergência.",
          "DO $pre$ BEGIN",
@@ -121,19 +126,20 @@ def main():
          f" IF md5(pg_get_functiondef('public.seller_portfolio_capability_v1()'::regprocedure)) IS DISTINCT FROM '{cap02b}' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:seller_portfolio_capability_v1'; END IF;"]
     for sig,v in pt.items():
         pre.append(f" IF md5(pg_get_functiondef('{sig}'::regprocedure)) IS DISTINCT FROM '{v['live']}' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:{sig}'; END IF;")
-        a,o=acl[sig].split('|');pre.append(f" IF (SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='{sig}'::regprocedure) IS DISTINCT FROM '{acl[sig]}' THEN RAISE EXCEPTION 'VENDW_PRE_ACL_DRIFT:{sig}'; END IF;")
+        pre.append(f" IF {aclq(sig)} IS DISTINCT FROM '{acl[sig]}' THEN RAISE EXCEPTION 'VENDW_PRE_ACL_DRIFT:{sig}'; END IF;")
     for s in newf[:3]+newf[4:]:
         pre.append(f" IF to_regprocedure('{s}') IS NOT NULL THEN RAISE EXCEPTION 'VENDW_PRE_ALREADY_PRESENT:{s}'; END IF;")
+    for s,h in (C.READER,C.PRICE): pre.append(f" IF md5(pg_get_functiondef('{s}'::regprocedure)) IS DISTINCT FROM '{h}' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:{s}'; END IF;")
     pre.append(" IF md5(pg_get_functiondef('platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'::regprocedure)) IS DISTINCT FROM '999e5e9fd9887595e252523fb2142726' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:c2_external_origin_assert'; END IF;")
     pre.append("END $pre$;\nSELECT 'VENDW_PRE_PASS';")
     pre_sql='\n'.join(pre)+'\n'
     post=["-- READ ONLY","DO $post$ BEGIN"]
     for sig,v in pt.items():
         post.append(f" IF md5(pg_get_functiondef('{sig}'::regprocedure)) IS DISTINCT FROM '{v['candidate']}' THEN RAISE EXCEPTION 'VENDW_POST_DRIFT:{sig}'; END IF;")
-        post.append(f" IF (SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='{sig}'::regprocedure) IS DISTINCT FROM '{acl[sig]}' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:{sig}'; END IF;")
+        post.append(f" IF {aclq(sig)} IS DISTINCT FROM '{acl[sig]}' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:{sig}'; END IF;")
     for s in newf:
         post.append(f" IF md5(pg_get_functiondef('{s}'::regprocedure)) IS DISTINCT FROM '{newm[s]}' THEN RAISE EXCEPTION 'VENDW_POST_DRIFT:{s}'; END IF;")
-        post.append(f" IF (SELECT coalesce(proacl::text,'NULL') FROM pg_proc WHERE oid='{s}'::regprocedure) IS DISTINCT FROM '{newacl[s]}' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:{s}'; END IF;")
+        post.append(f" IF {aclq(s)} IS DISTINCT FROM '{newacl[s]}' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:{s}'; END IF;")
     post.append(" IF md5(pg_get_functiondef('platform_private.b2b_internal_commercial_actor()'::regprocedure)) IS DISTINCT FROM '6555396c4f8fe914177d2ccfc3891279' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
     post.append(" IF md5(pg_get_functiondef('platform_private.c2_internal_order_target_reason(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '07d7c9002cbfe17497c9ee4a92d5a928' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
     post.append(" IF md5(pg_get_functiondef('public.fn_cc_can_prepare(uuid)'::regprocedure)) IS DISTINCT FROM '"+db.md5('public.fn_cc_can_prepare(uuid)')+"' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
@@ -157,7 +163,7 @@ def main():
     rb.append("DO $rbp$ BEGIN")
     for sig,v in pt.items():
         rb.append(f" IF md5(pg_get_functiondef('{sig}'::regprocedure)) IS DISTINCT FROM '{v['live']}' THEN RAISE EXCEPTION 'VENDW_RB_POST:{sig}'; END IF;")
-        rb.append(f" IF (SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='{sig}'::regprocedure) IS DISTINCT FROM '{acl[sig]}' THEN RAISE EXCEPTION 'VENDW_RB_ACL:{sig}'; END IF;")
+        rb.append(f" IF {aclq(sig)} IS DISTINCT FROM '{acl[sig]}' THEN RAISE EXCEPTION 'VENDW_RB_ACL:{sig}'; END IF;")
     rb.append(f" IF md5(pg_get_functiondef('public.seller_portfolio_capability_v1()'::regprocedure)) IS DISTINCT FROM '{cap02b}' THEN RAISE EXCEPTION 'VENDW_RB_POST:seller_cap'; END IF;")
     rb.append("END $rbp$;\nCOMMIT;")
     rb_sql='\n'.join(rb)+'\n'
@@ -165,7 +171,9 @@ def main():
     for n,t in files.items(): (H/n).write_text(t)
     man=dict(base='pg_get_functiondef no espelho composto (compose_current.py) restaurado; seis assinaturas conferem com MD5 do auditor',
       patched={s:dict(live=v['live'],candidate=v['candidate'],auditor_confirmed=v['auditor_confirmed'],acl=acl[s]) for s,v in pt.items()},
-      new=newm,new_acl=newacl,seller_cap_02b=cap02b,shared_helpers_unchanged=['platform_private.b2b_internal_commercial_actor()','platform_private.c2_internal_order_target_reason(uuid,uuid)','public.fn_cc_can_prepare(uuid)'],
+      catalog_reconciliation=dict(recon,source=['scripts/tenant-exclusive-catalog-20261101/ae_section.py','scripts/b2b-catalog-read-fence-v2-20261103/02-install-v2.sql.review','scripts/b2b-catalog-read-fence-v2-20261103/evidence-local.json post_pins'],production_md5=C.PROD_MD5,mirror_md5=C.MIRROR_MD5),
+      acl_comparison='conjunto aclexplode (grantor>grantee:privilégio:grant_option)+owner, ACL NULL=acldefault; ordem textual ignorada, membros extras/grant option detectados',
+      acl_reconciliation=aclrecon,new=newm,new_acl=newacl,seller_cap_02b=cap02b,shared_helpers_unchanged=['platform_private.b2b_internal_commercial_actor()','platform_private.c2_internal_order_target_reason(uuid,uuid)','public.fn_cc_can_prepare(uuid)'],
       files={n:hashlib.sha256(t.encode()).hexdigest() for n,t in files.items()},helpers_sha256=hashlib.sha256(HELPERS.encode()).hexdigest())
     (H/'manifest.json').write_text(json.dumps(man,indent=2,ensure_ascii=False)+'\n');print(json.dumps(man['files'],indent=1))
 if __name__=='__main__':main()

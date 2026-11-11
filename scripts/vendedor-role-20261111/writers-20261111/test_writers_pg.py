@@ -77,6 +77,14 @@ try:
         pass
     d.sql((H.parent/'02a-install-enum.sql.review').read_text())
     d.sql((H.parent/'02b-install.sql.review').read_text())
+    import catalog_reconcile as C
+    rc=C.reconcile(d);ok('espelho: catálogo reconstituído = produção 6b56cfb1 (b5684d35→d3217db2→6b56cfb1)',d.md5(C.SIG)==C.PROD_MD5,rc)
+    ar=C.align_acl(d);ok('espelho: ACL dos seis = conjunto real de produção',all(C.acl_set(d,s)==C.acl_text_to_set(d,x) for s,x in C.PROD_ACL.items()),ar)
+    PA=C.PROD_ACL['public.get_partner_catalog_secure(uuid)']
+    ok('ACL por conjunto ignora ordem textual',C.acl_text_to_set(d,'{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}|postgres')==C.acl_text_to_set(d,PA))
+    ok('ACL por conjunto detecta membro extra',C.acl_text_to_set(d,'{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres,anon=X/postgres}|postgres')!=C.acl_text_to_set(d,PA))
+    ok('ACL por conjunto detecta grant option',C.acl_text_to_set(d,'{postgres=X/postgres,service_role=X*/postgres,authenticated=X/postgres}|postgres')!=C.acl_text_to_set(d,PA))
+    ok('ACL por conjunto detecta owner divergente',C.acl_text_to_set(d,PA.replace('|postgres','|service_role'))!=C.acl_text_to_set(d,PA))
     for uid,org in [(V1,A),(V2,A),(VB,F),(VX,A)]:
         d.sql(f"INSERT INTO public.profiles(id,user_id,nome,ativo,organization_id,senha_provisoria) VALUES(gen_random_uuid(),'{uid}','VENDEDOR SINTETICO',true,'{org}',false);INSERT INTO public.user_roles(user_id,role) VALUES('{uid}','vendedor');")
     d.sql(f"INSERT INTO public.user_roles(user_id,role) VALUES('{VX}','gestor_comercial');")  # vendedor+gestor: não exclusivo
