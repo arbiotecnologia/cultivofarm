@@ -35,6 +35,8 @@ interface Props {
   viewerScope?: ViewerScope;
   /** Empresa fornecedora/emitente do PDF, resolvida pelo chamador (vendedor B2B autorizado ou tenant ativo). */
   empresaNome: string | null;
+  /** Conteúdo adicional montado pelo chamador (ex.: painel do piloto econômico C2). */
+  extra?: React.ReactNode;
 }
 
 export function DetalhePedidoDrawer({
@@ -43,6 +45,7 @@ export function DetalhePedidoDrawer({
   onOpenChange,
   viewerScope = "comercial",
   empresaNome,
+  extra,
 }: Props) {
   // Técnico B2B: bloqueado para pedidos oficiais
   if (viewerScope === "parceiro_tecnico") {

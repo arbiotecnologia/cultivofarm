@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { brl } from "@/lib/financial/format";
 import { formatDateDisplay as fd } from "@/lib/date-utils";
 import { partnerOrderStatusLabel } from "@/lib/partnerOrderStatus";
+import { C2PilotEconomicApproval } from "./C2PilotEconomicApproval";
 import { useSellerFinanceOrderReview, useSellerFinanceReject, type RejectBlockReason } from "@/hooks/useSellerFinanceOrderReview";
 
 const TERMS_LABEL: Record<string, string> = {
@@ -112,6 +113,8 @@ export function SellerFinanceOrderReview({ orderId, open, onOpenChange }: Props)
                   Situação financeira do cabeçalho (registro congelado do pedido): {review.header_financial.financial_approval_status ?? "—"}. Ela não indica se os termos estão pendentes.
                 </p>
               </div>
+
+              <C2PilotEconomicApproval orderId={review.order_id} />
 
               {review.reject_eligible ? (
                 confirming ? (
