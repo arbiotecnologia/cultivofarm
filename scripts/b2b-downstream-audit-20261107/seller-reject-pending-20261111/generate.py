@@ -8,8 +8,8 @@ SIG = 'public.reject_b2b_payment_terms_secure(uuid,text)'
 LIVE_MD5 = '40777d0cec6a7d8a8d4dfcb3370b08b6'
 SELLER = '007bb519-cba0-4704-be2c-cb93ad010048'
 ACL = ['authenticated=X/postgres', 'postgres=X/postgres', 'service_role=X/postgres']
-CANDIDATE_MD5 = '988935a5dfdbaa3914954f4b2fa66ec7'
-ROLLBACK_MD5 = 'dae0d60c90d283401217bd4c7050397c'
+CANDIDATE_MD5 = ''
+ROLLBACK_MD5 = LIVE_MD5
 FILES = ('01-pre.sql.readonly','02-install.sql.review','03-post.sql.readonly','04-rollback-deny.sql.review')
 
 def candidate():
@@ -29,7 +29,17 @@ DECLARE
   v_observed_revision timestamptz;
   v_observed_partner uuid;
   v_external boolean;
+  v_terms_id uuid;
+  v_created_by uuid;
+  v_numero text;
 BEGIN
+  -- Only the expressly authorized extension uses new fences. Otherwise LIVE verbatim.
+  IF NOT EXISTS(SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id
+      AND po.c2_external_origin_snapshot IS NOT NULL)
+    OR public.h15_actor_organization() IS DISTINCT FROM '__SELLER__'::uuid
+    OR platform_private.c2p1_internal_actor(ARRAY['financeiro']::public.app_role[]) IS DISTINCT FROM '__SELLER__'::uuid THEN
+    __LEGACY__
+  END IF;
   IF v_uid IS NULL OR current_setting('transaction_isolation') <> 'read committed' THEN
     RAISE EXCEPTION 'B2B_REJECT_SCOPE_DENIED' USING ERRCODE='42501';
   END IF;
@@ -59,7 +69,7 @@ BEGIN
   __AUTH__
   IF v_terms.approval_status IS DISTINCT FROM 'pending' OR v_terms.approved_by IS NOT NULL
     OR v_terms.approved_at IS NOT NULL OR v_order.approved_by IS NOT NULL OR v_order.approved_at IS NOT NULL
-    OR public.fn_b2b_status_is_approved_or_later(v_order.status::text)
+    OR public.fn_b2b_status_is_approved_or_later(v_order.status)
     OR v_order.status::text IN ('cancelado','reprovado')
     OR EXISTS(SELECT 1 FROM public.estoque_produto s WHERE s.reservado_para_partner_order_id=v_order.id
       OR s.reservado_para_os_id IN (SELECT id FROM public.ordens_servico WHERE partner_order_id=v_order.id))
@@ -78,7 +88,7 @@ BEGIN
   RETURN jsonb_build_object('success',true,'status','rejected');
 END;
 $function$
-'''.replace('SELECT po.*, po.c2_external_origin_snapshot IS NOT NULL INTO v_order','SELECT po.* INTO v_order').replace('__AUTH__', auth_sql())
+'''.replace('SELECT po.*, po.c2_external_origin_snapshot IS NOT NULL INTO v_order','SELECT po.* INTO v_order').replace('__AUTH__', auth_sql()).replace('__SELLER__', SELLER).replace('__LEGACY__', src.split('BEGIN',1)[1].rsplit('END;',1)[0].strip())
 
 def auth_sql():
     return f'''IF auth.uid() IS DISTINCT FROM v_uid OR public.h15_actor_organization() IS DISTINCT FROM v_org
@@ -111,7 +121,7 @@ def auth_sql():
   END IF;'''
 
 def rollback():
-    return SOURCE.read_text().split('AS $function$')[0] + "AS $function$\nBEGIN\n RAISE EXCEPTION 'B2B_REJECT_ROLLBACK_CLOSED' USING ERRCODE='42501';\nEND;\n$function$\n"
+    return SOURCE.read_text().rstrip('\n')+'\n'
 
 def guard(md5s):
     vals=','.join("'"+x+"'" for x in md5s)
@@ -126,7 +136,7 @@ def render():
     return dict(zip(FILES, ('BEGIN READ ONLY;\n'+pre+"SELECT 'PRE_PASS';\nROLLBACK;\n",
       'BEGIN;\n'+pre+candidate()+';\n'+post+'COMMIT;\n',
       'BEGIN READ ONLY;\n'+post+"SELECT 'POST_PASS';\nROLLBACK;\n",
-      'BEGIN;\n'+guard([LIVE_MD5,CANDIDATE_MD5,ROLLBACK_MD5])+rollback()+';\n'+rb+'COMMIT;\n')))
+      'BEGIN;\n'+guard([CANDIDATE_MD5])+rollback()+';\n'+rb+'COMMIT;\n')))
 
 def verify_on_disk():
     files=render()

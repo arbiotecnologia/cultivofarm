@@ -1,4 +1,5 @@
 ## 11/11 03:27 — Rejeição financeira externa ARBio (local)
+- [ ] Revisão 03:53: enum real, via legada integral, rollback somente hash candidato→LIVE sem drift; preservar erro 42883 e continuar correções até prova final.
 - [ ] Gerar delta do reject LIVE 40777d0c: vendedor estrito, termos pendentes, antes da aprovação comercial/reserva, locks e revalidação; cabeçalho preservado/auditoria única.
 - [ ] Executar PRE/INSTALL/POST/rollback exatos no espelho; negativas, concorrência aprovação/reserva e regressão 3/5→5/5; guardar bytes/ACL/SHA e limitações.
 - [ ] Validar entrada canônica do aplicativo sem rede hospedada; nenhuma implantação/publicação/fiscal/envio/cobrança.
