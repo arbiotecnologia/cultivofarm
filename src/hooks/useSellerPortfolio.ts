@@ -156,7 +156,8 @@ export function portfolioErrorText(message: string | undefined): string {
   const m = message ?? "";
   if (m.includes("SELLER_PORTFOLIO_ALREADY_ASSIGNED")) return "Este parceiro já está na carteira de um vendedor. Revogue antes de reatribuir.";
   if (m.includes("SELLER_PORTFOLIO_REASON_REQUIRED")) return "Informe o motivo.";
-  if (m.includes("SELLER_PORTFOLIO_SELLER_INVALID")) return "Usuário não é vendedor ativo desta empresa.";
+  if (m.includes("SELLER_PORTFOLIO_SELLER_INVALID")) return "Usuário não é vendedor ativo e exclusivo desta empresa.";
+  if (m.includes("SELLER_PORTFOLIO_PARTNER_INVALID")) return "Parceiro inativo ou excluído não pode receber carteira.";
   if (m.includes("SELLER_PORTFOLIO_FORBIDDEN")) return "Sem permissão para esta carteira.";
   return "Não foi possível concluir. Nada foi alterado.";
 }

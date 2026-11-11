@@ -1,0 +1,358 @@
+{
+ "passed": 66,
+ "total": 66,
+ "executed_sha256": {
+  "01d-pre-admin-gate.sql.readonly": [
+   "5bcb8c023e62a0306f1f81f8bf9d5294cda4a18bae5f0c6ed5cc1d3e0576c00e",
+   "5bcb8c023e62a0306f1f81f8bf9d5294cda4a18bae5f0c6ed5cc1d3e0576c00e",
+   "5bcb8c023e62a0306f1f81f8bf9d5294cda4a18bae5f0c6ed5cc1d3e0576c00e"
+  ],
+  "02d-install-admin-gate.sql.review": [
+   "fa19d3dc7ae1b9f8c896715e96a3f7f9050e2cf4eb65f961b688ef42dbdd445d",
+   "fa19d3dc7ae1b9f8c896715e96a3f7f9050e2cf4eb65f961b688ef42dbdd445d",
+   "fa19d3dc7ae1b9f8c896715e96a3f7f9050e2cf4eb65f961b688ef42dbdd445d",
+   "fa19d3dc7ae1b9f8c896715e96a3f7f9050e2cf4eb65f961b688ef42dbdd445d"
+  ],
+  "03d-post-admin-gate.sql.readonly": [
+   "03b22157607da34d21ab0d8939aa7e2805d5d98cb134073f753416935df747f3"
+  ],
+  "04d-rollback-admin-gate.sql.review": [
+   "84cb5ca1b6346673ef93440a7f267e4bc320ceaa3fc68f56846c47803e31172f",
+   "84cb5ca1b6346673ef93440a7f267e4bc320ceaa3fc68f56846c47803e31172f",
+   "84cb5ca1b6346673ef93440a7f267e4bc320ceaa3fc68f56846c47803e31172f"
+  ]
+ },
+ "checks": [
+  {
+   "test": "fixture parceiro 011 da empresa esperada e ativo",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "fixture parceiro 085 da empresa esperada e ativo",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "fixture parceiro 013 da empresa esperada e ativo",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "fixture: admin suspenso por rotação de acesso (access_ready=false)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "LIVE 02b: admin com acesso suspenso já era negado (has_role exige access_ready)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "LIVE 02b: admin de empresa INATIVA atribui (defeito reproduzido)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "LIVE 02b: vendedor com papéis combinados é aceito (defeito)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "LIVE 02b: parceiro inativo é aceito (defeito)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "LIVE: atribuição antiga V2→P2 criada",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "PRE ref divergente falha fechada",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "PRE_PASS",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "INSTALL sem ref recusado",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "INSTALL transação única",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "reinstalação recusada",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "POST_PASS",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "helper privado sem EXECUTE de cliente platform_private.seller_admin_actor_org()",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "helper privado sem EXECUTE de cliente platform_private.seller_assignee_eligible(uuid,uuid)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "admin com acesso suspenso não atribui [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "admin de empresa inativa não atribui [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "admin de empresa inativa não revoga [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "admin com perfil inativo não atribui [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "admin com senha provisória não atribui [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "gestor comercial não atribui [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "vendedor não se autoatribui [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "admin de outro tenant não atribui parceiro A [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "admin A não atribui parceiro de outro tenant (sem oráculo) [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "admin suspenso não revoga [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "admin suspenso não lista [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "admin suspenso não vê visão geral [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "motivo obrigatório [22023 SELLER_PORTFOLIO_REASON_REQUIRED]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "vendedor com papéis combinados recusado [22023 SELLER_PORTFOLIO_SELLER_INVALID]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "vendedor inativo recusado [22023 SELLER_PORTFOLIO_SELLER_INVALID]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "vendedor de outro tenant recusado [22023 SELLER_PORTFOLIO_SELLER_INVALID]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "usuário sem papel vendedor recusado [22023 SELLER_PORTFOLIO_SELLER_INVALID]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "parceiro inativo recusado [22023 SELLER_PORTFOLIO_PARTNER_INVALID]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "parceiro excluído recusado [22023 SELLER_PORTFOLIO_PARTNER_INVALID]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "visão: só vendedores elegíveis como opção",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "visão: parceiro excluído fora das opções",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "visão: atribuição antiga com alvo inválido continua listada para revogação",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "revoga atribuição antiga com vendedor e parceiro desativados",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "revogação auditada uma vez",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "revogação repetida negada sem efeito [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "positivo: admin vigente atribui vendedor elegível a parceiro ativo",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "positivo: auditoria assign única",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "duplicidade recusada [P0409 SELLER_PORTFOLIO_ALREADY_ASSIGNED]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "capability do vendedor mostra o parceiro atribuído",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "positivo: revogação",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "após revogar: parceiro some da capability",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "corrida: desativação do vendedor vence → atribuição espera e é negada",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "corrida: desativação do parceiro vence → atribuição espera e é negada",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "corrida: suspensão do admin vence → atribuição espera e é negada",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "corrida: atribuição vence → desativação espera o commit",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "após desativar: vendedor não opera a carteira",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "após desativar: atribuição continua revogável",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "corrida: remoção do papel vendedor vence → atribuição negada",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "ROLLBACK sem ref recusado",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "ROLLBACK restaura corpos 02b/02c e ACL exatos",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "rollback md5 LIVE public.admin_assign_seller_portfolio_v1(uuid,uuid,text)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "rollback md5 LIVE public.admin_revoke_seller_portfolio_v1(uuid,text)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "rollback md5 LIVE public.admin_list_seller_portfolio_v1()",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "rollback md5 LIVE public.admin_seller_portfolio_overview_v1()",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "rollback preserva atribuições e histórico",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "ROLLBACK repetido recusa por drift",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "PRE volta a passar após rollback (reinstalável)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "reinstalação após rollback",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "após reinstalar: admin suspenso segue negado [42501 SELLER_PORTFOLIO_FORBIDDEN]",
+   "status": "PASS",
+   "detail": null
+  }
+ ],
+ "note": "Auth sintética por claims SQL; não prova JWT/RLS/Storage hospedados."
+}
