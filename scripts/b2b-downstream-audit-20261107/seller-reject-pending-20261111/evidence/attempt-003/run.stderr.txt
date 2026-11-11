@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/tmp/seller-reject-mirror-g_uidsvs/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 511, in main
+    results=SR.run(B,Review70.Review,Q,A,choice,OUT)
+  File "/tmp/seller-reject-mirror-g_uidsvs/project/scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/mirror_flow.py", line 58, in run
+    ok(label+' fails closed',r.returncode!=0 and 'B2B_REJECT_SCOPE_DENIED' in r.stderr and state(po)==before,r.stderr[-500:])
+    ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/seller-reject-mirror-g_uidsvs/project/scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/mirror_flow.py", line 11, in ok
+    assert cond,(name,detail)
+           ^^^^
+AssertionError: ('buyer link revoked fails closed', ' constraint "partner_users_revocation_coherence_chk"\nDETAIL:  Failing row contains (e3918fc2-05d5-4f2a-992e-b415d12714ea, 00000000-0000-0000-0000-000000000011, 00000000-0000-0000-0000-000000000021, 2026-11-11 03:46:05.58244+00, gestor, 2026-11-11 03:46:05.58244+00, 2026-11-11 03:47:04.812634+00, null, null, 007bb519-cba0-4704-be2c-cb93ad010048, 2).\nSCHEMA NAME:  public\nTABLE NAME:  partner_users\nCONSTRAINT NAME:  partner_users_revocation_coherence_chk\nLOCATION:  ExecConstraints, execMain.c:2079\n')
