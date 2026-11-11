@@ -1,0 +1,1 @@
+19 PASS/1 FAIL: endpoint OS fechado por ACL+gate no dump (contenção real); controle positivo impossível sem abrir; negativa por ACL não prova regra de negócio

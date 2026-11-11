@@ -1,0 +1,50 @@
+{
+ "before": {
+  "os": 0,
+  "all_os": 23,
+  "titles": 0,
+  "entregas": 0,
+  "residual": 20.0,
+  "stock_sum": "53/20",
+  "all_titles": 2,
+  "stock_moves": 56,
+  "all_entregas": 16,
+  "all_installments": 2
+ },
+ "after_negative": {
+  "os": 0,
+  "all_os": 23,
+  "titles": 0,
+  "entregas": 0,
+  "residual": 20.0,
+  "stock_sum": "53/20",
+  "all_titles": 2,
+  "stock_moves": 56,
+  "all_entregas": 16,
+  "all_installments": 2
+ },
+ "after_positive_control": {
+  "os": 0,
+  "all_os": 23,
+  "titles": 0,
+  "entregas": 0,
+  "residual": 20.0,
+  "stock_sum": "53/20",
+  "all_titles": 2,
+  "stock_moves": 56,
+  "all_entregas": 16,
+  "all_installments": 2
+ },
+ "closed": [
+  "ERROR:  42501: permission denied for function rpc_b2b_resale_os_create_v1"
+ ],
+ "negative": [
+  "ERROR:  42501: RESALE_PILOT_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 26 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+  "ERROR:  42501: RESALE_PILOT_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 26 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+ ],
+ "positive": {
+  "rc": 3,
+  "out": "",
+  "err": "ERROR:  42501: RESALE_PILOT_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 26 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+ }
+}

@@ -89,23 +89,35 @@ def effects(o):
      'stock_moves',(SELECT count(*) FROM public.estoque_movimentacoes),
      'stock_sum',(SELECT coalesce(sum(quantidade),0)::text||'/'||coalesce(sum(quantidade_reservada),0)::text FROM public.estoque_produto),
      'all_titles',(SELECT count(*) FROM public.accounts_receivable),'all_installments',(SELECT count(*) FROM public.accounts_receivable_installments))::text"""))
-def os_call(uid,o,it,exp,key):
-    return d.raw("\\set VERBOSITY verbose\n"+m.claims(uid)+f"SELECT public.rpc_b2b_resale_os_create_v1('{o}','{it}','{exp}'::timestamptz,'{key}');")
+def os_call(uid,o,it,exp,key,open_seam=False):
+    pre="\\set VERBOSITY verbose\n"
+    if open_seam:
+        # S-OS: endpoint candidato aberto SÓ nesta transação revertida (mesmo GRANT do os_endpoint.py + gate do harness).
+        pre+="BEGIN;GRANT EXECUTE ON FUNCTION public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text) TO authenticated;UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=true WHERE singleton;"
+    q=pre+m.claims(uid)+f"SELECT public.rpc_b2b_resale_os_create_v1('{o}','{it}','{exp}'::timestamptz,'{key}');"
+    if open_seam: q+=f"RESET ROLE;SELECT (SELECT count(*) FROM public.ordens_servico WHERE partner_order_id='{o}')||'|'||(SELECT count(*) FROM public.entregas WHERE partner_order_id='{o}');ROLLBACK;"
+    return d.raw(q)
+errs=lambda r:[l for l in r.stderr.splitlines() if l.startswith('ERROR')]
 CTRL='e11dd06e-9bcc-4e30-bc2c-bfd821c19543';CTRL_ITEM='36b410d0-d7a2-4b1c-8ae1-de57479656c2';CTRL_OS='581bec9c-6c0b-4c1e-84ff-c349271db12e'
 e0=effects(PB);g0=fp(PB)
 pb_exp=d.last(f"SELECT updated_at FROM public.partner_orders WHERE id='{PB}'")
-neg=os_call(X.UADM,PB,item,pb_exp,'c2neg-resale-os-0001')
-neg2=os_call(X.UADM,PB,item,pb_exp,'c2neg-resale-os-0001')
-e1=effects(PB)
-ok('PB: criação de OS de revenda (entrada real) negada, repetição idem',neg.returncode!=0 and neg2.returncode!=0,dict(a=neg.stderr[-500:],b=neg2.stderr[-500:]))
-info('motivo da negativa OS PB',dict(first=[l for l in neg.stderr.splitlines() if l.startswith('ERROR')],second=[l for l in neg2.stderr.splitlines() if l.startswith('ERROR')]))
-ok('PB: sem efeito em saldo/título/OS/entrega/estoque após negativa',e1==e0 and fp(PB)==g0 and e1['os']==0 and e1['entregas']==0 and e1['titles']==0,dict(before=e0,after=e1))
 ctrl_exp=d.last(f"SELECT updated_at FROM public.partner_orders WHERE id='{CTRL}'")
-pos=os_call(X.UADM,CTRL,CTRL_ITEM,ctrl_exp,'resale-os-create-0001')
-pv=json.loads(pos.stdout.strip().splitlines()[-1]) if pos.returncode==0 else None
-ok('controle positivo: mesma identidade/gate no pedido aprovado r12 devolve a OS existente (replay)',pv is not None and pv.get('ok') is True and pv.get('os_id')==CTRL_OS,dict(rc=pos.returncode,out=pos.stdout[-400:],err=pos.stderr[-500:]))
-e2=effects(PB)
-ok('após controle positivo: PB inalterado e nenhuma OS/entrega nova global',e2==e0,dict(before=e0,after=e2))
-(att/'effects.json').write_text(json.dumps(dict(before=e0,after_negative=e1,after_positive_control=e2,negative=[neg.stderr[-800:],neg2.stderr[-800:]],positive=dict(rc=pos.returncode,out=pos.stdout[-600:],err=pos.stderr[-600:])),indent=1)+'\n')
+closed=os_call(X.UADM,PB,item,pb_exp,'c2neg-resale-os-0001')
+ok('estado contido (sem costura): endpoint OS sem EXECUTE para authenticated',closed.returncode!=0 and 'permission denied' in closed.stderr,errs(closed))
+neg=os_call(X.UADM,PB,item,pb_exp,'c2neg-resale-os-0001',True)
+neg2=os_call(X.UADM,PB,item,pb_exp,'c2neg-resale-os-0002',True)
+info('motivo da negativa OS PB com endpoint aberto',dict(first=errs(neg),second=errs(neg2)))
+ok('PB: com endpoint/gate abertos, criação de OS negada por regra de negócio (não ACL), repetição idem',neg.returncode!=0 and neg2.returncode!=0 and 'permission denied' not in neg.stderr+neg2.stderr,dict(a=errs(neg),b=errs(neg2)))
+pos=os_call(X.UADM,CTRL,CTRL_ITEM,ctrl_exp,'resale-os-create-0001',True)
+pl=[l for l in pos.stdout.strip().splitlines() if l.startswith('{')]
+pv=json.loads(pl[-1]) if pos.returncode==0 and pl else None
+ok('controle positivo (mesma identidade, mesma costura): pedido aprovado r12 devolve sua OS 581bec9c (replay)',pv is not None and pv.get('ok') is True and pv.get('os_id')==CTRL_OS,dict(rc=pos.returncode,out=pos.stdout[-400:],err=errs(pos)))
+e1=effects(PB)
+ok('nova conexão: PB e global sem efeito em saldo/título/OS/entrega/estoque; costura revertida',e1==e0 and fp(PB)==g0 and e1['os']==0 and e1['entregas']==0 and e1['titles']==0 and d.last("SELECT enabled::text FROM platform_private.b2b_resale_logistics_gate_v1")=='false' and 'authenticated' not in d.last("SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid='public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)'::regprocedure"),dict(before=e0,after=e1))
+SEAMS.append('S-AUTH usuários fictícios em auth.users antes das constraints (prep_restore.sh)')
+SEAMS.append('S-OS endpoint candidato rpc_b2b_resale_os_create_v1 + gate abertos somente dentro de transações revertidas')
+neg,neg2=neg,neg2
+e2=e1
+(att/'effects.json').write_text(json.dumps(dict(before=e0,after_negative=e1,after_positive_control=e2,closed=errs(closed),negative=[neg.stderr[-800:],neg2.stderr[-800:]],positive=dict(rc=pos.returncode,out=pos.stdout[-600:],err=pos.stderr[-600:])),indent=1)+'\n')
 (att/'checks.json').write_text(json.dumps(dict(order=PB,seams=SEAMS,checks=checks),indent=1,ensure_ascii=False,default=str)+'\n')
 fails=[c for c in checks if c['status']=='FAIL'];(att/'exitcode').write_text(('1' if fails else '0')+'\n');print(len([c for c in checks if c['status']=='PASS']),'PASS',len(fails),'FAIL');sys.exit(1 if fails else 0)

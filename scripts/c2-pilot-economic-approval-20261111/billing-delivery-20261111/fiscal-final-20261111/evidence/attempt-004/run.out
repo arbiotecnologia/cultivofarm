@@ -1,0 +1,27 @@
+PASS cotação respondida pelo writer real (R$10) 
+PASS PB-like: em_analise_comercial, C2 pendente contábil, total 20, snapshot nulo 
+PASS piloto 01-pre.sql.readonly sobre a composição fiscal final 
+PASS piloto 02-install.sql.review sobre a composição fiscal final 
+PASS piloto 03-post.sql.readonly sobre a composição fiscal final 
+PASS 05 habilitação estreita do PB 
+PASS duas aprovações explícitas → previsão 20/20 aguardando_fiscal 
+PASS approve_partner_order LIVE [C2_ACCOUNTING_PENDING] 
+PASS approve_b2b_credit LIVE [C2_ACCOUNTING_PENDING] 
+PASS generate_b2b_receivable_secure (Financeiro) [C2_ACCOUNTING_PENDING] 
+PASS elegibilidade fiscal do PB: não elegível 
+INFO motivos {'orderId': 'ff67d251-5882-4339-b398-b7ab3ffa87a4', 'reasons': [{'code': 'FISCAL_ORDER_STATUS_NOT_BILLABLE', 'message': 'Status do pedido nao habilitado para faturamento: em_analise_comercial', 'severity': 'BLOCK'}, {'code': 'FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING', 'message': 'Pedido sem aprovaca
+INFO inserção do documento sintético (pode ser negada por guardas reais) {'rc': 0, 'err': ''}
+INFO sync de início de emissão da previsão do PB (None, 'ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN')
+INFO callback autorizado H13 + replay [{'rc': 0, 'out': '{"nRec": null, "cStat": "104", "chNFe": "35262222222222222222222222222222222222004242", "nProt": "PB-NEG-PROT", "state": "SUCCEEDED", "outcome": "AUTHORIZED", "xMotivo": "LOTE PROCESSADO; PROTOCOLO AUTORIZADO", "protocolCStat": "100", "transmissionId": "4b6e5c55-2ee9-407d-bf76-f97
+PASS após callback autorizado: nenhum título para a NF do PB 
+PASS previsão do PB não reduz (residual 20) e nenhum FISCAL_CONFIRMED 
+PASS nenhuma alocação de documento para o PB 
+INFO estado final da NF sintética do PB {'inv_status': 'DRAFT', 'receivable': None}
+PASS PB: zero título (por pedido e por documento) 
+PASS PB: pedido idêntico ao estado após aprovações (cabeçalho) 
+PASS PB: criação de OS de revenda (entrada real) negada, repetição idem 
+INFO motivo da negativa OS PB {'first': ['ERROR:  42501: permission denied for function rpc_b2b_resale_os_create_v1'], 'second': ['ERROR:  42501: permission denied for function rpc_b2b_resale_os_create_v1']}
+PASS PB: sem efeito em saldo/título/OS/entrega/estoque após negativa 
+FAIL controle positivo: mesma identidade/gate no pedido aprovado r12 devolve a OS existente (replay) {'rc': 3, 'out': '', 'err': 'ERROR:  42501: permission denied for function rpc_b2b_resale_os_create_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n'}
+PASS após controle positivo: PB inalterado e nenhuma OS/entrega nova global 
+19 PASS 1 FAIL
