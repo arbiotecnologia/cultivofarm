@@ -60,7 +60,7 @@ def align_acl(db):
     for s,t in PROD_ACL.items():
         want=acl_text_to_set(db,t);have=acl_set(db,s)
         if have!=want:
-            assert want=='postgres>postgres:EXECUTE:false,postgres>service_role:EXECUTE:false|postgres' and have=='postgres>postgres:EXECUTE:false|postgres',('ACL_UNRECONCILABLE',s,have,want)
+            assert want=='postgres>postgres:EXECUTE:f,postgres>service_role:EXECUTE:f|postgres' and have=='postgres>postgres:EXECUTE:f|postgres',('ACL_UNRECONCILABLE',s,have,want)
             db.sql(f"GRANT EXECUTE ON FUNCTION {s} TO service_role;")
         assert acl_set(db,s)==want,('ACL_ALIGN',s)
         out[s]=dict(mirror_before=have,production_set=want)
