@@ -1,3 +1,9 @@
+## 11/11 23:28 — Implementação candidata da política humana de cancelamento
+- [ ] Pacote separado e inativo: saldo não faturado por Gestor Comercial/Admin vendedor, motivo/CAS, histórico preservado.
+- [ ] Confirmação final vinculada de cancelamento fiscal: nota+título totalmente aberto; pagamentos exigem reconciliação financeira sem estorno automático.
+- [ ] Testar endpoints reais, UI candidata, RBAC/tenant, replay/concorrência pagamento/autorização e rollback em espelho; PRE/INSTALL/POST/rollback e hashes.
+- [ ] Preservar gates e rastreabilidade; nenhuma reabertura de previsão/estoque, SQL remoto ou publicação.
+
 ## 11/11 23:20 — Continuação local independente de política comercial
 - [x] Conectar diagnóstico no painel temporário; testes 00/10/01/11, indisponibilidade/revogação e somente dois leitores, sem chamadas remotas.
 - [x] Revogação ator/empresa: holder/waiter+lock comprovados, negação pós-espera/reexecução e rollback/controle; attempt-015.
