@@ -1,0 +1,94 @@
+{
+  "group": {
+    "itens": [
+      {
+        "entrega_id": "1dc39e90-7876-48f1-9497-88841e635ff0",
+        "movimentacao_id": "16a5879d-c99e-4659-8bff-e00b66890cf2",
+        "estoque_produto_id": "1d01abe1-107a-43c4-bcb3-4c8c1a4ac9b7"
+      }
+    ],
+    "os_id": "cfa3b930-6468-4180-a1ea-1577493c4090",
+    "replay": false,
+    "success": true,
+    "organization_id": "007bb519-cba0-4704-be2c-cb93ad010048"
+  },
+  "group_replay": {
+    "itens": [
+      {
+        "entrega_id": "1dc39e90-7876-48f1-9497-88841e635ff0",
+        "movimentacao_id": "16a5879d-c99e-4659-8bff-e00b66890cf2",
+        "estoque_produto_id": "1d01abe1-107a-43c4-bcb3-4c8c1a4ac9b7"
+      }
+    ],
+    "os_id": "cfa3b930-6468-4180-a1ea-1577493c4090",
+    "replay": true,
+    "success": true,
+    "organization_id": "007bb519-cba0-4704-be2c-cb93ad010048"
+  },
+  "send": {
+    "os_id": "cfa3b930-6468-4180-a1ea-1577493c4090",
+    "action": "send",
+    "replay": false,
+    "status": "em_rota",
+    "success": true,
+    "actor_id": "00000000-0000-0000-0000-000000000024",
+    "entrega_id": "1dc39e90-7876-48f1-9497-88841e635ff0",
+    "updated_at": "2026-11-11T13:44:51.933233+00:00",
+    "organization_id": "007bb519-cba0-4704-be2c-cb93ad010048"
+  },
+  "send_replay": {
+    "os_id": "cfa3b930-6468-4180-a1ea-1577493c4090",
+    "action": "send",
+    "replay": true,
+    "status": "em_rota",
+    "success": true,
+    "actor_id": "00000000-0000-0000-0000-000000000024",
+    "entrega_id": "1dc39e90-7876-48f1-9497-88841e635ff0",
+    "updated_at": "2026-11-11T13:44:51.933233+00:00",
+    "organization_id": "007bb519-cba0-4704-be2c-cb93ad010048"
+  },
+  "confirm": {
+    "os_id": "cfa3b930-6468-4180-a1ea-1577493c4090",
+    "action": "confirm",
+    "replay": false,
+    "status": "entregue",
+    "success": true,
+    "actor_id": "00000000-0000-0000-0000-000000000024",
+    "os_status": "entregue",
+    "entrega_id": "1dc39e90-7876-48f1-9497-88841e635ff0",
+    "finalizada": false,
+    "updated_at": "2026-11-11T13:44:53.087634+00:00",
+    "comprovante_id": "0a862fb1-1b2a-47ea-887a-5d772b400d79",
+    "organization_id": "007bb519-cba0-4704-be2c-cb93ad010048"
+  },
+  "confirm_replay": {
+    "os_id": "cfa3b930-6468-4180-a1ea-1577493c4090",
+    "action": "confirm",
+    "replay": true,
+    "status": "entregue",
+    "success": true,
+    "actor_id": "00000000-0000-0000-0000-000000000024",
+    "os_status": "entregue",
+    "entrega_id": "1dc39e90-7876-48f1-9497-88841e635ff0",
+    "finalizada": false,
+    "updated_at": "2026-11-11T13:44:53.087634+00:00",
+    "comprovante_id": "0a862fb1-1b2a-47ea-887a-5d772b400d79",
+    "organization_id": "007bb519-cba0-4704-be2c-cb93ad010048"
+  },
+  "containment": {
+    "cq": 0,
+    "envase": 0,
+    "receivables": 1,
+    "order_status": "entregue",
+    "fiscal_documents": 1,
+    "production_links": 0,
+    "delivery_receivable": null,
+    "production_programs": 0,
+    "expedition_movements": 1,
+    "receivable_generated": false,
+    "effect_baseline": {
+      "receivables": 1,
+      "fiscal_documents": 1
+    }
+  }
+}

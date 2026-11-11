@@ -1,0 +1,5 @@
+BEGIN READ ONLY;
+DO $$BEGIN IF to_regprocedure('public.reject_b2b_payment_terms_secure(uuid,text)') IS NULL OR md5(pg_get_functiondef('public.reject_b2b_payment_terms_secure(uuid,text)'::regprocedure))<>'781427080999234bfe74b04e2b8e7ffd' THEN RAISE EXCEPTION 'REJECT_CANDIDATE_NOT_INSTALLED'; END IF; END$$;
+DO $$BEGIN IF to_regprocedure('public.get_b2b_seller_finance_order_review_v1(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'REVIEW_READER_ALREADY_PRESENT'; END IF; END$$;
+SELECT 'PRE_PASS';
+ROLLBACK;
