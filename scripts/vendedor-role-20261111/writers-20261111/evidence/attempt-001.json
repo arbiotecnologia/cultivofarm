@@ -1,7 +1,7 @@
 {
   "attempt": 1,
-  "pass_": 83,
-  "fail": 5,
+  "pass_": 97,
+  "fail": 3,
   "checks": [
     {
       "test": "restore sem erros além das FKs auth conhecidas",
@@ -215,13 +215,13 @@
     },
     {
       "test": "V1 lê o pedido na carteira",
-      "status": "FAIL",
-      "detail": "ERROR:  column i.item_id does not exist"
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "V2 não vê pedido de P",
-      "status": "FAIL",
-      "detail": "ERROR:  column i.item_id does not exist"
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "V1 não lança para parceiro não atribuído",
@@ -269,19 +269,79 @@
       "detail": null
     },
     {
-      "test": "comprador cria pedido sob consulta",
-      "status": "FAIL",
-      "detail": "ERROR:  plan_not_found"
+      "test": "fixture: admin publica condição Pix do plano sob consulta",
+      "status": "PASS",
+      "detail": null
     },
     {
-      "test": "revogação espera o vínculo travado pelo writer (lock_timeout)",
-      "status": "FAIL",
-      "detail": ""
+      "test": "fixture: admin atribui condição a P",
+      "status": "PASS",
+      "detail": null
     },
     {
-      "test": "admin revoga P de V1",
+      "test": "comprador cria pedido sob consulta pela via normal",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 vê cotação pendente com itens",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V2 não responde cotação de P",
       "status": "FAIL",
-      "detail": "ERROR:  SELLER_PORTFOLIO_FORBIDDEN"
+      "detail": "(None, 'ERROR:  C2_EXTERNAL_OWNER_DENIED')"
+    },
+    {
+      "test": "VB não responde cotação de P",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "financeiro não responde cotação",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 responde cotação de P (transição aguardando_cotacao → análise/crédito)",
+      "status": "FAIL",
+      "detail": "('ERROR:  C2_EXTERNAL_OWNER_DENIED', 'aguardando_cotacao|quote_required')"
+    },
+    {
+      "test": "segunda resposta: replay idempotente ou recusa explícita, sem duplicar termos",
+      "status": "FAIL",
+      "detail": "(None, 'ERROR:  C2_EXTERNAL_OWNER_DENIED')"
+    },
+    {
+      "test": "vendedor não aprova o pedido respondido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "resposta de cotação sem NF/recebível/reserva/entrega/envio",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "revogação concorrente espera o writer (lock_timeout) e o pedido do writer conclui",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "writer após espera é negado pela revalidação (SELLER_PORTFOLIO_REVOKED)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "nenhum pedido criado pela tentativa negada",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vínculo revogado pelo administrador",
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "após revogação: carteira vazia",
@@ -450,15 +510,15 @@
       "01d834d8bbc88eb4bc354533f0769a05a58491a8966838d13b5869a3cb0833f9"
     ],
     "02c-install-writers.sql.review": [
-      "16b7289d24364a88f7fb48a1ae4bbf83209e5162271540e9d02f2a6a84f0e219",
-      "16b7289d24364a88f7fb48a1ae4bbf83209e5162271540e9d02f2a6a84f0e219"
+      "a48a6f71d8037e9d0efade55d7068fc4f780e217e39630ab963ddcaf10b5f3fb",
+      "a48a6f71d8037e9d0efade55d7068fc4f780e217e39630ab963ddcaf10b5f3fb"
     ],
     "03c-post-writers.sql.readonly": [
-      "cd37f395bd61c8e60d0eb6e9a6d9374ccadc46eaf7fddf537bad9656ed37af00"
+      "2a90f4794aff7c2d3990488924fbdc9d77bddd83ae0ba1fff359115bc0fdb6e5"
     ],
     "04c-rollback-writers.sql.review": [
-      "7d36d92ca89720137863a167962e84e538ec8d48938f3da159adee229e986656",
-      "7d36d92ca89720137863a167962e84e538ec8d48938f3da159adee229e986656"
+      "06e2ebbd5bfb425a0ae140a4598feaa92de48abc3ed300326fbd0070a63e3907",
+      "06e2ebbd5bfb425a0ae140a4598feaa92de48abc3ed300326fbd0070a63e3907"
     ]
   },
   "note": "PostgreSQL descartável restaurado do espelho composto; Auth sintética; não prova JWT/RLS/Storage hospedados"

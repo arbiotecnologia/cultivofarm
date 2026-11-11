@@ -97,7 +97,7 @@
     "platform_private.seller_commercial_target_reason(uuid,uuid)": "a8334c62a2529f1b71b92a9dfe16ee50",
     "platform_private.seller_portfolio_lock(uuid,uuid)": "996aae96c23e94742ace7395b8c2e0ad",
     "public.seller_portfolio_capability_v1()": "21b1683d561f599bd3b349c2a4e6ecb9",
-    "public.seller_portfolio_orders_v1()": "2efdd11ec6e8f9bee576e75b4fbab2f0"
+    "public.seller_portfolio_orders_v1()": "7448e15784ff66e55b8eed1a06d0665b"
   },
   "new_acl": {
     "platform_private.seller_commercial_actor()": "{postgres=X/postgres}",
@@ -114,9 +114,9 @@
   ],
   "files": {
     "01c-pre-writers.sql.readonly": "01d834d8bbc88eb4bc354533f0769a05a58491a8966838d13b5869a3cb0833f9",
-    "02c-install-writers.sql.review": "16b7289d24364a88f7fb48a1ae4bbf83209e5162271540e9d02f2a6a84f0e219",
-    "03c-post-writers.sql.readonly": "cd37f395bd61c8e60d0eb6e9a6d9374ccadc46eaf7fddf537bad9656ed37af00",
-    "04c-rollback-writers.sql.review": "7d36d92ca89720137863a167962e84e538ec8d48938f3da159adee229e986656"
+    "02c-install-writers.sql.review": "a48a6f71d8037e9d0efade55d7068fc4f780e217e39630ab963ddcaf10b5f3fb",
+    "03c-post-writers.sql.readonly": "2a90f4794aff7c2d3990488924fbdc9d77bddd83ae0ba1fff359115bc0fdb6e5",
+    "04c-rollback-writers.sql.review": "06e2ebbd5bfb425a0ae140a4598feaa92de48abc3ed300326fbd0070a63e3907"
   },
-  "helpers_sha256": "79e0e9265d0cdab0923abf8373e9a194850c7fdfec90c7c671e2a2db8f02dd7b"
+  "helpers_sha256": "dbe3a8714c2bc01294232c37612fdfda39149e845a97723cb524db9102557ae4"
 }
