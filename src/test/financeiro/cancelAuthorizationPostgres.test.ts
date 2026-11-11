@@ -1,3 +1,4 @@
+import { pgBatteryTestTimeout, runPgBattery } from "@/test/helpers/pgBatterySlot";
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { mkdtempSync, readFileSync } from 'node:fs';
@@ -7,7 +8,7 @@ import { expect, it } from 'vitest';
 
 it('nega cancelamento estrangeiro e reproduz oráculo antes da transformação offline', async () => {
   const outputDir = join(mkdtempSync(join(tmpdir(), 'cancel-vitest-')), 'results');
-  const { stdout: output } = await promisify(execFile)('python3', [
+  const { stdout: output } = await runPgBattery('python3', [
     'scripts/financial-installments-initial-20261024/test-cancel-authorization.py',
     '--output-dir', outputDir,
   ], { encoding: 'utf8', timeout: 180_000 });
@@ -55,4 +56,4 @@ it('nega cancelamento estrangeiro e reproduz oráculo antes da transformação o
     expect(row.error).toEqual(['42501', 'FINANCIAL_SCOPE_DENIED']);
     expect(row.state_unchanged).toBe(true);
   }
-}, 180_000);
+}, pgBatteryTestTimeout(180_000));

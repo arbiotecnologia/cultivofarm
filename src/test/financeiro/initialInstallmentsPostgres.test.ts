@@ -1,9 +1,10 @@
+import { pgBatteryTestTimeout, runPgBattery } from "@/test/helpers/pgBatterySlot";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { expect, it } from "vitest";
 
 it("creates exact immutable installments once, with tenant isolation and full transaction rollback", async () => {
-  const { stdout: output } = await promisify(execFile)("python3", ["scripts/financial-installments-initial-20261024/test-local.py"], { encoding: "utf8", timeout: 180_000 });
+  const { stdout: output } = await runPgBattery("python3", ["scripts/financial-installments-initial-20261024/test-local.py"], { encoding: "utf8", timeout: 180_000 });
   for (const kind of ["receivable", "payable"]) {
     expect(output).toContain(`baseline ${kind} 1/3 snapshot failure`);
     expect(output).toContain(`${kind} b 1/3 exact initial cents`);
@@ -17,4 +18,4 @@ it("creates exact immutable installments once, with tenant isolation and full tr
   expect(output).toContain("full candidate.sql.review POST failure atomic");
   expect(output).toContain("full rollback.sql.review POST failure atomic");
   expect(output).toContain("no hosted JWT/RLS certification");
-}, 180_000);
+}, pgBatteryTestTimeout(180_000));

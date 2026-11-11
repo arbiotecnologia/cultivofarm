@@ -1,9 +1,10 @@
+import { pgBatteryTestTimeout, runPgBattery } from "@/test/helpers/pgBatterySlot";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { expect, it } from "vitest";
 
 it("serializes canonical orders and billing with two real local PostgreSQL connections", async () => {
-  const { stdout: output } = await promisify(execFile)("python3", ["scripts/owner-orders-20261023/credit-numeric-20261024/test-concurrency.py"], { encoding: "utf8", timeout: 470_000 });
+  const { stdout: output } = await runPgBattery("python3", ["scripts/owner-orders-20261023/credit-numeric-20261024/test-concurrency.py"], { encoding: "utf8", timeout: 470_000 });
   expect(output).toContain("TOTAL 183 PASS; synthetic Auth, no hosted JWT/RLS certification");
   expect(output).toContain("two sessions same key exactly one order and identical receipt");
   expect(output).toContain("two sessions changed fingerprint conflict one order");
@@ -27,4 +28,4 @@ it("serializes canonical orders and billing with two real local PostgreSQL conne
   expect(output).toContain("atomic complete containment deliberate POST failure preserves all function hashes owner ACL");
   expect(output).toContain("atomic preflight all checkpoints one real read-only transaction");
   expect(output).toMatch(/TOTAL \d+ PASS; synthetic Auth, no hosted JWT\/RLS certification/);
-}, 480_000);
+}, pgBatteryTestTimeout(480_000));
