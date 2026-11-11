@@ -24265,6 +24265,10 @@ export type Database = {
           total_recebido: number
         }[]
       }
+      rpc_b2b_resale_delivery_capability_v1: {
+        Args: { p_operation: string; p_os_id: string; p_stock_ids: string[] }
+        Returns: Json
+      }
       rpc_b2b_resale_os_availability_v1: {
         Args: { p_order_id: string }
         Returns: Json
