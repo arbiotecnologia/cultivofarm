@@ -27,7 +27,9 @@ def snapshot(order):
 PB=d.last("SELECT order_id FROM platform_private.c2_pilot_econ_approvals_v1 ORDER BY approved_at DESC LIMIT 1")
 BASE=(H/'capture/eligibility.sql').read_text()
 before=snapshot(PB)
-for uid in (COM,FIN):
+denied_commercial=call(COM,f"SELECT public.fn_fiscal_invoice_eligibility('PARTNER_ORDER','{PB}');")
+ok('gestor comercial não ganha acesso fiscal pelo diagnóstico',denied_commercial.returncode!=0 and 'H15_STAFF_FORBIDDEN' in denied_commercial.stderr)
+for uid in (FIN,):
  for overload in (False,True):
   expr=f"SELECT public.fn_fiscal_invoice_eligibility('PARTNER_ORDER','{PB}'"+(',NULL)' if overload else ')')+';'
   new=last(call(uid,expr));old=last(call(uid,expr,pre='BEGIN;'+BASE+';',post='ROLLBACK;'))
