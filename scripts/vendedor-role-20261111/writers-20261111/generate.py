@@ -59,7 +59,7 @@ TARGETS=[
   "PERFORM platform_private.seller_quote_origin_dispatch(NEW.id,NEW.c2_external_origin_snapshot,NEW.partner_id,NEW.cliente_id);\n  IF NEW.partner_id IS DISTINCT FROM OLD.partner_id",1),
  ("  IF org IS NULL OR NOT public.fn_cc_can_prepare(uid) OR NOT public._saas_user_has_feature(uid,'pedidos_b2b') THEN RAISE EXCEPTION 'B2B_INTERNAL_ACTOR_DENIED'",
   "  IF org IS NULL OR NOT (public.fn_cc_can_prepare(uid) OR "+P('uid','NEW.partner_id')+") OR NOT public._saas_user_has_feature(uid,'pedidos_b2b') THEN RAISE EXCEPTION 'B2B_INTERNAL_ACTOR_DENIED'",1)]),
-("platform_private.b2b_internal_child_snapshot_guard()","PENDING",False,[
+("platform_private.b2b_internal_child_snapshot_guard()","f9fcfca4588854d927f7f9a1bdbe4de7",False,[
  ("IF o.c2_external_origin_snapshot IS NOT NULL THEN PERFORM platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id); END IF;",
   "IF o.c2_external_origin_snapshot IS NOT NULL THEN PERFORM platform_private.seller_quote_origin_dispatch(o.id,o.c2_external_origin_snapshot,o.partner_id,o.cliente_id); END IF;",1)]),
 ("platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)","6bbb61aa5899b18d13ac55d4f76f45e1",False,[
@@ -75,8 +75,9 @@ TARGETS=[
  ("PERFORM platform_private.c2_external_origin_assert(","PERFORM platform_private.seller_quote_origin_dispatch(p_order_id,",3),
  ("  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;\n  -- Origem externa e interna",
   "  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;\n  -- seller_portfolio_v1: marcador txid restrito a ESTE pedido; só o despachante dedicado o lê. Removido antes de todo retorno; exceção reverte.\n  IF platform_private.seller_commercial_actor() IS TRUE THEN\n    INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES (txid_current(),'seller_quote_respond',p_order_id) ON CONFLICT DO NOTHING;\n  END IF;\n  -- Origem externa e interna",1),
- ("      RETURN v_result;","      DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='seller_quote_respond' AND target=p_order_id;\n      RETURN v_result;",1),
- ("  RETURN v_result;\nEND","  DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='seller_quote_respond' AND target=p_order_id;\n  RETURN v_result;\nEND",1),
+ ("      RETURN v_result;","      DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope IN ('seller_quote_respond','seller_quote_respond_locked') AND target=p_order_id;\n      RETURN v_result;",1),
+ ("  UPDATE public.partner_orders SET","  -- seller_portfolio_v1: validações concluídas sob lock; a partir daqui o pedido muda de estado nesta transação.\n  IF platform_private.seller_commercial_actor() IS TRUE THEN\n    INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES (txid_current(),'seller_quote_respond_locked',p_order_id) ON CONFLICT DO NOTHING;\n  END IF;\n  UPDATE public.partner_orders SET",1),
+ ("  RETURN v_result;\nEND","  DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope IN ('seller_quote_respond','seller_quote_respond_locked') AND target=p_order_id;\n  RETURN v_result;\nEND",1),
  ("    IF NOT (has_role(v_uid,'administrador'::app_role) OR has_role(v_uid,'gestor_comercial'::app_role)) THEN",
   "    IF NOT (has_role(v_uid,'administrador'::app_role) OR has_role(v_uid,'gestor_comercial'::app_role) OR "+P('v_uid','v_order.partner_id')+") THEN",1)]),
 ]

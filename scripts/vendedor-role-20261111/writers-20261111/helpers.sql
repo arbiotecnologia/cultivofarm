@@ -148,7 +148,7 @@ BEGIN
     RAISE EXCEPTION 'SELLER_QUOTE_FLOW_REQUIRED' USING ERRCODE='42501';
   END IF;
   -- Só cotação pendente, ou replay do próprio recibo deste vendedor para este pedido.
-  IF o.status <> 'aguardando_cotacao' AND NOT EXISTS (SELECT 1 FROM platform_private.b2b_quote_response_receipts rr
+  IF o.status <> 'aguardando_cotacao' AND NOT platform_private.has_ticket('seller_quote_respond_locked',p_order) AND NOT EXISTS (SELECT 1 FROM platform_private.b2b_quote_response_receipts rr
        WHERE rr.order_id=p_order AND rr.actor_id=uid) THEN
     RAISE EXCEPTION 'SELLER_QUOTE_STATE_DENIED' USING ERRCODE='42501';
   END IF;

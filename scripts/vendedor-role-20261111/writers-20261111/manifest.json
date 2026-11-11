@@ -73,6 +73,12 @@
       "auditor_confirmed": false,
       "acl": "{postgres=X/postgres}|postgres"
     },
+    "platform_private.b2b_internal_child_snapshot_guard()": {
+      "live": "f9fcfca4588854d927f7f9a1bdbe4de7",
+      "candidate": "b668b479b3b943e9b5e4d61922111e5b",
+      "auditor_confirmed": false,
+      "acl": "{postgres=X/postgres}|postgres"
+    },
     "platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)": {
       "live": "6bbb61aa5899b18d13ac55d4f76f45e1",
       "candidate": "03ff648ab3fbe7fb6d6cfb5410d5a36a",
@@ -81,7 +87,7 @@
     },
     "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": {
       "live": "97bcdb9884b54adb3bd4aae4915e32d0",
-      "candidate": "9912e3dc000c3b91c94a2dd4f7427b4a",
+      "candidate": "964b79ecd6f293c4bf81fd8ee5f5bbf5",
       "auditor_confirmed": true,
       "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}|postgres"
     },
@@ -99,7 +105,7 @@
     "public.seller_portfolio_capability_v1()": "21b1683d561f599bd3b349c2a4e6ecb9",
     "public.seller_portfolio_orders_v1()": "7448e15784ff66e55b8eed1a06d0665b",
     "public.admin_seller_portfolio_overview_v1()": "53dca32d7f12458c194cf852e47ad92f",
-    "platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)": "f5d8e6645dac2527e830a3eac27d3978"
+    "platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)": "74d5856cdcec7996c0aa710cdb595ed7"
   },
   "new_acl": {
     "platform_private.seller_commercial_actor()": "{postgres=X/postgres}",
@@ -117,10 +123,10 @@
     "public.fn_cc_can_prepare(uuid)"
   ],
   "files": {
-    "01c-pre-writers.sql.readonly": "d733d83e56092aa6e3b7237a7bae3b2b53996d018cecd352c9e1ae6dde85ee22",
-    "02c-install-writers.sql.review": "f7c7857685ec165e03a9593647f5cda7f10c7e866e9b8199f2af4f75dd1d572f",
-    "03c-post-writers.sql.readonly": "e462376cad13696cff37c5e1855554af9dd16a0ef7801a71ff281286599efec6",
-    "04c-rollback-writers.sql.review": "c899fe5746d719757718712431698dea893d5d6f0492abb2d7b4c33f97f31722"
+    "01c-pre-writers.sql.readonly": "169f2ac6facf43eeeca59c80bdc71bb2132e9b9104a195fce1f0fae6fff86750",
+    "02c-install-writers.sql.review": "3a8c009f6a6db5a629276d8d9e0ec7535ae7f868235f03cf43bea4cbe44abdca",
+    "03c-post-writers.sql.readonly": "4791cf191464c52bc4c46bcecfdb5e0c5e87ab18c54ce2cec5c6e394964106c9",
+    "04c-rollback-writers.sql.review": "38613ad442136abbb50fac5d0f8bff5d6a311409864e6f1bb4053227d0483f0c"
   },
-  "helpers_sha256": "dc04738acc9599737bc8e5eb12646698b03a9e30fafa1107d9e44985bbd80322"
+  "helpers_sha256": "9030969dfdf53563d3e8ec15ac4e8907b8169764f9fab5e6ee2938e8f1b16f11"
 }
