@@ -1,0 +1,39 @@
+{
+  "nf2": {
+    "invoice": "00000000-0000-0000-0000-000000000910",
+    "xml_run": "00000000-0000-0000-0000-000000000911",
+    "tx": "00000000-0000-0000-0000-000000000912",
+    "access_key": "35261111111111111111111111111111111111000910"
+  },
+  "inside_tx_output_tail": [
+    "{\"nRec\": null, \"cStat\": \"104\", \"chNFe\": \"35261111111111111111111111111111111111000910\", \"nProt\": \"LOCAL-INTEGRATED-PROTOCOL-2A\", \"state\": \"SUCCEEDED\", \"outcome\": \"AUTHORIZED\", \"xMotivo\": \"LOTE PROCESSADO; PROTOCOLO AUTORIZADO\", \"protocolCStat\": \"100\", \"transmissionId\": \"00000000-0000-0000-0000-000000000912\", \"reconciliationCode\": null, \"reconciliationPending\": false}",
+    "1",
+    "0.00"
+  ],
+  "before": {
+    "tag": "before-rolled-back-callback",
+    "titles": "1",
+    "title_ids": "d88fa0e2-474a-4bc2-8e14-cf302fcbf8b1",
+    "inst_ids": "9cf3c4f4-0548-4890-b276-355a3e3aca4d:10.00",
+    "confirmed_events": "1",
+    "residual": "10.00",
+    "nf2_titles": "0",
+    "nf2_alloc": "0",
+    "nf2_status": "DRAFT",
+    "nf2_tx": "PENDING"
+  },
+  "after": {
+    "tag": "new-connection-after-rollback",
+    "titles": "1",
+    "title_ids": "d88fa0e2-474a-4bc2-8e14-cf302fcbf8b1",
+    "inst_ids": "9cf3c4f4-0548-4890-b276-355a3e3aca4d:10.00",
+    "confirmed_events": "1",
+    "residual": "10.00",
+    "nf2_titles": "0",
+    "nf2_alloc": "0",
+    "nf2_status": "DRAFT",
+    "nf2_tx": "PENDING"
+  },
+  "rolled_back_intentionally": true,
+  "hosted": false
+}
