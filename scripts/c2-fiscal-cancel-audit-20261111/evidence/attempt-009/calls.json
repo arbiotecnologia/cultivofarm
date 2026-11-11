@@ -1,0 +1,135 @@
+[
+  {
+    "actor": "00000000-0000-0000-0000-000000000024",
+    "sql": "BEGIN;SELECT public.reject_partner_order('e8e2342b-111a-407c-8e17-8b28f3fbabbb','LOCAL BEFORE AFTER FORECAST');ROLLBACK;",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "sql": "SELECT public.fn_fiscal_invoice_eligibility('PARTNER_ORDER','e8e2342b-111a-407c-8e17-8b28f3fbabbb');",
+    "exit": 0,
+    "out": "{\"orderId\": \"e8e2342b-111a-407c-8e17-8b28f3fbabbb\", \"reasons\": [{\"code\": \"FISCAL_ORDER_STATUS_NOT_BILLABLE\", \"message\": \"Status do pedido nao habilitado para faturamento: em_analise_comercial\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING\", \"message\": \"Pedido sem aprovacao comercial registrada.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"economicDiagnosis\": {\"available\": true, \"fiscal_blocked\": true, \"credit_explicit\": false, \"accounting_pending\": true, \"commercial_explicit\": false, \"operational_blocked\": true, \"operational_commercial_registered\": false}, \"has_canceled_history\": false}\n",
+    "err": ""
+  },
+  {
+    "actor": "00000000-0000-0000-0000-000000000024",
+    "sql": "BEGIN;SELECT public.reject_partner_order('e8e2342b-111a-407c-8e17-8b28f3fbabbb','LOCAL BEFORE AFTER FORECAST');ROLLBACK;",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "sql": "SELECT public.fn_fiscal_invoice_eligibility('PARTNER_ORDER','e8e2342b-111a-407c-8e17-8b28f3fbabbb');",
+    "exit": 0,
+    "out": "{\"orderId\": \"e8e2342b-111a-407c-8e17-8b28f3fbabbb\", \"reasons\": [{\"code\": \"FISCAL_ORDER_STATUS_NOT_BILLABLE\", \"message\": \"Status do pedido nao habilitado para faturamento: em_analise_comercial\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING\", \"message\": \"Pedido sem aprovacao comercial registrada.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"economicDiagnosis\": {\"available\": true, \"fiscal_blocked\": true, \"credit_explicit\": false, \"accounting_pending\": true, \"commercial_explicit\": true, \"operational_blocked\": true, \"operational_commercial_registered\": false}, \"has_canceled_history\": false}\n",
+    "err": ""
+  },
+  {
+    "actor": "00000000-0000-0000-0000-000000000024",
+    "sql": "BEGIN;SELECT public.reject_partner_order('e8e2342b-111a-407c-8e17-8b28f3fbabbb','LOCAL BEFORE AFTER FORECAST');ROLLBACK;",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "sql": "SELECT public.fn_fiscal_invoice_eligibility('PARTNER_ORDER','e8e2342b-111a-407c-8e17-8b28f3fbabbb');",
+    "exit": 0,
+    "out": "{\"orderId\": \"e8e2342b-111a-407c-8e17-8b28f3fbabbb\", \"reasons\": [{\"code\": \"FISCAL_ORDER_STATUS_NOT_BILLABLE\", \"message\": \"Status do pedido nao habilitado para faturamento: em_analise_comercial\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING\", \"message\": \"Pedido sem aprovacao comercial registrada.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"economicDiagnosis\": {\"available\": true, \"fiscal_blocked\": true, \"credit_explicit\": true, \"accounting_pending\": true, \"commercial_explicit\": true, \"operational_blocked\": true, \"operational_commercial_registered\": false}, \"has_canceled_history\": false}\n",
+    "err": ""
+  },
+  {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "sql": "BEGIN;SELECT public.rpc_cancel_accounts_receivable('7c7ae490-3dc4-48a1-bca1-c6e1a45166c4','LOCAL CANCEL TITLE ONLY');ROLLBACK;",
+    "exit": 0,
+    "out": "\n",
+    "err": ""
+  },
+  {
+    "actor": "00000000-0000-0000-0000-000000000025",
+    "sql": "BEGIN;SELECT public.rpc_cancel_accounts_receivable('7c7ae490-3dc4-48a1-bca1-c6e1a45166c4','LOCAL CANCEL TITLE ONLY');ROLLBACK;",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  42501: tenant_scope_violation\nCONTEXT:  PL/pgSQL function public.guard_tenant_organization_id() line 15 at RAISE\nSQL statement \"UPDATE accounts_receivable_installments\n     SET status = 'CANCELED'\n   WHERE receivable_id = p_id AND status IN ('OPEN','PARTIAL','OVERDUE')\"\nPL/pgSQL function rpc_cancel_accounts_receivable(uuid,text) line 25 at SQL statement\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "sql": "BEGIN;SELECT public.rpc_register_receivable_payment('c474343c-c857-4b5f-b142-4176fa8b65f1','{\"amount_received\": 1, \"payment_method_id\": \"00000000-0000-0000-0000-000000000092\", \"payment_date\": \"2027-02-02\", \"idempotency_key\": \"local-payment-5db41b791de14adea20a7659f1e58a61\", \"has_receipt\": true}'::jsonb);SELECT public.rpc_cancel_accounts_receivable('7c7ae490-3dc4-48a1-bca1-c6e1a45166c4','LOCAL MUST DENY PAID');ROLLBACK;",
+    "exit": 3,
+    "out": "917edc06-d459-4ece-9bd8-24f654423f2a\n",
+    "err": "ERROR:  23514: Existem recebimentos não estornados. Estorne antes de cancelar.\nCONTEXT:  PL/pgSQL function rpc_cancel_accounts_receivable(uuid,text) line 22 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "sql": "BEGIN;SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000000900','CANCELLATION','LOCAL SYNTHETIC CANCEL REASON','cancel-case-4acfc7520a244cc59c763e1e8309a00d','00000000-0000-0000-0000-000000000029');ROLLBACK;",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  P0001: FISCAL_EVENT_ALREADY_REGISTERED\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 18 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "sql": "BEGIN;SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000000900','CANCELLATION','LOCAL SYNTHETIC CANCEL REASON','cancel-case-9e26f4dfc91342b88e33f43250e8302b','00000000-0000-0000-0000-000000000029');ROLLBACK;",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  P0001: FISCAL_EVENT_ALREADY_REGISTERED\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 18 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "sql": "BEGIN;SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000000900','CANCELLATION','LOCAL SYNTHETIC CANCEL REASON','cancel-case-5dd52c585c924a628e21d45221d5485f','00000000-0000-0000-0000-000000000029');ROLLBACK;",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  P0001: FISCAL_EVENT_ALREADY_REGISTERED\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 18 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "sql": "SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000004501','CANCELLATION','LOCAL CONCURRENT CANCEL REASON','distinct-05d7f189ecb24a67aa10e800e1ab653f','00000000-0000-0000-0000-000000000029');",
+    "exit": 0,
+    "out": "{\"reason\": \"LOCAL CONCURRENT CANCEL REASON\", \"eventId\": \"18d5d9ed-7534-4be3-9c27-170228124444\", \"protocol\": \"LOCAL-SECOND-NF\", \"accessKey\": \"35261111111111111111111111111111111111004501\", \"eventCode\": \"110111\", \"seqEvento\": 1, \"idempotentReplay\": false, \"companySettingsId\": \"0a757cd6-26ec-4920-94ba-81499af7ee70\"}\n",
+    "err": ""
+  },
+  {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "sql": "SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000004501','CANCELLATION','LOCAL CONCURRENT CANCEL REASON','distinct-2189656be49843d9b1c4fd47092ebc7c','00000000-0000-0000-0000-000000000029');",
+    "exit": 0,
+    "out": "{\"reason\": \"LOCAL CONCURRENT CANCEL REASON\", \"eventId\": \"c039e7ec-a54d-4cca-8a2a-9d7bd53f252c\", \"protocol\": \"LOCAL-SECOND-NF\", \"accessKey\": \"35261111111111111111111111111111111111004501\", \"eventCode\": \"110111\", \"seqEvento\": 1, \"idempotentReplay\": false, \"companySettingsId\": \"0a757cd6-26ec-4920-94ba-81499af7ee70\"}\n",
+    "err": ""
+  },
+  {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "sql": "BEGIN;INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('ff0cfd48-f5c6-4604-ad93-7b00626d73d3','00000000-0000-0000-0000-000000004501','c039e7ec-a54d-4cca-8a2a-9d7bd53f252c','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','case-ff0cfd48-f5c6-4604-ad93-7b00626d73d3','9915968cd2ca7b979294ae20face5688ec4fac1c12d0685fd918fee23a65fe07','SENT','PENDING','00000000-0000-0000-0000-000000000029');SELECT public.rpc_fiscal_sefaz_transmit_record_v1('ff0cfd48-f5c6-4604-ad93-7b00626d73d3','SUCCEEDED','{\"cStat\": \"573\", \"nProt\": \"LOCAL-EVENT-573\", \"chNFe\": \"35261111111111111111111111111111111111004501\", \"tpAmb\": \"2\", \"xMotivo\": \"LOCAL PROVIDER RESPONSE\"}'::jsonb);ROLLBACK;",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  42501: H15_COMPANY_FORBIDDEN\nCONTEXT:  PL/pgSQL function h15_require_company(uuid) line 2 at RAISE\nSQL statement \"SELECT public.h15_require_company(owner_company)\"\nPL/pgSQL function h15_related_integrity() line 33 at PERFORM\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "sql": "BEGIN;INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('724a8bff-f7ba-4062-abdb-b261a4250ceb','00000000-0000-0000-0000-000000004501','c039e7ec-a54d-4cca-8a2a-9d7bd53f252c','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','case-724a8bff-f7ba-4062-abdb-b261a4250ceb','9915968cd2ca7b979294ae20face5688ec4fac1c12d0685fd918fee23a65fe07','SENT','PENDING','00000000-0000-0000-0000-000000000029');SELECT public.rpc_fiscal_sefaz_transmit_record_v1('724a8bff-f7ba-4062-abdb-b261a4250ceb','SUCCEEDED','{\"cStat\": \"103\", \"nProt\": \"LOCAL-EVENT-103\", \"chNFe\": \"35261111111111111111111111111111111111004501\", \"tpAmb\": \"2\", \"xMotivo\": \"LOCAL PROVIDER RESPONSE\"}'::jsonb);ROLLBACK;",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  42501: H15_COMPANY_FORBIDDEN\nCONTEXT:  PL/pgSQL function h15_require_company(uuid) line 2 at RAISE\nSQL statement \"SELECT public.h15_require_company(owner_company)\"\nPL/pgSQL function h15_related_integrity() line 33 at PERFORM\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "sql": "BEGIN;INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('cd2f67d6-ada0-4a57-bfea-d03f0b880693','00000000-0000-0000-0000-000000004501','c039e7ec-a54d-4cca-8a2a-9d7bd53f252c','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','case-cd2f67d6-ada0-4a57-bfea-d03f0b880693','9915968cd2ca7b979294ae20face5688ec4fac1c12d0685fd918fee23a65fe07','SENT','PENDING','00000000-0000-0000-0000-000000000029');SELECT public.rpc_fiscal_sefaz_transmit_record_v1('cd2f67d6-ada0-4a57-bfea-d03f0b880693','SUCCEEDED','{\"cStat\": \"135\", \"nProt\": \"LOCAL-EVENT-135\", \"chNFe\": \"35261111111111111111111111111111111111004501\", \"tpAmb\": \"2\", \"xMotivo\": \"LOCAL PROVIDER RESPONSE\"}'::jsonb);ROLLBACK;",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  42501: H15_COMPANY_FORBIDDEN\nCONTEXT:  PL/pgSQL function h15_require_company(uuid) line 2 at RAISE\nSQL statement \"SELECT public.h15_require_company(owner_company)\"\nPL/pgSQL function h15_related_integrity() line 33 at PERFORM\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "sql": "INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('2c3f7a1f-c7df-4ba4-93e5-ee9706dab241','00000000-0000-0000-0000-000000004501','c039e7ec-a54d-4cca-8a2a-9d7bd53f252c','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','race-2c3f7a1f-c7df-4ba4-93e5-ee9706dab241','9915968cd2ca7b979294ae20face5688ec4fac1c12d0685fd918fee23a65fe07','SENT','PENDING','00000000-0000-0000-0000-000000000029');",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  P0001: SEFAZ_EVENT_NOT_SIGNED\nCONTEXT:  PL/pgSQL function fn_fiscal_sefaz_tx_link_guard() line 45 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "sql": "SELECT public.rpc_fiscal_sefaz_transmit_record_v1('2c3f7a1f-c7df-4ba4-93e5-ee9706dab241','SUCCEEDED','{\"cStat\": \"135\", \"nProt\": \"LOCAL-RACE-CANCEL\", \"chNFe\": \"35261111111111111111111111111111111111004501\", \"tpAmb\": \"2\", \"xMotivo\": \"LOCAL REGISTERED\"}'::jsonb);",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  P0001: FISCAL_TRANSMISSION_NOT_FOUND\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb) line 16 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  }
+]

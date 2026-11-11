@@ -1,0 +1,6 @@
+- Local audit and inactive review artifacts only; never hosted SQL, runtime edits, publication, provider calls, real cancellation, billing or messages.
+- Reconstruct the exact r12 harness in a temporary mirror; restore synthetic auth users before post-data constraints and assert the reported eligibility MD5 before testing.
+- Diagnostics are additive outside reasons and never change eligible, operational approvals or existing financial readers; reuse the canonical pilot reader and require current evidence and exact live grants.
+- Exercise actual entry RPCs and fiscal callbacks; synthetic seams are identity/configuration/document/signature inputs, never inserted authorization, balances, receivables or cancellation results.
+- Generated deltas pin body, owner, sorted ACL and configuration; distinguish owner-reported production pins from local dependency captures and readiness blockers.
+- Preserve failed attempts and all historical r12 evidence; rollback never restores an observed security leak.

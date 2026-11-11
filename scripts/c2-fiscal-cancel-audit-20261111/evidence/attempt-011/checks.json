@@ -1,0 +1,401 @@
+{
+  "order": "e041916a-dc1f-4e1b-ab57-61adb4249fc6",
+  "rows": [
+    {
+      "test": "novo pedido C2 criado e cotado por writers",
+      "status": "PASS",
+      "detail": [
+        {
+          "id": "e041916a-dc1f-4e1b-ab57-61adb4249fc6",
+          "total": 20.0,
+          "numero": "PB-001024",
+          "status": "em_analise_comercial",
+          "schedule": [
+            {
+              "amount": 20.0,
+              "due_date": "2026-12-11",
+              "estimated": true,
+              "interest_amount": 0.0,
+              "nominal_due_date": "2026-12-11",
+              "principal_amount": 20.0,
+              "installment_number": 1,
+              "business_day_adjusted": false
+            }
+          ],
+          "cart_hash": "32370ecb1b254d1bd7400e8b227e84566ab6b51e774092c259ea5d2fb6b3bcec",
+          "final_amount": 20.0,
+          "table_amount": 20.0,
+          "first_due_date": "2026-12-11",
+          "payment_choice": {
+            "payment_method": "boleto",
+            "payment_deadline_days": 30,
+            "payment_condition_version": 1
+          },
+          "payment_terms_id": "207ff237-e4d3-4636-b845-c626a319ee58",
+          "installment_count": 1,
+          "payment_condition": {
+            "due_basis": "nf_issue",
+            "estimated": true,
+            "monthly_rate": 0,
+            "deadline_days": 30,
+            "installment_count": 1,
+            "payment_method_name": "Boleto TESTE"
+          },
+          "credit_reason_code": "OK",
+          "credit_block_reason": null,
+          "financial_approval_status": "not_required",
+          "financial_interest_amount": 0.0,
+          "net_amount_after_discount": 20.0,
+          "payment_condition_contract": "B2B_PAYMENT_CONDITION_V1",
+          "requires_financial_approval": false
+        },
+        null
+      ]
+    },
+    {
+      "test": "habilitação econômica estreita fixture nova",
+      "status": "PASS",
+      "detail": "NOTICE:  C2PILOT_ENABLE_EVIDENCE_HASH a24f8055f96b436faad0898a7361e0bf\n"
+    },
+    {
+      "test": "reprovação matriz 00",
+      "status": "OBSERVED",
+      "detail": {
+        "exit": 3,
+        "err": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "out": "",
+        "forecast_count": "0"
+      }
+    },
+    {
+      "test": "reprovação matriz 00 sem efeitos após rollback",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "matriz 00 inelegível fiscal",
+      "status": "PASS",
+      "detail": {
+        "orderId": "e041916a-dc1f-4e1b-ab57-61adb4249fc6",
+        "reasons": [
+          {
+            "code": "FISCAL_ORDER_STATUS_NOT_BILLABLE",
+            "message": "Status do pedido nao habilitado para faturamento: em_analise_comercial",
+            "severity": "BLOCK"
+          },
+          {
+            "code": "FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING",
+            "message": "Pedido sem aprovacao comercial registrada.",
+            "severity": "BLOCK"
+          }
+        ],
+        "eligible": false,
+        "sourceType": "PARTNER_ORDER",
+        "debtorPartnerId": "00000000-0000-0000-0000-000000000011",
+        "economicDiagnosis": {
+          "available": true,
+          "fiscal_blocked": true,
+          "credit_explicit": false,
+          "accounting_pending": true,
+          "commercial_explicit": false,
+          "operational_blocked": true,
+          "operational_commercial_registered": false
+        },
+        "has_canceled_history": false
+      }
+    },
+    {
+      "test": "aprovação explícita commercial",
+      "status": "PASS",
+      "detail": [
+        {
+          "kind": "commercial",
+          "contract": "C2_PILOT_ECON_APPROVAL_V1",
+          "replayed": false,
+          "approval_id": "3e62f1b9-73ac-4646-bc7f-548b0b18a6b5",
+          "approved_at": "2026-11-11T23:16:35.357533+00:00",
+          "approved_by": "00000000-0000-0000-0000-000000000030",
+          "forecast_id": null
+        },
+        null
+      ]
+    },
+    {
+      "test": "reprovação matriz 10",
+      "status": "OBSERVED",
+      "detail": {
+        "exit": 3,
+        "err": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "out": "",
+        "forecast_count": "0"
+      }
+    },
+    {
+      "test": "reprovação matriz 10 sem efeitos após rollback",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "matriz 10 inelegível fiscal",
+      "status": "PASS",
+      "detail": {
+        "orderId": "e041916a-dc1f-4e1b-ab57-61adb4249fc6",
+        "reasons": [
+          {
+            "code": "FISCAL_ORDER_STATUS_NOT_BILLABLE",
+            "message": "Status do pedido nao habilitado para faturamento: em_analise_comercial",
+            "severity": "BLOCK"
+          },
+          {
+            "code": "FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING",
+            "message": "Pedido sem aprovacao comercial registrada.",
+            "severity": "BLOCK"
+          }
+        ],
+        "eligible": false,
+        "sourceType": "PARTNER_ORDER",
+        "debtorPartnerId": "00000000-0000-0000-0000-000000000011",
+        "economicDiagnosis": {
+          "available": true,
+          "fiscal_blocked": true,
+          "credit_explicit": false,
+          "accounting_pending": true,
+          "commercial_explicit": true,
+          "operational_blocked": true,
+          "operational_commercial_registered": false
+        },
+        "has_canceled_history": false
+      }
+    },
+    {
+      "test": "aprovação explícita credit",
+      "status": "PASS",
+      "detail": [
+        {
+          "kind": "credit",
+          "contract": "C2_PILOT_ECON_APPROVAL_V1",
+          "replayed": false,
+          "approval_id": "9bbb3147-997f-4c97-b16a-9747279b87a7",
+          "approved_at": "2026-11-11T23:16:35.641972+00:00",
+          "approved_by": "00000000-0000-0000-0000-000000000029",
+          "forecast_id": "011c93c7-030a-457e-b76a-8f7bdc903cbb"
+        },
+        null
+      ]
+    },
+    {
+      "test": "reprovação matriz 11",
+      "status": "OBSERVED",
+      "detail": {
+        "exit": 3,
+        "err": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_partner_order(uuid,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "out": "",
+        "forecast_count": "1"
+      }
+    },
+    {
+      "test": "reprovação matriz 11 sem efeitos após rollback",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "matriz 11 inelegível fiscal",
+      "status": "PASS",
+      "detail": {
+        "orderId": "e041916a-dc1f-4e1b-ab57-61adb4249fc6",
+        "reasons": [
+          {
+            "code": "FISCAL_ORDER_STATUS_NOT_BILLABLE",
+            "message": "Status do pedido nao habilitado para faturamento: em_analise_comercial",
+            "severity": "BLOCK"
+          },
+          {
+            "code": "FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING",
+            "message": "Pedido sem aprovacao comercial registrada.",
+            "severity": "BLOCK"
+          }
+        ],
+        "eligible": false,
+        "sourceType": "PARTNER_ORDER",
+        "debtorPartnerId": "00000000-0000-0000-0000-000000000011",
+        "economicDiagnosis": {
+          "available": true,
+          "fiscal_blocked": true,
+          "credit_explicit": true,
+          "accounting_pending": true,
+          "commercial_explicit": true,
+          "operational_blocked": true,
+          "operational_commercial_registered": false
+        },
+        "has_canceled_history": false
+      }
+    },
+    {
+      "test": "cancel título own",
+      "status": "OBSERVED",
+      "detail": {
+        "exit": 0,
+        "out": "\n",
+        "err": ""
+      }
+    },
+    {
+      "test": "cancel título own rollback sem efeitos",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "cancel título foreign",
+      "status": "OBSERVED",
+      "detail": {
+        "exit": 3,
+        "out": "",
+        "err": "ERROR:  42501: tenant_scope_violation\nCONTEXT:  PL/pgSQL function public.guard_tenant_organization_id() line 15 at RAISE\nSQL statement \"UPDATE accounts_receivable_installments\n     SET status = 'CANCELED'\n   WHERE receivable_id = p_id AND status IN ('OPEN','PARTIAL','OVERDUE')\"\nPL/pgSQL function rpc_cancel_accounts_receivable(uuid,text) line 25 at SQL statement\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      }
+    },
+    {
+      "test": "cancel título foreign rollback sem efeitos",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "pagamento real seguido cancelamento na mesma transação",
+      "status": "OBSERVED",
+      "detail": {
+        "exit": 3,
+        "err": "ERROR:  23514: Existem recebimentos não estornados. Estorne antes de cancelar.\nCONTEXT:  PL/pgSQL function rpc_cancel_accounts_receivable(uuid,text) line 22 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+        "out": "153b4551-7c03-48ee-9ef7-2b282e1f15a7\n"
+      }
+    },
+    {
+      "test": "pagamento+cancelamento aborta atomicamente sem efeito",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "preparo após registro nega caso 573",
+      "status": "PASS",
+      "detail": "ERROR:  P0001: FISCAL_EVENT_ALREADY_REGISTERED\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 18 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "preparo após registro nega caso 103",
+      "status": "PASS",
+      "detail": "ERROR:  P0001: FISCAL_EVENT_ALREADY_REGISTERED\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 18 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "preparo após registro nega caso 135",
+      "status": "PASS",
+      "detail": "ERROR:  P0001: FISCAL_EVENT_ALREADY_REGISTERED\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 18 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "NF2 entrada sintética autorização pelo callback real",
+      "status": "PASS",
+      "detail": {
+        "err": "",
+        "out": "{\"nRec\": null, \"cStat\": \"104\", \"chNFe\": \"35261111111111111111111111111111111111004501\", \"nProt\": \"LOCAL-SECOND-NF\", \"state\": \"SUCCEEDED\", \"outcome\": \"AUTHORIZED\", \"xMotivo\": \"LOTE PROCESSADO; PROTOCOLO AUTORIZADO\", \"protocolCStat\": \"100\", \"transmissionId\": \"00000000-0000-0000-0000-000000004503\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n"
+      }
+    },
+    {
+      "test": "preparo concorrente chaves distintas",
+      "status": "OBSERVED",
+      "detail": [
+        [
+          0,
+          "",
+          {
+            "reason": "LOCAL CONCURRENT CANCEL REASON",
+            "eventId": "4a15d552-0b8d-41b4-aa29-60f35abba3a1",
+            "protocol": "LOCAL-SECOND-NF",
+            "accessKey": "35261111111111111111111111111111111111004501",
+            "eventCode": "110111",
+            "seqEvento": 3,
+            "idempotentReplay": false,
+            "companySettingsId": "0a757cd6-26ec-4920-94ba-81499af7ee70"
+          }
+        ],
+        [
+          0,
+          "",
+          {
+            "reason": "LOCAL CONCURRENT CANCEL REASON",
+            "eventId": "06e5459c-a0f4-423a-a1d4-9f07f1083f45",
+            "protocol": "LOCAL-SECOND-NF",
+            "accessKey": "35261111111111111111111111111111111111004501",
+            "eventCode": "110111",
+            "seqEvento": 3,
+            "idempotentReplay": false,
+            "companySettingsId": "0a757cd6-26ec-4920-94ba-81499af7ee70"
+          }
+        ]
+      ]
+    },
+    {
+      "test": "preparo concorrente não cria resultados financeiros/físicos",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "pré-requisito assinatura evento via RPC real",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "callback cancel status 573",
+      "status": "OBSERVED",
+      "detail": {
+        "exit": 0,
+        "err": "",
+        "out": "{\"nRec\": null, \"cStat\": \"573\", \"chNFe\": \"35261111111111111111111111111111111111004501\", \"nProt\": \"LOCAL-EVENT-573\", \"state\": \"SUCCEEDED\", \"outcome\": \"REJECTED\", \"xMotivo\": \"LOCAL PROVIDER RESPONSE\", \"protocolCStat\": \"573\", \"transmissionId\": \"99017c67-e0e9-46b3-a4df-8575237d097d\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n"
+      }
+    },
+    {
+      "test": "callback 573 rollback preserva financeiro/físico",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "callback cancel status 103",
+      "status": "OBSERVED",
+      "detail": {
+        "exit": 0,
+        "err": "",
+        "out": "{\"nRec\": null, \"cStat\": \"103\", \"chNFe\": \"35261111111111111111111111111111111111004501\", \"nProt\": \"LOCAL-EVENT-103\", \"state\": \"SUCCEEDED\", \"outcome\": \"PROCESSING\", \"xMotivo\": \"LOCAL PROVIDER RESPONSE\", \"protocolCStat\": \"103\", \"transmissionId\": \"08a7a005-6cd5-4b18-a88d-0e8622cdf626\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n"
+      }
+    },
+    {
+      "test": "callback 103 rollback preserva financeiro/físico",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "callback cancel status 135",
+      "status": "OBSERVED",
+      "detail": {
+        "exit": 0,
+        "err": "",
+        "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111004501\", \"nProt\": \"LOCAL-EVENT-135\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL PROVIDER RESPONSE\", \"protocolCStat\": \"135\", \"transmissionId\": \"fd180d0d-bf5f-4b9f-bb12-81fed772b5b9\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n"
+      }
+    },
+    {
+      "test": "callback 135 rollback preserva financeiro/físico",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "autorização replay × confirmação cancelamento",
+      "status": "OBSERVED",
+      "detail": {
+        "auth_exit": 0,
+        "auth_err": "",
+        "cancel_exit": 0,
+        "cancel_err": "",
+        "cancel_out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111004501\", \"nProt\": \"LOCAL-RACE-CANCEL\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL REGISTERED\", \"protocolCStat\": \"135\", \"transmissionId\": \"047c6cd8-ef01-497d-bda8-ac299a0f8cb9\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n"
+      }
+    },
+    {
+      "test": "corrida não duplica título NF2",
+      "status": "PASS",
+      "detail": null
+    }
+  ]
+}
