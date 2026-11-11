@@ -1,5 +1,6 @@
 - Local preparation only; no hosted SQL, deployment, publication, fiscal, receivables, collections or messages — keeps the owner's execution boundary.
 - The reader is read-only and reuses the installed seller-reject external authority predicate verbatim (captured ARBio seller UUID, active internal Financeiro, exact order/creator/partner lineage); it never widens partner_order_items/terms RLS or the commercial route — prevents global widening.
+- Invalid external-origin contract denies before reading details; legitimate accounting-pending stays readable and rejectable.
 - reject_eligible must equal the installed writer's state predicate; the writer stays the only authority and the UI only offers it when eligible — prevents UI-only approvals.
 - not_required terms are frozen snapshots: no conversion to pending; review requires a new order under a plan that requires financial approval — preserves immutable snapshots.
 - Rollback drops only the exact candidate md5 and refuses drift.
