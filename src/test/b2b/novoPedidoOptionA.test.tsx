@@ -190,7 +190,10 @@ async function simulate(view=mount()){
 }
 it('closed → iniciar → simular → habilitado; uma reserva CAS somente no dispatch, duplo clique não duplica',async()=>{
  terminal='closed';const view=mount();
- fireEvent.click(await screen.findByRole('button',{name:'Iniciar nova tentativa'}));
+ // Primeiro teste do arquivo paga o carregamento frio (módulos, IndexedDB, leitura do journal) sob suíte conjunta:
+ // espera a leitura real do status e só então a ação, sem afrouxar nenhuma asserção.
+ await waitFor(()=>expect(calls('partner_order_attempt_status_v1').length).toBeGreaterThan(0),{timeout:5000});
+ fireEvent.click(await screen.findByRole('button',{name:'Iniciar nova tentativa'},{timeout:5000}));
  await waitFor(()=>expect(screen.queryByRole('button',{name:'Iniciar nova tentativa'})).toBeNull());
  expect(reserves()).toHaveLength(0);
  await simulate(view);const send=await submitBtn();await waitFor(()=>expect(send).toBeEnabled());
