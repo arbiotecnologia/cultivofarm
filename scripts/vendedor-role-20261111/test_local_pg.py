@@ -29,7 +29,7 @@ def partners(uid): return act(uid,"SELECT coalesce(string_agg(p->>'partner_id','
 data = TMP/"data"
 try:
     subprocess.run(PRIV+["initdb","-D",str(data),"-U","postgres","-A","trust"],check=True,capture_output=True)
-    subprocess.run(PRIV+["pg_ctl","-D",str(data),"-o",f"-k {TMP} -p {PORT} -c listen_addresses=''","-w","start"],check=True,capture_output=True)
+    subprocess.run(PRIV+["pg_ctl","-D",str(data),"-l",str(TMP/"log"),"-o",f"-k {TMP} -h \"\" -p {PORT}","start","-w"],check=True,capture_output=True)
     run((H/"fixture.sql").read_text())
     run("SET app.expected_ref='wrong';\n"+(H/"01-pre.sql.readonly").read_text(), error="VENDEDOR_PRE_REF_UNPROVEN"); results.append({"name":"pre_ref_divergente_falha","status":"PASS"})
     check("pre_pass", "SET app.expected_ref='swzpzcwiasxmjutrmvkm';\n"+(H/"01-pre.sql.readonly").read_text()+"", None)
