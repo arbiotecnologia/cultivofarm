@@ -123,9 +123,10 @@ try:
     c,e=call(V1,"public.c2_internal_order_entry_capability_v1()");ok('capacidade interna do gestor não abre para vendedor',c and c['order_create'] is False and c['reason']=='actor_not_allowed',c or e)
     # Catálogo
     r=call(V1,f"public.get_partner_catalog_secure('{P}')");ok('V1 lê catálogo de P',r[0] is not None,r)
-    deny('V1 catálogo de parceiro não atribuído',lambda: call(V1,f"public.get_partner_catalog_secure('{PNA}')"),'42501','forbidden_partner')
-    deny('V1 catálogo de P2 (de V2)',lambda: call(V1,f"public.get_partner_catalog_secure('{P2}')"),'42501','forbidden_partner')
-    deny('VB catálogo de P (outro tenant)',lambda: call(VB,f"public.get_partner_catalog_secure('{P}')"),'42501','forbidden_partner')
+    # Catálogo de PRODUÇÃO 6b56cfb1 chama o leitor b2b_partner_catalog_reader antes de tudo: negação vem dele (forbidden_role).
+    deny('V1 catálogo de parceiro não atribuído',lambda: call(V1,f"public.get_partner_catalog_secure('{PNA}')"),'42501','forbidden_role')
+    deny('V1 catálogo de P2 (de V2)',lambda: call(V1,f"public.get_partner_catalog_secure('{P2}')"),'42501','forbidden_role')
+    deny('VB catálogo de P (outro tenant)',lambda: call(VB,f"public.get_partner_catalog_secure('{P}')"),'42501','forbidden_role')
     r=call(V1,f"public.get_partner_packaging_offers_secure('{P}')");ok('V1 lê embalagens de P',r[0] is not None,r)
     def plan_ids(uid,pre='',post=''):
         r=act(uid,"SELECT coalesce(string_agg(id::text,',' ORDER BY id),'') FROM public.rpc_b2b_list_selectable_payment_plans();"+post,pre)
