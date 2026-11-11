@@ -75,6 +75,8 @@ export default function SolicitacoesB2B() {
   const [openSim, setOpenSim] = useState<string | null>(null);
   // Troca de ator/tenant/revogação fecha qualquer detalhe aberto.
   useEffect(() => { setOpenPedido(null); setOpenSim(null); }, [actorScope]);
+  const openedOrder = openPedido ? pedidos.find((p) => p.id === openPedido) : undefined;
+  const financeReview = financeOnly && !!openedOrder?.c2_external_origin_snapshot;
 
   // Clientes lookup for order rows
   const clienteIds = useMemo(
