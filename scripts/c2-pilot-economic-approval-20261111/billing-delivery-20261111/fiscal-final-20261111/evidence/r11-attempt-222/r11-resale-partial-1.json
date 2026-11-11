@@ -1,0 +1,33 @@
+{
+  "delivery": "1412ba5d-28b9-400d-af46-6b637940bcd5",
+  "confirm": {
+    "os_id": "61be302e-180d-42ed-893e-2216fe8f2948",
+    "action": "confirm",
+    "replay": false,
+    "status": "entregue",
+    "success": true,
+    "actor_id": "00000000-0000-0000-0000-000000000024",
+    "os_status": "pronto_entrega",
+    "entrega_id": "1412ba5d-28b9-400d-af46-6b637940bcd5",
+    "finalizada": false,
+    "updated_at": "2026-11-11T21:52:44.08294+00:00",
+    "comprovante_id": "e3a80569-ccbe-4b99-8ad2-430e4b65e72a",
+    "organization_id": "00000000-0000-0000-0000-000000000001"
+  },
+  "confirm_replay": {
+    "os_id": "61be302e-180d-42ed-893e-2216fe8f2948",
+    "action": "confirm",
+    "replay": true,
+    "status": "entregue",
+    "success": true,
+    "actor_id": "00000000-0000-0000-0000-000000000024",
+    "os_status": "pronto_entrega",
+    "entrega_id": "1412ba5d-28b9-400d-af46-6b637940bcd5",
+    "finalizada": false,
+    "updated_at": "2026-11-11T21:52:44.08294+00:00",
+    "comprovante_id": "e3a80569-ccbe-4b99-8ad2-430e4b65e72a",
+    "organization_id": "00000000-0000-0000-0000-000000000001"
+  },
+  "order_status_after_first": "aprovado",
+  "stock_qty_after_first": "2"
+}

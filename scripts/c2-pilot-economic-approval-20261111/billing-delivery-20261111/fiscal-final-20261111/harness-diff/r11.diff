@@ -1,0 +1,216 @@
+--- /tmp/orig.py	2026-11-11 21:54:29.455556730 +0000
++++ /tmp/r11/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py	2026-11-11 21:49:16.249467892 +0000
+@@ -1,6 +1,6 @@
+ #!/usr/bin/env python3
+ """Composition driver, executes only in /tmp mirror; all experiments are local."""
+-import hashlib,importlib.util,json,os,shutil,sys,traceback,uuid
++import subprocess,hashlib,importlib.util,json,os,shutil,sys,traceback,uuid
+ from pathlib import Path
+ H=Path(__file__).resolve().parent;ROOT=H.parents[2]
+ assert ROOT.is_relative_to(Path('/tmp')), 'TEMP_MIRROR_REQUIRED'
+@@ -256,7 +256,7 @@
+   checks.append(dict(test='real NULL seller org shape; global guards unchanged; role tenant inactive revocation and multilink negatives',status='PASS'))
+   published,publish_error=Q.publish(Q.UFIN,Q.P3,'boleto',Q.M_BOL,30,1,'0',1);assert published is not None,publish_error
+   assigned,assign_error=Q.assign(Q.UADM,Q.P,Q.P3,'boleto',2);assert assigned is not None,assign_error
+-  B.sql(f"UPDATE public.commercial_payment_plans SET discount_percent=10,requires_financial_approval=true WHERE id='{Q.P3}';BEGIN;UPDATE public.catalogo_precos_embalagem SET valid_until=current_date-1 WHERE id='{Q.SP.PR25}';INSERT INTO public.catalogo_precos_embalagem(id,produto_id,owner_organization_id,packaging_id,preco_brl,valid_from) SELECT '{Q.u(970)}',produto_id,owner_organization_id,packaging_id,10,current_date FROM public.catalogo_precos_embalagem WHERE id='{Q.SP.PR25}';COMMIT;")
++  B.sql(f"UPDATE public.commercial_payment_plans SET discount_percent=0,requires_financial_approval=true WHERE id='{Q.P3}';BEGIN;UPDATE public.catalogo_precos_embalagem SET valid_until=current_date-1 WHERE id='{Q.SP.PR25}';INSERT INTO public.catalogo_precos_embalagem(id,produto_id,owner_organization_id,packaging_id,preco_brl,valid_from) SELECT '{Q.u(970)}',produto_id,owner_organization_id,packaging_id,10,current_date FROM public.catalogo_precos_embalagem WHERE id='{Q.SP.PR25}';COMMIT;")
+   choice=Q.ch('boleto',2,30)
+   data,error=Q.sim(Q.UB,Q.P3,[Q.S(2)],choice);assert data is not None,error
+   journal,journal_error=Q.call(Q.UB,f"public.recover_partner_order_attempt_v1('{Q.P}',NULL,NULL,false,NULL)")
+@@ -302,7 +302,7 @@
+   accepted=json.loads(Q.psql(f"SELECT to_jsonb(o)::text FROM public.partner_orders o WHERE id='{order_id}'").stdout.strip())
+   assert accepted['status']=='aprovado' and accepted['internal_economic_snapshot'] is not None,accepted
+   assert accepted['ready_for_production'] is False,'external resale must not open biological production'
+-  assert float(accepted['final_amount_with_interest'])==18.0 and accepted['credit_approved_at'] is None,accepted
++  assert float(accepted['final_amount_with_interest'])==20.0 and accepted['credit_approved_at'] is None,accepted
+   assert accepted['financial_approval_status']=='pending',accepted
+   assert B.last(f"SELECT count(*) FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}';")=='0'
+   terms_before=json.loads(B.last(f"SELECT jsonb_build_object('order',to_jsonb(po),'terms',(SELECT to_jsonb(t) FROM public.partner_order_payment_terms t WHERE t.id=po.payment_terms_id))::text FROM public.partner_orders po WHERE id='{order_id}';"))
+@@ -399,11 +399,11 @@
+    items=json.dumps([{'item_id':stock,'quantidade':quantity}]);data=json.dumps({'partner_id':Q.P,'partner_order_id':order_id})
+    return B.T.actor(Q.UADM)+f"SELECT public.rpc_estoque_reservar_v1('{os_id}','b2b','{items}'::jsonb,'{key}','{data}'::jsonb);"
+   group_observations={}
+-  def group_resale(stock_id,key):
++  def group_resale(stock_id,key,quantity=2):
+    if key not in group_observations:
+     group_observations[key]=(B.last(f"SELECT updated_at FROM public.ordens_servico WHERE id='{os_id}';"),B.last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{stock_id}';"))
+    observed_os,observed_stock=group_observations[key]
+-   items=json.dumps([{'item_id':stock_id,'quantidade':2,'observed_updated_at':observed_stock}])
++   items=json.dumps([{'item_id':stock_id,'quantidade':quantity,'observed_updated_at':observed_stock}])
+    return B.T.actor(Q.UADM)+f"SELECT public.rpc_cockpit_criar_entrega_v1('{os_id}','b2b','{items}'::jsonb,'{key}','{{}}'::jsonb,'{observed_os}'::timestamptz);"
+   def prove_resale(delivery_id,key):
+    denied=B.run_raw(B.T.actor(Q.UB)+f"SELECT public.rpc_entrega_formulario_gerar_v1('{delivery_id}','resale-buyer-proof-{key}');")
+@@ -441,10 +441,24 @@
+   (OUT/'resale-cancel.json').write_text(json.dumps(dict(group=grouped,cancel=cancelled),indent=2)+'\n')
+   checks.append(dict(test='resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable',status='PASS',delivery_id=cancel_delivery))
+ 
+-  reserved=json.loads(B.last(reserve_resale('resale-reserve-final-0001')))['itens'][0]
+-  grouped=json.loads(B.last(group_resale(reserved,'resale-group-final-0001')))
++  # R11: revenda 1+1 no MESMO pedido de controle — 1ª entrega parcial de 1 embalagem pelas rotinas normais.
++  r1=json.loads(B.last(reserve_resale('resale-reserve-partial1-0001',1)))['itens'][0]
++  g1=json.loads(B.last(group_resale(r1,'resale-group-partial1-0001',1)));d1=g1['itens'][0]['entrega_id']
++  o1=B.last(f"SELECT updated_at FROM public.entregas WHERE id='{d1}';")
++  s1=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_enviar_manual_v1('{d1}','{o1}','resale-send-partial1');"));assert s1['success'] is True,s1
++  prove_resale(d1,'resale-proof-partial1')
++  o1=B.last(f"SELECT updated_at FROM public.entregas WHERE id='{d1}';")
++  c1=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_confirmar_manual_v1('{d1}','{o1}','resale-confirm-partial1','{{\"nome\":\"LOCAL REVENDA 1\"}}'::jsonb);"))
++  c1r=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_confirmar_manual_v1('{d1}','{o1}','resale-confirm-partial1','{{\"nome\":\"LOCAL REVENDA 1\"}}'::jsonb);"))
++  st1=B.last(f"SELECT status::text FROM public.partner_orders WHERE id='{order_id}';")
++  q1=B.last(f"SELECT coalesce(sum(quantidade),0) FROM public.estoque_produto WHERE id='{stock}';")
++  assert c1['success'] is True and c1['status']=='entregue' and c1r['replay'] is True and st1!='entregue',(c1,c1r,st1)
++  (OUT/'r11-resale-partial-1.json').write_text(json.dumps(dict(delivery=d1,confirm=c1,confirm_replay=c1r,order_status_after_first=st1,stock_qty_after_first=q1),indent=2)+'\n')
++  checks.append(dict(test='R11 partial resale delivery 1 of 2 confirmed with replay; order stays not delivered',status='PASS',delivery_id=d1))
++  reserved=json.loads(B.last(reserve_resale('resale-reserve-final-0001',1)))['itens'][0]
++  grouped=json.loads(B.last(group_resale(reserved,'resale-group-final-0001',1)))
+   delivery=grouped['itens'][0]['entrega_id']
+-  group_replay=json.loads(B.last(group_resale(reserved,'resale-group-final-0001')))
++  group_replay=json.loads(B.last(group_resale(reserved,'resale-group-final-0001',1)))
+   assert group_replay['replay'] is True and group_replay['itens'][0]['entrega_id']==delivery,group_replay
+   observed=B.last(f"SELECT updated_at FROM public.entregas WHERE id='{delivery}';")
+   sent=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_enviar_manual_v1('{delivery}','{observed}','resale-send-0001');"))
+@@ -744,7 +758,7 @@
+   invoice_id=Q.u(900);transmission_id=Q.u(901);xml_run_id=Q.u(902);access_key='35261111111111111111111111111111111111111111'
+   company_settings_id=accepted['internal_economic_snapshot']['origin']['company_settings_id']
+   partial_amount=round(float(accepted['final_amount_with_interest'])/2,2)
+-  assert partial_amount==9.0,partial_amount
++  assert partial_amount==10.0,partial_amount
+   # A restauração contém o schema fiscal real. A costura é somente o evento
+   # sintético; NOT NULL, CHECK, FK, triggers e índices permanecem obrigatórios.
+   invoice_idem=f'integrated-fiscal-invoice:{order_id}:v1'
+@@ -830,7 +844,7 @@
+   assert blocked['transmission_idempotency']==transmission_idem and blocked['transmission_fingerprint']==transmission_fingerprint,blocked
+   receivable_id=blocked['invoice_receivable']
+   forecast_after=json.loads(B.last(f"SELECT jsonb_build_object('state',state,'residual_amount',residual_amount,'version',version)::text FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}';"))
+-  assert forecast_after['state']=='faturado_parcial' and float(forecast_after['residual_amount'])==9 and forecast_after['version']==version_before_first_nf+1,forecast_after
++  assert forecast_after['state']=='faturado_parcial' and float(forecast_after['residual_amount'])==10 and forecast_after['version']==version_before_first_nf+1,forecast_after
+   credit_claims="'"+json.dumps(json.dumps({'sub':Q.UADM,'role':'authenticated','iat':1,'exp':4102444800})).replace("'","''")+"'"
+   credit_after=json.loads(B.last(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims={credit_claims};SELECT public.fn_b2b_credit_exposure('{Q.P}',0,NULL);"))
+   assert abs(float(credit_after['exposicao_atual'])-float(credit['exposicao_atual']))<0.01,(credit,credit_after)
+@@ -838,7 +852,20 @@
+   (OUT/'forecast-post-nf.json').write_text(json.dumps(dict(forecast=forecast_after,credit_before=credit,credit_after=credit_after,one_title_for_invoice=True),indent=2)+'\n')
+   (OUT/'integrated-strict-fiscal-callback.json').write_text(json.dumps(dict(callback=callback_data,replay=replay_data,confirmed=blocked,schema_and_fiscal_events_synthetic=True,always_allow_substitution=False,strict_permit_required=True),indent=2)+'\n')
+   checks.append(dict(test='real H13 envelope 104 protocol 100 generates one receivable and replay preserves one document allocation snapshot and title without close pending',status='PASS',receivable_id=receivable_id))
++  # AUDIT-20261111 hook (mirror only): measure LIVE-comparable hashes and dump full stack.
++  _m=B.last("""SELECT jsonb_object_agg(p.oid::regprocedure::text, md5(pg_get_functiondef(p.oid))) FROM pg_proc p WHERE p.oid::regprocedure::text IN ('rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid)','platform_private.b2b_fiscal_invoice_bridge_v1(uuid)','platform_private.b2b_allocate_document(uuid)','platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid)') OR p.proname='fn_fiscal_invoice_eligibility';""")
++  _i=B.last("""SELECT jsonb_build_object('one_title_idx',(SELECT indexdef FROM pg_indexes WHERE indexname='b2b_one_title_per_document'),'alloc_pk',(SELECT jsonb_agg(pg_get_constraintdef(c.oid)) FROM pg_constraint c WHERE c.conrelid='platform_private.b2b_document_allocations'::regclass AND c.contype='p'),'b4_snapshots',to_regclass('public.b4_order_condition_snapshots') IS NOT NULL OR to_regclass('platform_private.b4_order_condition_snapshots') IS NOT NULL);""")
++  (OUT/'audit-20261111-live-hash-compare.json').write_text(json.dumps(dict(functions=json.loads(_m),objects=json.loads(_i)),indent=2)+'\n')
++  _a=B.pg.psql();_pre=_a[:_a.index('psql')];_r=[];_k=dict(zip(_a,_a[1:]))
++  subprocess.run(_pre+['pg_dump','-Fc','-h',_k['-h'],'-p',_k['-p'],'-U',_k.get('-U','postgres'),'-d',_k.get('-d','postgres'),'-f','/tmp/r11/fullstack.dump'],check=False)
++  subprocess.run(_pre+['pg_dumpall','--globals-only','-h',_k['-h'],'-p',_k['-p'],'-U',_k.get('-U','postgres'),'-f','/tmp/r11/globals.sql'],check=False)
+   partial_completion=forecast_extra.run_partial_completion(B,Q,OUT,order_id,accepted,item,invoice_id,receivable_id,credit)
++  _cap=B.last(f"""SELECT jsonb_build_object('order',(SELECT jsonb_build_object('id',id,'total',total,'final',final_amount_with_interest,'status',status) FROM public.partner_orders WHERE id='{order_id}'),
++   'invoices',(SELECT jsonb_agg(jsonb_build_object('id',fi.id,'issue_date',fi.issue_date,'total',fi.total_amount,'status',fi.normalized_status,'receivable_id',fi.receivable_id,'org',fi.organization_id,'order',fi.partner_order_id) ORDER BY fi.issue_date,fi.id) FROM public.fiscal_invoices fi WHERE fi.partner_order_id='{order_id}'),
++   'receivables',(SELECT jsonb_agg(jsonb_build_object('id',ar.id,'doc',ar.b2b_document_id,'amount',ar.total_amount,'ar_issue',ar.issue_date,'first_due',ar.first_due_date,'count',ar.installment_count,'org',ar.organization_id,'installments',(SELECT jsonb_agg(jsonb_build_object('id',i.id,'n',i.installment_number,'amount',i.original_amount,'due_date',i.due_date) ORDER BY i.installment_number) FROM public.accounts_receivable_installments i WHERE i.receivable_id=ar.id)) ORDER BY ar.created_at) FROM public.accounts_receivable ar WHERE ar.b2b_document_id IN (SELECT id FROM public.fiscal_invoices WHERE partner_order_id='{order_id}')),
++   'forecast',(SELECT jsonb_build_object('id',f.id,'total',f.total_amount,'residual',f.residual_amount,'state',f.state) FROM platform_private.b2b_financial_forecasts f WHERE f.order_id='{order_id}'),
++   'forecast_events',(SELECT jsonb_agg(jsonb_build_object('type',e.event_type,'ref',e.event_reference,'at',e.created_at) ORDER BY e.created_at) FROM platform_private.b2b_financial_forecast_events e JOIN platform_private.b2b_financial_forecasts f ON f.id=e.forecast_id WHERE f.order_id='{order_id}'))::text;""")
++  (OUT/'r10-ids-dates-values.json').write_text(json.dumps(json.loads(_cap),indent=2)+'\n')
+   checks.append(dict(test='two authorized NF 9 plus residual 9 preserve exposure 18; concurrent last NFs create one title and one explicit close-pending; replay race H7 and payment 9 leave exposure 9 without reopening residual',status='PASS',second_receivable=partial_completion['second_receivable']))
+   triggers38.assert_and_write(B,ROOT,OUT,'before-forecast-scenarios')
+   cancel_late=forecast_extra.run_cancel_late_callback(B,Q,OUT,override['order_id'],accepted)
+--- /tmp/orig.py	2026-11-11 21:54:29.467955159 +0000
++++ /tmp/r11/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast_residual_scenario.py	2026-11-11 21:49:12.117000539 +0000
+@@ -343,7 +343,7 @@
+     (OUT/'fiscal-marker-local.json').write_text(json.dumps(dict(ref='swzpzcwiasxmjutrmvkm',synthetic=True,production_emission_allowed=False,hosted=False))+'\n')
+     company = accepted['internal_economic_snapshot']['origin']['company_settings_id']
+     log = []
+-    R = insert_invoice(B, Q, order_id, Q.P, company, item['id'], 9, 960)
++    R = insert_invoice(B, Q, order_id, Q.P, company, item['id'], 10, 960)
+     v = version(Q, order_id)
+     from lifecycle_containment_tests import run as containment_run
+     containment_run(B,Q,OUT,order_id,R,v)
+@@ -365,7 +365,7 @@
+     assert rejected['event'] == 'EMISSION_REJECTED' and rejected['state'] == 'aguardando_fiscal', rejected
+     assert forecast_row(B, order_id)['last_error_code'] == '539'
+ 
+-    T = insert_invoice(B, Q, order_id, Q.P, company, item['id'], 9, 965)
++    T = insert_invoice(B, Q, order_id, Q.P, company, item['id'], 10, 965)
+     t_started = sync(Q, Q.UFIN, T['tx'], rejected['version']); log.append(t_started)
+     transport_error(B, T['tx'], 'LOCAL_TRANSPORT_TIMEOUT')
+     timeout = sync(Q, Q.UFIN, T['tx'], t_started['version']); log.append(timeout)
+@@ -382,7 +382,7 @@
+ 
+     # Revocation after the wrapper's wait: owner holds the forecast row, deactivates
+     # the actor and commits; the wrapper re-authorizes after the lock and fails.
+-    W = insert_invoice(B, Q, order_id, Q.P, company, item['id'], 9, 970)
++    W = insert_invoice(B, Q, order_id, Q.P, company, item['id'], 10, 970)
+     before = forecast_row(B, order_id)
+     holder_sql = f"BEGIN;SELECT id FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}' FOR UPDATE;SELECT pg_sleep(.8);UPDATE public.profiles SET ativo=false WHERE user_id='{Q.UFIN}';COMMIT;"
+     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+@@ -397,7 +397,7 @@
+     assert forecast_row(B, order_id) == before
+     transport_error(B, W['tx'], 'LOCAL_ABANDONED_AFTER_DENIAL')
+     final = forecast_row(B, order_id)
+-    assert final['state'] == 'aguardando_fiscal' and float(final['residual_amount']) == 18, final
++    assert final['state'] == 'aguardando_fiscal' and float(final['residual_amount']) == 20, final
+     receivables = B.last(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{order_id}';")
+     assert receivables == '0', receivables
+     result = dict(events=log, negatives=neg, review=review, final=final, receivables=0, invoices=dict(rejected=R, timeout=T, consultation_tx=consult, revocation=W),
+@@ -470,9 +470,9 @@
+ 
+ def run_partial_completion(B, Q, OUT, order_id, accepted, item, first_invoice, first_receivable, credit_before):
+     """Duas NFs de 9, corrida das duas últimas NFs, replay, H7 e pagamento canônico de 9."""
+-    assert float(accepted['final_amount_with_interest']) == 18.0, accepted['final_amount_with_interest']
++    assert float(accepted['final_amount_with_interest']) == 20.0, accepted['final_amount_with_interest']
+     base_open = float(credit_before['saldo_em_aberto'])
+-    first_credit = assert_order_exposure(B, Q, order_id, base_open, 9, 9, label='after NF1: title 9 + residual 9 = 18')
++    first_credit = assert_order_exposure(B, Q, order_id, base_open, 10, 10, label='after NF1: title 10 + residual 10 = 20')
+     assert abs(float(first_credit['full']['exposicao_atual']) - float(credit_before['exposicao_atual'])) < .001, (first_credit, credit_before)
+ 
+     # Replay race only through the canonical H13 callback (the bridge itself has no
+@@ -487,8 +487,8 @@
+     assert B.last(f"SELECT count(*) FROM platform_private.b2b_financial_forecast_events WHERE event_type='FISCAL_CONFIRMED' AND event_reference='{first_invoice}';") == '1'
+ 
+     company = accepted['internal_economic_snapshot']['origin']['company_settings_id']
+-    A = insert_invoice(B, Q, order_id, Q.P, company, item['id'], 9, 910, '2027-02-02')
+-    Z = insert_invoice(B, Q, order_id, Q.P, company, item['id'], 9, 920, '2027-02-02')
++    A = insert_invoice(B, Q, order_id, Q.P, company, item['id'], 10, 910, '2027-02-02')
++    Z = insert_invoice(B, Q, order_id, Q.P, company, item['id'], 10, 920, '2027-02-02')
+     v = version(Q, order_id)
+     started = sync(Q, Q.UFIN, A['tx'], v)
+     assert started['event'] == 'EMISSION_STARTED' and started['state'] == 'emissao_em_andamento', started
+@@ -512,10 +512,10 @@
+     loser_reason = B.run_raw(f"BEGIN;SET ROLE service_role;SELECT public.rpc_fiscal_invoice_apply_authorization_v1('{loser['invoice']}','{loser['access_key']}','{'LOCAL-INTEGRATED-PROTOCOL-2A' if loser is A else 'LOCAL-INTEGRATED-PROTOCOL-2Z'}',now(),'100','LOTE PROCESSADO; PROTOCOLO AUTORIZADO','{loser['tx']}');ROLLBACK;")
+     forecast = forecast_row(B, order_id)
+     assert forecast['state'] == 'faturado_total' and float(forecast['residual_amount']) == 0 and forecast['version'] == started['version'] + 1, forecast
+-    second_credit = assert_order_exposure(B, Q, order_id, base_open, 18, 0, label='after NF2: titles 18 + residual 0 = 18')
++    second_credit = assert_order_exposure(B, Q, order_id, base_open, 20, 0, label='after NF2: titles 20 + residual 0 = 20')
+     assert abs(float(second_credit['full']['exposicao_atual']) - float(credit_before['exposicao_atual'])) < .001, (second_credit, credit_before)
+     totals = json.loads(B.last(f"SELECT jsonb_build_object('titles',count(*),'total',sum(total_amount))::text FROM public.accounts_receivable WHERE origin_id='{order_id}' AND b2b_document_id IS NOT NULL;"))
+-    assert totals['titles'] == 2 and float(totals['total']) == 18, totals
++    assert totals['titles'] == 2 and float(totals['total']) == 20, totals
+     replay = authorize(B, winner, winner['tx'], 'LOCAL-INTEGRATED-PROTOCOL-2A' if winner is A else 'LOCAL-INTEGRATED-PROTOCOL-2Z')
+     assert replay.returncode == 0 and _last(replay)['reconciliationPending'] is False, (replay.stdout, replay.stderr)
+     assert B.last(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{order_id}' AND b2b_document_id IS NOT NULL;") == '2'
+@@ -537,19 +537,19 @@
+     projection_result=test_projection_reader_contract(B,Q,OUT,first_receivable)
+     installment = B.last(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{first_receivable}' ORDER BY installment_number LIMIT 1;")
+     assert B.last(f"SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id='{first_receivable}';") == '1'
+-    payment = json.dumps({'amount_received':9,'payment_method_id':Q.M_BOL,'idempotency_key':'LOCAL-FORECAST-PAY-9'}).replace("'", "''")
++    payment = json.dumps({'amount_received':10,'payment_method_id':Q.M_BOL,'idempotency_key':'LOCAL-FORECAST-PAY-9'}).replace("'", "''")
+     paid = Q.as_user(Q.UFIN, f"SELECT public.rpc_register_receivable_payment('{installment}','{payment}'::jsonb);")
+     assert paid.returncode == 0, paid.stderr
+     paid_replay = Q.as_user(Q.UFIN, f"SELECT public.rpc_register_receivable_payment('{installment}','{payment}'::jsonb);")
+-    paid_credit = assert_order_exposure(B, Q, order_id, base_open, 9, 0, label='after payment 9: open 9 + residual 0 = 9')
+-    assert abs(float(paid_credit['full']['exposicao_atual']) - (float(credit_before['exposicao_atual']) - 9)) < .001, (paid_credit, credit_before)
++    paid_credit = assert_order_exposure(B, Q, order_id, base_open, 10, 0, label='after payment 10: open 10 + residual 0 = 10')
++    assert abs(float(paid_credit['full']['exposicao_atual']) - (float(credit_before['exposicao_atual']) - 10)) < .001, (paid_credit, credit_before)
+     forecast_after_payment = forecast_row(B, order_id)
+     assert forecast_after_payment == forecast, (forecast_after_payment, forecast)
+     result = dict(first_invoice=first_invoice, first_receivable=first_receivable, replay_race=[_last(r) for r in races], direct_bridge_service_denied=direct_bridge, winner_invoice=winner['invoice'], loser_invoice=loser['invoice'], second_receivable=second_receivable,
+                   second_intent_denied=second_intent_denied, concurrent_callbacks=dict(a=da, z=dz), loser_state=loser_state,
+                   loser_reason=dict(exit=loser_reason.returncode, stderr=loser_reason.stderr.strip()[-600:]),
+                   credit_before=credit_before, credit_after_first=first_credit, credit_after_second=second_credit, credit_after_payment=paid_credit,
+-                  forecast_after_second=forecast, forecast_after_payment=forecast_after_payment, titles=totals, payment_amount=9,
++                  forecast_after_second=forecast, forecast_after_payment=forecast_after_payment, titles=totals, payment_amount=10,
+                   payment_replay=dict(exit=paid_replay.returncode, stdout=paid_replay.stdout.strip()[-300:], stderr=paid_replay.stderr.strip()[-300:]),
+                   projection_reader_contract=projection_result, installment_id=installment,
+                   concurrent_replay_one_title=True, h7_receivable_id_immutable=True, h7=dict(change=h7.stderr.strip()[:300], same_value=dict(exit=h7_same.returncode, stderr=h7_same.stderr.strip()[:300]), without_claims=h7_no_claims.stderr.strip()[:300]), synthetic_fiscal_documents=True, hosted=False)
+@@ -969,7 +969,7 @@
+     # Two independent invoice intentions for the same residual, before any SYNC.
+     extra=insert_invoice(B,Q,order_id,Q.PC,
+       B.last(f"SELECT company_settings_id FROM public.fiscal_invoices WHERE id='{doc['invoice']}';"),
+-      B.last(f"SELECT partner_order_item_id FROM public.fiscal_invoice_items WHERE fiscal_invoice_id='{doc['invoice']}' LIMIT 1;"),9,1005,with_tx=False)  # second intention has NO fixture transmission: only the canonical begin may create one
++      B.last(f"SELECT partner_order_item_id FROM public.fiscal_invoice_items WHERE fiscal_invoice_id='{doc['invoice']}' LIMIT 1;"),10,1005,with_tx=False)  # second intention has NO fixture transmission: only the canonical begin may create one
+     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+         winner=pool.submit(B.run_raw,'BEGIN;'+begin_statement(Q,doc,'intent-first')+'SELECT pg_sleep(.8);COMMIT;')
+         time.sleep(.2)

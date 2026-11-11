@@ -1,0 +1,44 @@
+{
+  "forecast": {
+    "state": "faturado_parcial",
+    "version": 8,
+    "residual_amount": 10.0
+  },
+  "credit_before": {
+    "partner_id": "00000000-0000-0000-0000-000000000011",
+    "novo_pedido": 0.0,
+    "reason_code": "OK",
+    "credit_limit": 1000000.0,
+    "tem_vencidos": false,
+    "saldo_vencido": 0.0,
+    "exposicao_atual": 830.0,
+    "saldo_em_aberto": 0.0,
+    "block_if_overdue": false,
+    "credito_disponivel": 999170.0,
+    "credit_limit_action": "block",
+    "exposicao_projetada": 830.0,
+    "percentual_utilizado": 0.08,
+    "comprometido_pendente": 0.0,
+    "overdue_tolerance_days": 0,
+    "comprometido_nao_faturado": 830.0
+  },
+  "credit_after": {
+    "partner_id": "00000000-0000-0000-0000-000000000011",
+    "novo_pedido": 0.0,
+    "reason_code": "OK",
+    "credit_limit": 1000000.0,
+    "tem_vencidos": false,
+    "saldo_vencido": 0.0,
+    "exposicao_atual": 830.0,
+    "saldo_em_aberto": 10.0,
+    "block_if_overdue": false,
+    "credito_disponivel": 999170.0,
+    "credit_limit_action": "block",
+    "exposicao_projetada": 830.0,
+    "percentual_utilizado": 0.08,
+    "comprometido_pendente": 0.0,
+    "overdue_tolerance_days": 0,
+    "comprometido_nao_faturado": 820.0
+  },
+  "one_title_for_invoice": true
+}
