@@ -1,0 +1,5 @@
+- Preparação local apenas: nunca aplicar 02/04 hospedado nem publicar daqui; o auditor revisa e instala — evita mudança fiscal não revisada.
+- Arquivos SQL só via generate.py a partir de live-capture/ (md5/owner/ACL/config/enum fixados, três âncoras exatas); nunca editar à mão — o testado é o entregue.
+- A correção só compara o enum status_entrega como texto; regras de elegibilidade, sobrecarga 3-arg, autorização/ponte/alocação/reconciliação permanecem intocadas.
+- Rollback restaura o corpo capturado exato (que falha fechado para entregas); nunca conceder elegibilidade por exceção.
+- live-capture vem do espelho 851b14f9; se o MD5 LIVE de produção divergir, o PRE aborta e é preciso recapturar — espelho não prova produção.

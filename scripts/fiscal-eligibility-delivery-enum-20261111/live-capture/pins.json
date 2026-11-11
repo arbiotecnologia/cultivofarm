@@ -1,0 +1,11 @@
+{
+  "source": "full-stack mirror /tmp/r851 (commit 851b14f9 scripts, rebuild_current attempt-221), fn body = migra\u00e7\u00e3o h15; LIVE de produ\u00e7\u00e3o N\u00c3O medido aqui",
+  "live_md5_2arg": "6b3dde2bdf9d130c17bed265dabdce93",
+  "live_md5_3arg": "c920cc8f80b03733f58105b083d788c2",
+  "owner_2arg": "postgres",
+  "acl_2arg": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "acl_3arg": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "secdef_2arg": true,
+  "config_2arg": "{\"search_path=pg_catalog, public, pg_temp\"}",
+  "status_entrega_labels": "{separado,em_rota,entregue,cancelada}"
+}
