@@ -1,5 +1,0 @@
-BEGIN;
-REVOKE ALL ON FUNCTION public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text) FROM PUBLIC,anon,authenticated,service_role;
-REVOKE ALL ON FUNCTION public.rpc_b2b_resale_os_availability_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
-UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false WHERE singleton;
-COMMIT;

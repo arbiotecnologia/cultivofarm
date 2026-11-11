@@ -1,6 +1,0 @@
-{
-  "status": "PASS",
-  "error": "ERROR:  42501: C2_ACCOUNTING_PENDING\nCONTEXT:  PL/pgSQL function platform_private.c2_promote_accounting_pending_order_core(uuid,timestamp with time zone) line 24 at RAISE\nSQL function \"c2_promote_accounting_pending_order_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
-  "order_unchanged": true,
-  "hosted": false
-}

@@ -26,6 +26,10 @@ def main():
     body=d.stdout if d.returncode==0 else None
     res[sig]=dict(md5=B.last("SELECT md5(pg_get_functiondef('"+sig+"'::regprocedure));") if d.returncode==0 else None,error=None if d.returncode==0 else d.stderr[-300:])
     if body is not None: (Path(OUT)/(sig.replace('(','_').replace(')','').replace(',','_')+'.sql')).write_text(B.sql("SELECT pg_get_functiondef('"+sig+"'::regprocedure);"))
+   import subprocess as _sp
+   c=B.pg.psql(); h=c[c.index('-h')+1]; pt=c[c.index('-p')+1]
+   dr=_sp.run(['pg_dump','-h',h,'-p',pt,'-U','postgres','-Fc','-f','/tmp/vendedor-mirror.dump','postgres'],capture_output=True,text=True)
+   (Path(OUT)/'dump.txt').write_text(str(dr.returncode)+' '+dr.stderr[-2000:])
    (Path(OUT)/'measured.json').write_text(_j.dumps(res,indent=2)+'\\n')
    return 0
 """ % (list(SIGS),)
