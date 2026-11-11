@@ -1,5 +1,5 @@
 {
-  "workspace": "/tmp/seller-review-mirror-duynawo1",
+  "workspace": "/tmp/seller-review-mirror-qozglgak",
   "synthetic_seams": [
     "Auth SQL claims; schema and dependency seams inherited from current rebuild",
     "synthetic seller fixture UUID mapped before boot; final candidate unchanged",
