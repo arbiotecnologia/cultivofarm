@@ -79,6 +79,7 @@ try:
     r=run_file('01-pre.sql.readonly',"SET c2pilot.expected_ref='wrong';");ok('PRE ref divergente falha fechada',r.returncode!=0 and 'C2PILOT_PRE_REF_UNPROVEN' in r.stderr,r.stderr[-300:])
     r=run_file('01-pre.sql.readonly');ok('PRE_PASS',r.returncode==0 and 'C2PILOT_PRE_PASS' in r.stdout,r.stderr[-400:])
     r=run_file('02-install.sql.review',"SET c2pilot.expected_ref='wrong';");ok('INSTALL sem ref recusado',r.returncode!=0 and 'REF_UNPROVEN' in r.stderr)
+    EFF0={t:cnt(f"SELECT count(*) FROM {t}") for t in ('public.accounts_receivable','public.fiscal_invoices','public.estoque_movimentacoes','public.entregas','public.notificacoes_operacionais')+tuple(t for t in ('public.comunicacao_outbox','public.communication_outbox','public.fiscal_events','public.accounts_receivable_installments') if T(t))};F0=cnt('SELECT count(*) FROM platform_private.b2b_financial_forecasts');E0=cnt('SELECT count(*) FROM platform_private.b2b_financial_forecast_events')
     b0=fp();r=run_file('02-install.sql.review');ok('INSTALL transação única',r.returncode==0,r.stderr[-1200:])
     r=run_file('03-post.sql.readonly');ok('POST_PASS',r.returncode==0 and 'C2PILOT_POST_PASS' in r.stdout,r.stderr[-400:])
     r=run_file('02-install.sql.review');ok('reinstalação recusada',r.returncode!=0 and 'C2PILOT_INSTALL_ALREADY_PRESENT' in r.stderr,r.stderr[-200:])
@@ -177,10 +178,9 @@ try:
     a3,e=ap(X.UGC,O[0],'commercial',k1,H0);ok('após desligar: replay de registro existente ainda reautoriza e devolve recibo',a3 and a3['replayed'],a3 or e)
     # Ausência de efeitos downstream
     ok('pedidos inalterados ao final',[row(o) for o in O]==R)
-    ok('sem recebível, NF, estoque, entrega, notificação ou envio',all(cnt(f"SELECT count(*) FROM {t}")==0 or True for t in ()) and fp()!=None)
-    eff={t:cnt(f"SELECT count(*) FROM {t}") for t in ('public.accounts_receivable','public.fiscal_invoices','public.estoque_movimentacoes','public.entregas','public.notificacoes_operacionais')}
-    checks.append(dict(test='contagens finais downstream (registro)',status='INFO',detail=eff))
-    ok('previsões totais = 4 pedidos com 11 (O1,O2,O3,O4,O5→5)',cnt("SELECT count(*) FROM platform_private.b2b_financial_forecasts")==5 and cnt("SELECT count(*) FROM platform_private.b2b_financial_forecast_events")==5)
+    EFF1={t:cnt(f"SELECT count(*) FROM {t}") for t in ('public.accounts_receivable','public.fiscal_invoices','public.estoque_movimentacoes','public.entregas','public.notificacoes_operacionais')+tuple(t for t in ('public.comunicacao_outbox','public.communication_outbox','public.fiscal_events','public.accounts_receivable_installments') if T(t))}
+    ok('sem novo recebível, NF, estoque, entrega, notificação ou envio',EFF1==EFF0,(EFF0,EFF1))
+    ok('previsões novas = 5 pedidos que chegaram a 11 (um evento cada)',cnt('SELECT count(*) FROM platform_private.b2b_financial_forecasts')-F0==5 and cnt('SELECT count(*) FROM platform_private.b2b_financial_forecast_events')-E0==5)
     # Leitores existentes
     v,e=m.call(X.UFIN,f"public.get_b2b_financial_forecast_secure('{O[0]}')");ok('leitor existente de previsão lê a previsão do piloto (estimada, total 20)',v and v['total_amount']==20 and v['due_dates_estimated'] is True,v or e)
     v,e=m.call(X.UADMF,f"public.get_b2b_financial_forecast_secure('{O[0]}')");ok('leitor existente nega outro tenant',v is None and 'B2B_FORECAST_READ_DENIED' in (e or ''),v or e)
