@@ -1,0 +1,188 @@
+{
+ "order": "538f0ab6-bfb4-43f2-90cf-5158d5b1c751",
+ "seams": [
+  "S0 gate global de criação de previsão OFF (produção)",
+  "S1 plano global COT (quote_only) adotado pela empresa A",
+  "S2 configuração fiscal ativa da emitente desativada só durante a criação (writer grava C2 pendente contábil)",
+  "S3 documento NF sintético (fiscal_invoices/itens/xml/transmissão SENT) para o PB; resultado só pelo callback real",
+  "S-AUTH usuários fictícios em auth.users antes das constraints (prep_restore.sh)",
+  "S-OS endpoint candidato rpc_b2b_resale_os_create_v1 + gate + concessão os_create do piloto (ator/org/parceiro/pedido/item/produto exatos, igual ao harness) somente dentro de transações revertidas, idênticas para PB e controle"
+ ],
+ "checks": [
+  {
+   "test": "cotação respondida pelo writer real (R$10)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "PB-like: em_analise_comercial, C2 pendente contábil, total 20, snapshot nulo",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "piloto 01-pre.sql.readonly sobre a composição fiscal final",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "piloto 02-install.sql.review sobre a composição fiscal final",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "piloto 03-post.sql.readonly sobre a composição fiscal final",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "05 habilitação estreita do PB",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "duas aprovações explícitas → previsão 20/20 aguardando_fiscal",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "approve_partner_order LIVE [C2_ACCOUNTING_PENDING]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "approve_b2b_credit LIVE [C2_ACCOUNTING_PENDING]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "generate_b2b_receivable_secure (Financeiro) [C2_ACCOUNTING_PENDING]",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "elegibilidade fiscal do PB: não elegível",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "motivos",
+   "status": "INFO",
+   "detail": {
+    "orderId": "538f0ab6-bfb4-43f2-90cf-5158d5b1c751",
+    "reasons": [
+     {
+      "code": "FISCAL_ORDER_STATUS_NOT_BILLABLE",
+      "message": "Status do pedido nao habilitado para faturamento: em_analise_comercial",
+      "severity": "BLOCK"
+     },
+     {
+      "code": "FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING",
+      "message": "Pedido sem aprovacao comercial registrada.",
+      "severity": "BLOCK"
+     }
+    ],
+    "eligible": false,
+    "sourceType": "PARTNER_ORDER",
+    "debtorPartnerId": "00000000-0000-0000-0000-000000000011",
+    "has_canceled_history": false
+   }
+  },
+  {
+   "test": "inserção do documento sintético (pode ser negada por guardas reais)",
+   "status": "INFO",
+   "detail": {
+    "rc": 0,
+    "err": ""
+   }
+  },
+  {
+   "test": "sync de início de emissão da previsão do PB",
+   "status": "INFO",
+   "detail": [
+    null,
+    "ERROR:  42501: B2B_FORECAST_FISCAL_SOURCE_UNPROVEN"
+   ]
+  },
+  {
+   "test": "callback autorizado H13 + replay",
+   "status": "INFO",
+   "detail": [
+    {
+     "rc": 0,
+     "out": "{\"nRec\": null, \"cStat\": \"104\", \"chNFe\": \"35262222222222222222222222222222222222004242\", \"nProt\": \"PB-NEG-PROT\", \"state\": \"SUCCEEDED\", \"outcome\": \"AUTHORIZED\", \"xMotivo\": \"LOTE PROCESSADO; PROTOCOLO AUTORIZADO\", \"protocolCStat\": \"100\", \"transmissionId\": \"82e565ea-24a1-4e4c-ab7e-1f5781d5d930\", \"reconciliationCode\": \"FISCAL_AUTHORIZATION_CLOSE_PENDING\", \"reconciliationPending\": true}\n",
+     "err": ""
+    },
+    {
+     "rc": 0,
+     "out": "{\"nRec\": null, \"cStat\": \"104\", \"chNFe\": \"35262222222222222222222222222222222222004242\", \"nProt\": \"PB-NEG-PROT\", \"state\": \"SUCCEEDED\", \"outcome\": \"AUTHORIZED\", \"xMotivo\": \"LOTE PROCESSADO; PROTOCOLO AUTORIZADO\", \"protocolCStat\": \"100\", \"transmissionId\": \"82e565ea-24a1-4e4c-ab7e-1f5781d5d930\", \"reconciliationCode\": \"FISCAL_AUTHORIZATION_CLOSE_PENDING\", \"reconciliationPending\": true}\n",
+     "err": ""
+    }
+   ]
+  },
+  {
+   "test": "após callback autorizado: nenhum título para a NF do PB",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "previsão do PB não reduz (residual 20) e nenhum FISCAL_CONFIRMED",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "nenhuma alocação de documento para o PB",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "estado final da NF sintética do PB",
+   "status": "INFO",
+   "detail": {
+    "inv_status": "DRAFT",
+    "receivable": null
+   }
+  },
+  {
+   "test": "PB: zero título (por pedido e por documento)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "PB: pedido idêntico ao estado após aprovações (cabeçalho)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "estado contido (sem costura): endpoint OS sem EXECUTE para authenticated",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "motivo da negativa OS PB com endpoint aberto",
+   "status": "INFO",
+   "detail": {
+    "first": [
+     "ERROR:  PT409: B2B_RESALE_ORDER_CONFLICT"
+    ],
+    "second": [
+     "ERROR:  PT409: B2B_RESALE_ORDER_CONFLICT"
+    ]
+   }
+  },
+  {
+   "test": "PB: com endpoint/gate abertos, criação de OS negada por regra de negócio (não ACL), repetição idem",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "controle positivo (mesma identidade, mesma costura): pedido aprovado sem OS cria 1 OS dentro da transação (revertida)",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "test": "nova conexão: PB e global sem efeito em saldo/título/OS/entrega/estoque; costura revertida",
+   "status": "PASS",
+   "detail": null
+  }
+ ]
+}

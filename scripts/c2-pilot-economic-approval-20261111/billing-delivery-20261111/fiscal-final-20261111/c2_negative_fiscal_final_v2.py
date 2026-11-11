@@ -99,7 +99,7 @@ def os_call(uid,o,it,exp,key,open_seam=False):
     if open_seam: q+=f"RESET ROLE;SELECT (SELECT count(*) FROM public.ordens_servico WHERE partner_order_id='{o}')||'|'||(SELECT count(*) FROM public.entregas WHERE partner_order_id='{o}');ROLLBACK;"
     return d.raw(q)
 errs=lambda r:[l for l in r.stderr.splitlines() if l.startswith('ERROR')]
-CTRL='e11dd06e-9bcc-4e30-bc2c-bfd821c19543';CTRL_ITEM='36b410d0-d7a2-4b1c-8ae1-de57479656c2';CTRL_OS='581bec9c-6c0b-4c1e-84ff-c349271db12e'
+CTRL='77b2c9a1-f231-412c-a0fa-427453fa7e2d';CTRL_ITEM='e59d4e95-8b8c-43b2-a663-a75b5eaec4c9'
 e0=effects(PB);g0=fp(PB)
 pb_exp=d.last(f"SELECT updated_at FROM public.partner_orders WHERE id='{PB}'")
 ctrl_exp=d.last(f"SELECT updated_at FROM public.partner_orders WHERE id='{CTRL}'")
@@ -109,10 +109,11 @@ neg=os_call(X.UADM,PB,item,pb_exp,'c2neg-resale-os-0001',True)
 neg2=os_call(X.UADM,PB,item,pb_exp,'c2neg-resale-os-0002',True)
 info('motivo da negativa OS PB com endpoint aberto',dict(first=errs(neg),second=errs(neg2)))
 ok('PB: com endpoint/gate abertos, criação de OS negada por regra de negócio (não ACL), repetição idem',neg.returncode!=0 and neg2.returncode!=0 and 'permission denied' not in neg.stderr+neg2.stderr,dict(a=errs(neg),b=errs(neg2)))
-pos=os_call(X.UADM,CTRL,CTRL_ITEM,ctrl_exp,'resale-os-create-0001',True)
+pos=os_call(X.UADM,CTRL,CTRL_ITEM,ctrl_exp,'c2neg-ctrl-os-0001',True)
 pl=[l for l in pos.stdout.strip().splitlines() if l.startswith('{')]
 pv=json.loads(pl[-1]) if pos.returncode==0 and pl else None
-ok('controle positivo (mesma identidade, mesma costura): pedido aprovado r12 devolve sua OS 581bec9c (replay)',pv is not None and pv.get('ok') is True and pv.get('os_id')==CTRL_OS,dict(rc=pos.returncode,out=pos.stdout[-400:],err=errs(pos)))
+ctrl_counts=[l for l in pos.stdout.strip().splitlines() if '|' in l and not l.startswith('{')]
+ok('controle positivo (mesma identidade, mesma costura): pedido aprovado sem OS cria 1 OS dentro da transação (revertida)',pv is not None and pv.get('ok') is True and pv.get('replay') is False and ctrl_counts[-1:]==['1|0'] and cnt(f"SELECT count(*) FROM public.ordens_servico WHERE partner_order_id='{CTRL}'")==0,dict(rc=pos.returncode,out=pos.stdout[-400:],err=errs(pos)))
 e1=effects(PB)
 ok('nova conexão: PB e global sem efeito em saldo/título/OS/entrega/estoque; costura revertida',e1==e0 and fp(PB)==g0 and e1['os']==0 and e1['entregas']==0 and e1['titles']==0 and d.last("SELECT enabled::text FROM platform_private.b2b_resale_logistics_gate_v1")=='false' and 'authenticated' not in d.last("SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid='public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)'::regprocedure"),dict(before=e0,after=e1))
 SEAMS.append('S-AUTH usuários fictícios em auth.users antes das constraints (prep_restore.sh)')
