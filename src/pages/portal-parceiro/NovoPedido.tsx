@@ -698,46 +698,6 @@ export default function NovoPedido() {
       valorDose: p.valor_dose_brl,
       valorLitro: p.valor_litro_brl,
     });
-    // Mesmo aviso (e mesmas ações explícitas) da continuidade durável também dentro do diálogo de envio: o botão
-  // fica desabilitado pelo MESMO predicado (takeDispatch), mas o comprador vê o motivo onde está o botão.
-  const renderDurableBanner = (place: "page" | "dialog") => (
-    !isSimulationMode && durableAttempt.mode!=='legacy' && !durableAttempt.next && durableAttempt.journal?.state!=='reserved' && <Alert role="status" data-journal={durableAttempt.mode} data-journal-place={place}>
-            <AlertDescription className="space-y-2">
-              {durableAttempt.journal?.state==='committed' ? <>
-                <span className="block">Pedido {durableAttempt.journal.numero} já registrado. Consulte-o antes de iniciar outro pedido.</span>
-                <Button size="sm" variant="outline" onClick={()=>navigate(afterCreatePath??'/portal-parceiro/pedidos')}>Ver meus pedidos</Button>
-                <Button size="sm" variant="outline" disabled={durableAttempt.pending || !!ackTarget} onClick={()=>{
-                  const j=durableAttempt.journal;
-                  if(j?.state==='committed' && pageScope.ready) setAckTarget({journal:j,slot:attemptSlot,scope:pageScope.scope,fence:pageScope.capture()});
-                }}>Confirmar pedido existente e iniciar novo</Button>
-              </> : durableAttempt.journal?.state==='closed' ? <>
-                <span className="block">Tentativa encerrada sem pedido. Seu carrinho foi mantido.</span>
-                <Button size="sm" variant="outline" disabled={durableAttempt.pending} onClick={()=>void durableAttempt.recover(durableAttempt.journal??undefined)}>Iniciar nova tentativa</Button>
-              </> : durableAttempt.journal?.state==='uncertain' ? <>
-                <span className="block">O resultado de uma tentativa de envio ainda não foi confirmado. Verifique antes de iniciar outro pedido.</span>
-                <span className="block text-xs text-muted-foreground">Se nenhum pedido aparece em Meus Pedidos, use "Verificar e encerrar envio anterior": o servidor confirma se houve pedido e só encerra a tentativa se não houver. Nenhum pedido é cancelado ou reenviado.</span>
-                <Button size="sm" disabled={closeAttempt.pending || durableAttempt.pending} onClick={()=>{void closeAttempt.close(partner?.id).then(r=>{const f=closeAttemptFeedback(r);(f.tone==='success'?toast.success:f.tone==='info'?toast.info:toast.error)(f.text);});}}>{closeAttempt.pending?'Verificando…':'Verificar e encerrar envio anterior'}</Button>
-                <Button size="sm" variant="outline" disabled={durableAttempt.pending} onClick={()=>void durableAttempt.recover()}>Consultar situação novamente</Button>
-              </> : <>
-                <span className="block">{durableAttempt.mode==='checking'?'Verificando disponibilidade para o pedido…':'Não foi possível verificar a continuidade do pedido. Nada foi liberado.'}</span>
-                {durableAttempt.mode!=='checking' && <Button size="sm" variant="outline" disabled={durableAttempt.pending} onClick={()=>void durableAttempt.recover()}>Verificar novamente</Button>}
-              </>}
-            </AlertDescription>
-          </Alert>
-  );
-  // Motivo explícito do bloqueio do envio (não relaxa nenhum predicado; só explica o primeiro que falha).
-  const submitBlockReason: string | null = isSimulationMode ? null
-    : !selectedPlanId ? "Selecione uma condição de pagamento."
-    : methodMode === null ? "Confirmando os meios de pagamento desta condição…"
-    : requireMethod && !selectedMethod ? "Selecione um meio de pagamento permitido pela empresa fornecedora."
-    : selSim.pending ? "Aguardando a validação do servidor…"
-    : visibleSimFailure ? "A validação do servidor falhou; veja o aviso acima."
-    : !visibleSimulation ? "Aguardando a validação do servidor…"
-    : !durableAttempt.canSubmit ? (durableAttempt.mode === "checking" ? "Verificando a continuidade do pedido…"
-        : "Há uma tentativa anterior a resolver antes de um novo envio (veja o aviso acima).")
-    : attempt?.inflight ? "Envio anterior ainda em andamento."
-    : closeAttempt.pending ? "Verificando o envio anterior…"
-    : null;
   return (
       <div className="text-xs space-y-0.5">
         <PrecoComDesconto
@@ -793,6 +753,46 @@ export default function NovoPedido() {
   const packagingContractInvalid = packagingOffers.error instanceof Error && packagingOffers.error.message === "packaging_contract_unavailable";
   const doseRefHa = doseLitroHaFor(addRowCatalogItem ?? undefined);
 
+  // Mesmo aviso (e mesmas ações explícitas) da continuidade durável também dentro do diálogo de envio: o botão
+  // fica desabilitado pelo MESMO predicado (takeDispatch), mas o comprador vê o motivo onde está o botão.
+  const renderDurableBanner = (place: "page" | "dialog") => (
+    !isSimulationMode && durableAttempt.mode!=='legacy' && !durableAttempt.next && durableAttempt.journal?.state!=='reserved' && <Alert role="status" data-journal={durableAttempt.mode} data-journal-place={place}>
+            <AlertDescription className="space-y-2">
+              {durableAttempt.journal?.state==='committed' ? <>
+                <span className="block">Pedido {durableAttempt.journal.numero} já registrado. Consulte-o antes de iniciar outro pedido.</span>
+                <Button size="sm" variant="outline" onClick={()=>navigate(afterCreatePath??'/portal-parceiro/pedidos')}>Ver meus pedidos</Button>
+                <Button size="sm" variant="outline" disabled={durableAttempt.pending || !!ackTarget} onClick={()=>{
+                  const j=durableAttempt.journal;
+                  if(j?.state==='committed' && pageScope.ready) setAckTarget({journal:j,slot:attemptSlot,scope:pageScope.scope,fence:pageScope.capture()});
+                }}>Confirmar pedido existente e iniciar novo</Button>
+              </> : durableAttempt.journal?.state==='closed' ? <>
+                <span className="block">Tentativa encerrada sem pedido. Seu carrinho foi mantido.</span>
+                <Button size="sm" variant="outline" disabled={durableAttempt.pending} onClick={()=>void durableAttempt.recover(durableAttempt.journal??undefined)}>Iniciar nova tentativa</Button>
+              </> : durableAttempt.journal?.state==='uncertain' ? <>
+                <span className="block">O resultado de uma tentativa de envio ainda não foi confirmado. Verifique antes de iniciar outro pedido.</span>
+                <span className="block text-xs text-muted-foreground">Se nenhum pedido aparece em Meus Pedidos, use "Verificar e encerrar envio anterior": o servidor confirma se houve pedido e só encerra a tentativa se não houver. Nenhum pedido é cancelado ou reenviado.</span>
+                <Button size="sm" disabled={closeAttempt.pending || durableAttempt.pending} onClick={()=>{void closeAttempt.close(partner?.id).then(r=>{const f=closeAttemptFeedback(r);(f.tone==='success'?toast.success:f.tone==='info'?toast.info:toast.error)(f.text);});}}>{closeAttempt.pending?'Verificando…':'Verificar e encerrar envio anterior'}</Button>
+                <Button size="sm" variant="outline" disabled={durableAttempt.pending} onClick={()=>void durableAttempt.recover()}>Consultar situação novamente</Button>
+              </> : <>
+                <span className="block">{durableAttempt.mode==='checking'?'Verificando disponibilidade para o pedido…':'Não foi possível verificar a continuidade do pedido. Nada foi liberado.'}</span>
+                {durableAttempt.mode!=='checking' && <Button size="sm" variant="outline" disabled={durableAttempt.pending} onClick={()=>void durableAttempt.recover()}>Verificar novamente</Button>}
+              </>}
+            </AlertDescription>
+          </Alert>
+  );
+  // Motivo explícito do bloqueio do envio (não relaxa nenhum predicado; só explica o primeiro que falha).
+  const submitBlockReason: string | null = isSimulationMode ? null
+    : !selectedPlanId ? "Selecione uma condição de pagamento."
+    : methodMode === null ? "Confirmando os meios de pagamento desta condição…"
+    : requireMethod && !selectedMethod ? "Selecione um meio de pagamento permitido pela empresa fornecedora."
+    : selSim.pending ? "Aguardando a validação do servidor…"
+    : visibleSimFailure ? "A validação do servidor falhou; veja o aviso acima."
+    : !visibleSimulation ? "Aguardando a validação do servidor…"
+    : !durableAttempt.canSubmit ? (durableAttempt.mode === "checking" ? "Verificando a continuidade do pedido…"
+        : "Há uma tentativa anterior a resolver antes de um novo envio (veja o aviso acima).")
+    : attempt?.inflight ? "Envio anterior ainda em andamento."
+    : closeAttempt.pending ? "Verificando o envio anterior…"
+    : null;
   return (
     <div className="space-y-4 max-w-6xl mx-auto pb-32 md:pb-4">
       <div>
