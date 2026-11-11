@@ -75,6 +75,12 @@ try:
     ok('evento quote_responded único no histórico',cnt(f"SELECT count(*) FROM public.partner_order_audit_logs WHERE order_id='{O[0]}' AND acao='quote_responded'")==1)
     deny('LIVE approve_partner_order bloqueado para o contrato C2',lambda: m.call(X.UGC,f"public.approve_partner_order('{O[0]}',NULL)"),'42501','C2_ACCOUNTING_PENDING')
     deny('LIVE approve_b2b_credit bloqueado para o contrato C2',lambda: m.call(X.UFIN,f"public.approve_b2b_credit('{O[0]}',NULL)"),'42501','C2_ACCOUNTING_PENDING')
+    UNAV=lambda v,r: v is not None and v.get('available') is False and v.get('reason')==r and not ({'approvals','forecast','evidence','evidence_block_reason','can_approve_commercial','can_approve_credit'}&set(v))
+    # Pior caso de ACL padrão (Supabase): tabelas e funções novas em public/platform_private nascem abertas a anon/authenticated/service_role.
+    d.sql("ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public,platform_private GRANT ALL ON TABLES TO anon,authenticated,service_role;"
+          "ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public,platform_private GRANT EXECUTE ON FUNCTIONS TO anon,authenticated,service_role;")
+    r=run_file('00-default-acl-probe.sql.readonly');ok('sonda read-only de ACL padrão lista o pior caso emulado',r.returncode==0 and 'DEFAULT_ACL|postgres|platform_private|r|anon' in r.stdout and 'SCHEMA_USAGE|authenticated|t' in r.stdout,r.stdout[-600:]+r.stderr[-300:])
+    r=run_file('00-default-acl-probe.sql.readonly',"SET c2pilot.expected_ref='wrong';");ok('sonda com ref divergente falha fechada',r.returncode!=0 and 'C2PILOT_PROBE_REF_UNPROVEN' in r.stderr)
     # PRE / INSTALL / POST
     r=run_file('01-pre.sql.readonly',"SET c2pilot.expected_ref='wrong';");ok('PRE ref divergente falha fechada',r.returncode!=0 and 'C2PILOT_PRE_REF_UNPROVEN' in r.stderr,r.stderr[-300:])
     r=run_file('01-pre.sql.readonly');ok('PRE_PASS',r.returncode==0 and 'C2PILOT_PRE_PASS' in r.stdout,r.stderr[-400:])
@@ -84,9 +90,13 @@ try:
     r=run_file('03-post.sql.readonly');ok('POST_PASS',r.returncode==0 and 'C2PILOT_POST_PASS' in r.stdout,r.stderr[-400:])
     r=run_file('02-install.sql.review');ok('reinstalação recusada',r.returncode!=0 and 'C2PILOT_INSTALL_ALREADY_PRESENT' in r.stderr,r.stderr[-200:])
     for s,h in G.DEPS.items(): ok('pós-instalação: corpo LIVE intocado '+s,d.md5(s)==h)
+    acl=d.sql("SELECT string_agg(c.relname||'='||coalesce(c.relacl::text,'null'),';' ORDER BY c.relname) FROM pg_class c WHERE c.relnamespace='platform_private'::regnamespace AND c.relname LIKE 'c2_pilot_econ_%' AND c.relkind='r'")
+    ok('ACL real das tabelas novas = somente dono, apesar do default aberto',acl.count('=')==3 and all(x.split('=',1)[1] in ('{postgres=arwdDxtm/postgres}','{postgres=arwdDxt/postgres}') for x in acl.split(';')),acl)
+    pacl=d.sql("SELECT string_agg(p.proname||'='||p.proacl::text,';' ORDER BY p.proname) FROM pg_proc p WHERE p.proname LIKE 'c2_pilot_%'")
+    ok('ACL real das funções novas: anon/service_role ausentes; authenticated só nas RPCs e no core',all('anon=' not in x and 'service_role=' not in x for x in pacl.split(';')) and sum('authenticated=X' in x for x in pacl.split(';'))==3,pacl)
     ok('instalado fechado: gate false, allowlist vazia',d.last("SELECT enabled::text||(SELECT count(*) FROM platform_private.c2_pilot_econ_allowlist_v1) FROM platform_private.c2_pilot_econ_gate_v1")=='false0')
     H0=evh(O[0])
-    v,e=st(X.UGC,O[0]);ok('fechado: leitor informa piloto desligado, sem evidência e sem ação',v and v['pilot_enabled'] is False and v['evidence'] is None and v['can_approve_commercial'] is False,v or e)
+    v,e=st(X.UGC,O[0]);ok('fechado: leitor indisponível, sem evidência, autores, hashes ou previsão',UNAV(v,'PILOT_DISABLED'),v or e)
     deny('fechado: aprovação comercial recusada',lambda: ap(X.UGC,O[0],'commercial',key(),H0),'42501','C2_PILOT_ECON_DISABLED')
     # Habilitação separada
     r=enable(O[0],ca=VEND);ok('habilitação recusa vendedor como aprovador comercial',r.returncode!=0 and 'C2PILOT_ENABLE_COMMERCIAL_ACTOR_INVALID' in r.stderr,r.stderr[-300:])
@@ -98,7 +108,7 @@ try:
         r=enable(o);ok(f'habilitação estreita do pedido {o[:8]}',r.returncode==0 and 'C2PILOT_ENABLE_PASS' in r.stdout,r.stderr[-400:])
     v,e=st(X.UGC,O[0]);ok('UGC: evidência completa, pode aprovar comercial e não crédito',v and v['evidence'] and v['evidence']['evidence_hash']==H0 and v['can_approve_commercial'] is True and v['can_approve_credit'] is False,v or e)
     v,e=st(X.UFIN,O[0]);ok('Financeiro: pode aprovar crédito e não comercial',v and v['can_approve_credit'] is True and v['can_approve_commercial'] is False,v or e)
-    v,e=st(X.UADM,O[0]);ok('admin sem concessão: lê estado, sem evidência nem ação',v and v['evidence'] is None and not v['can_approve_commercial'] and not v['can_approve_credit'],v or e)
+    v,e=st(X.UADM,O[0]);ok('admin sem concessão: indisponível sem payload',UNAV(v,'NOT_GRANTED'),v or e)
     for lbl,uid,tok in (('comprador',X.UB,'C2_PILOT_ECON_DENIED:role'),('vendedor',VEND,'C2_PILOT_ECON_DENIED:role'),('técnico externo',X.UTEC,'C2_PILOT_ECON_DENIED:role'),('admin de outro tenant',X.UADMF,'C2_PILOT_ECON_DENIED:scope')):
         deny(f'leitor nega {lbl}',lambda uid=uid: st(uid,O[0]),'42501',tok)
     # Negativas da aprovação
@@ -116,6 +126,14 @@ try:
                         ('meio de pagamento inativo',f"UPDATE public.payment_methods SET active=false WHERE id='{X.u(92)}';",'payment_method'),
                         ('cronograma divergente',f"UPDATE public.partner_order_payment_schedule SET amount=19 WHERE partner_order_id='{O[0]}';",'schedule'),
                         ('termos rejeitados',f"UPDATE public.partner_order_payment_terms SET approval_status='rejected' WHERE partner_order_id='{O[0]}';",'TERMS_NOT_SETTLED'),
+                        ('termos approved sem autor',f"UPDATE public.partner_order_payment_terms SET approval_status='approved',approved_by=NULL,approved_at=now() WHERE partner_order_id='{O[0]}';",'TERMS_NOT_SETTLED'),
+                        ('termos approved sem data',f"UPDATE public.partner_order_payment_terms SET approval_status='approved',approved_by='{X.UFIN}',approved_at=NULL WHERE partner_order_id='{O[0]}';",'TERMS_NOT_SETTLED'),
+                        ('not_required com aprovação financeira obrigatória',f"UPDATE public.partner_orders SET requires_financial_approval=true WHERE id='{O[0]}';",'TERMS_NOT_SETTLED'),
+                        ('not_required com cabeçalho financeiro pendente',f"UPDATE public.partner_orders SET financial_approval_status='pending' WHERE id='{O[0]}';",'TERMS_NOT_SETTLED'),
+                        ('total do pedido nulo',f"UPDATE public.partner_orders SET total=NULL WHERE id='{O[0]}';",'quote_fields'),
+                        ('total financiado do pedido nulo',f"UPDATE public.partner_orders SET final_amount_with_interest=NULL WHERE id='{O[0]}';",'quote_fields'),
+                        ('valor de parcela nulo no cronograma',f"UPDATE public.partner_order_payment_schedule SET amount=NULL WHERE partner_order_id='{O[0]}';",'schedule'),
+                        ('subtotal de item nulo',f"UPDATE public.partner_order_items SET subtotal=NULL WHERE order_id='{O[0]}';",'items'),
                         ('parceiro inativo',f"UPDATE public.partner_accounts SET ativo=false WHERE id='{X.P}';",'scope')):
         r=m.act(X.UGC,f"SELECT public.c2_pilot_economic_approve_v1('{O[0]}','commercial','{key()}','{H0}',NULL); ROLLBACK;","BEGIN; SET LOCAL session_replication_role=replica;"+mut+"SET LOCAL session_replication_role=origin;")
         ok(f'evidência incompleta falha fechada: {lbl}',r.returncode!=0 and tok in r.stderr,r.stderr[-300:])
@@ -135,8 +153,30 @@ try:
     fr=json.loads(d.last(f"SELECT jsonb_build_object('t',total_amount,'r',residual_amount,'s',state,'cb',commercial_approved_by,'kb',credit_approved_by,'src',economic_snapshot->>'source','cs',credit_decision_snapshot->>'source','rc',credit_decision_snapshot ? 'reason_code','sch',schedule_snapshot)::text FROM platform_private.b2b_financial_forecasts WHERE order_id='{O[0]}'"))
     ok('previsão: total 20 não exigível (aguardando_fiscal), autores explícitos, crédito sem reason_code automático',fr['t']==20 and fr['r']==20 and fr['s']=='aguardando_fiscal' and fr['cb']==X.UGC and fr['kb']==X.UFIN and fr['src']=='C2_PILOT_ECONOMIC_APPROVAL_V1' and fr['cs']=='C2_PILOT_EXPLICIT_CREDIT_APPROVAL_V1' and fr['rc'] is False and len(fr['sch'])==1,fr)
     deny('11: LIVE approve_partner_order continua bloqueado',lambda: m.call(X.UGC,f"public.approve_partner_order('{O[0]}',NULL)"),'42501','C2_ACCOUNTING_PENDING')
-    k3=key();c,e=ap(X.UFIN,O[1],'credit',k3,evh(O[1]));ok('01: crédito antes do comercial, sem previsão',c and c['forecast_id'] is None and nf(O[1])==0,c or e)
-    c2,e=ap(X.UGC,O[1],'commercial',key(),evh(O[1]));ok('01→11: comercial depois cria uma previsão e um evento',c2 and c2['forecast_id'] and nf(O[1])==1 and nev(O[1])==1,c2 or e)
+    v,_=st(X.UGC,O[0]);ok('10 (ordem C→K): leitor com uma aprovação comercial e sem previsão',v and v.get('available') and [a['kind'] for a in v['approvals']]==['commercial','credit'] and v['forecast'] and not v['can_approve_commercial'],v)
+    v,_=st(X.UFIN,O[1]);ok('00 (ordem K→C): leitor sem aprovações e sem previsão',v and v['approvals']==[] and v['forecast'] is None and v['can_approve_credit'],v)
+    k3=key();c,e=ap(X.UFIN,O[1],'credit',k3,evh(O[1]));ok('01: crédito antes do comercial, sem previsão',c and c['approved_by']==X.UFIN and c['approved_at'] and c['forecast_id'] is None and nf(O[1])==0,c or e)
+    v,_=st(X.UGC,O[1]);ok('01: leitor mostra só crédito com autor/data, sem previsão; comercial ainda aprovável',v and [(a['kind'],a['approved_by']) for a in v['approvals']]==[('credit',X.UFIN)] and v['forecast'] is None and v['can_approve_commercial'],v)
+    deny('01: LIVE approve_partner_order continua bloqueado',lambda: m.call(X.UGC,f"public.approve_partner_order('{O[1]}',NULL)"),'42501','C2_ACCOUNTING_PENDING')
+    k4=key();c2,e=ap(X.UGC,O[1],'commercial',k4,evh(O[1]));ok('01→11: comercial depois cria uma previsão e um evento',c2 and c2['forecast_id'] and nf(O[1])==1 and nev(O[1])==1,c2 or e)
+    fr1=json.loads(d.last(f"SELECT jsonb_build_object('t',total_amount,'s',state,'cb',commercial_approved_by,'kb',credit_approved_by,'cs',credit_decision_snapshot->>'source')::text FROM platform_private.b2b_financial_forecasts WHERE order_id='{O[1]}'"))
+    ok('11 (ordem K→C): previsão total 20 aguardando_fiscal com os mesmos autores explícitos',fr1=={'t':20,'s':'aguardando_fiscal','cb':X.UGC,'kb':X.UFIN,'cs':'C2_PILOT_EXPLICIT_CREDIT_APPROVAL_V1'},fr1)
+    v,_=st(X.UFIN,O[1]);ok('11 (ordem K→C): leitor com duas aprovações e a previsão',v and len(v['approvals'])==2 and v['forecast'] and v['forecast']['forecast_id']==c2['forecast_id'] and not v['can_approve_credit'],v)
+    v,_=st(X.UADM,O[0]);ok('11: ator competente do tenant sem concessão não recebe autores, hashes nem previsão',UNAV(v,'NOT_GRANTED'),v)
+    # Concessão revogada antes do replay: replay negado, sem forecast_id
+    d.sql(f"UPDATE platform_private.c2_pilot_econ_allowlist_v1 SET revoked_at=now(),revoke_reason='teste replay' WHERE order_id='{O[1]}' AND kind='commercial';")
+    deny('replay após revogação da concessão negado (sem recibo nem forecast_id)',lambda: ap(X.UGC,O[1],'commercial',k4,evh(O[1])),'42501','C2_PILOT_ECON_NOT_GRANTED')
+    v,_=st(X.UGC,O[1]);ok('após revogação: leitor indisponível para o ator revogado',UNAV(v,'NOT_GRANTED'),v)
+    k5=key();c3,e=ap(X.UFIN,O[1],'credit',k3,evh(O[1]));ok('replay do crédito com concessão ainda vigente devolve o mesmo recibo',c3 and c3['replayed'] and c3['approval_id']==c['approval_id'] and c3['forecast_id']==c2['forecast_id'],c3 or e)
+    # Pedido comum (fora do piloto) com previsão: leitor não devolve previsão nem autores
+    oc=d.last(f"SELECT o.id FROM public.partner_orders o JOIN public.partner_accounts pa ON pa.id=o.partner_id WHERE pa.commercial_owner_organization_id='{X.A}' AND pa.ativo AND pa.deleted_at IS NULL AND o.c2_external_origin_snapshot IS NULL AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_financial_forecasts f WHERE f.order_id=o.id) ORDER BY o.created_at LIMIT 1")
+    ok('existe pedido comum do tenant A no espelho',len(oc)==36,oc)
+    d.sql("UPDATE platform_private.b2b_forecast_creation_gate_v1 SET enabled=true WHERE singleton;")
+    d.sql(f"INSERT INTO platform_private.b2b_financial_forecasts(order_id,organization_id,partner_id,total_amount,residual_amount,state,economic_snapshot,schedule_snapshot,items_snapshot,credit_decision_snapshot,commercial_approved_by,commercial_approved_at) SELECT id,'{X.A}',partner_id,99,99,'aguardando_fiscal','{{}}','[]','[]','{{\"reason_code\":\"OK\"}}','{X.UGC}',now() FROM public.partner_orders WHERE id='{oc}';")
+    d.sql("UPDATE platform_private.b2b_forecast_creation_gate_v1 SET enabled=false WHERE singleton;")
+    for lbl,uid in (('gestor comercial com concessões em outros pedidos',X.UGC),('Financeiro',X.UFIN),('administrador',X.UADM)):
+        v,e=st(uid,oc);ok(f'pedido comum com previsão: {lbl} recebe indisponível sem previsão/autores',UNAV(v,'NOT_GRANTED'),v or e)
+    deny('pedido comum: aprovação do piloto negada antes de travar',lambda: ap(X.UGC,oc,'commercial',key(),H0),'42501','C2_PILOT_ECON_NOT_GRANTED')
     ok('pedidos inalterados (status/aprovações/snapshot/flags) após 10/01/11',[row(o) for o in O]==R)
     v,_=st(X.UFIN,O[0]);ok('leitor: duas aprovações com autor/data e previsão; operação/fiscal/cobrança/envio bloqueados',len(v['approvals'])==2 and v['forecast'] and v['forecast']['total_amount']==20 and all(v[k] for k in ('operational_blocked','fiscal_blocked','billing_blocked','shipping_blocked')) and not v['can_approve_credit'],v)
     # Concorrência
@@ -175,7 +215,8 @@ try:
     deny('concessão revogada',lambda: ap(X.UGC,O[5],'commercial',key(),evh(O[5])),'42501','C2_PILOT_ECON_NOT_GRANTED')
     r=run_file('06-pilot-disable.sql.review');ok('desligamento do piloto',r.returncode==0 and 'C2PILOT_DISABLE_PASS' in r.stdout,r.stderr[-300:])
     deny('após desligar: crédito recusado',lambda: ap(X.UFIN,O[5],'credit',key(),evh(O[5])),'42501','C2_PILOT_ECON_DISABLED')
-    a3,e=ap(X.UGC,O[0],'commercial',k1,H0);ok('após desligar: replay de registro existente ainda reautoriza e devolve recibo',a3 and a3['replayed'],a3 or e)
+    deny('após desligar: replay de registro existente negado (gate off), sem forecast_id',lambda: ap(X.UGC,O[0],'commercial',k1,H0),'42501','C2_PILOT_ECON_DISABLED')
+    v,_=st(X.UFIN,O[0]);ok('após desligar: leitor indisponível sem payload',UNAV(v,'PILOT_DISABLED'),v)
     # Ausência de efeitos downstream
     ok('pedidos inalterados ao final',[row(o) for o in O]==R)
     EFF1={t:cnt(f"SELECT count(*) FROM {t}") for t in ('public.accounts_receivable','public.fiscal_invoices','public.estoque_movimentacoes','public.entregas','public.notificacoes_operacionais')+tuple(t for t in ('public.comunicacao_outbox','public.communication_outbox','public.fiscal_events','public.accounts_receivable_installments') if T(t))}
