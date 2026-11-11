@@ -1,6 +1,6 @@
 {
   "attempt": 1,
-  "pass_": 97,
+  "pass_": 98,
   "fail": 3,
   "checks": [
     {
@@ -429,6 +429,11 @@
       "detail": null
     },
     {
+      "test": "rollback md5 LIVE platform_private.c2_external_origin_assert(jsonb,uuid,uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
       "test": "rollback md5 LIVE public.get_partner_catalog_secure(uuid)",
       "status": "PASS",
       "detail": null
@@ -506,19 +511,19 @@
   ],
   "executed_sha256": {
     "01c-pre-writers.sql.readonly": [
-      "01d834d8bbc88eb4bc354533f0769a05a58491a8966838d13b5869a3cb0833f9",
-      "01d834d8bbc88eb4bc354533f0769a05a58491a8966838d13b5869a3cb0833f9"
+      "8e6e670b7f78a628dbc3b844186b354df0fafeb81b65e6840f2b27e5653e2089",
+      "8e6e670b7f78a628dbc3b844186b354df0fafeb81b65e6840f2b27e5653e2089"
     ],
     "02c-install-writers.sql.review": [
-      "a48a6f71d8037e9d0efade55d7068fc4f780e217e39630ab963ddcaf10b5f3fb",
-      "a48a6f71d8037e9d0efade55d7068fc4f780e217e39630ab963ddcaf10b5f3fb"
+      "450ea8b021d91c9748c686e07726421dcd90d800041a7eef578fce96d73c4139",
+      "450ea8b021d91c9748c686e07726421dcd90d800041a7eef578fce96d73c4139"
     ],
     "03c-post-writers.sql.readonly": [
-      "2a90f4794aff7c2d3990488924fbdc9d77bddd83ae0ba1fff359115bc0fdb6e5"
+      "e6e3b9198c45975c6554371df0ffe115d81f2a5f86ed0d556845affaad1c6a51"
     ],
     "04c-rollback-writers.sql.review": [
-      "06e2ebbd5bfb425a0ae140a4598feaa92de48abc3ed300326fbd0070a63e3907",
-      "06e2ebbd5bfb425a0ae140a4598feaa92de48abc3ed300326fbd0070a63e3907"
+      "96ec5c6914b17e6e9424098af9b4f509c1fa82c3c8e19e334bf85d72c360b7b7",
+      "96ec5c6914b17e6e9424098af9b4f509c1fa82c3c8e19e334bf85d72c360b7b7"
     ]
   },
   "note": "PostgreSQL descartável restaurado do espelho composto; Auth sintética; não prova JWT/RLS/Storage hospedados"

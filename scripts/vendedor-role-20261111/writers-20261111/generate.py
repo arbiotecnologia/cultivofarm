@@ -23,6 +23,9 @@ TARGETS=[
   "  IF NOT (v_admin OR public.has_role(v_uid,'parceiro_b2b'::app_role) OR platform_private.seller_commercial_actor() IS TRUE) THEN",1),
  ("    AND ((v_admin AND p.organization_id = v_org) OR platform_private.commercial_plan_buyer_visible(p.id, v_uid))",
   "    AND ((v_admin AND p.organization_id = v_org) OR platform_private.commercial_plan_buyer_visible(p.id, v_uid)\n      -- seller_portfolio_v1: somente planos publicados para parceiros da carteira própria.\n      OR (platform_private.seller_commercial_actor() IS TRUE AND p.organization_id = public.h15_actor_organization() AND EXISTS(\n        SELECT 1 FROM public.commercial_payment_plan_assignments sa WHERE sa.plan_id=p.id AND sa.buyer_scope='partner' AND sa.status='published'\n        AND sa.valid_from<=CURRENT_DATE AND (sa.valid_until IS NULL OR sa.valid_until>=CURRENT_DATE)\n        AND platform_private.seller_commercial_target_reason(v_uid, sa.partner_id) IS NULL)))",1)]),
+("platform_private.c2_external_origin_assert(jsonb,uuid,uuid)","999e5e9fd9887595e252523fb2142726",False,[
+ ("  IF public.h15_actor_organization() IS DISTINCT FROM org OR NOT platform_private.c2p1_settings_allowed(partner,true)\n",
+  "  IF public.h15_actor_organization() IS DISTINCT FROM org OR NOT (platform_private.c2p1_settings_allowed(partner,true)\n     -- seller_portfolio_v1: só dentro da transação de resposta de cotação do vendedor (ticket txid) e com vínculo vigente.\n     OR (platform_private.has_ticket('seller_quote_respond',partner) AND "+P('uid','partner')+"))\n",1)]),
 ("public.get_partner_catalog_secure(uuid)","b5684d350603d1db77ab9f1db0f4b253",False,[
  ("                AND platform_private.c2_internal_order_target_reason(v_uid, p_partner_id) IS NULL) THEN",
   "                AND platform_private.c2_internal_order_target_reason(v_uid, p_partner_id) IS NULL)\n       AND NOT "+P('v_uid','p_partner_id')+" THEN",1),
@@ -64,7 +67,9 @@ TARGETS=[
  ("  v_is_gestor := has_role(v_uid,'gestor_comercial'::app_role);\n",
   "  v_is_gestor := has_role(v_uid,'gestor_comercial'::app_role) OR "+P('v_uid',PO)+"; -- seller_portfolio_v1\n",1),
  ("v_is_admin := has_role(v_uid,'administrador'::app_role); v_is_gestor := has_role(v_uid,'gestor_comercial'::app_role);",
-  "v_is_admin := has_role(v_uid,'administrador'::app_role); v_is_gestor := has_role(v_uid,'gestor_comercial'::app_role) OR "+P('v_uid','v_order.partner_id')+";\n  -- seller_portfolio_v1: após FOR UPDATE do pedido, trava e revalida o vínculo da carteira.\n  IF platform_private.seller_commercial_actor() IS TRUE THEN PERFORM platform_private.seller_portfolio_lock(v_uid, v_order.partner_id); END IF;",1),
+  "v_is_admin := has_role(v_uid,'administrador'::app_role); v_is_gestor := has_role(v_uid,'gestor_comercial'::app_role) OR "+P('v_uid','v_order.partner_id')+";\n  -- seller_portfolio_v1: após FOR UPDATE do pedido, trava e revalida o vínculo da carteira.\n  IF platform_private.seller_commercial_actor() IS TRUE THEN\n    PERFORM platform_private.seller_portfolio_lock(v_uid, v_order.partner_id);\n    INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES (txid_current(),'seller_quote_respond',v_order.partner_id);\n  END IF;",1),
+ ("      RETURN v_result;","      DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='seller_quote_respond';\n      RETURN v_result;",1),
+ ("  RETURN v_result;\nEND","  DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='seller_quote_respond';\n  RETURN v_result;\nEND",1),
  ("    IF NOT (has_role(v_uid,'administrador'::app_role) OR has_role(v_uid,'gestor_comercial'::app_role)) THEN",
   "    IF NOT (has_role(v_uid,'administrador'::app_role) OR has_role(v_uid,'gestor_comercial'::app_role) OR "+P('v_uid','v_order.partner_id')+") THEN",1)]),
 ]
