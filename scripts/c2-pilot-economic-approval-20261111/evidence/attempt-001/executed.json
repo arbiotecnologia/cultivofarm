@@ -10,33 +10,101 @@
     },
     {
       "file": "02-install.sql.review",
-      "sha256": "5d90eb0bb7adcd44f9b5eeef0db44f7578c18b0be9f2955b03f1f713803a692d"
+      "sha256": "4f5f0b8828d5f992ae0517a307fa15c83cdee8ffa8f2c6abd3a1539c58dfdd62"
     },
     {
       "file": "02-install.sql.review",
-      "sha256": "5d90eb0bb7adcd44f9b5eeef0db44f7578c18b0be9f2955b03f1f713803a692d"
+      "sha256": "4f5f0b8828d5f992ae0517a307fa15c83cdee8ffa8f2c6abd3a1539c58dfdd62"
     },
     {
       "file": "03-post.sql.readonly",
-      "sha256": "ddc5fdfe39f0b266937870786706bb5069842d1edcfab63bae57a7a944001064"
+      "sha256": "8131cf2cf780032350a7309be5e6f9480dbc0bdfa5f775b76c1fc65cccbd2cc8"
     },
     {
       "file": "02-install.sql.review",
-      "sha256": "5d90eb0bb7adcd44f9b5eeef0db44f7578c18b0be9f2955b03f1f713803a692d"
+      "sha256": "4f5f0b8828d5f992ae0517a307fa15c83cdee8ffa8f2c6abd3a1539c58dfdd62"
+    },
+    {
+      "file": "05-pilot-enable.sql.review",
+      "sha256": "44d346fedb62bd9f2ca371bdf8346f812a06f162a604a14c42ec4d95a5d725ba"
+    },
+    {
+      "file": "05-pilot-enable.sql.review",
+      "sha256": "44d346fedb62bd9f2ca371bdf8346f812a06f162a604a14c42ec4d95a5d725ba"
+    },
+    {
+      "file": "05-pilot-enable.sql.review",
+      "sha256": "44d346fedb62bd9f2ca371bdf8346f812a06f162a604a14c42ec4d95a5d725ba"
+    },
+    {
+      "file": "05-pilot-enable.sql.review",
+      "sha256": "44d346fedb62bd9f2ca371bdf8346f812a06f162a604a14c42ec4d95a5d725ba"
+    },
+    {
+      "file": "05-pilot-enable.sql.review",
+      "sha256": "44d346fedb62bd9f2ca371bdf8346f812a06f162a604a14c42ec4d95a5d725ba"
+    },
+    {
+      "file": "05-pilot-enable.sql.review",
+      "sha256": "44d346fedb62bd9f2ca371bdf8346f812a06f162a604a14c42ec4d95a5d725ba"
+    },
+    {
+      "file": "05-pilot-enable.sql.review",
+      "sha256": "44d346fedb62bd9f2ca371bdf8346f812a06f162a604a14c42ec4d95a5d725ba"
+    },
+    {
+      "file": "05-pilot-enable.sql.review",
+      "sha256": "44d346fedb62bd9f2ca371bdf8346f812a06f162a604a14c42ec4d95a5d725ba"
+    },
+    {
+      "file": "05-pilot-enable.sql.review",
+      "sha256": "44d346fedb62bd9f2ca371bdf8346f812a06f162a604a14c42ec4d95a5d725ba"
+    },
+    {
+      "file": "05-pilot-enable.sql.review",
+      "sha256": "44d346fedb62bd9f2ca371bdf8346f812a06f162a604a14c42ec4d95a5d725ba"
+    },
+    {
+      "file": "05-pilot-enable.sql.review",
+      "sha256": "44d346fedb62bd9f2ca371bdf8346f812a06f162a604a14c42ec4d95a5d725ba"
+    },
+    {
+      "file": "06-pilot-disable.sql.review",
+      "sha256": "85f256f1dc8cc1497b96f3c459912060281cf77922de1778279167cf29247406"
+    },
+    {
+      "file": "04-rollback-deny.sql.review",
+      "sha256": "8d2a51cdb8bfba74577841da6424e16f39de15db2ea3aae9b556a81ff84c22e1"
+    },
+    {
+      "file": "04-rollback-deny.sql.review",
+      "sha256": "8d2a51cdb8bfba74577841da6424e16f39de15db2ea3aae9b556a81ff84c22e1"
+    },
+    {
+      "file": "04-rollback-deny.sql.review",
+      "sha256": "8d2a51cdb8bfba74577841da6424e16f39de15db2ea3aae9b556a81ff84c22e1"
+    },
+    {
+      "file": "03-post.sql.readonly",
+      "sha256": "8131cf2cf780032350a7309be5e6f9480dbc0bdfa5f775b76c1fc65cccbd2cc8"
+    },
+    {
+      "file": "05-pilot-enable.sql.review",
+      "sha256": "44d346fedb62bd9f2ca371bdf8346f812a06f162a604a14c42ec4d95a5d725ba"
     }
   ],
   "sha256sums": {
     "01-pre.sql.readonly": "87d58d7145126e0be6185e3fd749c1172b15ff60882cc2e0fa6dfc1ff783c991",
-    "02-install.sql.review": "5d90eb0bb7adcd44f9b5eeef0db44f7578c18b0be9f2955b03f1f713803a692d",
-    "03-post.sql.readonly": "ddc5fdfe39f0b266937870786706bb5069842d1edcfab63bae57a7a944001064",
-    "04-rollback-deny.sql.review": "951cb63c6a6d726bed2f08e5b27775eafe5d9a8825e9748cbb0983d4ebbb1b38",
-    "05-pilot-enable.sql.review": "344e1c6181b7857d1034b32d3a08a5170b5e3f34467b768aa91aca3a6a24829c",
+    "02-install.sql.review": "4f5f0b8828d5f992ae0517a307fa15c83cdee8ffa8f2c6abd3a1539c58dfdd62",
+    "03-post.sql.readonly": "8131cf2cf780032350a7309be5e6f9480dbc0bdfa5f775b76c1fc65cccbd2cc8",
+    "04-rollback-deny.sql.review": "8d2a51cdb8bfba74577841da6424e16f39de15db2ea3aae9b556a81ff84c22e1",
+    "05-pilot-enable.sql.review": "44d346fedb62bd9f2ca371bdf8346f812a06f162a604a14c42ec4d95a5d725ba",
     "06-pilot-disable.sql.review": "85f256f1dc8cc1497b96f3c459912060281cf77922de1778279167cf29247406",
     "candidate.sql": "b270de864e0180cb36da106a7c779c749822cdab855c3ad18ce0aedbea468828",
     "candidate-md5.json": "cb81c0614b820c2b060acdb12e73303e1249c3758f071f0c9fad21590610be91",
-    "generate.py": "69fc218c18749f83b81150a8240fc55a7c3aad2a34af003965cfe42605647e49",
+    "generate.py": "7ac4c065b0306d84d59e2ce920fe0d0675a927ac4a3c6a8e8ab5a7711d445582",
     "fixture.py": "21c169e0172b01a2cab6c553d3c49fb8cc409c37b01165ac36a5ef6ad9baea0e",
-    "test_pilot_pg.py": "c9af28a59e2f657ce96790737d59876bc9c6729e760bda147ae3b19bfa3d3dd6"
+    "test_pilot_pg.py": "c1ae981ef430b0b3138948e26a6dc11e837729c838ae1afc8b348448ef3f6c55"
   },
   "deps": {
     "public.approve_partner_order(uuid,text,date)": "0d3b85049e3b3b799ba81b4cb95be0da",

@@ -71,7 +71,7 @@ try:
     q=d.sql(f"SELECT condition_method||'|'||due_basis||'|'||estimated||'|'||principal||'|'||financed_total||'|'||jsonb_array_length(rows) FROM platform_private.b2b_order_condition_quote_snapshots WHERE order_id='{O[0]}'")
     it=d.sql(f"SELECT count(*)||'|'||sum(quantidade)||'|'||max(preco_unitario)||'|'||max(packaging_peso_liquido_kg_snapshot) FROM public.partner_order_items WHERE order_id='{O[0]}'")
     ok('cotação: boleto, due_basis nf_issue, estimado, principal=total=20, 1 parcela',q=='boleto|nf_issue|true|20.00|20.00|1',q)
-    ok('itens: 1 linha, 2 embalagens inteiras de 25 kg a R$10',it.split('|')[:3]==['1','2','10.00'] and float(it.split('|')[3] or 0)==25,it)
+    ok('itens: 1 linha, 2 embalagens inteiras de 25 kg a R$10',it.split('|')[0]=='1' and float(it.split('|')[1])==2 and float(it.split('|')[2])==10 and float(it.split('|')[3] or 0)==25,it)
     ok('evento quote_responded único no histórico',cnt(f"SELECT count(*) FROM public.partner_order_audit_logs WHERE order_id='{O[0]}' AND acao='quote_responded'")==1)
     deny('LIVE approve_partner_order bloqueado para o contrato C2',lambda: m.call(X.UGC,f"public.approve_partner_order('{O[0]}',NULL)"),'42501','C2_ACCOUNTING_PENDING')
     deny('LIVE approve_b2b_credit bloqueado para o contrato C2',lambda: m.call(X.UFIN,f"public.approve_b2b_credit('{O[0]}',NULL)"),'42501','C2_ACCOUNTING_PENDING')

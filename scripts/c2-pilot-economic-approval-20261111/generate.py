@@ -34,7 +34,7 @@ def absent(tag):
             +"".join(f" IF to_regprocedure('{s}') IS NOT NULL THEN RAISE EXCEPTION '{tag}_ALREADY_PRESENT:{s}';END IF;\n" for s in CAND)+"END$$;\n")
 def cand_checks(tag):
     return "DO $$BEGIN\n"+"".join(f" IF to_regprocedure('{s}') IS NULL OR md5(pg_get_functiondef('{s}'::regprocedure)) IS DISTINCT FROM '{m}' THEN RAISE EXCEPTION '{tag}_CANDIDATE_DRIFT:{s}';END IF;\n" for s,m in CAND.items())+"END$$;\n"
-ACL_SQL=lambda s: f"(SELECT coalesce(string_agg(x.grantee::regrole::text||':'||x.privilege_type||':'||x.is_grantable::text,',' ORDER BY 1),'') FROM pg_proc p,aclexplode(coalesce(p.proacl,acldefault('f',p.proowner)))x WHERE p.oid='{s}'::regprocedure AND x.grantee<>0)||'|'||(SELECT proowner::regrole::text FROM pg_proc WHERE oid='{s}'::regprocedure)"
+ACL_SQL=lambda s: f"(SELECT coalesce(string_agg(x.grantee::regrole::text||':'||x.privilege_type||':'||x.is_grantable::text,',' ORDER BY x.grantee::regrole::text,x.privilege_type),'') FROM pg_proc p,aclexplode(coalesce(p.proacl,acldefault('f',p.proowner)))x WHERE p.oid='{s}'::regprocedure AND x.grantee<>0)||'|'||(SELECT proowner::regrole::text FROM pg_proc WHERE oid='{s}'::regprocedure)"
 def acl_checks(tag,open_):
     want_pub='authenticated:EXECUTE:false,postgres:EXECUTE:false|postgres' if open_ else 'postgres:EXECUTE:false|postgres'
     out="DO $$BEGIN\n"

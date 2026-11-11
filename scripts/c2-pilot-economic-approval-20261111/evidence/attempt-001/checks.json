@@ -86,8 +86,8 @@
   },
   {
     "test": "itens: 1 linha, 2 embalagens inteiras de 25 kg a R$10",
-    "status": "FAIL",
-    "detail": "1|2.00|10.00|25.000"
+    "status": "PASS",
+    "detail": null
   },
   {
     "test": "evento quote_responded \u00fanico no hist\u00f3rico",
@@ -121,18 +121,18 @@
   },
   {
     "test": "INSTALL transa\u00e7\u00e3o \u00fanica",
-    "status": "FAIL",
-    "detail": "ERROR:  C2PILOT_INSTALL_ACL_DRIFT:public.c2_pilot_economic_approve_v1(uuid,text,text,text,text)\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\n"
+    "status": "PASS",
+    "detail": null
   },
   {
     "test": "POST_PASS",
-    "status": "FAIL",
-    "detail": "v1()') IS NULL OR md5(pg_get_functiondef('platform_...\n                                                             ^\nQUERY:  to_regprocedure('platform_private.c2_pilot_econ_immutable_v1()') IS NULL OR md5(pg_get_functiondef('platform_private.c2_pilot_econ_immutable_v1()'::regprocedure)) IS DISTINCT FROM 'b97e592e1b820be6edce6e85f35a78ac'\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at IF\n"
+    "status": "PASS",
+    "detail": null
   },
   {
     "test": "reinstala\u00e7\u00e3o recusada",
-    "status": "FAIL",
-    "detail": "ERROR:  C2PILOT_INSTALL_ACL_DRIFT:public.c2_pilot_economic_approve_v1(uuid,text,text,text,text)\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\n"
+    "status": "PASS",
+    "detail": null
   },
   {
     "test": "p\u00f3s-instala\u00e7\u00e3o: corpo LIVE intocado public.approve_partner_order(uuid,text,date)",
@@ -191,6 +191,487 @@
   },
   {
     "test": "p\u00f3s-instala\u00e7\u00e3o: corpo LIVE intocado public.h15_actor_organization()",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "instalado fechado: gate false, allowlist vazia",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "fechado: leitor informa piloto desligado, sem evid\u00eancia e sem a\u00e7\u00e3o",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "fechado: aprova\u00e7\u00e3o comercial recusada [42501 C2_PILOT_ECON_DISABLED]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "habilita\u00e7\u00e3o recusa vendedor como aprovador comercial",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "habilita\u00e7\u00e3o recusa gestor comercial como aprovador de cr\u00e9dito",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "habilita\u00e7\u00e3o recusa validade > 24h",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "habilita\u00e7\u00e3o recusa pedido sem resposta cotada (falha fechada)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "habilita\u00e7\u00e3o sem par\u00e2metros recusada",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "habilita\u00e7\u00e3o estreita do pedido ad9a2f20",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "habilita\u00e7\u00e3o estreita do pedido 3d3590a4",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "habilita\u00e7\u00e3o estreita do pedido 94ee0d92",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "habilita\u00e7\u00e3o estreita do pedido 49beaab4",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "habilita\u00e7\u00e3o estreita do pedido 0a0bd2bb",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "habilita\u00e7\u00e3o estreita do pedido 249a138b",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "UGC: evid\u00eancia completa, pode aprovar comercial e n\u00e3o cr\u00e9dito",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "Financeiro: pode aprovar cr\u00e9dito e n\u00e3o comercial",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "admin sem concess\u00e3o: l\u00ea estado, sem evid\u00eancia nem a\u00e7\u00e3o",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "leitor nega comprador [42501 C2_PILOT_ECON_DENIED:role]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "leitor nega vendedor [42501 C2_PILOT_ECON_DENIED:role]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "leitor nega t\u00e9cnico externo [42501 C2_PILOT_ECON_DENIED:role]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "leitor nega admin de outro tenant [42501 C2_PILOT_ECON_DENIED:scope]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "aprova\u00e7\u00e3o negada: comprador [42501 C2_PILOT_ECON_DENIED:role]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "aprova\u00e7\u00e3o negada: vendedor [42501 C2_PILOT_ECON_DENIED:role]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "aprova\u00e7\u00e3o negada: Financeiro como comercial [42501 C2_PILOT_ECON_DENIED:role]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "aprova\u00e7\u00e3o negada: gestor comercial como cr\u00e9dito [42501 C2_PILOT_ECON_DENIED:role]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "aprova\u00e7\u00e3o negada: admin de outro tenant [42501 C2_PILOT_ECON_DENIED:scope]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "aprova\u00e7\u00e3o negada: admin do tenant sem concess\u00e3o [42501 C2_PILOT_ECON_NOT_GRANTED]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "hash de evid\u00eancia divergente [PT409 C2_PILOT_ECON_EVIDENCE_CHANGED]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "chave curta [22023 C2_PILOT_ECON_KEY_INVALID]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "tipo inv\u00e1lido [22023 C2_PILOT_ECON_KIND_INVALID]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "concess\u00e3o de O1 n\u00e3o vale para O7 [42501 C2_PILOT_ECON_NOT_GRANTED]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "evid\u00eancia incompleta falha fechada: snapshot da cota\u00e7\u00e3o ausente",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "evid\u00eancia incompleta falha fechada: evento quote_responded ausente",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "evid\u00eancia incompleta falha fechada: meio de pagamento inativo",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "evid\u00eancia incompleta falha fechada: cronograma divergente",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "evid\u00eancia incompleta falha fechada: termos rejeitados",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "evid\u00eancia incompleta falha fechada: parceiro inativo",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "negativas sem efeitos persistidos",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "00: sem aprova\u00e7\u00f5es e sem previs\u00e3o",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "10: aprova\u00e7\u00e3o comercial expl\u00edcita com autor/data, sem previs\u00e3o",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "10: replay mesma chave devolve o mesmo registro",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "10: segunda aprova\u00e7\u00e3o comercial (outra chave) [PT409 C2_PILOT_ECON_ALREADY_APPROVED]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "10: chave reaproveitada para cr\u00e9dito [PT409 C2_PILOT_ECON_IDEMPOTENCY_CONFLICT]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "10: LIVE approve_b2b_credit continua bloqueado [42501 C2_ACCOUNTING_PENDING]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "11: cr\u00e9dito expl\u00edcito cria exatamente uma previs\u00e3o e um evento",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "11: replay devolve a mesma previs\u00e3o, sem duplicar",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "previs\u00e3o: total 20 n\u00e3o exig\u00edvel (aguardando_fiscal), autores expl\u00edcitos, cr\u00e9dito sem reason_code autom\u00e1tico",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "11: LIVE approve_partner_order continua bloqueado [42501 C2_ACCOUNTING_PENDING]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "01: cr\u00e9dito antes do comercial, sem previs\u00e3o",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "01\u219211: comercial depois cria uma previs\u00e3o e um evento",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "pedidos inalterados (status/aprova\u00e7\u00f5es/snapshot/flags) ap\u00f3s 10/01/11",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "leitor: duas aprova\u00e7\u00f5es com autor/data e previs\u00e3o; opera\u00e7\u00e3o/fiscal/cobran\u00e7a/envio bloqueados",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "concorr\u00eancia mesma chave: mesmo registro, uma previs\u00e3o e um evento",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "concorr\u00eancia comercial\u00d7cr\u00e9dito em conex\u00f5es distintas: ambos gravam, exatamente uma previs\u00e3o e um evento",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "concorr\u00eancia chaves distintas: um grava, outro PT409 ALREADY_APPROVED; uma previs\u00e3o/um evento",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "n\u00facleo legado com reason_code OK n\u00e3o cria previs\u00e3o para pedido do piloto",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "inser\u00e7\u00e3o direta privilegiada (reason_code OK, sem assinatura) negada mesmo com gate global aberto",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "pedido C2 sem aprova\u00e7\u00f5es: barreira s\u00f3 aceita o ticket da pr\u00f3pria transa\u00e7\u00e3o (n\u00facleo do piloto)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "cliente autenticado n\u00e3o forja ticket",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "cliente n\u00e3o chama o leitor privado de evid\u00eancia",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "cliente n\u00e3o l\u00ea o ledger",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ledger imut\u00e1vel (UPDATE)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ledger imut\u00e1vel (DELETE)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "concess\u00e3o revogada [42501 C2_PILOT_ECON_NOT_GRANTED]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "desligamento do piloto",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s desligar: cr\u00e9dito recusado [42501 C2_PILOT_ECON_DISABLED]",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s desligar: replay de registro existente ainda reautoriza e devolve recibo",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "pedidos inalterados ao final",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "sem receb\u00edvel, NF, estoque, entrega, notifica\u00e7\u00e3o ou envio",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "contagens finais downstream (registro)",
+    "status": "INFO",
+    "detail": {
+      "public.accounts_receivable": 1,
+      "public.fiscal_invoices": 1,
+      "public.estoque_movimentacoes": 53,
+      "public.entregas": 15,
+      "public.notificacoes_operacionais": 0
+    }
+  },
+  {
+    "test": "previs\u00f5es totais = 4 pedidos com 11 (O1,O2,O3,O4,O5\u21925)",
+    "status": "FAIL",
+    "detail": "None"
+  },
+  {
+    "test": "leitor existente de previs\u00e3o l\u00ea a previs\u00e3o do piloto (estimada, total 20)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "leitor existente nega outro tenant",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ROLLBACK sem ref recusado",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ROLLBACK_PASS (deny-only)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ROLLBACK idempotente",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "rollback preserva ledger, previs\u00f5es e eventos",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s rollback: RPC sem EXECUTE",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s rollback: leitor sem EXECUTE",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s rollback: barreira mantida contra inser\u00e7\u00e3o direta",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "POST ap\u00f3s rollback falha (ACL fechada detectada)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s rollback: habilita\u00e7\u00e3o recusada (ACL fechada)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s rollback: corpo LIVE intocado public.approve_partner_order(uuid,text,date)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s rollback: corpo LIVE intocado public.approve_b2b_credit(uuid,text)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s rollback: corpo LIVE intocado public.approve_b2b_payment_terms_secure(uuid,text)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s rollback: corpo LIVE intocado platform_private.c2_accounting_pending_guard()",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s rollback: corpo LIVE intocado platform_private.b2b_financial_forecast_after_approval_v1(uuid,jsonb)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s rollback: corpo LIVE intocado platform_private.c2_external_origin_contract_valid(jsonb)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s rollback: corpo LIVE intocado platform_private.c2p1_internal_actor(public.app_role[])",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s rollback: corpo LIVE intocado public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s rollback: corpo LIVE intocado platform_private.b2b_financial_forecast_guard()",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s rollback: corpo LIVE intocado platform_private.has_ticket(text,uuid)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s rollback: corpo LIVE intocado public.get_b2b_financial_forecast_secure(uuid)",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s rollback: corpo LIVE intocado public.h15_actor_organization()",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ap\u00f3s rollback: LIVE approve_partner_order segue bloqueado [42501 C2_ACCOUNTING_PENDING]",
     "status": "PASS",
     "detail": null
   },
