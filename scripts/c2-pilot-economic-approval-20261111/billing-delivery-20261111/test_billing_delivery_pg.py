@@ -18,6 +18,8 @@ def ok(scn,name,cond,detail=None): rec(scn,name,'PASS' if cond else 'FAIL',None 
 def seam(s): SEAMS.append(s); print('SEAM',s,flush=True)
 SUMS={l.split()[1]:l.split()[0] for l in (P/'SHA256SUMS').read_text().splitlines()}
 m=X.Mirror(55841);d=m.d;js=X.js
+# attempt-008: claims sem 'exp' faziam catalog_tenant_actor negar (falha do harness, não do produto). Claims completas como logistics-linked-approval.
+m.claims=lambda uid: f"SET ROLE authenticated; SET request.jwt.claim.sub='{uid}'; SET request.jwt.claims='"+json.dumps({'sub':uid,'role':'authenticated','iat':1,'exp':4102444800})+"';"
 REF="SET c2pilot.expected_ref='swzpzcwiasxmjutrmvkm';"
 def run_file(n,pre=REF):
     b=(P/n).read_bytes();s=hashlib.sha256(b).hexdigest()
