@@ -45,11 +45,23 @@ def reconcile(db):
     acl1=db.last(f"SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='{SIG}'::regprocedure")
     assert acl0==acl1
     return dict(already=False,chain=[MIRROR_MD5,AE_MD5,PROD_MD5],seller_fn_md5=db.md5(SELLER_SIG),item_price_md5=db.md5(PRICE[0]),reader_md5=db.md5(READER[0]),acl=acl1)
+ITEM="format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable)"
 def acl_set_sql(sig):
-    "Conjunto canônico ordenado de (grantor,grantee,privilégio,grant_option) + owner; PUBLIC=grantee 0."
-    return (f"(SELECT coalesce(string_agg(format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable),',' ORDER BY 1),'')"
-            f"||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p LEFT JOIN LATERAL aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a ON true WHERE p.oid='{sig}'::regprocedure GROUP BY p.proowner)")
+    "Conjunto canônico (ordenado lexicograficamente) de (grantor>grantee:privilégio:grant_option) + owner; ACL NULL expande acldefault; PUBLIC explícito."
+    return (f"(SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT {ITEM} x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')"
+            f"||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='{sig}'::regprocedure)")
 def acl_set(db,sig): return db.last("SELECT "+acl_set_sql(sig)+";")
 def acl_text_to_set(db,text):
     acl,owner=text.split('|')
-    return db.last(f"SELECT coalesce(string_agg(format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable),',' ORDER BY 1),'')||'|{owner}' FROM aclexplode('{acl}'::aclitem[]) a;")
+    return db.last(f"SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT {ITEM} x FROM aclexplode('{acl}'::aclitem[]) a) q),'')||'|{owner}';")
+def align_acl(db):
+    "Alinha o espelho ao ACL REAL de produção (só acrescenta o membro ausente service_role=X nos guards); recusa qualquer outra divergência."
+    out={}
+    for s,t in PROD_ACL.items():
+        want=acl_text_to_set(db,t);have=acl_set(db,s)
+        if have!=want:
+            assert want=='postgres>postgres:EXECUTE:false,postgres>service_role:EXECUTE:false|postgres' and have=='postgres>postgres:EXECUTE:false|postgres',('ACL_UNRECONCILABLE',s,have,want)
+            db.sql(f"GRANT EXECUTE ON FUNCTION {s} TO service_role;")
+        assert acl_set(db,s)==want,('ACL_ALIGN',s)
+        out[s]=dict(mirror_before=have,production_set=want)
+    return out
