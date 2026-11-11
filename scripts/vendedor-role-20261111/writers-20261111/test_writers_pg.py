@@ -338,7 +338,7 @@ try:
     for sig,v in json.loads((H/'manifest.json').read_text())['patched'].items():
         ok('rollback md5 LIVE '+sig,d.md5(sig)==v['live'],d.md5(sig))
     deny('após rollback: vendedor sem writers',lambda: full_create(V1,P),'?','')
-    ok('após rollback: pedidos e atribuições preservados',d.last(f"select count(*) from public.partner_orders where created_by='{V1}'")=='2' and d.last("select count(*) from platform_private.seller_portfolio_assignments")=='3')
+    ok('após rollback: pedidos e atribuições preservados',d.last(f"select count(*) from public.partner_orders where created_by='{V1}'")=='2' and d.last("select count(*) from platform_private.seller_portfolio_assignments")=='4')
     r=run_file('04c-rollback-writers.sql.review');ok('rollback repetido recusa drift',r.returncode!=0 and 'VENDW_RB_DRIFT' in r.stderr,r.stderr[-200:])
     c,e=call(UGC,"public.c2_internal_order_entry_capability_v1()");ok('após rollback: gestor segue aberto',c and c['order_create'] is True,c or e)
 finally:

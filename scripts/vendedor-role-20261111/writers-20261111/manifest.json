@@ -25,12 +25,6 @@
       "auditor_confirmed": false,
       "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}|postgres"
     },
-    "platform_private.c2_external_origin_assert(jsonb,uuid,uuid)": {
-      "live": "999e5e9fd9887595e252523fb2142726",
-      "candidate": "36930a875f8f3f073bbbc684a5b4a64c",
-      "auditor_confirmed": false,
-      "acl": "{postgres=X/postgres}|postgres"
-    },
     "public.get_partner_catalog_secure(uuid)": {
       "live": "b5684d350603d1db77ab9f1db0f4b253",
       "candidate": "b5d8b3e96c6814ae868dc684cd1f3751",
@@ -87,7 +81,7 @@
     },
     "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": {
       "live": "97bcdb9884b54adb3bd4aae4915e32d0",
-      "candidate": "0d62c5761e36ae7848df98d0eb36f9d8",
+      "candidate": "2940102f053123d64b9ed6724832ab3f",
       "auditor_confirmed": true,
       "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}|postgres"
     },
@@ -104,7 +98,8 @@
     "platform_private.seller_portfolio_lock(uuid,uuid)": "996aae96c23e94742ace7395b8c2e0ad",
     "public.seller_portfolio_capability_v1()": "21b1683d561f599bd3b349c2a4e6ecb9",
     "public.seller_portfolio_orders_v1()": "7448e15784ff66e55b8eed1a06d0665b",
-    "public.admin_seller_portfolio_overview_v1()": "f5afeaca56abebd40309385112c1a611"
+    "public.admin_seller_portfolio_overview_v1()": "53dca32d7f12458c194cf852e47ad92f",
+    "platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)": "271aba99a49f475135e3e4726375a6e6"
   },
   "new_acl": {
     "platform_private.seller_commercial_actor()": "{postgres=X/postgres}",
@@ -112,7 +107,8 @@
     "platform_private.seller_portfolio_lock(uuid,uuid)": "{postgres=X/postgres}",
     "public.seller_portfolio_capability_v1()": "{postgres=X/postgres,authenticated=X/postgres}",
     "public.seller_portfolio_orders_v1()": "{postgres=X/postgres,authenticated=X/postgres}",
-    "public.admin_seller_portfolio_overview_v1()": "{postgres=X/postgres,authenticated=X/postgres}"
+    "public.admin_seller_portfolio_overview_v1()": "{postgres=X/postgres,authenticated=X/postgres}",
+    "platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)": "{postgres=X/postgres}"
   },
   "seller_cap_02b": "1d55a8e4ba15dac634461867fa6b5c24",
   "shared_helpers_unchanged": [
@@ -121,10 +117,10 @@
     "public.fn_cc_can_prepare(uuid)"
   ],
   "files": {
-    "01c-pre-writers.sql.readonly": "0049852019b5467c7a59b0b269d0bbd8ae9774533201705d26b2335171caf583",
-    "02c-install-writers.sql.review": "a0fe37f87930a87fd069550a799893dc67ec69e1b5d5695735589aba8d9852ff",
-    "03c-post-writers.sql.readonly": "372cd808bc7883e511858e91ab2b92be6b04ec81f69183b5381a92d5d95ae1dd",
-    "04c-rollback-writers.sql.review": "47c93b09597b6ddf3c704f2cb404b4eee3d305eea2e92f1adc2864f0de943439"
+    "01c-pre-writers.sql.readonly": "d733d83e56092aa6e3b7237a7bae3b2b53996d018cecd352c9e1ae6dde85ee22",
+    "02c-install-writers.sql.review": "9098009c5c520287aea1eeebb5b0be0b28deb8378fbf3b54c674306596eddff2",
+    "03c-post-writers.sql.readonly": "3604c21b479537f3e4001a74e5897f4d4523fdf639e7fd974a7d450161b07362",
+    "04c-rollback-writers.sql.review": "c0703fcc30c61924a4a48622ffdddb8e88cd6cb069aa4f9461a0c450a608ff6a"
   },
-  "helpers_sha256": "03de7e92200abd1e54e2d39427e0dbe6d58b1e318d8b6cbcfb245f04ad7fd79c"
+  "helpers_sha256": "428ad60278025fa93bc40551a8205c6f7504deb9cfe23f552a530181885c2dcf"
 }

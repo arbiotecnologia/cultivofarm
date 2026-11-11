@@ -6,7 +6,6 @@ DO $rb$ BEGIN
  IF md5(pg_get_functiondef('platform_private.c2_owner_order_guard(uuid,uuid,uuid)'::regprocedure)) IS DISTINCT FROM '1cece91f0d4ac29d8a2f0d09363e3ee1' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:platform_private.c2_owner_order_guard(uuid,uuid,uuid)'; END IF;
  IF md5(pg_get_functiondef('platform_private.commercial_plan_partner_visible(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '029abbe0fa877743bddf08a10179f925' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:platform_private.commercial_plan_partner_visible(uuid,uuid)'; END IF;
  IF md5(pg_get_functiondef('public.rpc_b2b_list_selectable_payment_plans()'::regprocedure)) IS DISTINCT FROM '754a458a2a6f09f90faa0cffb6777cc0' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:public.rpc_b2b_list_selectable_payment_plans()'; END IF;
- IF md5(pg_get_functiondef('platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'::regprocedure)) IS DISTINCT FROM '36930a875f8f3f073bbbc684a5b4a64c' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'; END IF;
  IF md5(pg_get_functiondef('public.get_partner_catalog_secure(uuid)'::regprocedure)) IS DISTINCT FROM 'b5d8b3e96c6814ae868dc684cd1f3751' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:public.get_partner_catalog_secure(uuid)'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_partner_catalog_reader(uuid)'::regprocedure)) IS DISTINCT FROM '2988e5e919f9a692071c7bbfb42d7e1e' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:platform_private.b2b_partner_catalog_reader(uuid)'; END IF;
  IF md5(pg_get_functiondef('platform_private.c2_partner_order_attempt_authz(uuid,uuid)'::regprocedure)) IS DISTINCT FROM 'c0c428f4e3569df9c340fff6cc70ad17' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:platform_private.c2_partner_order_attempt_authz(uuid,uuid)'; END IF;
@@ -16,14 +15,15 @@ DO $rb$ BEGIN
  IF md5(pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure)) IS DISTINCT FROM 'af9d3b1c442ab741370f543044f0182d' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_internal_order_snapshot_guard()'::regprocedure)) IS DISTINCT FROM 'cac1843af110621fc30edb488fff2c6d' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:platform_private.b2b_internal_order_snapshot_guard()'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)'::regprocedure)) IS DISTINCT FROM '03ff648ab3fbe7fb6d6cfb5410d5a36a' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)'; END IF;
- IF md5(pg_get_functiondef('public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'::regprocedure)) IS DISTINCT FROM '0d62c5761e36ae7848df98d0eb36f9d8' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'; END IF;
+ IF md5(pg_get_functiondef('public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'::regprocedure)) IS DISTINCT FROM '2940102f053123d64b9ed6724832ab3f' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'; END IF;
  IF md5(pg_get_functiondef('public.c2_internal_order_entry_capability_v1()'::regprocedure)) IS DISTINCT FROM 'e1fdc878899be5d1880ad3c6cb316542' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:public.c2_internal_order_entry_capability_v1()'; END IF;
  IF md5(pg_get_functiondef('platform_private.seller_commercial_actor()'::regprocedure)) IS DISTINCT FROM 'c992f81c85c2ed9cc91d68cf0dcdfb7e' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:platform_private.seller_commercial_actor()'; END IF;
  IF md5(pg_get_functiondef('platform_private.seller_commercial_target_reason(uuid,uuid)'::regprocedure)) IS DISTINCT FROM 'a8334c62a2529f1b71b92a9dfe16ee50' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:platform_private.seller_commercial_target_reason(uuid,uuid)'; END IF;
  IF md5(pg_get_functiondef('platform_private.seller_portfolio_lock(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '996aae96c23e94742ace7395b8c2e0ad' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:platform_private.seller_portfolio_lock(uuid,uuid)'; END IF;
  IF md5(pg_get_functiondef('public.seller_portfolio_capability_v1()'::regprocedure)) IS DISTINCT FROM '21b1683d561f599bd3b349c2a4e6ecb9' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:public.seller_portfolio_capability_v1()'; END IF;
  IF md5(pg_get_functiondef('public.seller_portfolio_orders_v1()'::regprocedure)) IS DISTINCT FROM '7448e15784ff66e55b8eed1a06d0665b' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:public.seller_portfolio_orders_v1()'; END IF;
- IF md5(pg_get_functiondef('public.admin_seller_portfolio_overview_v1()'::regprocedure)) IS DISTINCT FROM 'f5afeaca56abebd40309385112c1a611' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:public.admin_seller_portfolio_overview_v1()'; END IF;
+ IF md5(pg_get_functiondef('public.admin_seller_portfolio_overview_v1()'::regprocedure)) IS DISTINCT FROM '53dca32d7f12458c194cf852e47ad92f' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:public.admin_seller_portfolio_overview_v1()'; END IF;
+ IF md5(pg_get_functiondef('platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)'::regprocedure)) IS DISTINCT FROM '271aba99a49f475135e3e4726375a6e6' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)'; END IF;
 END $rb$;
 CREATE OR REPLACE FUNCTION platform_private.c2_order_actor_scope(_uid uuid, _partner uuid)
  RETURNS void
@@ -134,35 +134,6 @@ BEGIN
   ORDER BY p.sort_order, p.name;
 END
 $function$;
-CREATE OR REPLACE FUNCTION platform_private.c2_external_origin_assert(s jsonb, partner uuid, client uuid)
- RETURNS void
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO ''
-AS $function$
-DECLARE uid uuid:=auth.uid(); org uuid; p public.partner_accounts;
-BEGIN
- IF uid IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
- SELECT * INTO p FROM public.partner_accounts WHERE id=partner FOR SHARE;
- org:=p.commercial_owner_organization_id;
- IF NOT FOUND OR p.ativo IS NOT TRUE OR p.deleted_at IS NOT NULL OR org IS NULL
- OR NOT EXISTS(SELECT 1 FROM public.organizations o WHERE o.id=org AND o.ativo AND o.status='ativa')
- OR EXISTS(SELECT 1 FROM public.organizations o WHERE o.partner_account_id=partner)
- OR NOT platform_private.c2_external_origin_contract_valid(s)
- OR s->>'organization_id' IS DISTINCT FROM org::text OR s->>'partner_id' IS DISTINCT FROM partner::text
- THEN RAISE EXCEPTION 'C2_EXTERNAL_ORIGIN_DENIED' USING ERRCODE='42501'; END IF;
- IF client IS DISTINCT FROM p.client_id OR (client IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.clientes c WHERE c.id=client AND c.organization_id=org))
- THEN RAISE EXCEPTION 'C2_EXTERNAL_CLIENT_DENIED' USING ERRCODE='42501'; END IF;
- -- Initial writes are authorized only inside the existing canonical create transaction.
- -- Subsequent administration uses P1's active internal owner authority, never buyer roles.
- IF platform_private.has_ticket('c2_external_order_create',partner) THEN
-  IF s->>'actor_user_id' IS DISTINCT FROM uid::text OR NOT platform_private.c2_owner_order_create_allowed(uid,partner)
-  THEN RAISE EXCEPTION 'C2_EXTERNAL_CREATE_DENIED' USING ERRCODE='42501'; END IF;
-  ELSE
-  IF public.h15_actor_organization() IS DISTINCT FROM org OR NOT platform_private.c2p1_settings_allowed(partner,true)
-  THEN RAISE EXCEPTION 'C2_EXTERNAL_OWNER_DENIED' USING ERRCODE='42501'; END IF;
- END IF;
-END $function$;
 CREATE OR REPLACE FUNCTION public.get_partner_catalog_secure(p_partner_id uuid)
  RETURNS TABLE(item_id uuid, item_tipo text, product_id uuid, produto_nome text, produto_codigo text, descricao_curta text, preco_tabela numeric, desconto_percentual numeric, preco_parceiro numeric, produto_ativo boolean, resumo_curto text, explicacao_b2b text, beneficios_principais text, ficha_status text, ficha_aprovada boolean, valor_dose_brl numeric, valor_litro_brl numeric, valor_ha_brl numeric, unidade_preco_principal text)
  LANGUAGE plpgsql
@@ -1889,6 +1860,7 @@ BEGIN
         AND pa.commercial_owner_organization_id=v_org),'[]'::jsonb));
 END $function$;
 REVOKE ALL ON FUNCTION public.seller_portfolio_capability_v1() FROM PUBLIC, anon; GRANT EXECUTE ON FUNCTION public.seller_portfolio_capability_v1() TO authenticated;
+DROP FUNCTION platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid);
 DROP FUNCTION public.admin_seller_portfolio_overview_v1();
 DROP FUNCTION public.seller_portfolio_orders_v1();
 DROP FUNCTION platform_private.seller_portfolio_lock(uuid,uuid);
@@ -1903,8 +1875,6 @@ DO $rbp$ BEGIN
  IF (SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='platform_private.commercial_plan_partner_visible(uuid,uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres}|postgres' THEN RAISE EXCEPTION 'VENDW_RB_ACL:platform_private.commercial_plan_partner_visible(uuid,uuid)'; END IF;
  IF md5(pg_get_functiondef('public.rpc_b2b_list_selectable_payment_plans()'::regprocedure)) IS DISTINCT FROM '5bceeda188eee7525172eadeed17f7c0' THEN RAISE EXCEPTION 'VENDW_RB_POST:public.rpc_b2b_list_selectable_payment_plans()'; END IF;
  IF (SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.rpc_b2b_list_selectable_payment_plans()'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}|postgres' THEN RAISE EXCEPTION 'VENDW_RB_ACL:public.rpc_b2b_list_selectable_payment_plans()'; END IF;
- IF md5(pg_get_functiondef('platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'::regprocedure)) IS DISTINCT FROM '999e5e9fd9887595e252523fb2142726' THEN RAISE EXCEPTION 'VENDW_RB_POST:platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'; END IF;
- IF (SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres}|postgres' THEN RAISE EXCEPTION 'VENDW_RB_ACL:platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'; END IF;
  IF md5(pg_get_functiondef('public.get_partner_catalog_secure(uuid)'::regprocedure)) IS DISTINCT FROM 'b5684d350603d1db77ab9f1db0f4b253' THEN RAISE EXCEPTION 'VENDW_RB_POST:public.get_partner_catalog_secure(uuid)'; END IF;
  IF (SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}|postgres' THEN RAISE EXCEPTION 'VENDW_RB_ACL:public.get_partner_catalog_secure(uuid)'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_partner_catalog_reader(uuid)'::regprocedure)) IS DISTINCT FROM 'bd985484b69c8fa6e63a920eff518369' THEN RAISE EXCEPTION 'VENDW_RB_POST:platform_private.b2b_partner_catalog_reader(uuid)'; END IF;
