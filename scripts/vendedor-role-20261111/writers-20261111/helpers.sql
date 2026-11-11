@@ -129,7 +129,7 @@ GRANT EXECUTE ON FUNCTION public.admin_seller_portfolio_overview_v1() TO authent
 
 -- Despachante dedicado da resposta de cotação. Não vendedor: chama o validador compartilhado LIVE, inalterado.
 -- Vendedor exclusivo: só o pedido informado, mesma linhagem gravada, mesmas checagens estruturais e carteira vigente.
--- Não usa ticket nem cria autoridade reaproveitável por outro escritor da transação.
+-- Exige o marcador txid emitido pela resposta de cotação para ESTE pedido; outros escritores (ex.: cobrança) seguem no validador LIVE.
 CREATE FUNCTION platform_private.seller_quote_origin_dispatch(p_order uuid, s jsonb, partner uuid, client uuid)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $f$
 DECLARE uid uuid := auth.uid(); o record; p public.partner_accounts; org uuid; r text;
@@ -143,6 +143,9 @@ BEGIN
     FROM public.partner_orders po WHERE po.id=p_order;
   IF NOT FOUND OR o.partner_id IS DISTINCT FROM partner OR o.cliente_id IS DISTINCT FROM client OR o.snap IS DISTINCT FROM s THEN
     RAISE EXCEPTION 'SELLER_QUOTE_ORIGIN_DENIED' USING ERRCODE='42501';
+  END IF;
+  IF NOT platform_private.has_ticket('seller_quote_respond',p_order) THEN
+    RAISE EXCEPTION 'SELLER_QUOTE_FLOW_REQUIRED' USING ERRCODE='42501';
   END IF;
   -- Só cotação pendente, ou replay do próprio recibo deste vendedor para este pedido.
   IF o.status <> 'aguardando_cotacao' AND NOT EXISTS (SELECT 1 FROM platform_private.b2b_quote_response_receipts rr

@@ -53,6 +53,10 @@ TARGETS=[
  ("  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_idem:' || p_partner_id::text || ':' || v_idem, 0));",
   "  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_idem:' || p_partner_id::text || ':' || v_idem, 0));\n  -- seller_portfolio_v1: vínculo travado (FOR SHARE) e revalidado após as esperas; revogação concorrente serializa.\n  IF platform_private.seller_commercial_actor() IS TRUE THEN PERFORM platform_private.seller_portfolio_lock(v_uid, p_partner_id); END IF;",1)]),
 ("platform_private.b2b_internal_order_snapshot_guard()","1c342be2cdaf7bf458a3cd1aa15e7ba5",False,[
+ ("PERFORM platform_private.c2_external_origin_assert(OLD.c2_external_origin_snapshot,OLD.partner_id,OLD.cliente_id);",
+  "PERFORM platform_private.seller_quote_origin_dispatch(OLD.id,OLD.c2_external_origin_snapshot,OLD.partner_id,OLD.cliente_id);",1),
+ ("PERFORM platform_private.c2_external_origin_assert(NEW.c2_external_origin_snapshot,NEW.partner_id,NEW.cliente_id);\n IF NEW.partner_id IS DISTINCT FROM OLD.partner_id",
+  "PERFORM platform_private.seller_quote_origin_dispatch(NEW.id,NEW.c2_external_origin_snapshot,NEW.partner_id,NEW.cliente_id);\n IF NEW.partner_id IS DISTINCT FROM OLD.partner_id",1),
  ("  IF org IS NULL OR NOT public.fn_cc_can_prepare(uid) OR NOT public._saas_user_has_feature(uid,'pedidos_b2b') THEN RAISE EXCEPTION 'B2B_INTERNAL_ACTOR_DENIED'",
   "  IF org IS NULL OR NOT (public.fn_cc_can_prepare(uid) OR "+P('uid','NEW.partner_id')+") OR NOT public._saas_user_has_feature(uid,'pedidos_b2b') THEN RAISE EXCEPTION 'B2B_INTERNAL_ACTOR_DENIED'",1)]),
 ("platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)","6bbb61aa5899b18d13ac55d4f76f45e1",False,[
@@ -66,6 +70,10 @@ TARGETS=[
  ("v_is_admin := has_role(v_uid,'administrador'::app_role); v_is_gestor := has_role(v_uid,'gestor_comercial'::app_role);",
   "v_is_admin := has_role(v_uid,'administrador'::app_role); v_is_gestor := has_role(v_uid,'gestor_comercial'::app_role) OR "+P('v_uid','v_order.partner_id')+";\n  -- seller_portfolio_v1: após FOR UPDATE do pedido, trava e revalida o vínculo da carteira.\n  IF platform_private.seller_commercial_actor() IS TRUE THEN\n    PERFORM platform_private.seller_portfolio_lock(v_uid, v_order.partner_id);\n  END IF;",1),
  ("PERFORM platform_private.c2_external_origin_assert(","PERFORM platform_private.seller_quote_origin_dispatch(p_order_id,",3),
+ ("  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;\n  -- Origem externa e interna",
+  "  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;\n  -- seller_portfolio_v1: marcador txid restrito a ESTE pedido; só o despachante dedicado o lê. Removido antes de todo retorno; exceção reverte.\n  IF platform_private.seller_commercial_actor() IS TRUE THEN\n    INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES (txid_current(),'seller_quote_respond',p_order_id) ON CONFLICT DO NOTHING;\n  END IF;\n  -- Origem externa e interna",1),
+ ("      RETURN v_result;","      DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='seller_quote_respond' AND target=p_order_id;\n      RETURN v_result;",1),
+ ("  RETURN v_result;\nEND","  DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='seller_quote_respond' AND target=p_order_id;\n  RETURN v_result;\nEND",1),
  ("    IF NOT (has_role(v_uid,'administrador'::app_role) OR has_role(v_uid,'gestor_comercial'::app_role)) THEN",
   "    IF NOT (has_role(v_uid,'administrador'::app_role) OR has_role(v_uid,'gestor_comercial'::app_role) OR "+P('v_uid','v_order.partner_id')+") THEN",1)]),
 ]
@@ -126,7 +134,7 @@ def main():
     post.append(" IF md5(pg_get_functiondef('platform_private.c2_internal_order_target_reason(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '07d7c9002cbfe17497c9ee4a92d5a928' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
     post.append(" IF md5(pg_get_functiondef('public.fn_cc_can_prepare(uuid)'::regprocedure)) IS DISTINCT FROM '"+db.md5('public.fn_cc_can_prepare(uuid)')+"' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
     post.append(" IF md5(pg_get_functiondef('platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'::regprocedure)) IS DISTINCT FROM '999e5e9fd9887595e252523fb2142726' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;")
-    post.append(" IF EXISTS(SELECT 1 FROM pg_proc p WHERE p.prokind='f' AND pg_get_functiondef(p.oid) LIKE '%seller_quote_respond%') THEN RAISE EXCEPTION 'VENDW_POST_TICKET_PRESENT'; END IF;")
+    post.append(" IF EXISTS(SELECT 1 FROM pg_proc p WHERE p.prokind='f' AND pg_get_functiondef(p.oid) LIKE '%seller_quote_respond%' AND p.oid NOT IN ('public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'::regprocedure,'platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)'::regprocedure)) THEN RAISE EXCEPTION 'VENDW_POST_TICKET_SCOPE_WIDENED'; END IF;")
     post.append("END $post$;\nSELECT 'VENDW_POST_PASS';")
     post_sql='\n'.join(post)+'\n'
     inst=["-- REVIEW ONLY / INATIVO. Aplicar somente pelo auditor após VENDW_PRE_PASS no ref swzpzcwiasxmjutrmvkm.","BEGIN;","SET LOCAL lock_timeout='5s';",pre_sql.replace("SELECT 'VENDW_PRE_PASS';",""),HELPERS]
