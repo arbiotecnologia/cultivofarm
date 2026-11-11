@@ -47,7 +47,7 @@ spec=importlib.util.spec_from_file_location('r12_scenarios',F);S=importlib.util.
 class B:
  run_raw=staticmethod(d.raw);last=staticmethod(d.last);sql=staticmethod(d.sql)
 class Q:
- UADM=X.UADM;A=X.A
+ UADM=X.UADM;A=X.A;u=staticmethod(X.u)
 item=d.last(f"SELECT id FROM public.partner_order_items WHERE order_id='{O}' LIMIT 1");partner=d.last(f"SELECT partner_id FROM public.partner_orders WHERE id='{O}'");company=d.last(f"SELECT company_settings_id FROM public.fiscal_invoices WHERE id='{INV}'")
 # Existing first NF allocated one package of two; second synthetic document uses the real remaining quantity.
 nf=S.insert_invoice(B,Q,O,partner,company,item,10,4501,'2027-02-02')
