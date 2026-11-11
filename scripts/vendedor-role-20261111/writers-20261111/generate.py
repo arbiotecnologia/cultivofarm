@@ -12,6 +12,9 @@ TARGETS=[
 ("platform_private.c2_order_actor_scope(uuid,uuid)","54c4327d63f48e39f598129ff9dd8f09",False,[
  ("    RETURN;\n  END IF;\n  IF public.has_role(_uid,'parceiro_b2b_tecnico'",
   "    RETURN;\n  END IF;\n  -- SELLER_PORTFOLIO_V1: vendedor exclusivo somente para parceiro atribuído explicitamente na própria empresa.\n  IF platform_private.seller_commercial_actor() IS TRUE AND auth.uid() IS NOT DISTINCT FROM _uid THEN\n    r := platform_private.seller_commercial_target_reason(_uid,_partner);\n    IF r IS NOT NULL OR _partner IS NULL THEN\n      RAISE EXCEPTION 'C2_SELLER_TARGET_DENIED:%', COALESCE(r,'target_required') USING ERRCODE='42501';\n    END IF;\n    RETURN;\n  END IF;\n  IF public.has_role(_uid,'parceiro_b2b_tecnico'",1)]),
+("platform_private.c2_owner_order_guard(uuid,uuid,uuid)","01d6cb10289af56ecfdbb38e43646e3a",False,[
+ ("     OR public.has_role(_uid,'gestor_comercial'::public.app_role) THEN\n    RETURN;",
+  "     OR public.has_role(_uid,'gestor_comercial'::public.app_role)\n     OR "+P('_uid','_partner')+" THEN\n    RETURN;",1)]),
 ("public.get_partner_catalog_secure(uuid)","b5684d350603d1db77ab9f1db0f4b253",False,[
  ("                AND platform_private.c2_internal_order_target_reason(v_uid, p_partner_id) IS NULL) THEN",
   "                AND platform_private.c2_internal_order_target_reason(v_uid, p_partner_id) IS NULL)\n       AND NOT "+P('v_uid','p_partner_id')+" THEN",1),

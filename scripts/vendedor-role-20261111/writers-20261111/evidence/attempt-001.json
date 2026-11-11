@@ -156,7 +156,7 @@
     {
       "test": "V1 lança pedido para P (positivo apto)",
       "status": "FAIL",
-      "detail": "ERROR:  C2_OWNER_ORDER_CLOSED"
+      "detail": "ERROR:  payment_condition_unavailable"
     },
     {
       "test": "V1 não lança para parceiro não atribuído",
@@ -201,15 +201,15 @@
   ],
   "executed_sha256": {
     "01c-pre-writers.sql.readonly": [
-      "020ae91dab7a45c7b962e6e173f246886803a860a36ca73bbd7f4af1a54d3432",
-      "020ae91dab7a45c7b962e6e173f246886803a860a36ca73bbd7f4af1a54d3432"
+      "a725da0625e5be150f9b15dbc82f53f5ea1ffac8290cb90609556bd0d7fb2b02",
+      "a725da0625e5be150f9b15dbc82f53f5ea1ffac8290cb90609556bd0d7fb2b02"
     ],
     "02c-install-writers.sql.review": [
-      "e30683093bfe0686de9cb8b1d707f9edec5a0dfc8743b1a1dbaa39020caaaf8c",
-      "e30683093bfe0686de9cb8b1d707f9edec5a0dfc8743b1a1dbaa39020caaaf8c"
+      "f01050efd688b8634f1ab62bb5b42f476eac5ac1b5a3c26833ca348ad2533a9a",
+      "f01050efd688b8634f1ab62bb5b42f476eac5ac1b5a3c26833ca348ad2533a9a"
     ],
     "03c-post-writers.sql.readonly": [
-      "0478ef4a5292d528e6a095f238a0459777232d8190d7642d37dbb91bb88f3a14"
+      "e7f107a8df50f87ecf0201ca2072ce7cca7e7a5283da53db44bd791bf9a4e5e0"
     ]
   },
   "note": "PostgreSQL descartável restaurado do espelho composto; Auth sintética; não prova JWT/RLS/Storage hospedados"
