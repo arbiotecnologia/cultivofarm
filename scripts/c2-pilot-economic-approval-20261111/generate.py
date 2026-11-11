@@ -111,6 +111,6 @@ if __name__=='__main__':
     if '--verify' in sys.argv: print(json.dumps(verify_on_disk(),indent=1));sys.exit(0)
     r=render()
     for n,t in r.items(): (H/n).write_text(t)
-    files=FILES+['candidate.sql','candidate-md5.json','generate.py','fixture.py','test_pilot_pg.py']
+    files=FILES+['candidate.sql','candidate-md5.json','generate.py','measure_candidate.py','fixture.py','test_pilot_pg.py']
     (H/'SHA256SUMS').write_text(''.join(f"{sha((H/n).read_bytes())}  {n}\n" for n in files if (H/n).exists()))
     print('written')
