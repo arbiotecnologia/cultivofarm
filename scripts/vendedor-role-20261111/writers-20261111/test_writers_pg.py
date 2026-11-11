@@ -199,7 +199,7 @@ try:
         rq=lambda uid,q=None: call(uid,rqs(q or qid,L(q or qid)))
         tk=lambda: d.last("select count(*) from platform_private.authz_tickets")
         tk0=tk()
-        ok('marcador seller_quote_respond aparece só na resposta de cotação e no despachante dedicado',set(d.sql("select string_agg(p.oid::regprocedure::text,',') from pg_proc p where p.prokind='f' and pg_get_functiondef(p.oid) like '%seller_quote_respond%'").split(','))=={'platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)','respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'},d.sql("select string_agg(p.oid::regprocedure::text,',' order by 1) from pg_proc p where p.prokind='f' and pg_get_functiondef(p.oid) like '%seller_quote_respond%'"))
+        ok('marcador seller_quote_respond aparece só na resposta de cotação e no despachante dedicado',set(d.sql("select string_agg(p.oid::regprocedure::text,'|') from pg_proc p where p.prokind='f' and pg_get_functiondef(p.oid) like '%seller_quote_respond%'").split('|'))=={'platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)','respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'},d.sql("select string_agg(p.oid::regprocedure::text,',' order by 1) from pg_proc p where p.prokind='f' and pg_get_functiondef(p.oid) like '%seller_quote_respond%'"))
         ok('cobrança B2B continua no validador LIVE (não usa o despachante)',"seller_quote_origin_dispatch" not in d.body('public.generate_b2b_receivable_secure_impl(uuid)'))
         # Costura declarada: marcador de Q1 inserido manualmente (simula o meio da resposta de Q1) em transação revertida.
         cl1=d.last(f"select coalesce(cliente_id::text,'') from public.partner_orders where id='{qid}'")

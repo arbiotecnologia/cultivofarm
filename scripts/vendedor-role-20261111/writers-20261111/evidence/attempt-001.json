@@ -1,7 +1,7 @@
 {
   "attempt": 1,
-  "pass_": 156,
-  "fail": 1,
+  "pass_": 157,
+  "fail": 0,
   "checks": [
     {
       "test": "restore sem erros além das FKs auth conhecidas",
@@ -340,8 +340,8 @@
     },
     {
       "test": "marcador seller_quote_respond aparece só na resposta de cotação e no despachante dedicado",
-      "status": "FAIL",
-      "detail": "respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text),platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid)"
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "cobrança B2B continua no validador LIVE (não usa o despachante)",
