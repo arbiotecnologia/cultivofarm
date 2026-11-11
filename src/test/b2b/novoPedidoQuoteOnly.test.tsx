@@ -6,7 +6,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { minDeliveryDateISO } from "@/lib/b2bDeliveryDate";
 import { formatDateDisplay } from "@/lib/date-utils";
 
-// Fixture local apenas: transporte sintético, nunca serviços hospedados.
+// Plano quote_only + meio explícito (piloto). Fixture local apenas: transporte sintético, nunca serviços hospedados.
 // Layout, guards, NovoPedido e hooks de catálogo/pedido permanecem reais.
 const state = vi.hoisted(() => ({
   actor: "11111111-1111-4111-8111-111111111111",
@@ -140,27 +140,89 @@ const calls = (n: string) => state.rpc.mock.calls.filter(([x]) => x === n).map((
 const submitBtn = () => screen.findByRole("button", { name: "Enviar pedido para análise" });
 
 const quoteBtn = () => screen.findByRole("button", { name: "Enviar solicitação de cotação" });
-function quoteSim() {
+const QUOTE_REPLY = (extra: Record<string, unknown> = {}) => ({
+  partner_id: state.partner, pricing_mode: "quote_only", quote_required: true, cart_hash: "hash-quote",
+  payment_plan: { id: PLAN.id, name: PLAN.name, code: PLAN.code, pricing_mode: "quote_only", discount_percent: 0,
+    monthly_interest_percent: 0, months_count: 1, installment_count: 1, requires_financial_approval: false,
+    requires_credit_approval: false, requires_guarantee: false },
+  amounts: { table_amount: 0, discount_amount: 0, net_amount_after_discount: 0, financial_interest_amount: 0, final_amount: 0 },
+  schedule: [], warnings: ["Condicao sob consulta: preco sera definido em cotacao."], ...extra,
+});
+const FIN_FISCAL = /fiscal|receivable|nf|boleto_emit|titulo|cobranc|communication|comunicacao/i;
+function useServer(opts: { reply?: (a: Record<string, unknown>) => unknown; journal?: "legacy" | "none" | "committed" } = {}) {
   const base = wrapped();
-  state.rpc.mockImplementation((n: string, a?: Record<string, unknown>) => {
-    if (n === "simulate_b2b_payment_plan_secure") return response({
-      partner_id: state.partner, pricing_mode: "quote_only", quote_required: true, cart_hash: "hash-quote",
-      payment_plan: { id: PLAN.id, name: PLAN.name, code: PLAN.code, pricing_mode: "quote_only", discount_percent: 0,
-        monthly_interest_percent: 0, months_count: 1, installment_count: 1, requires_financial_approval: false,
-        requires_credit_approval: false, requires_guarantee: false },
-      amounts: { table_amount: 0, discount_amount: 0, net_amount_after_discount: 0, financial_interest_amount: 0, final_amount: 0 },
-      schedule: [], warnings: ["Condicao sob consulta: preco sera definido em cotacao."],
-    });
+  state.rpc.mockImplementation((n: string, a: Record<string, unknown> = {}) => {
+    if (opts.journal && opts.journal !== "legacy") {
+      if (n === "partner_order_journal_capability_v1") return response({ contract: "C2_DURABLE_ORDER_ATTEMPT_V2", enabled: true, actor_id: state.actor, organization_id: state.tenant, partner_id: state.partner });
+    }
+    if (n === "simulate_b2b_payment_condition_secure") {
+      // Servidor (contrato B3 LIVE): cotação devolve envelope do meio, cronograma vazio e total 0 — nunca Price/parcelas.
+      const r = opts.reply ? opts.reply(a) : { ...QUOTE_REPLY(), final_amount: 0, installment_count: 1, schedule_estimated: true, due_basis: "nf_issue",
+        payment_condition_contract: TEST_CONTRACT, payment_choice: a.p_payment_choice,
+        payment_condition: { payment_method_name: "Pix", installment_count: 1, monthly_rate: 0, deadline_days: 5, due_basis: "nf_issue", estimated: true },
+        credit: { credit_limit: 1000, exposicao_projetada: 0, credit_checked: true } };
+      return response(r);
+    }
+    if (n === "create_partner_order_condition_secure") return response({ id: "d4539dd9-b090-4433-9ed3-6f8f5d3e767b", numero: "PB-001029", total: 0,
+      final_amount: 0, quote_required: true, status: "aguardando_cotacao", cart_hash: a.p_expected_cart_hash, schedule: [], ...condEnvelope(a.p_payment_choice) });
     return base(n, a);
   });
 }
-it("REPRO quote_only com meio explícito: botão de cotação habilita", async () => {
-  quoteSim();
+const finFiscalCalls = () => state.rpc.mock.calls.filter(([n]) => FIN_FISCAL.test(String(n)) && !String(n).startsWith("b2b_list_payment_condition"));
+
+it("quote_only com meio explícito: botão de cotação habilita e envia sem preço/parcelas inventados", async () => {
+  useServer();
   await toPayment();
+  expect(await screen.findByTestId("submit-block-reason")).toHaveTextContent("meio de pagamento");
   await pickTestPix();
   await waitFor(() => expect(calls("simulate_b2b_payment_condition_secure")).toHaveLength(1));
   const b = await quoteBtn();
-  await new Promise((r) => setTimeout(r, 100));
-  screen.debug(undefined, 0);
-  expect(b).toBeEnabled();
+  await waitFor(() => expect(b).toBeEnabled());
+  expect(screen.queryByTestId("submit-block-reason")).toBeNull();
+  expect(screen.getByText(/Itens sob consulta/)).toBeInTheDocument();
+  fireEvent.click(b); fireEvent.click(b);
+  await waitFor(() => expect(calls("create_partner_order_condition_secure")).toHaveLength(1));
+  const a = calls("create_partner_order_condition_secure")[0];
+  expect(a).toMatchObject({ p_payment_choice: TEST_PIX, p_expected_cart_hash: "hash-quote" });
+  expect(a).not.toHaveProperty("p_first_due_date");
+  expect(a).not.toHaveProperty("p_installment_count");
+  await screen.findByText("PB-001029");
+  expect(calls("create_partner_order_condition_secure")).toHaveLength(1);
+  expect(finFiscalCalls()).toHaveLength(0);
+  expect(state.writes).not.toHaveBeenCalled();
+});
+
+it("cotação com cronograma/parcelas na resposta é inválida: envio bloqueado (nunca adota Price em cotação)", async () => {
+  useServer({ reply: (a) => ({ ...QUOTE_REPLY({ schedule: [{ installment_number: 1, due_date: "2027-01-05", amount: 100, principal_amount: 100, interest_amount: 0 }] }),
+    final_amount: 0, installment_count: 1, schedule_estimated: true, due_basis: "nf_issue", payment_condition_contract: TEST_CONTRACT, payment_choice: a.p_payment_choice,
+    payment_condition: { payment_method_name: "Pix", installment_count: 1, monthly_rate: 0, deadline_days: 5, due_basis: "nf_issue", estimated: true } }) });
+  await toPayment(); await pickTestPix();
+  await waitFor(() => expect(calls("simulate_b2b_payment_condition_secure")).toHaveLength(1));
+  expect(await screen.findByTestId("submit-block-reason")).toHaveTextContent("validação do servidor falhou");
+  const send = screen.getByRole("button", { name: "Enviar pedido para análise" });
+  expect(send).toBeDisabled();
+  fireEvent.click(send);
+  expect(calls("create_partner_order_condition_secure")).toHaveLength(0);
+});
+
+it("cotação sem envelope do meio escolhido é inválida: envio bloqueado", async () => {
+  useServer({ reply: () => QUOTE_REPLY() });
+  await toPayment(); await pickTestPix();
+  await waitFor(() => expect(calls("simulate_b2b_payment_condition_secure")).toHaveLength(1));
+  expect(await screen.findByTestId("submit-block-reason")).toHaveTextContent("validação do servidor falhou");
+  expect(calls("create_partner_order_condition_secure")).toHaveLength(0);
+});
+
+it("preço ausente fora de quote_only segue bloqueado: sem simulação nem envio", async () => {
+  const base = wrapped();
+  state.rpc.mockImplementation((n: string, a?: Record<string, unknown>) => n === "get_partner_catalog_secure"
+    ? response([{ catalog_contract: "C1B_DUAL_TENANT_V1", item_id: a?.p_partner_id, item_tipo: "produto", produto_nome: "Produto local", produto_codigo: "LOCAL",
+        familia_catalogo: "biologico", valor_litro_brl: null, preco_parceiro: null, desconto_percentual: 0, unidade_preco_principal: "sob_consulta", ficha_aprovada: false }])
+    : base(n, a));
+  mount();
+  await screen.findByText("Produto local");
+  expect(screen.getAllByText(/sob consulta/i).length).toBeGreaterThan(0);
+  await new Promise((r) => setTimeout(r, 30));
+  expect(calls("simulate_b2b_payment_condition_secure")).toHaveLength(0);
+  expect(calls("create_partner_order_condition_secure")).toHaveLength(0);
 });
