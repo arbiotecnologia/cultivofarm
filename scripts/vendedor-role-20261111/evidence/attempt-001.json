@@ -7,6 +7,130 @@
   {
    "name": "pre_pass",
    "status": "PASS"
+  },
+  {
+   "name": "post_pass",
+   "status": "PASS"
+  },
+  {
+   "name": "sem_atribuicao_carteira_vazia",
+   "status": "PASS"
+  },
+  {
+   "name": "vendedor_nao_atribui",
+   "status": "PASS"
+  },
+  {
+   "name": "gestor_comercial_nao_atribui",
+   "status": "PASS"
+  },
+  {
+   "name": "motivo_obrigatorio",
+   "status": "PASS"
+  },
+  {
+   "name": "parceiro_outro_tenant_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "vendedor_outro_tenant_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "nao_vendedor_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "carteira_propria_visivel",
+   "status": "PASS"
+  },
+  {
+   "name": "outro_vendedor_nao_ve",
+   "status": "PASS"
+  },
+  {
+   "name": "vendedor_outro_tenant_nao_ve",
+   "status": "PASS"
+  },
+  {
+   "name": "dupla_atribuicao_conflito",
+   "status": "PASS"
+  },
+  {
+   "name": "admin_outro_tenant_nao_revoga",
+   "status": "PASS"
+  },
+  {
+   "name": "admin_outro_tenant_revoga_id_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "tabela_inacessivel_cliente",
+   "status": "PASS"
+  },
+  {
+   "name": "predicado_privado_sem_execute",
+   "status": "PASS"
+  },
+  {
+   "name": "escritores_fechados",
+   "status": "PASS"
+  },
+  {
+   "name": "vendedor_sem_aprovacao_comercial",
+   "status": "PASS"
+  },
+  {
+   "name": "gestor_comercial_preservado",
+   "status": "PASS"
+  },
+  {
+   "name": "gestor_comercial_sem_carteira_vendedor",
+   "status": "PASS"
+  },
+  {
+   "name": "perfil_inativo_revoga_acesso",
+   "status": "PASS"
+  },
+  {
+   "name": "papel_removido_revoga_acesso",
+   "status": "PASS"
+  },
+  {
+   "name": "historico_imutavel",
+   "status": "PASS"
+  },
+  {
+   "name": "sem_delete",
+   "status": "PASS"
+  },
+  {
+   "name": "revogacao_oculta_carteira",
+   "status": "PASS"
+  },
+  {
+   "name": "revogacao_repetida_negada",
+   "status": "PASS"
+  },
+  {
+   "name": "reatribuicao_outro_vendedor",
+   "status": "PASS"
+  },
+  {
+   "name": "auditoria_completa",
+   "status": "PASS"
+  },
+  {
+   "name": "rollback_recusa_ativos",
+   "status": "PASS"
+  },
+  {
+   "name": "rollback_preserva_historico",
+   "status": "PASS"
+  },
+  {
+   "name": "rollback_remove_rpcs",
+   "status": "PASS"
   }
  ],
  "sha256": {
@@ -15,6 +139,6 @@
   "02b-install.sql.review": "b4cb46b9d9ee18bcfea24abdbd208e64b8e3c2c4c3a0eeb28bccd97d79820ff4",
   "03-post.sql.readonly": "75fcfc9d89390b5662e9865c5c2efc0db3d2a7c47699138d03de23019728b789",
   "04-rollback.sql.review": "d9671b78dc9c776938ca77361d316da7f02a0ac41d9e6c7233400d42c2ced655",
-  "fixture.sql": "677098e014e8828742473ea87ec815793269bcdb1113eb38745f1bac9fbcb817"
+  "fixture.sql": "2cc7ef1d34c2d539ef5cb890917ef0e878ce23b8406bf1230359cdb9399d7366"
  }
 }
