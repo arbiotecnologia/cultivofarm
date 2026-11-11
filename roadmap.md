@@ -1,3 +1,10 @@
+## 11/11 22:50 — Semântica econômica C2 e auditoria de cancelamentos (somente local)
+- [ ] Auditar consumidores da elegibilidade e distinguir aprovação econômica explícita de autorização operacional/contábil, sem alterar approved_* ou elegibilidade.
+- [ ] Reconstituir espelho r12 com restauração limpa/FKs validadas e pin do leitor 70dba08838cd4d5eea29f37f5f8a3373; preservar positivo já encerrado.
+- [ ] Auditar entradas UI/backend de cancelamento de pedido e documento fiscal; testar antes/depois de previsão, parcial, autorização, recusa/pendência, confirmação simulada, replay, concorrência, pagamento e isolamento.
+- [ ] Executar evidências locais positivas/negativas/rollback; separar correções prontas de decisões de negócio bloqueadas em pacotes pequenos gerados com PRE/INSTALL fechado/POST/rollback e hashes.
+- [ ] Documentar comandos, fontes, limitações e decisões materiais; nenhuma rede remota/runtime/publicação/emissão/cobrança/cancelamento real.
+
 ## 11/11 03:27 — Rejeição financeira externa ARBio (local)
 - [ ] Revisão 03:53: enum real, via legada integral, rollback somente hash candidato→LIVE sem drift; preservar erro 42883 e continuar correções até prova final.
 - [ ] Gerar delta do reject LIVE 40777d0c: vendedor estrito, termos pendentes, antes da aprovação comercial/reserva, locks e revalidação; cabeçalho preservado/auditoria única.
