@@ -143,6 +143,7 @@ try:
     v,_=st(X.UGC,O[0]);ok('00: sem aprovações e sem previsão',v['approvals']==[] and v['forecast'] is None)
     k1=key();a,e=ap(X.UGC,O[0],'commercial',k1,H0)
     ok('10: aprovação comercial explícita com autor/data, sem previsão',a and a['approved_by']==X.UGC and a['approved_at'] and a['forecast_id'] is None and nf(O[0])==0,a or e)
+    v,_=st(X.UFIN,O[0]);ok('10 (ordem C→K): leitor mostra só comercial com autor/data, sem previsão; crédito aprovável',v and [(x['kind'],x['approved_by']) for x in v['approvals']]==[('commercial',X.UGC)] and v['approvals'][0]['approved_at'] and v['forecast'] is None and v['can_approve_credit'],v)
     a2,e=ap(X.UGC,O[0],'commercial',k1,H0);ok('10: replay mesma chave devolve o mesmo registro',a2 and a2['replayed'] and a2['approval_id']==a['approval_id'],a2 or e)
     deny('10: segunda aprovação comercial (outra chave)',lambda: ap(X.UGC,O[0],'commercial',key(),H0),'PT409','C2_PILOT_ECON_ALREADY_APPROVED')
     deny('10: chave reaproveitada para crédito',lambda: ap(X.UFIN,O[0],'credit',k1,H0),'PT409','C2_PILOT_ECON_IDEMPOTENCY_CONFLICT')
@@ -153,7 +154,7 @@ try:
     fr=json.loads(d.last(f"SELECT jsonb_build_object('t',total_amount,'r',residual_amount,'s',state,'cb',commercial_approved_by,'kb',credit_approved_by,'src',economic_snapshot->>'source','cs',credit_decision_snapshot->>'source','rc',credit_decision_snapshot ? 'reason_code','sch',schedule_snapshot)::text FROM platform_private.b2b_financial_forecasts WHERE order_id='{O[0]}'"))
     ok('previsão: total 20 não exigível (aguardando_fiscal), autores explícitos, crédito sem reason_code automático',fr['t']==20 and fr['r']==20 and fr['s']=='aguardando_fiscal' and fr['cb']==X.UGC and fr['kb']==X.UFIN and fr['src']=='C2_PILOT_ECONOMIC_APPROVAL_V1' and fr['cs']=='C2_PILOT_EXPLICIT_CREDIT_APPROVAL_V1' and fr['rc'] is False and len(fr['sch'])==1,fr)
     deny('11: LIVE approve_partner_order continua bloqueado',lambda: m.call(X.UGC,f"public.approve_partner_order('{O[0]}',NULL)"),'42501','C2_ACCOUNTING_PENDING')
-    v,_=st(X.UGC,O[0]);ok('10 (ordem C→K): leitor com uma aprovação comercial e sem previsão',v and v.get('available') and [a['kind'] for a in v['approvals']]==['commercial','credit'] and v['forecast'] and not v['can_approve_commercial'],v)
+    v,_=st(X.UGC,O[0]);ok('11 (ordem C→K): leitor com duas aprovações e a previsão',v and v.get('available') and [a['kind'] for a in v['approvals']]==['commercial','credit'] and v['forecast'] and not v['can_approve_commercial'],v)
     v,_=st(X.UFIN,O[1]);ok('00 (ordem K→C): leitor sem aprovações e sem previsão',v and v['approvals']==[] and v['forecast'] is None and v['can_approve_credit'],v)
     k3=key();c,e=ap(X.UFIN,O[1],'credit',k3,evh(O[1]));ok('01: crédito antes do comercial, sem previsão',c and c['approved_by']==X.UFIN and c['approved_at'] and c['forecast_id'] is None and nf(O[1])==0,c or e)
     v,_=st(X.UGC,O[1]);ok('01: leitor mostra só crédito com autor/data, sem previsão; comercial ainda aprovável',v and [(a['kind'],a['approved_by']) for a in v['approvals']]==[('credit',X.UFIN)] and v['forecast'] is None and v['can_approve_commercial'],v)
@@ -221,7 +222,7 @@ try:
     ok('pedidos inalterados ao final',[row(o) for o in O]==R)
     EFF1={t:cnt(f"SELECT count(*) FROM {t}") for t in ('public.accounts_receivable','public.fiscal_invoices','public.estoque_movimentacoes','public.entregas','public.notificacoes_operacionais')+tuple(t for t in ('public.comunicacao_outbox','public.communication_outbox','public.fiscal_events','public.accounts_receivable_installments') if T(t))}
     ok('sem novo recebível, NF, estoque, entrega, notificação ou envio',EFF1==EFF0,(EFF0,EFF1))
-    ok('previsões novas = 5 pedidos que chegaram a 11 (um evento cada)',cnt('SELECT count(*) FROM platform_private.b2b_financial_forecasts')-F0==5 and cnt('SELECT count(*) FROM platform_private.b2b_financial_forecast_events')-E0==5)
+    ok('previsões novas = 5 pedidos do piloto em 11 (um evento cada) + 1 previsão comum de controle sem evento',cnt('SELECT count(*) FROM platform_private.b2b_financial_forecasts')-F0==6 and cnt('SELECT count(*) FROM platform_private.b2b_financial_forecast_events')-E0==5)
     # Leitores existentes
     v,e=m.call(X.UFIN,f"public.get_b2b_financial_forecast_secure('{O[0]}')");ok('leitor existente de previsão lê a previsão do piloto (estimada, total 20)',v and v['total_amount']==20 and v['due_dates_estimated'] is True,v or e)
     v,e=m.call(X.UADMF,f"public.get_b2b_financial_forecast_secure('{O[0]}')");ok('leitor existente nega outro tenant',v is None and 'B2B_FORECAST_READ_DENIED' in (e or ''),v or e)
