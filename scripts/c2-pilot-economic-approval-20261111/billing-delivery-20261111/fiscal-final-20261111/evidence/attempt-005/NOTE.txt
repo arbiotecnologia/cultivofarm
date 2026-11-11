@@ -1,0 +1,1 @@
+19 PASS/1 FAIL: com ACL/gate abertos, contenção do piloto (allowlist) negou também o controle; negativa PB não diferencia regra C2

@@ -94,6 +94,7 @@ def os_call(uid,o,it,exp,key,open_seam=False):
     if open_seam:
         # S-OS: endpoint candidato aberto SÓ nesta transação revertida (mesmo GRANT do os_endpoint.py + gate do harness).
         pre+="BEGIN;GRANT EXECUTE ON FUNCTION public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text) TO authenticated;UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=true WHERE singleton;"
+        pre+=f"INSERT INTO platform_private.resale_pilot_allowlist_v1(gate,operation,actor_id,organization_id,partner_id,order_id,order_item_id,product_id,synthetic,created_by,valid_until) SELECT 'b2b_resale','os_create','{uid}',po.seller_organization_id_eff,po.partner_id,po.id,i.id,i.product_id,true,'{uid}',now()+interval '1 hour' FROM (SELECT id,partner_id,'00000000-0000-0000-0000-000000000001'::uuid seller_organization_id_eff FROM public.partner_orders WHERE id='{o}') po JOIN public.partner_order_items i ON i.order_id=po.id AND i.id='{it}';"
     q=pre+m.claims(uid)+f"SELECT public.rpc_b2b_resale_os_create_v1('{o}','{it}','{exp}'::timestamptz,'{key}');"
     if open_seam: q+=f"RESET ROLE;SELECT (SELECT count(*) FROM public.ordens_servico WHERE partner_order_id='{o}')||'|'||(SELECT count(*) FROM public.entregas WHERE partner_order_id='{o}');ROLLBACK;"
     return d.raw(q)
@@ -115,7 +116,7 @@ ok('controle positivo (mesma identidade, mesma costura): pedido aprovado r12 dev
 e1=effects(PB)
 ok('nova conexão: PB e global sem efeito em saldo/título/OS/entrega/estoque; costura revertida',e1==e0 and fp(PB)==g0 and e1['os']==0 and e1['entregas']==0 and e1['titles']==0 and d.last("SELECT enabled::text FROM platform_private.b2b_resale_logistics_gate_v1")=='false' and 'authenticated' not in d.last("SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid='public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)'::regprocedure"),dict(before=e0,after=e1))
 SEAMS.append('S-AUTH usuários fictícios em auth.users antes das constraints (prep_restore.sh)')
-SEAMS.append('S-OS endpoint candidato rpc_b2b_resale_os_create_v1 + gate abertos somente dentro de transações revertidas')
+SEAMS.append('S-OS endpoint candidato rpc_b2b_resale_os_create_v1 + gate + concessão os_create do piloto (ator/org/parceiro/pedido/item/produto exatos, igual ao harness) somente dentro de transações revertidas, idênticas para PB e controle')
 neg,neg2=neg,neg2
 e2=e1
 (att/'effects.json').write_text(json.dumps(dict(before=e0,after_negative=e1,after_positive_control=e2,closed=errs(closed),negative=[neg.stderr[-800:],neg2.stderr[-800:]],positive=dict(rc=pos.returncode,out=pos.stdout[-600:],err=pos.stderr[-600:])),indent=1)+'\n')
