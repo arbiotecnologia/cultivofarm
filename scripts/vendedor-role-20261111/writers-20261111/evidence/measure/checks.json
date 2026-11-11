@@ -1,0 +1,303 @@
+[
+  {
+    "test": "fresh full physical catalog restoration and reviewed upstream composition",
+    "status": "PASS"
+  },
+  {
+    "test": "restricted POSPLANOS baseline measures twenty LIVE bodies 120 triggers 18 relation security pins and four captured dependencies before candidate generation",
+    "status": "PASS"
+  },
+  {
+    "test": "physical revised install exact measured PRE POST with six current tenant guards; fresh confirmation/send generated pins",
+    "status": "PASS"
+  },
+  {
+    "test": "new physical control purchase reserve send proof confirm without manufacture",
+    "status": "PASS"
+  },
+  {
+    "test": "new B3 captured economic composition merged without dropped physical guards",
+    "status": "PASS"
+  },
+  {
+    "test": "plan tenant candidate PRE POST in same DB; seller positive FSF read write negative and cross tenant same code",
+    "status": "PASS"
+  },
+  {
+    "test": "Seller91 real body installed before canonical order creation; current MD5 97bcdb98",
+    "status": "PASS"
+  },
+  {
+    "test": "post catalog Price plans preserve twenty LIVE bodies 120 triggers 18 relation security pins and four captured dependencies",
+    "status": "PASS"
+  },
+  {
+    "test": "real registration fence and exact receivable ACL with all ten triggers enabled before B2B order",
+    "status": "PASS"
+  },
+  {
+    "test": "direct settings write denied and delivery context forbids receivable INSERT UPDATE DELETE",
+    "status": "PASS"
+  },
+  {
+    "test": "additive pilot targeting keeps old and new required; legacy writer denied; outside partner and tenant unchanged",
+    "status": "PASS"
+  },
+  {
+    "test": "real NULL seller org shape; global guards unchanged; role tenant inactive revocation and multilink negatives",
+    "status": "PASS"
+  },
+  {
+    "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
+    "status": "PASS",
+    "order_id": "93f20f95-4b81-4026-afa3-38f08edc55d1"
+  },
+  {
+    "test": "accounting pending promotion denied atomically before synthetic validation",
+    "status": "PASS"
+  },
+  {
+    "test": "accounting pending approval denied atomically before synthetic promotion",
+    "status": "PASS"
+  },
+  {
+    "test": "forecast separate after commercial and valid credit; idempotent scoped no receivable; private transition denied to authenticated",
+    "status": "PASS",
+    "forecast_id": "6ba4a482-69d2-4359-ba9e-9bb0eaa32b7c"
+  },
+  {
+    "test": "synthetic accounting CAS promotion and canonical seller acceptance; biological production stays closed",
+    "status": "PASS"
+  },
+  {
+    "test": "credit OK without override creates 18 only after commercial and payment terms; separate manual override and cross tenant scope use real canonical approvals",
+    "status": "PASS",
+    "override_order": "a65760d6-ffd3-4cca-ac24-10d98b0dce88",
+    "seller_scope": false
+  },
+  {
+    "test": "public endpoint gate closed, private helper client EXECUTE denied and no direct ready OS bypass",
+    "status": "PASS"
+  },
+  {
+    "test": "authenticated direct status changes zero rows and privileged direct operational transition is explicitly denied",
+    "status": "PASS"
+  },
+  {
+    "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
+    "status": "PASS",
+    "os_id": "d19007d8-b779-485c-924d-c6fc327b26d5"
+  },
+  {
+    "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
+    "status": "PASS"
+  },
+  {
+    "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
+    "status": "PASS",
+    "delivery_id": "356f514e-877a-4d2c-8640-69f1fb4af3f9"
+  },
+  {
+    "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
+    "status": "PASS",
+    "delivery_id": "54e47048-8271-4f06-ba15-e81c2dba8c78"
+  },
+  {
+    "test": "review70 two_items_only_one_os_and_delivery",
+    "status": "PASS",
+    "detail": {
+      "partial": {
+        "confirmation_success": true,
+        "persisted": {
+          "proof": "confirmado",
+          "stock": "expedido",
+          "receipt": 1,
+          "delivery": "entregue",
+          "quantity": 1,
+          "expedition": 1,
+          "receivables": 1
+        },
+        "replay_no_delta": true,
+        "order_status": "aprovado"
+      },
+      "completed_only_after_both_items": true
+    }
+  },
+  {
+    "test": "review70 quantity_three_delivery_one_remainder_unreserved",
+    "status": "PASS",
+    "detail": {
+      "partial": {
+        "confirmation_success": true,
+        "persisted": {
+          "proof": "confirmado",
+          "stock": "expedido",
+          "receipt": 1,
+          "delivery": "entregue",
+          "quantity": 1,
+          "expedition": 1,
+          "receivables": 1
+        },
+        "replay_no_delta": true,
+        "order_status": "aprovado"
+      },
+      "delivered_quantities": [
+        1,
+        2
+      ],
+      "remainder_initially_unreserved": true
+    }
+  },
+  {
+    "test": "review70 cancelled_partial_does_not_complete",
+    "status": "PASS",
+    "detail": {
+      "partial": {
+        "confirmation_success": true,
+        "persisted": {
+          "proof": "confirmado",
+          "stock": "expedido",
+          "receipt": 1,
+          "delivery": "entregue",
+          "quantity": 1,
+          "expedition": 1,
+          "receivables": 1
+        },
+        "replay_no_delta": true,
+        "order_status": "aprovado"
+      },
+      "cancelled_delivery_excluded": true,
+      "replacement_required_and_confirmed": true
+    }
+  },
+  {
+    "test": "review70 overdelivery_cannot_complete_or_rewrite_snapshots",
+    "status": "PASS",
+    "detail": {
+      "initial_denial": "ERROR:  PT409: B2B_RESALE_OVERDELIVERY\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 85 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "ordered": 2,
+      "attempted": 3,
+      "confirmed_overdelivery": false
+    }
+  },
+  {
+    "test": "review70 last_two_deliveries_concurrent",
+    "status": "PASS",
+    "detail": {
+      "distinct_connections_and_OS": true,
+      "actual_lock_wait": true,
+      "both_success": true,
+      "terminal_event_count": 1,
+      "states": [
+        {
+          "proof": "confirmado",
+          "stock": "expedido",
+          "receipt": 1,
+          "delivery": "entregue",
+          "quantity": 1,
+          "expedition": 1,
+          "receivables": 1
+        },
+        {
+          "proof": "confirmado",
+          "stock": "expedido",
+          "receipt": 1,
+          "delivery": "entregue",
+          "quantity": 1,
+          "expedition": 1,
+          "receivables": 1
+        }
+      ],
+      "replays_no_delta": true
+    }
+  },
+  {
+    "test": "review70 create_wait_revocation_role",
+    "status": "PASS",
+    "detail": {
+      "actual_row_wait": true,
+      "error": "ERROR:  B2B_RESALE_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 24 at RAISE\n",
+      "zero_os_ticket_ledger_event_receipt_delta": true,
+      "explicit_candidate_reauth": true
+    }
+  },
+  {
+    "test": "review70 create_wait_revocation_profile",
+    "status": "PASS",
+    "detail": {
+      "actual_row_wait": true,
+      "error": "ERROR:  B2B_RESALE_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 24 at RAISE\n",
+      "zero_os_ticket_ledger_event_receipt_delta": true,
+      "explicit_candidate_reauth": true
+    }
+  },
+  {
+    "test": "review70 create_wait_revocation_tenant",
+    "status": "PASS",
+    "detail": {
+      "actual_row_wait": true,
+      "error": "ERROR:  ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 22 at IF\n",
+      "zero_os_ticket_ledger_event_receipt_delta": true,
+      "explicit_candidate_reauth": true
+    }
+  },
+  {
+    "test": "review70 create_wait_revocation_gate",
+    "status": "PASS",
+    "detail": {
+      "actual_row_wait": true,
+      "error": "ERROR:  B2B_RESALE_GATE_CLOSED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 26 at RAISE\n",
+      "zero_os_ticket_ledger_event_receipt_delta": true,
+      "explicit_candidate_reauth": true
+    }
+  },
+  {
+    "test": "review70 replay_wait_revocation_role",
+    "status": "PASS",
+    "detail": {
+      "actual_advisory_wait": true,
+      "receipt_not_returned": true,
+      "error": "ERROR:  B2B_RESALE_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 24 at RAISE\n",
+      "explicit_candidate_reauth": true
+    }
+  },
+  {
+    "test": "review70 replay_wait_revocation_profile",
+    "status": "PASS",
+    "detail": {
+      "actual_advisory_wait": true,
+      "receipt_not_returned": true,
+      "error": "ERROR:  B2B_RESALE_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 24 at RAISE\n",
+      "explicit_candidate_reauth": true
+    }
+  },
+  {
+    "test": "review70 replay_wait_revocation_tenant",
+    "status": "PASS",
+    "detail": {
+      "actual_advisory_wait": true,
+      "receipt_not_returned": true,
+      "error": "ERROR:  ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 22 at IF\n",
+      "explicit_candidate_reauth": false
+    }
+  },
+  {
+    "test": "review70 replay_wait_revocation_gate",
+    "status": "PASS",
+    "detail": {
+      "actual_advisory_wait": true,
+      "receipt_not_returned": true,
+      "error": "ERROR:  B2B_RESALE_GATE_CLOSED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 26 at RAISE\n",
+      "explicit_candidate_reauth": true
+    }
+  },
+  {
+    "test": "public OS endpoint FSF buyer revoked feature pending helper ACL and concurrent creation",
+    "status": "PASS"
+  },
+  {
+    "test": "manual agronomic physical flow still passes after resale candidate",
+    "status": "PASS",
+    "delivery_id": "f6bd57b4-bb32-47e0-8a97-7187c5047180"
+  }
+]

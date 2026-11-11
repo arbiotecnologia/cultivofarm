@@ -1,0 +1,34 @@
+{
+  "status": "INACTIVE_REVIEW_ONLY_NOT_APPROVED",
+  "hosted": false,
+  "default_enabled": false,
+  "master_switch_is_not_authority": true,
+  "client_allowlist_access": false,
+  "changed_functions": [
+    "platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)",
+    "platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)",
+    "public.rpc_finished_product_purchase_capability_v1()",
+    "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)",
+    "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)",
+    "platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes)",
+    "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)",
+    "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)",
+    "public.rpc_b2b_resale_os_availability_v1(uuid)",
+    "public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)",
+    "public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)",
+    "public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)",
+    "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)",
+    "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
+    "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
+    "public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)",
+    "platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb)",
+    "public.rpc_entrega_comprovacao_preflight_v1(uuid,text)"
+  ],
+  "new_functions": [
+    "platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)",
+    "platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)",
+    "platform_private.resale_pilot_delivery_scope_v1(text,text,uuid,uuid,uuid)",
+    "platform_private.resale_pilot_delivery_allowed_v1(text,text,uuid,uuid,uuid)"
+  ],
+  "candidate_sha256": "680e2ebac8ad4c03860a0a2e047057ab9400609064ffe0d5e6ad32efed5ee243"
+}
