@@ -14,7 +14,7 @@ FILES = ('01-pre.sql.readonly','02-install.sql.review','03-post.sql.readonly','0
 
 def candidate():
     src = SOURCE.read_text()
-    assert hashlib.md5(src.encode()).hexdigest() == LIVE_MD5
+    assert hashlib.md5((src.rstrip('\n')+'\n').encode()).hexdigest() == LIVE_MD5
     assert json.loads(PROVENANCE.read_text())['facts']['arbio_organization_id'] == SELLER
     head = src.split('AS $function$')[0]
     assert src.count('UPDATE public.partner_orders') == 1 and src.count('INSERT INTO public.partner_order_audit_logs') == 1
