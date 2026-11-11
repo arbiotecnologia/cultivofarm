@@ -1,0 +1,12 @@
+-- READ-ONLY: captura as ACLs padrão REAIS de produção para funções/tabelas novas (pg_default_acl) e o acesso ao schema privado.
+-- O auditor anexa a saída à revisão; 02 revoga explicitamente PUBLIC/anon/authenticated/service_role e o POST exige o conjunto exato,
+-- portanto qualquer default (inclusive o pior caso emulado no espelho) termina no mesmo ACL ou falha fechado.
+BEGIN READ ONLY;
+DO $$BEGIN IF current_setting('c2pilot.expected_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'C2PILOT_PROBE_REF_UNPROVEN';END IF;END$$;
+SELECT 'DEFAULT_ACL' AS k,d.defaclrole::regrole::text AS role,coalesce(d.defaclnamespace::regnamespace::text,'<global>') AS schema,d.defaclobjtype AS objtype,
+ x.grantee::regrole::text AS grantee,x.privilege_type,x.is_grantable FROM pg_default_acl d,aclexplode(d.defaclacl)x
+ WHERE d.defaclnamespace IN (0,'public'::regnamespace,'platform_private'::regnamespace) ORDER BY 2,3,4,5,6;
+SELECT 'SCHEMA_ACL' AS k,n.nspname,n.nspowner::regrole::text AS owner,x.grantee::regrole::text AS grantee,x.privilege_type FROM pg_namespace n,aclexplode(coalesce(n.nspacl,acldefault('n',n.nspowner)))x WHERE n.nspname IN ('public','platform_private') AND x.grantee<>0 ORDER BY 2,4,5;
+SELECT 'SCHEMA_USAGE' AS k,r,has_schema_privilege(r,'platform_private','USAGE') AS usage_private FROM unnest(ARRAY['anon','authenticated','service_role'])r;
+SELECT 'CURRENT_USER' AS k,current_user;
+ROLLBACK;

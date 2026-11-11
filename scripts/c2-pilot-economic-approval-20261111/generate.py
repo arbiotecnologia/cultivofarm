@@ -25,7 +25,7 @@ CAND=json.loads((H/'candidate-md5.json').read_text()) if (H/'candidate-md5.json'
 PUBLIC_RPCS=['public.c2_pilot_economic_approve_v1(uuid,text,text,text,text)','public.c2_pilot_economic_state_v1(uuid)']
 CORE='platform_private.c2_pilot_econ_approve_core_v1(uuid,text,text,text,text)'
 TABLES=['platform_private.c2_pilot_econ_gate_v1','platform_private.c2_pilot_econ_allowlist_v1','platform_private.c2_pilot_econ_approvals_v1']
-FILES=['01-pre.sql.readonly','02-install.sql.review','03-post.sql.readonly','04-rollback-deny.sql.review','05-pilot-enable.sql.review','06-pilot-disable.sql.review']
+FILES=['00-default-acl-probe.sql.readonly','01-pre.sql.readonly','02-install.sql.review','03-post.sql.readonly','04-rollback-deny.sql.review','05-pilot-enable.sql.review','06-pilot-disable.sql.review']
 def refcheck(tag): return f"DO $$BEGIN IF current_setting('c2pilot.expected_ref',true) IS DISTINCT FROM '{REF}' THEN RAISE EXCEPTION '{tag}_REF_UNPROVEN';END IF;END$$;\n"
 def dep_checks(tag):
     return "DO $$BEGIN\n"+"".join(f" IF md5(pg_get_functiondef('{s}'::regprocedure)) IS DISTINCT FROM '{m}' THEN RAISE EXCEPTION '{tag}_DEP_DRIFT:{s}';END IF;\n" for s,m in DEPS.items())+"END$$;\n"
@@ -40,6 +40,7 @@ def acl_checks(tag,open_):
     out="DO $$BEGIN\n"
     for s in PUBLIC_RPCS+[CORE]: out+=f" IF {ACL_SQL(s)} IS DISTINCT FROM '{want_pub}' THEN RAISE EXCEPTION '{tag}_ACL_DRIFT:{s}';END IF;\n"
     for s in [x for x in CAND if x not in PUBLIC_RPCS+[CORE]]: out+=f" IF {ACL_SQL(s)} IS DISTINCT FROM 'postgres:EXECUTE:false|postgres' THEN RAISE EXCEPTION '{tag}_ACL_DRIFT:{s}';END IF;\n"
+    for t in TABLES: out+=f" IF EXISTS(SELECT 1 FROM pg_class c,aclexplode(coalesce(c.relacl,acldefault('r',c.relowner)))x WHERE c.oid='{t}'::regclass AND x.grantee<>c.relowner) OR (SELECT relowner::regrole::text FROM pg_class WHERE oid='{t}'::regclass)<>'postgres' OR NOT (SELECT relrowsecurity FROM pg_class WHERE oid='{t}'::regclass) THEN RAISE EXCEPTION '{tag}_TABLE_ACL_SET_DRIFT:{t}';END IF;\n"
     for t in TABLES: out+=f" IF has_table_privilege('authenticated','{t}','SELECT,INSERT,UPDATE,DELETE') OR has_table_privilege('anon','{t}','SELECT') OR has_table_privilege('service_role','{t}','SELECT,INSERT,UPDATE,DELETE') THEN RAISE EXCEPTION '{tag}_TABLE_ACL_DRIFT:{t}';END IF;\n"
     out+=f" IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='platform_private.b2b_financial_forecasts'::regclass AND tgname='c2_pilot_forecast_insert_barrier' AND tgenabled='O') THEN RAISE EXCEPTION '{tag}_BARRIER_MISSING';END IF;\n"
     out+=f" IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='platform_private.c2_pilot_econ_approvals_v1'::regclass AND tgname='c2_pilot_econ_approvals_no_change' AND tgenabled='O') THEN RAISE EXCEPTION '{tag}_IMMUTABLE_MISSING';END IF;\n"
@@ -88,7 +89,16 @@ COMMIT;
     dis=("-- DESLIGAMENTO DO PILOTO: gate false e revogação das concessões vigentes; ledger/previsões preservados.\nBEGIN;\n"+refcheck('C2PILOT_DISABLE')
          +"UPDATE platform_private.c2_pilot_econ_gate_v1 SET enabled=false,updated_at=now(),reason='PILOT_DISABLED' WHERE singleton;\n"
          +"UPDATE platform_private.c2_pilot_econ_allowlist_v1 SET revoked_at=greatest(now(),valid_from),revoke_reason='PILOT_DISABLED' WHERE revoked_at IS NULL;\nSELECT 'C2PILOT_DISABLE_PASS';\nCOMMIT;\n")
-    return dict(zip(FILES,[pre,inst,post,rb,en,dis]))
+    probe=("-- READ-ONLY: captura as ACLs padrão REAIS de produção para funções/tabelas novas (pg_default_acl) e o acesso ao schema privado.\n"
+           "-- O auditor anexa a saída à revisão; 02 revoga explicitamente PUBLIC/anon/authenticated/service_role e o POST exige o conjunto exato,\n"
+           "-- portanto qualquer default (inclusive o pior caso emulado no espelho) termina no mesmo ACL ou falha fechado.\nBEGIN READ ONLY;\n"+refcheck('C2PILOT_PROBE')
+           +"SELECT 'DEFAULT_ACL' AS k,d.defaclrole::regrole::text AS role,coalesce(d.defaclnamespace::regnamespace::text,'<global>') AS schema,d.defaclobjtype AS objtype,\n"
+           " x.grantee::regrole::text AS grantee,x.privilege_type,x.is_grantable FROM pg_default_acl d,aclexplode(d.defaclacl)x\n"
+           " WHERE d.defaclnamespace IN (0,'public'::regnamespace,'platform_private'::regnamespace) ORDER BY 2,3,4,5,6;\n"
+           "SELECT 'SCHEMA_ACL' AS k,n.nspname,n.nspowner::regrole::text AS owner,x.grantee::regrole::text AS grantee,x.privilege_type FROM pg_namespace n,aclexplode(coalesce(n.nspacl,acldefault('n',n.nspowner)))x WHERE n.nspname IN ('public','platform_private') AND x.grantee<>0 ORDER BY 2,4,5;\n"
+           "SELECT 'SCHEMA_USAGE' AS k,r,has_schema_privilege(r,'platform_private','USAGE') AS usage_private FROM unnest(ARRAY['anon','authenticated','service_role'])r;\n"
+           "SELECT 'CURRENT_USER' AS k,current_user;\nROLLBACK;\n")
+    return dict(zip(FILES,[probe,pre,inst,post,rb,en,dis]))
 def sha(b): return hashlib.sha256(b).hexdigest()
 def verify_on_disk():
     r=render();out={}
