@@ -87,7 +87,25 @@ try:
  with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
   p=pool.submit(actor,payment,'authenticated');c=pool.submit(actor,cancel,'authenticated');pr,cr=p.result(),c.result()
  ok('replay pagamento concorrente com cancelamento não duplica nem estorna',pr.returncode==0 and cr.returncode!=0 and '23514' in cr.stderr and fp()==before,dict(payment=pr.stdout,cancel=cr.stderr))
+ payload2=json.loads(payload);payload2['idempotency_key']='follow-second-'+uuid.uuid4().hex
+ payment2=f"SELECT public.rpc_register_receivable_payment('{inst}','{json.dumps(payload2)}'::jsonb);"
+ with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+  p=pool.submit(actor,payment2,'authenticated');c=pool.submit(actor,cancel,'authenticated');pr,cr=p.result(),c.result()
+ ok('novo pagamento concorrente R$1 vence; cancelamento nega recebimento já persistido',pr.returncode==0 and cr.returncode!=0 and '23514' in cr.stderr and d.last(f"SELECT received_amount FROM accounts_receivable_installments WHERE id='{inst}'")=='2.00',dict(payment=pr.stdout,cancel=cr.stderr))
+ before=fp()
  rolled=actor('BEGIN;'+prepare('after-partial-payment')+'ROLLBACK;');ok('preparo fiscal não decide estorno do título pago; rollback sem efeitos',rolled.returncode==0 and fp()==before,rolled.stderr)
+ prepared=actor(prepare('paid-fiscal-event'));event=value(prepared)
+ ok('preparo com título parcial mantém porta fiscal sem política financeira inventada',prepared.returncode==0,event)
+ if event:
+  eid=event['eventId'];sig=hashlib.sha256(b'local-follow-event-signature').hexdigest();tid=str(uuid.uuid4())
+  signed=actor(f"SELECT public.rpc_fiscal_event_sefaz_mark_signed_v1('{eid}','eventos/local/follow.xml','{sig}','{FIN}');")
+  ok('assinatura entrada sintética registrada pela RPC',signed.returncode==0,signed.stderr)
+  d.sql(f"INSERT INTO fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('{tid}','{invoice}','{eid}','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','follow-{tid}','{sig}','SENT','PENDING','{FIN}')")
+  body=json.dumps(dict(cStat='135',nProt='LOCAL-FOLLOW-PAID-CANCEL',chNFe=nf['access_key'],tpAmb='2',xMotivo='LOCAL REGISTERED'))
+  financial=d.last(f"SELECT md5(concat_ws('|',(SELECT to_jsonb(r)::text FROM accounts_receivable r WHERE id='{title}'),(SELECT to_jsonb(i)::text FROM accounts_receivable_installments i WHERE id='{inst}'),(SELECT jsonb_agg(to_jsonb(p) ORDER BY id)::text FROM receivable_payments p WHERE installment_id='{inst}'))) ")
+  callback=actor(f"SELECT public.rpc_fiscal_sefaz_transmit_record_v1('{tid}','SUCCEEDED','{body}'::jsonb);")
+  financial2=d.last(f"SELECT md5(concat_ws('|',(SELECT to_jsonb(r)::text FROM accounts_receivable r WHERE id='{title}'),(SELECT to_jsonb(i)::text FROM accounts_receivable_installments i WHERE id='{inst}'),(SELECT jsonb_agg(to_jsonb(p) ORDER BY id)::text FROM receivable_payments p WHERE installment_id='{inst}'))) ")
+  ok('callback cancelamento com pagamento persistido registra sem estorno automático',callback.returncode==0 and financial==financial2 and d.last(f"SELECT count(*) FROM fiscal_events WHERE related_event_id='{eid}' AND event_type='SEFAZ_EVENT_REGISTERED'")=='1',dict(out=callback.stdout,err=callback.stderr))
  d.sql('REVOKE EXECUTE ON FUNCTION public.rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) FROM service_role')
  ok('ACL deny-only restaurada',d.last("SELECT proacl::text FROM pg_proc WHERE oid='rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid)'::regprocedure")==acl)
  observe('limite', 'Clone independente da restauração r12 previamente limpa; resultados fiscais/financeiros só por callbacks/RPCs. Auth e configuração são sintéticos; nenhuma prova hosted/JWT/RLS/Storage. Não define política de cancelamento.')
