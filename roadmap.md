@@ -1,3 +1,11 @@
+## 11/11 23:20 — Continuação local independente de política comercial
+- [x] Conectar diagnóstico no painel temporário; testes 00/10/01/11, indisponibilidade/revogação e somente dois leitores, sem chamadas remotas.
+- [x] Revogação ator/empresa: holder/waiter+lock comprovados, negação pós-espera/reexecução e rollback/controle; attempt-015.
+- [x] Pagamento real R$1 persistido, cancelamento posterior negado, replay/novo pagamento concorrente R$2; financeiro sem estorno automático.
+- [x] Preparo distingue falta de protocolo, mas aceita autorização efetiva close-pending sem título próprio; 26 PASS, limites documentados em FOLLOWUP-20261111-2320.md.
+- [ ] Decisão externa: política cancelamento comercial/reconciliação/estorno/reposição; nenhum novo efeito autorizado. Primeiro callback da própria NF após pagamento não homologado (apenas replay dessa NF e callback novo de outra NF do mesmo pedido).
+- [x] Pins dos dois PRE confirmados em produção conforme relato do auditor; nenhuma consulta remota pelo agente.
+
 ## 11/11 22:50 — Semântica econômica C2 e auditoria de cancelamentos (somente local)
 - [x] Consumidores auditados; delta diagnóstico local distingue econômica vigente de operacional sem mudar eligible/reasons/approved_*; painel runtime não alterado.
 - [x] r12 reconstituído; restauração limpa com duas FKs validadas e pin 70dba08838cd4d5eea29f37f5f8a3373; positivo histórico preservado.

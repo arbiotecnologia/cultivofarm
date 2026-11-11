@@ -1,0 +1,313 @@
+{
+  "database": "c2_follow_51eee1b6",
+  "rows": [
+    {
+      "test": "candidato event-sequence exato",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "candidato diagnóstico exato",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "duas FKs presentes/validadas",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "SENT/PENDING sem protocolo nega preparo sem efeitos",
+      "status": "PASS",
+      "detail": "ERROR:  P0001: FISCAL_EVENT_INVOICE_NOT_AUTHORIZED\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 23 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "autorização efetiva pelo H13 com financeiro pendente por excesso do controle",
+      "status": "OBSERVED",
+      "detail": {
+        "callback": {
+          "nRec": null,
+          "cStat": "104",
+          "chNFe": "35261111111111111111111111111111111111007800",
+          "nProt": "LOCAL-FOLLOW-CLOSE-PENDING",
+          "state": "SUCCEEDED",
+          "outcome": "AUTHORIZED",
+          "xMotivo": "LOTE PROCESSADO; PROTOCOLO AUTORIZADO",
+          "protocolCStat": "100",
+          "transmissionId": "00000000-0000-0000-0000-000000007802",
+          "reconciliationCode": "FISCAL_AUTHORIZATION_CLOSE_PENDING",
+          "reconciliationPending": true
+        },
+        "exit": 0,
+        "state": "{\"id\": \"00000000-0000-0000-0000-000000007800\", \"notes\": null, \"series\": null, \"status\": \"PENDING\", \"fin_nfe\": null, \"tp_emis\": 1, \"icms_due\": null, \"provider\": null, \"direction\": null, \"locked_at\": null, \"locked_by\": null, \"source_id\": null, \"access_key\": \"35261111111111111111111111111111111111007800\", \"created_at\": \"2026-11-11T23:26:58.165837+00:00\", \"created_by\": \"00000000-0000-0000-0000-000000000024\", \"issue_date\": \"2027-02-03\", \"updated_at\": \"2026-11-11T23:26:58.165837+00:00\", \"canceled_at\": null, \"customer_id\": null, \"debtor_type\": null, \"delivery_id\": null, \"environment\": \"HOMOLOGATION\", \"icms_amount\": null, \"legal_basis\": null, \"rejected_at\": null, \"source_type\": null, \"company_cnpj\": null, \"invoice_type\": \"NFE\", \"tax_snapshot\": {}, \"total_amount\": 10.00, \"tp_nf_debito\": null, \"authorized_at\": null, \"billing_scope\": null, \"cancel_reason\": null, \"draft_version\": 1, \"legal_version\": null, \"receivable_id\": null, \"sales_channel\": null, \"tp_nf_credito\": null, \"document_model\": \"NFE\", \"invoice_number\": null, \"document_origin\": null, \"idempotency_key\": \"local-forecast-invoice:00000000-0000-0000-0000-000000007800\", \"organization_id\": \"00000000-0000-0000-0000-000000000001\", \"xml_document_id\": null, \"company_snapshot\": null, \"nature_operation\": null, \"partner_order_id\": \"76587cd2-154d-49b2-a3aa-d852965046d5\", \"customer_snapshot\": null, \"danfe_document_id\": null, \"debtor_partner_id\": \"00000000-0000-0000-0000-000000000011\", \"normalized_status\": \"DRAFT\", \"parent_invoice_id\": null, \"debtor_customer_id\": null, \"provider_reference\": \"LOCAL-FORECAST-7800\", \"company_settings_id\": \"0a757cd6-26ec-4920-94ba-81499af7ee70\", \"provider_status_raw\": null, \"tax_authority_notes\": null, \"legal_effective_date\": null, \"fiscal_operation_type\": null, \"reconciliation_status\": null, \"fiscal_totals_snapshot\": null, \"payload_schema_version\": null, \"fiscal_profile_snapshot\": {}, \"substitution_invoice_id\": null, \"homologation_validation_at\": null, \"original_recipient_snapshot\": null, \"homologation_validation_status\": \"NOT_VALIDATED\", \"homologation_validation_summary\": {}}"
+      }
+    },
+    {
+      "test": "callback real registra autorização fiscal com reconciliação pendente",
+      "status": "PASS",
+      "detail": {
+        "nRec": null,
+        "cStat": "104",
+        "chNFe": "35261111111111111111111111111111111111007800",
+        "nProt": "LOCAL-FOLLOW-CLOSE-PENDING",
+        "state": "SUCCEEDED",
+        "outcome": "AUTHORIZED",
+        "xMotivo": "LOTE PROCESSADO; PROTOCOLO AUTORIZADO",
+        "protocolCStat": "100",
+        "transmissionId": "00000000-0000-0000-0000-000000007802",
+        "reconciliationCode": "FISCAL_AUTHORIZATION_CLOSE_PENDING",
+        "reconciliationPending": true
+      }
+    },
+    {
+      "test": "preparo aceita evidência autorizada mesmo close-pending; rollback sem efeitos",
+      "status": "PASS",
+      "detail": {
+        "out": "{\"reason\": \"LOCAL FOLLOWUP CANCEL REASON\", \"eventId\": \"43c7149f-5452-41cc-93eb-15be7fbef9c5\", \"protocol\": \"LOCAL-FOLLOW-CLOSE-PENDING\", \"accessKey\": \"35261111111111111111111111111111111111007800\", \"eventCode\": \"110111\", \"seqEvento\": 1, \"idempotentReplay\": false, \"companySettingsId\": \"0a757cd6-26ec-4920-94ba-81499af7ee70\"}\n",
+        "err": ""
+      }
+    },
+    {
+      "test": "actor revogado em conexão separada após espera comprovada",
+      "status": "PASS",
+      "detail": {
+        "holder": 63950,
+        "waiter": 63954,
+        "blocking": [
+          63950
+        ],
+        "ungranted": 1
+      }
+    },
+    {
+      "test": "actor revalidação pós-lock nega 42501 sem efeitos",
+      "status": "PASS",
+      "detail": {
+        "proof": {
+          "holder": 63950,
+          "waiter": 63954,
+          "blocking": [
+            63950
+          ],
+          "ungranted": 1
+        },
+        "err": "ERROR:  42501: FISCAL_FORBIDDEN\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 12 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      }
+    },
+    {
+      "test": "actor reexecução revogada também nega sem efeitos",
+      "status": "PASS",
+      "detail": "ERROR:  42501: FISCAL_FORBIDDEN\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "actor controle restaurado aceita e rollback preserva estado",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "company revogado em conexão separada após espera comprovada",
+      "status": "PASS",
+      "detail": {
+        "holder": 63980,
+        "waiter": 63985,
+        "blocking": [
+          63980
+        ],
+        "ungranted": 1
+      }
+    },
+    {
+      "test": "company revalidação pós-lock nega 42501 sem efeitos",
+      "status": "PASS",
+      "detail": {
+        "proof": {
+          "holder": 63980,
+          "waiter": 63985,
+          "blocking": [
+            63980
+          ],
+          "ungranted": 1
+        },
+        "err": "ERROR:  42501: FISCAL_FORBIDDEN\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 12 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      }
+    },
+    {
+      "test": "company reexecução revogada também nega sem efeitos",
+      "status": "PASS",
+      "detail": "ERROR:  42501: FISCAL_FORBIDDEN\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "company controle restaurado aceita e rollback preserva estado",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "pagamento R$1 real COMMIT antes de cancelamento",
+      "status": "PASS",
+      "detail": "7489593b-d7d2-43db-90f4-eb635a5632e6\n"
+    },
+    {
+      "test": "nova conexão comprova título R$10 parcial R$1 persistido",
+      "status": "PASS",
+      "detail": {
+        "title": {
+          "id": "7c7ae490-3dc4-48a1-bca1-c6e1a45166c4",
+          "notes": null,
+          "status": "PARTIAL",
+          "origin_id": "76587cd2-154d-49b2-a3aa-d852965046d5",
+          "boleto_url": null,
+          "created_at": "2026-11-11T23:07:22.435597+00:00",
+          "created_by": null,
+          "issue_date": "2027-02-01",
+          "partner_id": "00000000-0000-0000-0000-000000000011",
+          "updated_at": "2026-11-11T23:27:00.324631+00:00",
+          "category_id": "00000000-0000-0000-0000-000000000097",
+          "customer_id": "00000000-0000-0000-0000-000000000301",
+          "description": "Documento fiscal autorizado — candidato interno",
+          "origin_type": "B2B_ORDER",
+          "pix_qr_code": null,
+          "total_amount": 10.0,
+          "auto_generated": false,
+          "cost_center_id": null,
+          "first_due_date": "2027-03-03",
+          "pix_copia_cola": null,
+          "b2b_document_id": "00000000-0000-0000-0000-000000000900",
+          "organization_id": "00000000-0000-0000-0000-000000000001",
+          "payment_gateway": null,
+          "reference_month": null,
+          "fiscal_policy_id": null,
+          "fiscal_access_key": null,
+          "fiscal_issue_date": null,
+          "installment_count": 1,
+          "payment_method_id": "00000000-0000-0000-0000-000000000092",
+          "external_payment_id": null,
+          "fiscal_exemption_id": null,
+          "fiscal_invoice_number": null,
+          "fiscal_invoice_status": "NOT_REQUIRED",
+          "recurring_template_id": null,
+          "fiscal_invoice_required": false,
+          "fiscal_requirement_source": null
+        },
+        "payments": [
+          {
+            "id": "7489593b-d7d2-43db-90f4-eb635a5632e6",
+            "notes": null,
+            "created_at": "2026-11-11T23:27:00.324631+00:00",
+            "created_by": "00000000-0000-0000-0000-000000000029",
+            "is_reversal": false,
+            "payment_date": "2027-02-03",
+            "installment_id": "c474343c-c857-4b5f-b142-4176fa8b65f1",
+            "penalty_amount": 0.0,
+            "amount_received": 1.0,
+            "bank_account_id": null,
+            "discount_amount": 0.0,
+            "idempotency_key": "follow-payment-40f5aff816804dc099174ef40e462251",
+            "interest_amount": 0.0,
+            "organization_id": "00000000-0000-0000-0000-000000000001",
+            "reversal_reason": null,
+            "payment_method_id": "00000000-0000-0000-0000-000000000092",
+            "request_fingerprint": "34af2d2be1c938b21071ecb3385b3deee75bbf5cfc517c9017c2a1300d1e22cb",
+            "reversed_payment_id": null
+          }
+        ],
+        "installment": {
+          "id": "c474343c-c857-4b5f-b142-4176fa8b65f1",
+          "status": "PARTIAL",
+          "paid_at": null,
+          "due_date": "2027-03-03",
+          "created_at": "2026-11-11T23:07:22.435597+00:00",
+          "net_amount": 10.0,
+          "receivable_id": "7c7ae490-3dc4-48a1-bca1-c6e1a45166c4",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "00000000-0000-0000-0000-000000000001",
+          "original_amount": 10.0,
+          "received_amount": 1.0,
+          "installment_number": 1
+        }
+      }
+    },
+    {
+      "test": "outra transação nega cancelar pago parcialmente sem efeito",
+      "status": "PASS",
+      "detail": "ERROR:  23514: Existem recebimentos não estornados. Estorne antes de cancelar.\nCONTEXT:  PL/pgSQL function rpc_cancel_accounts_receivable(uuid,text) line 22 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "replay pagamento concorrente com cancelamento não duplica nem estorna",
+      "status": "PASS",
+      "detail": {
+        "payment": "7489593b-d7d2-43db-90f4-eb635a5632e6\n",
+        "cancel": "ERROR:  23514: Existem recebimentos não estornados. Estorne antes de cancelar.\nCONTEXT:  PL/pgSQL function rpc_cancel_accounts_receivable(uuid,text) line 22 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      }
+    },
+    {
+      "test": "novo pagamento concorrente R$1 vence; cancelamento nega recebimento já persistido",
+      "status": "PASS",
+      "detail": {
+        "payment": "bb93e949-2790-46b3-be8c-d4790159ec8a\n",
+        "cancel": "ERROR:  23514: Existem recebimentos não estornados. Estorne antes de cancelar.\nCONTEXT:  PL/pgSQL function rpc_cancel_accounts_receivable(uuid,text) line 22 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      }
+    },
+    {
+      "test": "preparo fiscal não decide estorno do título pago; rollback sem efeitos",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "preparo com título parcial mantém porta fiscal sem política financeira inventada",
+      "status": "PASS",
+      "detail": {
+        "reason": "LOCAL FOLLOWUP CANCEL REASON",
+        "eventId": "4b4f96ef-eb5e-4001-8ae9-d59451b498e4",
+        "protocol": "LOCAL-FOLLOW-CLOSE-PENDING",
+        "accessKey": "35261111111111111111111111111111111111007800",
+        "eventCode": "110111",
+        "seqEvento": 1,
+        "idempotentReplay": false,
+        "companySettingsId": "0a757cd6-26ec-4920-94ba-81499af7ee70"
+      }
+    },
+    {
+      "test": "assinatura entrada sintética registrada pela RPC",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "transmissão sintética respeita ator/empresa pelo trigger real",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "callback de documento close-pending do MESMO pedido mantém título pago de OUTRA NF",
+      "status": "PASS",
+      "detail": {
+        "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111007800\", \"nProt\": \"LOCAL-FOLLOW-PAID-CANCEL\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL REGISTERED\", \"protocolCStat\": \"135\", \"transmissionId\": \"4ad17bd3-ab26-429d-8f31-1596bb59167c\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+        "err": ""
+      }
+    },
+    {
+      "test": "replay callback da própria NF paga preserva pagamento e demais efeitos",
+      "status": "PASS",
+      "detail": {
+        "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-CANCEL-PROTOCOL\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL SYNTHETIC REGISTERED EVENT\", \"protocolCStat\": \"135\", \"transmissionId\": \"d9e2eca1-3e98-4585-89c3-1e21865311df\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+        "err": ""
+      }
+    },
+    {
+      "test": "limite pagamento/fiscal",
+      "status": "OBSERVED",
+      "detail": "Cancelamento financeiro novo testado na própria NF paga; callback novo usa documento close-pending do mesmo pedido, sem título próprio. Na própria NF paga foi testado replay de registro anterior, não primeiro registro após pagamento. Não certifica cascata nem política."
+    },
+    {
+      "test": "ACL deny-only restaurada",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "limite",
+      "status": "OBSERVED",
+      "detail": "Clone independente da restauração r12 previamente limpa; resultados fiscais/financeiros só por callbacks/RPCs. Auth e configuração são sintéticos; nenhuma prova hosted/JWT/RLS/Storage. Não define política de cancelamento."
+    }
+  ]
+}

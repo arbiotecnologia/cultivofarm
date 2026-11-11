@@ -1,0 +1,152 @@
+[
+  {
+    "sql": "SET application_name='audit_follow';SET ROLE service_role;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"service_role\", \"iat\": 1, \"exp\": 4102444800}';BEGIN;SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000007800','CANCELLATION','LOCAL FOLLOWUP CANCEL REASON','pending-before-auth','00000000-0000-0000-0000-000000000029');ROLLBACK;",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  P0001: FISCAL_EVENT_INVOICE_NOT_AUTHORIZED\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 23 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_record_v1('00000000-0000-0000-0000-000000007802','SUCCEEDED','{\"cStat\": \"104\", \"protocolCStat\": \"100\", \"nProt\": \"LOCAL-FOLLOW-CLOSE-PENDING\", \"chNFe\": \"35261111111111111111111111111111111111007800\", \"xMotivo\": \"LOTE PROCESSADO; PROTOCOLO AUTORIZADO\", \"tpAmb\": \"2\", \"dhRecbto\": \"2027-02-03T12:00:00Z\"}'::jsonb);",
+    "exit": 0,
+    "out": "{\"nRec\": null, \"cStat\": \"104\", \"chNFe\": \"35261111111111111111111111111111111111007800\", \"nProt\": \"LOCAL-FOLLOW-CLOSE-PENDING\", \"state\": \"SUCCEEDED\", \"outcome\": \"AUTHORIZED\", \"xMotivo\": \"LOTE PROCESSADO; PROTOCOLO AUTORIZADO\", \"protocolCStat\": \"100\", \"transmissionId\": \"00000000-0000-0000-0000-000000007802\", \"reconciliationCode\": \"FISCAL_AUTHORIZATION_CLOSE_PENDING\", \"reconciliationPending\": true}\n",
+    "err": ""
+  },
+  {
+    "sql": "SET application_name='audit_follow';SET ROLE service_role;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"service_role\", \"iat\": 1, \"exp\": 4102444800}';BEGIN;SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000007800','CANCELLATION','LOCAL FOLLOWUP CANCEL REASON','normal-rollback','00000000-0000-0000-0000-000000000029');ROLLBACK;",
+    "exit": 0,
+    "out": "{\"reason\": \"LOCAL FOLLOWUP CANCEL REASON\", \"eventId\": \"43c7149f-5452-41cc-93eb-15be7fbef9c5\", \"protocol\": \"LOCAL-FOLLOW-CLOSE-PENDING\", \"accessKey\": \"35261111111111111111111111111111111111007800\", \"eventCode\": \"110111\", \"seqEvento\": 1, \"idempotentReplay\": false, \"companySettingsId\": \"0a757cd6-26ec-4920-94ba-81499af7ee70\"}\n",
+    "err": ""
+  },
+  {
+    "sql": "UPDATE profiles SET ativo=false WHERE user_id='00000000-0000-0000-0000-000000000029';",
+    "exit": 0,
+    "out": "",
+    "err": ""
+  },
+  {
+    "sql": "SET application_name='wait_actor';SET ROLE service_role;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"service_role\", \"iat\": 1, \"exp\": 4102444800}';SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000007800','CANCELLATION','LOCAL FOLLOWUP CANCEL REASON','wait-actor-e3c4be62b4ff49a3acd0d28f0c7a6bdd','00000000-0000-0000-0000-000000000029');",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  42501: FISCAL_FORBIDDEN\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 12 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "SET application_name='audit_follow';SET ROLE service_role;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"service_role\", \"iat\": 1, \"exp\": 4102444800}';SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000007800','CANCELLATION','LOCAL FOLLOWUP CANCEL REASON','wait-actor-e3c4be62b4ff49a3acd0d28f0c7a6bdd','00000000-0000-0000-0000-000000000029');",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  42501: FISCAL_FORBIDDEN\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "UPDATE profiles SET ativo=true WHERE user_id='00000000-0000-0000-0000-000000000029';",
+    "exit": 0,
+    "out": "",
+    "err": ""
+  },
+  {
+    "sql": "SET application_name='audit_follow';SET ROLE service_role;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"service_role\", \"iat\": 1, \"exp\": 4102444800}';BEGIN;SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000007800','CANCELLATION','LOCAL FOLLOWUP CANCEL REASON','wait-actor-e3c4be62b4ff49a3acd0d28f0c7a6bdd','00000000-0000-0000-0000-000000000029');ROLLBACK;",
+    "exit": 0,
+    "out": "{\"reason\": \"LOCAL FOLLOWUP CANCEL REASON\", \"eventId\": \"3ac53b3a-8a1e-4339-b6b6-e3f82411c2ab\", \"protocol\": \"LOCAL-FOLLOW-CLOSE-PENDING\", \"accessKey\": \"35261111111111111111111111111111111111007800\", \"eventCode\": \"110111\", \"seqEvento\": 1, \"idempotentReplay\": false, \"companySettingsId\": \"0a757cd6-26ec-4920-94ba-81499af7ee70\"}\n",
+    "err": ""
+  },
+  {
+    "sql": "UPDATE organizations SET ativo=false WHERE id='00000000-0000-0000-0000-000000000001';",
+    "exit": 0,
+    "out": "",
+    "err": ""
+  },
+  {
+    "sql": "SET application_name='wait_company';SET ROLE service_role;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"service_role\", \"iat\": 1, \"exp\": 4102444800}';SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000007800','CANCELLATION','LOCAL FOLLOWUP CANCEL REASON','wait-company-db6d59a57eae4e54831999b46f9ea08d','00000000-0000-0000-0000-000000000029');",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  42501: FISCAL_FORBIDDEN\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 12 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "SET application_name='audit_follow';SET ROLE service_role;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"service_role\", \"iat\": 1, \"exp\": 4102444800}';SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000007800','CANCELLATION','LOCAL FOLLOWUP CANCEL REASON','wait-company-db6d59a57eae4e54831999b46f9ea08d','00000000-0000-0000-0000-000000000029');",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  42501: FISCAL_FORBIDDEN\nCONTEXT:  PL/pgSQL function rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid) line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "UPDATE organizations SET ativo=true WHERE id='00000000-0000-0000-0000-000000000001';",
+    "exit": 0,
+    "out": "",
+    "err": ""
+  },
+  {
+    "sql": "SET application_name='audit_follow';SET ROLE service_role;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"service_role\", \"iat\": 1, \"exp\": 4102444800}';BEGIN;SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000007800','CANCELLATION','LOCAL FOLLOWUP CANCEL REASON','wait-company-db6d59a57eae4e54831999b46f9ea08d','00000000-0000-0000-0000-000000000029');ROLLBACK;",
+    "exit": 0,
+    "out": "{\"reason\": \"LOCAL FOLLOWUP CANCEL REASON\", \"eventId\": \"3ccbdd2f-81b4-4073-94d2-f22baee684ba\", \"protocol\": \"LOCAL-FOLLOW-CLOSE-PENDING\", \"accessKey\": \"35261111111111111111111111111111111111007800\", \"eventCode\": \"110111\", \"seqEvento\": 1, \"idempotentReplay\": false, \"companySettingsId\": \"0a757cd6-26ec-4920-94ba-81499af7ee70\"}\n",
+    "err": ""
+  },
+  {
+    "sql": "SET application_name='audit_follow';SET ROLE authenticated;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"authenticated\", \"iat\": 1, \"exp\": 4102444800}';SELECT public.rpc_register_receivable_payment('c474343c-c857-4b5f-b142-4176fa8b65f1','{\"amount_received\": 1, \"payment_method_id\": \"00000000-0000-0000-0000-000000000092\", \"payment_date\": \"2027-02-03\", \"idempotency_key\": \"follow-payment-40f5aff816804dc099174ef40e462251\", \"has_receipt\": true}'::jsonb);",
+    "exit": 0,
+    "out": "7489593b-d7d2-43db-90f4-eb635a5632e6\n",
+    "err": ""
+  },
+  {
+    "sql": "SET application_name='audit_follow';SET ROLE authenticated;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"authenticated\", \"iat\": 1, \"exp\": 4102444800}';SELECT public.rpc_cancel_accounts_receivable('7c7ae490-3dc4-48a1-bca1-c6e1a45166c4','LOCAL PERSISTED PAYMENT DENIAL');",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  23514: Existem recebimentos não estornados. Estorne antes de cancelar.\nCONTEXT:  PL/pgSQL function rpc_cancel_accounts_receivable(uuid,text) line 22 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "SET application_name='audit_follow';SET ROLE authenticated;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"authenticated\", \"iat\": 1, \"exp\": 4102444800}';SELECT public.rpc_cancel_accounts_receivable('7c7ae490-3dc4-48a1-bca1-c6e1a45166c4','LOCAL PERSISTED PAYMENT DENIAL');",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  23514: Existem recebimentos não estornados. Estorne antes de cancelar.\nCONTEXT:  PL/pgSQL function rpc_cancel_accounts_receivable(uuid,text) line 22 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "SET application_name='audit_follow';SET ROLE authenticated;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"authenticated\", \"iat\": 1, \"exp\": 4102444800}';SELECT public.rpc_register_receivable_payment('c474343c-c857-4b5f-b142-4176fa8b65f1','{\"amount_received\": 1, \"payment_method_id\": \"00000000-0000-0000-0000-000000000092\", \"payment_date\": \"2027-02-03\", \"idempotency_key\": \"follow-payment-40f5aff816804dc099174ef40e462251\", \"has_receipt\": true}'::jsonb);",
+    "exit": 0,
+    "out": "7489593b-d7d2-43db-90f4-eb635a5632e6\n",
+    "err": ""
+  },
+  {
+    "sql": "SET application_name='audit_follow';SET ROLE authenticated;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"authenticated\", \"iat\": 1, \"exp\": 4102444800}';SELECT public.rpc_cancel_accounts_receivable('7c7ae490-3dc4-48a1-bca1-c6e1a45166c4','LOCAL PERSISTED PAYMENT DENIAL');",
+    "exit": 3,
+    "out": "",
+    "err": "ERROR:  23514: Existem recebimentos não estornados. Estorne antes de cancelar.\nCONTEXT:  PL/pgSQL function rpc_cancel_accounts_receivable(uuid,text) line 22 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "sql": "SET application_name='audit_follow';SET ROLE authenticated;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"authenticated\", \"iat\": 1, \"exp\": 4102444800}';SELECT public.rpc_register_receivable_payment('c474343c-c857-4b5f-b142-4176fa8b65f1','{\"amount_received\": 1, \"payment_method_id\": \"00000000-0000-0000-0000-000000000092\", \"payment_date\": \"2027-02-03\", \"idempotency_key\": \"follow-second-ef5aa88e0798491f8bc80f151a46320d\", \"has_receipt\": true}'::jsonb);",
+    "exit": 0,
+    "out": "bb93e949-2790-46b3-be8c-d4790159ec8a\n",
+    "err": ""
+  },
+  {
+    "sql": "SET application_name='audit_follow';SET ROLE service_role;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"service_role\", \"iat\": 1, \"exp\": 4102444800}';BEGIN;SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000007800','CANCELLATION','LOCAL FOLLOWUP CANCEL REASON','after-partial-payment','00000000-0000-0000-0000-000000000029');ROLLBACK;",
+    "exit": 0,
+    "out": "{\"reason\": \"LOCAL FOLLOWUP CANCEL REASON\", \"eventId\": \"6fc6d46a-bc02-454a-90c2-c8bb33bf054c\", \"protocol\": \"LOCAL-FOLLOW-CLOSE-PENDING\", \"accessKey\": \"35261111111111111111111111111111111111007800\", \"eventCode\": \"110111\", \"seqEvento\": 1, \"idempotentReplay\": false, \"companySettingsId\": \"0a757cd6-26ec-4920-94ba-81499af7ee70\"}\n",
+    "err": ""
+  },
+  {
+    "sql": "SET application_name='audit_follow';SET ROLE service_role;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"service_role\", \"iat\": 1, \"exp\": 4102444800}';SELECT public.rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000007800','CANCELLATION','LOCAL FOLLOWUP CANCEL REASON','paid-fiscal-event','00000000-0000-0000-0000-000000000029');",
+    "exit": 0,
+    "out": "{\"reason\": \"LOCAL FOLLOWUP CANCEL REASON\", \"eventId\": \"4b4f96ef-eb5e-4001-8ae9-d59451b498e4\", \"protocol\": \"LOCAL-FOLLOW-CLOSE-PENDING\", \"accessKey\": \"35261111111111111111111111111111111111007800\", \"eventCode\": \"110111\", \"seqEvento\": 1, \"idempotentReplay\": false, \"companySettingsId\": \"0a757cd6-26ec-4920-94ba-81499af7ee70\"}\n",
+    "err": ""
+  },
+  {
+    "sql": "SET application_name='audit_follow';SET ROLE service_role;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"service_role\", \"iat\": 1, \"exp\": 4102444800}';SELECT public.rpc_fiscal_event_sefaz_mark_signed_v1('4b4f96ef-eb5e-4001-8ae9-d59451b498e4','eventos/local/follow.xml','dba589c246b6d279dd4ecc556db9aaba2da1df73c42d52668506b706e6a5c907','00000000-0000-0000-0000-000000000029');",
+    "exit": 0,
+    "out": "{\"state\": \"SIGNED\", \"eventId\": \"4b4f96ef-eb5e-4001-8ae9-d59451b498e4\", \"idempotentReplay\": false, \"signatureEventId\": \"a2ac0fdc-37b5-426b-90c9-162f95e9b97e\"}\n",
+    "err": ""
+  },
+  {
+    "sql": "SET application_name='audit_follow';SET ROLE service_role;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"service_role\", \"iat\": 1, \"exp\": 4102444800}';INSERT INTO fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('4ad17bd3-ab26-429d-8f31-1596bb59167c','00000000-0000-0000-0000-000000007800','4b4f96ef-eb5e-4001-8ae9-d59451b498e4','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','follow-4ad17bd3-ab26-429d-8f31-1596bb59167c','dba589c246b6d279dd4ecc556db9aaba2da1df73c42d52668506b706e6a5c907','SENT','PENDING','00000000-0000-0000-0000-000000000029')",
+    "exit": 0,
+    "out": "",
+    "err": ""
+  },
+  {
+    "sql": "SET application_name='audit_follow';SET ROLE service_role;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"service_role\", \"iat\": 1, \"exp\": 4102444800}';SELECT public.rpc_fiscal_sefaz_transmit_record_v1('4ad17bd3-ab26-429d-8f31-1596bb59167c','SUCCEEDED','{\"cStat\": \"135\", \"nProt\": \"LOCAL-FOLLOW-PAID-CANCEL\", \"chNFe\": \"35261111111111111111111111111111111111007800\", \"tpAmb\": \"2\", \"xMotivo\": \"LOCAL REGISTERED\"}'::jsonb);",
+    "exit": 0,
+    "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111007800\", \"nProt\": \"LOCAL-FOLLOW-PAID-CANCEL\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL REGISTERED\", \"protocolCStat\": \"135\", \"transmissionId\": \"4ad17bd3-ab26-429d-8f31-1596bb59167c\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+    "err": ""
+  },
+  {
+    "sql": "SET application_name='audit_follow';SET ROLE service_role;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000029';SET request.jwt.claims='{\"sub\": \"00000000-0000-0000-0000-000000000029\", \"role\": \"service_role\", \"iat\": 1, \"exp\": 4102444800}';SELECT public.rpc_fiscal_sefaz_transmit_record_v1('d9e2eca1-3e98-4585-89c3-1e21865311df','SUCCEEDED','{}'::jsonb);",
+    "exit": 0,
+    "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-CANCEL-PROTOCOL\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL SYNTHETIC REGISTERED EVENT\", \"protocolCStat\": \"135\", \"transmissionId\": \"d9e2eca1-3e98-4585-89c3-1e21865311df\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+    "err": ""
+  }
+]

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import NotFound from "@/pages/NotFound";
 import { Button } from "@/components/ui/button";
@@ -12,19 +12,29 @@ import {
 const yn = (v: boolean | null) => (v === null ? "n/a" : v ? "sim" : "não");
 
 export default function DiagnosticoElegibilidade() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [type, setType] = useState<EligibilitySourceType>("PARTNER_ORDER");
   const [id, setId] = useState("");
   const [busy, setBusy] = useState(false);
   const [rows, setRows] = useState<OverloadSummary[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const generation = useRef(0);
+  useEffect(() => {
+    generation.current += 1;
+    setRows(null); setErr(null); setBusy(false);
+    return () => { generation.current += 1; };
+  }, [user?.id, profile]);
   if (!isDiagnosticOpen(window.location.hostname)) return <NotFound />;
 
   const consultar = async () => {
+    const request = ++generation.current;
     setBusy(true); setErr(null); setRows(null);
-    try { setRows(await runEligibilityDiagnostic(type, id)); }
-    catch (e) { setErr(e instanceof Error ? e.message : "ERRO"); }
-    finally { setBusy(false); }
+    try {
+      const result = await runEligibilityDiagnostic(type, id);
+      if (request === generation.current) setRows(result);
+    }
+    catch (e) { if (request === generation.current) setErr(e instanceof Error ? e.message : "ERRO"); }
+    finally { if (request === generation.current) setBusy(false); }
   };
 
   return (
@@ -41,13 +51,13 @@ export default function DiagnosticoElegibilidade() {
           <div className="space-y-1">
             <Label htmlFor="tipo">Tipo</Label>
             <select id="tipo" className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
-              value={type} onChange={(e) => setType(e.target.value as EligibilitySourceType)}>
+              value={type} disabled={busy} onChange={(e) => { setRows(null); setType(e.target.value as EligibilitySourceType); }}>
               {ELIGIBILITY_SOURCE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
           <div className="space-y-1">
             <Label htmlFor="uuid">UUID</Label>
-            <Input id="uuid" autoComplete="off" value={id} onChange={(e) => setId(e.target.value)} placeholder="cole o identificador" />
+            <Input id="uuid" autoComplete="off" value={id} disabled={busy} onChange={(e) => { setRows(null); setId(e.target.value); }} placeholder="cole o identificador" />
           </div>
           <Button onClick={consultar} disabled={busy || !isValidUuid(id)}>{busy ? "Consultando…" : "Consultar"}</Button>
         </section>
@@ -64,6 +74,9 @@ export default function DiagnosticoElegibilidade() {
                     <div><dt className="inline text-muted-foreground">pedido retornado: </dt><dd className="inline">{yn(r.hasOrderId)}</dd></div>
                     <div><dt className="inline text-muted-foreground">devedor retornado: </dt><dd className="inline">{yn(r.hasDebtorPartnerId)}</dd></div>
                     <div><dt className="inline text-muted-foreground">pedido = entrada: </dt><dd className="inline">{yn(r.orderMatchesInput)}</dd></div>
+                    <div><dt className="font-medium">Aprovação econômica do piloto</dt><dd>{r.economicDiagnosis?.available ? `Comercial explícita vigente: ${yn(r.economicDiagnosis.commercialExplicit)} · Crédito explícito vigente: ${yn(r.economicDiagnosis.creditExplicit)}` : "Diagnóstico indisponível; não comprova ausência nem pendência de aprovação."}</dd></div>
+                    <div><dt className="font-medium">Situação operacional e contábil</dt><dd>{r.economicDiagnosis ? `Comercial registrada no pedido: ${yn(r.economicDiagnosis.operationalCommercialRegistered)} · Pendência contábil: ${yn(r.economicDiagnosis.accountingPending)} · Bloqueio operacional: ${yn(r.economicDiagnosis.operationalBlocked)}` : "Diagnóstico operacional adicional indisponível."}</dd></div>
+                    {r.eligible === false && <div><dd>Faturamento bloqueado. Aprovação econômica não libera operação nem emissão fiscal.</dd></div>}
                   </dl>
                 ) : <p className="text-destructive">erro: {r.error}</p>}
               </article>

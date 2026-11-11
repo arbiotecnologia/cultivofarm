@@ -28,15 +28,25 @@ export type OverloadSummary = {
   hasOrderId: boolean;
   hasDebtorPartnerId: boolean;
   orderMatchesInput: boolean | null;
+  economicDiagnosis: {
+    available: boolean;
+    commercialExplicit: boolean | null;
+    creditExplicit: boolean | null;
+    operationalCommercialRegistered: boolean | null;
+    accountingPending: boolean | null;
+    operationalBlocked: boolean | null;
+  } | null;
 };
 
 export function summarize(overload: OverloadSummary["overload"], type: EligibilitySourceType, id: string,
   data: unknown, error: { code?: string; message?: string } | null): OverloadSummary {
-  if (error) return { overload, ok: false, error: [error.code, error.message].filter(Boolean).join(": "), eligible: null, codes: [], hasOrderId: false, hasDebtorPartnerId: false, orderMatchesInput: null };
+  if (error) return { overload, ok: false, error: [error.code, error.message].filter(Boolean).join(": "), eligible: null, codes: [], hasOrderId: false, hasDebtorPartnerId: false, orderMatchesInput: null, economicDiagnosis: null };
   const d = (data && typeof data === "object" ? data : {}) as Record<string, unknown>;
   const reasons = Array.isArray(d.reasons) ? d.reasons : [];
   const codes = reasons.map((r) => (r && typeof r === "object" ? String((r as Record<string, unknown>).code ?? "") : "")).filter(Boolean);
   const orderId = typeof d.orderId === "string" && d.orderId ? d.orderId : null;
+  const e = d.economicDiagnosis && typeof d.economicDiagnosis === "object" ? d.economicDiagnosis as Record<string, unknown> : null;
+  const boolean = (key: string) => typeof e?.[key] === "boolean" ? e[key] as boolean : null;
   return {
     overload, ok: true, error: null,
     eligible: typeof d.eligible === "boolean" ? d.eligible : null,
@@ -44,6 +54,14 @@ export function summarize(overload: OverloadSummary["overload"], type: Eligibili
     hasOrderId: orderId !== null,
     hasDebtorPartnerId: typeof d.debtorPartnerId === "string" && d.debtorPartnerId.length > 0,
     orderMatchesInput: type === "PARTNER_ORDER" ? (orderId === null ? null : orderId.toLowerCase() === id.toLowerCase()) : null,
+    economicDiagnosis: e ? {
+      available: e.available === true,
+      commercialExplicit: e.available === true ? boolean("commercial_explicit") : null,
+      creditExplicit: e.available === true ? boolean("credit_explicit") : null,
+      operationalCommercialRegistered: boolean("operational_commercial_registered"),
+      accountingPending: boolean("accounting_pending"),
+      operationalBlocked: boolean("operational_blocked"),
+    } : null,
   };
 }
 
