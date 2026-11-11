@@ -99,6 +99,9 @@ try:
     deny('V1 catálogo de P2 (de V2)',call(V1,f"public.get_partner_catalog_secure('{P2}')"),'forbidden_partner')
     deny('VB catálogo de P (outro tenant)',call(VB,f"public.get_partner_catalog_secure('{P}')"),'forbidden')
     r=call(V1,f"public.get_partner_packaging_offers_secure('{P}')");ok('V1 lê embalagens de P',r[0] is not None,r)
+    r=act(V1,"SELECT count(*) FROM public.rpc_b2b_list_selectable_payment_plans();");ok('V1 lista planos da carteira',r.returncode==0 and int(r.stdout.strip().splitlines()[-1])>0,r.stderr[-200:])
+    r=act(V2,"SELECT count(*) FROM public.rpc_b2b_list_selectable_payment_plans() WHERE id='"+P3+"';");ok('V2 vê P3 só via própria carteira (P2 atribuído)',r.returncode==0,r.stderr[-200:])
+    r=act(VB,"SELECT count(*) FROM public.rpc_b2b_list_selectable_payment_plans();");ok('VB (outro tenant) sem planos de A',r.returncode==0 and r.stdout.strip().splitlines()[-1]=='0',r.stdout+r.stderr[-200:])
     r=call(V1,f"public.b2b_list_payment_condition_options_secure('{P}','{P3}')");ok('V1 lê condições vigentes de P',r[0] is not None,r)
     # Lançamento positivo isolado apto
     b0=counts()

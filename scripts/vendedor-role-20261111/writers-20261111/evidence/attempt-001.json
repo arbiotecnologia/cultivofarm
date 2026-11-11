@@ -1,7 +1,7 @@
 {
   "attempt": 1,
-  "pass_": 38,
-  "fail": 1,
+  "pass_": 83,
+  "fail": 5,
   "checks": [
     {
       "test": "restore sem erros além das FKs auth conhecidas",
@@ -149,14 +149,79 @@
       "detail": null
     },
     {
+      "test": "V1 lista planos da carteira",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V2 vê P3 só via própria carteira (P2 atribuído)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "VB (outro tenant) sem planos de A",
+      "status": "PASS",
+      "detail": null
+    },
+    {
       "test": "V1 lê condições vigentes de P",
       "status": "PASS",
       "detail": null
     },
     {
       "test": "V1 lança pedido para P (positivo apto)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "pedido com origem interna server-side do vendedor, aguardando análise",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "sem NF, recebível, reserva, entrega ou envio",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "replay mesma chave devolve o mesmo pedido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "replay sem novas escritas",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não aprova pedido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "status preservado após tentativa de aprovação",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não aprova termos financeiros",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não rejeita termos financeiros",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 lê o pedido na carteira",
       "status": "FAIL",
-      "detail": "ERROR:  payment_condition_unavailable"
+      "detail": "ERROR:  column i.item_id does not exist"
+    },
+    {
+      "test": "V2 não vê pedido de P",
+      "status": "FAIL",
+      "detail": "ERROR:  column i.item_id does not exist"
     },
     {
       "test": "V1 não lança para parceiro não atribuído",
@@ -197,19 +262,203 @@
       "test": "emitente não validado: fiscal_block issuer_not_validated e order_create false, quote_respond mantido",
       "status": "PASS",
       "detail": null
+    },
+    {
+      "test": "emitente não validado: criação bloqueada B2B_INTERNAL_ISSUER_NOT_VALIDATED",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "comprador cria pedido sob consulta",
+      "status": "FAIL",
+      "detail": "ERROR:  plan_not_found"
+    },
+    {
+      "test": "revogação espera o vínculo travado pelo writer (lock_timeout)",
+      "status": "FAIL",
+      "detail": ""
+    },
+    {
+      "test": "admin revoga P de V1",
+      "status": "FAIL",
+      "detail": "ERROR:  SELLER_PORTFOLIO_FORBIDDEN"
+    },
+    {
+      "test": "após revogação: carteira vazia",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "após revogação: criação negada",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "após revogação: catálogo negado",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "histórico de atribuição preservado",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "reatribuição cria novo vínculo",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "perfil inativo: criação negada",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "perfil inativo: capacidade fechada",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "papel revogado: criação negada",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "regressão: gestor comercial lança para P",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "regressão: comprador externo lança próprio pedido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "regressão: técnico de parceiro segue negado",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "regressão: financeiro não vira vendedor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "ROLLBACK restaura corpos LIVE",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE platform_private.c2_order_actor_scope(uuid,uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE platform_private.c2_owner_order_guard(uuid,uuid,uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE platform_private.commercial_plan_partner_visible(uuid,uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE public.rpc_b2b_list_selectable_payment_plans()",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE public.get_partner_catalog_secure(uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE platform_private.b2b_partner_catalog_reader(uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE platform_private.c2_partner_order_attempt_authz(uuid,uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE public.simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE platform_private.b2b_internal_order_snapshot_guard()",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback md5 LIVE public.c2_internal_order_entry_capability_v1()",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "após rollback: vendedor sem writers",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "após rollback: pedidos e atribuições preservados",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback repetido recusa drift",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "após rollback: gestor segue aberto",
+      "status": "PASS",
+      "detail": null
     }
   ],
   "executed_sha256": {
     "01c-pre-writers.sql.readonly": [
-      "a725da0625e5be150f9b15dbc82f53f5ea1ffac8290cb90609556bd0d7fb2b02",
-      "a725da0625e5be150f9b15dbc82f53f5ea1ffac8290cb90609556bd0d7fb2b02"
+      "01d834d8bbc88eb4bc354533f0769a05a58491a8966838d13b5869a3cb0833f9",
+      "01d834d8bbc88eb4bc354533f0769a05a58491a8966838d13b5869a3cb0833f9"
     ],
     "02c-install-writers.sql.review": [
-      "f01050efd688b8634f1ab62bb5b42f476eac5ac1b5a3c26833ca348ad2533a9a",
-      "f01050efd688b8634f1ab62bb5b42f476eac5ac1b5a3c26833ca348ad2533a9a"
+      "16b7289d24364a88f7fb48a1ae4bbf83209e5162271540e9d02f2a6a84f0e219",
+      "16b7289d24364a88f7fb48a1ae4bbf83209e5162271540e9d02f2a6a84f0e219"
     ],
     "03c-post-writers.sql.readonly": [
-      "e7f107a8df50f87ecf0201ca2072ce7cca7e7a5283da53db44bd791bf9a4e5e0"
+      "cd37f395bd61c8e60d0eb6e9a6d9374ccadc46eaf7fddf537bad9656ed37af00"
+    ],
+    "04c-rollback-writers.sql.review": [
+      "7d36d92ca89720137863a167962e84e538ec8d48938f3da159adee229e986656",
+      "7d36d92ca89720137863a167962e84e538ec8d48938f3da159adee229e986656"
     ]
   },
   "note": "PostgreSQL descartável restaurado do espelho composto; Auth sintética; não prova JWT/RLS/Storage hospedados"

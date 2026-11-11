@@ -10,6 +10,10 @@ DO $pre$ BEGIN
  IF (SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres}|postgres' THEN RAISE EXCEPTION 'VENDW_PRE_ACL_DRIFT:platform_private.c2_order_actor_scope(uuid,uuid)'; END IF;
  IF md5(pg_get_functiondef('platform_private.c2_owner_order_guard(uuid,uuid,uuid)'::regprocedure)) IS DISTINCT FROM '01d6cb10289af56ecfdbb38e43646e3a' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:platform_private.c2_owner_order_guard(uuid,uuid,uuid)'; END IF;
  IF (SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='platform_private.c2_owner_order_guard(uuid,uuid,uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres}|postgres' THEN RAISE EXCEPTION 'VENDW_PRE_ACL_DRIFT:platform_private.c2_owner_order_guard(uuid,uuid,uuid)'; END IF;
+ IF md5(pg_get_functiondef('platform_private.commercial_plan_partner_visible(uuid,uuid)'::regprocedure)) IS DISTINCT FROM 'df00b1478d8214bc9a17d63d841b24c4' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:platform_private.commercial_plan_partner_visible(uuid,uuid)'; END IF;
+ IF (SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='platform_private.commercial_plan_partner_visible(uuid,uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres}|postgres' THEN RAISE EXCEPTION 'VENDW_PRE_ACL_DRIFT:platform_private.commercial_plan_partner_visible(uuid,uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.rpc_b2b_list_selectable_payment_plans()'::regprocedure)) IS DISTINCT FROM '5bceeda188eee7525172eadeed17f7c0' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:public.rpc_b2b_list_selectable_payment_plans()'; END IF;
+ IF (SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.rpc_b2b_list_selectable_payment_plans()'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}|postgres' THEN RAISE EXCEPTION 'VENDW_PRE_ACL_DRIFT:public.rpc_b2b_list_selectable_payment_plans()'; END IF;
  IF md5(pg_get_functiondef('public.get_partner_catalog_secure(uuid)'::regprocedure)) IS DISTINCT FROM 'b5684d350603d1db77ab9f1db0f4b253' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:public.get_partner_catalog_secure(uuid)'; END IF;
  IF (SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}|postgres' THEN RAISE EXCEPTION 'VENDW_PRE_ACL_DRIFT:public.get_partner_catalog_secure(uuid)'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_partner_catalog_reader(uuid)'::regprocedure)) IS DISTINCT FROM 'bd985484b69c8fa6e63a920eff518369' THEN RAISE EXCEPTION 'VENDW_PRE_DRIFT:platform_private.b2b_partner_catalog_reader(uuid)'; END IF;
@@ -210,6 +214,69 @@ BEGIN
     RAISE EXCEPTION 'plan_not_assigned' USING ERRCODE='42501';
   END IF;
 END $function$;
+CREATE OR REPLACE FUNCTION platform_private.commercial_plan_partner_visible(p_plan_id uuid, p_partner_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+ SELECT COALESCE(EXISTS(SELECT 1 FROM public.commercial_payment_plans p
+ JOIN public.partner_accounts pa ON pa.id=p_partner_id AND pa.commercial_owner_organization_id=p.organization_id
+ AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+ JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE AND o.status='ativa'
+ WHERE p.id=p_plan_id AND p.organization_id IS NOT NULL AND (
+   p.organization_id=platform_private.commercial_plan_actor_organization()
+   -- seller_portfolio_v1: vendedor exclusivo vê só planos publicados para parceiro atribuído da própria empresa.
+   OR ((platform_private.seller_commercial_actor() IS TRUE AND platform_private.seller_commercial_target_reason(auth.uid(),p_partner_id) IS NULL) AND p.organization_id=public.h15_actor_organization() AND EXISTS(
+     SELECT 1 FROM public.commercial_payment_plan_assignments sa WHERE sa.plan_id=p.id AND sa.partner_id=p_partner_id AND sa.buyer_scope='partner' AND sa.status='published'
+     AND sa.valid_from<=CURRENT_DATE AND (sa.valid_until IS NULL OR sa.valid_until>=CURRENT_DATE)))
+   OR (public.has_role(auth.uid(),'parceiro_b2b'::public.app_role) IS TRUE AND EXISTS(
+     SELECT 1 FROM public.commercial_payment_plan_assignments a
+     JOIN public.partner_users pu ON pu.partner_id=a.partner_id AND pu.user_id=auth.uid() AND pu.tenant_id=p.organization_id
+     AND pu.revoked_at IS NULL AND COALESCE(pu.valid_from,'-infinity'::timestamptz)<=now()
+     JOIN public.profiles pr ON pr.user_id=auth.uid() AND pr.ativo IS TRUE
+     WHERE a.plan_id=p.id AND a.partner_id=p_partner_id AND a.buyer_scope='partner' AND a.status='published'
+     AND a.valid_from<=CURRENT_DATE AND (a.valid_until IS NULL OR a.valid_until>=CURRENT_DATE))))
+ ),false);
+$function$;
+CREATE OR REPLACE FUNCTION public.rpc_b2b_list_selectable_payment_plans()
+ RETURNS TABLE(id uuid, code text, name text, description text, plan_type text, max_days integer, months_count numeric, installment_count integer, discount_percent numeric, monthly_interest_percent numeric, interest_type text, pricing_mode text, minimum_order_amount numeric, requires_credit_approval boolean, requires_guarantee boolean, requires_financial_approval boolean, is_default boolean, sort_order integer)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_uid uuid := auth.uid(); v_admin boolean; v_org uuid;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  v_admin := public.has_role(v_uid,'administrador'::app_role)
+          OR public.has_role(v_uid,'financeiro'::app_role)
+          OR public.has_role(v_uid,'gestor_comercial'::app_role);
+  IF NOT (v_admin OR public.has_role(v_uid,'parceiro_b2b'::app_role) OR platform_private.seller_commercial_actor() IS TRUE) THEN
+    RAISE EXCEPTION 'not_authorized';
+  END IF;
+
+  v_org := platform_private.commercial_plan_actor_organization();
+  RETURN QUERY
+  SELECT p.id, p.code, p.name, p.description, p.plan_type::text,
+         p.max_days, p.months_count, p.installment_count,
+         p.discount_percent, p.monthly_interest_percent,
+         p.interest_type::text, p.pricing_mode::text, p.minimum_order_amount,
+         p.requires_credit_approval, p.requires_guarantee, p.requires_financial_approval,
+         p.is_default, p.sort_order
+  FROM public.commercial_payment_plans p
+  WHERE p.active = true
+    AND p.superseded_by_id IS NULL
+    AND p.valid_from <= now()
+    AND (p.valid_until IS NULL OR p.valid_until > now())
+    AND ((v_admin AND p.organization_id = v_org) OR platform_private.commercial_plan_buyer_visible(p.id, v_uid)
+      -- seller_portfolio_v1: somente planos publicados para parceiros da carteira própria.
+      OR (platform_private.seller_commercial_actor() IS TRUE AND p.organization_id = public.h15_actor_organization() AND EXISTS(
+        SELECT 1 FROM public.commercial_payment_plan_assignments sa WHERE sa.plan_id=p.id AND sa.buyer_scope='partner' AND sa.status='published'
+        AND sa.valid_from<=CURRENT_DATE AND (sa.valid_until IS NULL OR sa.valid_until>=CURRENT_DATE)
+        AND platform_private.seller_commercial_target_reason(v_uid, sa.partner_id) IS NULL)))
+  ORDER BY p.sort_order, p.name;
+END
+$function$;
 CREATE OR REPLACE FUNCTION public.get_partner_catalog_secure(p_partner_id uuid)
  RETURNS TABLE(item_id uuid, item_tipo text, product_id uuid, produto_nome text, produto_codigo text, descricao_curta text, preco_tabela numeric, desconto_percentual numeric, preco_parceiro numeric, produto_ativo boolean, resumo_curto text, explicacao_b2b text, beneficios_principais text, ficha_status text, ficha_aprovada boolean, valor_dose_brl numeric, valor_litro_brl numeric, valor_ha_brl numeric, unidade_preco_principal text)
  LANGUAGE plpgsql
@@ -1933,6 +2000,10 @@ DO $post$ BEGIN
  IF (SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres}|postgres' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:platform_private.c2_order_actor_scope(uuid,uuid)'; END IF;
  IF md5(pg_get_functiondef('platform_private.c2_owner_order_guard(uuid,uuid,uuid)'::regprocedure)) IS DISTINCT FROM '1cece91f0d4ac29d8a2f0d09363e3ee1' THEN RAISE EXCEPTION 'VENDW_POST_DRIFT:platform_private.c2_owner_order_guard(uuid,uuid,uuid)'; END IF;
  IF (SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='platform_private.c2_owner_order_guard(uuid,uuid,uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres}|postgres' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:platform_private.c2_owner_order_guard(uuid,uuid,uuid)'; END IF;
+ IF md5(pg_get_functiondef('platform_private.commercial_plan_partner_visible(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '029abbe0fa877743bddf08a10179f925' THEN RAISE EXCEPTION 'VENDW_POST_DRIFT:platform_private.commercial_plan_partner_visible(uuid,uuid)'; END IF;
+ IF (SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='platform_private.commercial_plan_partner_visible(uuid,uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres}|postgres' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:platform_private.commercial_plan_partner_visible(uuid,uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.rpc_b2b_list_selectable_payment_plans()'::regprocedure)) IS DISTINCT FROM '754a458a2a6f09f90faa0cffb6777cc0' THEN RAISE EXCEPTION 'VENDW_POST_DRIFT:public.rpc_b2b_list_selectable_payment_plans()'; END IF;
+ IF (SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.rpc_b2b_list_selectable_payment_plans()'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}|postgres' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:public.rpc_b2b_list_selectable_payment_plans()'; END IF;
  IF md5(pg_get_functiondef('public.get_partner_catalog_secure(uuid)'::regprocedure)) IS DISTINCT FROM 'b5d8b3e96c6814ae868dc684cd1f3751' THEN RAISE EXCEPTION 'VENDW_POST_DRIFT:public.get_partner_catalog_secure(uuid)'; END IF;
  IF (SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}|postgres' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:public.get_partner_catalog_secure(uuid)'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_partner_catalog_reader(uuid)'::regprocedure)) IS DISTINCT FROM '2988e5e919f9a692071c7bbfb42d7e1e' THEN RAISE EXCEPTION 'VENDW_POST_DRIFT:platform_private.b2b_partner_catalog_reader(uuid)'; END IF;

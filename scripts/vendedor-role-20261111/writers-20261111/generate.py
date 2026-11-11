@@ -15,6 +15,14 @@ TARGETS=[
 ("platform_private.c2_owner_order_guard(uuid,uuid,uuid)","01d6cb10289af56ecfdbb38e43646e3a",False,[
  ("     OR public.has_role(_uid,'gestor_comercial'::public.app_role) THEN\n    RETURN;",
   "     OR public.has_role(_uid,'gestor_comercial'::public.app_role)\n     OR "+P('_uid','_partner')+" THEN\n    RETURN;",1)]),
+("platform_private.commercial_plan_partner_visible(uuid,uuid)","df00b1478d8214bc9a17d63d841b24c4",False,[
+ ("   p.organization_id=platform_private.commercial_plan_actor_organization()\n",
+  "   p.organization_id=platform_private.commercial_plan_actor_organization()\n   -- seller_portfolio_v1: vendedor exclusivo vê só planos publicados para parceiro atribuído da própria empresa.\n   OR ("+P('auth.uid()','p_partner_id')+" AND p.organization_id=public.h15_actor_organization() AND EXISTS(\n     SELECT 1 FROM public.commercial_payment_plan_assignments sa WHERE sa.plan_id=p.id AND sa.partner_id=p_partner_id AND sa.buyer_scope='partner' AND sa.status='published'\n     AND sa.valid_from<=CURRENT_DATE AND (sa.valid_until IS NULL OR sa.valid_until>=CURRENT_DATE)))\n",1)]),
+("public.rpc_b2b_list_selectable_payment_plans()","5bceeda188eee7525172eadeed17f7c0",False,[
+ ("  IF NOT (v_admin OR public.has_role(v_uid,'parceiro_b2b'::app_role)) THEN",
+  "  IF NOT (v_admin OR public.has_role(v_uid,'parceiro_b2b'::app_role) OR platform_private.seller_commercial_actor() IS TRUE) THEN",1),
+ ("    AND ((v_admin AND p.organization_id = v_org) OR platform_private.commercial_plan_buyer_visible(p.id, v_uid))",
+  "    AND ((v_admin AND p.organization_id = v_org) OR platform_private.commercial_plan_buyer_visible(p.id, v_uid)\n      -- seller_portfolio_v1: somente planos publicados para parceiros da carteira própria.\n      OR (platform_private.seller_commercial_actor() IS TRUE AND p.organization_id = public.h15_actor_organization() AND EXISTS(\n        SELECT 1 FROM public.commercial_payment_plan_assignments sa WHERE sa.plan_id=p.id AND sa.buyer_scope='partner' AND sa.status='published'\n        AND sa.valid_from<=CURRENT_DATE AND (sa.valid_until IS NULL OR sa.valid_until>=CURRENT_DATE)\n        AND platform_private.seller_commercial_target_reason(v_uid, sa.partner_id) IS NULL)))",1)]),
 ("public.get_partner_catalog_secure(uuid)","b5684d350603d1db77ab9f1db0f4b253",False,[
  ("                AND platform_private.c2_internal_order_target_reason(v_uid, p_partner_id) IS NULL) THEN",
   "                AND platform_private.c2_internal_order_target_reason(v_uid, p_partner_id) IS NULL)\n       AND NOT "+P('v_uid','p_partner_id')+" THEN",1),
