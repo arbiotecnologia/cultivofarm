@@ -1,7 +1,7 @@
 {
   "attempt": 1,
-  "pass_": 26,
-  "fail": 13,
+  "pass_": 38,
+  "fail": 1,
   "checks": [
     {
       "test": "restore sem erros além das FKs auth conhecidas",
@@ -80,13 +80,13 @@
     },
     {
       "test": "INSTALL transação única",
-      "status": "FAIL",
-      "detail": "ERROR:  VENDW_PRE_REF_UNPROVEN\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\n"
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "POST_PASS",
-      "status": "FAIL",
-      "detail": "ERROR:  VENDW_POST_DRIFT:platform_private.c2_order_actor_scope(uuid,uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\n"
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "reinstalação recusada (PRE interno)",
@@ -95,8 +95,8 @@
     },
     {
       "test": "capacidade V1: só P, order_create e quote_respond",
-      "status": "FAIL",
-      "detail": "{'ready': True, 'reason': None, 'contract': 'seller_portfolio_capability_v1', 'partners': [{'partner_id': '00000000-0000-0000-0000-000000000011', 'razao_social': 'LOCAL B3 PARTNER'}], 'order_create': False, 'quote_respond': False, 'writers_reason': 'seller_writers_blocked_pending_live_capture'}"
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "capacidade V2: só P2",
@@ -110,8 +110,8 @@
     },
     {
       "test": "vendedor+gestor não é vendedor exclusivo",
-      "status": "FAIL",
-      "detail": "{'ready': True, 'reason': None, 'contract': 'seller_portfolio_capability_v1', 'partners': [], 'order_create': False, 'quote_respond': False, 'writers_reason': 'seller_writers_blocked_pending_live_capture'}"
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "regressão: capacidade do gestor segue aberta (pin catálogo novo)",
@@ -125,8 +125,8 @@
     },
     {
       "test": "V1 lê catálogo de P",
-      "status": "FAIL",
-      "detail": "(None, 'ERROR:  forbidden_partner')"
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "V1 catálogo de parceiro não atribuído",
@@ -145,38 +145,38 @@
     },
     {
       "test": "V1 lê embalagens de P",
-      "status": "FAIL",
-      "detail": "(None, 'ERROR:  forbidden_role')"
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "V1 lê condições vigentes de P",
-      "status": "FAIL",
-      "detail": "(None, 'ERROR:  forbidden_role')"
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "V1 lança pedido para P (positivo apto)",
       "status": "FAIL",
-      "detail": "ERROR:  forbidden_partner"
+      "detail": "ERROR:  C2_OWNER_ORDER_CLOSED"
     },
     {
       "test": "V1 não lança para parceiro não atribuído",
-      "status": "FAIL",
-      "detail": "(None, 'ERROR:  forbidden_partner')"
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "V1 não lança para P2 (outro vendedor)",
-      "status": "FAIL",
-      "detail": "(None, 'ERROR:  forbidden_partner')"
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "V1 não lança para parceiro de outro tenant",
-      "status": "FAIL",
-      "detail": "(None, 'ERROR:  forbidden_partner')"
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "VB não lança para P",
-      "status": "FAIL",
-      "detail": "(None, 'ERROR:  forbidden_partner')"
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "vendedor não publica condição",
@@ -195,8 +195,8 @@
     },
     {
       "test": "emitente não validado: fiscal_block issuer_not_validated e order_create false, quote_respond mantido",
-      "status": "FAIL",
-      "detail": "ERROR:  H15_COMPANY_FORBIDDEN\nCONTEXT:  PL/pgSQL function h15_company_integrity() line 4 at RAISE\n"
+      "status": "PASS",
+      "detail": null
     }
   ],
   "executed_sha256": {

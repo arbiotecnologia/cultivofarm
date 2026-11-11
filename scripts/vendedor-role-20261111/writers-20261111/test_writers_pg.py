@@ -82,9 +82,9 @@ try:
     deny('gestor comercial não atribui carteira',call(UGC,f"public.admin_assign_seller_portfolio_v1('{V1}','{PNA}','x')"),'SELLER_PORTFOLIO_FORBIDDEN')
     deny('admin A não atribui vendedor de F',call(UADM,f"public.admin_assign_seller_portfolio_v1('{VB}','{P2}','x')"),'SELLER_PORTFOLIO_SELLER_INVALID')
     # Instalação
-    r=run_file('02c-install-writers.sql.review');ok('INSTALL transação única',r.returncode==0,r.stderr[-800:])
+    r=run_file('02c-install-writers.sql.review',"SET app.expected_ref='swzpzcwiasxmjutrmvkm';");ok('INSTALL transação única',r.returncode==0,r.stderr[-800:])
     r=run_file('03c-post-writers.sql.readonly');ok('POST_PASS',r.returncode==0 and 'VENDW_POST_PASS' in r.stdout,r.stderr[-400:])
-    r=run_file('02c-install-writers.sql.review');ok('reinstalação recusada (PRE interno)',r.returncode!=0 and 'VENDW_PRE' in r.stderr,r.stderr[-300:])
+    r=run_file('02c-install-writers.sql.review',"SET app.expected_ref='swzpzcwiasxmjutrmvkm';");ok('reinstalação recusada (PRE interno)',r.returncode!=0 and 'VENDW_PRE' in r.stderr,r.stderr[-300:])
     # Capacidade
     c,e=call(V1,"public.seller_portfolio_capability_v1()")
     ok('capacidade V1: só P, order_create e quote_respond',c and c['ready'] and [p['partner_id'] for p in c['partners']]==[P] and c['order_create'] and c['quote_respond'] and c['fiscal_block'] is None,c or e)
@@ -125,7 +125,7 @@ try:
     deny('vendedor não lista planos administrativos',call(V1,"public.rpc_admin_list_commercial_plans()"),'')
     deny('vendedor não altera atribuição de condição',call(V1,f"public.b2b_payment_condition_assign('{P}','{P3}','boleto',2,false)"),'')
     # Bloqueio fiscal distinto de ausência funcional (transação revertida; sem alterar snapshots)
-    pre_draft=f"BEGIN; UPDATE public.company_fiscal_settings SET configuration_status='DRAFT' WHERE organization_id='{A}' AND is_active;"
+    pre_draft=f"BEGIN; SET LOCAL session_replication_role=replica; UPDATE public.company_fiscal_settings SET configuration_status='DRAFT' WHERE organization_id='{A}' AND is_active; SET LOCAL session_replication_role=origin;"
     r=act(V1,"SELECT public.seller_portfolio_capability_v1()::text; ROLLBACK;",pre_draft)
     cap=json.loads([l for l in r.stdout.splitlines() if l.startswith('{')][-1]) if r.returncode==0 else None
     ok('emitente não validado: fiscal_block issuer_not_validated e order_create false, quote_respond mantido',cap and cap['fiscal_block']=='issuer_not_validated' and cap['order_create'] is False and cap['quote_respond'] is True and cap['partners'],cap or r.stderr[-300:])
