@@ -1,0 +1,2 @@
+-- Transação própria: valor de enum precisa ser confirmado antes do uso.
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'vendedor';

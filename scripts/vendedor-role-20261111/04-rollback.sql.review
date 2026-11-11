@@ -1,0 +1,14 @@
+-- Não remove o valor do enum (Postgres não suporta); só recusa se houver atribuições ativas.
+BEGIN;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM platform_private.seller_portfolio_assignments WHERE revoked_at IS NULL) THEN
+    RAISE EXCEPTION 'VENDEDOR_ROLLBACK_ACTIVE_ASSIGNMENTS: revogue pelo fluxo normal antes';
+  END IF;
+END $$;
+DROP FUNCTION public.seller_portfolio_capability_v1();
+DROP FUNCTION public.admin_list_seller_portfolio_v1();
+DROP FUNCTION public.admin_revoke_seller_portfolio_v1(uuid,text);
+DROP FUNCTION public.admin_assign_seller_portfolio_v1(uuid,uuid,text);
+-- Tabelas e histórico preservados (sem DROP); apenas fechados.
+REVOKE ALL ON platform_private.seller_portfolio_assignments FROM PUBLIC, anon, authenticated;
+COMMIT;

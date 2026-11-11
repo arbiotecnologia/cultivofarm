@@ -1,0 +1,138 @@
+BEGIN;
+SET LOCAL lock_timeout='3s';
+
+CREATE TABLE platform_private.seller_portfolio_assignments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id uuid NOT NULL REFERENCES public.organizations(id) ON DELETE RESTRICT,
+  seller_user_id uuid NOT NULL,
+  partner_id uuid NOT NULL REFERENCES public.partner_accounts(id) ON DELETE RESTRICT,
+  assigned_by uuid NOT NULL,
+  assigned_at timestamptz NOT NULL DEFAULT now(),
+  reason text NOT NULL,
+  revoked_at timestamptz,
+  revoked_by uuid,
+  revoke_reason text
+);
+CREATE UNIQUE INDEX seller_portfolio_one_active
+  ON platform_private.seller_portfolio_assignments(organization_id, partner_id) WHERE revoked_at IS NULL;
+REVOKE ALL ON platform_private.seller_portfolio_assignments FROM PUBLIC, anon, authenticated;
+
+CREATE TABLE platform_private.seller_portfolio_audit (
+  id bigserial PRIMARY KEY,
+  assignment_id uuid NOT NULL,
+  action text NOT NULL,
+  actor uuid NOT NULL,
+  at timestamptz NOT NULL DEFAULT now(),
+  snapshot jsonb NOT NULL
+);
+REVOKE ALL ON platform_private.seller_portfolio_audit FROM PUBLIC, anon, authenticated;
+
+CREATE FUNCTION platform_private.seller_portfolio_guard_immutable() RETURNS trigger
+LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN
+  IF TG_OP='DELETE' THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_IMMUTABLE' USING ERRCODE='42501'; END IF;
+  IF OLD.revoked_at IS NOT NULL
+     OR (NEW.organization_id,NEW.seller_user_id,NEW.partner_id,NEW.assigned_by,NEW.assigned_at,NEW.reason)
+        IS DISTINCT FROM (OLD.organization_id,OLD.seller_user_id,OLD.partner_id,OLD.assigned_by,OLD.assigned_at,OLD.reason) THEN
+    RAISE EXCEPTION 'SELLER_PORTFOLIO_IMMUTABLE' USING ERRCODE='42501';
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER seller_portfolio_immutable BEFORE UPDATE OR DELETE ON platform_private.seller_portfolio_assignments
+  FOR EACH ROW EXECUTE FUNCTION platform_private.seller_portfolio_guard_immutable();
+
+-- Ator pronto da empresa: perfil ativo + papel real, nunca claims/GUC.
+CREATE FUNCTION platform_private.seller_actor_org(p_role public.app_role) RETURNS uuid
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+  SELECT pr.organization_id FROM public.profiles pr
+   WHERE pr.user_id=auth.uid() AND pr.ativo IS TRUE AND pr.organization_id IS NOT NULL
+     AND platform_private.has_role(auth.uid(), p_role)
+     AND NOT platform_private.has_role(auth.uid(),'parceiro_b2b')
+     AND NOT platform_private.has_role(auth.uid(),'parceiro_b2b_tecnico')
+$$;
+REVOKE ALL ON FUNCTION platform_private.seller_actor_org(public.app_role) FROM PUBLIC, anon, authenticated;
+
+CREATE FUNCTION platform_private.seller_partner_in_portfolio(p_partner uuid) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM platform_private.seller_portfolio_assignments a
+      JOIN public.partner_accounts pa ON pa.id=a.partner_id
+     WHERE a.partner_id=p_partner AND a.seller_user_id=auth.uid() AND a.revoked_at IS NULL
+       AND a.organization_id=platform_private.seller_actor_org('vendedor')
+       AND pa.commercial_owner_organization_id=a.organization_id)
+$$;
+REVOKE ALL ON FUNCTION platform_private.seller_partner_in_portfolio(uuid) FROM PUBLIC, anon, authenticated;
+
+-- Atribuição explícita: só administrador ativo da mesma empresa.
+CREATE FUNCTION public.admin_assign_seller_portfolio_v1(p_seller uuid, p_partner uuid, p_reason text)
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v_org uuid := platform_private.seller_actor_org('administrador'); v_id uuid;
+BEGIN
+  IF v_org IS NULL THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF nullif(btrim(coalesce(p_reason,'')),'') IS NULL THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_REASON_REQUIRED' USING ERRCODE='22023'; END IF;
+  PERFORM 1 FROM public.partner_accounts WHERE id=p_partner AND commercial_owner_organization_id=v_org FOR SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.profiles WHERE user_id=p_seller AND organization_id=v_org AND ativo IS TRUE)
+     OR NOT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id=p_seller AND role='vendedor') THEN
+    RAISE EXCEPTION 'SELLER_PORTFOLIO_SELLER_INVALID' USING ERRCODE='22023';
+  END IF;
+  IF EXISTS (SELECT 1 FROM platform_private.seller_portfolio_assignments
+              WHERE organization_id=v_org AND partner_id=p_partner AND revoked_at IS NULL) THEN
+    RAISE EXCEPTION 'SELLER_PORTFOLIO_ALREADY_ASSIGNED' USING ERRCODE='P0409';
+  END IF;
+  INSERT INTO platform_private.seller_portfolio_assignments(organization_id,seller_user_id,partner_id,assigned_by,reason)
+  VALUES (v_org,p_seller,p_partner,auth.uid(),btrim(p_reason)) RETURNING id INTO v_id;
+  INSERT INTO platform_private.seller_portfolio_audit(assignment_id,action,actor,snapshot)
+  SELECT v_id,'assign',auth.uid(),to_jsonb(a) FROM platform_private.seller_portfolio_assignments a WHERE a.id=v_id;
+  RETURN v_id;
+END $$;
+
+CREATE FUNCTION public.admin_revoke_seller_portfolio_v1(p_assignment uuid, p_reason text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v_org uuid := platform_private.seller_actor_org('administrador');
+BEGIN
+  IF v_org IS NULL THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF nullif(btrim(coalesce(p_reason,'')),'') IS NULL THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_REASON_REQUIRED' USING ERRCODE='22023'; END IF;
+  UPDATE platform_private.seller_portfolio_assignments
+     SET revoked_at=now(), revoked_by=auth.uid(), revoke_reason=btrim(p_reason)
+   WHERE id=p_assignment AND organization_id=v_org AND revoked_at IS NULL;
+  IF NOT FOUND THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  INSERT INTO platform_private.seller_portfolio_audit(assignment_id,action,actor,snapshot)
+  SELECT p_assignment,'revoke',auth.uid(),to_jsonb(a) FROM platform_private.seller_portfolio_assignments a WHERE a.id=p_assignment;
+END $$;
+
+CREATE FUNCTION public.admin_list_seller_portfolio_v1()
+RETURNS TABLE(id uuid, seller_user_id uuid, partner_id uuid, assigned_at timestamptz, reason text, revoked_at timestamptz)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v_org uuid := platform_private.seller_actor_org('administrador');
+BEGIN
+  IF v_org IS NULL THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  RETURN QUERY SELECT a.id,a.seller_user_id,a.partner_id,a.assigned_at,a.reason,a.revoked_at
+    FROM platform_private.seller_portfolio_assignments a WHERE a.organization_id=v_org ORDER BY a.assigned_at DESC;
+END $$;
+
+-- Capacidade do vendedor: apenas a própria carteira vigente. Escritores fechados.
+CREATE FUNCTION public.seller_portfolio_capability_v1()
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v_org uuid := platform_private.seller_actor_org('vendedor');
+BEGIN
+  IF v_org IS NULL THEN
+    RETURN jsonb_build_object('contract','seller_portfolio_capability_v1','ready',false,'reason','not_seller','partners','[]'::jsonb,
+      'order_create',false,'quote_respond',false);
+  END IF;
+  RETURN jsonb_build_object('contract','seller_portfolio_capability_v1','ready',true,'reason',null,
+    'order_create',false,'quote_respond',false,'writers_reason','seller_writers_blocked_pending_live_capture',
+    'partners',coalesce((SELECT jsonb_agg(jsonb_build_object('partner_id',pa.id,'razao_social',pa.razao_social) ORDER BY pa.razao_social)
+       FROM platform_private.seller_portfolio_assignments a JOIN public.partner_accounts pa ON pa.id=a.partner_id
+      WHERE a.seller_user_id=auth.uid() AND a.organization_id=v_org AND a.revoked_at IS NULL
+        AND pa.commercial_owner_organization_id=v_org),'[]'::jsonb));
+END $$;
+
+DO $$ DECLARE f text; BEGIN
+  FOREACH f IN ARRAY ARRAY['public.admin_assign_seller_portfolio_v1(uuid,uuid,text)','public.admin_revoke_seller_portfolio_v1(uuid,text)',
+    'public.admin_list_seller_portfolio_v1()','public.seller_portfolio_capability_v1()'] LOOP
+    EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon', f);
+    EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO authenticated', f);
+  END LOOP;
+END $$;
+COMMIT;

@@ -1,0 +1,21 @@
+-- PRE somente leitura. Falha fechada se o ref/estado divergir.
+DO $$
+BEGIN
+  IF current_setting('app.expected_ref', true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN
+    RAISE EXCEPTION 'VENDEDOR_PRE_REF_UNPROVEN: execute SET app.expected_ref=''swzpzcwiasxmjutrmvkm'' após conferir o projeto';
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON t.oid=e.enumtypid JOIN pg_namespace n ON n.oid=t.typnamespace
+             WHERE n.nspname='public' AND t.typname='app_role' AND e.enumlabel='vendedor') THEN
+    RAISE EXCEPTION 'VENDEDOR_PRE_ALREADY_PRESENT';
+  END IF;
+  IF to_regclass('platform_private.seller_portfolio_assignments') IS NOT NULL THEN
+    RAISE EXCEPTION 'VENDEDOR_PRE_TABLE_PRESENT';
+  END IF;
+  IF to_regprocedure('platform_private.has_role(uuid,public.app_role)') IS NULL
+     OR to_regprocedure('platform_private.b2b_internal_commercial_actor()') IS NULL THEN
+    RAISE EXCEPTION 'VENDEDOR_PRE_DEPENDENCY_MISSING';
+  END IF;
+END $$;
+SELECT 'PRE_PASS' AS status,
+  md5(pg_get_functiondef('platform_private.b2b_internal_commercial_actor()'::regprocedure)) AS commercial_actor_md5,
+  (SELECT count(*) FROM public.user_roles) AS user_roles_count;

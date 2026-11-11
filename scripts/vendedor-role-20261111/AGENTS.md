@@ -1,0 +1,4 @@
+- Package is review-only: never apply hosted, publish or deploy from here; the auditor installs after PRE_PASS on ref swzpzcwiasxmjutrmvkm.
+- `vendedor` is distinct from `gestor_comercial`: never add it to `b2b_internal_commercial_actor`, approval guards, plan/condition writers, billing, stock, delivery or fiscal — prevents approval escalation.
+- Seller portfolio is deny-by-default in `platform_private.seller_portfolio_assignments`; only an active same-tenant administrador assigns/revokes, audited, with revocation preserving history — prevents implicit portfolios.
+- Order/quote writers for vendedor stay BLOCKED until LIVE bodies of the canonical writers are captured and a separate delta is reviewed; never fork writers or call them with borrowed roles.
