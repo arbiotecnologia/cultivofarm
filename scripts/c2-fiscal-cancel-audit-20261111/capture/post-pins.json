@@ -1,0 +1,51 @@
+{
+  "public.fn_fiscal_invoice_eligibility(text,uuid)": {
+    "acl": [
+      "authenticated=X/postgres",
+      "postgres=X/postgres",
+      "service_role=X/postgres"
+    ],
+    "md5": "9eab0ceb7796f6a2421617dfb4013849",
+    "owner": "postgres",
+    "config": [
+      "search_path=pg_catalog, public, pg_temp"
+    ],
+    "secdef": true
+  },
+  "public.fn_fiscal_invoice_eligibility(text,uuid,uuid)": {
+    "acl": [
+      "authenticated=X/postgres",
+      "postgres=X/postgres",
+      "service_role=X/postgres"
+    ],
+    "md5": "c920cc8f80b03733f58105b083d788c2",
+    "owner": "postgres",
+    "config": [
+      "search_path=pg_catalog, public, pg_temp"
+    ],
+    "secdef": true
+  },
+  "public.c2_pilot_economic_state_v1(uuid)": {
+    "acl": [
+      "authenticated=X/postgres",
+      "postgres=X/postgres"
+    ],
+    "md5": "d8ad1d4d5e7e74a660d0db49b7b24cba",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "secdef": true
+  },
+  "platform_private.c2_pilot_econ_evidence_v1(uuid)": {
+    "acl": [
+      "postgres=X/postgres"
+    ],
+    "md5": "64c7dbffed240f40170f79eb7f62ce8d",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "secdef": true
+  }
+}
