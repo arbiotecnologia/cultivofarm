@@ -8,8 +8,8 @@ SIG = 'public.reject_b2b_payment_terms_secure(uuid,text)'
 LIVE_MD5 = '40777d0cec6a7d8a8d4dfcb3370b08b6'
 SELLER = '007bb519-cba0-4704-be2c-cb93ad010048'
 ACL = ['authenticated=X/postgres', 'postgres=X/postgres', 'service_role=X/postgres']
-CANDIDATE_MD5 = ''  # measured preliminary rehearsal; blank refuses final generation
-ROLLBACK_MD5 = ''
+CANDIDATE_MD5 = '988935a5dfdbaa3914954f4b2fa66ec7'
+ROLLBACK_MD5 = 'dae0d60c90d283401217bd4c7050397c'
 FILES = ('01-pre.sql.readonly','02-install.sql.review','03-post.sql.readonly','04-rollback-deny.sql.review')
 
 def candidate():
