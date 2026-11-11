@@ -1,6 +1,6 @@
 {
   "attempt": 1,
-  "pass_": 102,
+  "pass_": 105,
   "fail": 0,
   "checks": [
     {
@@ -90,6 +90,21 @@
     },
     {
       "test": "reinstalação recusada (PRE interno)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "admin vê vendedores e atribuições só da própria empresa",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "gestor comercial não lê visão de carteiras",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor não lê visão de carteiras",
       "status": "PASS",
       "detail": null
     },
@@ -516,19 +531,19 @@
   ],
   "executed_sha256": {
     "01c-pre-writers.sql.readonly": [
-      "8e6e670b7f78a628dbc3b844186b354df0fafeb81b65e6840f2b27e5653e2089",
-      "8e6e670b7f78a628dbc3b844186b354df0fafeb81b65e6840f2b27e5653e2089"
+      "0049852019b5467c7a59b0b269d0bbd8ae9774533201705d26b2335171caf583",
+      "0049852019b5467c7a59b0b269d0bbd8ae9774533201705d26b2335171caf583"
     ],
     "02c-install-writers.sql.review": [
-      "67965431330b7ba80519c5b8184742fdf34db7559d8082e3fa314de75cc3ae65",
-      "67965431330b7ba80519c5b8184742fdf34db7559d8082e3fa314de75cc3ae65"
+      "a0fe37f87930a87fd069550a799893dc67ec69e1b5d5695735589aba8d9852ff",
+      "a0fe37f87930a87fd069550a799893dc67ec69e1b5d5695735589aba8d9852ff"
     ],
     "03c-post-writers.sql.readonly": [
-      "9d0dc61d43f2001d3489f18adaab29a260313309a0eada805cf2c9ea47e049e7"
+      "372cd808bc7883e511858e91ab2b92be6b04ec81f69183b5381a92d5d95ae1dd"
     ],
     "04c-rollback-writers.sql.review": [
-      "bf9ceab1990415f98375c1d1a53c9307ff21888aeb9cb48ed9ca91887504babe",
-      "bf9ceab1990415f98375c1d1a53c9307ff21888aeb9cb48ed9ca91887504babe"
+      "47c93b09597b6ddf3c704f2cb404b4eee3d305eea2e92f1adc2864f0de943439",
+      "47c93b09597b6ddf3c704f2cb404b4eee3d305eea2e92f1adc2864f0de943439"
     ]
   },
   "note": "PostgreSQL descartável restaurado do espelho composto; Auth sintética; não prova JWT/RLS/Storage hospedados"

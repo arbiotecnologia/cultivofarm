@@ -39,5 +39,6 @@ DO $pre$ BEGIN
  IF to_regprocedure('platform_private.seller_commercial_target_reason(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'VENDW_PRE_ALREADY_PRESENT:platform_private.seller_commercial_target_reason(uuid,uuid)'; END IF;
  IF to_regprocedure('platform_private.seller_portfolio_lock(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'VENDW_PRE_ALREADY_PRESENT:platform_private.seller_portfolio_lock(uuid,uuid)'; END IF;
  IF to_regprocedure('public.seller_portfolio_orders_v1()') IS NOT NULL THEN RAISE EXCEPTION 'VENDW_PRE_ALREADY_PRESENT:public.seller_portfolio_orders_v1()'; END IF;
+ IF to_regprocedure('public.admin_seller_portfolio_overview_v1()') IS NOT NULL THEN RAISE EXCEPTION 'VENDW_PRE_ALREADY_PRESENT:public.admin_seller_portfolio_overview_v1()'; END IF;
 END $pre$;
 SELECT 'VENDW_PRE_PASS';

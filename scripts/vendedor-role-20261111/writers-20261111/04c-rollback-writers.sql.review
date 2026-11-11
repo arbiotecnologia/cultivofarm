@@ -23,6 +23,7 @@ DO $rb$ BEGIN
  IF md5(pg_get_functiondef('platform_private.seller_portfolio_lock(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '996aae96c23e94742ace7395b8c2e0ad' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:platform_private.seller_portfolio_lock(uuid,uuid)'; END IF;
  IF md5(pg_get_functiondef('public.seller_portfolio_capability_v1()'::regprocedure)) IS DISTINCT FROM '21b1683d561f599bd3b349c2a4e6ecb9' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:public.seller_portfolio_capability_v1()'; END IF;
  IF md5(pg_get_functiondef('public.seller_portfolio_orders_v1()'::regprocedure)) IS DISTINCT FROM '7448e15784ff66e55b8eed1a06d0665b' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:public.seller_portfolio_orders_v1()'; END IF;
+ IF md5(pg_get_functiondef('public.admin_seller_portfolio_overview_v1()'::regprocedure)) IS DISTINCT FROM 'f5afeaca56abebd40309385112c1a611' THEN RAISE EXCEPTION 'VENDW_RB_DRIFT:public.admin_seller_portfolio_overview_v1()'; END IF;
 END $rb$;
 CREATE OR REPLACE FUNCTION platform_private.c2_order_actor_scope(_uid uuid, _partner uuid)
  RETURNS void
@@ -1888,6 +1889,7 @@ BEGIN
         AND pa.commercial_owner_organization_id=v_org),'[]'::jsonb));
 END $function$;
 REVOKE ALL ON FUNCTION public.seller_portfolio_capability_v1() FROM PUBLIC, anon; GRANT EXECUTE ON FUNCTION public.seller_portfolio_capability_v1() TO authenticated;
+DROP FUNCTION public.admin_seller_portfolio_overview_v1();
 DROP FUNCTION public.seller_portfolio_orders_v1();
 DROP FUNCTION platform_private.seller_portfolio_lock(uuid,uuid);
 DROP FUNCTION platform_private.seller_commercial_target_reason(uuid,uuid);

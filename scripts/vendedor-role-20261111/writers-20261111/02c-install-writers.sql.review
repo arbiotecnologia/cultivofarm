@@ -42,6 +42,7 @@ DO $pre$ BEGIN
  IF to_regprocedure('platform_private.seller_commercial_target_reason(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'VENDW_PRE_ALREADY_PRESENT:platform_private.seller_commercial_target_reason(uuid,uuid)'; END IF;
  IF to_regprocedure('platform_private.seller_portfolio_lock(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'VENDW_PRE_ALREADY_PRESENT:platform_private.seller_portfolio_lock(uuid,uuid)'; END IF;
  IF to_regprocedure('public.seller_portfolio_orders_v1()') IS NOT NULL THEN RAISE EXCEPTION 'VENDW_PRE_ALREADY_PRESENT:public.seller_portfolio_orders_v1()'; END IF;
+ IF to_regprocedure('public.admin_seller_portfolio_overview_v1()') IS NOT NULL THEN RAISE EXCEPTION 'VENDW_PRE_ALREADY_PRESENT:public.admin_seller_portfolio_overview_v1()'; END IF;
 END $pre$;
 
 
@@ -151,6 +152,25 @@ BEGIN
 END $f$;
 REVOKE ALL ON FUNCTION public.seller_portfolio_orders_v1() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.seller_portfolio_orders_v1() TO authenticated;
+
+-- Visão do administrador para atribuir carteira pela interface: vendedores, parceiros e atribuições da PRÓPRIA empresa.
+CREATE FUNCTION public.admin_seller_portfolio_overview_v1()
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $f$
+DECLARE v_org uuid := platform_private.seller_actor_org('administrador'::public.app_role);
+BEGIN
+  IF v_org IS NULL OR v_org IS DISTINCT FROM public.h15_actor_organization() THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  RETURN jsonb_build_object('contract','admin_seller_portfolio_overview_v1','organization_id',v_org,
+    'sellers',COALESCE((SELECT jsonb_agg(jsonb_build_object('user_id',pr.user_id,'nome',pr.nome) ORDER BY pr.nome, pr.user_id)
+      FROM public.profiles pr WHERE pr.organization_id=v_org AND pr.ativo IS TRUE
+       AND EXISTS (SELECT 1 FROM public.user_roles r WHERE r.user_id=pr.user_id AND r.role='vendedor'::public.app_role)),'[]'::jsonb),
+    'partners',COALESCE((SELECT jsonb_agg(jsonb_build_object('partner_id',p.id,'razao_social',p.razao_social) ORDER BY p.razao_social, p.id)
+      FROM public.partner_accounts p WHERE p.commercial_owner_organization_id=v_org AND p.ativo IS TRUE AND p.deleted_at IS NULL),'[]'::jsonb),
+    'assignments',COALESCE((SELECT jsonb_agg(jsonb_build_object('id',a.id,'seller_user_id',a.seller_user_id,'partner_id',a.partner_id,
+        'assigned_at',a.assigned_at,'reason',a.reason,'revoked_at',a.revoked_at,'revoke_reason',a.revoke_reason) ORDER BY a.assigned_at DESC, a.id)
+      FROM platform_private.seller_portfolio_assignments a WHERE a.organization_id=v_org),'[]'::jsonb));
+END $f$;
+REVOKE ALL ON FUNCTION public.admin_seller_portfolio_overview_v1() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_seller_portfolio_overview_v1() TO authenticated;
 
 CREATE OR REPLACE FUNCTION platform_private.c2_order_actor_scope(_uid uuid, _partner uuid)
  RETURNS void
@@ -2079,6 +2099,8 @@ DO $post$ BEGIN
  IF (SELECT coalesce(proacl::text,'NULL') FROM pg_proc WHERE oid='public.seller_portfolio_capability_v1()'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:public.seller_portfolio_capability_v1()'; END IF;
  IF md5(pg_get_functiondef('public.seller_portfolio_orders_v1()'::regprocedure)) IS DISTINCT FROM '7448e15784ff66e55b8eed1a06d0665b' THEN RAISE EXCEPTION 'VENDW_POST_DRIFT:public.seller_portfolio_orders_v1()'; END IF;
  IF (SELECT coalesce(proacl::text,'NULL') FROM pg_proc WHERE oid='public.seller_portfolio_orders_v1()'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:public.seller_portfolio_orders_v1()'; END IF;
+ IF md5(pg_get_functiondef('public.admin_seller_portfolio_overview_v1()'::regprocedure)) IS DISTINCT FROM 'f5afeaca56abebd40309385112c1a611' THEN RAISE EXCEPTION 'VENDW_POST_DRIFT:public.admin_seller_portfolio_overview_v1()'; END IF;
+ IF (SELECT coalesce(proacl::text,'NULL') FROM pg_proc WHERE oid='public.admin_seller_portfolio_overview_v1()'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}' THEN RAISE EXCEPTION 'VENDW_POST_ACL_DRIFT:public.admin_seller_portfolio_overview_v1()'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_internal_commercial_actor()'::regprocedure)) IS DISTINCT FROM '6555396c4f8fe914177d2ccfc3891279' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;
  IF md5(pg_get_functiondef('platform_private.c2_internal_order_target_reason(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '07d7c9002cbfe17497c9ee4a92d5a928' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;
  IF md5(pg_get_functiondef('public.fn_cc_can_prepare(uuid)'::regprocedure)) IS DISTINCT FROM '439d9c28f69029b9c71fddbef1054e57' THEN RAISE EXCEPTION 'VENDW_POST_SHARED_HELPER_CHANGED'; END IF;
