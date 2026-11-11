@@ -1,0 +1,1811 @@
+[
+ {
+  "test": "espelho: quatro rotinas fiscais B4 = MD5 LIVE informados pelo auditor",
+  "status": "PASS",
+  "detail": {
+   "public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid)": "766fb81a3c7dafa71de7806e559f0730",
+   "platform_private.b2b_fiscal_invoice_bridge_v1(uuid)": "9b14fa08913075c08bc905074fb98a10",
+   "platform_private.b2b_allocate_document(uuid)": "cc539ca8c501af53a528d66b810aecd8",
+   "platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid,uuid)": "f8f3b5e52653fa7c8b69c393c2eefa4d"
+  }
+ },
+ {
+  "test": "espelho: índice b2b_one_title_per_document e PK de alocação por document_id",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "ANTES: entrega concluída falha com enum vazio (2 args)",
+  "status": "PASS",
+  "detail": "ERROR:  invalid input value for enum status_entrega: \"\"\nLINE 1: ...t.cancelada_em IS NOT NULL OR coalesce(ent.status,'') = 'can...\n                                                             ^\nQUERY:  ent.cancelada_em IS NOT NULL OR coalesce(ent.status,'') = 'cancelada'\n         OR coalesce(ent.fin"
+ },
+ {
+  "test": "ANTES: entrega concluída falha com enum vazio (3 args)",
+  "status": "PASS",
+  "detail": "ERROR:  invalid input value for enum status_entrega: \"\"\nLINE 1: ...t.cancelada_em IS NOT NULL OR coalesce(ent.status,'') = 'can...\n                                                             ^\nQUERY:  ent.cancelada_em IS NOT NULL OR coalesce(ent.status,'') = 'cancelada'\n         OR coalesce(ent.fin"
+ },
+ {
+  "test": "PRE sem ref do projeto falha fechado",
+  "status": "PASS",
+  "detail": "ERROR:  FELIG_PRE_PROJECT_REF_REQUIRED\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE"
+ },
+ {
+  "test": "PRE passa com pins (corpo/owner/ACL/config/3-arg/enum)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "test": "PRE ignora COMMENT (não faz parte do corpo) — controle",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "test": "PRE detecta deriva de ACL",
+  "status": "PASS",
+  "detail": "ERROR:  FELIG_PRE_META_DRIFT_2ARG postgres {postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres,anon=X/postgres} t {\"search_path=pg_catalog, public, pg_temp\"}\nCONTEXT:  PL/pgSQL funct"
+ },
+ {
+  "test": "INSTALL sem ref falha fechado sem efeito",
+  "status": "PASS",
+  "detail": "ERROR:  FELIG_INSTALL_PROJECT_REF_REQUIRED\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE"
+ },
+ {
+  "test": "INSTALL aplica corpo candidato",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "test": "INSTALL repetido aborta por deriva (não reaplica)",
+  "status": "PASS",
+  "detail": "ERROR:  FELIG_INSTALL_BODY_DRIFT_2ARG 70dba08838cd4d5eea29f37f5f8a3373\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE"
+ },
+ {
+  "test": "POST passa",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "test": "3-arg intocado e ACLs preservadas",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "autorização/ponte/alocação/reconciliação intocadas",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "DEPOIS (2 args) entrega concluída 235f161d responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"1f6a379f-bb28-450a-b976-0c72d83c9ded\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega concluída 41d97844 responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"ec9790cc-fe37-4712-ab07-946b9f5c603a\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega concluída 649602ed responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"ab924880-31f9-4ab2-8054-c2318d303e48\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega concluída 6ce48809 responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"1f6a379f-bb28-450a-b976-0c72d83c9ded\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega concluída 832b0279 responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"ab924880-31f9-4ab2-8054-c2318d303e48\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega concluída a6d4cb07 responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"279ad91a-bbf3-4c0b-a70c-f14dec878825\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega concluída bc992023 responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"ec9790cc-fe37-4712-ab07-946b9f5c603a\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega concluída ca84e11a responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"279ad91a-bbf3-4c0b-a70c-f14dec878825\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega concluída eb4a3bc9 responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"901444a9-4847-40f6-8269-700798ca538e\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega concluída f5c824b4 responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"79170823-ca4f-4bd4-be97-c176c1f38cf6\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega parcial concluída 235f161d sem NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega parcial concluída 41d97844 sem NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega parcial concluída 649602ed sem NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega parcial concluída 6ce48809 sem NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega parcial concluída 832b0279 sem NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega parcial concluída a6d4cb07 sem NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega parcial concluída bc992023 sem NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega parcial concluída ca84e11a sem NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega cancelada 0114eb9f nega com CANCELED e NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "s atual: cancelada\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_RECEIPT_MISSING\", \"message\": \"Entrega sem aceite/recebimento registrado.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega cancelada 775564d9 nega com CANCELED e NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "s atual: cancelada\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_RECEIPT_MISSING\", \"message\": \"Entrega sem aceite/recebimento registrado.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega cancelada f6bfd203 nega com CANCELED e NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "s atual: cancelada\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_RECEIPT_MISSING\", \"message\": \"Entrega sem aceite/recebimento registrado.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega não concluída (separado) nega NOT_COMPLETED + RECEIPT_MISSING, ineligible",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   " separado\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_RECEIPT_MISSING\", \"message\": \"Entrega sem aceite/recebimento registrado.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}\nROLLBACK"
+  ]
+ },
+ {
+  "test": "DEPOIS (2 args) entrega não concluída (em_rota) nega NOT_COMPLETED + RECEIPT_MISSING, ineligible",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   ": em_rota\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_RECEIPT_MISSING\", \"message\": \"Entrega sem aceite/recebimento registrado.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}\nROLLBACK"
+  ]
+ },
+ {
+  "test": "(2 args) entrega inexistente nega NOT_FOUND",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "test": "DEPOIS (3 args) entrega concluída 235f161d responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"1f6a379f-bb28-450a-b976-0c72d83c9ded\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega concluída 41d97844 responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"ec9790cc-fe37-4712-ab07-946b9f5c603a\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega concluída 649602ed responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"ab924880-31f9-4ab2-8054-c2318d303e48\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega concluída 6ce48809 responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"1f6a379f-bb28-450a-b976-0c72d83c9ded\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega concluída 832b0279 responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"ab924880-31f9-4ab2-8054-c2318d303e48\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega concluída a6d4cb07 responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"279ad91a-bbf3-4c0b-a70c-f14dec878825\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega concluída bc992023 responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"ec9790cc-fe37-4712-ab07-946b9f5c603a\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega concluída ca84e11a responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"279ad91a-bbf3-4c0b-a70c-f14dec878825\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega concluída eb4a3bc9 responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"901444a9-4847-40f6-8269-700798ca538e\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega concluída f5c824b4 responde sem erro e sem NOT_COMPLETED/CANCELED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": \"79170823-ca4f-4bd4-be97-c176c1f38cf6\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega parcial concluída 235f161d sem NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega parcial concluída 41d97844 sem NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega parcial concluída 649602ed sem NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega parcial concluída 6ce48809 sem NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega parcial concluída 832b0279 sem NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega parcial concluída a6d4cb07 sem NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega parcial concluída bc992023 sem NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega parcial concluída ca84e11a sem NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega cancelada 0114eb9f nega com CANCELED e NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "s atual: cancelada\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_RECEIPT_MISSING\", \"message\": \"Entrega sem aceite/recebimento registrado.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega cancelada 775564d9 nega com CANCELED e NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "s atual: cancelada\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_RECEIPT_MISSING\", \"message\": \"Entrega sem aceite/recebimento registrado.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega cancelada f6bfd203 nega com CANCELED e NOT_COMPLETED",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "s atual: cancelada\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_RECEIPT_MISSING\", \"message\": \"Entrega sem aceite/recebimento registrado.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega não concluída (separado) nega NOT_COMPLETED + RECEIPT_MISSING, ineligible",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   " separado\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_RECEIPT_MISSING\", \"message\": \"Entrega sem aceite/recebimento registrado.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}\nROLLBACK"
+  ]
+ },
+ {
+  "test": "DEPOIS (3 args) entrega não concluída (em_rota) nega NOT_COMPLETED + RECEIPT_MISSING, ineligible",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   ": em_rota\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_RECEIPT_MISSING\", \"message\": \"Entrega sem aceite/recebimento registrado.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}\nROLLBACK"
+  ]
+ },
+ {
+  "test": "(3 args) entrega inexistente nega NOT_FOUND",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "test": "entrega revertida voltou a entregue (sem efeito persistido)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "anon continua sem EXECUTE",
+  "status": "PASS",
+  "detail": "ERROR:  permission denied for function fn_fiscal_invoice_eligibility"
+ },
+ {
+  "test": "ator sem empresa continua negado (H15)",
+  "status": "PASS",
+  "detail": "ERROR:  H15_ORGANIZATION_FORBIDDEN\nCONTEXT:  PL/pgSQL function h15_require_staff() line 3 at RAISE\nSQL statement \"SELECT public.h15_require_staff()\"\nPL/pgSQL function fn_fiscal_invoice_eligibility(tex"
+ },
+ {
+  "test": "origem PARTNER_ORDER: resultado idêntico antes/depois (2 args)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "origem PARTNER_ORDER: resultado idêntico antes/depois (3 args)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "(2 args) admin FSF lê entrega alheia 235f161d: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê entrega alheia 41d97844: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê entrega alheia 649602ed: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê entrega alheia 6ce48809: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê entrega alheia 832b0279: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê entrega alheia a6d4cb07: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê entrega alheia bc992023: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê entrega alheia ca84e11a: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê entrega alheia eb4a3bc9: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê entrega alheia f5c824b4: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê entrega alheia 0114eb9f: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê entrega alheia 775564d9: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê entrega alheia f6bfd203: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio 1f6a379f: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio 279ad91a: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio 2b644743: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio 6376e573: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio 68265c58: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio 6d7cf7b2: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio 79170823: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio 8b4f114b: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio 8ffce116: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio 901444a9: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio 96ca5710: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio ab924880: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio b13610fd: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio b63ac586: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio be1d05f7: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio dc342150: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio e8ecac20: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio ec9790cc: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin FSF lê pedido alheio ed052ae1: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê entrega alheia 235f161d: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê entrega alheia 41d97844: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê entrega alheia 649602ed: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê entrega alheia 6ce48809: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê entrega alheia 832b0279: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê entrega alheia a6d4cb07: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê entrega alheia bc992023: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê entrega alheia ca84e11a: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê entrega alheia eb4a3bc9: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê entrega alheia f5c824b4: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê entrega alheia 0114eb9f: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê entrega alheia 775564d9: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê entrega alheia f6bfd203: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio 1f6a379f: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio 279ad91a: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio 2b644743: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio 6376e573: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio 68265c58: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio 6d7cf7b2: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio 79170823: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio 8b4f114b: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio 8ffce116: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio 901444a9: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio 96ca5710: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio ab924880: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio b13610fd: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio b63ac586: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio be1d05f7: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio dc342150: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio e8ecac20: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio ec9790cc: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê pedido alheio ed052ae1: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê a própria entrega 1df425f7 (sem pedido → LINK_MISSING, sem ID alheio)",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_ORDER_LINK_MISSING\", \"message\": \"Entrega sem vinculo inequivoco a pedido B2B.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin A lê entrega de B 1df425f7: NOT_FOUND uniforme",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "(2 args) admin B lê a própria entrega e7ad7c3e (sem pedido → LINK_MISSING, sem ID alheio)",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_ORDER_LINK_MISSING\", \"message\": \"Entrega sem vinculo inequivoco a pedido B2B.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(2 args) admin A lê entrega de B e7ad7c3e: NOT_FOUND uniforme",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "(2 args) entrega A com pedido de dono B: TENANT_MISMATCH, inelegível, sem orderId/debtor",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   ", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DEBTOR_UNRESOLVED\", \"message\": \"Parceiro devedor da entrega nao identificado.\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_ORDER_STATUS_NOT_BILLABLE\", \"message\": \"Pedido vinculado a entrega nao esta habilitado para faturamento: -\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}\nROLLBACK"
+  ]
+ },
+ {
+  "test": "(2 args) entrega de B ligada a pedido de A, lida por B: TENANT_MISMATCH sem IDs de A",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   ", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DEBTOR_UNRESOLVED\", \"message\": \"Parceiro devedor da entrega nao identificado.\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_ORDER_STATUS_NOT_BILLABLE\", \"message\": \"Pedido vinculado a entrega nao esta habilitado para faturamento: -\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}\nROLLBACK"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê entrega alheia 235f161d: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê entrega alheia 41d97844: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê entrega alheia 649602ed: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê entrega alheia 6ce48809: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê entrega alheia 832b0279: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê entrega alheia a6d4cb07: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê entrega alheia bc992023: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê entrega alheia ca84e11a: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê entrega alheia eb4a3bc9: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê entrega alheia f5c824b4: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê entrega alheia 0114eb9f: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê entrega alheia 775564d9: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê entrega alheia f6bfd203: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio 1f6a379f: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio 279ad91a: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio 2b644743: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio 6376e573: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio 68265c58: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio 6d7cf7b2: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio 79170823: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio 8b4f114b: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio 8ffce116: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio 901444a9: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio 96ca5710: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio ab924880: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio b13610fd: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio b63ac586: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio be1d05f7: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio dc342150: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio e8ecac20: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio ec9790cc: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin FSF lê pedido alheio ed052ae1: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê entrega alheia 235f161d: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê entrega alheia 41d97844: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê entrega alheia 649602ed: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê entrega alheia 6ce48809: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê entrega alheia 832b0279: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê entrega alheia a6d4cb07: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê entrega alheia bc992023: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê entrega alheia ca84e11a: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê entrega alheia eb4a3bc9: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê entrega alheia f5c824b4: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê entrega alheia 0114eb9f: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê entrega alheia 775564d9: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê entrega alheia f6bfd203: resposta idêntica à inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_NOT_FOUND\", \"message\": \"Entrega inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio 1f6a379f: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio 279ad91a: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio 2b644743: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio 6376e573: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio 68265c58: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio 6d7cf7b2: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio 79170823: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio 8b4f114b: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio 8ffce116: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio 901444a9: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio 96ca5710: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio ab924880: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio b13610fd: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio b63ac586: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio be1d05f7: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio dc342150: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio e8ecac20: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio ec9790cc: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê pedido alheio ed052ae1: idêntico ao inexistente, sem IDs",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_ORDER_NOT_FOUND\", \"message\": \"Pedido inexistente.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"PARTNER_ORDER\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê a própria entrega 1df425f7 (sem pedido → LINK_MISSING, sem ID alheio)",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_ORDER_LINK_MISSING\", \"message\": \"Entrega sem vinculo inequivoco a pedido B2B.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin A lê entrega de B 1df425f7: NOT_FOUND uniforme",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "(3 args) admin B lê a própria entrega e7ad7c3e (sem pedido → LINK_MISSING, sem ID alheio)",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   "SET\nSET\nSET\n{\"orderId\": null, \"reasons\": [{\"code\": \"FISCAL_DELIVERY_ORDER_LINK_MISSING\", \"message\": \"Entrega sem vinculo inequivoco a pedido B2B.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}"
+  ]
+ },
+ {
+  "test": "(3 args) admin A lê entrega de B e7ad7c3e: NOT_FOUND uniforme",
+  "status": "PASS",
+  "detail": [
+   0,
+   ""
+  ]
+ },
+ {
+  "test": "(3 args) entrega A com pedido de dono B: TENANT_MISMATCH, inelegível, sem orderId/debtor",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   ", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DEBTOR_UNRESOLVED\", \"message\": \"Parceiro devedor da entrega nao identificado.\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_ORDER_STATUS_NOT_BILLABLE\", \"message\": \"Pedido vinculado a entrega nao esta habilitado para faturamento: -\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}\nROLLBACK"
+  ]
+ },
+ {
+  "test": "(3 args) entrega de B ligada a pedido de A, lida por B: TENANT_MISMATCH sem IDs de A",
+  "status": "PASS",
+  "detail": [
+   0,
+   "",
+   ", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DEBTOR_UNRESOLVED\", \"message\": \"Parceiro devedor da entrega nao identificado.\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_ORDER_STATUS_NOT_BILLABLE\", \"message\": \"Pedido vinculado a entrega nao esta habilitado para faturamento: -\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": null, \"has_canceled_history\": false}\nROLLBACK"
+  ]
+ },
+ {
+  "test": "fixtures revertidas (dono do parceiro e empresa da entrega intactos)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "nenhum superadmin legítimo contornava esta leitura (h15_require_staff exige empresa ativa); nada a preservar",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "ROLLBACK sem ref falha fechado",
+  "status": "PASS",
+  "detail": "ERROR:  FELIG_ROLLBACK_PROJECT_REF_REQUIRED\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE"
+ },
+ {
+  "test": "ROLLBACK restaura corpo capturado exato e ACL",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "test": "pós-rollback: falha de enum volta (falha fechada, nenhuma elegibilidade concedida)",
+  "status": "PASS",
+  "detail": "ERROR:  invalid input value for enum status_entrega: \"\"\nLINE 1: ...t.cancelada_em IS NOT NULL OR coalesce(ent.status,'') = 'can...\n                                                             ^\nQUERY:"
+ },
+ {
+  "test": "pós-rollback PRE passa de novo",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "reinstalação após rollback idêntica",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "rollback final deixa espelho no estado capturado",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "test": "rotinas protegidas intocadas ao final",
+  "status": "PASS",
+  "detail": null
+ }
+]

@@ -1,0 +1,190 @@
+{
+ "2:done:235f161d-1f2b-4ff5-8546-384b2d2186ba": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"1f6a379f-bb28-450a-b976-0c72d83c9ded\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "2:done:41d97844-3ee3-44e0-984d-cc83cfbe5b08": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"ec9790cc-fe37-4712-ab07-946b9f5c603a\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "2:done:649602ed-d568-44c9-b5dd-a43fb9a48447": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"ab924880-31f9-4ab2-8054-c2318d303e48\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "2:done:6ce48809-47f4-43d7-99dd-10e236b05e7d": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"1f6a379f-bb28-450a-b976-0c72d83c9ded\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "2:done:832b0279-18e2-44e6-9a5d-719f4bf7cdbf": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"ab924880-31f9-4ab2-8054-c2318d303e48\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "2:done:a6d4cb07-25ef-47bd-897e-2cad60170a2f": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"279ad91a-bbf3-4c0b-a70c-f14dec878825\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "2:done:bc992023-f5f1-4fbb-b4ee-798a85b95fa0": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"ec9790cc-fe37-4712-ab07-946b9f5c603a\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "2:done:ca84e11a-9354-4700-ada4-2c1eeb2dcd44": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"279ad91a-bbf3-4c0b-a70c-f14dec878825\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "2:done:eb4a3bc9-1afc-4453-aec0-0b81cdee9c45": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"901444a9-4847-40f6-8269-700798ca538e\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "2:done:f5c824b4-9d1a-45eb-b36a-a29d5fce0638": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"79170823-ca4f-4bd4-be97-c176c1f38cf6\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "2:partial:235f161d-1f2b-4ff5-8546-384b2d2186ba": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"1f6a379f-bb28-450a-b976-0c72d83c9ded\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "2:partial:41d97844-3ee3-44e0-984d-cc83cfbe5b08": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"ec9790cc-fe37-4712-ab07-946b9f5c603a\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "2:partial:649602ed-d568-44c9-b5dd-a43fb9a48447": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"ab924880-31f9-4ab2-8054-c2318d303e48\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "2:partial:6ce48809-47f4-43d7-99dd-10e236b05e7d": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"1f6a379f-bb28-450a-b976-0c72d83c9ded\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "2:partial:832b0279-18e2-44e6-9a5d-719f4bf7cdbf": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"ab924880-31f9-4ab2-8054-c2318d303e48\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "2:partial:a6d4cb07-25ef-47bd-897e-2cad60170a2f": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"279ad91a-bbf3-4c0b-a70c-f14dec878825\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "2:partial:bc992023-f5f1-4fbb-b4ee-798a85b95fa0": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"ec9790cc-fe37-4712-ab07-946b9f5c603a\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "2:partial:ca84e11a-9354-4700-ada4-2c1eeb2dcd44": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"279ad91a-bbf3-4c0b-a70c-f14dec878825\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "2:canc:0114eb9f-0dbb-4189-9a15-87403904a792": [
+  0,
+  " \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_NOT_COMPLETED\", \"message\": \"Entrega nao concluida/aceita. Status atual: cancelada\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_RECEIPT_MISSING\", \"message\": \"Entrega sem aceite/recebimento registrado.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "2:canc:775564d9-b7c8-4454-8293-d7eb192e33af": [
+  0,
+  " \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_NOT_COMPLETED\", \"message\": \"Entrega nao concluida/aceita. Status atual: cancelada\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_RECEIPT_MISSING\", \"message\": \"Entrega sem aceite/recebimento registrado.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "2:canc:f6bfd203-0d45-44f9-a0db-fb3eed9fa7e2": [
+  0,
+  " \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_NOT_COMPLETED\", \"message\": \"Entrega nao concluida/aceita. Status atual: cancelada\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_RECEIPT_MISSING\", \"message\": \"Entrega sem aceite/recebimento registrado.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "3:done:235f161d-1f2b-4ff5-8546-384b2d2186ba": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"1f6a379f-bb28-450a-b976-0c72d83c9ded\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "3:done:41d97844-3ee3-44e0-984d-cc83cfbe5b08": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"ec9790cc-fe37-4712-ab07-946b9f5c603a\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "3:done:649602ed-d568-44c9-b5dd-a43fb9a48447": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"ab924880-31f9-4ab2-8054-c2318d303e48\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "3:done:6ce48809-47f4-43d7-99dd-10e236b05e7d": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"1f6a379f-bb28-450a-b976-0c72d83c9ded\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "3:done:832b0279-18e2-44e6-9a5d-719f4bf7cdbf": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"ab924880-31f9-4ab2-8054-c2318d303e48\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "3:done:a6d4cb07-25ef-47bd-897e-2cad60170a2f": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"279ad91a-bbf3-4c0b-a70c-f14dec878825\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "3:done:bc992023-f5f1-4fbb-b4ee-798a85b95fa0": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"ec9790cc-fe37-4712-ab07-946b9f5c603a\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "3:done:ca84e11a-9354-4700-ada4-2c1eeb2dcd44": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"279ad91a-bbf3-4c0b-a70c-f14dec878825\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "3:done:eb4a3bc9-1afc-4453-aec0-0b81cdee9c45": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"901444a9-4847-40f6-8269-700798ca538e\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "3:done:f5c824b4-9d1a-45eb-b36a-a29d5fce0638": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"79170823-ca4f-4bd4-be97-c176c1f38cf6\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}",
+  ""
+ ],
+ "3:partial:235f161d-1f2b-4ff5-8546-384b2d2186ba": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"1f6a379f-bb28-450a-b976-0c72d83c9ded\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "3:partial:41d97844-3ee3-44e0-984d-cc83cfbe5b08": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"ec9790cc-fe37-4712-ab07-946b9f5c603a\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "3:partial:649602ed-d568-44c9-b5dd-a43fb9a48447": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"ab924880-31f9-4ab2-8054-c2318d303e48\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "3:partial:6ce48809-47f4-43d7-99dd-10e236b05e7d": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"1f6a379f-bb28-450a-b976-0c72d83c9ded\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "3:partial:832b0279-18e2-44e6-9a5d-719f4bf7cdbf": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"ab924880-31f9-4ab2-8054-c2318d303e48\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "3:partial:a6d4cb07-25ef-47bd-897e-2cad60170a2f": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"279ad91a-bbf3-4c0b-a70c-f14dec878825\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "3:partial:bc992023-f5f1-4fbb-b4ee-798a85b95fa0": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"ec9790cc-fe37-4712-ab07-946b9f5c603a\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "3:partial:ca84e11a-9354-4700-ada4-2c1eeb2dcd44": [
+  0,
+  "SET\nSET\nSET\n{\"orderId\": \"279ad91a-bbf3-4c0b-a70c-f14dec878825\", \"reasons\": [], \"eligible\": true, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "3:canc:0114eb9f-0dbb-4189-9a15-87403904a792": [
+  0,
+  " \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_NOT_COMPLETED\", \"message\": \"Entrega nao concluida/aceita. Status atual: cancelada\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_RECEIPT_MISSING\", \"message\": \"Entrega sem aceite/recebimento registrado.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "3:canc:775564d9-b7c8-4454-8293-d7eb192e33af": [
+  0,
+  " \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_NOT_COMPLETED\", \"message\": \"Entrega nao concluida/aceita. Status atual: cancelada\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_RECEIPT_MISSING\", \"message\": \"Entrega sem aceite/recebimento registrado.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ],
+ "3:canc:f6bfd203-0d45-44f9-a0db-fb3eed9fa7e2": [
+  0,
+  " \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_NOT_COMPLETED\", \"message\": \"Entrega nao concluida/aceita. Status atual: cancelada\", \"severity\": \"BLOCK\"}, {\"code\": \"FISCAL_DELIVERY_RECEIPT_MISSING\", \"message\": \"Entrega sem aceite/recebimento registrado.\", \"severity\": \"BLOCK\"}], \"eligible\": false, \"sourceType\": \"ENTREGA\", \"debtorPartnerId\": \"00000000-0000-0000-0000-000000000011\", \"has_canceled_history\": false}"
+ ]
+}

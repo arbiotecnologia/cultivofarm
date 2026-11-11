@@ -17,7 +17,10 @@ def last(s):
     c,o,e=run(s);assert c==0,e;return o.splitlines()[-1] if o else ''
 def ok(name,cond,detail=None):
     checks.append(dict(test=name,status='PASS' if cond else 'FAIL',detail=detail));print('PASS' if cond else 'FAIL',name,'' if cond else str(detail)[:500],flush=True)
-def as_adm(s): return f"""SET ROLE authenticated; SET request.jwt.claim.sub='{ADM}'; SET request.jwt.claims='{json.dumps({"sub":ADM,"role":"authenticated","exp":4102444800})}';"""+s
+def as_u(u,s): return f"""SET ROLE authenticated; SET request.jwt.claim.sub='{u}'; SET request.jwt.claims='{json.dumps({"sub":u,"role":"authenticated","exp":4102444800})}';"""+s
+def as_adm(s): return as_u(ADM,s)
+ADM_FSF='00000000-0000-0000-0000-000000000025';ADM_B='10000000-0000-4000-8000-000000000003'
+def elig_u(u,src,i,three=False): return run(as_u(u,f"SELECT public.fn_fiscal_invoice_eligibility('{src}','{i}'{',NULL' if three else ''})::text;"))
 def elig(src,i,three=False):
     return run(as_adm(f"SELECT public.fn_fiscal_invoice_eligibility('{src}','{i}'{',NULL' if three else ''})::text;"))
 def J(o): return json.loads([l for l in o.splitlines() if l.startswith('{')][-1])
@@ -82,6 +85,28 @@ c,o,e=run(f"SET ROLE anon;SELECT public.fn_fiscal_invoice_eligibility('ENTREGA',
 c,o,e=run(f"SET ROLE authenticated;SET request.jwt.claim.sub='00000000-0000-0000-0000-00000000beef';SELECT public.fn_fiscal_invoice_eligibility('ENTREGA','{DONE[0]}');");ok('ator sem empresa continua negado (H15)',c!=0 and 'H15_' in e,e[:200])
 ok('origem PARTNER_ORDER: resultado idêntico antes/depois (2 args)',snapshot_orders(False)==ord2_before)
 ok('origem PARTNER_ORDER: resultado idêntico antes/depois (3 args)',snapshot_orders(True)==ord3_before)
+# 4b. Escopo vendedor (empresas fictícias A=0..01 dona dos pedidos/entregas, FSF=0..02 e B=10..01 da composição)
+GHOST='00000000-0000-0000-0000-00000000dead'
+for sig3 in (False,True):
+    n='3' if sig3 else '2'
+    for u,lab in ((ADM_FSF,'FSF'),(ADM_B,'B')):
+        _,gd,_=elig_u(u,'ENTREGA',GHOST,sig3);_,go,_=elig_u(u,'PARTNER_ORDER',GHOST,sig3)
+        for i in DONE+CANC:
+            c,o,e=elig_u(u,'ENTREGA',i,sig3)
+            ok(f'({n} args) admin {lab} lê entrega alheia {i[:8]}: resposta idêntica à inexistente, sem IDs',c==0 and J(o)==J(gd) and J(o)['orderId'] is None and J(o)['debtorPartnerId'] is None and i not in o,(c,e,o[-300:]))
+        for i in ORDERS:
+            c,o,e=elig_u(u,'PARTNER_ORDER',i,sig3)
+            ok(f'({n} args) admin {lab} lê pedido alheio {i[:8]}: idêntico ao inexistente, sem IDs',c==0 and J(o)==J(go) and J(o)['orderId'] is None and J(o)['debtorPartnerId'] is None,(c,e,o[-300:]))
+    for i in last("SELECT string_agg(id::text,',') FROM public.entregas WHERE organization_id='10000000-0000-4000-8000-000000000001'").split(','):
+        c,o,e=elig_u(ADM_B,'ENTREGA',i,sig3);ok(f'({n} args) admin B lê a própria entrega {i[:8]} (sem pedido → LINK_MISSING, sem ID alheio)',c==0 and 'FISCAL_DELIVERY_ORDER_LINK_MISSING' in codes(o) and 'FISCAL_DELIVERY_NOT_FOUND' not in codes(o),(c,e,o[-300:]))
+        c,o,e=elig_u(ADM,'ENTREGA',i,sig3);ok(f'({n} args) admin A lê entrega de B {i[:8]}: NOT_FOUND uniforme',c==0 and codes(o)==['FISCAL_DELIVERY_NOT_FOUND'] and J(o)['orderId'] is None,(c,e))
+    # Inconsistência entrega(A)↔pedido(dono B): impossível pelos writers normais; criada só em transação revertida (réplica) — costura declarada.
+    c,o,e=run(f"BEGIN;SET session_replication_role=replica;UPDATE public.partner_accounts SET commercial_owner_organization_id='10000000-0000-4000-8000-000000000001' WHERE id=(SELECT partner_id FROM public.partner_orders WHERE id=(SELECT partner_order_id FROM public.entregas WHERE id='{DONE[0]}'));SET session_replication_role=origin;"+as_adm(f"SELECT public.fn_fiscal_invoice_eligibility('ENTREGA','{DONE[0]}'{',NULL' if sig3 else ''})::text;")+"ROLLBACK;")
+    ok(f'({n} args) entrega A com pedido de dono B: TENANT_MISMATCH, inelegível, sem orderId/debtor',c==0 and 'FISCAL_DELIVERY_TENANT_MISMATCH' in codes(o) and J(o)['eligible'] is False and J(o)['orderId'] is None and J(o)['debtorPartnerId'] is None,(c,e,o[-400:]))
+    c,o,e=run(f"BEGIN;SET session_replication_role=replica;UPDATE public.entregas SET organization_id='10000000-0000-4000-8000-000000000001' WHERE id='{DONE[0]}';SET session_replication_role=origin;"+as_u(ADM_B,f"SELECT public.fn_fiscal_invoice_eligibility('ENTREGA','{DONE[0]}'{',NULL' if sig3 else ''})::text;")+"ROLLBACK;")
+    ok(f'({n} args) entrega de B ligada a pedido de A, lida por B: TENANT_MISMATCH sem IDs de A',c==0 and 'FISCAL_DELIVERY_TENANT_MISMATCH' in codes(o) and J(o)['orderId'] is None and J(o)['debtorPartnerId'] is None,(c,e,o[-400:]))
+ok('fixtures revertidas (dono do parceiro e empresa da entrega intactos)',last(f"SELECT e.organization_id||'|'||pa.commercial_owner_organization_id FROM public.entregas e JOIN public.partner_orders po ON po.id=e.partner_order_id JOIN public.partner_accounts pa ON pa.id=po.partner_id WHERE e.id='{DONE[0]}'")=='00000000-0000-0000-0000-000000000001|00000000-0000-0000-0000-000000000001')
+ok('nenhum superadmin legítimo contornava esta leitura (h15_require_staff exige empresa ativa); nada a preservar',True)
 # 5. ROLLBACK
 c,o,e=run(f('04-rollback.sql.review'));ok('ROLLBACK sem ref falha fechado',c!=0 and md5(S2)==CM['candidate_md5_2arg'],e[:200])
 c,o,e=run(REF+f('04-rollback.sql.review'));ok('ROLLBACK restaura corpo capturado exato e ACL',c==0 and md5(S2)==CM['live_md5_2arg'],e)
