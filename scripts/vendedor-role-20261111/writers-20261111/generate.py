@@ -101,7 +101,7 @@ def main():
     cnew=cb.replace("'b5684d350603d1db77ab9f1db0f4b253'","'"+cat_new+"'");db.sql(cnew)
     pt[CAP[0]]=dict(orig=cb,new=cnew,live=CAP[1],auditor_confirmed=True,candidate=db.md5(CAP[0]))
     acl={sig:db.last(f"SELECT coalesce(proacl::text,'NULL')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='{sig}'::regprocedure;") for sig in pt}
-    newf=['platform_private.seller_commercial_actor()','platform_private.seller_commercial_target_reason(uuid,uuid)','platform_private.seller_portfolio_lock(uuid,uuid)','public.seller_portfolio_capability_v1()','public.seller_portfolio_orders_v1()']
+    newf=['platform_private.seller_commercial_actor()','platform_private.seller_commercial_target_reason(uuid,uuid)','platform_private.seller_portfolio_lock(uuid,uuid)','public.seller_portfolio_capability_v1()','public.seller_portfolio_orders_v1()','public.admin_seller_portfolio_overview_v1()']
     newm={s:db.md5(s) for s in newf}
     newacl={s:db.last(f"SELECT coalesce(proacl::text,'NULL') FROM pg_proc WHERE oid='{s}'::regprocedure;") for s in newf}
     # Prior seller capability (02b) pin for PRE/rollback.
@@ -144,7 +144,7 @@ def main():
     for sig,v in pt.items(): rb.append(v['orig'].rstrip()+';')
     rb.append(cap02b_body.rstrip()+';')
     rb.append("REVOKE ALL ON FUNCTION public.seller_portfolio_capability_v1() FROM PUBLIC, anon; GRANT EXECUTE ON FUNCTION public.seller_portfolio_capability_v1() TO authenticated;")
-    rb.append("DROP FUNCTION public.seller_portfolio_orders_v1();\nDROP FUNCTION platform_private.seller_portfolio_lock(uuid,uuid);\nDROP FUNCTION platform_private.seller_commercial_target_reason(uuid,uuid);\nDROP FUNCTION platform_private.seller_commercial_actor();")
+    rb.append("DROP FUNCTION public.admin_seller_portfolio_overview_v1();\nDROP FUNCTION public.seller_portfolio_orders_v1();\nDROP FUNCTION platform_private.seller_portfolio_lock(uuid,uuid);\nDROP FUNCTION platform_private.seller_commercial_target_reason(uuid,uuid);\nDROP FUNCTION platform_private.seller_commercial_actor();")
     rb.append("DO $rbp$ BEGIN")
     for sig,v in pt.items():
         rb.append(f" IF md5(pg_get_functiondef('{sig}'::regprocedure)) IS DISTINCT FROM '{v['live']}' THEN RAISE EXCEPTION 'VENDW_RB_POST:{sig}'; END IF;")

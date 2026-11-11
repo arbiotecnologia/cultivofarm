@@ -104,3 +104,22 @@ BEGIN
 END $f$;
 REVOKE ALL ON FUNCTION public.seller_portfolio_orders_v1() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.seller_portfolio_orders_v1() TO authenticated;
+
+-- Visão do administrador para atribuir carteira pela interface: vendedores, parceiros e atribuições da PRÓPRIA empresa.
+CREATE FUNCTION public.admin_seller_portfolio_overview_v1()
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $f$
+DECLARE v_org uuid := platform_private.seller_actor_org('administrador'::public.app_role);
+BEGIN
+  IF v_org IS NULL OR v_org IS DISTINCT FROM public.h15_actor_organization() THEN RAISE EXCEPTION 'SELLER_PORTFOLIO_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  RETURN jsonb_build_object('contract','admin_seller_portfolio_overview_v1','organization_id',v_org,
+    'sellers',COALESCE((SELECT jsonb_agg(jsonb_build_object('user_id',pr.user_id,'nome',pr.nome) ORDER BY pr.nome, pr.user_id)
+      FROM public.profiles pr WHERE pr.organization_id=v_org AND pr.ativo IS TRUE
+       AND EXISTS (SELECT 1 FROM public.user_roles r WHERE r.user_id=pr.user_id AND r.role='vendedor'::public.app_role)),'[]'::jsonb),
+    'partners',COALESCE((SELECT jsonb_agg(jsonb_build_object('partner_id',p.id,'razao_social',p.razao_social) ORDER BY p.razao_social, p.id)
+      FROM public.partner_accounts p WHERE p.commercial_owner_organization_id=v_org AND p.ativo IS TRUE AND p.deleted_at IS NULL),'[]'::jsonb),
+    'assignments',COALESCE((SELECT jsonb_agg(jsonb_build_object('id',a.id,'seller_user_id',a.seller_user_id,'partner_id',a.partner_id,
+        'assigned_at',a.assigned_at,'reason',a.reason,'revoked_at',a.revoked_at,'revoke_reason',a.revoke_reason) ORDER BY a.assigned_at DESC, a.id)
+      FROM platform_private.seller_portfolio_assignments a WHERE a.organization_id=v_org),'[]'::jsonb));
+END $f$;
+REVOKE ALL ON FUNCTION public.admin_seller_portfolio_overview_v1() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_seller_portfolio_overview_v1() TO authenticated;

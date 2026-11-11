@@ -85,6 +85,10 @@ try:
     r=run_file('02c-install-writers.sql.review',"SET app.expected_ref='swzpzcwiasxmjutrmvkm';");ok('INSTALL transação única',r.returncode==0,r.stderr[-800:])
     r=run_file('03c-post-writers.sql.readonly');ok('POST_PASS',r.returncode==0 and 'VENDW_POST_PASS' in r.stdout,r.stderr[-400:])
     r=run_file('02c-install-writers.sql.review',"SET app.expected_ref='swzpzcwiasxmjutrmvkm';");ok('reinstalação recusada (PRE interno)',r.returncode!=0 and 'VENDW_PRE' in r.stderr,r.stderr[-300:])
+    ov,e=call(UADM,"public.admin_seller_portfolio_overview_v1()")
+    ok('admin vê vendedores e atribuições só da própria empresa',ov and {s['user_id'] for s in ov['sellers']}>={V1,V2} and VB not in {s['user_id'] for s in ov['sellers']} and PF not in {p['partner_id'] for p in ov['partners']} and len(ov['assignments'])==2,ov or e)
+    deny('gestor comercial não lê visão de carteiras',call(UGC,"public.admin_seller_portfolio_overview_v1()"),'SELLER_PORTFOLIO_FORBIDDEN')
+    deny('vendedor não lê visão de carteiras',call(V1,"public.admin_seller_portfolio_overview_v1()"),'SELLER_PORTFOLIO_FORBIDDEN')
     # Capacidade
     c,e=call(V1,"public.seller_portfolio_capability_v1()")
     ok('capacidade V1: só P, order_create e quote_respond',c and c['ready'] and [p['partner_id'] for p in c['partners']]==[P] and c['order_create'] and c['quote_respond'] and c['fiscal_block'] is None,c or e)
