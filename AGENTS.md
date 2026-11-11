@@ -118,3 +118,4 @@
 - B2B payment condition/method (B3): single contract in scripts/b2b-payment-condition-v1-rebase-20261106/AGENTS.md; method rev.2 package is history only.
 
 - Tenant product CRUD uses only Catálogo → Produtos and scoped RPCs; legacy query/hash survive. Query-aware RBAC mounts only authorized tabs; fiscal links retain existing gates — prevents duplicate editors and redirected privilege expansion.
+- Internal seller role: scripts/vendedor-role-20261111/AGENTS.md; portfolio is explicit deny-by-default and never widens shared commercial/approval helpers — prevents seller approval escalation.
