@@ -168,6 +168,7 @@ import ComercialSolicitacoesB2B from "@/pages/comercial/SolicitacoesB2B";
 // PortalMeusPedidos removido do fluxo do produtor (Fase 2 - reformulação B2B). Componente preservado para uso interno futuro.
 import CampanhasComerciais from "@/pages/comercial/CampanhasComerciais";
 import SimuladorComercial from "@/pages/comercial/SimuladorComercial";
+import MinhaCarteiraVendedor from "@/pages/comercial/MinhaCarteiraVendedor";
 import IndicadoresComerciais from "@/pages/comercial/IndicadoresComerciais";
 import AlertasComerciais from "@/pages/comercial/AlertasComerciais";
 
@@ -621,6 +622,7 @@ const App = () => (
                  <Route path="/comercial/solicitacoes-b2b" element={<RoleGuard><ComercialSolicitacoesB2B /></RoleGuard>} />
                  <Route path="/comercial/dashboard-b2b" element={<Navigate to="/comercial/dashboard-consolidado" replace />} />
                  <Route path="/comercial/campanhas" element={<RoleGuard><CampanhasComerciais /></RoleGuard>} />
+                 <Route path="/comercial/minha-carteira" element={<RoleGuard><MinhaCarteiraVendedor /></RoleGuard>} />
                  <Route path="/comercial/simulador" element={<RoleGuard><SimuladorComercial /></RoleGuard>} />
                  <Route path="/comercial/catalogo" element={<PreservedNavigate to="/base-tecnica?tab=catalogo-tecnico" />} />
                  <Route path="/comercial/indicadores" element={<RoleGuard><IndicadoresComerciais /></RoleGuard>} />

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useSellerRoleInstalled } from "@/hooks/useSellerPortfolio";
 import {
   validarNovoUsuario,
   primeiroCampoInvalido,
@@ -204,8 +205,12 @@ export default function Configuracoes() {
     return <ul className="text-sm space-y-1">{e.detalhes.map((d, i) => <li key={i}>{d}</li>)}{fora && <li>{fora}</li>}</ul>;
   };
 
+  // "vendedor" só é oferecido depois que o servidor instalado comprovar o papel
+  // e a carteira (capability); antes disso o provisionamento recusaria.
+  const sellerRoleInstalled = useSellerRoleInstalled();
   const TENANT_MANAGEABLE_ROLES = ACTIVE_ROLES.filter((candidate) =>
-    !["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"].includes(candidate),
+    !["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"].includes(candidate)
+    && (candidate !== "vendedor" || sellerRoleInstalled),
   );
   function toggleRole(roles: string[], r: string, on: boolean): string[] {
     const next = new Set(roles);
