@@ -29,6 +29,27 @@ try:
         cr=m.call(X.UFIN,f"public.approve_b2b_credit('{PO}',NULL)");rec(SCN_P,'aprovação de crédito LIVE','PASS' if cr[0] is not None else 'BLOCKED',cr);need('crédito',cr[0],cr[1])
     fP=forecast(PO);rec(SCN_P,'previsão do controle após aprovações','INFO',fP)
     rec(SCN_P,'títulos do controle após aprovação (antes de NF)','INFO',ar_for(PO))
-    raise Blocked('stop-here-phase1')
+    ok(SCN_P,'controle: previsão 20/20 aguardando_fiscal e zero título antes de NF',fP and fP['total']==20 and fP['residual']==20 and fP['state']=='aguardando_fiscal' and ar_for(PO)==0,dict(f=fP,ar=ar_for(PO)))
+    IT=json.loads(d.last(f"SELECT to_jsonb(i)::text FROM public.partner_order_items i WHERE order_id='{PO}' LIMIT 1"))
+    PROD,PACK=IT['product_id'],IT['packaging_id_snapshot']
+    grant('finished_product','purchase',product=PROD)
+    def buy(q,k): return m.call(X.UADM,f"public.rpc_finished_product_purchase_entry_v1('{PROD}','{PACK}','LOTE-{k}',{q},'COMPRA-{k}','FORNECEDOR FICTICIO','{k}','2028-12-31')")
+    kb=key();b1=buy(2,kb);need('compra de produto acabado para revenda (2 embalagens)',b1[0],b1[1])
+    b1r=buy(2,kb);ok(SCN_P,'compra: replay mesma chave = mesmo recibo, sem nova movimentação',b1r[0] and b1r[0].get('replay') is True and b1r[0].get('estoque_produto_id')==b1[0]['estoque_produto_id'],b1r)
+    STK=b1[0]['estoque_produto_id'];LOT=b1[0]['lote_id']
+    s0=json.loads(d.last(f"SELECT jsonb_build_object('q',quantidade,'st',status,'lot',lote_id,'org',(SELECT organization_id FROM public.lotes WHERE id=lote_id))::text FROM public.estoque_produto WHERE id='{STK}'"))
+    ok(SCN_P,'estoque de revenda: lote próprio do tenant A, quantidade 2',s0['org']==X.A and float(s0['q'])==2,s0)
+    grant('b2b_resale','os_create',X.P,PO,IT['id'],PROD)
+    upd=d.last(f"SELECT updated_at FROM public.partner_orders WHERE id='{PO}'")
+    ko=key();os_=m.call(X.UADM,f"public.rpc_b2b_resale_os_create_v1('{PO}','{IT['id']}','{upd}'::timestamptz,'{ko}')");need('OS de revenda',os_[0],os_[1])
+    OS=os_[0]['os_id'];ok(SCN_P,'OS de revenda criada (não biológica)',bool(OS),os_)
+    os_r=m.call(X.UADM,f"public.rpc_b2b_resale_os_create_v1('{PO}','{IT['id']}','{upd}'::timestamptz,'{ko}')");ok(SCN_P,'OS replay: mesma OS',os_r[0] and os_r[0].get('os_id')==OS,os_r)
+    grant('b2b_resale','reserve',X.P,PO,IT['id'],PROD,STK)
+    def reserve(stock,q,k): return m.call(X.UADM,f"public.rpc_estoque_reservar_v1('{OS}','b2b','{js([{'item_id':stock,'quantidade':q}])}'::jsonb,'{k}','{js({'partner_id':X.P,'partner_order_id':PO})}'::jsonb)")
+    kr=key();rv=reserve(STK,2,kr);need('reserva por lote (2)',rv[0],rv[1])
+    RES=rv[0]['itens'][0] if isinstance(rv[0].get('itens'),list) else None
+    globals().update(PO=PO,IT=IT,PROD=PROD,PACK=PACK,STK=STK,LOT=LOT,OS=OS,RES=RES,reserve=reserve,kr=kr,rv=rv)
+    rec(SCN_P,'recibo de reserva','INFO',rv[0])
+    exec((H/'positive_delivery.py').read_text())
 except Blocked as b:
     rec(SCN_P,'cadeia interrompida em',"BLOCKED",str(b))

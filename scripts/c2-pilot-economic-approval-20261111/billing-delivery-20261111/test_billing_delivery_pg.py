@@ -102,7 +102,7 @@ try:
     body=d.sql("SELECT pg_get_functiondef('platform_private.b2b_financial_forecast_transition_v1(uuid,integer,text,text,jsonb)'::regprocedure)")
     evs=sorted(set(__import__('re').findall(r"'(EMISSION_[A-Z]+|CONSULTATION_[A-Z_]+|AUTHORIZ[A-Z_]*|INVOICE_[A-Z_]+)'",body)))
     rec(SCN_I,'eventos aceitos pela transição efetiva da previsão','INFO',evs)
-    ok(SCN_I,'transição efetiva NÃO tem evento de NF autorizada (sem redução de residual)',not any('AUTHORIZ' in x or 'INVOICE' in x for x in evs) and not __import__('re').search(r"SET[^;]*residual_amount\s*=",body),evs)
+    ok(SCN_I,'transição efetiva NÃO tem evento de NF autorizada (sem redução de residual)',not any(x in ('AUTHORIZED','INVOICE_AUTHORIZED','EMISSION_AUTHORIZED','FISCAL_AUTHORIZED') or x.startswith('INVOICE') for x in evs) and not __import__('re').search(r"SET[^;]*residual_amount\s*=",body),evs)
     who_res=d.sql("SELECT coalesce(string_agg(p.oid::regprocedure::text,';'),'') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN('public','platform_private') AND p.prosrc ~* 'b2b_financial_forecasts' AND p.prosrc ~* 'residual_amount\\s*=\\s*[^,]*-'")
     rec(SCN_I,'rotinas que reduzem residual da previsão','INFO',who_res or 'nenhuma')
     auth=d.sql("SELECT pg_get_functiondef('public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid)'::regprocedure)")

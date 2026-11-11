@@ -1,0 +1,33 @@
+{
+ "files": [
+  {
+   "file": "01-pre.sql.readonly",
+   "sha256": "87d58d7145126e0be6185e3fd749c1172b15ff60882cc2e0fa6dfc1ff783c991"
+  },
+  {
+   "file": "02-install.sql.review",
+   "sha256": "6aadaa0a2db5b462e7017f1d0b718330adab8ed0926579e672fb86fe354890e5"
+  },
+  {
+   "file": "03-post.sql.readonly",
+   "sha256": "ba2b96df400af5ddde0fd3173c25e13bea2031dd58b620f4c6bbb15766a65d76"
+  },
+  {
+   "file": "05-pilot-enable.sql.review",
+   "sha256": "0e3cc15f9a37519df6ae0ea535f261d479a662f59e687fff3bbaf7e8a7f9ee4d"
+  }
+ ],
+ "seams": [
+  "S0 gate global de criação de previsão alinhado OFF (estado de produção reportado)",
+  "S1 plano global \"Sob consulta TESTE\" adotado pela empresa A (costura do pacote writers-20261111)",
+  "S2 configuração fiscal da emitente desativada só durante a criação do pedido C2 (writer canônico grava snapshot pendente contábil)",
+  "S3 gates de logística de revenda/produto acabado abertos no espelho + concessões exatas por ator/pedido/item (configuração, nunca resultado)",
+  "P1 controle positivo: pedido normal do mesmo parceiro/comprador criado com a configuração fiscal da emitente ATIVA (não é o PB-001042; origem difere)",
+  "P2 gate de criação de previsão ligado no espelho + concessões exatas ator/org/parceiro/pedido do controle (configuração)"
+ ],
+ "findings": [
+  "Integração NF autorizada → título/residual da previsão NÃO existe nas rotinas efetivas: apply_authorization só altera fiscal_invoices; a transição da previsão aceita apenas EMISSION_*/CONSULTATION_NOT_AUTHORIZED; título B2B é único por pedido e nasce por gatilho de status do pedido (na_aprovacao/na_entrega/na_producao_finalizada) ou por entrega (DELIVERY), não por NF."
+ ],
+ "script_sha256": "28bc813034d64939b97e9795a5f9d54a28cdb74325039a3ff5177accd49bdcf3",
+ "positive_sha256": "7adcf97d756774ebc025c826c44aed9d2fc7bf4a871f3cee335642db53dfdf5a"
+}
