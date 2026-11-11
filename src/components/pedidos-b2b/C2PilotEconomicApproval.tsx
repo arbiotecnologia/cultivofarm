@@ -21,6 +21,8 @@ export function C2PilotEconomicApproval({ orderId }: { orderId: string | null })
   const approve = useC2PilotEconomicApprove();
   // Chave por (pedido, tipo, evidência): repetição explícita após resposta incerta reusa a mesma chave.
   const keys = useRef(new Map<string, string>());
+  // Trava síncrona por montagem: duplo clique nunca despacha duas vezes.
+  const inFlight = useRef(false);
   const [uncertain, setUncertain] = useState<C2PilotKind | null>(null);
   const read = q.data;
   if (!orderId || q.isError || !read || read.state !== "ready") return null;
@@ -28,11 +30,13 @@ export function C2PilotEconomicApproval({ orderId }: { orderId: string | null })
   if (!p.pilot_enabled && p.approvals.length === 0 && !p.forecast) return null;
 
   const act = (kind: C2PilotKind) => {
-    if (!p.evidence || approve.isPending) return;
+    if (!p.evidence || approve.isPending || inFlight.current) return;
+    inFlight.current = true;
     const k = `${orderId}:${kind}:${p.evidence.evidence_hash}`;
     const key = keys.current.get(k) ?? newKey();
     keys.current.set(k, key);
     approve.mutate({ orderId, kind, idempotencyKey: key, evidenceHash: p.evidence.evidence_hash }, {
+      onSettled: () => { inFlight.current = false; },
       onSuccess: (r) => { setUncertain(null); toast.success(r.forecast_id ? "Aprovação registrada. Previsão financeira estimada criada." : "Aprovação registrada."); },
       onError: (e: any) => {
         const msg = String(e?.message ?? "");
