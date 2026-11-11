@@ -1,0 +1,12 @@
+3c3
+< import hashlib,importlib.util,json,os,shutil,sys,traceback,uuid
+---
+> import subprocess,hashlib,importlib.util,json,os,shutil,sys,traceback,uuid
+840a841,847
+>   # AUDIT-20261111 hook (mirror only): measure LIVE-comparable hashes and dump full stack.
+>   _m=B.last("""SELECT jsonb_object_agg(p.oid::regprocedure::text, md5(pg_get_functiondef(p.oid))) FROM pg_proc p WHERE p.oid::regprocedure::text IN ('rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid)','platform_private.b2b_fiscal_invoice_bridge_v1(uuid)','platform_private.b2b_allocate_document(uuid)','platform_private.b2b_financial_forecast_reconcile_fiscal_v1(uuid)') OR p.proname='fn_fiscal_invoice_eligibility';""")
+>   _i=B.last("""SELECT jsonb_build_object('one_title_idx',(SELECT indexdef FROM pg_indexes WHERE indexname='b2b_one_title_per_document'),'alloc_pk',(SELECT jsonb_agg(pg_get_constraintdef(c.oid)) FROM pg_constraint c WHERE c.conrelid='platform_private.b2b_document_allocations'::regclass AND c.contype='p'),'b4_snapshots',to_regclass('public.b4_order_condition_snapshots') IS NOT NULL OR to_regclass('platform_private.b4_order_condition_snapshots') IS NOT NULL);""")
+>   (OUT/'audit-20261111-live-hash-compare.json').write_text(json.dumps(dict(functions=json.loads(_m),objects=json.loads(_i)),indent=2)+'\n')
+>   _a=B.pg.psql();_pre=_a[:_a.index('psql')];_r=[];_k=dict(zip(_a,_a[1:]))
+>   subprocess.run(_pre+['pg_dump','-Fc','-h',_k['-h'],'-p',_k['-p'],'-U',_k.get('-U','postgres'),'-d',_k.get('-d','postgres'),'-f','/tmp/r851/fullstack.dump'],check=False)
+>   subprocess.run(_pre+['pg_dumpall','--globals-only','-h',_k['-h'],'-p',_k['-p'],'-U',_k.get('-U','postgres'),'-f','/tmp/r851/globals.sql'],check=False)
