@@ -46,14 +46,20 @@ try:
     os_r=m.call(X.UADM,f"public.rpc_b2b_resale_os_create_v1('{PO}','{IT['id']}','{upd}'::timestamptz,'{ko}')");ok(SCN_P,'OS replay: mesma OS',os_r[0] and os_r[0].get('os_id')==OS,os_r)
     GRES=grant('b2b_resale','reserve',X.P,PO,IT['id'],PROD,STK)
     def reserve(stock,q,k): return m.call(X.UADM,f"public.rpc_estoque_reservar_v1('{OS}','b2b','{js([{'item_id':stock,'quantidade':q}])}'::jsonb,'{k}','{js({'partner_id':X.P,'partner_order_id':PO})}'::jsonb)")
-    kr=key();rv=reserve(STK,2,kr);need('reserva por lote (2)',rv[0],rv[1])
-    RES=rv[0]['itens'][0] if isinstance(rv[0].get('itens'),list) else None
-    rvr=reserve(STK,2,kr);ok(SCN_P,'reserva: replay mesma chave = mesmo recibo',rvr[0] and rvr[0].get('replay') is True and rvr[0]['itens']==rv[0]['itens'],rvr)
-    rx=reserve(STK,1,key());ok(SCN_P,'reserva além do lote comprado negada',rx[0] is None,rx)
-    # mesma prática do pacote logistics-linked-approval: a concessão de reserva passa a apontar a linha reservada devolvida pelo motor
-    d.sql(f"UPDATE platform_private.resale_pilot_allowlist_v1 SET stock_id='{RES}' WHERE id='{GRES}'")
-    seam('P4 concessão de reserva re-apontada para a linha reservada devolvida (configuração da allowlist, como logistics-linked-approval)')
-    globals().update(PO=PO,IT=IT,PROD=PROD,PACK=PACK,STK=STK,LOT=LOT,OS=OS,RES=RES,reserve=reserve,kr=kr,rv=rv)
+    # Motor efetivo: a entrega consome a linha reservada inteira (quantidade == reservada); parcial 1+1 = duas reservas de 1 (split).
+    RESL=[];KR=[]
+    for i in (1,2):
+        kr=key();rv=reserve(STK,1,kr);need(f'reserva {i} de 1 embalagem',rv[0],rv[1]);RESL.append(rv[0]['itens'][0]);KR.append(kr)
+        rvr=reserve(STK,1,kr);ok(SCN_P,f'reserva {i}: replay mesma chave = mesmo recibo, sem nova linha',rvr[0] and rvr[0].get('replay') is True and rvr[0]['itens']==rv[0]['itens'],rvr)
+        if i==1: d.sql(f"UPDATE platform_private.resale_pilot_allowlist_v1 SET stock_id='{RESL[0]}' WHERE id='{GRES}'");GRES2=grant('b2b_resale','reserve',X.P,PO,IT['id'],PROD,STK)
+        else: d.sql(f"UPDATE platform_private.resale_pilot_allowlist_v1 SET stock_id='{RESL[1]}' WHERE id='{GRES2}'")
+    seam('P4 concessão de reserva re-apontada para a linha reservada devolvida pelo motor (configuração da allowlist, como logistics-linked-approval)')
+    ok(SCN_P,'duas linhas reservadas distintas de 1 embalagem',len(set(RESL))==2 and cnt(f"SELECT count(*) FROM public.estoque_produto WHERE reservado_para_os_id='{OS}' AND status::text='reservado' AND quantidade=1")==2)
+    grant('b2b_resale','reserve',X.P,PO,IT['id'],PROD,STK)
+    rx=reserve(STK,1,key());ok(SCN_P,'reserva além das 2 embalagens compradas negada',rx[0] is None,rx)
+    RES=None;rv=None;kr=None
+    rec(SCN_P,'linhas reservadas','INFO',RESL)
+    globals().update(RESL=RESL,PO=PO,IT=IT,PROD=PROD,PACK=PACK,STK=STK,LOT=LOT,OS=OS,RES=RES,reserve=reserve,kr=kr,rv=rv)
     rec(SCN_P,'recibo de reserva','INFO',rv[0])
     exec((H/'positive_delivery.py').read_text())
 except Blocked as b:

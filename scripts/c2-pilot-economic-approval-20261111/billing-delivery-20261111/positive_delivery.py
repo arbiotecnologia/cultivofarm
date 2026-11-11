@@ -19,8 +19,7 @@ def confirm_sql(dl,k,o=None): return f"SELECT public.rpc_entrega_confirmar_manua
 seam('P3 objeto de Storage do comprovante inserido em storage.objects do espelho (sem bytes; Storage real não provado)')
 DL=[];CONF={}
 for i in (1,2):
-    rs=stock_row(RES) if RES else None
-    src=RES
+    src=RESL[i-1]
     kg=key();g=group(src,1,kg);need(f'entrega parcial {i}: agrupamento de 1 embalagem',g[0],g[1])
     dl=g[0]['itens'][0]['entrega_id'];DL.append(dl)
     gr=group(src,1,kg);ok(SCN_P,f'entrega {i}: replay do agrupamento = mesma entrega',gr[0] and gr[0].get('replay') is True and gr[0]['itens'][0]['entrega_id']==dl,gr)
@@ -51,7 +50,7 @@ fin=json.loads(d.last(f"""SELECT jsonb_build_object('order',(SELECT status FROM 
  'mov',(SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id IN (SELECT id FROM public.estoque_produto WHERE lote_id='{LOT}')))::text"""))
 rec(SCN_P,'estado físico final','INFO',fin)
 ok(SCN_P,'final: 2 embalagens entregues em 2 entregas distintas',float(fin['delivered'])==2 and len(set(DL))==2,fin)
-kx=key();gx=group(RES,1,kx)
+kx=key();gx=group(RESL[0],1,kx)
 ok(SCN_P,'excesso de quantidade: terceira entrega negada (saldo esgotado)',gx[0] is None,gx)
 ok(SCN_P,'FSF não confirma entrega da ARBio',m.call(X.UADMF,confirm_sql(DL[0],key()).replace('SELECT ','',1))[0] is None)
 rec(SCN_P,'títulos após entregas (sem NF)','INFO',ar_for(PO))
