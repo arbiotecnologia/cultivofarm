@@ -60,6 +60,8 @@ ok('preparo concorrente não cria resultados financeiros/físicos',d.last(f"SELE
 prepared=[val(r) for r in res if r.returncode==0 and val(r)];
 if prepared:
  eid=prepared[0]['eventId'];sig=hashlib.sha256(b'local signed event input').hexdigest()
+ signed=run(X.UFIN,f"SELECT public.rpc_fiscal_event_sefaz_mark_signed_v1('{eid}','eventos/local/extended.xml','{sig}','{X.UFIN}');",True)
+ ok('pré-requisito assinatura evento via RPC real',signed.returncode==0,signed.stderr)
  for stat in ('573','103','135'):
   tid=str(uuid.uuid4());seam=f"BEGIN;INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('{tid}','{nf['invoice']}','{eid}','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','case-{tid}','{sig}','SENT','PENDING','{X.UFIN}');"
   body=json.dumps(dict(cStat=stat,nProt='LOCAL-EVENT-'+stat,chNFe=nf['access_key'],tpAmb='2',xMotivo='LOCAL PROVIDER RESPONSE'))
