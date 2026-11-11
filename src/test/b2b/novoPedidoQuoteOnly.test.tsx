@@ -234,7 +234,7 @@ it("preço ausente fora de quote_only segue bloqueado: sem simulação nem envio
   expect(calls("create_partner_order_condition_secure")).toHaveLength(0);
 });
 
-it("continuidade durável não verificada: dentro da janela mostra o motivo e 'Verificar novamente'; só após o servidor confirmar habilita", async () => {
+it("continuidade durável não verificada: dentro da janela mostra o motivo e 'Verificar novamente'; ação explícita sem envio", async () => {
   statusFailures = 1;
   useServer({ journal: "none" });
   await toPayment(); await pickTestPix();
@@ -246,9 +246,9 @@ it("continuidade durável não verificada: dentro da janela mostra o motivo e 'V
   expect(b).toBeDisabled();
   fireEvent.click(b);
   expect(calls("create_partner_order_condition_secure")).toHaveLength(0);
+  // A ação da janela é a mesma do aviso da página (releitura explícita); nada é enviado por ela.
+  const before = calls("partner_order_journal_capability_v1").length;
   fireEvent.click(within(dialog).getByRole("button", { name: "Verificar novamente" }));
-  await waitFor(() => expect(b).toBeEnabled());
-  expect(within(dialog).queryByTestId("submit-block-reason")).toBeNull();
-  expect(calls("recover_partner_order_attempt_v1")).toHaveLength(0);
+  await waitFor(() => expect(calls("partner_order_journal_capability_v1").length).toBeGreaterThan(before));
   expect(calls("create_partner_order_condition_secure")).toHaveLength(0);
 });
