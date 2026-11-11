@@ -698,7 +698,7 @@ export default function NovoPedido() {
       valorDose: p.valor_dose_brl,
       valorLitro: p.valor_litro_brl,
     });
-    return (
+  return (
       <div className="text-xs space-y-0.5">
         <PrecoComDesconto
           valorCheio={isSimulationMode ? undefined : valorCheio}
@@ -753,25 +753,10 @@ export default function NovoPedido() {
   const packagingContractInvalid = packagingOffers.error instanceof Error && packagingOffers.error.message === "packaging_contract_unavailable";
   const doseRefHa = doseLitroHaFor(addRowCatalogItem ?? undefined);
 
-  return (
-    <div className="space-y-4 max-w-6xl mx-auto pb-32 md:pb-4">
-      <div>
-        <h1 className="text-xl md:text-2xl font-bold">
-          {isCatalogoRoute ? "Selecionar produtos para o pedido" : isSimulationMode ? "Simulador B2B" : "Novo Pedido"}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {isCatalogoRoute
-            ? "Pedido para a empresa vinculada ao seu acesso. O envio depende da validação de preços e da autorização do servidor."
-            : isSimulationMode
-            ? "Esta simulação utiliza valores de tabela, sem desconto. Condições comerciais finais são aplicadas apenas em pedido oficial."
-            : "Selecione produtos e/ou microrganismos. Condição comercial B2B aplicada."}
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          Escolha o volume comercial desejado, informe a área (ha) se aplicável e confirme a quantidade.
-        </p>
-      </div>
-
-          {!isSimulationMode && durableAttempt.mode!=='legacy' && !durableAttempt.next && durableAttempt.journal?.state!=='reserved' && <Alert role="status" data-journal={durableAttempt.mode}>
+  // Mesmo aviso (e mesmas ações explícitas) da continuidade durável também dentro do diálogo de envio: o botão
+  // fica desabilitado pelo MESMO predicado (takeDispatch), mas o comprador vê o motivo onde está o botão.
+  const renderDurableBanner = (place: "page" | "dialog") => (
+    !isSimulationMode && durableAttempt.mode!=='legacy' && !durableAttempt.next && durableAttempt.journal?.state!=='reserved' && <Alert role="status" data-journal={durableAttempt.mode} data-journal-place={place}>
             <AlertDescription className="space-y-2">
               {durableAttempt.journal?.state==='committed' ? <>
                 <span className="block">Pedido {durableAttempt.journal.numero} já registrado. Consulte-o antes de iniciar outro pedido.</span>
@@ -793,7 +778,40 @@ export default function NovoPedido() {
                 {durableAttempt.mode!=='checking' && <Button size="sm" variant="outline" disabled={durableAttempt.pending} onClick={()=>void durableAttempt.recover()}>Verificar novamente</Button>}
               </>}
             </AlertDescription>
-          </Alert>}
+          </Alert>
+  );
+  // Motivo explícito do bloqueio do envio (não relaxa nenhum predicado; só explica o primeiro que falha).
+  const submitBlockReason: string | null = isSimulationMode ? null
+    : !selectedPlanId ? "Selecione uma condição de pagamento."
+    : methodMode === null ? "Confirmando os meios de pagamento desta condição…"
+    : requireMethod && !selectedMethod ? "Selecione um meio de pagamento permitido pela empresa fornecedora."
+    : selSim.pending ? "Aguardando a validação do servidor…"
+    : visibleSimFailure ? "A validação do servidor falhou; veja o aviso acima."
+    : !visibleSimulation ? "Aguardando a validação do servidor…"
+    : !durableAttempt.canSubmit ? (durableAttempt.mode === "checking" ? "Verificando a continuidade do pedido…"
+        : "Há uma tentativa anterior a resolver antes de um novo envio (veja o aviso acima).")
+    : attempt?.inflight ? "Envio anterior ainda em andamento."
+    : closeAttempt.pending ? "Verificando o envio anterior…"
+    : null;
+  return (
+    <div className="space-y-4 max-w-6xl mx-auto pb-32 md:pb-4">
+      <div>
+        <h1 className="text-xl md:text-2xl font-bold">
+          {isCatalogoRoute ? "Selecionar produtos para o pedido" : isSimulationMode ? "Simulador B2B" : "Novo Pedido"}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {isCatalogoRoute
+            ? "Pedido para a empresa vinculada ao seu acesso. O envio depende da validação de preços e da autorização do servidor."
+            : isSimulationMode
+            ? "Esta simulação utiliza valores de tabela, sem desconto. Condições comerciais finais são aplicadas apenas em pedido oficial."
+            : "Selecione produtos e/ou microrganismos. Condição comercial B2B aplicada."}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Escolha o volume comercial desejado, informe a área (ha) se aplicável e confirme a quantidade.
+        </p>
+      </div>
+
+          {renderDurableBanner("page")}
           <AlertDialog open={!!ackTarget} onOpenChange={o=>{if(!o)setAckTarget(null);}}>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -1424,6 +1442,10 @@ export default function NovoPedido() {
           ) : null)}
           {!isSimulationMode && closeNote && closeNote.slot === attemptSlot && (!attempt || attempt.key === closeNote.key || attempt.order) && (
             <p role="status" data-attempt-note className="text-xs text-muted-foreground">{closeNote.text}</p>
+          )}
+          {renderDurableBanner("dialog")}
+          {!isSimulationMode && submitBlockReason && !createOrder.isPending && !submitPending && (
+            <p role="status" data-testid="submit-block-reason" className="text-xs text-muted-foreground">{submitBlockReason}</p>
           )}
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
