@@ -1,0 +1,409 @@
+[
+ {
+  "scenario": "setup",
+  "test": "restore sem erros além das FKs auth conhecidas",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "setup",
+  "test": "estado reportado: Vendedor 02a/02b/02c/02d (bytes finais)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "cotação respondida pelo writer real",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "pedido fiel: em_analise_comercial, C2 pendente contábil, total 20, snapshot nulo",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "itens: 2 embalagens inteiras de 25 kg x R$10",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "setup",
+  "test": "piloto 01-pre.sql.readonly (bytes = SHA256SUMS)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "setup",
+  "test": "piloto 02-install.sql.review (bytes = SHA256SUMS)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "setup",
+  "test": "piloto 03-post.sql.readonly (bytes = SHA256SUMS)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "setup",
+  "test": "05 habilitação estreita do PB",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "duas aprovações explícitas → uma previsão 20 aguardando_fiscal",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "LIVE approve_partner_order [C2_ACCOUNTING_PENDING]",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "LIVE approve_b2b_credit [C2_ACCOUNTING_PENDING]",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "título por pedido generate_b2b_receivable_secure (Financeiro) [C2_ACCOUNTING_PENDING]",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "título por pedido generate_b2b_receivable_secure (admin) [C2_ACCOUNTING_PENDING]",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "elegibilidade fiscal do pedido C2: não elegível",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "motivos de inelegibilidade fiscal (evidência)",
+  "status": "INFO",
+  "detail": {
+   "orderId": "e2d19481-2bfa-404a-990b-e873a8745cfa",
+   "reasons": [
+    {
+     "code": "FISCAL_ORDER_STATUS_NOT_BILLABLE",
+     "message": "Status do pedido nao habilitado para faturamento: em_analise_comercial",
+     "severity": "BLOCK"
+    },
+    {
+     "code": "FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING",
+     "message": "Pedido sem aprovacao comercial registrada.",
+     "severity": "BLOCK"
+    }
+   ],
+   "eligible": false,
+   "sourceType": "PARTNER_ORDER",
+   "debtorPartnerId": "00000000-0000-0000-0000-000000000011",
+   "has_canceled_history": false
+  }
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "OS de revenda (liberação/entrega) com concessão os_create exata [B2B_RESALE]",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "nenhuma OS para o PB",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "disponibilidade de OS (leitura)",
+  "status": "INFO",
+  "detail": "(None, 'ERROR:  42501: B2B_RESALE_ORDER_SCOPE_DENIED')"
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "FSF (outro tenant) não gera título do PB [denied]",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "rpc_fiscal_invoice_apply_authorization_v1 sem EXECUTE para authenticated [permission denied]",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "rpc_fiscal_sefaz_transmit_begin_v1 sem EXECUTE para authenticated [permission denied]",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "transição privada da previsão sem EXECUTE [permission denied]",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "gravação direta de status operacional negada",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "após negativas: previsão intacta 20/20 aguardando_fiscal, 0 NF, 0 título, pedido byte-idêntico",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "INTEGRACAO",
+  "test": "eventos aceitos pela transição efetiva da previsão",
+  "status": "INFO",
+  "detail": [
+   "CONSULTATION_NOT_AUTHORIZED",
+   "EMISSION_FAILED",
+   "EMISSION_REJECTED",
+   "EMISSION_STARTED",
+   "EMISSION_TIMEOUT"
+  ]
+ },
+ {
+  "scenario": "INTEGRACAO",
+  "test": "transição efetiva NÃO tem evento de NF autorizada (sem redução de residual)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "INTEGRACAO",
+  "test": "rotinas que reduzem residual da previsão",
+  "status": "INFO",
+  "detail": "nenhuma"
+ },
+ {
+  "scenario": "INTEGRACAO",
+  "test": "autorização fiscal efetiva não toca previsão nem recebível (integração automática ausente)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "INTEGRACAO",
+  "test": "writers efetivos de accounts_receivable",
+  "status": "INFO",
+  "detail": [
+   "fn_generate_recurring_title(uuid,date,boolean)",
+   "fn_generate_receivable_from_entrega(uuid,jsonb)",
+   "generate_b2b_receivable_secure_impl(uuid)"
+  ]
+ },
+ {
+  "scenario": "INTEGRACAO",
+  "test": "b2b_allocate_document (B4 por documento) ausente no estado efetivo",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "INTEGRACAO",
+  "test": "unicidade efetiva: um título B2B_ORDER ativo por pedido (duas NFs ⇒ dois títulos impossível nessa origem)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "pedido de controle criado/cotado pelos writers reais (origem/contrato)",
+  "status": "INFO",
+  "detail": {
+   "order": "34b2d2c1-91aa-4ef4-8d66-6b6128670ebd",
+   "quote": true,
+   "info": {
+    "acc": null,
+    "rfa": false,
+    "terms": "not_required",
+    "total": 20.0,
+    "status": "em_analise_comercial",
+    "contract": "C2_EXTERNAL_ORDER_ORIGIN_V1"
+   }
+  }
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "diferença de origem declarada: controle NÃO é C2 pendente contábil",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "aprovação comercial LIVE do controle",
+  "status": "PASS",
+  "detail": "(True, None)"
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "estado após aprovação comercial",
+  "status": "INFO",
+  "detail": "aprovado|-|not_required"
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "previsão do controle após aprovações",
+  "status": "INFO",
+  "detail": {
+   "id": "1c54eff1-d2a1-4153-9fdf-3846395310de",
+   "state": "aguardando_fiscal",
+   "total": 20.0,
+   "source": null,
+   "version": 1,
+   "residual": 20.0
+  }
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "títulos do controle após aprovação (antes de NF)",
+  "status": "INFO",
+  "detail": "0"
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "controle: previsão 20/20 aguardando_fiscal e zero título antes de NF",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "compra: replay mesma chave = mesmo recibo, sem nova movimentação",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "estoque de revenda: lote próprio do tenant A, quantidade 2",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "OS de revenda criada (não biológica)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "OS replay: mesma OS",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "reserva 1: replay mesma chave = mesmo recibo, sem nova linha",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "reserva 2: replay mesma chave = mesmo recibo, sem nova linha",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "duas linhas reservadas distintas de 1 embalagem",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "reserva além das 2 embalagens compradas negada",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "linhas reservadas",
+  "status": "INFO",
+  "detail": [
+   "4f1eec97-a16b-4645-888f-67ccfdeee952",
+   "3243f5c1-7314-48a6-a12f-fee54568a913"
+  ]
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "entrega 1: replay do agrupamento = mesma entrega",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "entrega 1: confirmada; replay da confirmação sem nova movimentação",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "status do pedido após entrega 1",
+  "status": "INFO",
+  "detail": "aprovado"
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "após 1/2: pedido NÃO concluído",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "entrega 2: replay do agrupamento = mesma entrega",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "entrega 2: confirmação concorrente em 2 conexões ⇒ uma saída de estoque; perdedora replay/erro explícito",
+  "status": "FAIL",
+  "detail": [
+   [
+    "",
+    "ERROR:  tenant_catalog_fence_denied\nCONTEXT:  PL/pgSQL function platform_private.tenant_catalog_fence(text,uuid[]) line 13 at RAISE\nSQL statement \"SELECT platform_private.tenant_catalog_fence('read_catalog', array_remove(ARRAY[CASE WHEN p_product_id IS NULL THEN NULL ELSE coalesce((SELECT z.owner_organization_id FROM public.produtos z WHERE z.id = p_product_id), '00000000-0000-0000-0000-000000000000'::uuid) END, CASE WHEN p_microorganism_id IS NULL THEN NULL ELSE coalesce((SELECT z.owner_organization_id FROM public.microrganismos z WHERE z.id = p_microorganism_id), '00000000-0000-0000-0000-000000000000'::uuid) END]::uuid[], NULL))\"\nPL/pgSQL function platform_private.lab_item_is_manufacturable(uuid,uuid) line 1 at PERFORM\nSQL statement \"SELECT count(*)               FROM public.partner_order_items i WHERE i.order_id=v_partner_order_id\n AND NOT platform_private.lab_item_is_manufacturable(i.product_id,i.microrganismo_id)\"\nPL/pgSQL function trg_os_sync_partner_order_fn() line 11 at SQL statement\nSQL statement \"UPDATE public.ordens_servico SET status = v_proximo::public.status_os WHERE id = p_os_id\"\nPL/pgSQL function _avancar_os_status(text,uuid,text) line 28 at SQL statement\nSQL statement \"SELECT public._avancar_os_status(p_origem_os, p_os_id, 'entregue')\"\nPL/pgSQL function _rpc_avancar_esteira_laboratorio_internal(uuid,text,text,uuid) line 115 at PERFORM\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 111 at assignment\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\n"
+   ],
+   [
+    "",
+    "ERROR:  tenant_catalog_fence_denied\nCONTEXT:  PL/pgSQL function platform_private.tenant_catalog_fence(text,uuid[]) line 13 at RAISE\nSQL statement \"SELECT platform_private.tenant_catalog_fence('read_catalog', array_remove(ARRAY[CASE WHEN p_product_id IS NULL THEN NULL ELSE coalesce((SELECT z.owner_organization_id FROM public.produtos z WHERE z.id = p_product_id), '00000000-0000-0000-0000-000000000000'::uuid) END, CASE WHEN p_microorganism_id IS NULL THEN NULL ELSE coalesce((SELECT z.owner_organization_id FROM public.microrganismos z WHERE z.id = p_microorganism_id), '00000000-0000-0000-0000-000000000000'::uuid) END]::uuid[], NULL))\"\nPL/pgSQL function platform_private.lab_item_is_manufacturable(uuid,uuid) line 1 at PERFORM\nSQL statement \"SELECT count(*)               FROM public.partner_order_items i WHERE i.order_id=v_partner_order_id\n AND NOT platform_private.lab_item_is_manufacturable(i.product_id,i.microrganismo_id)\"\nPL/pgSQL function trg_os_sync_partner_order_fn() line 11 at SQL statement\nSQL statement \"UPDATE public.ordens_servico SET status = v_proximo::public.status_os WHERE id = p_os_id\"\nPL/pgSQL function _avancar_os_status(text,uuid,text) line 28 at SQL statement\nSQL statement \"SELECT public._avancar_os_status(p_origem_os, p_os_id, 'entregue')\"\nPL/pgSQL function _rpc_avancar_esteira_laboratorio_internal(uuid,text,text,uuid) line 115 at PERFORM\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 111 at assignment\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\n"
+   ]
+  ]
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "entrega 2: confirmada; replay da confirmação sem nova movimentação",
+  "status": "FAIL",
+  "detail": {
+   "st": "em_rota",
+   "replay": [
+    null,
+    "ERROR:  42501: tenant_catalog_fence_denied"
+   ],
+   "c": null
+  }
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "status do pedido após entrega 2",
+  "status": "INFO",
+  "detail": "aprovado"
+ },
+ {
+  "scenario": "runner",
+  "test": "exceção",
+  "status": "FAIL",
+  "detail": "Traceback (most recent call last):\n  File \"/dev-server/scripts/c2-pilot-economic-approval-20261111/billing-delivery-20261111/test_billing_delivery_pg.py\", line 116, in <module>\n    exec((H/'positive_control.py').read_text())\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 63, in <module>\n  File \"<string>\", line 51, in <module>\n  File \"/dev-server/scripts/vendedor-role-20261111/writers-20261111/mirror_db.py\", line 26, in last\n    def last(s,sql): return (s.sql(sql).splitlines() or [''])[-1]\n                             ~~~~~^^^^^\n  File \"/dev-server/scripts/vendedor-role-20261111/writers-20261111/mirror_db.py\", line 24, in sql\n    if r.returncode: raise RuntimeError(r.stderr[-3000:])\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nRuntimeError: ERROR:  column \"quantidade\" does not exist\nLINE 2:  'delivered',(SELECT coalesce(sum(quantidade),0) FROM public...\n                                          ^\n\n"
+ }
+]

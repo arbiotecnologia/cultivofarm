@@ -21632,6 +21632,17 @@ export type Database = {
         Returns: Json
       }
       c2_internal_order_entry_capability_v1: { Args: never; Returns: Json }
+      c2_pilot_economic_approve_v1: {
+        Args: {
+          p_expected_evidence_hash: string
+          p_idempotency_key: string
+          p_kind: string
+          p_notes?: string
+          p_order: string
+        }
+        Returns: Json
+      }
+      c2_pilot_economic_state_v1: { Args: { p_order: string }; Returns: Json }
       c2_promote_accounting_pending_order_v1: {
         Args: { p_expected_updated_at: string; p_order_id: string }
         Returns: Json

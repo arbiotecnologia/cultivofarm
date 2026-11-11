@@ -1,0 +1,493 @@
+[
+ {
+  "scenario": "setup",
+  "test": "restore sem erros além das FKs auth conhecidas",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "setup",
+  "test": "estado reportado: Vendedor 02a/02b/02c/02d (bytes finais)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "cotação respondida pelo writer real",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "pedido fiel: em_analise_comercial, C2 pendente contábil, total 20, snapshot nulo",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "itens: 2 embalagens inteiras de 25 kg x R$10",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "setup",
+  "test": "piloto 01-pre.sql.readonly (bytes = SHA256SUMS)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "setup",
+  "test": "piloto 02-install.sql.review (bytes = SHA256SUMS)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "setup",
+  "test": "piloto 03-post.sql.readonly (bytes = SHA256SUMS)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "setup",
+  "test": "05 habilitação estreita do PB",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "duas aprovações explícitas → uma previsão 20 aguardando_fiscal",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "LIVE approve_partner_order [C2_ACCOUNTING_PENDING]",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "LIVE approve_b2b_credit [C2_ACCOUNTING_PENDING]",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "título por pedido generate_b2b_receivable_secure (Financeiro) [C2_ACCOUNTING_PENDING]",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "título por pedido generate_b2b_receivable_secure (admin) [C2_ACCOUNTING_PENDING]",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "elegibilidade fiscal do pedido C2: não elegível",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "motivos de inelegibilidade fiscal (evidência)",
+  "status": "INFO",
+  "detail": {
+   "orderId": "961483e8-3bcc-446e-aaf0-be3b9233d429",
+   "reasons": [
+    {
+     "code": "FISCAL_ORDER_STATUS_NOT_BILLABLE",
+     "message": "Status do pedido nao habilitado para faturamento: em_analise_comercial",
+     "severity": "BLOCK"
+    },
+    {
+     "code": "FISCAL_ORDER_COMMERCIAL_APPROVAL_MISSING",
+     "message": "Pedido sem aprovacao comercial registrada.",
+     "severity": "BLOCK"
+    }
+   ],
+   "eligible": false,
+   "sourceType": "PARTNER_ORDER",
+   "debtorPartnerId": "00000000-0000-0000-0000-000000000011",
+   "has_canceled_history": false
+  }
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "OS de revenda (liberação/entrega) com concessão os_create exata [B2B_RESALE]",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "nenhuma OS para o PB",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "disponibilidade de OS (leitura)",
+  "status": "INFO",
+  "detail": "(None, 'ERROR:  42501: B2B_RESALE_ORDER_SCOPE_DENIED')"
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "FSF (outro tenant) não gera título do PB [denied]",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "rpc_fiscal_invoice_apply_authorization_v1 sem EXECUTE para authenticated [permission denied]",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "rpc_fiscal_sefaz_transmit_begin_v1 sem EXECUTE para authenticated [permission denied]",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "transição privada da previsão sem EXECUTE [permission denied]",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "gravação direta de status operacional negada",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "C2-PB001042",
+  "test": "após negativas: previsão intacta 20/20 aguardando_fiscal, 0 NF, 0 título, pedido byte-idêntico",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "INTEGRACAO",
+  "test": "eventos aceitos pela transição efetiva da previsão",
+  "status": "INFO",
+  "detail": [
+   "CONSULTATION_NOT_AUTHORIZED",
+   "EMISSION_FAILED",
+   "EMISSION_REJECTED",
+   "EMISSION_STARTED",
+   "EMISSION_TIMEOUT"
+  ]
+ },
+ {
+  "scenario": "INTEGRACAO",
+  "test": "transição efetiva NÃO tem evento de NF autorizada (sem redução de residual)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "INTEGRACAO",
+  "test": "rotinas que reduzem residual da previsão",
+  "status": "INFO",
+  "detail": "nenhuma"
+ },
+ {
+  "scenario": "INTEGRACAO",
+  "test": "autorização fiscal efetiva não toca previsão nem recebível (integração automática ausente)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "INTEGRACAO",
+  "test": "writers efetivos de accounts_receivable",
+  "status": "INFO",
+  "detail": [
+   "fn_generate_recurring_title(uuid,date,boolean)",
+   "fn_generate_receivable_from_entrega(uuid,jsonb)",
+   "generate_b2b_receivable_secure_impl(uuid)"
+  ]
+ },
+ {
+  "scenario": "INTEGRACAO",
+  "test": "b2b_allocate_document (B4 por documento) ausente no estado efetivo",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "INTEGRACAO",
+  "test": "unicidade efetiva: um título B2B_ORDER ativo por pedido (duas NFs ⇒ dois títulos impossível nessa origem)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "pedido de controle criado/cotado pelos writers reais (origem/contrato)",
+  "status": "INFO",
+  "detail": {
+   "order": "ae361f77-8c3b-4200-a16b-159e12c75d32",
+   "quote": true,
+   "info": {
+    "acc": null,
+    "rfa": false,
+    "terms": "not_required",
+    "total": 20.0,
+    "status": "em_analise_comercial",
+    "contract": "C2_EXTERNAL_ORDER_ORIGIN_V1"
+   }
+  }
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "diferença de origem declarada: controle NÃO é C2 pendente contábil",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "aprovação comercial LIVE do controle",
+  "status": "PASS",
+  "detail": "(True, None)"
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "estado após aprovação comercial",
+  "status": "INFO",
+  "detail": "aprovado|-|not_required"
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "previsão do controle após aprovações",
+  "status": "INFO",
+  "detail": {
+   "id": "3770d12f-90fb-48a1-b6ba-1694a2ca4a4f",
+   "state": "aguardando_fiscal",
+   "total": 20.0,
+   "source": null,
+   "version": 1,
+   "residual": 20.0
+  }
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "títulos do controle após aprovação (antes de NF)",
+  "status": "INFO",
+  "detail": "0"
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "controle: previsão 20/20 aguardando_fiscal e zero título antes de NF",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "compra: replay mesma chave = mesmo recibo, sem nova movimentação",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "estoque de revenda: lote próprio do tenant A, quantidade 2",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "OS de revenda criada (não biológica)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "OS replay: mesma OS",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "reserva 1: replay mesma chave = mesmo recibo, sem nova linha",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "reserva 2: replay mesma chave = mesmo recibo, sem nova linha",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "duas linhas reservadas distintas de 1 embalagem",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "reserva além das 2 embalagens compradas negada",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "linhas reservadas",
+  "status": "INFO",
+  "detail": [
+   "d0eadfef-bb3a-4eb7-801b-9fad13254da0",
+   "d09a17d1-b26a-4575-a8eb-b9b17fe48abb"
+  ]
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "entrega 1: replay do agrupamento = mesma entrega",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "entrega 1: confirmada; replay da confirmação sem nova movimentação",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "status do pedido após entrega 1",
+  "status": "INFO",
+  "detail": "aprovado"
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "após 1/2: pedido NÃO concluído",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "entrega 2: replay do agrupamento = mesma entrega",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "entrega 2: confirmação concorrente em 2 conexões ⇒ uma saída de estoque; perdedora replay/erro explícito",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "entrega 2: confirmada; replay da confirmação sem nova movimentação",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "status do pedido após entrega 2",
+  "status": "INFO",
+  "detail": "entregue"
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "estado físico final",
+  "status": "INFO",
+  "detail": {
+   "mov": 6,
+   "order": "entregue",
+   "stock": [
+    {
+     "q": 1,
+     "id": "d0eadfef-bb3a-4eb7-801b-9fad13254da0",
+     "st": "expedido"
+    },
+    {
+     "q": 1,
+     "id": "d09a17d1-b26a-4575-a8eb-b9b17fe48abb",
+     "st": "expedido"
+    }
+   ],
+   "delivered": 2
+  }
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "final: 2 embalagens entregues em 2 entregas distintas",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "excesso de quantidade: terceira entrega negada (saldo esgotado)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "FSF não confirma entrega da ARBio",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-CONTROLE",
+  "test": "títulos após entregas (sem NF)",
+  "status": "INFO",
+  "detail": "0"
+ },
+ {
+  "scenario": "POSITIVO-FISCAL",
+  "test": "após entrega integral sem NF: zero título B2B e previsão 20/20 (nenhuma integração por entrega)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-FISCAL",
+  "test": "elegibilidade fiscal da entrega 1",
+  "status": "INFO",
+  "detail": "(None, 'ERROR:  22P02: invalid input value for enum status_entrega: \"\"')"
+ },
+ {
+  "scenario": "POSITIVO-FISCAL",
+  "test": "elegibilidade fiscal da entrega 2",
+  "status": "INFO",
+  "detail": "(None, 'ERROR:  22P02: invalid input value for enum status_entrega: \"\"')"
+ },
+ {
+  "scenario": "POSITIVO-FISCAL",
+  "test": "elegibilidade fiscal do pedido de controle",
+  "status": "INFO",
+  "detail": "({'orderId': 'ae361f77-8c3b-4200-a16b-159e12c75d32', 'reasons': [], 'eligible': True, 'sourceType': 'PARTNER_ORDER', 'debtorPartnerId': '00000000-0000-0000-0000-000000000011', 'has_canceled_history': False}, None)"
+ },
+ {
+  "scenario": "POSITIVO-FISCAL",
+  "test": "rascunho de NF da entrega 1 pelo writer normal",
+  "status": "BLOCKED",
+  "detail": "(None, 'ERROR:  22023: items_count_out_of_range')"
+ },
+ {
+  "scenario": "POSITIVO-FISCAL",
+  "test": "rascunho de NF da entrega 2 pelo writer normal",
+  "status": "BLOCKED",
+  "detail": "(None, 'ERROR:  22023: items_count_out_of_range')"
+ },
+ {
+  "scenario": "POSITIVO-FISCAL",
+  "test": "generate_b2b_receivable_secure (único título por pedido) após entrega integral sem NF",
+  "status": "INFO",
+  "detail": "(None, 'ERROR:  P0001: B2B_PAYMENT_METHOD_NOT_CONFIGURED')"
+ },
+ {
+  "scenario": "POSITIVO-FISCAL",
+  "test": "rota por pedido não gera título sem NF (negada)",
+  "status": "PASS",
+  "detail": null
+ },
+ {
+  "scenario": "POSITIVO-FISCAL",
+  "test": "fn_generate_receivable_from_entrega (por entrega) sem NF",
+  "status": "INFO",
+  "detail": "(None, 'ERROR:  23514: Entrega sem cliente vinculado.')"
+ },
+ {
+  "scenario": "POSITIVO-FISCAL",
+  "test": "positivo NF autorizada → 2 títulos/residual 20→10→0",
+  "status": "BLOCKED",
+  "detail": "Transição não suportada pelas rotinas efetivas: não há evento de autorização na previsão, apply_authorization é service-only e não cria título; B4 por documento não está instalado. Não simulado por inserção."
+ }
+]

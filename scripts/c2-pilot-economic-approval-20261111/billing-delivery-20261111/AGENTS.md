@@ -1,0 +1,4 @@
+- Somente bateria local em PostgreSQL descartável; nunca SQL hospedado, publicação, emissão, cobrança ou envio — escopo de auditoria.
+- Resultados finais (NF autorizada, título, residual, saldo) nunca são inseridos; costuras só de configuração/evidência e declaradas em SEAMS — evita sucesso simulado.
+- Positivo NF→títulos/residual fica BLOCKED enquanto a rotina efetiva não suportar a transição; não autorizar por exceção nem usar o candidato B4 inativo como prova.
+- Tentativas em evidence/attempt-NNN são preservadas, inclusive falhas de harness.
