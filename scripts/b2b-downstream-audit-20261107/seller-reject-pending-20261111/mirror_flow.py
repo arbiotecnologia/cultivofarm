@@ -94,7 +94,9 @@ def run(B,Review,Q,A,choice,out):
     rv=pending('revoke-wait');holder=B.T.session('BEGIN;SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;');time.sleep(.12)
     pid=B.last("SELECT pid FROM pg_stat_activity WHERE state='idle in transaction' AND query LIKE '%cf_user_guards_v1.state%FOR UPDATE%';");assert pid
     waiter=B.T.session(sql(rv));evidence=wait_for(pid)
-    B.sql(f"UPDATE public.profiles SET ativo=false WHERE user_id='{Q.UFIN}';");B.T.finish(holder,'COMMIT;');wo,we=B.T.finish(waiter)
+    # Profile guard shares this gate: revoke in the owning transaction, not a blocked third writer.
+    ho,he=B.T.finish(holder,f"UPDATE public.profiles SET ativo=false WHERE user_id='{Q.UFIN}';COMMIT;");wo,we=B.T.finish(waiter)
+    assert not he,he
     B.sql(f"UPDATE public.profiles SET ativo=true WHERE user_id='{Q.UFIN}';")
     ok('revocation after real gate wait denied without audit', 'B2B_REJECT_SCOPE_DENIED' in we and state(rv)['audits']==0,dict(wait=evidence,error=we))
     # Reuse immutable LLA final sources; replace only its obsolete BLOCKED test in temporary copy.
