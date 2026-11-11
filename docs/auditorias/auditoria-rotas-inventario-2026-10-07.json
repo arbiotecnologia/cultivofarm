@@ -4699,6 +4699,61 @@
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
+      "path": "/comercial/minha-carteira/pedido",
+      "line": 626,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "VendedorNovoPedido"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "pedidos_b2b",
+      "profiles": [
+        "vendedor"
+      ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
+      "navigation": [],
+      "references": [
+        "src/pages/comercial/VendedorNovoPedido.tsx",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 2,
+      "navigationJustification": "system/internal route; never automatically expose",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/comercial/minha-carteira/pedido",
+      "line": 626,
+      "index": true,
+      "components": [
+        "ParceiroNovoPedido"
+      ],
+      "ancestors": [
+        "ProtectedRoutes",
+        "RoleGuard",
+        "VendedorNovoPedido"
+      ],
+      "redirect": null,
+      "feature": "pedidos_b2b",
+      "profiles": [
+        "vendedor"
+      ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
+      "navigation": [],
+      "references": [
+        "src/pages/comercial/VendedorNovoPedido.tsx",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
       "path": "/comercial/minha-carteira",
       "line": 625,
       "index": false,
