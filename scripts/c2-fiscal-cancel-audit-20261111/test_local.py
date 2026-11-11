@@ -80,7 +80,7 @@ if event:
  # Local transmission input is exactly what transport begin normally persists; never set a terminal outcome.
  tr=call(FIN,f"INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('{tx}','{INV}','{eid}','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','audit-event-tx:{tx}','{sig}','SENT','PENDING','{FIN}');",'service_role')
  ok('transmissão sintética mantém integridade real de empresa',tr.returncode==0,tr.stderr)
- body=json.dumps({'cStat':'135','nProt':'LOCAL-CANCEL-PROTOCOL','chNFe':event['accessKey'],'tpAmb':'2','xMotivo':'Evento registrado sintético','dhRecbto':'2027-02-02T12:00:00Z'})
+ body=json.dumps({'cStat':'135','nProt':'LOCAL-CANCEL-PROTOCOL','chNFe':event['accessKey'],'tpAmb':'2','xMotivo':'LOCAL SYNTHETIC REGISTERED EVENT','dhRecbto':'2027-02-02T12:00:00Z'})
  cb=lambda:f"SELECT public.rpc_fiscal_sefaz_transmit_record_v1('{tx}','SUCCEEDED','{body}'::jsonb);"
  rolled=call(FIN,cb(),'service_role',pre='BEGIN;',post='ROLLBACK;');ok('callback cancelamento rollback sem efeitos financeiros/físicos',rolled.returncode==0 and snapshot(ORDER)==state0,rolled.stderr)
  with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:rs=list(pool.map(lambda _:call(FIN,cb(),'service_role'),range(2)))
