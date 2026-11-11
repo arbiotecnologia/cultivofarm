@@ -199,7 +199,7 @@ try:
         rq=lambda uid,q=None: call(uid,rqs(q or qid,L(q or qid)))
         tk=lambda: d.last("select count(*) from platform_private.authz_tickets")
         tk0=tk()
-        ok('marcador seller_quote_respond aparece só na resposta de cotação e no despachante dedicado',d.sql("select string_agg(p.oid::regprocedure::text,',' order by 1) from pg_proc p where p.prokind='f' and pg_get_functiondef(p.oid) like '%seller_quote_respond%'")=='platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid),respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)')
+        ok('marcador seller_quote_respond aparece só na resposta de cotação e no despachante dedicado',d.sql("select string_agg(p.oid::regprocedure::text,',' order by 1) from pg_proc p where p.prokind='f' and pg_get_functiondef(p.oid) like '%seller_quote_respond%'")=='platform_private.seller_quote_origin_dispatch(uuid,jsonb,uuid,uuid),respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)',d.sql("select string_agg(p.oid::regprocedure::text,',' order by 1) from pg_proc p where p.prokind='f' and pg_get_functiondef(p.oid) like '%seller_quote_respond%'"))
         ok('cobrança B2B continua no validador LIVE (não usa o despachante)',"seller_quote_origin_dispatch" not in d.body('public.generate_b2b_receivable_secure_impl(uuid)'))
         # Costura declarada: marcador de Q1 inserido manualmente (simula o meio da resposta de Q1) em transação revertida.
         cl1=d.last(f"select coalesce(cliente_id::text,'') from public.partner_orders where id='{qid}'")
@@ -214,8 +214,9 @@ try:
         ok('marcador de Q1 NÃO autoriza Q2 do mesmo parceiro (SELLER_QUOTE_FLOW_REQUIRED)',r.returncode!=0 and '42501' in r.stderr and 'SELLER_QUOTE_FLOW_REQUIRED' in r.stderr,r.stderr[-300:])
         r=mid(f"SELECT platform_private.c2_external_origin_assert('{sq1(qid)}'::jsonb,'{P}',{cl1s});")
         ok('marcador de Q1 NÃO abre o validador compartilhado (outros escritores) nem para Q1',r.returncode!=0 and 'C2_EXTERNAL_OWNER_DENIED' in r.stderr,r.stderr[-300:])
-        r=mid(f"SELECT platform_private.seller_quote_origin_dispatch('{qid}','{sq1(qid2)}'::jsonb,'{P}',{cl1s});")
-        ok('marcador de Q1 com snapshot de outro pedido: SELLER_QUOTE_ORIGIN_DENIED',r.returncode!=0 and 'SELLER_QUOTE_ORIGIN_DENIED' in r.stderr,r.stderr[-300:])
+        forged=js({**json.loads(d.last(f"select c2_external_origin_snapshot::text from public.partner_orders where id='{qid}'")),'actor_user_id':V2})
+        r=mid(f"SELECT platform_private.seller_quote_origin_dispatch('{qid}','{forged}'::jsonb,'{P}',{cl1s});")
+        ok('marcador de Q1 com snapshot diferente do gravado: SELLER_QUOTE_ORIGIN_DENIED',r.returncode!=0 and 'SELLER_QUOTE_ORIGIN_DENIED' in r.stderr,r.stderr[-300:])
         r=d.raw("\\set VERBOSITY verbose\nBEGIN; SET LOCAL request.jwt.claim.sub='"+V2+"'; SET LOCAL request.jwt.claims='"+json.dumps({'sub':V2,'role':'authenticated','iat':1})+"';"
                 f"INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'seller_quote_respond','{qid}'); SELECT platform_private.seller_quote_origin_dispatch('{qid}','{sq1(qid)}'::jsonb,'{P}',{cl1s}); ROLLBACK;")
         ok('marcador não substitui a carteira: V2 com marcador de Q1 segue negado',r.returncode!=0 and 'C2_SELLER_TARGET_DENIED:not_assigned' in r.stderr,r.stderr[-300:])

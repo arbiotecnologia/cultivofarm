@@ -59,6 +59,9 @@ TARGETS=[
   "PERFORM platform_private.seller_quote_origin_dispatch(NEW.id,NEW.c2_external_origin_snapshot,NEW.partner_id,NEW.cliente_id);\n  IF NEW.partner_id IS DISTINCT FROM OLD.partner_id",1),
  ("  IF org IS NULL OR NOT public.fn_cc_can_prepare(uid) OR NOT public._saas_user_has_feature(uid,'pedidos_b2b') THEN RAISE EXCEPTION 'B2B_INTERNAL_ACTOR_DENIED'",
   "  IF org IS NULL OR NOT (public.fn_cc_can_prepare(uid) OR "+P('uid','NEW.partner_id')+") OR NOT public._saas_user_has_feature(uid,'pedidos_b2b') THEN RAISE EXCEPTION 'B2B_INTERNAL_ACTOR_DENIED'",1)]),
+("platform_private.b2b_internal_child_snapshot_guard()","PENDING",False,[
+ ("IF o.c2_external_origin_snapshot IS NOT NULL THEN PERFORM platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id); END IF;",
+  "IF o.c2_external_origin_snapshot IS NOT NULL THEN PERFORM platform_private.seller_quote_origin_dispatch(o.id,o.c2_external_origin_snapshot,o.partner_id,o.cliente_id); END IF;",1)]),
 ("platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)","6bbb61aa5899b18d13ac55d4f76f45e1",False,[
  (" IF org IS NULL OR NOT public.fn_cc_can_prepare(uid) OR",
   " IF org IS NULL OR NOT (public.fn_cc_can_prepare(uid) OR "+P('uid','partner')+") OR",1)]),
