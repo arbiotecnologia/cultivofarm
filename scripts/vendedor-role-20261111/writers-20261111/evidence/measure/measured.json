@@ -1,0 +1,26 @@
+{
+  "public.c2_internal_order_entry_capability_v1()": {
+    "md5": "e2619c71becfebf38c8d03562ff11ce2",
+    "error": null
+  },
+  "public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)": {
+    "md5": "e86385fefb25c68d9dd4d0fef6619f27",
+    "error": null
+  },
+  "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": {
+    "md5": "fe82f5381d426136f2627803f3b0005d",
+    "error": null
+  },
+  "platform_private.b2b_internal_commercial_actor()": {
+    "md5": "6555396c4f8fe914177d2ccfc3891279",
+    "error": null
+  },
+  "platform_private.c2_internal_order_target_reason(uuid,uuid)": {
+    "md5": "07d7c9002cbfe17497c9ee4a92d5a928",
+    "error": null
+  },
+  "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": {
+    "md5": "97bcdb9884b54adb3bd4aae4915e32d0",
+    "error": null
+  }
+}
