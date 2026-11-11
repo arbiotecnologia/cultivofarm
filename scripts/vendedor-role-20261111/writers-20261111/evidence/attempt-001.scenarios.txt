@@ -1,0 +1,157 @@
+restore sem erros além das FKs auth conhecidas 
+base reconstituída = MD5 auditor public.c2_internal_order_entry_capability_v1() 
+base reconstituída = MD5 auditor public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb) 
+base reconstituída = MD5 auditor public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) 
+base reconstituída = MD5 auditor platform_private.b2b_internal_commercial_actor() 
+base reconstituída = MD5 auditor platform_private.c2_internal_order_target_reason(uuid,uuid) 
+base reconstituída = MD5 auditor public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) 
+LIVE: vendedor sem delta não cria pedido 
+PRE ref divergente falha fechada 
+PRE_PASS 
+admin atribui P a V1 
+admin atribui P2 a V2 
+vendedor não atribui carteira [42501 SELLER_PORTFOLIO_FORBIDDEN] 
+gestor comercial não atribui carteira [42501 SELLER_PORTFOLIO_FORBIDDEN] 
+admin A não atribui vendedor de F [22023 SELLER_PORTFOLIO_SELLER_INVALID] 
+INSTALL transação única 
+POST_PASS 
+reinstalação recusada (PRE interno) 
+admin vê vendedores e atribuições só da própria empresa 
+gestor comercial não lê visão de carteiras [42501 SELLER_PORTFOLIO_FORBIDDEN] 
+vendedor não lê visão de carteiras [42501 SELLER_PORTFOLIO_FORBIDDEN] 
+capacidade V1: só P, order_create e quote_respond 
+capacidade V2: só P2 
+capacidade VB (outro tenant) sem parceiros 
+vendedor+gestor não é vendedor exclusivo 
+regressão: capacidade do gestor segue aberta (pin catálogo novo) 
+capacidade interna do gestor não abre para vendedor 
+V1 lê catálogo de P 
+V1 catálogo de parceiro não atribuído [42501 forbidden_partner] 
+V1 catálogo de P2 (de V2) [42501 forbidden_partner] 
+VB catálogo de P (outro tenant) [42501 forbidden_partner] 
+V1 lê embalagens de P 
+planos V1 = planos publicados/vigentes da empresa atribuídos a P (carteira) 
+planos V2 = só os de P2; nenhum plano exclusivo de P (outra carteira) 
+plano só em rascunho não aparece ao vendedor 
+VB (outro tenant) não vê planos de A 
+atribuição de plano vencida (transação revertida) some da lista do vendedor 
+detalhe: condições de plano para parceiro de outra carteira [42501 forbidden_role] 
+detalhe: simulação para parceiro de outra carteira [42501 C2_SELLER_TARGET_DENIED:not_assigned] 
+detalhe: condições para parceiro de outro tenant [42501 forbidden_role] 
+detalhe: VB não lê condições de P [42501 forbidden_role] 
+V1 lê condições vigentes de P 
+V1 lança pedido para P (positivo apto) 
+pedido com origem interna server-side do vendedor, aguardando análise 
+sem NF, recebível, reserva, entrega ou envio 
+replay mesma chave devolve o mesmo pedido 
+replay sem novas escritas 
+vendedor não aprova pedido [42501 b2b_phase1_scope_denied] 
+status preservado após tentativa de aprovação 
+vendedor não aprova termos financeiros [42501 b2b_phase1_scope_denied] 
+vendedor não rejeita termos financeiros [42501 b2b_phase1_scope_denied] 
+V1 lê o pedido na carteira 
+V2 não vê pedido de P 
+V1 não lança para parceiro não atribuído [42501 C2_SELLER_TARGET_DENIED:not_assigned] 
+V1 não lança para P2 (outro vendedor) [42501 C2_SELLER_TARGET_DENIED:not_assigned] 
+V1 não lança para parceiro de outro tenant [42501 C2_SELLER_TARGET_DENIED:target_outside_portfolio] 
+VB não lança para P [42501 C2_SELLER_TARGET_DENIED:target_outside_portfolio] 
+vendedor não publica condição [42501 forbidden] 
+vendedor não lista planos administrativos [P0001 not_authorized] 
+vendedor não altera atribuição de condição [42501 forbidden] 
+emitente não validado: fiscal_block issuer_not_validated e order_create false, quote_respond mantido 
+emitente não validado: criação bloqueada B2B_INTERNAL_ISSUER_NOT_VALIDATED 
+fixture: admin publica condição Pix do plano sob consulta 
+fixture: admin atribui condição a P 
+comprador cria dois pedidos sob consulta (Q1,Q2) pela via normal 
+comprador cria pedido externo comum (não cotação) de P 
+V1 vê Q1 e Q2 com itens 
+marcador seller_quote_respond aparece só na resposta de cotação e no despachante dedicado 
+cobrança B2B continua no validador LIVE (não usa o despachante) 
+marcador de Q1 autoriza o despachante só para Q1 
+marcador de Q1 NÃO autoriza Q2 do mesmo parceiro (SELLER_QUOTE_FLOW_REQUIRED) 
+marcador de Q1 NÃO abre o validador compartilhado (outros escritores) nem para Q1 
+marcador de Q1 com snapshot diferente do gravado: SELLER_QUOTE_ORIGIN_DENIED 
+marcador não substitui a carteira: V2 com marcador de Q1 segue negado 
+marca de pedido travado sozinha não autoriza (SELLER_QUOTE_FLOW_REQUIRED) 
+cliente autenticado não emite marcador 
+validador compartilhado permanece com corpo LIVE 
+V2 (outro vendedor) não responde Q1 [42501 C2_SELLER_TARGET_DENIED:not_assigned] 
+VB (outro tenant) não responde Q1 [42501 C2_SELLER_TARGET_DENIED:tenant] 
+financeiro não responde cotação [P0001 forbidden_quote_response] 
+vendedor não chama o despachante privado diretamente [42501 permission denied] 
+vendedor não usa a resposta de cotação num pedido externo comum [42501 SELLER_QUOTE_STATE_DENIED] 
+falha de validação da resposta (linhas vazias) sem efeitos [P0001 quote_incomplete] 
+mesma transação: validador compartilhado nega vendedor para Q2 após responder Q1, e tudo é revertido 
+mesma transação: validador compartilhado nega vendedor para Q1 após responder Q1, e tudo é revertido 
+resposta revertida (ROLLBACK): Q1 continua aguardando, sem termos e sem recibo 
+V1 responde Q1 (aguardando_cotacao → análise/crédito) 
+Q2 intocado pela resposta de Q1 
+nenhum ticket criado ou retido 
+replay por recibo (retorno antecipado) não abre o validador compartilhado 
+replay idempotente devolve o mesmo resultado, sem duplicar termos 
+preço diferente após resposta: conflito explícito [PT409 quote_idempotency_conflict] 
+outro vendedor não reaproveita o recibo de Q1 [42501 SELLER_QUOTE_STATE_DENIED] 
+vendedor não aprova o pedido respondido [42501 b2b_phase1_scope_denied] 
+concorrência: as duas respostas idênticas de Q2 devolvem o mesmo resultado; um termo e um recibo 
+concorrência sem ticket residual 
+respostas de cotação sem NF/recebível/reserva/entrega/envio 
+revogação concorrente espera o writer (lock_timeout) e o pedido do writer conclui 
+writer após espera é negado pela revalidação (SELLER_PORTFOLIO_REVOKED) 
+nenhum pedido criado pela tentativa negada 
+vínculo revogado pelo administrador 
+após revogação: carteira vazia 
+após revogação: criação negada [42501 C2_SELLER_TARGET_DENIED:not_assigned] 
+após revogação: catálogo negado [42501 forbidden_partner] 
+após revogação: nenhum plano listado ao vendedor 
+após revogação: condições de P negadas [42501 forbidden_role] 
+após revogação: pedidos de P somem da carteira 
+histórico de atribuição preservado 
+reatribuição cria novo vínculo 
+parceiro desativado: sai da capability, dos pedidos e dos planos do vendedor 
+parceiro desativado: admin vê atribuição marcada partner_active=false e fora da lista de parceiros atribuíveis 
+parceiro desativado: criação negada pelo servidor 
+vendedor suspenso: lista de planos negada ou vazia 
+vendedor suspenso: pedidos da carteira negados [42501 SELLER_SCOPE_DENIED] 
+vendedor suspenso: admin vê atribuição com seller_active=false e vendedor fora da lista atribuível 
+vendedor suspenso: admin não atribui novo parceiro a ele [22023 SELLER_PORTFOLIO_SELLER_INVALID] 
+perfil inativo: criação negada [42501 inactive_scope] 
+perfil inativo: capacidade fechada 
+papel revogado: criação negada [42501 forbidden_partner] 
+provisionamento cria usuário só com o papel vendedor 
+reprovisionamento recusado (user_not_ready_for_provisioning) 
+administrador não chama o provisionamento direto (só serviço) 
+novo vendedor: pronto, carteira vazia (negação por padrão) 
+novo vendedor sem atribuição não lança [42501 C2_SELLER_TARGET_DENIED:not_assigned] 
+admin atribui PNA ao novo vendedor 
+novo vendedor vê só PNA 
+edição pelo admin acrescenta financeiro: deixa de ser vendedor exclusivo 
+edição volta a vendedor exclusivo: carteira PNA preservada 
+edição com carimbo antigo: conflito [PT409 user_edit_conflict] 
+admin de outra empresa não edita o vendedor [42501 user_edit_forbidden] 
+admin revoga PNA do novo vendedor 
+após revogação: novo vendedor sem parceiros 
+regressão: gestor comercial lança para P 
+regressão: comprador externo lança próprio pedido 
+regressão: técnico de parceiro segue negado [42501 forbidden_financial_terms] 
+regressão: financeiro não vira vendedor [42501 SELLER_SCOPE_DENIED] 
+ROLLBACK restaura corpos LIVE 
+rollback md5 LIVE platform_private.c2_order_actor_scope(uuid,uuid) 
+rollback md5 LIVE platform_private.c2_owner_order_guard(uuid,uuid,uuid) 
+rollback md5 LIVE platform_private.commercial_plan_partner_visible(uuid,uuid) 
+rollback md5 LIVE public.rpc_b2b_list_selectable_payment_plans() 
+rollback md5 LIVE public.get_partner_catalog_secure(uuid) 
+rollback md5 LIVE platform_private.b2b_partner_catalog_reader(uuid) 
+rollback md5 LIVE platform_private.c2_partner_order_attempt_authz(uuid,uuid) 
+rollback md5 LIVE public.simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb) 
+rollback md5 LIVE public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date) 
+rollback md5 LIVE public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb) 
+rollback md5 LIVE public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) 
+rollback md5 LIVE platform_private.b2b_internal_order_snapshot_guard() 
+rollback md5 LIVE platform_private.b2b_internal_child_snapshot_guard() 
+rollback md5 LIVE platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid) 
+rollback md5 LIVE public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) 
+rollback md5 LIVE public.c2_internal_order_entry_capability_v1() 
+após rollback: vendedor sem writers [42501 forbidden_partner] 
+após rollback: pedidos e atribuições preservados 
+rollback repetido recusa drift 
+após rollback: gestor segue aberto 
