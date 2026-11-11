@@ -44,10 +44,15 @@ try:
     ko=key();os_=m.call(X.UADM,f"public.rpc_b2b_resale_os_create_v1('{PO}','{IT['id']}','{upd}'::timestamptz,'{ko}')");need('OS de revenda',os_[0],os_[1])
     OS=os_[0]['os_id'];ok(SCN_P,'OS de revenda criada (não biológica)',bool(OS),os_)
     os_r=m.call(X.UADM,f"public.rpc_b2b_resale_os_create_v1('{PO}','{IT['id']}','{upd}'::timestamptz,'{ko}')");ok(SCN_P,'OS replay: mesma OS',os_r[0] and os_r[0].get('os_id')==OS,os_r)
-    grant('b2b_resale','reserve',X.P,PO,IT['id'],PROD,STK)
+    GRES=grant('b2b_resale','reserve',X.P,PO,IT['id'],PROD,STK)
     def reserve(stock,q,k): return m.call(X.UADM,f"public.rpc_estoque_reservar_v1('{OS}','b2b','{js([{'item_id':stock,'quantidade':q}])}'::jsonb,'{k}','{js({'partner_id':X.P,'partner_order_id':PO})}'::jsonb)")
     kr=key();rv=reserve(STK,2,kr);need('reserva por lote (2)',rv[0],rv[1])
     RES=rv[0]['itens'][0] if isinstance(rv[0].get('itens'),list) else None
+    rvr=reserve(STK,2,kr);ok(SCN_P,'reserva: replay mesma chave = mesmo recibo',rvr[0] and rvr[0].get('replay') is True and rvr[0]['itens']==rv[0]['itens'],rvr)
+    rx=reserve(STK,1,key());ok(SCN_P,'reserva além do lote comprado negada',rx[0] is None,rx)
+    # mesma prática do pacote logistics-linked-approval: a concessão de reserva passa a apontar a linha reservada devolvida pelo motor
+    d.sql(f"UPDATE platform_private.resale_pilot_allowlist_v1 SET stock_id='{RES}' WHERE id='{GRES}'")
+    seam('P4 concessão de reserva re-apontada para a linha reservada devolvida (configuração da allowlist, como logistics-linked-approval)')
     globals().update(PO=PO,IT=IT,PROD=PROD,PACK=PACK,STK=STK,LOT=LOT,OS=OS,RES=RES,reserve=reserve,kr=kr,rv=rv)
     rec(SCN_P,'recibo de reserva','INFO',rv[0])
     exec((H/'positive_delivery.py').read_text())
