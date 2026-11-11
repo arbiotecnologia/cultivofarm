@@ -1,7 +1,7 @@
 {
   "attempt": 1,
-  "pass_": 100,
-  "fail": 1,
+  "pass_": 102,
+  "fail": 0,
   "checks": [
     {
       "test": "restore sem erros além das FKs auth conhecidas",
@@ -290,8 +290,8 @@
     },
     {
       "test": "V2 não responde cotação de P",
-      "status": "FAIL",
-      "detail": "(None, 'ERROR:  C2_EXTERNAL_OWNER_DENIED')"
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "VB não responde cotação de P",
@@ -305,6 +305,11 @@
     },
     {
       "test": "V1 responde cotação de P (transição aguardando_cotacao → análise/crédito)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "ticket do vendedor não persiste após a transação",
       "status": "PASS",
       "detail": null
     },
