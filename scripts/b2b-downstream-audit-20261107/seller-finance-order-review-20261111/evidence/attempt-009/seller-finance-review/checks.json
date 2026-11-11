@@ -1,0 +1,469 @@
+[
+  {
+    "test": "PRE exact bytes",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "POST exact bytes md5 owner ACL",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "seller Financeiro reads external order items/terms canonically",
+    "status": "PASS",
+    "detail": {
+      "err": "",
+      "v": {
+        "items": [
+          {
+            "id": "8efaac1c-c576-47ef-bcd8-0249ec5e5df6",
+            "unidade": "unidade",
+            "subtotal": 18.0,
+            "embalagem": "SC25",
+            "quantidade": 2.0,
+            "produto_nome": "Fertilizante s\u00f3lido TESTE",
+            "preco_unitario": 9.0,
+            "produto_codigo": "SOL-1"
+          }
+        ],
+        "terms": {
+          "id": "51260cb8-349f-4c7a-999f-e9c061265bb8",
+          "approved_at": null,
+          "final_amount": 18.0,
+          "table_amount": 20.0,
+          "approval_notes": null,
+          "approval_status": "pending",
+          "installment_count": 1,
+          "plan_code_snapshot": "T3",
+          "plan_name_snapshot": "TESTE 3x"
+        },
+        "numero": "PB-001020",
+        "origin": "external_partner",
+        "status": "em_analise_comercial",
+        "contract": "B2B_SELLER_FINANCE_ORDER_REVIEW_V1",
+        "order_id": "e44dcebf-1cbd-4445-a2f6-e4ba74027ca0",
+        "created_at": "2026-11-11T15:12:38.406554+00:00",
+        "reject_eligible": true,
+        "header_financial": {
+          "financial_approval_status": "pending",
+          "requires_financial_approval": true
+        },
+        "terms_review_path": null,
+        "accounting_pending": false,
+        "reject_block_reason": null
+      }
+    }
+  },
+  {
+    "test": "pending terms before commercial/reserve are eligible",
+    "status": "PASS",
+    "detail": {
+      "items": [
+        {
+          "id": "8efaac1c-c576-47ef-bcd8-0249ec5e5df6",
+          "unidade": "unidade",
+          "subtotal": 18.0,
+          "embalagem": "SC25",
+          "quantidade": 2.0,
+          "produto_nome": "Fertilizante s\u00f3lido TESTE",
+          "preco_unitario": 9.0,
+          "produto_codigo": "SOL-1"
+        }
+      ],
+      "terms": {
+        "id": "51260cb8-349f-4c7a-999f-e9c061265bb8",
+        "approved_at": null,
+        "final_amount": 18.0,
+        "table_amount": 20.0,
+        "approval_notes": null,
+        "approval_status": "pending",
+        "installment_count": 1,
+        "plan_code_snapshot": "T3",
+        "plan_name_snapshot": "TESTE 3x"
+      },
+      "numero": "PB-001020",
+      "origin": "external_partner",
+      "status": "em_analise_comercial",
+      "contract": "B2B_SELLER_FINANCE_ORDER_REVIEW_V1",
+      "order_id": "e44dcebf-1cbd-4445-a2f6-e4ba74027ca0",
+      "created_at": "2026-11-11T15:12:38.406554+00:00",
+      "reject_eligible": true,
+      "header_financial": {
+        "financial_approval_status": "pending",
+        "requires_financial_approval": true
+      },
+      "terms_review_path": null,
+      "accounting_pending": false,
+      "reject_block_reason": null
+    }
+  },
+  {
+    "test": "buyer denied reader",
+    "status": "PASS",
+    "detail": "ERROR:  42501: B2B_SELLER_FINANCE_REVIEW_DENIED\nCONTEXT:  PL/pgSQL function get_b2b_seller_finance_order_review_v1(uuid) line 32 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "test": "seller admin denied reader",
+    "status": "PASS",
+    "detail": "ERROR:  42501: B2B_SELLER_FINANCE_REVIEW_DENIED\nCONTEXT:  PL/pgSQL function get_b2b_seller_finance_order_review_v1(uuid) line 32 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "test": "foreign company admin denied reader",
+    "status": "PASS",
+    "detail": "ERROR:  42501: B2B_SELLER_FINANCE_REVIEW_DENIED\nCONTEXT:  PL/pgSQL function get_b2b_seller_finance_order_review_v1(uuid) line 32 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "test": "buyer link revoked reader fails closed",
+    "status": "PASS",
+    "detail": "ERROR:  42501: B2B_SELLER_FINANCE_REVIEW_DENIED\nCONTEXT:  PL/pgSQL function get_b2b_seller_finance_order_review_v1(uuid) line 32 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "test": "Financeiro inactive reader fails closed",
+    "status": "PASS",
+    "detail": "ERROR:  42501: B2B_SELLER_FINANCE_REVIEW_DENIED\nCONTEXT:  PL/pgSQL function get_b2b_seller_finance_order_review_v1(uuid) line 32 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "test": "Financeiro other tenant reader fails closed",
+    "status": "PASS",
+    "detail": "ERROR:  42501: B2B_SELLER_FINANCE_REVIEW_DENIED\nCONTEXT:  PL/pgSQL function get_b2b_seller_finance_order_review_v1(uuid) line 32 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "test": "normal create yields canonical PENDING_ACCOUNTING snapshot accepted by existing validator",
+    "status": "PASS",
+    "detail": "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1"
+  },
+  {
+    "test": "accounting-pending legit order readable with items/terms; pending terms eligible",
+    "status": "PASS",
+    "detail": {
+      "err": "",
+      "v": {
+        "items": [
+          {
+            "id": "a1aada4a-ca14-4ba9-aa3e-1307924d1b6b",
+            "unidade": "unidade",
+            "subtotal": 18.0,
+            "embalagem": "SC25",
+            "quantidade": 2.0,
+            "produto_nome": "Fertilizante s\u00f3lido TESTE",
+            "preco_unitario": 9.0,
+            "produto_codigo": "SOL-1"
+          }
+        ],
+        "terms": {
+          "id": "0062f665-ddf1-479f-91c3-c77c3d342254",
+          "approved_at": null,
+          "final_amount": 18.0,
+          "table_amount": 20.0,
+          "approval_notes": null,
+          "approval_status": "pending",
+          "installment_count": 1,
+          "plan_code_snapshot": "T3",
+          "plan_name_snapshot": "TESTE 3x"
+        },
+        "numero": "PB-001021",
+        "origin": "external_partner",
+        "status": "em_analise_comercial",
+        "contract": "B2B_SELLER_FINANCE_ORDER_REVIEW_V1",
+        "order_id": "9ba4b2c6-5cde-4dc2-bf0e-31b65722bf65",
+        "created_at": "2026-11-11T15:12:40.971561+00:00",
+        "reject_eligible": true,
+        "header_financial": {
+          "financial_approval_status": "pending",
+          "requires_financial_approval": true
+        },
+        "terms_review_path": null,
+        "accounting_pending": true,
+        "reject_block_reason": null
+      }
+    }
+  },
+  {
+    "test": "accounting pending: writer rejects pending terms; header unchanged; one audit; no fiscal/receivable/send effect",
+    "status": "PASS",
+    "detail": {
+      "w": "",
+      "before": {
+        "SELECT count(*) FROM public.accounts_receivable": "1",
+        "SELECT count(*) FROM public.fiscal_invoices": "1",
+        "SELECT count(*) FROM public.notificacoes_operacionais": "0",
+        "SELECT count(*) FROM public.fiscal_events": "1"
+      },
+      "after": {
+        "SELECT count(*) FROM public.accounts_receivable": "1",
+        "SELECT count(*) FROM public.fiscal_invoices": "1",
+        "SELECT count(*) FROM public.notificacoes_operacionais": "0",
+        "SELECT count(*) FROM public.fiscal_events": "1"
+      }
+    }
+  },
+  {
+    "test": "invalid origin denied before any detail: no payload, no items/terms/notes",
+    "status": "PASS",
+    "detail": {
+      "out": "",
+      "err": "ERROR:  42501: B2B_SELLER_FINANCE_REVIEW_DENIED\nCONTEXT:  PL/pgSQL function get_b2b_seller_finance_order_review_v1(uuid) line 32 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  },
+  {
+    "test": "invalid origin: writer also denies, no audit",
+    "status": "PASS",
+    "detail": "ERROR:  42501: B2B_REJECT_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 104 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "test": "validator restored after rollback: same order readable",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "test": "dispensed new order: terms not_required, new-order path, writer denied, no audit",
+    "status": "PASS",
+    "detail": {
+      "v": {
+        "items": [
+          {
+            "id": "8ab65431-9337-4a15-8c57-d341fcf3696e",
+            "unidade": "unidade",
+            "subtotal": 18.0,
+            "embalagem": "SC25",
+            "quantidade": 2.0,
+            "produto_nome": "Fertilizante s\u00f3lido TESTE",
+            "preco_unitario": 9.0,
+            "produto_codigo": "SOL-1"
+          }
+        ],
+        "terms": {
+          "id": "06afebc3-4bbf-4a58-8815-d9b65fe22ea8",
+          "approved_at": null,
+          "final_amount": 18.0,
+          "table_amount": 20.0,
+          "approval_notes": null,
+          "approval_status": "not_required",
+          "installment_count": 1,
+          "plan_code_snapshot": "T3",
+          "plan_name_snapshot": "TESTE 3x"
+        },
+        "numero": "PB-001023",
+        "origin": "external_partner",
+        "status": "em_analise_comercial",
+        "contract": "B2B_SELLER_FINANCE_ORDER_REVIEW_V1",
+        "order_id": "6fd78dbc-c121-44a4-bfca-58d6857caeb2",
+        "created_at": "2026-11-11T15:12:45.990608+00:00",
+        "reject_eligible": false,
+        "header_financial": {
+          "financial_approval_status": "not_required",
+          "requires_financial_approval": false
+        },
+        "terms_review_path": "new_order_with_financial_approval_plan",
+        "accounting_pending": false,
+        "reject_block_reason": "terms_not_required"
+      },
+      "w": "ERROR:  PT409: B2B_REJECT_STATE_CONFLICT\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 189 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  },
+  {
+    "test": "reserved order: reader ineligible and writer denied, no audit",
+    "status": "PASS",
+    "detail": {
+      "v": {
+        "items": [
+          {
+            "id": "57a6d008-9dcc-4a35-b833-3e271e07eba5",
+            "unidade": "unidade",
+            "subtotal": 18.0,
+            "embalagem": "SC25",
+            "quantidade": 2.0,
+            "produto_nome": "Fertilizante s\u00f3lido TESTE",
+            "preco_unitario": 9.0,
+            "produto_codigo": "SOL-1"
+          }
+        ],
+        "terms": {
+          "id": "f143736e-04ef-43cc-9e2a-e0e89590bcec",
+          "approved_at": "2026-11-11T15:11:08.303814+00:00",
+          "final_amount": 18.0,
+          "table_amount": 20.0,
+          "approval_notes": "LOCAL TERMS APPROVAL",
+          "approval_status": "approved",
+          "installment_count": 1,
+          "plan_code_snapshot": "T3",
+          "plan_name_snapshot": "TESTE 3x"
+        },
+        "numero": "PB-001001",
+        "origin": "external_partner",
+        "status": "entregue",
+        "contract": "B2B_SELLER_FINANCE_ORDER_REVIEW_V1",
+        "order_id": "bf5943c3-d2d0-4327-8133-07fd04dbd5e0",
+        "created_at": "2026-11-11T15:11:06.546431+00:00",
+        "reject_eligible": false,
+        "header_financial": {
+          "financial_approval_status": "pending",
+          "requires_financial_approval": true
+        },
+        "terms_review_path": null,
+        "accounting_pending": false,
+        "reject_block_reason": "terms_decided"
+      },
+      "w": "ERROR:  PT409: B2B_REJECT_STATE_CONFLICT\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 189 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  },
+  {
+    "test": "installed writer rejects; reader reflects rejected; header unchanged; one audit; no notification",
+    "status": "PASS",
+    "detail": {
+      "w": "",
+      "v": {
+        "items": [
+          {
+            "id": "8efaac1c-c576-47ef-bcd8-0249ec5e5df6",
+            "unidade": "unidade",
+            "subtotal": 18.0,
+            "embalagem": "SC25",
+            "quantidade": 2.0,
+            "produto_nome": "Fertilizante s\u00f3lido TESTE",
+            "preco_unitario": 9.0,
+            "produto_codigo": "SOL-1"
+          }
+        ],
+        "terms": {
+          "id": "51260cb8-349f-4c7a-999f-e9c061265bb8",
+          "approved_at": "2026-11-11T15:12:47.568717+00:00",
+          "final_amount": 18.0,
+          "table_amount": 20.0,
+          "approval_notes": "REVISAO FINANCEIRO LOCAL",
+          "approval_status": "rejected",
+          "installment_count": 1,
+          "plan_code_snapshot": "T3",
+          "plan_name_snapshot": "TESTE 3x"
+        },
+        "numero": "PB-001020",
+        "origin": "external_partner",
+        "status": "em_analise_comercial",
+        "contract": "B2B_SELLER_FINANCE_ORDER_REVIEW_V1",
+        "order_id": "e44dcebf-1cbd-4445-a2f6-e4ba74027ca0",
+        "created_at": "2026-11-11T15:12:38.406554+00:00",
+        "reject_eligible": false,
+        "header_financial": {
+          "financial_approval_status": "pending",
+          "requires_financial_approval": true
+        },
+        "terms_review_path": null,
+        "accounting_pending": false,
+        "reject_block_reason": "terms_decided"
+      }
+    }
+  },
+  {
+    "test": "repeat rejection denied, still one audit",
+    "status": "PASS",
+    "detail": "ERROR:  PT409: B2B_REJECT_STATE_CONFLICT\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 189 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "test": "commercial approved: reader ineligible and writer denied",
+    "status": "PASS",
+    "detail": {
+      "v": {
+        "items": [
+          {
+            "id": "4aa81267-35ba-43cd-b334-6dde72ec4920",
+            "unidade": "unidade",
+            "subtotal": 18.0,
+            "embalagem": "SC25",
+            "quantidade": 2.0,
+            "produto_nome": "Fertilizante s\u00f3lido TESTE",
+            "preco_unitario": 9.0,
+            "produto_codigo": "SOL-1"
+          }
+        ],
+        "terms": {
+          "id": "c1676862-f70d-4b14-8ab8-e9ab504490d2",
+          "approved_at": null,
+          "final_amount": 18.0,
+          "table_amount": 20.0,
+          "approval_notes": null,
+          "approval_status": "pending",
+          "installment_count": 1,
+          "plan_code_snapshot": "T3",
+          "plan_name_snapshot": "TESTE 3x"
+        },
+        "numero": "PB-001024",
+        "origin": "external_partner",
+        "status": "aprovado",
+        "contract": "B2B_SELLER_FINANCE_ORDER_REVIEW_V1",
+        "order_id": "e09549ab-131b-4ca9-b179-bac12cfda5eb",
+        "created_at": "2026-11-11T15:12:48.74312+00:00",
+        "reject_eligible": false,
+        "header_financial": {
+          "financial_approval_status": "pending",
+          "requires_financial_approval": true
+        },
+        "terms_review_path": null,
+        "accounting_pending": false,
+        "reject_block_reason": "commercial_approved"
+      },
+      "w": "ERROR:  PT409: B2B_REJECT_STATE_CONFLICT\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 189 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  },
+  {
+    "test": "approved terms never reversible",
+    "status": "PASS",
+    "detail": {
+      "items": [
+        {
+          "id": "d39b39d4-6a4e-493a-8e41-7d4d474687ec",
+          "unidade": "unidade",
+          "subtotal": 18.0,
+          "embalagem": "SC25",
+          "quantidade": 2.0,
+          "produto_nome": "Fertilizante s\u00f3lido TESTE",
+          "preco_unitario": 9.0,
+          "produto_codigo": "SOL-1"
+        }
+      ],
+      "terms": {
+        "id": "6155e936-6aa6-44c1-b157-dffa1d5d17ec",
+        "approved_at": "2026-11-11T15:12:51.427222+00:00",
+        "final_amount": 18.0,
+        "table_amount": 20.0,
+        "approval_notes": null,
+        "approval_status": "approved",
+        "installment_count": 1,
+        "plan_code_snapshot": "T3",
+        "plan_name_snapshot": "TESTE 3x"
+      },
+      "numero": "PB-001025",
+      "origin": "external_partner",
+      "status": "em_analise_comercial",
+      "contract": "B2B_SELLER_FINANCE_ORDER_REVIEW_V1",
+      "order_id": "471b4495-e906-45c9-a89d-393177798af8",
+      "created_at": "2026-11-11T15:12:50.681142+00:00",
+      "reject_eligible": false,
+      "header_financial": {
+        "financial_approval_status": "pending",
+        "requires_financial_approval": true
+      },
+      "terms_review_path": null,
+      "accounting_pending": false,
+      "reject_block_reason": "terms_decided"
+    }
+  },
+  {
+    "test": "reader causes no receivable/fiscal rows",
+    "status": "PASS",
+    "detail": {
+      "receivables": 1,
+      "fiscal": 1
+    }
+  },
+  {
+    "test": "ROLLBACK exact bytes drops only candidate",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "rollback rerun refuses drift",
+    "status": "PASS",
+    "detail": "ERROR:  P0001: REVIEW_READER_CATALOG_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  }
+]
