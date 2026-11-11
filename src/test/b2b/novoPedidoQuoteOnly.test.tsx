@@ -156,7 +156,7 @@ function useServer(opts: { reply?: (a: Record<string, unknown>) => unknown; jour
       if (n === "partner_order_journal_capability_v1") return response({ contract: "C2_ORDER_JOURNAL_V1", enabled: true, actor_id: state.actor, organization_id: state.tenant, partner_id: state.partner });
     }
     if (opts.journal === "committed" && n === "partner_order_attempt_status_v1") return response({ contract: "C2_ORDER_JOURNAL_V1",
-      key: "k-1", generation: 1, state: "committed", order_id: "55555555-5555-4555-8555-555555555555", numero: "PB-ANTERIOR", predecessors: [] });
+      key: "66666666-6666-4666-8666-666666666666", generation: 1, state: "committed", order_id: "55555555-5555-4555-8555-555555555555", numero: "PB-ANTERIOR", predecessors: [] });
     if (opts.journal === "none" && n === "partner_order_attempt_status_v1") return response({ contract: "C2_ORDER_ATTEMPT_STATUS_V1", state: "none",
       actor_id: state.actor, organization_id: state.tenant, partner_id: state.partner });
     if (n === "simulate_b2b_payment_condition_secure") {
@@ -238,7 +238,7 @@ it("tentativa anterior registrada (journal durável): cotação bloqueada com o 
   const b = await quoteBtn();
   await waitFor(() => expect(screen.getByTestId("submit-block-reason")).toHaveTextContent("tentativa anterior"));
   expect(b).toBeDisabled();
-  const dialog = screen.getByRole("dialog"); console.log("DLG", dialog.textContent?.slice(0,1500));
+  const dialog = screen.getByRole("dialog");
   expect(within(dialog).getByText(/Pedido PB-ANTERIOR já registrado/)).toBeInTheDocument();
   expect(within(dialog).getByRole("button", { name: "Confirmar pedido existente e iniciar novo" })).toBeInTheDocument();
   fireEvent.click(b);
