@@ -131,7 +131,7 @@ END $$;
 DO $$ DECLARE f text; BEGIN
   FOREACH f IN ARRAY ARRAY['public.admin_assign_seller_portfolio_v1(uuid,uuid,text)','public.admin_revoke_seller_portfolio_v1(uuid,text)',
     'public.admin_list_seller_portfolio_v1()','public.seller_portfolio_capability_v1()'] LOOP
-    EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon', f);
+    EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon, service_role', f);
     EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO authenticated', f);
   END LOOP;
 END $$;
