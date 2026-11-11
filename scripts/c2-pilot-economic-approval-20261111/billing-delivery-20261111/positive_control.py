@@ -60,7 +60,6 @@ try:
     RES=None;rv=None;kr=None
     rec(SCN_P,'linhas reservadas','INFO',RESL)
     globals().update(RESL=RESL,PO=PO,IT=IT,PROD=PROD,PACK=PACK,STK=STK,LOT=LOT,OS=OS,RES=RES,reserve=reserve,kr=kr,rv=rv)
-    rec(SCN_P,'recibo de reserva','INFO',rv[0])
     exec((H/'positive_delivery.py').read_text())
 except Blocked as b:
     rec(SCN_P,'cadeia interrompida em',"BLOCKED",str(b))
