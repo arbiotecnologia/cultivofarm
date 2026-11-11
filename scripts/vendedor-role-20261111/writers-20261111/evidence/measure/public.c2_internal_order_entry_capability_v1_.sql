@@ -1,0 +1,32 @@
+CREATE OR REPLACE FUNCTION public.c2_internal_order_entry_capability_v1()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE uid uuid := auth.uid(); org uuid; r text; n integer; validated boolean; partners jsonb := '[]'::jsonb;
+BEGIN
+  IF uid IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+  r := platform_private.c2_internal_order_target_reason(uid, NULL);
+  IF r IS NULL THEN
+    org := public.h15_actor_organization();
+    -- Same issuer predicate as LIVE b2b_internal_order_snapshot_guard; read only, no lock.
+    SELECT count(*), bool_and(c.configuration_status='VALIDATED' AND c.accounting_validated_at IS NOT NULL
+             AND nullif(btrim(c.legal_name),'') IS NOT NULL AND nullif(btrim(c.cnpj),'') IS NOT NULL)
+      INTO n, validated FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active IS TRUE;
+    IF n<>1 THEN r := 'issuer_ambiguous'; ELSIF validated IS NOT TRUE THEN r := 'issuer_not_validated'; END IF;
+    SELECT COALESCE(jsonb_agg(jsonb_build_object('partner_id',p.id,'razao_social',p.razao_social,
+             'commercial_owner_organization_id',p.commercial_owner_organization_id) ORDER BY p.razao_social, p.id),'[]'::jsonb)
+      INTO partners FROM public.partner_accounts p
+     WHERE platform_private.c2_internal_order_target_reason(uid,p.id) IS NULL;
+    IF r IS NULL AND jsonb_array_length(partners)=0 THEN r := 'no_partner_in_scope'; END IF;
+    -- Same catalogue feature as the canonical reader (b2b_actor_scope.has_catalog / catalogo_precos).
+    IF r IS NULL AND NOT EXISTS (SELECT 1 FROM platform_private.b2b_actor_scope(uid) x WHERE x.has_catalog IS TRUE) THEN r := 'catalog_feature_disabled'; END IF;
+    -- Catalogue reader must be exactly the reviewed portfolio-aware body; any drift closes order entry.
+    IF r IS NULL AND md5(pg_get_functiondef('public.get_partner_catalog_secure(uuid)'::regprocedure)) IS DISTINCT FROM 'b5684d350603d1db77ab9f1db0f4b253' THEN r := 'catalog_reader_pending'; END IF;
+  END IF;
+  RETURN jsonb_build_object('contract','C2_INTERNAL_ORDER_ENTRY_V1','organization_id',org,
+    'profile_ok', r IS DISTINCT FROM 'inactive_scope' AND r IS DISTINCT FROM 'actor_not_allowed',
+    'order_create', r IS NULL, 'reason', r,
+    'partners', CASE WHEN org IS NULL THEN '[]'::jsonb ELSE partners END);
+END $function$
