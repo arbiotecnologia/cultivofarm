@@ -1,0 +1,99 @@
+{
+  "status": "LOCAL_ONLY_NOT_INSTALL_AUTHORIZED",
+  "production_pre": "ALL_PINS_CONFIRMED_OWNER_REPORT_20261111_2320_NOT_AGENT_REMOTE_READ",
+  "sql_unchanged": true,
+  "files": [
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/FOLLOWUP-20261111-2320.md",
+      "sha256": "4644c0a7abe91a5e50dbeaee825edfaa0366a04a4a61bbe9fccb18df2f813631"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/diagnostic/01-pre.sql.readonly",
+      "sha256": "aca994d21122f4e0d1522c41266fdc55798cfaf80d1d06dd9df2b7ecc0f50a53"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/diagnostic/02-install.sql.review",
+      "sha256": "ded2e264482cc486bb9239e4198a01397575f801f52489a77f2827f9b80b6b99"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/diagnostic/03-post.sql.readonly",
+      "sha256": "e06efa9b671dfc5eb399df8ad678a00a26d46bf2b85b140c6c3b78fabfbd98b5"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/diagnostic/04-rollback.sql.review",
+      "sha256": "b3e8e322ad8e674472e92514720cac940e0df3be25093eebefed95c38549fd7b"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/diagnostic/SHA256SUMS",
+      "sha256": "b961ec1e332b0de63d1867656c4fe513b5380b020962971eb3da905532909e2c"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/diagnostic/candidate.sql",
+      "sha256": "caca5a88ca5ee9432d2cac167ce7391ab7f1a4a64d3f105d96906233bd2eedd1"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/event-sequence/01-pre.sql.readonly",
+      "sha256": "e4c49561d70925adebff9fde60991c9282eb28acdb417cf03fea54d8c625ce8e"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/event-sequence/02-install.sql.review",
+      "sha256": "9229da941744538d5a092a46b8779dbdd04fe6bb14c236c4c92b9e60fd449586"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/event-sequence/03-post.sql.readonly",
+      "sha256": "015cdd107afcdf0a27b2d77886fc80d794ea7f7e5c2c855ab16592831bc0b511"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/event-sequence/04-rollback-deny.sql.review",
+      "sha256": "fb8d95ef7924cdaa1efc9dfb9d283158a016224b44728a2a59f697c4974c9f3f"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/event-sequence/SHA256SUMS",
+      "sha256": "972bf59144ee2f12893fe53efba07fcb666b02b673e59e686494d1f5adc55f0e"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/event-sequence/candidate.sql",
+      "sha256": "55d028af9940b7e5a44ff9e5f02645fd575c995fe7f0481b9b5b2c8981b8b891"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/evidence/attempt-015/calls.json",
+      "sha256": "f29df1b0ad0c17ae17ca176f3debe0143d9f065e02bd83b642aa6622bd5a7eaa"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/evidence/attempt-015/checks.json",
+      "sha256": "dceb097a71fbc7bb42c1ca84c7d3a4f03b1c4fdde9f53b6605a5504275cd18b7"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/evidence/attempt-015/exitcode",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/evidence/followup-ui/exitcode",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/evidence/followup-ui/vitest.txt",
+      "sha256": "217f3fbd153af09c4df21017fe8f204d53875969e0691a9d07f1c863126421f9"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/test_followup.py",
+      "sha256": "a4674429d276e6785d7ee02d816a29d793907796e363bee87ea7dd70828d93db"
+    },
+    {
+      "path": "src/lib/fiscal/eligibilityDiagnostic.ts",
+      "sha256": "5694f444286a2bcdaa2e438540d8b56d353b696848e962b3b888e7f1ef6f6082"
+    },
+    {
+      "path": "src/pages/fiscal/DiagnosticoElegibilidade.tsx",
+      "sha256": "c748e9828a24d19ece05b896babad24bcef0a1db9d4f3ad8557d1097e099745a"
+    },
+    {
+      "path": "src/test/fiscal/eligibilityDiagnostic.test.ts",
+      "sha256": "96f80915d6c68ff40c6d8bae11bf7171ef3f4bf8bec916e727a6347a35cfad5d"
+    },
+    {
+      "path": "src/test/fiscal/eligibilityEconomicDiagnosis.ui.test.tsx",
+      "sha256": "56f726150f520a519e3efc301af06f7dc3572c7feae8f2caa2e3013fe071de82"
+    }
+  ]
+}
