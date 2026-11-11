@@ -236,6 +236,8 @@ it("tentativa anterior registrada (journal durável): cotação bloqueada com o 
   useServer({ journal: "committed" });
   await toPayment(); await pickTestPix();
   await waitFor(() => expect(calls("simulate_b2b_payment_condition_secure")).toHaveLength(1));
+  await new Promise((r) => setTimeout(r, 50));
+  console.log("DLG2", document.body.textContent?.slice(-1500));
   const b = await quoteBtn();
   await waitFor(() => expect(screen.getByTestId("submit-block-reason")).toHaveTextContent("tentativa anterior"));
   expect(b).toBeDisabled();
