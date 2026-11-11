@@ -1,3 +1,0 @@
-UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;
-REVOKE ALL ON FUNCTION platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date),public.rpc_finished_product_purchase_capability_v1(),public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) FROM PUBLIC,anon,authenticated,service_role;
--- Deny-only: preserva corpos, colunas, estoque, entregas e histórico; nenhum grant é restaurado.
