@@ -1,0 +1,31 @@
+-- HOMOLOG ONLY; catalog validation infrastructure, no business grants.
+BEGIN;SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='30s';
+DO $target$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref='vrlcdwmlytukrjezrrnf' AND production_emission_allowed IS FALSE) OR EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref IS DISTINCT FROM 'vrlcdwmlytukrjezrrnf' OR production_emission_allowed IS DISTINCT FROM FALSE) THEN RAISE EXCEPTION 'HOMOLOG_MARKER_REQUIRED'; END IF;
+ IF EXISTS(SELECT 1 FROM cron.job WHERE active) THEN RAISE EXCEPTION 'HOMOLOG_CRON_ACTIVE'; END IF;
+ IF to_regclass('platform_private.b2b_financial_forecasts') IS NULL THEN RAISE EXCEPTION 'STAGE_A_REQUIRED'; END IF;
+ IF EXISTS(SELECT 1 FROM platform_private.b2b_forecast_creation_gate_v1 WHERE enabled) OR EXISTS(SELECT 1 FROM platform_private.b2b_forecast_lifecycle_gate_v1 WHERE enabled) THEN RAISE EXCEPTION 'FOUNDATION_MUST_REMAIN_CLOSED'; END IF;
+END $target$;
+
+CREATE OR REPLACE FUNCTION platform_private.cancel_homolog_resolve_function_v1(signature text,body_md5 text)
+RETURNS oid LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $identity$
+DECLARE f oid;hits integer;qualified boolean;function_name text;arg_types text;
+BEGIN
+ qualified:=position('.' in split_part(signature,'(',1))>0;
+ IF qualified THEN
+  f:=pg_catalog.to_regprocedure(signature);
+  IF f IS NULL OR pg_catalog.md5(pg_catalog.pg_get_functiondef(f)) IS DISTINCT FROM body_md5 THEN RAISE EXCEPTION 'FUNCTION_IDENTITY_DRIFT:%',signature; END IF;
+  RETURN f;
+ END IF;
+ function_name:=split_part(signature,'(',1);
+ arg_types:=substring(signature from position('(' in signature)+1 for length(signature)-position('(' in signature)-1);
+ SELECT count(*),min(p.oid::bigint)::oid INTO hits,f FROM pg_catalog.pg_proc p
+ JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
+ WHERE p.proname=function_name AND p.prokind='f'
+ AND p.oid=pg_catalog.to_regprocedure(pg_catalog.format('%I.%I(%s)',n.nspname,p.proname,arg_types))
+ AND pg_catalog.md5(pg_catalog.pg_get_functiondef(p.oid))=body_md5;
+ IF hits<>1 THEN RAISE EXCEPTION 'FUNCTION_IDENTITY_AMBIGUOUS_OR_MISSING:%',signature; END IF;
+ RETURN f;
+END $identity$;
+REVOKE ALL ON FUNCTION platform_private.cancel_homolog_resolve_function_v1(text,text) FROM PUBLIC,anon,authenticated,service_role;
+COMMIT;
