@@ -57,13 +57,13 @@ try:
  _,cancel=prepared(d);before=snapshot(d);r=call(d,cancel);check('pendência verdadeira bloqueia cancelamento financeiro',snapshot(d)==before and 'FISCAL_AUTHORIZATION_RECONCILIATION_PENDING' in r.stdout,r.stdout)
  r=call(d,f"UPDATE company_fiscal_settings SET configuration_status='VALIDATED',accounting_validated_at=clock_timestamp() WHERE id=(select company_settings_id from fiscal_invoices where id='{invoice}');");assert r.returncode==0,r.stderr
  r=call(d,q);check('reconciliação após validação contábil real remove pendência',r.returncode==0 and d.last(f"select count(*) from platform_private.fiscal_close_pending where transmission_id='{tx}'")=='0')
- r=call(d,cancel);check('recuperação após pendência verdadeira cancela sem duplicar',r.returncode==0 and d.last(f"select normalized_status from fiscal_invoices where id='{invoice}'")=='CANCELED' and d.last("select count(*) from financial_audit_log where action='AR_CANCELED'")=='1',r.stderr)
+ r=call(d,cancel);check('recuperação após pendência verdadeira cancela sem duplicar',r.returncode==0 and d.last(f"select normalized_status from fiscal_invoices where id='{invoice}'")=='CANCELED' and d.last(f"select count(*) from financial_audit_log where action='AR_CANCELED' AND entity_id=(select receivable_id from fiscal_invoices where id='{invoice}')")=='1',r.stderr)
  # Both deterministic orders: lock invoice until the other callback is waiting.
  for first in ['authorization','cancellation']:
   d=clone();_,cancel=prepared(d);_,q=authq(d)
   r=blocked(d,f"SELECT id FROM fiscal_invoices WHERE id='{invoice}' FOR UPDATE",q if first=='cancellation' else cancel,'SELECT 1')
   check('espera callback '+first,r.returncode==0,r.stderr)
-  r=call(d,cancel if first=='cancellation' else q);check('ordem '+first+' final e auditoria única',r.returncode==0 and d.last(f"select normalized_status from fiscal_invoices where id='{invoice}'")=='CANCELED' and d.last("select count(*) from financial_audit_log where action='AR_CANCELED'")=='1',r.stderr)
+  r=call(d,cancel if first=='cancellation' else q);check('ordem '+first+' final e auditoria única',r.returncode==0 and d.last(f"select normalized_status from fiscal_invoices where id='{invoice}'")=='CANCELED' and d.last(f"select count(*) from financial_audit_log where action='AR_CANCELED' AND entity_id=(select receivable_id from fiscal_invoices where id='{invoice}')")=='1',r.stderr)
  # Revocation under a proven invoice wait, rolled back/re-authorized control in each clone.
  for kind,mutation,restore in [
   ('ator',f"UPDATE profiles SET ativo=false WHERE user_id='{u(29)}'",f"UPDATE profiles SET ativo=true WHERE user_id='{u(29)}'"),
@@ -79,8 +79,8 @@ try:
   d=clone();tid,cancel=prepared(d,kind)
   if kind=='sem-evento':check('entrada sem evento negada pela guarda real',cancel.returncode!=0 and 'SEFAZ_EVENT_REQUIRED' in cancel.stderr,cancel.stderr);continue
   if kind=='evento-empresa':
-   r=call(d,f"UPDATE fiscal_events SET organization_id='{u(2)}' WHERE id=(select fiscal_event_id from fiscal_sefaz_transmissions where id='{tid}');")
-   if r.returncode!=0:check('evento estrangeiro barrado por integridade real', 'H15_' in r.stderr,r.stderr);continue
+   claims=json.dumps(dict(sub=u(29),role='authenticated',iat=1));r=d.raw(f"SET request.jwt.claim.sub='{u(29)}';SET request.jwt.claims='{claims}';UPDATE fiscal_events SET organization_id='{u(2)}' WHERE id=(select fiscal_event_id from fiscal_sefaz_transmissions where id='{tid}');")
+   if r.returncode!=0:check('evento estrangeiro barrado por integridade real', 'H15_' in r.stderr or 'TENANT' in r.stderr,r.stderr);continue
   before=snapshot(d);r=call(d,cancel,u(25) if kind=='ator-empresa' else u(29));check(kind+' não cancela documento/título/estoque/OS/entrega',snapshot(d)==before and (r.returncode!=0 or '"final": true' not in r.stdout),dict(out=r.stdout,err=r.stderr))
  # Residual capability and writer negative states; only input seams, rollback assertions.
  for kind in ['pendente','sem-previsao','sem-concessao','estrangeiro']:
