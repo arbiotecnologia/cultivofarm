@@ -1,0 +1,258 @@
+{
+ "rows": [
+  {
+   "id": "fiscal-ficticio-1",
+   "organization_id": "org-ficticia-homolog",
+   "is_active": true,
+   "legal_name": "EMITENTE FICTÍCIO HOMOLOGAÇÃO LTDA",
+   "trade_name": "FICTÍCIO",
+   "cnpj": "11222333000181",
+   "state_registration": "ISENTO",
+   "state": "MG",
+   "city": null,
+   "country_code": null,
+   "tax_regime": "LUCRO_PRESUMIDO",
+   "crt": "3",
+   "pis_cofins_regime": null,
+   "pis_cofins_regime_effective_from": null,
+   "uf_accreditations": [
+    {
+     "uf": "MG"
+    },
+    {
+     "uf": "SP",
+     "accredited": true
+    }
+   ],
+   "configuration_status": "PENDING_ACCOUNTING",
+   "configuration_version": 7,
+   "fiscal_environment": "HOMOLOGATION",
+   "fiscal_provider": "NONE",
+   "nfe_provider": "NONE",
+   "nfse_provider": "NFSE_NACIONAL",
+   "nfe_enabled": false,
+   "nfse_enabled": false,
+   "production_enabled": false,
+   "accounting_validated_at": null,
+   "nfe_configuration": {
+    "presence_indicator": 0,
+    "freight_modality": "9",
+    "danfe_layout": "LEGADO_A4",
+    "legacy_extra": {
+     "k": 1
+    },
+    "default_finality": "NORMAL"
+   },
+   "nfse_configuration": {
+    "iss_rate": 0,
+    "rps_type": 7,
+    "fiscal_incentive": false,
+    "rps_series": "R1"
+   },
+   "nfe_environment_code": "2",
+   "webhook_ref": "ref.ficticia-01"
+  }
+ ],
+ "history": [],
+ "rtc": {
+  "configuration": {
+   "schema_version": 1,
+   "source_document": "LC 214/2025 (fictício teste)",
+   "rtc_environment": "NOT_CONFIGURED"
+  },
+  "revision": "r1",
+  "exists": true
+ },
+ "log": [
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_pis_cofins_history",
+   "q": "select=id%2Cold_regime%2Cnew_regime%2Cold_effective_from%2Cnew_effective_from%2Cchanged_by%2Cchanged_at&company_settings_id=eq.fiscal-ficticio-1&organization_id=eq.org-ficticia-homolog&order=changed_a"
+  },
+  {
+   "m": "PATCH",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "id=eq.fiscal-ficticio-1&organization_id=eq.org-ficticia-homolog&configuration_version=eq.1&select=*"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_pis_cofins_history",
+   "q": "select=id%2Cold_regime%2Cnew_regime%2Cold_effective_from%2Cnew_effective_from%2Cchanged_by%2Cchanged_at&company_settings_id=eq.fiscal-ficticio-1&organization_id=eq.org-ficticia-homolog&order=changed_a"
+  },
+  {
+   "m": "PATCH",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "id=eq.fiscal-ficticio-1&organization_id=eq.org-ficticia-homolog&configuration_version=eq.2&select=*"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_pis_cofins_history",
+   "q": "select=id%2Cold_regime%2Cnew_regime%2Cold_effective_from%2Cnew_effective_from%2Cchanged_by%2Cchanged_at&company_settings_id=eq.fiscal-ficticio-1&organization_id=eq.org-ficticia-homolog&order=changed_a"
+  },
+  {
+   "m": "PATCH",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "id=eq.fiscal-ficticio-1&organization_id=eq.org-ficticia-homolog&configuration_version=eq.3&select=*"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_pis_cofins_history",
+   "q": "select=id%2Cold_regime%2Cnew_regime%2Cold_effective_from%2Cnew_effective_from%2Cchanged_by%2Cchanged_at&company_settings_id=eq.fiscal-ficticio-1&organization_id=eq.org-ficticia-homolog&order=changed_a"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "PATCH",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "id=eq.fiscal-ficticio-1&organization_id=eq.org-ficticia-homolog&configuration_version=eq.4&select=*"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "PATCH",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "id=eq.fiscal-ficticio-1&organization_id=eq.org-ficticia-homolog&configuration_version=eq.5&select=*"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "PATCH",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "id=eq.fiscal-ficticio-1&organization_id=eq.org-ficticia-homolog&configuration_version=eq.6&select=*"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "POST",
+   "p": "/rest/v1/rpc/rpc_fiscal_company_rtc_get",
+   "q": ""
+  },
+  {
+   "m": "POST",
+   "p": "/rest/v1/rpc/rpc_fiscal_company_rtc_save",
+   "q": ""
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "POST",
+   "p": "/rest/v1/rpc/rpc_fiscal_company_rtc_get",
+   "q": ""
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/v_fiscal_certificate_readiness",
+   "q": "select=*&company_settings_id=eq.fiscal-ficticio-1&order=valid_until.desc"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/v_fiscal_certificate_readiness",
+   "q": "select=*&company_settings_id=eq.fiscal-ficticio-1&order=valid_until.desc"
+  },
+  {
+   "m": "POST",
+   "p": "/rest/v1/rpc/rpc_fiscal_homologation_readiness_v2",
+   "q": ""
+  },
+  {
+   "m": "GET",
+   "p": "/rest/v1/company_fiscal_settings",
+   "q": "select=*&is_active=eq.true&organization_id=eq.org-ficticia-homolog"
+  }
+ ]
+}

@@ -1,0 +1,530 @@
+[
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "país ausente exibe Não informado",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "PIS/COFINS ausente",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "botão único visível em Empresa",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "UF nova em branco",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "registrar bloqueado sem aptidão",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "seleção mantida após registrar",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "aviso de salvar pendente",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "salvamento MG",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "reabrir UF única: MG selecionada e Apta",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "SP nova em branco",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "salvamento SP",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "duas UFs: nenhuma pré-selecionada",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "editar MG carrega Apta",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "editar SP carrega Não apta (false)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "salvamento alternância",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "persistido SP true e MG sem chave (ausente ≠ false)",
+  "ok": true,
+  "detail": "[{\"uf\": \"MG\"}, {\"uf\": \"SP\", \"accredited\": true}]"
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "MG reaberta Não informada",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "SP reaberta Apta",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "NF-e numeração ausente = Não informado",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "NF-e contingência ausente = Não informado",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "presença zero numérica exibida 0",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "DANFE legado mantido",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "switch com nome acessível",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "salvamento NF-e",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "NF-e preserva zero/legados/extra",
+  "ok": true,
+  "detail": "{\"presence_indicator\": 0, \"freight_modality\": \"9\", \"danfe_layout\": \"LEGADO_A4\", \"legacy_extra\": {\"k\": 1}, \"default_finality\": \"NORMAL\"}"
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "NF-e reaberta",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "RPS legado 7 mantido",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "regime especial ausente = Não informado",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "ISS 0 exibido",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "salvamento NFS-e",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "NFS-e preserva 0/false/legado",
+  "ok": true,
+  "detail": "{\"iss_rate\": 0, \"rps_type\": 7, \"fiscal_incentive\": false, \"rps_series\": \"R1\"}"
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "NFS-e reaberta",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "provedor legível",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "salvamento Integração",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "Integração persistida sem abrir emissão",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "Integração reaberta",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "RTC sem botão geral",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "RTC salvo por ação própria",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "RTC reaberto",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "certificado sem botão geral",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "revisao sem botão geral",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "homologacao sem botão geral",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "sem erros de página",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "desktop-1280x1800",
+  "check": "PATCH nunca enviou campos proibidos",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "país ausente exibe Não informado",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "PIS/COFINS ausente",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "botão único visível em Empresa",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "UF nova em branco",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "registrar bloqueado sem aptidão",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "seleção mantida após registrar",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "aviso de salvar pendente",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "salvamento MG",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "reabrir UF única: MG selecionada e Apta",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "SP nova em branco",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "salvamento SP",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "duas UFs: nenhuma pré-selecionada",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "editar MG carrega Apta",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "editar SP carrega Não apta (false)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "salvamento alternância",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "persistido SP true e MG sem chave (ausente ≠ false)",
+  "ok": true,
+  "detail": "[{\"uf\": \"MG\"}, {\"uf\": \"SP\", \"accredited\": true}]"
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "MG reaberta Não informada",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "SP reaberta Apta",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "NF-e numeração ausente = Não informado",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "NF-e contingência ausente = Não informado",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "presença zero numérica exibida 0",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "DANFE legado mantido",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "switch com nome acessível",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "salvamento NF-e",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "NF-e preserva zero/legados/extra",
+  "ok": true,
+  "detail": "{\"presence_indicator\": 0, \"freight_modality\": \"9\", \"danfe_layout\": \"LEGADO_A4\", \"legacy_extra\": {\"k\": 1}, \"default_finality\": \"NORMAL\"}"
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "NF-e reaberta",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "RPS legado 7 mantido",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "regime especial ausente = Não informado",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "ISS 0 exibido",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "salvamento NFS-e",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "NFS-e preserva 0/false/legado",
+  "ok": true,
+  "detail": "{\"iss_rate\": 0, \"rps_type\": 7, \"fiscal_incentive\": false, \"rps_series\": \"R1\"}"
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "NFS-e reaberta",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "provedor legível",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "salvamento Integração",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "Integração persistida sem abrir emissão",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "Integração reaberta",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "RTC sem botão geral",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "RTC salvo por ação própria",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "RTC reaberto",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "certificado sem botão geral",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "revisao sem botão geral",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "homologacao sem botão geral",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "sem erros de página",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "viewport": "mobile-390x844",
+  "check": "PATCH nunca enviou campos proibidos",
+  "ok": true,
+  "detail": ""
+ }
+]
