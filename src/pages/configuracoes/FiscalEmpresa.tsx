@@ -72,20 +72,10 @@ import { CnpjLookupButton } from "@/components/fiscal/CnpjLookupButton";
 import { useFiscalFieldFocus } from "@/lib/fiscal/useFiscalFieldFocus";
 import CompanyAccreditationsFields from "@/components/fiscal/CompanyAccreditationsFields";
 import PisCofinsHistory from "@/components/fiscal/PisCofinsHistory";
+import { PROVIDER_OPTIONS } from "@/lib/fiscal/providerLabels";
 
 
 const PAGE_TITLE = "Central de Configuração Fiscal";
-const PROVIDER_LABELS: Record<(typeof ALLOWED_PROVIDERS)[number], string> = {
-  NONE: "Nenhum (sem integração)",
-  NOT_CONFIGURED: "Não configurado",
-  FOCUS_NFE: "Focus NFe",
-  PLUGNOTAS: "PlugNotas",
-  SEFAZ_DIRETO: "SEFAZ direto",
-  NFSE_NACIONAL: "NFS-e Nacional",
-  MUNICIPAL: "Prefeitura (municipal)",
-  OTHER_FUTURE: "Outro (futuro)",
-};
-const PROVIDER_OPTIONS = ALLOWED_PROVIDERS.map((value) => ({ value, label: PROVIDER_LABELS[value] }));
 const SAVE_TABS = ["empresa", "nfe", "nfse", "integracao"] as const;
 const EMISSION_BANNER = "Emissão fiscal desativada — ambiente em preparação";
 

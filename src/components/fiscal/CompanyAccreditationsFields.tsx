@@ -65,10 +65,11 @@ export default function CompanyAccreditationsFields({ records, savedRecords, onC
           <option value="">Selecionar UF</option>{UF_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}{accreditedUfs(records).includes(option.value) ? " (registrada)" : ""}</option>)}
         </select>
       </div>
-      <div className="grid gap-1.5"><Label htmlFor="accreditation-declaration">Aptidão declarada{uf ? ` — ${uf}` : ""}</Label>
+      <div className="grid gap-1.5"><Label htmlFor="accreditation-declaration">Aptidão declarada</Label>
         <select id="accreditation-declaration" disabled={disabled || !uf || lookup?.kind === "duplicate"} className="h-11 rounded-md border bg-background px-3" value={declaration} onChange={(e) => setDeclaration(e.target.value as AccreditationDeclaration)}>
           <option value="">Não informada</option><option value="yes">{LABEL.yes}</option><option value="no">{LABEL.no}</option>
         </select>
+        {uf ? <p className="text-xs font-medium">UF em edição: {uf}</p> : null}
         {lookup?.kind === "new" ? <p className="text-xs text-muted-foreground">Nova UF, sem registro anterior.</p> : null}
         {lookup?.kind === "single" && lookup.legacyValue ? <p className="text-xs text-muted-foreground">Valor legado não booleano; registrar o substituirá.</p> : null}
       </div>
