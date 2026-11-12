@@ -1,0 +1,30 @@
+{
+  "fiscal_provider": "NONE",
+  "cnpj": "11222333000181",
+  "legal_name": "AR Bio FICTÍCIA — SEM USO FISCAL",
+  "tax_regime": "LUCRO_PRESUMIDO",
+  "crt": "3",
+  "pis_cofins_regime": null,
+  "uf_accreditations": [
+    {
+      "uf": "SP",
+      "accredited": true,
+      "note": "preservar"
+    },
+    {
+      "uf": "MG",
+      "accredited": true,
+      "evidence_ref": "original"
+    }
+  ],
+  "state_registration": "ISENTO",
+  "fiscal_environment": "HOMOLOGATION",
+  "nfe_enabled": false,
+  "nfe_environment_code": "2",
+  "nfse_enabled": false,
+  "nfe_provider": "NONE",
+  "nfse_provider": "NONE",
+  "nfe_configuration": {},
+  "nfse_configuration": {},
+  "configuration_version": 8
+}
