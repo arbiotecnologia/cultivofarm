@@ -2,23 +2,23 @@
   "forecast": {
     "state": "aguardando_fiscal",
     "version": 1,
-    "order_id": "af35c54f-dc78-4926-8022-01827ca20a5c",
+    "order_id": "6d3af857-1e48-4609-9429-00f049cd54c0",
     "schedule": [
       {
-        "id": "63004ef3-7499-44d7-8f66-6ef993027a9a",
+        "id": "0b5d69ec-84e9-4185-9f7f-c5dc96039ca1",
         "amount": 18.0,
-        "due_date": "2026-12-11",
+        "due_date": "2026-12-12",
         "interest_amount": 0.0,
-        "partner_order_id": "af35c54f-dc78-4926-8022-01827ca20a5c",
-        "payment_terms_id": "fd4e3e88-e59c-4dfe-b1a1-cff86d20f0c0",
+        "partner_order_id": "6d3af857-1e48-4609-9429-00f049cd54c0",
+        "payment_terms_id": "7e57fcea-8129-43be-9fd2-d6f9ab990bae",
         "principal_amount": 18.0,
         "installment_number": 1
       }
     ],
-    "created_at": "2026-11-11T16:05:50.994618+00:00",
+    "created_at": "2026-11-12T12:52:55.682185+00:00",
     "partner_id": "00000000-0000-0000-0000-000000000011",
-    "updated_at": "2026-11-11T16:05:50.994618+00:00",
-    "forecast_id": "297739e9-c89b-4ae1-a046-350e5cbfa4c9",
+    "updated_at": "2026-11-12T12:52:55.682185+00:00",
+    "forecast_id": "2beac53c-20ff-4f72-afd2-3725ce0bb210",
     "total_amount": 18.0,
     "last_error_code": null,
     "organization_id": "007bb519-cba0-4704-be2c-cb93ad010048",
@@ -29,7 +29,7 @@
   "replay": {
     "state": "aguardando_fiscal",
     "replayed": true,
-    "forecast_id": "297739e9-c89b-4ae1-a046-350e5cbfa4c9"
+    "forecast_id": "2beac53c-20ff-4f72-afd2-3725ce0bb210"
   },
   "cross_tenant_denied": "ERROR:  42501: B2B_FORECAST_READ_DENIED\nCONTEXT:  PL/pgSQL function public.get_b2b_financial_forecast_secure(uuid) line 11 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
   "receivables_before_nf": 0
