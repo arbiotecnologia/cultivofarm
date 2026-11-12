@@ -1,0 +1,1 @@
+- Org onboarding review and Central Fiscal release follow scripts/org-onboarding-review-20261112/AGENTS.md — prevents activation from browser-only verification.
