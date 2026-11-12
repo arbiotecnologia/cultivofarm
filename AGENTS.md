@@ -24,6 +24,7 @@
 - Fixtures need Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
+- Homolog cancellation prerequisites stay in an isolated metadata-only package; divergent hosted bodies require exact catalog capture and schema-only roundtrip before installers or session fiscal adapters are generated — prevents blind repinning and broad service grants.
 - Cancellation review UI uses the canonical order detail extra slot and a fresh exact-order server capability; isolated transport is disposable-only and production entrypoints remain unchanged — prevents candidate preparation from activating writers.
 - Seller pending-term rejection candidates follow scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/AGENTS.md; use the canonical existing endpoint and isolated generated delta — prevents parallel writers and unreviewed release.
 - Payment-term approval captures the observed linked child revision, locks order before child, and revalidates canonical active actor/scope after waits; missing commercial approval defers forecast without undoing valid terms — prevents stale approval and premature financial creation.

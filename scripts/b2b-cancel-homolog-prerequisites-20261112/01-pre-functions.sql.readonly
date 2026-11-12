@@ -1,0 +1,15 @@
+-- Somente catálogo; executar manualmente APENAS no projeto vrlcdwmlytukrjezrrnf.
+-- Não comprova ref pelo SQL: operador deve conferir URL/ref no painel antes de executar.
+WITH expected(signature,reported_md5) AS (VALUES
+('public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text)',NULL),
+('public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb)','e340a643e46c6cc0dea0fcebd207f612'),
+('public.rpc_register_receivable_payment(uuid,jsonb)','f59c6c09309dfa8bb5fedfa53f0873d0'),
+('public.rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid)','a518f355f035d485f720419e05e89906'),
+('public.rpc_fiscal_event_sefaz_reconcile_v1(uuid,uuid,text,text,text,timestamptz)','474c1e8cb40a15bc9fcb2544fef1c4b6'),
+('platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text)',NULL),
+('platform_private.c2p1_internal_actor(public.app_role[])','97bab97591a9f662bad7b1ccf837bfcd'),
+('platform_private.b2b_forecast_lifecycle_scope_v1(text,uuid,uuid,uuid,uuid)',NULL),
+('platform_private.b2b_forecast_lifecycle_allowed_v1(text,uuid,uuid,uuid,uuid)',NULL),
+('public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid)','9c94985d80502c8aea8bfb5da3abdecd'),
+('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)',NULL)
+) SELECT e.signature,e.reported_md5,p.oid IS NOT NULL AS present,md5(pg_get_functiondef(p.oid)) AS current_md5, pg_get_userbyid(p.proowner) AS owner,p.proacl::text AS raw_acl,p.proconfig,p.prosecdef,CASE WHEN e.reported_md5 IS NULL THEN p.oid IS NULL ELSE md5(pg_get_functiondef(p.oid))=e.reported_md5 END AS matches_report FROM expected e LEFT JOIN pg_proc p ON p.oid=to_regprocedure(e.signature) ORDER BY e.signature;

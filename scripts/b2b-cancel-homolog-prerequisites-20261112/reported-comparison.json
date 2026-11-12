@@ -1,0 +1,68 @@
+[
+  {
+    "signature": "public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text)",
+    "reported_md5": null,
+    "candidate_pre_md5": "9b930e51d8a95a1f516573d5dc64e937",
+    "status": "ABSENT"
+  },
+  {
+    "signature": "public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb)",
+    "reported_md5": "e340a643e46c6cc0dea0fcebd207f612",
+    "candidate_pre_md5": "766034ca6a25074dd5aeb6e57300c1d4",
+    "status": "DRIFT"
+  },
+  {
+    "signature": "public.rpc_register_receivable_payment(uuid,jsonb)",
+    "reported_md5": "f59c6c09309dfa8bb5fedfa53f0873d0",
+    "candidate_pre_md5": "db0ef1369e8a98630afb98368d391678",
+    "status": "DRIFT"
+  },
+  {
+    "signature": "public.rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid)",
+    "reported_md5": "a518f355f035d485f720419e05e89906",
+    "candidate_pre_md5": "9af2e91f3dbea476bffb4328fa288b2f",
+    "status": "DRIFT"
+  },
+  {
+    "signature": "public.rpc_fiscal_event_sefaz_reconcile_v1(uuid,uuid,text,text,text,timestamptz)",
+    "reported_md5": "474c1e8cb40a15bc9fcb2544fef1c4b6",
+    "candidate_pre_md5": "474c1e8cb40a15bc9fcb2544fef1c4b6",
+    "status": "MATCH_BODY_ONLY"
+  },
+  {
+    "signature": "platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text)",
+    "reported_md5": null,
+    "candidate_pre_md5": "40c8315020d521125868794349ad5e16",
+    "status": "ABSENT"
+  },
+  {
+    "signature": "platform_private.c2p1_internal_actor(public.app_role[])",
+    "reported_md5": "97bab97591a9f662bad7b1ccf837bfcd",
+    "candidate_pre_md5": "97bab97591a9f662bad7b1ccf837bfcd",
+    "status": "MATCH_BODY_ONLY"
+  },
+  {
+    "signature": "platform_private.b2b_forecast_lifecycle_scope_v1(text,uuid,uuid,uuid,uuid)",
+    "reported_md5": null,
+    "candidate_pre_md5": "ff7fd0bf839a91befa13600fd0b3faf1",
+    "status": "ABSENT"
+  },
+  {
+    "signature": "platform_private.b2b_forecast_lifecycle_allowed_v1(text,uuid,uuid,uuid,uuid)",
+    "reported_md5": null,
+    "candidate_pre_md5": "5347eaece2bbf5a05e5b581d4b2cd262",
+    "status": "ABSENT"
+  },
+  {
+    "signature": "public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid)",
+    "reported_md5": "9c94985d80502c8aea8bfb5da3abdecd",
+    "candidate_pre_md5": "766fb81a3c7dafa71de7806e559f0730",
+    "status": "DRIFT"
+  },
+  {
+    "signature": "platform_private.b2b_fiscal_invoice_bridge_v1(uuid)",
+    "reported_md5": null,
+    "candidate_pre_md5": "9b14fa08913075c08bc905074fb98a10",
+    "status": "ABSENT"
+  }
+]

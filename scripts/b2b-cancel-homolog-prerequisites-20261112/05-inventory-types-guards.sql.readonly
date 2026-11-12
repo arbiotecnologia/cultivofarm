@@ -1,0 +1,5 @@
+-- Somente catálogo; executar manualmente APENAS no projeto vrlcdwmlytukrjezrrnf.
+-- Não comprova ref pelo SQL: operador deve conferir URL/ref no painel antes de executar.
+SELECT n.nspname,t.typname,t.typtype,e.enumlabel,e.enumsortorder FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace LEFT JOIN pg_enum e ON e.enumtypid=t.oid WHERE n.nspname IN ('public','platform_private') AND t.typtype IN ('e','d') ORDER BY n.nspname,t.typname,e.enumsortorder;
+SELECT evtname,evtevent,evtenabled,evttags,evtfoid::regprocedure::text AS signature,md5(pg_get_functiondef(evtfoid)) AS body_md5 FROM pg_event_trigger ORDER BY evtname;
+SELECT r.rolname AS member,g.rolname AS inherited_role,m.admin_option FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.member JOIN pg_roles g ON g.oid=m.roleid WHERE r.rolname IN ('anon','authenticated','service_role') ORDER BY 1,2;
