@@ -137,26 +137,8 @@ async function readBounded(
   }
 }
 
-function decodeKeyB64(raw: string | undefined | null): Uint8Array | null {
-  if (!raw) return null;
-  try {
-    const bin = atob(raw.trim());
-    if (bin.length !== 32) return null;
-    const out = new Uint8Array(32);
-    for (let i = 0; i < 32; i++) out[i] = bin.charCodeAt(i);
-    return out;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Única chave mestra aceita pelo motor fiscal. A via legada de chave de teste
- * (fixture do harness) foi removida: o banco canônico é produção do SaaS.
- */
-function decodeMasterKey(): Uint8Array | null {
-  return decodeKeyB64(Deno.env.get("FISCAL_CERTIFICATE_MASTER_KEY"));
-}
+// Única chave mestra aceita: derivação compartilhada com o upload
+// (Deno.env.get("FISCAL_CERTIFICATE_MASTER_KEY") em ../_shared/fiscal/masterKey.ts).
 
 /**
  * Integridade de artefato imutável no Storage: colisão de path só é aceita
@@ -599,7 +581,7 @@ Deno.serve(async (req) => {
       detail: "certificado do emitente não está disponível em homologação" }, 412, headers);
   }
 
-  const masterKey = decodeMasterKey();
+  const masterKey = await decodeMasterKey();
   if (!masterKey) {
     // Recuperável: o XML gerado permanece íntegro em GENERATED.
     return json({ runId: run.runId, state: "GENERATED", code: "CERTIFICATE_REQUIRED",

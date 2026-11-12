@@ -40,20 +40,6 @@ async function sha256Hex(text: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-function decodeMasterKey(): Uint8Array | null {
-  const raw = Deno.env.get("FISCAL_CERTIFICATE_MASTER_KEY");
-  if (!raw) return null;
-  try {
-    const bin = atob(raw.trim());
-    if (bin.length !== 32) return null;
-    const out = new Uint8Array(32);
-    for (let i = 0; i < 32; i++) out[i] = bin.charCodeAt(i);
-    return out;
-  } catch {
-    return null;
-  }
-}
-
 function fromBinaryColumn(value: string): Uint8Array {
   const v = String(value ?? "").trim();
   if (v.startsWith("\\x") || v.startsWith("0x")) {
@@ -72,7 +58,7 @@ function fromBinaryColumn(value: string): Uint8Array {
 async function loadSigningMaterial(admin: any, certificateId: string): Promise<{ certPem: string; keyPem: string }> {
   if (!certificateId) throw new FiscalEventXmlError("CERTIFICATE_REQUIRED");
 
-  const masterKey = decodeMasterKey();
+  const masterKey = await decodeMasterKey();
   if (!masterKey) throw new FiscalEventXmlError("CERTIFICATE_REQUIRED");
 
   const material = await admin
