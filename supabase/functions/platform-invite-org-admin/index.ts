@@ -166,6 +166,7 @@ Deno.serve(async (req) => {
         p_modo_acesso: modo,
         p_responsavel_principal: responsavelPrincipal,
         p_confirm_ambiguous_email_retry: confirmAmbiguousEmailRetry,
+        p_delivery_mode: deliveryMode,
       },
     );
     if (claimError || !claimed) {
