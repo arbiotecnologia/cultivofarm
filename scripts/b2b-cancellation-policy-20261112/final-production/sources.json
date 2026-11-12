@@ -58,5 +58,51 @@
       "sha256": "65cb84f95996dcada6006304b8b5154a0a6806bd0acb2b7b40fe0d1ad4aed35d"
     }
   ],
+  "prerequisites": [
+    {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/81-ccr2-install.sql.review",
+      "sha256": "6b483d3af96875156e61e8161cebecf44027793cb56b1cc01176dd03e772e03e"
+    },
+    {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/82-ccr2-post.sql.readonly",
+      "sha256": "084ab4127981a8abcd4dd87330f1b2549712ee91a73863ae086984e4f4709887"
+    },
+    {
+      "path": "scripts/c2-pilot-economic-approval-20261111/01-pre.sql.readonly",
+      "sha256": "87d58d7145126e0be6185e3fd749c1172b15ff60882cc2e0fa6dfc1ff783c991"
+    },
+    {
+      "path": "scripts/c2-pilot-economic-approval-20261111/02-install.sql.review",
+      "sha256": "6aadaa0a2db5b462e7017f1d0b718330adab8ed0926579e672fb86fe354890e5"
+    },
+    {
+      "path": "scripts/c2-pilot-economic-approval-20261111/03-post.sql.readonly",
+      "sha256": "ba2b96df400af5ddde0fd3173c25e13bea2031dd58b620f4c6bbb15766a65d76"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/diagnostic/01-pre.sql.readonly",
+      "sha256": "aca994d21122f4e0d1522c41266fdc55798cfaf80d1d06dd9df2b7ecc0f50a53"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/diagnostic/02-install.sql.review",
+      "sha256": "ded2e264482cc486bb9239e4198a01397575f801f52489a77f2827f9b80b6b99"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/diagnostic/03-post.sql.readonly",
+      "sha256": "e06efa9b671dfc5eb399df8ad678a00a26d46bf2b85b140c6c3b78fabfbd98b5"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/event-sequence/01-pre.sql.readonly",
+      "sha256": "e4c49561d70925adebff9fde60991c9282eb28acdb417cf03fea54d8c625ce8e"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/event-sequence/02-install.sql.review",
+      "sha256": "9229da941744538d5a092a46b8779dbdd04fe6bb14c236c4c92b9e60fd449586"
+    },
+    {
+      "path": "scripts/c2-fiscal-cancel-audit-20261111/event-sequence/03-post.sql.readonly",
+      "sha256": "015cdd107afcdf0a27b2d77886fc80d794ea7f7e5c2c855ab16592831bc0b511"
+    }
+  ],
   "homolog_sources": []
 }

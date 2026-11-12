@@ -1,0 +1,20 @@
+{
+  "source": "Owner integral metadata delta 2026-11-12 02:20 UTC",
+  "public_removed": [
+    "TRUNCATE",
+    "REFERENCES",
+    "TRIGGER"
+  ],
+  "private_explicit_owner": [
+    "fiscal_close_pending",
+    "b2b_financial_forecasts",
+    "b2b_allocation_reversals",
+    "b2b_document_allocations",
+    "b2b_fiscal_service_permits",
+    "b2b_fiscal_invoice_snapshots",
+    "b2b_financial_forecast_events",
+    "b2b_forecast_lifecycle_gate_v1",
+    "b2b_forecast_lifecycle_allowlist_v1"
+  ],
+  "hosted": false
+}

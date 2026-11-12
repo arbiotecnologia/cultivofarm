@@ -1,3 +1,7 @@
+## 12/11 02:20 — Reconstrução FINAL com controles LIVE relatados
+- [x] Composição original recomposta com CCR2/Vendedor/C2 e ACLs reais restritivas; fontes/etapas exatas e tentativas preservadas.
+- [x] PRE/INSTALL/POST +121 SQL +14 UI PASS; diagnóstico econômico/sequência NF separados, ordem/SHA/REPORT; PRE hospedado e revisão externa permanecem fora do escopo.
+
 ## 12/11 02:00 — Candidato FINAL de cancelamento no original
 - [x] Candidato final-production entregue: PRE/INSTALL fechado/POST/rollback, awaiting normalizado, 37 integração +49 determinísticos +18 roundtrip/awaiting +21 UI PASS; hashes/REPORT; instalação real depende de PRE/revisão LIVE, fora do escopo autorizado.
 - [x] Trabalho de homolog hospedada encerrado por mudança expressa; dependências e liberações artificiais não serão transportadas.

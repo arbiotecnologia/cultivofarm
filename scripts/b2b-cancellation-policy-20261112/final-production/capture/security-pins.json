@@ -774,8 +774,8 @@
     },
     "public.partner_orders": {
       "acl": [
-        "anon=arwdDxtm/postgres",
-        "authenticated=arwdDxtm/postgres",
+        "anon=arwdm/postgres",
+        "authenticated=arwdm/postgres",
         "postgres=arwdDxtm/postgres",
         "service_role=arwdDxtm/postgres"
       ],
@@ -1236,6 +1236,12 @@
           "aa01b7e77b9eca76ce52eea8a79c4bab"
         ],
         [
+          "b2b_condition_zz_coherence_upd",
+          "CREATE CONSTRAINT TRIGGER b2b_condition_zz_coherence_upd AFTER UPDATE OF partner_id, payment_plan_id ON public.partner_orders DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.partner_id IS DISTINCT FROM new.partner_id) OR (old.payment_plan_id IS DISTINCT FROM new.payment_plan_id))) EXECUTE FUNCTION platform_private.b2b_condition_order_coherence_trg()",
+          "O",
+          "7f793a95047846b63cb514e5a8b1af11"
+        ],
+        [
           "b2b_payment_condition_required",
           "CREATE CONSTRAINT TRIGGER b2b_payment_condition_required AFTER INSERT ON public.partner_orders DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_condition_required_check()",
           "O",
@@ -1257,7 +1263,7 @@
           "trg_00_b2b_internal_snapshot",
           "CREATE TRIGGER trg_00_b2b_internal_snapshot BEFORE INSERT OR UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_internal_order_snapshot_guard()",
           "O",
-          "1c342be2cdaf7bf458a3cd1aa15e7ba5"
+          "1f82005554748b8545403372160e68a9"
         ],
         [
           "trg_audit_po_commercial",
@@ -1358,6 +1364,11 @@
       ],
       "force_rls": false,
       "constraints": [
+        [
+          "b2b_condition_zz_coherence_upd",
+          "TRIGGER DEFERRABLE INITIALLY DEFERRED",
+          true
+        ],
         [
           "b2b_payment_condition_required",
           "TRIGGER DEFERRABLE INITIALLY DEFERRED",
@@ -2264,8 +2275,8 @@
     },
     "public.partner_accounts": {
       "acl": [
-        "anon=arwdDxtm/postgres",
-        "authenticated=arwdDxtm/postgres",
+        "anon=arwdm/postgres",
+        "authenticated=arwdm/postgres",
         "postgres=arwdDxtm/postgres",
         "service_role=arwdDxtm/postgres"
       ],
@@ -4078,7 +4089,9 @@
       ]
     },
     "platform_private.fiscal_close_pending": {
-      "acl": [],
+      "acl": [
+        "postgres=arwdDxtm/postgres"
+      ],
       "rls": true,
       "owner": "postgres",
       "columns": [
@@ -4444,7 +4457,9 @@
       ]
     },
     "platform_private.b2b_financial_forecasts": {
-      "acl": [],
+      "acl": [
+        "postgres=arwdDxtm/postgres"
+      ],
       "rls": true,
       "owner": "postgres",
       "columns": [
@@ -4594,6 +4609,12 @@
           "CREATE TRIGGER b2b_forecast_guard BEFORE DELETE OR UPDATE ON platform_private.b2b_financial_forecasts FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_financial_forecast_guard()",
           "O",
           "2a28194f419c5e7627cb9ec04bb8bebe"
+        ],
+        [
+          "c2_pilot_forecast_insert_barrier",
+          "CREATE TRIGGER c2_pilot_forecast_insert_barrier BEFORE INSERT ON platform_private.b2b_financial_forecasts FOR EACH ROW EXECUTE FUNCTION platform_private.c2_pilot_forecast_insert_barrier_v1()",
+          "O",
+          "7064ddc0a6c7dae3efedf8558254ccca"
         ]
       ],
       "force_rls": false,
@@ -4651,7 +4672,9 @@
       ]
     },
     "platform_private.b2b_allocation_reversals": {
-      "acl": [],
+      "acl": [
+        "postgres=arwdDxtm/postgres"
+      ],
       "rls": true,
       "owner": "postgres",
       "columns": [
@@ -4722,7 +4745,9 @@
       ]
     },
     "platform_private.b2b_document_allocations": {
-      "acl": [],
+      "acl": [
+        "postgres=arwdDxtm/postgres"
+      ],
       "rls": true,
       "owner": "postgres",
       "columns": [
@@ -4871,7 +4896,9 @@
       ]
     },
     "platform_private.b2b_fiscal_service_permits": {
-      "acl": [],
+      "acl": [
+        "postgres=arwdDxtm/postgres"
+      ],
       "rls": true,
       "owner": "postgres",
       "columns": [
@@ -4937,7 +4964,9 @@
       ]
     },
     "platform_private.b2b_fiscal_invoice_snapshots": {
-      "acl": [],
+      "acl": [
+        "postgres=arwdDxtm/postgres"
+      ],
       "rls": true,
       "owner": "postgres",
       "columns": [
@@ -5010,7 +5039,9 @@
       ]
     },
     "platform_private.b2b_financial_forecast_events": {
-      "acl": [],
+      "acl": [
+        "postgres=arwdDxtm/postgres"
+      ],
       "rls": true,
       "owner": "postgres",
       "columns": [
@@ -5098,7 +5129,9 @@
       ]
     },
     "platform_private.b2b_forecast_lifecycle_gate_v1": {
-      "acl": [],
+      "acl": [
+        "postgres=arwdDxtm/postgres"
+      ],
       "rls": true,
       "owner": "postgres",
       "columns": [
@@ -5157,7 +5190,9 @@
       ]
     },
     "platform_private.b2b_forecast_lifecycle_allowlist_v1": {
-      "acl": [],
+      "acl": [
+        "postgres=arwdDxtm/postgres"
+      ],
       "rls": true,
       "owner": "postgres",
       "columns": [

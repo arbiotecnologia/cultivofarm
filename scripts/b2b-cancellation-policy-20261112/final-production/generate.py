@@ -86,6 +86,10 @@ def main():
     body += "ALTER TABLE platform_private.b2b_cancel_policy_gate_v1 ENABLE ROW LEVEL SECURITY;\nALTER TABLE platform_private.b2b_cancel_policy_allowlist_v1 ENABLE ROW LEVEL SECURITY;\n"
     (H / 'candidate.sql').write_text(body)
     pins = json.loads((SOURCE / 'capture/pins.json').read_text())
+    # The original separate per-invoice sequence package is installed first.
+    # Preserve its exact pin; cancellation itself does not CREATE this function.
+    event = json.loads((ROOT / 'scripts/c2-fiscal-cancel-audit-20261111/capture/event-post-pins.json').read_text())
+    pins['public.rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid)'] = {k: v for k, v in event.items() if k != 'secdef'}
     pre = DESTINATION + function_pins(pins) + security_checks() + """DO $fresh$ BEGIN
  IF to_regclass('platform_private.b2b_cancel_policy_gate_v1') IS NOT NULL
  OR to_regclass('platform_private.b2b_cancel_policy_allowlist_v1') IS NOT NULL
@@ -97,7 +101,9 @@ END $fresh$;
     (H / '01-pre.sql.readonly').write_text('BEGIN READ ONLY;\nSET LOCAL search_path TO pg_catalog,public;\n' + pre + 'ROLLBACK;\n')
     post_path = H / 'capture/post-pins.json'
     if post_path.exists():
-        post = DESTINATION + function_pins(json.loads(post_path.read_text())) + security_checks()
+        post_pins = json.loads(post_path.read_text())
+        post_pins['public.rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid)'] = pins['public.rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid)']
+        post = DESTINATION + function_pins(post_pins) + security_checks()
         (H / '02-install-closed.sql.review').write_text("BEGIN;\nSET LOCAL lock_timeout='3s';\nSET LOCAL search_path TO pg_catalog,public;\n" + pre + body + post + closed_state() + 'COMMIT;\n')
         (H / '03-post.sql.readonly').write_text('BEGIN READ ONLY;\nSET LOCAL search_path TO pg_catalog,public;\n' + post + closed_state() + 'ROLLBACK;\n')
         rollback = "UPDATE platform_private.b2b_cancel_policy_gate_v1 SET enabled=false;\nREVOKE EXECUTE ON FUNCTION public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text),public.rpc_b2b_cancel_residual_capability_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;\n"
@@ -106,7 +112,9 @@ END $fresh$;
         (H / '05-post-rollback.sql.readonly').write_text((H / '03-post.sql.readonly').read_text())
     provenance = [{'path': str(p.relative_to(ROOT)), 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()}
         for p in [SOURCE / 'generate.py', *sorted((SOURCE / 'capture').glob('*'))] if p.is_file()]
-    (H / 'sources.json').write_text(json.dumps({'target': REF, 'provenance': provenance, 'homolog_sources': []}, indent=2) + '\n')
+    from compose_controls import PACKAGES
+    prerequisites = [{'path': p, 'sha256': hashlib.sha256((ROOT / p).read_bytes()).hexdigest()} for p in PACKAGES]
+    (H / 'sources.json').write_text(json.dumps({'target': REF, 'provenance': provenance, 'prerequisites': prerequisites, 'homolog_sources': []}, indent=2) + '\n')
     (H / 'SHA256SUMS').write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(H)}\n'
         for p in sorted(H.rglob('*')) if p.is_file() and p.name not in ['SHA256SUMS', 'manifest.json'] and '__pycache__' not in p.parts))
 

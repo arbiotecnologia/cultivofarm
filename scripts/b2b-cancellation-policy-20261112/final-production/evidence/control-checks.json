@@ -1,0 +1,212 @@
+[
+  {
+    "test": "plano de entrada publicado pelo writer original",
+    "status": "PASS",
+    "detail": [
+      {
+        "contract": "B2B_PAYMENT_CONDITION_V1",
+        "condition": {
+          "method": "boleto",
+          "plan_id": "cad5dd69-030a-4285-a3dd-3e66173556e2",
+          "version": 1,
+          "created_at": "2026-11-12T02:39:06.526358+00:00",
+          "approved_at": "2026-11-12T02:39:06.526358+00:00",
+          "category_id": "00000000-0000-0000-0000-000000000097",
+          "monthly_rate": 0,
+          "deadline_days": 30,
+          "organization_id": "00000000-0000-0000-0000-000000000001",
+          "calendar_version": null,
+          "installment_count": 1,
+          "payment_method_id": "00000000-0000-0000-0000-000000000092",
+          "configuration_approved": true
+        }
+      },
+      null
+    ]
+  },
+  {
+    "test": "condição de entrada atribuída pelo writer original",
+    "status": "PASS",
+    "detail": [
+      {
+        "method": "boleto",
+        "enabled": true,
+        "plan_id": "cad5dd69-030a-4285-a3dd-3e66173556e2",
+        "version": 1,
+        "contract": "B2B_PAYMENT_CONDITION_V1",
+        "partner_id": "00000000-0000-0000-0000-000000000011"
+      },
+      null
+    ]
+  },
+  {
+    "test": "atribuição comercial publicada pelo writer original",
+    "status": "PASS",
+    "detail": [
+      true,
+      null
+    ]
+  },
+  {
+    "test": "C2 criado/cotado por writers originais com todos os controles ativos",
+    "status": "PASS",
+    "detail": [
+      {
+        "id": "534c942e-db3e-4754-9a61-1e45e0cfb239",
+        "total": 20.0,
+        "numero": "PB-001020",
+        "status": "em_analise_comercial",
+        "schedule": [
+          {
+            "amount": 20.0,
+            "due_date": "2026-12-12",
+            "estimated": true,
+            "interest_amount": 0.0,
+            "nominal_due_date": "2026-12-12",
+            "principal_amount": 20.0,
+            "installment_number": 1,
+            "business_day_adjusted": false
+          }
+        ],
+        "cart_hash": "324fb356e92e7f06517da5840ddd2987ac674496f5e6103407d2e2a240b9ca7a",
+        "final_amount": 20.0,
+        "table_amount": 20.0,
+        "first_due_date": "2026-12-12",
+        "payment_choice": {
+          "payment_method": "boleto",
+          "payment_deadline_days": 30,
+          "payment_condition_version": 1
+        },
+        "payment_terms_id": "b19084c1-23f4-4c9c-a33b-ab6f9d975a39",
+        "installment_count": 1,
+        "payment_condition": {
+          "due_basis": "nf_issue",
+          "estimated": true,
+          "monthly_rate": 0,
+          "deadline_days": 30,
+          "installment_count": 1,
+          "payment_method_name": "Boleto TESTE"
+        },
+        "credit_reason_code": "OK",
+        "credit_block_reason": null,
+        "financial_approval_status": "not_required",
+        "financial_interest_amount": 0.0,
+        "net_amount_after_discount": 20.0,
+        "payment_condition_contract": "B2B_PAYMENT_CONDITION_V1",
+        "requires_financial_approval": false
+      },
+      null
+    ]
+  },
+  {
+    "test": "barreira C2 nega INSERT sem ticket mesmo postgres",
+    "status": "PASS",
+    "detail": "ERROR:  C2_PILOT_FORECAST_ENTRY_DENIED\nCONTEXT:  PL/pgSQL function platform_private.c2_pilot_forecast_insert_barrier_v1() line 7 at RAISE\n"
+  },
+  {
+    "test": "ACL privada nega INSERT direto authenticated",
+    "status": "PASS",
+    "detail": "ERROR:  permission denied for table b2b_financial_forecasts\n"
+  },
+  {
+    "test": "ACL privada nega INSERT direto service_role",
+    "status": "PASS",
+    "detail": "ERROR:  permission denied for schema platform_private\nLINE 1: INSERT INTO platform_private.b2b_financial_forecasts SELECT ...\n                    ^\n"
+  },
+  {
+    "test": "gate piloto OFF nega aprovação explícita sem criar previsão",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "C2 normal não ganhou aprovação operacional nem previsão",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "habilitação exata somente clone sintético",
+    "status": "PASS",
+    "detail": "NOTICE:  C2PILOT_ENABLE_EVIDENCE_HASH 0938f792a7a3167c4f7602b66ce82ffe\n"
+  },
+  {
+    "test": "primeira aprovação explícita não cria previsão",
+    "status": "PASS",
+    "detail": [
+      {
+        "kind": "commercial",
+        "contract": "C2_PILOT_ECON_APPROVAL_V1",
+        "replayed": false,
+        "approval_id": "eb217c7e-4dd5-4429-bd09-7232ab5cecca",
+        "approved_at": "2026-11-12T02:39:09.041243+00:00",
+        "approved_by": "00000000-0000-0000-0000-000000000030",
+        "forecast_id": null
+      },
+      null
+    ]
+  },
+  {
+    "test": "segunda aprovação core atravessa barreira com ticket real e cria 20 awaiting",
+    "status": "PASS",
+    "detail": [
+      {
+        "kind": "credit",
+        "contract": "C2_PILOT_ECON_APPROVAL_V1",
+        "replayed": false,
+        "approval_id": "1df69c4d-3b79-4982-8077-7e6a5957fa7c",
+        "approved_at": "2026-11-12T02:39:09.106634+00:00",
+        "approved_by": "00000000-0000-0000-0000-000000000029",
+        "forecast_id": "e7f60592-7497-4698-9e66-57dd8afdfdc1"
+      },
+      null
+    ]
+  },
+  {
+    "test": "ledger explícito preserva bloqueio operacional C2",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "duas conexões prepare retornam sucesso",
+    "status": "PASS",
+    "detail": [
+      "",
+      ""
+    ]
+  },
+  {
+    "test": "duas chaves mesma NF têm sequência única",
+    "status": "PASS",
+    "detail": [
+      {
+        "reason": "LOCAL CONCURRENT CONTROL",
+        "eventId": "80088050-733e-4d4a-b421-6994b52142a6",
+        "protocol": "LOCAL-INTEGRATED-PROTOCOL",
+        "accessKey": "35261111111111111111111111111111111111111111",
+        "eventCode": "110111",
+        "seqEvento": 2,
+        "idempotentReplay": false,
+        "companySettingsId": "828b2bb1-082b-453e-bd3f-d6bc6c2b4a1b"
+      },
+      {
+        "reason": "LOCAL CONCURRENT CONTROL",
+        "eventId": "188a7451-93fe-47cd-89db-bb2fed1ae296",
+        "protocol": "LOCAL-INTEGRATED-PROTOCOL",
+        "accessKey": "35261111111111111111111111111111111111111111",
+        "eventCode": "110111",
+        "seqEvento": 1,
+        "idempotentReplay": false,
+        "companySettingsId": "828b2bb1-082b-453e-bd3f-d6bc6c2b4a1b"
+      }
+    ]
+  },
+  {
+    "test": "todos os triggers de pedido/previsão seguem habilitados",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "PRE nega privilégio além do real sem escrita de instalação",
+    "status": "PASS",
+    "detail": "WARNING:  there is already a transaction in progress\nERROR:  FINAL_ORIGINAL_SECURITY_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 24 at RAISE\n"
+  }
+]

@@ -4,13 +4,13 @@
     "status": "PASS",
     "detail": {
       "reason": "LOCAL POLICY CANCEL REASON",
-      "eventId": "0e8129a7-65e2-42bb-b27f-2b8c769364ae",
+      "eventId": "823c4398-a02d-47e3-b168-ee9d6ec9b9a1",
       "protocol": "LOCAL-INTEGRATED-PROTOCOL",
       "accessKey": "35261111111111111111111111111111111111111111",
       "eventCode": "110111",
       "seqEvento": 1,
       "idempotentReplay": false,
-      "companySettingsId": "2a841451-6136-4f1d-bbe5-bba64da737c4"
+      "companySettingsId": "828b2bb1-082b-453e-bd3f-d6bc6c2b4a1b"
     }
   },
   {
@@ -22,7 +22,7 @@
     "test": "573 não cancela nota/título",
     "status": "PASS",
     "detail": {
-      "out": "{\"nRec\": null, \"cStat\": \"573\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-573\", \"state\": \"SUCCEEDED\", \"outcome\": \"REJECTED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_NOT_FINAL\", \"final\": false}, \"protocolCStat\": \"573\", \"transmissionId\": \"b31f867a-1f23-4043-8ec1-ce9dec328c99\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"OPEN\", \"invoice\": \"AUTHORIZED\"}\n",
+      "out": "{\"nRec\": null, \"cStat\": \"573\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-573\", \"state\": \"SUCCEEDED\", \"outcome\": \"REJECTED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_NOT_FINAL\", \"final\": false}, \"protocolCStat\": \"573\", \"transmissionId\": \"29ef40ac-2a77-46c5-87b0-3288a3ca9b88\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"OPEN\", \"invoice\": \"AUTHORIZED\"}\n",
       "err": ""
     }
   },
@@ -30,7 +30,7 @@
     "test": "103 não cancela nota/título",
     "status": "PASS",
     "detail": {
-      "out": "{\"nRec\": null, \"cStat\": \"103\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-103\", \"state\": \"SUCCEEDED\", \"outcome\": \"PROCESSING\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_NOT_FINAL\", \"final\": false}, \"protocolCStat\": \"103\", \"transmissionId\": \"6271a129-b0b8-4f3d-8c13-84e5eb235b38\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"OPEN\", \"invoice\": \"AUTHORIZED\"}\n",
+      "out": "{\"nRec\": null, \"cStat\": \"103\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-103\", \"state\": \"SUCCEEDED\", \"outcome\": \"PROCESSING\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_NOT_FINAL\", \"final\": false}, \"protocolCStat\": \"103\", \"transmissionId\": \"564e5f94-1070-4c6a-a81d-ed4cf595b60c\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"OPEN\", \"invoice\": \"AUTHORIZED\"}\n",
       "err": ""
     }
   },
@@ -38,7 +38,7 @@
     "test": "136 não cancela nota/título",
     "status": "PASS",
     "detail": {
-      "out": "{\"nRec\": null, \"cStat\": \"136\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-136\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_NOT_FINAL\", \"final\": false}, \"protocolCStat\": \"136\", \"transmissionId\": \"5b16276a-3b22-460e-8294-2645fe60ba45\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"OPEN\", \"invoice\": \"AUTHORIZED\"}\n",
+      "out": "{\"nRec\": null, \"cStat\": \"136\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-136\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_NOT_FINAL\", \"final\": false}, \"protocolCStat\": \"136\", \"transmissionId\": \"9e98540b-01a1-4559-869d-452e84942bfb\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"OPEN\", \"invoice\": \"AUTHORIZED\"}\n",
       "err": ""
     }
   },
@@ -46,7 +46,7 @@
     "test": "135 final vinculado cancela nota e título aberto na transação",
     "status": "PASS",
     "detail": {
-      "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-135\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"final\": true, \"idempotentReplay\": false, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"5b060731-b0f8-481a-be80-72583e72aee7\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"CANCELED\", \"invoice\": \"CANCELED\"}\n",
+      "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-135\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"final\": true, \"idempotentReplay\": false, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"27584663-d104-45ce-8ca8-ba456279b4e2\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"CANCELED\", \"invoice\": \"CANCELED\"}\n",
       "err": ""
     }
   },
@@ -59,7 +59,7 @@
     "test": "155 final vinculado cancela nota e título aberto na transação",
     "status": "PASS",
     "detail": {
-      "out": "{\"nRec\": null, \"cStat\": \"155\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-155\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"final\": true, \"idempotentReplay\": false, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"155\", \"transmissionId\": \"0ded2d59-a3dc-44e8-a951-e30ce4ead048\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"CANCELED\", \"invoice\": \"CANCELED\"}\n",
+      "out": "{\"nRec\": null, \"cStat\": \"155\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-155\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"final\": true, \"idempotentReplay\": false, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"155\", \"transmissionId\": \"e406680c-9449-44c4-9a18-a49578d5adc8\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"CANCELED\", \"invoice\": \"CANCELED\"}\n",
       "err": ""
     }
   },
@@ -77,31 +77,31 @@
     "test": "open-replay marca nota CANCELED e não reabre previsão/estoque/entrega",
     "status": "PASS",
     "detail": {
-      "a": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-RACE\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"final\": true, \"idempotentReplay\": false, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"b159198d-3ebd-455c-bc44-8034bf77ca77\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+      "a": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-RACE\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"final\": true, \"idempotentReplay\": false, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"33bb2479-3606-4210-bd70-71c0df45bf7e\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
       "ae": "",
-      "c": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-RACE\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"final\": true, \"idempotentReplay\": true, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"b159198d-3ebd-455c-bc44-8034bf77ca77\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+      "c": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-RACE\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"final\": true, \"idempotentReplay\": true, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"33bb2479-3606-4210-bd70-71c0df45bf7e\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
       "ce": "",
       "state": {
-        "stock": "e4c2c4505e57f22ece111013b01c8ba7",
+        "stock": "5ec32cf4d5f160d08da83cc6e0b211e1",
         "title": "CANCELED",
         "invoice": "CANCELED",
-        "delivery": "57d6b505e95f8216a38d1a109a2e9bd9",
+        "delivery": "bbe396ebd5c8509ec295506a3ca701c3",
         "forecast": {
-          "id": "ddc2c644-d6c9-45de-a69b-d2434e4d30df",
+          "id": "f944ef3a-143d-4f22-bfb2-58e855031e7b",
           "state": "faturado_parcial",
           "version": 8,
-          "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-          "created_at": "2026-11-12T02:04:59.191284+00:00",
+          "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+          "created_at": "2026-11-12T02:30:06.560716+00:00",
           "partner_id": "00000000-0000-0000-0000-000000000011",
-          "updated_at": "2026-11-12T02:06:09.715766+00:00",
+          "updated_at": "2026-11-12T02:31:19.602115+00:00",
           "total_amount": 20.0,
           "items_snapshot": [
             {
-              "id": "dbe642a8-aa89-4b49-9e83-c66d9c5d76d8",
-              "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+              "id": "f6daabdc-6fc1-417c-84b8-4b27e072da5c",
+              "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
               "subtotal": 20.0,
               "volume_ml": null,
-              "created_at": "2026-11-12T02:04:57.902255+00:00",
+              "created_at": "2026-11-12T02:30:05.168602+00:00",
               "product_id": "00000000-0000-0000-0000-000000000032",
               "quantidade": 2.0,
               "preco_unitario": 10.0,
@@ -136,8 +136,8 @@
           "economic_snapshot": {
             "items": [
               {
-                "id": "dbe642a8-aa89-4b49-9e83-c66d9c5d76d8",
-                "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+                "id": "f6daabdc-6fc1-417c-84b8-4b27e072da5c",
+                "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
                 "subtotal": 20.0,
                 "volume_ml": null,
                 "product_id": "00000000-0000-0000-0000-000000000032",
@@ -168,15 +168,15 @@
               }
             ],
             "terms": {
-              "id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
-              "created_at": "2026-11-12T02:04:57.902255+00:00",
+              "id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
+              "created_at": "2026-11-12T02:30:05.168602+00:00",
               "created_by": "00000000-0000-0000-0000-000000000021",
               "final_amount": 20.0,
               "table_amount": 20.0,
               "first_due_date": "2026-12-12",
               "discount_amount": 0.0,
               "payment_plan_id": "00000000-0000-0000-0000-000000000081",
-              "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+              "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
               "installment_count": 1,
               "plan_code_snapshot": "T3",
               "plan_name_snapshot": "TESTE 3x",
@@ -216,8 +216,8 @@
               "schema_version": "1",
               "organization_id": "00000000-0000-0000-0000-000000000001",
               "issuer_legal_name": "ARBIO FIXTURE LOCAL SEM VALIDADE EXTERNA",
-              "company_settings_id": "2a841451-6136-4f1d-bbe5-bba64da737c4",
-              "accounting_promoted_at": "2026-11-12T02:04:58.982975+00:00",
+              "company_settings_id": "828b2bb1-082b-453e-bd3f-d6bc6c2b4a1b",
+              "accounting_promoted_at": "2026-11-12T02:30:06.275341+00:00",
               "accounting_promoted_by": "00000000-0000-0000-0000-000000000024",
               "issuer_organization_id": "00000000-0000-0000-0000-000000000001",
               "promoted_from_contract": "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1",
@@ -227,12 +227,12 @@
             "discount": 0.0,
             "schedule": [
               {
-                "id": "23347bb7-5c32-4026-a7f1-92904f64830a",
+                "id": "cc4bb9b2-d18c-4577-8402-dc418c739a6c",
                 "amount": 20.0,
                 "due_date": "2026-12-12",
                 "interest_amount": 0.0,
-                "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-                "payment_terms_id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
+                "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+                "payment_terms_id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
                 "principal_amount": 20.0,
                 "installment_number": 1
               }
@@ -243,12 +243,12 @@
           },
           "schedule_snapshot": [
             {
-              "id": "23347bb7-5c32-4026-a7f1-92904f64830a",
+              "id": "cc4bb9b2-d18c-4577-8402-dc418c739a6c",
               "amount": 20.0,
               "due_date": "2026-12-12",
               "interest_amount": 0.0,
-              "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-              "payment_terms_id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
+              "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+              "payment_terms_id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
               "principal_amount": 20.0,
               "installment_number": 1
             }
@@ -256,7 +256,7 @@
           "credit_approved_at": null,
           "credit_approved_by": null,
           "due_dates_estimated": true,
-          "commercial_approved_at": "2026-11-12T02:04:59.045316+00:00",
+          "commercial_approved_at": "2026-11-12T02:30:06.351951+00:00",
           "commercial_approved_by": "00000000-0000-0000-0000-000000000024",
           "credit_decision_snapshot": {
             "partner_id": "00000000-0000-0000-0000-000000000011",
@@ -285,26 +285,26 @@
     "test": "open-replay único cancelamento financeiro",
     "status": "PASS",
     "detail": {
-      "stock": "e4c2c4505e57f22ece111013b01c8ba7",
+      "stock": "5ec32cf4d5f160d08da83cc6e0b211e1",
       "title": "CANCELED",
       "invoice": "CANCELED",
-      "delivery": "57d6b505e95f8216a38d1a109a2e9bd9",
+      "delivery": "bbe396ebd5c8509ec295506a3ca701c3",
       "forecast": {
-        "id": "ddc2c644-d6c9-45de-a69b-d2434e4d30df",
+        "id": "f944ef3a-143d-4f22-bfb2-58e855031e7b",
         "state": "faturado_parcial",
         "version": 8,
-        "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-        "created_at": "2026-11-12T02:04:59.191284+00:00",
+        "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+        "created_at": "2026-11-12T02:30:06.560716+00:00",
         "partner_id": "00000000-0000-0000-0000-000000000011",
-        "updated_at": "2026-11-12T02:06:09.715766+00:00",
+        "updated_at": "2026-11-12T02:31:19.602115+00:00",
         "total_amount": 20.0,
         "items_snapshot": [
           {
-            "id": "dbe642a8-aa89-4b49-9e83-c66d9c5d76d8",
-            "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+            "id": "f6daabdc-6fc1-417c-84b8-4b27e072da5c",
+            "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
             "subtotal": 20.0,
             "volume_ml": null,
-            "created_at": "2026-11-12T02:04:57.902255+00:00",
+            "created_at": "2026-11-12T02:30:05.168602+00:00",
             "product_id": "00000000-0000-0000-0000-000000000032",
             "quantidade": 2.0,
             "preco_unitario": 10.0,
@@ -339,8 +339,8 @@
         "economic_snapshot": {
           "items": [
             {
-              "id": "dbe642a8-aa89-4b49-9e83-c66d9c5d76d8",
-              "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+              "id": "f6daabdc-6fc1-417c-84b8-4b27e072da5c",
+              "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
               "subtotal": 20.0,
               "volume_ml": null,
               "product_id": "00000000-0000-0000-0000-000000000032",
@@ -371,15 +371,15 @@
             }
           ],
           "terms": {
-            "id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
-            "created_at": "2026-11-12T02:04:57.902255+00:00",
+            "id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
+            "created_at": "2026-11-12T02:30:05.168602+00:00",
             "created_by": "00000000-0000-0000-0000-000000000021",
             "final_amount": 20.0,
             "table_amount": 20.0,
             "first_due_date": "2026-12-12",
             "discount_amount": 0.0,
             "payment_plan_id": "00000000-0000-0000-0000-000000000081",
-            "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+            "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
             "installment_count": 1,
             "plan_code_snapshot": "T3",
             "plan_name_snapshot": "TESTE 3x",
@@ -419,8 +419,8 @@
             "schema_version": "1",
             "organization_id": "00000000-0000-0000-0000-000000000001",
             "issuer_legal_name": "ARBIO FIXTURE LOCAL SEM VALIDADE EXTERNA",
-            "company_settings_id": "2a841451-6136-4f1d-bbe5-bba64da737c4",
-            "accounting_promoted_at": "2026-11-12T02:04:58.982975+00:00",
+            "company_settings_id": "828b2bb1-082b-453e-bd3f-d6bc6c2b4a1b",
+            "accounting_promoted_at": "2026-11-12T02:30:06.275341+00:00",
             "accounting_promoted_by": "00000000-0000-0000-0000-000000000024",
             "issuer_organization_id": "00000000-0000-0000-0000-000000000001",
             "promoted_from_contract": "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1",
@@ -430,12 +430,12 @@
           "discount": 0.0,
           "schedule": [
             {
-              "id": "23347bb7-5c32-4026-a7f1-92904f64830a",
+              "id": "cc4bb9b2-d18c-4577-8402-dc418c739a6c",
               "amount": 20.0,
               "due_date": "2026-12-12",
               "interest_amount": 0.0,
-              "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-              "payment_terms_id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
+              "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+              "payment_terms_id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
               "principal_amount": 20.0,
               "installment_number": 1
             }
@@ -446,12 +446,12 @@
         },
         "schedule_snapshot": [
           {
-            "id": "23347bb7-5c32-4026-a7f1-92904f64830a",
+            "id": "cc4bb9b2-d18c-4577-8402-dc418c739a6c",
             "amount": 20.0,
             "due_date": "2026-12-12",
             "interest_amount": 0.0,
-            "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-            "payment_terms_id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
+            "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+            "payment_terms_id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
             "principal_amount": 20.0,
             "installment_number": 1
           }
@@ -459,7 +459,7 @@
         "credit_approved_at": null,
         "credit_approved_by": null,
         "due_dates_estimated": true,
-        "commercial_approved_at": "2026-11-12T02:04:59.045316+00:00",
+        "commercial_approved_at": "2026-11-12T02:30:06.351951+00:00",
         "commercial_approved_by": "00000000-0000-0000-0000-000000000024",
         "credit_decision_snapshot": {
           "partner_id": "00000000-0000-0000-0000-000000000011",
@@ -497,31 +497,31 @@
     "test": "payment-cancel marca nota CANCELED e não reabre previsão/estoque/entrega",
     "status": "PASS",
     "detail": {
-      "a": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-RACE\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_PAYMENT_REVIEW\", \"final\": true, \"financialReconciliationRequired\": true}, \"protocolCStat\": \"135\", \"transmissionId\": \"a4eab58a-4cf4-475a-8f82-9609404f89df\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+      "a": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-RACE\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_PAYMENT_REVIEW\", \"final\": true, \"financialReconciliationRequired\": true}, \"protocolCStat\": \"135\", \"transmissionId\": \"1a40b237-d98c-4eb8-8a77-71aeb58637b6\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
       "ae": "",
-      "c": "702a59ea-88e9-4e5f-9a75-a42b48548333\n",
+      "c": "5bece072-de35-4af6-b337-5dd6744acfd5\n",
       "ce": "",
       "state": {
-        "stock": "e4c2c4505e57f22ece111013b01c8ba7",
+        "stock": "5ec32cf4d5f160d08da83cc6e0b211e1",
         "title": "PARTIAL",
         "invoice": "CANCELED",
-        "delivery": "57d6b505e95f8216a38d1a109a2e9bd9",
+        "delivery": "bbe396ebd5c8509ec295506a3ca701c3",
         "forecast": {
-          "id": "ddc2c644-d6c9-45de-a69b-d2434e4d30df",
+          "id": "f944ef3a-143d-4f22-bfb2-58e855031e7b",
           "state": "faturado_parcial",
           "version": 8,
-          "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-          "created_at": "2026-11-12T02:04:59.191284+00:00",
+          "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+          "created_at": "2026-11-12T02:30:06.560716+00:00",
           "partner_id": "00000000-0000-0000-0000-000000000011",
-          "updated_at": "2026-11-12T02:06:09.715766+00:00",
+          "updated_at": "2026-11-12T02:31:19.602115+00:00",
           "total_amount": 20.0,
           "items_snapshot": [
             {
-              "id": "dbe642a8-aa89-4b49-9e83-c66d9c5d76d8",
-              "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+              "id": "f6daabdc-6fc1-417c-84b8-4b27e072da5c",
+              "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
               "subtotal": 20.0,
               "volume_ml": null,
-              "created_at": "2026-11-12T02:04:57.902255+00:00",
+              "created_at": "2026-11-12T02:30:05.168602+00:00",
               "product_id": "00000000-0000-0000-0000-000000000032",
               "quantidade": 2.0,
               "preco_unitario": 10.0,
@@ -556,8 +556,8 @@
           "economic_snapshot": {
             "items": [
               {
-                "id": "dbe642a8-aa89-4b49-9e83-c66d9c5d76d8",
-                "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+                "id": "f6daabdc-6fc1-417c-84b8-4b27e072da5c",
+                "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
                 "subtotal": 20.0,
                 "volume_ml": null,
                 "product_id": "00000000-0000-0000-0000-000000000032",
@@ -588,15 +588,15 @@
               }
             ],
             "terms": {
-              "id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
-              "created_at": "2026-11-12T02:04:57.902255+00:00",
+              "id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
+              "created_at": "2026-11-12T02:30:05.168602+00:00",
               "created_by": "00000000-0000-0000-0000-000000000021",
               "final_amount": 20.0,
               "table_amount": 20.0,
               "first_due_date": "2026-12-12",
               "discount_amount": 0.0,
               "payment_plan_id": "00000000-0000-0000-0000-000000000081",
-              "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+              "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
               "installment_count": 1,
               "plan_code_snapshot": "T3",
               "plan_name_snapshot": "TESTE 3x",
@@ -636,8 +636,8 @@
               "schema_version": "1",
               "organization_id": "00000000-0000-0000-0000-000000000001",
               "issuer_legal_name": "ARBIO FIXTURE LOCAL SEM VALIDADE EXTERNA",
-              "company_settings_id": "2a841451-6136-4f1d-bbe5-bba64da737c4",
-              "accounting_promoted_at": "2026-11-12T02:04:58.982975+00:00",
+              "company_settings_id": "828b2bb1-082b-453e-bd3f-d6bc6c2b4a1b",
+              "accounting_promoted_at": "2026-11-12T02:30:06.275341+00:00",
               "accounting_promoted_by": "00000000-0000-0000-0000-000000000024",
               "issuer_organization_id": "00000000-0000-0000-0000-000000000001",
               "promoted_from_contract": "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1",
@@ -647,12 +647,12 @@
             "discount": 0.0,
             "schedule": [
               {
-                "id": "23347bb7-5c32-4026-a7f1-92904f64830a",
+                "id": "cc4bb9b2-d18c-4577-8402-dc418c739a6c",
                 "amount": 20.0,
                 "due_date": "2026-12-12",
                 "interest_amount": 0.0,
-                "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-                "payment_terms_id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
+                "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+                "payment_terms_id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
                 "principal_amount": 20.0,
                 "installment_number": 1
               }
@@ -663,12 +663,12 @@
           },
           "schedule_snapshot": [
             {
-              "id": "23347bb7-5c32-4026-a7f1-92904f64830a",
+              "id": "cc4bb9b2-d18c-4577-8402-dc418c739a6c",
               "amount": 20.0,
               "due_date": "2026-12-12",
               "interest_amount": 0.0,
-              "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-              "payment_terms_id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
+              "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+              "payment_terms_id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
               "principal_amount": 20.0,
               "installment_number": 1
             }
@@ -676,7 +676,7 @@
           "credit_approved_at": null,
           "credit_approved_by": null,
           "due_dates_estimated": true,
-          "commercial_approved_at": "2026-11-12T02:04:59.045316+00:00",
+          "commercial_approved_at": "2026-11-12T02:30:06.351951+00:00",
           "commercial_approved_by": "00000000-0000-0000-0000-000000000024",
           "credit_decision_snapshot": {
             "partner_id": "00000000-0000-0000-0000-000000000011",
@@ -705,26 +705,26 @@
     "test": "corrida pagamento conserva dinheiro ou nega pagamento após cancelamento",
     "status": "PASS",
     "detail": {
-      "stock": "e4c2c4505e57f22ece111013b01c8ba7",
+      "stock": "5ec32cf4d5f160d08da83cc6e0b211e1",
       "title": "PARTIAL",
       "invoice": "CANCELED",
-      "delivery": "57d6b505e95f8216a38d1a109a2e9bd9",
+      "delivery": "bbe396ebd5c8509ec295506a3ca701c3",
       "forecast": {
-        "id": "ddc2c644-d6c9-45de-a69b-d2434e4d30df",
+        "id": "f944ef3a-143d-4f22-bfb2-58e855031e7b",
         "state": "faturado_parcial",
         "version": 8,
-        "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-        "created_at": "2026-11-12T02:04:59.191284+00:00",
+        "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+        "created_at": "2026-11-12T02:30:06.560716+00:00",
         "partner_id": "00000000-0000-0000-0000-000000000011",
-        "updated_at": "2026-11-12T02:06:09.715766+00:00",
+        "updated_at": "2026-11-12T02:31:19.602115+00:00",
         "total_amount": 20.0,
         "items_snapshot": [
           {
-            "id": "dbe642a8-aa89-4b49-9e83-c66d9c5d76d8",
-            "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+            "id": "f6daabdc-6fc1-417c-84b8-4b27e072da5c",
+            "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
             "subtotal": 20.0,
             "volume_ml": null,
-            "created_at": "2026-11-12T02:04:57.902255+00:00",
+            "created_at": "2026-11-12T02:30:05.168602+00:00",
             "product_id": "00000000-0000-0000-0000-000000000032",
             "quantidade": 2.0,
             "preco_unitario": 10.0,
@@ -759,8 +759,8 @@
         "economic_snapshot": {
           "items": [
             {
-              "id": "dbe642a8-aa89-4b49-9e83-c66d9c5d76d8",
-              "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+              "id": "f6daabdc-6fc1-417c-84b8-4b27e072da5c",
+              "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
               "subtotal": 20.0,
               "volume_ml": null,
               "product_id": "00000000-0000-0000-0000-000000000032",
@@ -791,15 +791,15 @@
             }
           ],
           "terms": {
-            "id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
-            "created_at": "2026-11-12T02:04:57.902255+00:00",
+            "id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
+            "created_at": "2026-11-12T02:30:05.168602+00:00",
             "created_by": "00000000-0000-0000-0000-000000000021",
             "final_amount": 20.0,
             "table_amount": 20.0,
             "first_due_date": "2026-12-12",
             "discount_amount": 0.0,
             "payment_plan_id": "00000000-0000-0000-0000-000000000081",
-            "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+            "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
             "installment_count": 1,
             "plan_code_snapshot": "T3",
             "plan_name_snapshot": "TESTE 3x",
@@ -839,8 +839,8 @@
             "schema_version": "1",
             "organization_id": "00000000-0000-0000-0000-000000000001",
             "issuer_legal_name": "ARBIO FIXTURE LOCAL SEM VALIDADE EXTERNA",
-            "company_settings_id": "2a841451-6136-4f1d-bbe5-bba64da737c4",
-            "accounting_promoted_at": "2026-11-12T02:04:58.982975+00:00",
+            "company_settings_id": "828b2bb1-082b-453e-bd3f-d6bc6c2b4a1b",
+            "accounting_promoted_at": "2026-11-12T02:30:06.275341+00:00",
             "accounting_promoted_by": "00000000-0000-0000-0000-000000000024",
             "issuer_organization_id": "00000000-0000-0000-0000-000000000001",
             "promoted_from_contract": "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1",
@@ -850,12 +850,12 @@
           "discount": 0.0,
           "schedule": [
             {
-              "id": "23347bb7-5c32-4026-a7f1-92904f64830a",
+              "id": "cc4bb9b2-d18c-4577-8402-dc418c739a6c",
               "amount": 20.0,
               "due_date": "2026-12-12",
               "interest_amount": 0.0,
-              "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-              "payment_terms_id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
+              "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+              "payment_terms_id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
               "principal_amount": 20.0,
               "installment_number": 1
             }
@@ -866,12 +866,12 @@
         },
         "schedule_snapshot": [
           {
-            "id": "23347bb7-5c32-4026-a7f1-92904f64830a",
+            "id": "cc4bb9b2-d18c-4577-8402-dc418c739a6c",
             "amount": 20.0,
             "due_date": "2026-12-12",
             "interest_amount": 0.0,
-            "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-            "payment_terms_id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
+            "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+            "payment_terms_id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
             "principal_amount": 20.0,
             "installment_number": 1
           }
@@ -879,7 +879,7 @@
         "credit_approved_at": null,
         "credit_approved_by": null,
         "due_dates_estimated": true,
-        "commercial_approved_at": "2026-11-12T02:04:59.045316+00:00",
+        "commercial_approved_at": "2026-11-12T02:30:06.351951+00:00",
         "commercial_approved_by": "00000000-0000-0000-0000-000000000024",
         "credit_decision_snapshot": {
           "partner_id": "00000000-0000-0000-0000-000000000011",
@@ -917,31 +917,31 @@
     "test": "authorization-cancel marca nota CANCELED e não reabre previsão/estoque/entrega",
     "status": "PASS",
     "detail": {
-      "a": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-RACE\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"final\": true, \"idempotentReplay\": false, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"f13365d9-10a6-4797-bd94-131a76d6918a\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+      "a": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-RACE\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"final\": true, \"idempotentReplay\": false, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"2b14dcd1-be00-410f-b3ee-1ded39144f7f\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
       "ae": "",
       "c": "{\"nRec\": null, \"cStat\": \"104\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-INTEGRATED-PROTOCOL\", \"state\": \"SUCCEEDED\", \"outcome\": \"AUTHORIZED\", \"xMotivo\": \"LOTE PROCESSADO; PROTOCOLO AUTORIZADO\", \"cancellation\": null, \"protocolCStat\": \"100\", \"transmissionId\": \"00000000-0000-0000-0000-000000000901\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
       "ce": "",
       "state": {
-        "stock": "e4c2c4505e57f22ece111013b01c8ba7",
+        "stock": "5ec32cf4d5f160d08da83cc6e0b211e1",
         "title": "CANCELED",
         "invoice": "CANCELED",
-        "delivery": "57d6b505e95f8216a38d1a109a2e9bd9",
+        "delivery": "bbe396ebd5c8509ec295506a3ca701c3",
         "forecast": {
-          "id": "ddc2c644-d6c9-45de-a69b-d2434e4d30df",
+          "id": "f944ef3a-143d-4f22-bfb2-58e855031e7b",
           "state": "faturado_parcial",
           "version": 8,
-          "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-          "created_at": "2026-11-12T02:04:59.191284+00:00",
+          "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+          "created_at": "2026-11-12T02:30:06.560716+00:00",
           "partner_id": "00000000-0000-0000-0000-000000000011",
-          "updated_at": "2026-11-12T02:06:09.715766+00:00",
+          "updated_at": "2026-11-12T02:31:19.602115+00:00",
           "total_amount": 20.0,
           "items_snapshot": [
             {
-              "id": "dbe642a8-aa89-4b49-9e83-c66d9c5d76d8",
-              "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+              "id": "f6daabdc-6fc1-417c-84b8-4b27e072da5c",
+              "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
               "subtotal": 20.0,
               "volume_ml": null,
-              "created_at": "2026-11-12T02:04:57.902255+00:00",
+              "created_at": "2026-11-12T02:30:05.168602+00:00",
               "product_id": "00000000-0000-0000-0000-000000000032",
               "quantidade": 2.0,
               "preco_unitario": 10.0,
@@ -976,8 +976,8 @@
           "economic_snapshot": {
             "items": [
               {
-                "id": "dbe642a8-aa89-4b49-9e83-c66d9c5d76d8",
-                "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+                "id": "f6daabdc-6fc1-417c-84b8-4b27e072da5c",
+                "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
                 "subtotal": 20.0,
                 "volume_ml": null,
                 "product_id": "00000000-0000-0000-0000-000000000032",
@@ -1008,15 +1008,15 @@
               }
             ],
             "terms": {
-              "id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
-              "created_at": "2026-11-12T02:04:57.902255+00:00",
+              "id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
+              "created_at": "2026-11-12T02:30:05.168602+00:00",
               "created_by": "00000000-0000-0000-0000-000000000021",
               "final_amount": 20.0,
               "table_amount": 20.0,
               "first_due_date": "2026-12-12",
               "discount_amount": 0.0,
               "payment_plan_id": "00000000-0000-0000-0000-000000000081",
-              "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+              "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
               "installment_count": 1,
               "plan_code_snapshot": "T3",
               "plan_name_snapshot": "TESTE 3x",
@@ -1056,8 +1056,8 @@
               "schema_version": "1",
               "organization_id": "00000000-0000-0000-0000-000000000001",
               "issuer_legal_name": "ARBIO FIXTURE LOCAL SEM VALIDADE EXTERNA",
-              "company_settings_id": "2a841451-6136-4f1d-bbe5-bba64da737c4",
-              "accounting_promoted_at": "2026-11-12T02:04:58.982975+00:00",
+              "company_settings_id": "828b2bb1-082b-453e-bd3f-d6bc6c2b4a1b",
+              "accounting_promoted_at": "2026-11-12T02:30:06.275341+00:00",
               "accounting_promoted_by": "00000000-0000-0000-0000-000000000024",
               "issuer_organization_id": "00000000-0000-0000-0000-000000000001",
               "promoted_from_contract": "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1",
@@ -1067,12 +1067,12 @@
             "discount": 0.0,
             "schedule": [
               {
-                "id": "23347bb7-5c32-4026-a7f1-92904f64830a",
+                "id": "cc4bb9b2-d18c-4577-8402-dc418c739a6c",
                 "amount": 20.0,
                 "due_date": "2026-12-12",
                 "interest_amount": 0.0,
-                "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-                "payment_terms_id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
+                "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+                "payment_terms_id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
                 "principal_amount": 20.0,
                 "installment_number": 1
               }
@@ -1083,12 +1083,12 @@
           },
           "schedule_snapshot": [
             {
-              "id": "23347bb7-5c32-4026-a7f1-92904f64830a",
+              "id": "cc4bb9b2-d18c-4577-8402-dc418c739a6c",
               "amount": 20.0,
               "due_date": "2026-12-12",
               "interest_amount": 0.0,
-              "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-              "payment_terms_id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
+              "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+              "payment_terms_id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
               "principal_amount": 20.0,
               "installment_number": 1
             }
@@ -1096,7 +1096,7 @@
           "credit_approved_at": null,
           "credit_approved_by": null,
           "due_dates_estimated": true,
-          "commercial_approved_at": "2026-11-12T02:04:59.045316+00:00",
+          "commercial_approved_at": "2026-11-12T02:30:06.351951+00:00",
           "commercial_approved_by": "00000000-0000-0000-0000-000000000024",
           "credit_decision_snapshot": {
             "partner_id": "00000000-0000-0000-0000-000000000011",
@@ -1125,26 +1125,26 @@
     "test": "authorization-cancel único cancelamento financeiro",
     "status": "PASS",
     "detail": {
-      "stock": "e4c2c4505e57f22ece111013b01c8ba7",
+      "stock": "5ec32cf4d5f160d08da83cc6e0b211e1",
       "title": "CANCELED",
       "invoice": "CANCELED",
-      "delivery": "57d6b505e95f8216a38d1a109a2e9bd9",
+      "delivery": "bbe396ebd5c8509ec295506a3ca701c3",
       "forecast": {
-        "id": "ddc2c644-d6c9-45de-a69b-d2434e4d30df",
+        "id": "f944ef3a-143d-4f22-bfb2-58e855031e7b",
         "state": "faturado_parcial",
         "version": 8,
-        "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-        "created_at": "2026-11-12T02:04:59.191284+00:00",
+        "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+        "created_at": "2026-11-12T02:30:06.560716+00:00",
         "partner_id": "00000000-0000-0000-0000-000000000011",
-        "updated_at": "2026-11-12T02:06:09.715766+00:00",
+        "updated_at": "2026-11-12T02:31:19.602115+00:00",
         "total_amount": 20.0,
         "items_snapshot": [
           {
-            "id": "dbe642a8-aa89-4b49-9e83-c66d9c5d76d8",
-            "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+            "id": "f6daabdc-6fc1-417c-84b8-4b27e072da5c",
+            "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
             "subtotal": 20.0,
             "volume_ml": null,
-            "created_at": "2026-11-12T02:04:57.902255+00:00",
+            "created_at": "2026-11-12T02:30:05.168602+00:00",
             "product_id": "00000000-0000-0000-0000-000000000032",
             "quantidade": 2.0,
             "preco_unitario": 10.0,
@@ -1179,8 +1179,8 @@
         "economic_snapshot": {
           "items": [
             {
-              "id": "dbe642a8-aa89-4b49-9e83-c66d9c5d76d8",
-              "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+              "id": "f6daabdc-6fc1-417c-84b8-4b27e072da5c",
+              "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
               "subtotal": 20.0,
               "volume_ml": null,
               "product_id": "00000000-0000-0000-0000-000000000032",
@@ -1211,15 +1211,15 @@
             }
           ],
           "terms": {
-            "id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
-            "created_at": "2026-11-12T02:04:57.902255+00:00",
+            "id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
+            "created_at": "2026-11-12T02:30:05.168602+00:00",
             "created_by": "00000000-0000-0000-0000-000000000021",
             "final_amount": 20.0,
             "table_amount": 20.0,
             "first_due_date": "2026-12-12",
             "discount_amount": 0.0,
             "payment_plan_id": "00000000-0000-0000-0000-000000000081",
-            "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+            "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
             "installment_count": 1,
             "plan_code_snapshot": "T3",
             "plan_name_snapshot": "TESTE 3x",
@@ -1259,8 +1259,8 @@
             "schema_version": "1",
             "organization_id": "00000000-0000-0000-0000-000000000001",
             "issuer_legal_name": "ARBIO FIXTURE LOCAL SEM VALIDADE EXTERNA",
-            "company_settings_id": "2a841451-6136-4f1d-bbe5-bba64da737c4",
-            "accounting_promoted_at": "2026-11-12T02:04:58.982975+00:00",
+            "company_settings_id": "828b2bb1-082b-453e-bd3f-d6bc6c2b4a1b",
+            "accounting_promoted_at": "2026-11-12T02:30:06.275341+00:00",
             "accounting_promoted_by": "00000000-0000-0000-0000-000000000024",
             "issuer_organization_id": "00000000-0000-0000-0000-000000000001",
             "promoted_from_contract": "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1",
@@ -1270,12 +1270,12 @@
           "discount": 0.0,
           "schedule": [
             {
-              "id": "23347bb7-5c32-4026-a7f1-92904f64830a",
+              "id": "cc4bb9b2-d18c-4577-8402-dc418c739a6c",
               "amount": 20.0,
               "due_date": "2026-12-12",
               "interest_amount": 0.0,
-              "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-              "payment_terms_id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
+              "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+              "payment_terms_id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
               "principal_amount": 20.0,
               "installment_number": 1
             }
@@ -1286,12 +1286,12 @@
         },
         "schedule_snapshot": [
           {
-            "id": "23347bb7-5c32-4026-a7f1-92904f64830a",
+            "id": "cc4bb9b2-d18c-4577-8402-dc418c739a6c",
             "amount": 20.0,
             "due_date": "2026-12-12",
             "interest_amount": 0.0,
-            "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-            "payment_terms_id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
+            "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+            "payment_terms_id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
             "principal_amount": 20.0,
             "installment_number": 1
           }
@@ -1299,7 +1299,7 @@
         "credit_approved_at": null,
         "credit_approved_by": null,
         "due_dates_estimated": true,
-        "commercial_approved_at": "2026-11-12T02:04:59.045316+00:00",
+        "commercial_approved_at": "2026-11-12T02:30:06.351951+00:00",
         "commercial_approved_by": "00000000-0000-0000-0000-000000000024",
         "credit_decision_snapshot": {
           "partner_id": "00000000-0000-0000-0000-000000000011",
@@ -1337,7 +1337,7 @@
     "test": "primeiro final da própria NF paga marca nota sem cancelar título",
     "status": "PASS",
     "detail": {
-      "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-135\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_PAYMENT_REVIEW\", \"final\": true, \"financialReconciliationRequired\": true}, \"protocolCStat\": \"135\", \"transmissionId\": \"1e49ae4a-59bc-4cda-a182-96b25e1a43df\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"PARTIAL\", \"invoice\": \"CANCELED\"}\n",
+      "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-135\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_PAYMENT_REVIEW\", \"final\": true, \"financialReconciliationRequired\": true}, \"protocolCStat\": \"135\", \"transmissionId\": \"671b8870-6497-46aa-a90c-931c112e89b9\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"PARTIAL\", \"invoice\": \"CANCELED\"}\n",
       "err": ""
     }
   },
@@ -1350,7 +1350,7 @@
     "test": "residual RBAC 24",
     "status": "PASS",
     "detail": {
-      "out": "{\"actor\": \"00000000-0000-0000-0000-000000000024\", \"state\": \"cancelado_residual\", \"version\": 9, \"order_id\": \"3980d5b7-4854-41ea-aa97-8f3dee8f80a4\", \"forecast_id\": \"ddc2c644-d6c9-45de-a69b-d2434e4d30df\"}\n",
+      "out": "{\"actor\": \"00000000-0000-0000-0000-000000000024\", \"state\": \"cancelado_residual\", \"version\": 9, \"order_id\": \"1aa80e33-28b1-4e12-8c7c-5ae214f38244\", \"forecast_id\": \"f944ef3a-143d-4f22-bfb2-58e855031e7b\"}\n",
       "err": ""
     }
   },
@@ -1363,7 +1363,7 @@
     "test": "residual RBAC 30",
     "status": "PASS",
     "detail": {
-      "out": "{\"actor\": \"00000000-0000-0000-0000-000000000030\", \"state\": \"cancelado_residual\", \"version\": 9, \"order_id\": \"3980d5b7-4854-41ea-aa97-8f3dee8f80a4\", \"forecast_id\": \"ddc2c644-d6c9-45de-a69b-d2434e4d30df\"}\n",
+      "out": "{\"actor\": \"00000000-0000-0000-0000-000000000030\", \"state\": \"cancelado_residual\", \"version\": 9, \"order_id\": \"1aa80e33-28b1-4e12-8c7c-5ae214f38244\", \"forecast_id\": \"f944ef3a-143d-4f22-bfb2-58e855031e7b\"}\n",
       "err": ""
     }
   },
@@ -1416,30 +1416,30 @@
     "status": "PASS",
     "detail": {
       "results": [
-        "{\"state\": \"cancelado_residual\", \"version\": 9, \"forecast_id\": \"ddc2c644-d6c9-45de-a69b-d2434e4d30df\", \"idempotentReplay\": true}\n",
-        "{\"actor\": \"00000000-0000-0000-0000-000000000030\", \"state\": \"cancelado_residual\", \"version\": 9, \"order_id\": \"3980d5b7-4854-41ea-aa97-8f3dee8f80a4\", \"forecast_id\": \"ddc2c644-d6c9-45de-a69b-d2434e4d30df\"}\n"
+        "{\"actor\": \"00000000-0000-0000-0000-000000000030\", \"state\": \"cancelado_residual\", \"version\": 9, \"order_id\": \"1aa80e33-28b1-4e12-8c7c-5ae214f38244\", \"forecast_id\": \"f944ef3a-143d-4f22-bfb2-58e855031e7b\"}\n",
+        "{\"state\": \"cancelado_residual\", \"version\": 9, \"forecast_id\": \"f944ef3a-143d-4f22-bfb2-58e855031e7b\", \"idempotentReplay\": true}\n"
       ],
       "state": {
-        "stock": "e4c2c4505e57f22ece111013b01c8ba7",
+        "stock": "5ec32cf4d5f160d08da83cc6e0b211e1",
         "title": "PARTIAL",
         "invoice": "AUTHORIZED",
-        "delivery": "57d6b505e95f8216a38d1a109a2e9bd9",
+        "delivery": "bbe396ebd5c8509ec295506a3ca701c3",
         "forecast": {
-          "id": "ddc2c644-d6c9-45de-a69b-d2434e4d30df",
+          "id": "f944ef3a-143d-4f22-bfb2-58e855031e7b",
           "state": "cancelado_residual",
           "version": 9,
-          "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-          "created_at": "2026-11-12T02:04:59.191284+00:00",
+          "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+          "created_at": "2026-11-12T02:30:06.560716+00:00",
           "partner_id": "00000000-0000-0000-0000-000000000011",
-          "updated_at": "2026-11-12T02:09:50.194591+00:00",
+          "updated_at": "2026-11-12T02:39:02.518727+00:00",
           "total_amount": 20.0,
           "items_snapshot": [
             {
-              "id": "dbe642a8-aa89-4b49-9e83-c66d9c5d76d8",
-              "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+              "id": "f6daabdc-6fc1-417c-84b8-4b27e072da5c",
+              "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
               "subtotal": 20.0,
               "volume_ml": null,
-              "created_at": "2026-11-12T02:04:57.902255+00:00",
+              "created_at": "2026-11-12T02:30:05.168602+00:00",
               "product_id": "00000000-0000-0000-0000-000000000032",
               "quantidade": 2.0,
               "preco_unitario": 10.0,
@@ -1474,8 +1474,8 @@
           "economic_snapshot": {
             "items": [
               {
-                "id": "dbe642a8-aa89-4b49-9e83-c66d9c5d76d8",
-                "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+                "id": "f6daabdc-6fc1-417c-84b8-4b27e072da5c",
+                "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
                 "subtotal": 20.0,
                 "volume_ml": null,
                 "product_id": "00000000-0000-0000-0000-000000000032",
@@ -1506,15 +1506,15 @@
               }
             ],
             "terms": {
-              "id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
-              "created_at": "2026-11-12T02:04:57.902255+00:00",
+              "id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
+              "created_at": "2026-11-12T02:30:05.168602+00:00",
               "created_by": "00000000-0000-0000-0000-000000000021",
               "final_amount": 20.0,
               "table_amount": 20.0,
               "first_due_date": "2026-12-12",
               "discount_amount": 0.0,
               "payment_plan_id": "00000000-0000-0000-0000-000000000081",
-              "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+              "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
               "installment_count": 1,
               "plan_code_snapshot": "T3",
               "plan_name_snapshot": "TESTE 3x",
@@ -1554,8 +1554,8 @@
               "schema_version": "1",
               "organization_id": "00000000-0000-0000-0000-000000000001",
               "issuer_legal_name": "ARBIO FIXTURE LOCAL SEM VALIDADE EXTERNA",
-              "company_settings_id": "2a841451-6136-4f1d-bbe5-bba64da737c4",
-              "accounting_promoted_at": "2026-11-12T02:04:58.982975+00:00",
+              "company_settings_id": "828b2bb1-082b-453e-bd3f-d6bc6c2b4a1b",
+              "accounting_promoted_at": "2026-11-12T02:30:06.275341+00:00",
               "accounting_promoted_by": "00000000-0000-0000-0000-000000000024",
               "issuer_organization_id": "00000000-0000-0000-0000-000000000001",
               "promoted_from_contract": "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1",
@@ -1565,12 +1565,12 @@
             "discount": 0.0,
             "schedule": [
               {
-                "id": "23347bb7-5c32-4026-a7f1-92904f64830a",
+                "id": "cc4bb9b2-d18c-4577-8402-dc418c739a6c",
                 "amount": 20.0,
                 "due_date": "2026-12-12",
                 "interest_amount": 0.0,
-                "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-                "payment_terms_id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
+                "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+                "payment_terms_id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
                 "principal_amount": 20.0,
                 "installment_number": 1
               }
@@ -1581,12 +1581,12 @@
           },
           "schedule_snapshot": [
             {
-              "id": "23347bb7-5c32-4026-a7f1-92904f64830a",
+              "id": "cc4bb9b2-d18c-4577-8402-dc418c739a6c",
               "amount": 20.0,
               "due_date": "2026-12-12",
               "interest_amount": 0.0,
-              "partner_order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
-              "payment_terms_id": "02ee5a2c-1d0a-4368-88b2-249e570be55b",
+              "partner_order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
+              "payment_terms_id": "bff46cc7-615d-40f8-b52a-41cfbe7ad275",
               "principal_amount": 20.0,
               "installment_number": 1
             }
@@ -1594,7 +1594,7 @@
           "credit_approved_at": null,
           "credit_approved_by": null,
           "due_dates_estimated": true,
-          "commercial_approved_at": "2026-11-12T02:04:59.045316+00:00",
+          "commercial_approved_at": "2026-11-12T02:30:06.351951+00:00",
           "commercial_approved_by": "00000000-0000-0000-0000-000000000024",
           "credit_decision_snapshot": {
             "partner_id": "00000000-0000-0000-0000-000000000011",
