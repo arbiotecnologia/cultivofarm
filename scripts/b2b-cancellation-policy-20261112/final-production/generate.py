@@ -101,13 +101,7 @@ END $fresh$;
         (H / '02-install-closed.sql.review').write_text("BEGIN;\nSET LOCAL lock_timeout='3s';\nSET LOCAL search_path TO pg_catalog,public;\n" + pre + body + post + closed_state() + 'COMMIT;\n')
         (H / '03-post.sql.readonly').write_text('BEGIN READ ONLY;\nSET LOCAL search_path TO pg_catalog,public;\n' + post + closed_state() + 'ROLLBACK;\n')
         rollback = "UPDATE platform_private.b2b_cancel_policy_gate_v1 SET enabled=false;\nREVOKE EXECUTE ON FUNCTION public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text),public.rpc_b2b_cancel_residual_capability_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;\n"
-        # Rollback accepts an independently reviewed activation changing ACL only;
-        # it still pins exact bodies, owners, configs and original relation security.
-        relaxed = {s: {k: v for k, v in p.items() if k != 'acl'} for s, p in json.loads(post_path.read_text()).items()}
-        check = function_pins(json.loads(post_path.read_text()))
-        for sig, pin in json.loads(post_path.read_text()).items():
-            # No relaxed installation or implicit restoration: rollback here is exact closed-package containment.
-            pass
+        # Exact closed-package containment; any later activation needs its own pins.
         (H / '04-rollback-deny.sql.review').write_text("BEGIN;\nSET LOCAL lock_timeout='3s';\nSET LOCAL search_path TO pg_catalog,public;\n" + post + rollback + closed_state() + 'COMMIT;\n')
         (H / '05-post-rollback.sql.readonly').write_text((H / '03-post.sql.readonly').read_text())
     provenance = [{'path': str(p.relative_to(ROOT)), 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()}
