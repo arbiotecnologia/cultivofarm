@@ -1,0 +1,144 @@
+{
+  "hosted": false,
+  "synthetic_event_body": true,
+  "checks": [
+    {
+      "test": "same trigger OID passes with public,pg_catalog",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "same trigger OID passes with extensions,public,pg_catalog",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "same trigger OID passes with other,pg_catalog",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "reproduced qualified vs unqualified display",
+      "status": "PASS",
+      "detail": [
+        "extensions.set_graphql_placeholder()",
+        "set_graphql_placeholder()"
+      ]
+    },
+    {
+      "test": "enabled-state drift still denied",
+      "status": "PASS",
+      "detail": "ERROR:  EVENT_TRIGGER_IDENTITY_DRIFT:issue_graphql_placeholder\nCONTEXT:  PL/pgSQL function platform_private.cancel_homolog_catalog_check_v1() line 43 at RAISE\n"
+    },
+    {
+      "test": "other-schema same name denied",
+      "status": "PASS",
+      "detail": "ERROR:  EVENT_TRIGGER_IDENTITY_DRIFT:issue_graphql_placeholder\nCONTEXT:  PL/pgSQL function platform_private.cancel_homolog_catalog_check_v1() line 43 at RAISE\n"
+    },
+    {
+      "test": "event/tag drift denied",
+      "status": "PASS",
+      "detail": "ERROR:  EVENT_TRIGGER_IDENTITY_DRIFT:issue_graphql_placeholder\nCONTEXT:  PL/pgSQL function platform_private.cancel_homolog_catalog_check_v1() line 43 at RAISE\n"
+    },
+    {
+      "test": "ordinary row-trigger identity resolves qualified OID",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "row display normalization preserves definition",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "argument change not normalized away",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "compact checker executes columns constraints indexes policies row triggers",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "compact column-default drift denied",
+      "status": "PASS",
+      "detail": "ERROR:  COLUMN_DRIFT:public.row_parent.id\nCONTEXT:  PL/pgSQL function platform_private.cancel_homolog_catalog_check_v1() line 11 at RAISE\n"
+    },
+    {
+      "test": "exact bootstrap 00-install-checker.sql.review",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "exact bootstrap 01-install-checker.sql.review",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "exact bootstrap 02-install-checker.sql.review",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "exact bootstrap 03-install-checker.sql.review",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "exact bootstrap 04-install-checker.sql.review",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "exact bootstrap 05-install-checker.sql.review",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "exact bootstrap 06-install-checker.sql.review",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "exact bootstrap 07-install-checker.sql.review",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "exact bootstrap 08-install-checker.sql.review",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "exact bootstrap 09-install-checker.sql.review",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "exact bootstrap 10-install-checker.sql.review",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "exact bootstrap 11-install-checker.sql.review",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "exact bootstrap 12-install-checker.sql.review",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "all bootstrap source/owner/ACL/config pins match",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "bootstrap repeat refuses overwrite",
+      "status": "PASS",
+      "detail": "ERROR:  CHECKER_ALREADY_PRESENT:platform_private.cancel_homolog_resolve_function_v1(text,text)\nCONTEXT:  PL/pgSQL function inline_code_block line 1 at RAISE\n"
+    }
+  ]
+}

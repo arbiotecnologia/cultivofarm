@@ -1,3 +1,4 @@
 - Prepare only for the exact homolog marker; never execute hosted SQL or modify runtime — preserves the original and installed Stage A.
-- Generate closed additive stages from the supplied catalog and pinned canonical sources; no writer hooks or client grants until the homolog statement-level receivable barrier is reviewed — prevents an unproven fixture bypass.
+- Resolve captured function identities by unique qualified OID plus exact MD5, never search_path-dependent display text; keep all catalog checks in segmented owner-only pinned functions — prevents namespace false drift without weakening pins.
+- The reviewed homolog exception keeps the existing statement trigger enabled and adds an exact one-shot transaction/backend/actor/row permit barrier; install gate OFF without issuer or client grants until the complete canonical synthetic-intent chain is independently authorized — prevents normal-traffic release and fixture authority fabrication.
 - Schema-shell and synthetic identity tests are component evidence only; hosted fiscal fixtures remain blocked rather than inserting final financial or fiscal results — prevents false session certification.

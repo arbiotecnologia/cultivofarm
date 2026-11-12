@@ -1,0 +1,59 @@
+{
+  "hosted": false,
+  "synthetic_event_body": true,
+  "checks": [
+    {
+      "test": "same trigger OID passes with public,pg_catalog",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "same trigger OID passes with extensions,public,pg_catalog",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "same trigger OID passes with other,pg_catalog",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "reproduced qualified vs unqualified display",
+      "status": "PASS",
+      "detail": [
+        "extensions.set_graphql_placeholder()",
+        "set_graphql_placeholder()"
+      ]
+    },
+    {
+      "test": "enabled-state drift still denied",
+      "status": "PASS",
+      "detail": "ERROR:  EVENT_TRIGGER_IDENTITY_DRIFT:issue_graphql_placeholder\nCONTEXT:  PL/pgSQL function platform_private.cancel_homolog_catalog_check_v1() line 43 at RAISE\n"
+    },
+    {
+      "test": "other-schema same name denied",
+      "status": "PASS",
+      "detail": "ERROR:  EVENT_TRIGGER_IDENTITY_DRIFT:issue_graphql_placeholder\nCONTEXT:  PL/pgSQL function platform_private.cancel_homolog_catalog_check_v1() line 43 at RAISE\n"
+    },
+    {
+      "test": "event/tag drift denied",
+      "status": "PASS",
+      "detail": "ERROR:  EVENT_TRIGGER_IDENTITY_DRIFT:issue_graphql_placeholder\nCONTEXT:  PL/pgSQL function platform_private.cancel_homolog_catalog_check_v1() line 43 at RAISE\n"
+    },
+    {
+      "test": "ordinary row-trigger identity resolves qualified OID",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "row display normalization preserves definition",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "argument change not normalized away",
+      "status": "PASS",
+      "detail": ""
+    }
+  ]
+}

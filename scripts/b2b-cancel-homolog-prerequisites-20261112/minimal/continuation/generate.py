@@ -1,5 +1,6 @@
 """Offline homolog continuation: additive closed catalog, never hosted access."""
 import hashlib,json,re
+import catalog_checks
 from pathlib import Path
 H=Path(__file__).resolve().parent
 ROOT=H.parents[3]
@@ -58,7 +59,7 @@ def closed_post(tables,functions):
   s+=f"IF to_regprocedure('{n}') IS NULL OR EXISTS(SELECT 1 FROM aclexplode(coalesce((SELECT proacl FROM pg_proc WHERE oid=to_regprocedure('{n}')),acldefault('f',(SELECT proowner FROM pg_proc WHERE oid=to_regprocedure('{n}'))))) WHERE grantee=0 OR grantee IN(SELECT oid FROM pg_roles WHERE rolname IN('anon','authenticated','service_role'))) THEN RAISE EXCEPTION 'NEW_FUNCTION_NOT_CLOSED:{n}'; END IF;\n"
  return s+'END $closed$;\n'
 def stage(label,body,tables,functions,extra_post=''):
- pre=TARGET+catalog_guard(DATA)+'DO $absent$ BEGIN\n'
+ pre=TARGET+CHECKER_PIN+"SELECT platform_private.cancel_homolog_catalog_check_v1();\n"+'DO $absent$ BEGIN\n'
  for n in tables:pre+=f"IF to_regclass('{n}') IS NOT NULL THEN RAISE EXCEPTION 'STAGE_ALREADY_PRESENT:{n}'; END IF;\n"
  for n in functions:pre+=f"IF to_regprocedure('{n}') IS NOT NULL THEN RAISE EXCEPTION 'STAGE_ALREADY_PRESENT:{n}'; END IF;\n"
  pre+='END $absent$;\n'
@@ -70,7 +71,7 @@ def stage(label,body,tables,functions,extra_post=''):
  head="-- HOMOLOG ONLY vrlcdwmlytukrjezrrnf; CLOSED additive preparation; no operational hooks.\nBEGIN;SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='30s';SET LOCAL search_path=public,pg_catalog;\n"
  (H/(label+'-pre.sql.readonly')).write_text(head+pre+'ROLLBACK;\n')
  (H/(label+'-install.sql.review')).write_text(head+pre+before+body+post+after+'COMMIT;\n')
- (H/(label+'-post.sql.readonly')).write_text(head+TARGET+post+catalog_guard(DATA)+'ROLLBACK;\n')
+ (H/(label+'-post.sql.readonly')).write_text(head+TARGET+CHECKER_PIN+post+"SELECT platform_private.cancel_homolog_catalog_check_v1();\n"+'ROLLBACK;\n')
  rollback=head+TARGET
  for n in functions:rollback+=f'REVOKE ALL ON FUNCTION {n} FROM PUBLIC,anon,authenticated,service_role;\n'
  for n in tables:rollback+=f'REVOKE ALL ON {n} FROM PUBLIC,anon,authenticated,service_role;\n'
@@ -78,8 +79,24 @@ def stage(label,body,tables,functions,extra_post=''):
  (H/(label+'-rollback-deny.sql.review')).write_text(rollback)
  return dict(stage=label,tables=tables,functions=functions,status='REVIEW_CLOSED_ADDITIVE_FULL_CATALOG_ROUNDTRIP_NOT_PROVEN')
 def generate():
- global DATA
+ global DATA,CHECKER_PIN
  DATA=json.loads((H/'capture/catalog.json').read_text())
+ # Supplied regprocedure display strings are not namespace identities. The
+ # bootstrap stores compact pins once and resolves unqualified names by unique
+ # OID + exact MD5; every stage calls the same pinned checker, never skips it.
+ checkparts=catalog_checks.segmented_sources(DATA)
+ CHECKER_PIN='DO $checker_pin$ BEGIN\n'
+ initdir=H/'checks';initdir.mkdir(exist_ok=True)
+ for i,(sig,body) in enumerate(checkparts):
+  m=re.search(r'AS (\$\w*\$)',body);assert m
+  prosrc=body[m.end():body.index(m[1],m.end())]
+  src_md5=hashlib.md5(prosrc.encode()).hexdigest()
+  config=['search_path=public, pg_catalog'] if sig=='platform_private.cancel_homolog_catalog_check_v1()' else ['search_path=""']
+  CHECKER_PIN+=f"IF (SELECT jsonb_build_array(md5(prosrc),pg_get_userbyid(proowner),prosecdef,proconfig,(SELECT coalesce(jsonb_agg(a::text ORDER BY a::text),'[]'::jsonb) FROM unnest(proacl) a)) FROM pg_proc WHERE oid=to_regprocedure('{sig}')) IS DISTINCT FROM jsonb_build_array('{src_md5}','postgres',true,{quote(json.dumps(config))}::jsonb,'[\"postgres=X/postgres\"]'::jsonb) THEN RAISE EXCEPTION 'CHECKER_PIN_DRIFT:{sig}'; END IF;\n"
+  absence=f"DO $absence$ BEGIN IF to_regprocedure('{sig}') IS NOT NULL THEN RAISE EXCEPTION 'CHECKER_ALREADY_PRESENT:{sig}'; END IF;END $absence$;\n"
+  (initdir/f'{i:02d}-install-checker.sql.review').write_text("-- HOMOLOG ONLY; catalog validation infrastructure, no business grants.\nBEGIN;SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='30s';\n"+TARGET+absence+body+"COMMIT;\n")
+ CHECKER_PIN+='END $checker_pin$;\n'
+ (initdir/'99-verify-checker.sql.readonly').write_text('BEGIN READ ONLY;\n'+TARGET+CHECKER_PIN+'SELECT platform_private.cancel_homolog_catalog_check_v1();\nROLLBACK;\n')
  b4=B4.read_text();bridge=BR.read_text();candidate=(C/'candidate.sql').read_text()
  # Independent provenance relations only, not the B4 motor/conditions/view/hooks.
  tables=['platform_private.b2b_authorized_documents','platform_private.b2b_document_allocations','platform_private.b2b_allocation_reversals','platform_private.b2b_title_permits','platform_private.b2b_cancellation_attestations']
@@ -102,21 +119,35 @@ def generate():
  functions=['platform_private.cancel_homolog_residual_capability_v1(uuid)','platform_private.cancel_homolog_residual_command_v1(uuid,integer,text)','platform_private.b2b_cancel_confirmed_fiscal_v1(uuid)']
  for n in functions:body+=f'REVOKE ALL ON FUNCTION {n} FROM PUBLIC,anon,authenticated,service_role;\n'
  stages.append(stage('D',body,tables,functions,"DO $off$ BEGIN IF EXISTS(SELECT 1 FROM platform_private.b2b_cancel_policy_gate_v1 WHERE enabled) OR EXISTS(SELECT 1 FROM platform_private.b2b_cancel_policy_allowlist_v1) THEN RAISE EXCEPTION 'CANCEL_POLICY_MUST_BE_CLOSED'; END IF;END $off$;\n"))
- # No executable E installer until exact statement guard body has been reviewed.
- focal="""-- FOCAL READ ONLY: exact statement barrier omitted from supplied function definitions.
--- No business rows, Auth, secrets or data export. Only operator-reviewed source.
-BEGIN READ ONLY;
-SELECT p.oid::regprocedure::text AS signature,md5(pg_get_functiondef(p.oid)) AS current_md5,
- '1b7e286b1391c986604df2b171025c62' AS expected_md5,pg_get_userbyid(p.proowner) AS owner,
- p.proacl::text AS acl,p.proconfig,pg_get_functiondef(p.oid) AS exact_definition
-FROM pg_proc p WHERE p.oid=to_regprocedure('platform_private.homolog_validation_block_receivable_insert()');
-ROLLBACK;
-"""
- (H/'E-required-statement-guard.sql.readonly').write_text(focal)
- (H/'manifest.json').write_text(json.dumps(dict(target_ref='vrlcdwmlytukrjezrrnf',stage_A='INSTALLED_POST_PASS_OWNER_REPORTED_NOT_RERUN_HOSTED',capture_sha256=hashlib.sha256((H/'capture/catalog.json').read_bytes()).hexdigest(),stages=stages,E='BLOCKED_EXACT_STATEMENT_GUARD_BODY',operational_installable=False,hosted_executed=False,source_sha256={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [B4,BR,C/'candidate.sql']}),indent=2)+'\n')
+ statement=json.loads((H/'capture/statement-guard.json').read_text())
+ (H/'capture/statement-guard.sql').write_text(statement['exact_definition']+';\n')
+ pre=TARGET+CHECKER_PIN+'SELECT platform_private.cancel_homolog_catalog_check_v1();\n'
+ pre+=f"DO $statement_pin$ BEGIN IF (SELECT jsonb_build_array(md5(pg_get_functiondef(oid)),pg_get_userbyid(proowner),proacl::text,proconfig) FROM pg_proc WHERE oid=to_regprocedure('{statement['signature']}')) IS DISTINCT FROM {quote(json.dumps([statement['current_md5'],statement['owner'],statement['acl'],statement['proconfig']]))}::jsonb THEN RAISE EXCEPTION 'E_STATEMENT_PIN_DRIFT'; END IF;END $statement_pin$;\n"
+ ebody=(H/'fixture_barrier.sql.source').read_text()
+ etables=['platform_private.cancel_homolog_fixture_'+n+'_v1' for n in ['gate','grants','permits']]
+ efunctions=['platform_private.cancel_homolog_fixture_scope_v1(text,uuid,jsonb,boolean)','platform_private.cancel_homolog_fixture_row_guard_v1()']
+ post=closed_post(etables,efunctions)+"DO $Eoff$ BEGIN IF EXISTS(SELECT 1 FROM platform_private.cancel_homolog_fixture_gate_v1 WHERE enabled) OR EXISTS(SELECT 1 FROM platform_private.cancel_homolog_fixture_grants_v1) OR EXISTS(SELECT 1 FROM platform_private.cancel_homolog_fixture_permits_v1) THEN RAISE EXCEPTION 'E_FIXTURE_NOT_CLOSED_EMPTY'; END IF;IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='a00_homolog_validation_no_receivable' AND tgrelid='public.accounts_receivable'::regclass AND tgenabled='O' AND tgfoid='platform_private.homolog_validation_block_receivable_insert()'::regprocedure) OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='zz_cancel_homolog_fixture_row_guard_v1' AND tgrelid='public.accounts_receivable'::regclass AND tgenabled='O') OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='zz_cancel_homolog_fixture_payment_guard_v1' AND tgrelid='public.receivable_payments'::regclass AND tgenabled='O') THEN RAISE EXCEPTION 'E_ROW_OR_STATEMENT_GUARD_MISSING'; END IF;END $Eoff$;\n"
+ # Body/config/owner pins for every new E helper and replaced statement guard.
+ epins='DO $Epin$ BEGIN\n'
+ for sig in efunctions+[statement['signature']]:
+  name=sig.split('(')[0];body=definition(ebody,name);m=re.search(r'AS (\$\w*\$)',body);assert m
+  src=body[m.end():body.index(m[1],m.end())]
+  epins+=f"IF (SELECT jsonb_build_array(md5(prosrc),pg_get_userbyid(proowner),proconfig,prosecdef) FROM pg_proc WHERE oid=to_regprocedure('{sig}')) IS DISTINCT FROM jsonb_build_array('{hashlib.md5(src.encode()).hexdigest()}','postgres','[\"search_path=\\\"\\\"\"]'::jsonb,true) THEN RAISE EXCEPTION 'E_FUNCTION_PIN_DRIFT:{sig}'; END IF;\n"
+ epins+='END $Epin$;\n'
+ post+=epins
+ for n in etables:pre+=f"DO $absence$ BEGIN IF to_regclass('{n}') IS NOT NULL THEN RAISE EXCEPTION 'E_ALREADY_PRESENT:{n}'; END IF;END $absence$;\n"
+ head="-- HOMOLOG ONLY; reviewed exception infrastructure, gate OFF/no issuer/no client grant.\nBEGIN;SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='30s';\n"
+ (H/'E-pre.sql.readonly').write_text(head+pre+'ROLLBACK;\n')
+ (H/'E-install-closed.sql.review').write_text(head+pre+ebody+post+'COMMIT;\n')
+ (H/'E-post.sql.readonly').write_text(head+TARGET+post+'ROLLBACK;\n')
+ rollback=TARGET+"UPDATE platform_private.cancel_homolog_fixture_gate_v1 SET enabled=false;\n"
+ for sig in efunctions:rollback+=f'REVOKE ALL ON FUNCTION {sig} FROM PUBLIC,anon,authenticated,service_role;\n'
+ (H/'E-rollback-deny.sql.review').write_text(head+epins+rollback+closed_post(etables,efunctions)+'COMMIT;\n')
+ (H/'E-required-statement-guard.sql.readonly').write_text('-- SUPERSEDED: exact body received 01:49; no further inventory requested.\nSELECT \'STATEMENT_GUARD_CAPTURE_RECEIVED\' AS status;\n')
+ (H/'manifest.json').write_text(json.dumps(dict(target_ref='vrlcdwmlytukrjezrrnf',stage_A='INSTALLED_POST_PASS_OWNER_REPORTED_NOT_RERUN_HOSTED',capture_sha256=hashlib.sha256((H/'capture/catalog.json').read_bytes()).hexdigest(),stages=stages,E='CLOSED_BARRIER_INFRASTRUCTURE_NO_ISSUER',checker_segments=len(checkparts),operational_installable=False,decision='AUTHORIZE_AND_REVIEW_EXACT_SYNTHETIC_INTENT_ISSUER_BEFORE_ANY_ENABLEMENT',hosted_executed=False,source_sha256={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [B4,BR,C/'candidate.sql',H/'fixture_barrier.sql.source']}),indent=2)+'\n')
  sums=[]
  for p in sorted(H.rglob('*')):
   if p.is_file() and p.name!='SHA256SUMS' and '__pycache__' not in p.parts and 'evidence' not in p.parts:sums.append(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+str(p.relative_to(H)))
  (H/'SHA256SUMS').write_text('\n'.join(sums)+'\n')
- print('B/C/D additive closed; E blocked by exact statement barrier; no remote calls.')
+ print('B/C/D closed; OID checker segmented; E row+statement infrastructure closed, no fixture issuer or grants.')
 if __name__=='__main__':generate()

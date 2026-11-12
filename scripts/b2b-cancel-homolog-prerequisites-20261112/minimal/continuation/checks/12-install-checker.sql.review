@@ -1,0 +1,59 @@
+-- HOMOLOG ONLY; catalog validation infrastructure, no business grants.
+BEGIN;SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='30s';
+DO $target$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref='vrlcdwmlytukrjezrrnf' AND production_emission_allowed IS FALSE) OR EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref IS DISTINCT FROM 'vrlcdwmlytukrjezrrnf' OR production_emission_allowed IS DISTINCT FROM FALSE) THEN RAISE EXCEPTION 'HOMOLOG_MARKER_REQUIRED'; END IF;
+ IF EXISTS(SELECT 1 FROM cron.job WHERE active) THEN RAISE EXCEPTION 'HOMOLOG_CRON_ACTIVE'; END IF;
+ IF to_regclass('platform_private.b2b_financial_forecasts') IS NULL THEN RAISE EXCEPTION 'STAGE_A_REQUIRED'; END IF;
+ IF EXISTS(SELECT 1 FROM platform_private.b2b_forecast_creation_gate_v1 WHERE enabled) OR EXISTS(SELECT 1 FROM platform_private.b2b_forecast_lifecycle_gate_v1 WHERE enabled) THEN RAISE EXCEPTION 'FOUNDATION_MUST_REMAIN_CLOSED'; END IF;
+END $target$;
+DO $absence$ BEGIN IF to_regprocedure('platform_private.cancel_homolog_catalog_check_v1()') IS NOT NULL THEN RAISE EXCEPTION 'CHECKER_ALREADY_PRESENT:platform_private.cancel_homolog_catalog_check_v1()'; END IF;END $absence$;
+
+CREATE OR REPLACE FUNCTION platform_private.cancel_homolog_catalog_check_v1()
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path='public','pg_catalog' AS $checker$
+DECLARE data jsonb:='{"definitions":[{"signature":"public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)","current_md5":"b8fbd43d7a019fbf2f12d572bd79ba60","owner":"postgres","proconfig":["search_path=public"],"acl":["authenticated=X/postgres","postgres=X/postgres","service_role=X/postgres"]},{"signature":"public.rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid)","current_md5":"a518f355f035d485f720419e05e89906","owner":"postgres","proconfig":["search_path=public, pg_temp"],"acl":["postgres=X/postgres","service_role=X/postgres"]},{"signature":"public.rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid)","current_md5":"96f6f30724c829cd4a78ce232bd5c84a","owner":"postgres","proconfig":["search_path=public, pg_temp"],"acl":["postgres=X/postgres","service_role=X/postgres"]}],"triggers":[{"evtname":"ensure_rls","evtevent":"ddl_command_end","evtenabled":"O","evttags":["CREATE TABLE","CREATE TABLE AS","SELECT INTO"],"signature":"rls_auto_enable()","body_md5":"c87c47145933a8d6d2b249bc222ea981"},{"evtname":"issue_graphql_placeholder","evtevent":"sql_drop","evtenabled":"O","evttags":["DROP EXTENSION"],"signature":"set_graphql_placeholder()","body_md5":"8da9dff6b2ae47498209d341acaeb60b"},{"evtname":"issue_pg_cron_access","evtevent":"ddl_command_end","evtenabled":"O","evttags":["CREATE EXTENSION"],"signature":"grant_pg_cron_access()","body_md5":"53a44336da0ac1dd62d89dbd988e6d1d"},{"evtname":"issue_pg_graphql_access","evtevent":"ddl_command_end","evtenabled":"O","evttags":["CREATE EXTENSION"],"signature":"grant_pg_graphql_access()","body_md5":"4e6d7efe4aed1b3b92063b648aa7a0cf"},{"evtname":"issue_pg_net_access","evtevent":"ddl_command_end","evtenabled":"O","evttags":["CREATE EXTENSION"],"signature":"grant_pg_net_access()","body_md5":"1d06ef4fb47bb0ab6e6f8818a62013bb"},{"evtname":"pgrst_ddl_watch","evtevent":"ddl_command_end","evtenabled":"O","evttags":null,"signature":"pgrst_ddl_watch()","body_md5":"afaad7193dcf8f81e728d2bedb85e43e"},{"evtname":"pgrst_drop_watch","evtevent":"sql_drop","evtenabled":"O","evttags":null,"signature":"pgrst_drop_watch()","body_md5":"4357772baf5cfcd5c6d7049585b3a537"}]}'::jsonb||jsonb_build_object('schema',jsonb_build_array(platform_private.cancel_homolog_catalog_part_00_v1(),platform_private.cancel_homolog_catalog_part_01_v1(),platform_private.cancel_homolog_catalog_part_02_v1(),platform_private.cancel_homolog_catalog_part_03_v1(),platform_private.cancel_homolog_catalog_part_04_v1(),platform_private.cancel_homolog_catalog_part_05_v1(),platform_private.cancel_homolog_catalog_part_06_v1(),platform_private.cancel_homolog_catalog_part_07_v1(),platform_private.cancel_homolog_catalog_part_08_v1(),platform_private.cancel_homolog_catalog_part_09_v1(),platform_private.cancel_homolog_catalog_part_10_v1()));r jsonb;c jsonb;t jsonb;p jsonb;d jsonb;x jsonb;expected jsonb;rel oid;f oid;definition_text text;
+BEGIN
+ FOR r IN SELECT value FROM jsonb_array_elements(data->'schema') LOOP
+  rel:=to_regclass(r->>'name');
+  SELECT jsonb_build_array(pg_get_userbyid(relowner),relrowsecurity,relforcerowsecurity,
+   (SELECT coalesce(jsonb_agg(a::text ORDER BY a::text),'[]'::jsonb) FROM unnest(relacl) a)) INTO x FROM pg_class WHERE oid=rel;
+  IF x IS DISTINCT FROM jsonb_build_array(r->>'owner',r->'relrowsecurity',r->'relforcerowsecurity',r->'acl') THEN RAISE EXCEPTION 'RELATION_OWNER_RLS_ACL_DRIFT:%',r->>'name';END IF;
+  FOR c IN SELECT value FROM jsonb_array_elements(r->'columns') LOOP
+   SELECT jsonb_build_array(format_type(a.atttypid,a.atttypmod),a.attnotnull,pg_get_expr(ad.adbin,ad.adrelid),a.attidentity,a.attgenerated) INTO x FROM pg_attribute a LEFT JOIN pg_attrdef ad ON ad.adrelid=a.attrelid AND ad.adnum=a.attnum WHERE a.attrelid=rel AND a.attname=c->>'name' AND NOT a.attisdropped;
+   IF x IS DISTINCT FROM jsonb_build_array(c->>'type',c->'not_null',c->'default',c->>'identity',c->>'generated') THEN RAISE EXCEPTION 'COLUMN_DRIFT:%.%',r->>'name',c->>'name'; END IF;
+  END LOOP;
+  FOR c IN SELECT value FROM jsonb_array_elements(r->'constraints') LOOP
+   SELECT jsonb_build_array(pg_get_constraintdef(oid,true),convalidated) INTO x FROM pg_constraint WHERE conrelid=rel AND conname=c->>'name';
+   IF x IS DISTINCT FROM jsonb_build_array(c->>'definition',c->'validated') THEN RAISE EXCEPTION 'CONSTRAINT_DRIFT:%.%',r->>'name',c->>'name'; END IF;
+  END LOOP;
+  FOR c IN SELECT value FROM jsonb_array_elements(r->'indexes') LOOP
+   IF NOT EXISTS(SELECT 1 FROM pg_index WHERE indrelid=rel AND pg_get_indexdef(indexrelid)=c#>>'{}') THEN RAISE EXCEPTION 'INDEX_DRIFT:%',r->>'name'; END IF;
+  END LOOP;
+  FOR p IN SELECT value FROM jsonb_array_elements(r->'policies') LOOP
+   SELECT jsonb_build_array(polcmd,polpermissive,polroles,pg_get_expr(polqual,polrelid),pg_get_expr(polwithcheck,polrelid)) INTO x FROM pg_policy WHERE polrelid=rel AND polname=p->>'name';
+   IF x IS DISTINCT FROM jsonb_build_array(p->>'command',p->'permissive',p->'roles',p->'using',p->'check') THEN RAISE EXCEPTION 'POLICY_DRIFT:%.%',r->>'name',p->>'name'; END IF;
+  END LOOP;
+  FOR t IN SELECT value FROM jsonb_array_elements(r->'triggers') LOOP
+   f:=platform_private.cancel_homolog_resolve_function_v1(t->>'function',t->>'body_md5');
+   SELECT jsonb_build_array(tgenabled,tgfoid),pg_get_triggerdef(oid,true) INTO x,definition_text FROM pg_trigger WHERE tgrelid=rel AND tgname=t->>'name';
+   IF x IS DISTINCT FROM jsonb_build_array(t->>'enabled',f) THEN RAISE EXCEPTION 'TRIGGER_IDENTITY_DRIFT:%.%',r->>'name',t->>'name'; END IF;
+   -- The function is checked by OID, not path-dependent regprocedure text. Keep
+   -- event/timing/columns/WHEN/arguments exactly; normalize only its printed name.
+   IF regexp_replace(definition_text,'EXECUTE FUNCTION [^(]+\(','EXECUTE FUNCTION FUNCTION_ID(')
+    IS DISTINCT FROM regexp_replace(t->>'definition','EXECUTE FUNCTION [^(]+\(','EXECUTE FUNCTION FUNCTION_ID(') THEN RAISE EXCEPTION 'TRIGGER_DEFINITION_DRIFT:%.%',r->>'name',t->>'name'; END IF;
+  END LOOP;
+  IF (SELECT count(*) FROM pg_trigger WHERE tgrelid=rel AND NOT tgisinternal)<>jsonb_array_length(r->'triggers') THEN RAISE EXCEPTION 'TRIGGER_SET_DRIFT:%',r->>'name'; END IF;
+ END LOOP;
+ FOR d IN SELECT value FROM jsonb_array_elements(data->'definitions') LOOP
+  f:=platform_private.cancel_homolog_resolve_function_v1(d->>'signature',d->>'current_md5');
+  SELECT jsonb_build_array(pg_get_userbyid(proowner),(SELECT coalesce(jsonb_agg(a::text ORDER BY a::text),'[]'::jsonb) FROM unnest(proacl) a),proconfig) INTO x FROM pg_proc WHERE oid=f;
+  IF x IS DISTINCT FROM jsonb_build_array(d->>'owner',d->'acl',d->'proconfig') THEN RAISE EXCEPTION 'FUNCTION_OWNER_ACL_CONFIG_DRIFT:%',d->>'signature'; END IF;
+ END LOOP;
+ FOR t IN SELECT value FROM jsonb_array_elements(data->'triggers') LOOP
+  f:=platform_private.cancel_homolog_resolve_function_v1(t->>'signature',t->>'body_md5');
+  SELECT jsonb_build_array(evtevent,evtenabled,evttags,evtfoid) INTO x FROM pg_event_trigger WHERE evtname=t->>'evtname';
+  IF x IS DISTINCT FROM jsonb_build_array(t->>'evtevent',t->>'evtenabled',t->'evttags',f) THEN RAISE EXCEPTION 'EVENT_TRIGGER_IDENTITY_DRIFT:%',t->>'evtname'; END IF;
+ END LOOP;
+ IF (SELECT count(*) FROM pg_event_trigger)<>jsonb_array_length(data->'triggers') THEN RAISE EXCEPTION 'EVENT_TRIGGER_SET_DRIFT'; END IF;
+END $checker$;
+REVOKE ALL ON FUNCTION platform_private.cancel_homolog_catalog_check_v1() FROM PUBLIC,anon,authenticated,service_role;
+COMMIT;

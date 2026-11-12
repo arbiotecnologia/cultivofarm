@@ -1,0 +1,132 @@
+{
+  "hosted": false,
+  "real_session": false,
+  "canonical_title_flow": false,
+  "seams": [
+    "synthetic identity/role resolver",
+    "reduced parent/title/payment schema without remaining homolog triggers",
+    "permits seeded by local owner for barrier unit proof, no delivered issuer"
+  ],
+  "checks": [
+    {
+      "test": "supplied actual statement body hash",
+      "status": "PASS",
+      "detail": "1b7e286b1391c986604df2b171025c62\n"
+    },
+    {
+      "test": "actual baseline blocks every INSERT",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "exact E payload installs closed",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "statement trigger remains enabled same function OID",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "no grants or ticket issuer",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "gate OFF blocks even a private synthetic permit",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "forged GUC never opens normal traffic",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "row rejects altered organization_id",
+      "status": "PASS",
+      "detail": "ERROR:  HOMOLOG_FIXTURE_ROW_DENIED\nCONTEXT:  PL/pgSQL function platform_private.cancel_homolog_fixture_row_guard_v1() line 11 at RAISE\n"
+    },
+    {
+      "test": "row rejects altered total_amount",
+      "status": "PASS",
+      "detail": "ERROR:  HOMOLOG_FIXTURE_ROW_DENIED\nCONTEXT:  PL/pgSQL function platform_private.cancel_homolog_fixture_row_guard_v1() line 11 at RAISE\n"
+    },
+    {
+      "test": "row rejects altered boleto_url",
+      "status": "PASS",
+      "detail": "ERROR:  HOMOLOG_FIXTURE_ROW_DENIED\nCONTEXT:  PL/pgSQL function platform_private.cancel_homolog_fixture_row_guard_v1() line 11 at RAISE\n"
+    },
+    {
+      "test": "row rejects altered created_by",
+      "status": "PASS",
+      "detail": "ERROR:  HOMOLOG_FIXTURE_ROW_DENIED\nCONTEXT:  PL/pgSQL function platform_private.cancel_homolog_fixture_row_guard_v1() line 11 at RAISE\n"
+    },
+    {
+      "test": "revoked grant blocks row",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "expired grant blocks row",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "exact synthetic row consumes one-shot permit",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "rolled-back row not persisted",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "permit cannot create twice",
+      "status": "PASS",
+      "detail": "ERROR:  HOMOLOG_VALIDATION_RECEIVABLE_BLOCKED: criacao de titulos desabilitada durante preparacao AR Bio/FSF\nCONTEXT:  PL/pgSQL function platform_private.homolog_validation_block_receivable_insert() line 6 at RAISE\n"
+    },
+    {
+      "test": "mixed multi-row INSERT aborts atomically",
+      "status": "PASS",
+      "detail": "ERROR:  HOMOLOG_FIXTURE_ROW_DENIED\nCONTEXT:  PL/pgSQL function platform_private.cancel_homolog_fixture_row_guard_v1() line 11 at RAISE\n"
+    },
+    {
+      "test": "actor revocation rechecked after proven wait",
+      "status": "PASS",
+      "detail": "ERROR:  HOMOLOG_FIXTURE_ROW_DENIED\nCONTEXT:  PL/pgSQL function platform_private.cancel_homolog_fixture_row_guard_v1() line 11 at RAISE\n"
+    },
+    {
+      "test": "synthetic-title payment without exact permit denied",
+      "status": "PASS",
+      "detail": "ERROR:  HOMOLOG_FIXTURE_ROW_DENIED\nCONTEXT:  PL/pgSQL function platform_private.cancel_homolog_fixture_row_guard_v1() line 11 at RAISE\n"
+    },
+    {
+      "test": "exact synthetic payment R$1 persisted locally",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "exact E deny rollback passes with retained history",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "rollback preserves title/payment history",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback gate false",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "normal traffic still blocked after rollback",
+      "status": "PASS",
+      "detail": null
+    }
+  ]
+}

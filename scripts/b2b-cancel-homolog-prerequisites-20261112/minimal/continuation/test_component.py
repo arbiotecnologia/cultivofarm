@@ -2,6 +2,7 @@
 import hashlib,json,os,shutil,subprocess,tempfile
 from pathlib import Path
 import generate as G
+import normalize_production as N
 H=Path(__file__).resolve().parent
 def main():
  tmp=tempfile.mkdtemp(prefix='homolog-continuation-',dir='/tmp');shutil.chown(tmp,user='lovable')
@@ -40,6 +41,13 @@ def main():
    z=sql('BEGIN;'+text[start:end]+'COMMIT;')
    check(label+' exact additive payload + closed POST',z.returncode==0,z.stderr)
    if z.returncode:raise RuntimeError(z.stderr)
+  N.generate()
+  out=H/'production-normalization'
+  z=sql((out/'baseline.sql').read_text()+"REVOKE ALL ON FUNCTION public.rpc_b2b_cancel_residual_capability_v1(uuid) FROM PUBLIC,anon,service_role;GRANT EXECUTE ON FUNCTION public.rpc_b2b_cancel_residual_capability_v1(uuid) TO authenticated;SELECT md5(pg_get_functiondef('public.rpc_b2b_cancel_residual_capability_v1(uuid)'::regprocedure));")
+  check('production normalization exact baseline hash',z.returncode==0 and z.stdout.strip()=='af146396b98c5b6d9933ba192b783d19',z.stderr)
+  for name in ['01-pre.sql.readonly','02-install.sql.review','03-post.sql.readonly','04-rollback-deny.sql.review','03-post.sql.readonly']:
+   z=sql((out/name).read_text());check('production overlay '+name,z.returncode==0,z.stderr)
+  check('production deny rollback closes capability ACL',sql("SELECT NOT has_function_privilege('authenticated','public.rpc_b2b_cancel_residual_capability_v1(uuid)','EXECUTE');").stdout.strip()=='t')
   for label in ['B','C','D']:
    z=sql((H/(label+'-rollback-deny.sql.review')).read_text());check(label+' exact rollback',z.returncode==0,z.stderr)
   # Delivered PRE must stop on the real missing captured catalog, never silently skip it.
