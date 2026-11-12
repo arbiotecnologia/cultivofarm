@@ -7,12 +7,18 @@ import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { TrocaSenhaObrigatoria } from "@/components/auth/TrocaSenhaObrigatoria";
 import { OnboardingEmpresa } from "@/components/onboarding/OnboardingEmpresa";
 import { useOnboardingState } from "@/hooks/useOrgOnboarding";
+import { OnboardingRevalidando } from "@/components/onboarding/OnboardingRevalidando";
 
 export function AppLayout() {
-  const { role, profile } = useAuth();
+  const { role, profile, user } = useAuth();
   const { config, defaults } = useSystemConfig();
   const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
-  const onboarding = useOnboardingState(!!profile?.organization_id && profile?.senha_provisoria !== true);
+  const onboarding = useOnboardingState(
+    !!profile?.organization_id && profile?.senha_provisoria !== true,
+    { userId: user?.id, organizationId: profile?.organization_id },
+  );
+  // Mocks/legado sem `bloqueado` caem no `required` do servidor.
+  const bloqueado = onboarding.bloqueado ?? !!onboarding.data?.required;
 
   // Primeiro acesso com senha provisória: bloqueia até a troca.
   if (profile?.senha_provisoria === true) {
@@ -25,7 +31,11 @@ export function AppLayout() {
   }
 
   // Empresa com cadastro pendente: só onboarding, sair e suporte.
-  if (onboarding.data?.required) {
+  // Retorno após ausência longa / bfcache: não exibe formulário nem módulo antigos até revalidar.
+  if (onboarding.revalidando === true) {
+    return <OnboardingRevalidando />;
+  }
+  if (onboarding.data && bloqueado) {
     return <OnboardingEmpresa state={onboarding.data} />;
   }
 

@@ -4,7 +4,7 @@
  * (Edge Function autenticada). Sem consulta válida (ou fallback manual),
  * o formulário extenso não é exibido.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -71,7 +71,13 @@ export function OnboardingEmpresa({ state }: { state: OnboardingState }) {
   const [usarApi, setUsarApi] = useState<Set<CampoAplicavel>>(new Set());
   const [origem, setOrigem] = useState<Record<string, "manual" | "consulta">>({});
 
+  // Inicializa o rascunho uma única vez por organização: as revalidações periódicas do
+  // estado (polling/foco) não podem sobrescrever edições locais nem a etapa atual.
+  const inicializadoPara = useRef<string | null>(null);
   useEffect(() => {
+    const chaveInicial = state.organization_id ?? "__sem_org__";
+    if (inicializadoPara.current === chaveInicial) return;
+    inicializadoPara.current = chaveInicial;
     const inicial: OnboardingDados = {
       razao_social: state.razao_social ?? state.nome ?? "",
       nome_fantasia: state.nome_fantasia ?? "",

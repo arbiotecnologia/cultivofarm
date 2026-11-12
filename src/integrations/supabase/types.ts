@@ -23334,6 +23334,10 @@ export type Database = {
         Args: { p_job_id: string; p_lease_token: string }
         Returns: Json
       }
+      platform_approve_onboarding_review: {
+        Args: { _motivo: string; _org: string }
+        Returns: Json
+      }
       platform_archive_plan_version: {
         Args: { _idempotency_key: string; _reason: string; _version_id: string }
         Returns: string
@@ -23585,6 +23589,10 @@ export type Database = {
         Args: { p_familia: string }
         Returns: Json
       }
+      platform_list_onboarding_reviews: {
+        Args: { _org?: string }
+        Returns: Json
+      }
       platform_mark_org_admin_email_ambiguous: {
         Args: { p_error_code: string; p_job_id: string; p_lease_token: string }
         Returns: Json
@@ -23701,6 +23709,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      platform_return_organization_to_review: {
+        Args: { _motivo: string; _org: string }
+        Returns: Json
       }
       platform_save_plan_version_draft: {
         Args: {
@@ -26806,6 +26818,16 @@ export type Database = {
         Returns: boolean
       }
       storage1_path_strict: { Args: { p_name: string }; Returns: boolean }
+      svc_onboarding_record_cnpj_evidence: {
+        Args: {
+          _actor: string
+          _dados: Json
+          _fonte: string
+          _org: string
+          _payload_sha256: string
+        }
+        Returns: string
+      }
       technical_actor_ready: { Args: { p_user: string }; Returns: boolean }
       technical_attachment_download_snapshot: {
         Args: { _name: string }
