@@ -1,0 +1,26 @@
+$ vitest run src/test/fiscal/companyFiscalSave.original.test.tsx "src/test/fiscal/fase3_1.static.test.ts" "src/test/fiscal/fase3_1.ui.test.tsx" "src/test/fiscal/fase3_15.static.test.ts" "src/test/fiscal/fase_h5_a1.draftSave.test.ts" src/test/fiscal/arbioSyntheticFiscal.audit.test.ts "src/test/fiscal/h17Readiness.test.ts" "--maxWorkers=2"
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/fiscal/fase3_15.static.test.ts (24 tests) 20ms
+stderr | src/test/fiscal/fase3_1.ui.test.tsx > FiscalEmpresa — flag OFF (default) > admin vê estado de preparação, sem formulário
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/fase3_1.ui.test.tsx (18 tests) 508ms
+stderr | src/test/fiscal/companyFiscalSave.original.test.tsx > Contrato canônico de salvamento sem validação contábil > reabre DRAFT, salva dados e mantém a revisão sem promover emissão
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/fase3_1.static.test.ts (35 tests) 19ms
+ ✓ src/test/fiscal/companyFiscalSave.original.test.tsx (14 tests) 1549ms
+   ✓ Contrato canônico de salvamento sem validação contábil > reabre DRAFT, salva dados e mantém a revisão sem promover emissão  406ms
+ ✓ src/test/fiscal/h17Readiness.test.ts (15 tests) 21ms
+ ✓ src/test/fiscal/fase_h5_a1.draftSave.test.ts (4 tests) 8ms
+ ✓ src/test/fiscal/arbioSyntheticFiscal.audit.test.ts (4 tests) 7ms
+
+ Test Files  7 passed (7)
+      Tests  114 passed (114)
+   Start at  03:17:24
+   Duration  7.29s (transform 755ms, setup 810ms, collect 2.33s, tests 2.13s, environment 4.99s, prepare 946ms)
+
