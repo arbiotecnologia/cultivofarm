@@ -1,1 +1,2 @@
 - Org onboarding review and Central Fiscal release follow scripts/org-onboarding-review-20261112/AGENTS.md — prevents activation from browser-only verification.
+- Onboarding/review gating is enforced by useOnboardingState in both AppLayout and MobileLayout (poll 20s visible, focus/online/pageshow/BroadcastChannel, org-scoped key, neutral screen on long return, cache/mutation fences on transitions); never rely on required alone or initialize form state on every refetch — open tabs must reflect server status without reload.
