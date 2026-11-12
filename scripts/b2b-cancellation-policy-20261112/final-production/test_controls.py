@@ -44,6 +44,12 @@ try:
     check('plano de entrada publicado pelo writer original', r[0] is not None, r)
     r = m.call(X.UADM, f"public.b2b_payment_condition_assign('{X.P}','{X.PLQ}','boleto',1,true)")
     check('condição de entrada atribuída pelo writer original', r[0] is not None, r)
+    assignment = m.call(X.UADM, f"public.rpc_cc_upsert_assignment(NULL,'{X.PLQ}','partner','{X.P}',NULL,current_date,NULL,'LOCAL CONTROLS')")
+    if assignment[0] is None:
+        raise RuntimeError(('assignment', assignment))
+    aid = assignment[0].get('id') or assignment[0].get('assignment_id')
+    submitted = m.call(X.UADM, f"public.rpc_cc_publish_assignment('{aid}','LOCAL CONTROLS')")
+    check('atribuição comercial publicada pelo writer original', submitted[0] is not None, submitted)
     settings_actor = f"SET request.jwt.claim.sub='{X.UADM}';SET request.jwt.claims='{{\"sub\":\"{X.UADM}\",\"role\":\"authenticated\",\"iat\":1}}';"
     d.sql(settings_actor + f"UPDATE public.company_fiscal_settings SET is_active=false WHERE organization_id='{X.A}' AND is_active")
     # Existing helper would use replica mode around configuration; instead perform
