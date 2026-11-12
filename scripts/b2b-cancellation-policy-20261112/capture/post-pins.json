@@ -96,11 +96,44 @@
       "search_path=\"\""
     ]
   },
+  "public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid)": {
+    "acl": [
+      "postgres=X/postgres",
+      "service_role=X/postgres"
+    ],
+    "md5": "237c155f36acbf65c7e8cd961afe17c5",
+    "owner": "postgres",
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  "platform_private.b2b_fiscal_invoice_bridge_v1(uuid)": {
+    "acl": [
+      "postgres=X/postgres",
+      "service_role=X/postgres"
+    ],
+    "md5": "bc43d19e03f53b4bf5d473ec616b3f0d",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ]
+  },
   "platform_private.b2b_cancel_confirmed_fiscal_v1(uuid)": {
     "acl": [
       "postgres=X/postgres"
     ],
     "md5": "99d88c43cd79d26cb707144e16415644",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ]
+  },
+  "public.rpc_b2b_cancel_residual_capability_v1(uuid)": {
+    "acl": [
+      "authenticated=X/postgres",
+      "postgres=X/postgres"
+    ],
+    "md5": "af146396b98c5b6d9933ba192b783d19",
     "owner": "postgres",
     "config": [
       "search_path=\"\""
