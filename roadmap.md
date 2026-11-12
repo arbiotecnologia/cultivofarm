@@ -1,8 +1,8 @@
 ## 11/11 23:28 — Implementação candidata da política humana de cancelamento
-- [ ] Pacote separado e inativo: saldo não faturado por Gestor Comercial/Admin vendedor, motivo/CAS, histórico preservado.
-- [ ] Confirmação final vinculada de cancelamento fiscal: nota+título totalmente aberto; pagamentos exigem reconciliação financeira sem estorno automático.
-- [ ] Testar endpoints reais, UI candidata, RBAC/tenant, replay/concorrência pagamento/autorização e rollback em espelho; PRE/INSTALL/POST/rollback e hashes.
-- [ ] Preservar gates e rastreabilidade; nenhuma reabertura de previsão/estoque, SQL remoto ou publicação.
+- [x] Pacote separado inativo preparado: residual Comercial/Admin com motivo/CAS; helper fiscal final vinculado e título aberto; pagamentos exigem Financeiro, sem estorno automático.
+- [x] Gates/escopo estreitos, PRE/INSTALL/POST/rollback/POST-rollback gerados; UI candidata isolada 17/17, runtime/Edges intactos.
+- [ ] NÃO PRONTO: attempt-006 35 PASS/2 FAIL na corrida autorização replay × cancelamento (close-pending); corrigir reconciliação/recuperação e completar revogação/negativas/UI integrada. Ver scripts/b2b-cancellation-policy-20261112/REPORT.md.
+- [ ] Bloqueio externo: auditor confirmar pins novos e revisar pacote; não instalar/publicar nem certificar JWT/RLS/Storage real.
 
 ## 11/11 23:20 — Continuação local independente de política comercial
 - [x] Conectar diagnóstico no painel temporário; testes 00/10/01/11, indisponibilidade/revogação e somente dois leitores, sem chamadas remotas.
