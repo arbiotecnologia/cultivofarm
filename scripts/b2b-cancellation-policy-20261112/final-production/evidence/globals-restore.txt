@@ -1,1 +1,1 @@
-psql: error: connection to server on socket "/tmp/felig/.s.PGSQL.55901" failed: FATAL:  role "postgres" does not exist
+ERROR:  role "postgres" already exists

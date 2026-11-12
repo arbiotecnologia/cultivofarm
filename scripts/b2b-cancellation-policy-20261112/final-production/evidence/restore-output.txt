@@ -1,1 +1,4 @@
-psql: error: connection to server on socket "/tmp/felig/.s.PGSQL.55901" failed: FATAL:  role "postgres" does not exist
+NOTICE:  database "c2" does not exist, skipping
+pg_restore: error: could not execute query: ERROR:  role "supabase_admin" does not exist
+Command was: ALTER SCHEMA auth OWNER TO supabase_admin;
+
