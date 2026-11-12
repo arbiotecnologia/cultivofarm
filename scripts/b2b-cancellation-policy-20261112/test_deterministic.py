@@ -27,7 +27,10 @@ def authq(d):
  return tx,f"SELECT rpc_fiscal_sefaz_transmit_record_v1('{tx}','SUCCEEDED','{{}}'::jsonb);"
 def blocked(d,locksql,query,mutation,uid=u(29),role='service_role'):
  tag='wait_'+uuid.uuid4().hex;holder=subprocess.Popen(d.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
- holder.stdin.write('BEGIN;'+locksql+';SELECT pg_backend_pid();\n');holder.stdin.flush();pid=int(holder.stdout.readline().strip())
+ holder.stdin.write('BEGIN;'+locksql+';SELECT pg_backend_pid();\n');holder.stdin.flush()
+ while True:
+  line=holder.stdout.readline().strip()
+  if line.isdigit():pid=int(line);break
  with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
   work=pool.submit(call,d,query,uid,role,tag);seen=False
   for _ in range(400):
@@ -69,20 +72,22 @@ try:
  # Event provenance negatives and scope uniformity.
  for kind in ['sem-evento','chave','evento-empresa','ator-empresa','registro-nao-cancelamento']:
   d=clone();tid,cancel=prepared(d)
-  if kind=='sem-evento':d.sql(f"UPDATE fiscal_sefaz_transmissions SET fiscal_event_id=NULL WHERE id='{tid}'")
-  if kind=='chave':d.sql(f"UPDATE fiscal_events SET sefaz_access_key=repeat('9',44) WHERE id=(select fiscal_event_id from fiscal_sefaz_transmissions where id='{tid}')")
-  if kind=='evento-empresa':d.sql(f"UPDATE fiscal_events SET organization_id='{u(2)}' WHERE id=(select fiscal_event_id from fiscal_sefaz_transmissions where id='{tid}')")
-  if kind=='registro-nao-cancelamento':d.sql(f"UPDATE fiscal_events SET sefaz_event_code='110110' WHERE id=(select fiscal_event_id from fiscal_sefaz_transmissions where id='{tid}')")
+  if kind=='sem-evento':r=call(d,f"UPDATE fiscal_sefaz_transmissions SET fiscal_event_id=NULL WHERE id='{tid}';");assert r.returncode==0,r.stderr
+  if kind=='chave':r=call(d,f"UPDATE fiscal_events SET sefaz_access_key=repeat('9',44) WHERE id=(select fiscal_event_id from fiscal_sefaz_transmissions where id='{tid}');");assert r.returncode==0,r.stderr
+  if kind=='evento-empresa':r=call(d,f"UPDATE fiscal_events SET organization_id='{u(2)}' WHERE id=(select fiscal_event_id from fiscal_sefaz_transmissions where id='{tid}');");assert r.returncode==0,r.stderr
+  if kind=='registro-nao-cancelamento':r=call(d,f"UPDATE fiscal_events SET sefaz_event_code='110110' WHERE id=(select fiscal_event_id from fiscal_sefaz_transmissions where id='{tid}');");assert r.returncode==0,r.stderr
   before=snapshot(d);r=call(d,cancel,u(25) if kind=='ator-empresa' else u(29));check(kind+' não cancela documento/título/estoque/OS/entrega',snapshot(d)==before and (r.returncode!=0 or '"final": true' not in r.stdout),dict(out=r.stdout,err=r.stderr))
  # Residual capability and writer negative states; only input seams, rollback assertions.
  for kind in ['pendente','sem-previsao','sem-concessao','estrangeiro']:
   d=clone();version=d.last(f"select version from platform_private.b2b_financial_forecasts where order_id='{order}'")
   d.sql(f"INSERT INTO platform_private.b2b_forecast_lifecycle_allowlist_v1(operation,actor_id,organization_id,partner_id,order_id,synthetic,valid_until,created_by) VALUES('forecast_cancel','{u(30)}','{u(1)}','{partner}','{order}',true,now()+interval '1 hour','{u(24)}')")
   if kind=='pendente':d.sql(f"UPDATE partner_orders SET status='solicitado',approved_at=NULL,approved_by=NULL WHERE id='{order}'")
-  if kind=='sem-previsao':d.sql(f"DELETE FROM platform_private.b2b_financial_forecast_events WHERE forecast_id=(select id from platform_private.b2b_financial_forecasts where order_id='{order}');DELETE FROM platform_private.b2b_financial_forecasts WHERE order_id='{order}'")
+  if kind=='sem-previsao':
+   target=d.last("select po.id from partner_orders po where NOT EXISTS(select 1 from platform_private.b2b_financial_forecasts f where f.order_id=po.id) limit 1");assert target
+  else:target=order
   if kind=='sem-concessao':d.sql(f"UPDATE platform_private.b2b_forecast_lifecycle_allowlist_v1 SET revoked_at=now() WHERE actor_id='{u(30)}'")
   actor=u(25) if kind=='estrangeiro' else u(30);before=snapshot(d)
-  r=call(d,f"SELECT rpc_b2b_cancel_residual_capability_v1('{order}');",actor,'authenticated');check(kind+' capacidade opaca indisponível',val(r)=={'available':False},dict(out=r.stdout,err=r.stderr))
-  r=call(d,f"SELECT rpc_b2b_forecast_cancel_residual_v1('{order}',{version},'LOCAL NEGATIVE');",actor,'authenticated');check(kind+' writer nega sem efeitos',r.returncode!=0 and snapshot(d)==before,r.stderr)
+  r=call(d,f"SELECT rpc_b2b_cancel_residual_capability_v1('{target}');",actor,'authenticated');check(kind+' capacidade opaca indisponível',val(r)=={'available':False},dict(out=r.stdout,err=r.stderr))
+  r=call(d,f"SELECT rpc_b2b_forecast_cancel_residual_v1('{target}',{version},'LOCAL NEGATIVE');",actor,'authenticated');check(kind+' writer nega sem efeitos',r.returncode!=0 and snapshot(d)==before,r.stderr)
 except Exception as e:check('harness',False,repr(e))
 (out/'checks.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2)+'\n');code=int(any(x['status']=='FAIL' for x in rows));(out/'exitcode').write_text(str(code));print(out);sys.exit(code)
