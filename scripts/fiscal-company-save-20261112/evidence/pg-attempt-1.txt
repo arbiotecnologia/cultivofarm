@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/fiscal-company-save-20261112/test_pg.py", line 50, in <module>
+    assert result.returncode == 0, result.stderr
+           ^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: runuser: Critical error - immediate abort
+
