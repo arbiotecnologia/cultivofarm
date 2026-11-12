@@ -10,7 +10,7 @@
  * As respostas passam obrigatoriamente pelos sanitizadores puros; nada bruto
  * chega à tela e nada é registrado em console.
  */
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   sanitizeSefazStatusResponse,
@@ -39,13 +39,47 @@ function smokeIdempotencyKey(): string {
   return `H7-SMOKE-STATUS-${crypto.randomUUID()}`;
 }
 
+/** Rascunho NF-e de homologação elegível para o smoke de status. */
+export interface HomologationDraftOption {
+  id: string;
+  label: string;
+}
+
+/**
+ * Lista (via RLS da sessão) os rascunhos NF-e tpAmb=2 da empresa fiscal atual.
+ * Somente leitura; o servidor revalida acesso e vínculo do certificado.
+ */
+export function useHomologationNfeDrafts(companySettingsId: string | null) {
+  return useQuery<HomologationDraftOption[], Error>({
+    queryKey: ["fiscal", "smoke", "hml-nfe-drafts", companySettingsId],
+    enabled: !!companySettingsId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("fiscal_invoices")
+        .select("id, series, invoice_number, created_at")
+        .eq("company_settings_id", companySettingsId as string)
+        .eq("document_model", "NFE")
+        .eq("environment", "HOMOLOGATION")
+        .eq("normalized_status", "DRAFT")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw new Error(error.message);
+      return (data ?? []).map((r) => ({
+        id: r.id,
+        label: `Rascunho série ${r.series ?? "—"} · ${new Date(r.created_at).toLocaleString("pt-BR")} · ${r.id.slice(0, 8)}`,
+      }));
+    },
+  });
+}
+
 export function useSefazStatusSmoke() {
-  return useMutation<SefazStatusView, Error, void>({
+  return useMutation<SefazStatusView, Error, { invoiceId: string }>({
     mutationKey: ["fiscal", "smoke", "sefaz-status"],
-    mutationFn: async () => {
+    mutationFn: async ({ invoiceId }) => {
+      if (!invoiceId) throw new Error("Selecione um rascunho NF-e de homologação.");
       const started = Date.now();
       const { data, error } = await supabase.functions.invoke("fiscal-sefaz-transport", {
-        body: { action: "status", idempotency_key: smokeIdempotencyKey() },
+        body: { action: "status", invoice_id: invoiceId, idempotency_key: smokeIdempotencyKey() },
       });
       const elapsed = Date.now() - started;
       if (error) throw new Error(error.message);

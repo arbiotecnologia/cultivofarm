@@ -137,7 +137,7 @@ describe("H7M — contrato do hook e da UI", () => {
     expect(hook).toContain('action: "status"');
     for (const proibido of [
       'action: "authorize"', 'action: "event"', 'action: "consult"', 'action: "receipt"',
-      "invoice_id", "run_id", "access_key",
+      "run_id", "access_key",
     ]) {
       expect(hook).not.toContain(proibido);
     }
@@ -152,7 +152,10 @@ describe("H7M — contrato do hook e da UI", () => {
 
   it("previne clique duplo e respeita o gate", () => {
     expect(ui).toContain("disabled={!certGate.enabled || selfTest.isPending}");
-    expect(ui).toContain("disabled={!envGate.enabled || sefazStatus.isPending}");
+    expect(ui).toContain("disabled={!envGate.enabled || sefazStatus.isPending || !draftId}");
+    expect(hook).toContain("invoice_id: invoiceId");
+    expect(hook).toContain('.eq("environment", "HOMOLOGATION")');
+    expect(hook).toContain('.eq("normalized_status", "DRAFT")');
     expect(ui).toContain("if (!isAdmin) return null;");
   });
 
