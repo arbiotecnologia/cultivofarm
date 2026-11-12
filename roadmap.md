@@ -1,6 +1,7 @@
 ## 12/11 02:48 — Painel original de aprovações e diagnóstico
-- [ ] Montar painel econômico na carteira real e apresentar diagnóstico server-side sem confundir aprovação econômica com liberação operacional.
-- [ ] Testar AR Bio sintética, papéis/tenant, previsão única, reconciliação/parcial R$1 e bloqueios; informar limites de sessão e publicação.
+- [x] Painel econômico montado na carteira real; economicDiagnosis escopado, mensagem correta, eligible/reasons preservados.
+- [x] 92 testes focados PASS: AR Bio sintética, papéis/tenant, previsão única, reconciliação/parcial R$1 e bloqueios; harness visual sintético desktop/mobile; build automático OK.
+- [ ] Conferência autenticada PB-001042: bloqueada por sessão Supabase externa indisponível; bateria PG nova não rodada porque espelho /tmp foi removido. Provas anteriores preservadas, publicação não autorizada.
 
 ## 12/11 02:20 — Reconstrução FINAL com controles LIVE relatados
 - [x] Composição original recomposta com CCR2/Vendedor/C2 e ACLs reais restritivas; fontes/etapas exatas e tentativas preservadas.
