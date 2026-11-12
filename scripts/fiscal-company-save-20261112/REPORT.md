@@ -25,4 +25,5 @@
 **Somente frontend.** Não há Edge alterada, migration, DDL/GRANT ou instalador servidor necessário. Constraint, revisão contábil, habilitações/gates e banco não devem mudar. O build público precisa de publicação **posterior autorizada** para receber esta correção; nada foi publicado aqui.
 Revisar os quatro arquivos de runtime acima e testes. Não transportar `test_pg.py`, fixtures ou SQL de teste para produção. Reversão do frontend não exige banco, mas restauraria o defeito; manter salvamento contido se houver reversão.
 
-Resultados finais e SHA-256: `evidence/vitest-final.txt`, `evidence/pg.json`, `evidence/build-final.txt` e `SHA256SUMS`.
+Resultado final: **160 testes Vitest PASS em nove arquivos**, incluindo **26 checks PostgreSQL PASS**. Compilação/typecheck automáticos OK; sem execução manual de build/typecheck.
+Resultados e SHA-256: `evidence/vitest-final.txt`, `evidence/pg.json`, `evidence/build-final.txt` e `SHA256SUMS`.
