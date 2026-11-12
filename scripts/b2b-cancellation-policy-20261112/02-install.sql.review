@@ -309,7 +309,7 @@ BEGIN
   JOIN public.accounts_receivable r ON r.id=a.receivable_id
   JOIN platform_private.b2b_financial_forecasts f ON f.order_id=po.id AND f.organization_id=org AND f.partner_id=po.partner_id
   JOIN platform_private.b2b_financial_forecast_events fe ON fe.forecast_id=f.id AND fe.event_type='FISCAL_CONFIRMED' AND fe.event_reference=inv.id::text
-  WHERE a.document_id=inv.id AND a.organization_id=org AND a.order_id=po.id AND a.source_digest=digest AND a.items=items
+  WHERE a.document_id=inv.id AND a.organization_id=org AND a.order_id=po.id AND a.source_digest=digest AND a.items=existing.items
    AND r.id=inv.receivable_id AND r.organization_id=org AND r.origin_id=po.id AND r.origin_type='B2B_ORDER' AND r.partner_id=po.partner_id AND r.b2b_document_id=inv.id
    AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals z WHERE z.document_id=inv.id)
  ) THEN RETURN jsonb_build_object('success',true,'invoice_id',inv.id,'receivable_id',inv.receivable_id,'replayed',true,'closed_evidence_verified',true); END IF;
