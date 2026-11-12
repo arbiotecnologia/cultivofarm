@@ -51532,3 +51532,4 @@ stderr | src/test/pedidos/ownerOrderTracking.test.tsx > commercialOwner em /pedi
 
  ✓ src/test/pedidos/ownerOrderTracking.test.tsx (2 tests) 212ms
  ✓ src/test/catalogo/productUnitPackaging.contract.test.tsx (11 tests) 59ms
+error: script "test" exited with code 143
