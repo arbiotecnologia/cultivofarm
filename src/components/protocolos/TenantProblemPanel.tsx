@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { DraftExitConfirmation } from "@/components/catalogo/DraftExitConfirmation";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
+import { supabase } from "@/integrations/supabase/client";
 
 export function TenantProblemDialog({ item, onClose, onSaved }: { item: CatalogExtensionRow | null; onClose(): void; onSaved(row: { id: string; nome: string }): void }) {
   const api = useCatalogExtensions("problems");
@@ -20,11 +22,17 @@ export function TenantProblemDialog({ item, onClose, onSaved }: { item: CatalogE
 }
 export function TenantProblemPanel() {
   const api = useCatalogExtensions("problems"); const [editing, setEditing] = useState<{ item: CatalogExtensionRow | null }>(); const [search, setSearch] = useState("");
+  const historical = useScopedPortalQuery({ queryKey: ["catalog-problems-historical"], queryFn: async signal => {
+    const {data,error} = await supabase.from("catalogo_problemas").select("id,nome,nome_cientifico,categoria").eq("ativo",true).order("nome").abortSignal(signal);
+    if(error) throw error; return data ?? [];
+  } });
   useEffect(() => { setEditing(undefined); setSearch(""); }, [api.scope]);
   return <section className="space-y-3"><header className="flex flex-wrap gap-3 justify-between"><Input aria-label="Buscar problemas próprios" value={search} onChange={e => setSearch(e.target.value)} className="min-h-11 sm:max-w-sm" />{api.canEdit && <Button className="min-h-11" onClick={() => setEditing({ item: null })}>Adicionar problema</Button>}</header>
     {api.isError && <p role="alert">Cadastros próprios indisponíveis; o contrato precisa estar ativo.</p>}
     {(api.data ?? []).filter(r => (r.nome ?? "").toLowerCase().includes(search.toLowerCase())).map(r => <article className="border-b py-3 flex gap-3 justify-between" key={r.id}><p>{r.nome}</p>{api.canEdit && <Button variant="outline" className="min-h-11" onClick={() => setEditing({ item: r })}>Editar problema</Button>}</article>)}
     {!api.isLoading && !api.isError && !api.data?.length && <p>Nenhum problema próprio cadastrado.</p>}
+    {historical.isError && <p role="alert">Não foi possível consultar os problemas existentes.</p>}
+    {(historical.data ?? []).filter(r => r.nome.toLowerCase().includes(search.toLowerCase())).map(r => <article key={`historical-${r.id}`} className="border-b py-3"><p>{r.nome}</p><p className="text-sm text-muted-foreground">{r.categoria}</p></article>)}
     {editing && <TenantProblemDialog key={api.scope} item={editing.item} onClose={() => setEditing(undefined)} onSaved={() => setEditing(undefined)} />}
   </section>;
 }

@@ -9,5 +9,5 @@ export function useActiveCatalogFamilies() {
     if (error) throw error;
     return families.parse(data).flatMap(f => f.value && f.label ? [{ value: f.value, label: f.label }] : []);
   } });
-  return { ...query, options: [{value:"todos",label:"Todas as famílias"},...(query.data ?? PRODUCT_FAMILY_TABS.filter(t => t.value !== "todos" && t.value !== "sem_classificacao")),{value:"sem_classificacao",label:"Sem classificação"}] };
+  return { ...query, options: [{value:"todos",label:"Todas as famílias"},...(query.isSuccess ? query.data ?? [] : PRODUCT_FAMILY_TABS.filter(t => t.value !== "todos" && t.value !== "sem_classificacao")),{value:"sem_classificacao",label:"Sem classificação"}] };
 }
