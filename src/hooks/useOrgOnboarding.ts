@@ -81,7 +81,6 @@ export function useOnboardingState(enabled: boolean, scope?: OnboardingScope) {
   });
 
   // Revalidação ao voltar/retomar + bloqueio de conteúdo antigo após ausência longa.
-  const [hiddenSince, setHiddenSince] = useState<number | null>(null);
   const [revalidando, setRevalidando] = useState(false);
   const keyRef = useRef(key);
   keyRef.current = key;
@@ -94,9 +93,9 @@ export function useOnboardingState(enabled: boolean, scope?: OnboardingScope) {
         .finally(() => setRevalidando(false));
     };
     const onVis = () => {
-      if (document.visibilityState === "hidden") { oculto = Date.now(); setHiddenSince(oculto); return; }
+      if (document.visibilityState === "hidden") { oculto = Date.now(); return; }
       const longo = oculto !== null && Date.now() - oculto >= ONBOARDING_RETURN_REVALIDATE_MS;
-      oculto = null; setHiddenSince(null);
+      oculto = null;
       revalidar(longo);
     };
     const onPageShow = (e: PageTransitionEvent) => { if (e.persisted) revalidar(true); };
@@ -132,8 +131,7 @@ export function useOnboardingState(enabled: boolean, scope?: OnboardingScope) {
     statusAnterior.current = statusAtual;
   }, [statusAtual]);
 
-  void hiddenSince;
-  return Object.assign(query, { revalidando });
+  return { ...query, revalidando };
 }
 
 export function useSalvarOnboarding() {
@@ -162,4 +160,34 @@ export function useConcluirOnboarding() {
       await qc.invalidateQueries({ queryKey: ["organization-profile"] });
     },
   });
+}
+
+const FISCAL_KEY = /fiscal|nfe|nfse|nf-e|nfs-e|rtc|certificad|cfop|ncm|tribut/i;
+
+/**
+ * Efeitos de transição do bloqueio de cadastro em aba aberta:
+ * liberado→bloqueado cancela leituras em voo, remove caches fiscais/inativos e descarta
+ * mutações pendentes (o servidor continua bloqueando escrita); bloqueado→liberado
+ * invalida tudo para que nenhum conteúdo anterior à aprovação seja reaproveitado.
+ */
+export function useOnboardingTransitionFences(bloqueado: boolean | null) {
+  const qc = useQueryClient();
+  const anterior = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (bloqueado === null) return;
+    const prev = anterior.current;
+    anterior.current = bloqueado;
+    if (prev === null || prev === bloqueado) return;
+    const naoOnboarding = (k: readonly unknown[]) => k[0] !== "org_onboarding_state";
+    if (bloqueado) {
+      void qc.cancelQueries({ predicate: (q) => naoOnboarding(q.queryKey) });
+      qc.removeQueries({
+        predicate: (q) => naoOnboarding(q.queryKey)
+          && (q.getObserversCount() === 0 || q.queryKey.some((p) => typeof p === "string" && FISCAL_KEY.test(p))),
+      });
+      qc.getMutationCache().clear();
+    } else {
+      void qc.invalidateQueries({ predicate: (q) => naoOnboarding(q.queryKey) });
+    }
+  }, [bloqueado, qc]);
 }
