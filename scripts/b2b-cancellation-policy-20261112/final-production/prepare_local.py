@@ -21,6 +21,7 @@ if not (socket / '.s.PGSQL.55901').exists():
     subprocess.run(priv + [str(PG / 'pg_ctl'), '-D', str(socket / 'data'), '-l', str(socket / 'postgres.log'), '-o', '-k /tmp/felig -h "" -p 55901', '-w', 'start'], check=True)
 # Synthetic restoration only; historical original dump is not distributed.
 globals_sql = Path('/tmp/r12/globals.sql').read_text()
+globals_sql = globals_sql.replace('CREATE ROLE postgres;', '')
 # Existing disposable clusters initialized by uid 1000 may name their bootstrap
 # superuser differently; establish postgres locally without weakening any app guard.
 if db.DB('postgres').raw('SELECT 1').returncode:
