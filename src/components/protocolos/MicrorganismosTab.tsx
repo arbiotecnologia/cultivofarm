@@ -41,6 +41,8 @@ import { VolumesChips } from "./VolumesChips";
 import { saveTenantCatalogRoot } from "@/lib/catalogo/tenantCatalogRoots";
 import { gerarProximoCodigoMicro, ehCodigoAutomatico, PREFIXOS_MICRO } from "@/lib/protocolos/autoCodigo";
 import { useActiveTenantName } from "@/hooks/useActiveTenantName";
+import { TenantReferenceDialog } from "./TenantReferencePanel";
+import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
 
 /** CAT-08 · carga consistente: só aplica dados se ambas as consultas passarem. */
 export async function carregarMicrorganismosCatalogo(client: any): Promise<
@@ -104,9 +106,9 @@ interface Microrganismo {
   updated_at?: string | null;
 }
 
-export { TenantMicroorganismsTab as MicrorganismosTab };
-function TenantMicroorganismsTab() { return <TenantReferencePanel root="microrganismos" />; }
-function LegacyMicrorganismosTab() {
+export function MicrorganismosTab() {
+  const editor = useTenantCatalogEditor();
+  const [reference, setReference] = useState<{ item: Microrganismo | null }>();
   const { name: tenantName } = useActiveTenantName();
   const [items, setItems] = useState<Microrganismo[]>([]);
   const [filteredItems, setFilteredItems] = useState<Microrganismo[]>([]);
@@ -170,14 +172,14 @@ function LegacyMicrorganismosTab() {
   const activeScopeKey = ownedCapability.scope ? `${ownedCapability.scope.organizationId}|${ownedCapability.scope.userId}` : "";
   useEffect(() => {
     localGeneration.current += 1;
-    setItems([]); setFilteredItems([]); setOwnedDialog({ open: false, item: null }); setOwnedConfirm(null); setVolumesEdit(null);
+    setItems([]); setFilteredItems([]); setOwnedDialog({ open: false, item: null }); setOwnedConfirm(null); setVolumesEdit(null); setReference(undefined);
     void fetch();
     return () => { localGeneration.current += 1; };
     // Session-bound legacy global reads; own reads use the scoped QueryClient hook.
   }, [activeScopeKey]);
 
   useEffect(() => {
-    let result = [...items.filter((item) => !item.owner_organization_id), ...((ownedRead.data?.items ?? []) as unknown as Microrganismo[])];
+    let result = [...items, ...((ownedRead.data?.items ?? []) as unknown as Microrganismo[])].filter((item, i, all) => all.findIndex(r => r.id === item.id) === i);
     result = result.filter((item) => showArchived || !item.archived_at);
     
     if (search) {
@@ -337,6 +339,8 @@ function LegacyMicrorganismosTab() {
 
   return (
     <div className="space-y-4">
+      {reference && <TenantReferenceDialog key={editor.scope} root="microrganismos" item={reference.item ? { ...reference.item, descricao: reference.item.descricao ?? null, updated_at: reference.item.updated_at ?? null } : null} onClose={() => setReference(undefined)} onSaved={() => { setReference(undefined); void fetch(); }} />}
+      {editor.canEdit && <div className="flex justify-end"><Button onClick={() => setReference({ item: null })}><Plus className="mr-2 h-4 w-4" />Adicionar microrganismo</Button></div>}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -684,6 +688,7 @@ function LegacyMicrorganismosTab() {
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1 justify-end flex-wrap">
                     <TechnicalProfileStatusBadge status={profileStatusMap[m.id] ?? null} />
+                    {editor.canEdit && m.owner_organization_id && <Button variant="outline" size="sm" onClick={() => setReference({ item: m })}>Editar</Button>}
                     <TenantHiddenBadge state={tenantVis.map?.get(m.id)} />
                     {canManageVis && !m.owner_organization_id && (
                       <TenantVisibilityToggle entity="microrganismo" item={{ id: m.id, nome: m.nome, ativo: m.ativo }}

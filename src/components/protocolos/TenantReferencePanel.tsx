@@ -63,7 +63,10 @@ export function TenantReferencePanel({ root }: { root: ReferenceRoot }) {
   const query = useScopedPortalQuery<Reference[]>({ queryKey: ["tenant-reference", root], queryFn: async signal => {
     const { data, error } = await supabase.from(root).select("*").order("nome").abortSignal(signal);
     if (error) throw error;
-    return (data ?? []) as Reference[];
+    return (data ?? []).map(row => {
+      const r = row as typeof row & { updated_at?: string; owner_organization_id?: string };
+      return { ...r, updated_at: r.updated_at ?? null };
+    });
   } });
   const rows = query.data?.filter(r => r.nome.toLowerCase().includes(search.toLowerCase())) ?? [];
   return <section className="space-y-4">
