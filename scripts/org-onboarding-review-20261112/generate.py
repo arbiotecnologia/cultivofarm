@@ -20,8 +20,8 @@ def regproc(sig):
     return sig if sig.startswith('platform_private.') else 'public.' + sig
 
 pre = ["DO $pre$ DECLARE v text; BEGIN",
-       "  IF current_setting('cf.expected_ref', true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN",
-       "    RAISE EXCEPTION 'PRE: defina SET cf.expected_ref = ''swzpzcwiasxmjutrmvkm'' após conferir o projeto'; END IF;",
+       "  IF NOT EXISTS (SELECT 1 FROM public.organizations WHERE id='442444d9-263f-45d9-a991-a679498d06c3' AND cnpj_normalizado='98761243000147') THEN",
+       "    RAISE EXCEPTION 'PRE: banco não reconhecido como swzpzcwiasxmjutrmvkm (fixture homolog ausente)'; END IF;",
        "  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname='platform_approve_onboarding_review') THEN RAISE EXCEPTION 'PRE: pacote já instalado (rerun bloqueado)'; END IF;",
        "  IF EXISTS (SELECT 1 FROM public.organizations WHERE status NOT IN ('rascunho','aguardando_ativacao','onboarding','ativa','suspensa','cancelada')) THEN RAISE EXCEPTION 'PRE: status inesperado'; END IF;"]
 for s, m in PINS.items():
