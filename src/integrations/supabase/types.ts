@@ -24227,6 +24227,10 @@ export type Database = {
           valor_medio_parceiro: number
         }[]
       }
+      rpc_b2b_cancel_residual_capability_v1: {
+        Args: { p_order: string }
+        Returns: Json
+      }
       rpc_b2b_capacity_kpis: { Args: never; Returns: Json }
       rpc_b2b_carteira_kpis: {
         Args: { p_from?: string; p_to?: string }
