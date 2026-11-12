@@ -44,7 +44,8 @@ try:
     check('plano de entrada publicado pelo writer original', r[0] is not None, r)
     r = m.call(X.UADM, f"public.b2b_payment_condition_assign('{X.P}','{X.PLQ}','boleto',1,true)")
     check('condição de entrada atribuída pelo writer original', r[0] is not None, r)
-    d.sql(f"UPDATE public.company_fiscal_settings SET is_active=false WHERE organization_id='{X.A}' AND is_active")
+    settings_actor = f"SET request.jwt.claim.sub='{X.UADM}';SET request.jwt.claims='{{\"sub\":\"{X.UADM}\",\"role\":\"authenticated\",\"iat\":1}}';"
+    d.sql(settings_actor + f"UPDATE public.company_fiscal_settings SET is_active=false WHERE organization_id='{X.A}' AND is_active")
     # Existing helper would use replica mode around configuration; instead perform
     # normal configuration above and call with pending_accounting=False.
     pending = m.buyer_quote_order(pending_accounting=False)
@@ -70,7 +71,7 @@ try:
     r = m.call(X.UFIN, f"public.c2_pilot_economic_approve_v1('{pending}','credit','controls-k-{uuid.uuid4().hex}','{ev}','LOCAL EXPLICIT')")
     check('segunda aprovação core atravessa barreira com ticket real e cria 20 awaiting', r[0] is not None and d.last(f"SELECT total_amount=20 AND residual_amount=20 AND state='aguardando_fiscal' FROM platform_private.b2b_financial_forecasts WHERE order_id='{pending}'") == 't', r)
     check('ledger explícito preserva bloqueio operacional C2', m.call(X.UGC, f"public.approve_partner_order('{pending}',NULL)")[0] is None and d.last(f"SELECT approved_at IS NULL AND approved_by IS NULL FROM partner_orders WHERE id='{pending}'") == 't')
-    d.sql(f"UPDATE public.company_fiscal_settings SET is_active=true WHERE organization_id='{X.A}'")
+    d.sql(settings_actor + f"UPDATE public.company_fiscal_settings SET is_active=true WHERE organization_id='{X.A}'")
     # Per-invoice sequence: independent connections, actual prepare endpoint.
     d.sql("INSERT INTO saas_features(module_id,key,name) SELECT id,'emissao_nfe_nfse','LOCAL CONTROL' FROM saas_modules LIMIT 1; INSERT INTO organization_feature_overrides(organization_id,feature_id,mode,reason,created_by) SELECT '" + X.A + "',id,'GRANT','LOCAL ONLY','" + X.UADM + "' FROM saas_features WHERE key='emissao_nfe_nfse'")
     invoice = u(900)
