@@ -85,9 +85,10 @@ try:
   d.sql(f"INSERT INTO platform_private.b2b_forecast_lifecycle_allowlist_v1(operation,actor_id,organization_id,partner_id,order_id,synthetic,valid_until,created_by) VALUES('forecast_cancel','{u(30)}','{u(1)}','{partner}','{order}',true,now()+interval '1 hour','{u(24)}')")
   if kind in ['pendente','sem-previsao']:
    items=json.dumps([dict(item_id=u(32),item_tipo='produto',packaging_id=u(51),quantidade=2)])
-   choice=json.dumps(dict(payment_method='boleto',payment_condition_version=1,payment_deadline_days=30))
+   current=int(d.last(f"select max(version) from platform_private.b2b_condition_versions where plan_id='{u(81)}' and method='boleto'"))
+   choice=json.dumps(dict(payment_method='boleto',payment_condition_version=current,payment_deadline_days=30))
    r=call(d,f"UPDATE company_fiscal_settings SET configuration_status='PENDING_ACCOUNTING',accounting_validated_at=NULL WHERE id=(select company_settings_id from fiscal_invoices where id='{invoice}');");assert r.returncode==0,r.stderr
-   sim=val(call(d,f"SELECT simulate_b2b_payment_condition_secure('{partner}','{u(81)}','{items}'::jsonb,'{choice}'::jsonb);",u(21),'authenticated'));assert sim
+   r=call(d,f"SELECT simulate_b2b_payment_condition_secure('{partner}','{u(81)}','{items}'::jsonb,'{choice}'::jsonb);",u(21),'authenticated');sim=val(r);assert sim,r.stderr
    journal=val(call(d,f"SELECT recover_partner_order_attempt_v1('{partner}',NULL,NULL,false,NULL);",u(21),'authenticated'));assert journal
    if journal.get('state')=='committed':journal=val(call(d,f"SELECT recover_partner_order_attempt_v1('{partner}','{journal['key']}',{journal['generation']},true,'{journal['order_id']}');",u(21),'authenticated'))
    r=call(d,f"SELECT create_partner_order_condition_secure('{partner}',NULL,'{items}'::jsonb,NULL,'{u(81)}','{sim['cart_hash']}','{journal['key']}','{choice}'::jsonb);",u(21),'authenticated');created=val(r);assert created,r.stderr
