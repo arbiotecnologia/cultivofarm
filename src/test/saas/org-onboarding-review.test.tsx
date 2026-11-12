@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { acaoStatusGenericaPermitida, onboardingBloqueia } from "@/lib/saas/orgOnboarding";
@@ -15,6 +15,11 @@ const base: OnboardingState = {
   cnpj: "11222333000181",
   dados: { razao_social: "Emitente Fictício Ltda", cnpj: "11222333000181", cep: "38600-000", logradouro: "Rua A",
     cidade: "Paracatu", uf: "MG", telefone: "38999990000" },
+};
+const voltarAteEtapa2 = () => {
+  // Retomada abre na primeira pendência (Responsável); volta até "Dados da empresa".
+  fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
+  fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
 };
 const renderiza = (state: OnboardingState) => render(
   <QueryClientProvider client={new QueryClient()}><MemoryRouter><OnboardingEmpresa state={state} /></MemoryRouter></QueryClientProvider>,
@@ -46,6 +51,7 @@ describe("onboarding com revisão obrigatória", () => {
 
   it("retomada sem evidência do servidor não exibe a empresa como verificada", () => {
     renderiza({ ...base, evidencia: null });
+    voltarAteEtapa2();
     expect(screen.queryByText(/Fonte: Receita Federal/)).toBeNull();
     expect(screen.getByText(/Cadastro não verificado/)).toBeInTheDocument();
   });
@@ -53,6 +59,7 @@ describe("onboarding com revisão obrigatória", () => {
   it("retomada com evidência vigente do servidor mostra a situação oficial registrada", () => {
     renderiza({ ...base, evidencia: { id: "e1", cnpj: "11222333000181", razao_social: "Emitente Fictício Ltda",
       situacao_cadastral: "BAIXADA", fonte: "Receita Federal via BrasilAPI", consultado_em: "2026-11-12T15:00:00Z", vigente: true } });
+    voltarAteEtapa2();
     expect(screen.getByText(/Situação cadastral: BAIXADA/)).toBeInTheDocument();
   });
 });
