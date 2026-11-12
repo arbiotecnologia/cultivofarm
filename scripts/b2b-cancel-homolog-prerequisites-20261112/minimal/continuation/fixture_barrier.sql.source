@@ -1,0 +1,99 @@
+-- Source only; generated homolog-only install remains gate OFF, no client grants.
+CREATE TABLE platform_private.cancel_homolog_fixture_gate_v1(
+ singleton boolean PRIMARY KEY CHECK(singleton),enabled boolean NOT NULL DEFAULT false);
+INSERT INTO platform_private.cancel_homolog_fixture_gate_v1 VALUES(true,false);
+CREATE TABLE platform_private.cancel_homolog_fixture_grants_v1(
+ id uuid PRIMARY KEY,actor_id uuid NOT NULL,organization_id uuid NOT NULL,order_id uuid NOT NULL,
+ partner_id uuid NOT NULL,invoice_id uuid NOT NULL,title_id uuid NOT NULL,synthetic boolean NOT NULL CHECK(synthetic),
+ valid_from timestamptz NOT NULL,valid_until timestamptz NOT NULL,revoked_at timestamptz,
+ CHECK(valid_until>valid_from AND valid_until<=valid_from+interval '4 hours'),
+ UNIQUE(actor_id,organization_id,order_id,invoice_id,title_id));
+CREATE TABLE platform_private.cancel_homolog_fixture_permits_v1(
+ transaction_id bigint NOT NULL,backend_pid integer NOT NULL,actor_id uuid NOT NULL,
+ grant_id uuid NOT NULL REFERENCES platform_private.cancel_homolog_fixture_grants_v1(id),
+ action text NOT NULL CHECK(action IN ('TITLE','PAYMENT')),
+ object_id uuid NOT NULL,expected_row jsonb NOT NULL,used boolean NOT NULL DEFAULT false,
+ PRIMARY KEY(transaction_id,backend_pid,action,object_id));
+ALTER TABLE platform_private.cancel_homolog_fixture_gate_v1 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_private.cancel_homolog_fixture_grants_v1 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_private.cancel_homolog_fixture_permits_v1 ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON platform_private.cancel_homolog_fixture_gate_v1,platform_private.cancel_homolog_fixture_grants_v1,platform_private.cancel_homolog_fixture_permits_v1 FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.cancel_homolog_fixture_scope_v1(p_action text,p_object uuid,p_row jsonb,p_consume boolean)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $scope$
+DECLARE permit platform_private.cancel_homolog_fixture_permits_v1;g platform_private.cancel_homolog_fixture_grants_v1;org uuid;enabled boolean;
+BEGIN
+ IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed' OR auth.uid() IS NULL THEN RETURN false; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref='vrlcdwmlytukrjezrrnf' AND production_emission_allowed IS FALSE)
+ OR EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref IS DISTINCT FROM 'vrlcdwmlytukrjezrrnf' OR production_emission_allowed IS DISTINCT FROM FALSE) THEN RETURN false; END IF;
+ org:=platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]);
+ IF org IS NULL THEN RETURN false; END IF;
+ -- Exact tx/backend/actor permit is private, never a session flag or payload.
+ SELECT * INTO permit FROM platform_private.cancel_homolog_fixture_permits_v1
+ WHERE transaction_id=txid_current() AND backend_pid=pg_backend_pid() AND actor_id=auth.uid()
+ AND action=p_action AND object_id=p_object AND used IS FALSE;
+ IF NOT FOUND THEN RETURN false; END IF;
+ SELECT * INTO g FROM platform_private.cancel_homolog_fixture_grants_v1
+ WHERE id=permit.grant_id AND actor_id=auth.uid() AND organization_id=org FOR SHARE;
+ IF NOT FOUND THEN RETURN false; END IF;
+ SELECT e.enabled INTO enabled FROM platform_private.cancel_homolog_fixture_gate_v1 e WHERE singleton FOR SHARE;
+ IF enabled IS NOT TRUE OR g.synthetic IS NOT TRUE OR g.revoked_at IS NOT NULL
+ OR g.valid_from>clock_timestamp() OR g.valid_until<=clock_timestamp()
+ OR platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro']::public.app_role[]) IS DISTINCT FROM org THEN RETURN false; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.partner_orders po JOIN public.partner_accounts pa ON pa.id=po.partner_id
+ WHERE po.id=g.order_id AND po.partner_id=g.partner_id AND pa.commercial_owner_organization_id=org AND pa.ativo IS TRUE AND pa.deleted_at IS NULL) THEN RETURN false; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.fiscal_invoices i WHERE i.id=g.invoice_id AND i.organization_id=org
+ AND i.partner_order_id=g.order_id AND i.debtor_partner_id=g.partner_id AND i.environment='HOMOLOGATION') THEN RETURN false; END IF;
+ IF p_action='TITLE' THEN
+  IF p_object IS DISTINCT FROM g.title_id OR p_row IS DISTINCT FROM permit.expected_row
+  OR p_row->>'origin_type' IS DISTINCT FROM 'B2B_ORDER' OR p_row->>'origin_id' IS DISTINCT FROM g.order_id::text
+  OR p_row->>'organization_id' IS DISTINCT FROM org::text OR p_row->>'partner_id' IS DISTINCT FROM g.partner_id::text
+  OR p_row->>'b2b_document_id' IS DISTINCT FROM g.invoice_id::text OR p_row->>'created_by' IS DISTINCT FROM auth.uid()::text
+  OR p_row->>'status' IS DISTINCT FROM 'OPEN' OR p_row->>'fiscal_invoice_status' IS DISTINCT FROM 'ISSUED'
+  OR p_row->>'payment_gateway' IS NOT NULL OR p_row->>'external_payment_id' IS NOT NULL
+  OR p_row->>'boleto_url' IS NOT NULL OR p_row->>'pix_qr_code' IS NOT NULL OR p_row->>'pix_copia_cola' IS NOT NULL THEN RETURN false; END IF;
+ ELSIF p_action='PAYMENT' THEN
+  IF p_row IS DISTINCT FROM permit.expected_row OR p_row->>'organization_id' IS DISTINCT FROM org::text
+  OR p_row->>'created_by' IS DISTINCT FROM auth.uid()::text OR p_row->>'is_reversal' IS DISTINCT FROM 'false'
+  OR NOT EXISTS(SELECT 1 FROM public.accounts_receivable_installments x JOIN public.accounts_receivable r ON r.id=x.receivable_id
+    WHERE x.id=(p_row->>'installment_id')::uuid AND x.organization_id=org AND r.organization_id=org
+    AND r.id=g.title_id AND r.b2b_document_id=g.invoice_id AND r.origin_id=g.order_id AND r.partner_id=g.partner_id) THEN RETURN false; END IF;
+ ELSE RETURN false; END IF;
+ IF p_consume THEN
+  UPDATE platform_private.cancel_homolog_fixture_permits_v1 SET used=true
+  WHERE transaction_id=permit.transaction_id AND backend_pid=permit.backend_pid AND action=permit.action AND object_id=permit.object_id AND used IS FALSE;
+  IF NOT FOUND THEN RETURN false; END IF;
+ END IF;
+ RETURN true;
+END $scope$;
+REVOKE ALL ON FUNCTION platform_private.cancel_homolog_fixture_scope_v1(text,uuid,jsonb,boolean) FROM PUBLIC,anon,authenticated,service_role;
+
+-- Existing named statement trigger remains enabled; its body gets only a private
+-- tx-permit prefilter. Every inserted row still has to consume its exact ticket.
+CREATE OR REPLACE FUNCTION platform_private.homolog_validation_block_receivable_insert()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $statement$
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM platform_private.cancel_homolog_fixture_gate_v1 WHERE singleton AND enabled)
+ OR NOT EXISTS(SELECT 1 FROM platform_private.cancel_homolog_fixture_permits_v1
+ WHERE transaction_id=txid_current() AND backend_pid=pg_backend_pid() AND actor_id=auth.uid() AND action='TITLE' AND used IS FALSE)
+ THEN RAISE EXCEPTION 'HOMOLOG_VALIDATION_RECEIVABLE_BLOCKED: criacao de titulos desabilitada durante preparacao AR Bio/FSF' USING ERRCODE='42501'; END IF;
+ RETURN NULL;
+END $statement$;
+REVOKE ALL ON FUNCTION platform_private.homolog_validation_block_receivable_insert() FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION platform_private.cancel_homolog_fixture_row_guard_v1()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $row$
+DECLARE action text;
+BEGIN
+ action:=CASE WHEN TG_TABLE_NAME='accounts_receivable' THEN 'TITLE' ELSE 'PAYMENT' END;
+ IF action='PAYMENT' AND NOT EXISTS(SELECT 1 FROM public.accounts_receivable_installments x
+ JOIN platform_private.cancel_homolog_fixture_grants_v1 g ON g.title_id=x.receivable_id
+ WHERE x.id=NEW.installment_id) THEN RETURN NEW; END IF;
+ IF platform_private.cancel_homolog_fixture_scope_v1(action,NEW.id,to_jsonb(NEW),true) IS NOT TRUE THEN
+ RAISE EXCEPTION 'HOMOLOG_FIXTURE_ROW_DENIED' USING ERRCODE='42501'; END IF;
+ RETURN NEW;
+END $row$;
+REVOKE ALL ON FUNCTION platform_private.cancel_homolog_fixture_row_guard_v1() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER zz_cancel_homolog_fixture_row_guard_v1 BEFORE INSERT ON public.accounts_receivable
+FOR EACH ROW EXECUTE FUNCTION platform_private.cancel_homolog_fixture_row_guard_v1();
+CREATE TRIGGER zz_cancel_homolog_fixture_payment_guard_v1 BEFORE INSERT ON public.receivable_payments
+FOR EACH ROW EXECUTE FUNCTION platform_private.cancel_homolog_fixture_row_guard_v1();
