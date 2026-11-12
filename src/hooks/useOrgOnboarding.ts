@@ -20,6 +20,13 @@ export interface OnboardingState {
   fuso_horario?: string | null;
   dados?: OnboardingDados;
   plano?: string | null;
+  review_pending?: boolean;
+  review?: { origem: string; motivo_codigo: string; submetido_em: string } | null;
+  /** Evidência registrada pelo servidor (Edge) para o CNPJ atual; nunca derivada do navegador. */
+  evidencia?: {
+    id: string; cnpj: string; razao_social: string | null; situacao_cadastral: string | null;
+    fonte: string; consultado_em: string; vigente: boolean;
+  } | null;
 }
 
 export function useOnboardingState(enabled: boolean) {
@@ -55,7 +62,7 @@ export function useConcluirOnboarding() {
     mutationFn: async () => {
       const { data, error } = await db.rpc("org_onboarding_complete");
       if (error) throw new Error(error.message);
-      return data as { status: string; idempotent: boolean };
+      return data as { status: "ativa" | "aguardando_revisao"; idempotent: boolean; motivo?: string };
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["org_onboarding_state"] });

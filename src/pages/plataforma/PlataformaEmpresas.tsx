@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { mensagemErroPlataforma, useAlterarStatusEmpresa, useOrganizacoesSaaS, type OrganizacaoSaaS } from "@/hooks/usePlataformaSaaS";
-import { ORG_STATUS_LABEL, type OrgStatus, transicaoPermitida } from "@/lib/saas/orgOnboarding";
+import { acaoStatusGenericaPermitida, ORG_STATUS_LABEL, type OrgStatus } from "@/lib/saas/orgOnboarding";
 import { filtrarEmpresas, formatarCnpj } from "@/components/plataforma/empresaEdicao";
 import OrganizationOnboardingFlow from "./OrganizationOnboardingFlow";
 import EmpresaDetalhe from "./EmpresaDetalhe";
@@ -79,7 +79,7 @@ export default function PlataformaEmpresas({ onAbrirAdministradores, onAbrirAssi
 
   const menuAcoes = (org: OrganizacaoSaaS) => {
     const status = org.status as OrgStatus;
-    const transicoes = ACOES_SUPERADMIN.filter((next) => transicaoPermitida(status, next) && !(status === "onboarding" && next === "ativa"));
+    const transicoes = ACOES_SUPERADMIN.filter((next) => acaoStatusGenericaPermitida(status, next));
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
