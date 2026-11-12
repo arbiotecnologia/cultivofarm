@@ -110,9 +110,11 @@ RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $row$
 DECLARE action text;
 BEGIN
  action:=CASE WHEN TG_TABLE_NAME='accounts_receivable' THEN 'TITLE' ELSE 'PAYMENT' END;
- IF action='PAYMENT' AND NOT EXISTS(SELECT 1 FROM public.accounts_receivable_installments x
- JOIN platform_private.cancel_homolog_fixture_grants_v1 g ON g.title_id=x.receivable_id
- WHERE x.id=NEW.installment_id) THEN RETURN NEW; END IF;
+ IF action='PAYMENT' THEN
+  IF NOT EXISTS(SELECT 1 FROM public.accounts_receivable_installments x
+   JOIN platform_private.cancel_homolog_fixture_grants_v1 g ON g.title_id=x.receivable_id
+   WHERE x.id=NEW.installment_id) THEN RETURN NEW; END IF;
+ END IF;
  IF platform_private.cancel_homolog_fixture_scope_v1(action,NEW.id,to_jsonb(NEW),true) IS NOT TRUE THEN
  RAISE EXCEPTION 'HOMOLOG_FIXTURE_ROW_DENIED' USING ERRCODE='42501'; END IF;
  RETURN NEW;

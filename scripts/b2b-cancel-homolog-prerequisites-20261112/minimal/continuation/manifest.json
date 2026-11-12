@@ -48,6 +48,6 @@
     "scripts/b2b-downstream-audit-20261107/b4/review-d6cd95c0/b4-candidate.sql.review": "7dde7f07bca49f6d89ca995f1b6eacfdbb84b0694565e2a4121b1a7bec4dc59f",
     "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/stages/04-bridge-install.sql.review": "5db2c160fd3a99bb847fe20a1d9764cbfed82d5cd80915be0eceb94eadfb9964",
     "scripts/b2b-cancellation-policy-20261112/candidate.sql": "babcf71d36fecb0d5d51919e541a52722f1f9fd794cc2d716e1d2b43774081ba",
-    "scripts/b2b-cancel-homolog-prerequisites-20261112/minimal/continuation/fixture_barrier.sql.source": "f7b125577dfc67d98cea954ec13dfd245131efa73b95ac82b98002ab4d082e82"
+    "scripts/b2b-cancel-homolog-prerequisites-20261112/minimal/continuation/fixture_barrier.sql.source": "197f68311e994759024522fd922c2b816e7d5a1bd5508daf05cf082ff1a0d048"
   }
 }
