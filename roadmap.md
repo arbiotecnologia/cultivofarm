@@ -1,5 +1,5 @@
 ## 12/11 02:00 — Candidato FINAL de cancelamento no original
-- [ ] Consolidar PRE/instalação fechada/POST/rollback do pacote original, aguardando_fiscal, hashes e testes locais integração/concorrência/rollback; sem remoto/publicação.
+- [x] Candidato final-production entregue: PRE/INSTALL fechado/POST/rollback, awaiting normalizado, 37 integração +49 determinísticos +18 roundtrip/awaiting +21 UI PASS; hashes/REPORT; instalação real depende de PRE/revisão LIVE, fora do escopo autorizado.
 - [x] Trabalho de homolog hospedada encerrado por mudança expressa; dependências e liberações artificiais não serão transportadas.
 
 ## 12/11 01:22 — Pré-requisitos específicos de cancelamento em homologação (ENCERRADO pelo proprietário às 02:00)
