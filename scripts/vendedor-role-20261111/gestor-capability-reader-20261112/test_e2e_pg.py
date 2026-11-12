@@ -57,8 +57,14 @@ def approve_flow(label,oid,internal):
         ok(f'{label}: gestor comercial aprova comercialmente',r[0] is not None and s2['approved_by']==UGC,(r,s2))
         ids[label]['finding_reverse_order_no_forecast']=not s2['forecasts']
         print('OBSERVADO termos antes da comercial -> previsão:',s2['forecasts'])
+def grant(actor,oid):
+    # Costura declarada (igual a billing-delivery-20261111/positive_control.py): gate do espelho ligado e concessão sintética exata ator/org/parceiro/pedido, 3h.
+    d.sql("UPDATE platform_private.b2b_forecast_creation_gate_v1 SET enabled=true,reason='MIRROR_POSITIVE_CONTROL' WHERE singleton;")
+    d.sql(f"INSERT INTO platform_private.b2b_forecast_creation_allowlist_v1(id,actor_id,organization_id,partner_id,order_id,synthetic,valid_from,valid_until,created_by) VALUES(gen_random_uuid(),'{actor}','{A}','{P}','{oid}',true,now(),now()+interval '3 hours','{UADM}')")
 def canonical_flow(label,oid):
     ids[label]=dict(order_id=oid,created=state(oid))
+    r=call(UFIN,f"public.get_b2b_financial_forecast_secure('{oid}')");ids[label]['forecast_before']=r
+    grant(UFIN,oid)
     r=call(UGC,f"public.approve_partner_order('{oid}',NULL)");ok(f'{label}: gestor comercial aprova comercialmente',r[0] is not None,r)
     s1=state(oid);ok(f'{label}: sem previsão só com a comercial',not s1['forecasts'] and s1['approved_by']==UGC,s1)
     r=call(UFIN,f"public.approve_b2b_payment_terms_secure('{oid}','FINANCEIRO LOCAL SINTETICO')");ok(f'{label}: financeiro aprova termos',r[0] is not None,r)
@@ -109,8 +115,16 @@ try:
     if o4: probe_gestor_terms(o4['order']['id'])
     o3,e=full_create(UB,P);ok('comprador externo grava pedido para P (controle financeiro positivo)',o3 is not None,e)
     if o3: approve_flow('comprador_ordem_inversa',o3['order']['id'],False)
+    r=d.sql("UPDATE platform_private.b2b_forecast_creation_gate_v1 SET enabled=false,reason='PRODUCTION_ALIGNED_OFF' WHERE singleton;")
     o5,e=full_create(UB,P);ok('comprador grava segundo pedido (sequência canônica)',o5 is not None,e)
     if o5: canonical_flow('comprador_canonico',o5['order']['id'])
+    o6,e=full_create(UB,P);ok('comprador grava terceiro pedido (ordem inversa com concessão)',o6 is not None,e)
+    if o6:
+        oid=o6['order']['id'];ids['inversa_com_concessao']=dict(order_id=oid);grant(UGC,oid)
+        r1=call(UFIN,f"public.approve_b2b_payment_terms_secure('{oid}','FIN')");r2=call(UGC,f"public.approve_partner_order('{oid}',NULL)");s=state(oid);ids['inversa_com_concessao']['final']=s
+        ok('ordem inversa (termos→comercial) também gera previsão única com autores distintos',r1[0] and r2[0] and s['forecasts'] and len(s['forecasts'])==1 and s['forecasts'][0]['commercial_by']==UGC and s['forecasts'][0]['credit_by']==UFIN,(r1,r2,s))
+    d.sql("UPDATE platform_private.b2b_forecast_creation_gate_v1 SET enabled=false,reason='PRODUCTION_ALIGNED_OFF' WHERE singleton;")
+    ok('gate de previsão desligado ao fim (alinhado à produção)',q("select enabled::text from platform_private.b2b_forecast_creation_gate_v1 where singleton")=='false')
     r=full_create(UGC,PF);ok('gestor não grava para parceiro de outra empresa',r[0] is None,r)
     ok('nenhum título/NF/evento fiscal/envio/reserva/entrega criado (recebível só após NF)'+'' if True else '',cnt()==base,(base,cnt()))
     #/NF/evento fiscal/envio/reserva/entrega criado',cnt()==base,(base,cnt()))

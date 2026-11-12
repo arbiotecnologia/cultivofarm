@@ -1,6 +1,6 @@
 {
   "attempt": 1,
-  "pass_": 55,
+  "pass_": 58,
   "fail": 2,
   "checks": [
     {
@@ -246,12 +246,12 @@
     {
       "test": "comprador_canonico: previsão única aguardando NF, autores distintos (gestor/financeiro)",
       "status": "FAIL",
-      "detail": "{'status': 'aprovado', 'created_by': '00000000-0000-0000-0000-000000000021', 'approved_by': '00000000-0000-0000-0000-000000000030', 'approved_at': True, 'financial_approval_status': 'pending', 'numero': 'PB-001024', 'table': 10.0, 'discount': 1.0, 'total': 9.0, 'final': 9.0, 'credit_approved_by': None, 'requires_fin': True, 'origin_actor': None, 'terms': [{'id': '2b280d73-f983-4260-abee-28b562afcc58', 'status': 'approved', 'approved_by': '00000000-0000-0000-0000-000000000029'}], 'schedule': [{'n': 1, 'due': '2026-12-12', 'amount': 9.0}], 'forecasts': None}"
+      "detail": "{'status': 'aprovado', 'created_by': '00000000-0000-0000-0000-000000000021', 'approved_by': '00000000-0000-0000-0000-000000000030', 'approved_at': True, 'financial_approval_status': 'pending', 'numero': 'PB-001024', 'table': 10.0, 'discount': 1.0, 'total': 9.0, 'final': 9.0, 'credit_approved_by': None, 'requires_fin': True, 'origin_actor': None, 'terms': [{'id': '690ff4c9-d2fc-4ff3-a84a-0bf99349fdf9', 'status': 'approved', 'approved_by': '00000000-0000-0000-0000-000000000029'}], 'schedule': [{'n': 1, 'due': '2026-12-12', 'amount': 9.0}], 'forecasts': [{'id': '0ac0d654-c39b-40ee-a324-08334c91a9c8', 'state': 'aguardando_fiscal', 'amount': 9.0, 'residual': 9.0, 'commercial_by': '00000000-0000-0000-0000-000000000030', 'credit_by': None}]}"
     },
     {
       "test": "comprador_canonico: repetição não duplica previsão",
-      "status": "FAIL",
-      "detail": "(({'status': 'approved', 'success': True, 'replayed': True, 'approved_at': '2026-11-12T13:06:24.244406+00:00', 'approved_by': '00000000-0000-0000-0000-000000000029'}, None), {'status': 'aprovado', 'created_by': '00000000-0000-0000-0000-000000000021', 'approved_by': '00000000-0000-0000-0000-000000000030', 'approved_at': True, 'financial_approval_status': 'pending', 'numero': 'PB-001024', 'table': 10.0, 'discount': 1.0, 'total': 9.0, 'final': 9.0, 'credit_approved_by': None, 'requires_fin': True, 'origin_actor': None, 'terms': [{'id': '2b280d73-f983-4260-abee-28b562afcc58', 'status': 'approved', 'approved_by': '00000000-0000-0000-0000-000000000029'}], 'schedule': [{'n': 1, 'due': '2026-12-12', 'amount': 9.0}], 'forecasts': None})"
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "comprador_canonico: financeiro lê a previsão",
@@ -260,6 +260,21 @@
     },
     {
       "test": "comprador_canonico: vendedor não lê a previsão",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "comprador grava terceiro pedido (ordem inversa com concessão)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "ordem inversa (termos→comercial) também gera previsão única com autores distintos",
+      "status": "FAIL",
+      "detail": "(({'status': 'approved', 'success': True}, None), (True, None), {'status': 'aprovado', 'created_by': '00000000-0000-0000-0000-000000000021', 'approved_by': '00000000-0000-0000-0000-000000000030', 'approved_at': True, 'financial_approval_status': 'pending', 'numero': 'PB-001025', 'table': 10.0, 'discount': 1.0, 'total': 9.0, 'final': 9.0, 'credit_approved_by': None, 'requires_fin': True, 'origin_actor': None, 'terms': [{'id': 'accbb53b-b5d9-415c-8886-f92da4dd769a', 'status': 'approved', 'approved_by': '00000000-0000-0000-0000-000000000029'}], 'schedule': [{'n': 1, 'due': '2026-12-12', 'amount': 9.0}], 'forecasts': [{'id': '7d362db4-aba2-44e0-9118-973e3efc42dd', 'state': 'aguardando_fiscal', 'amount': 9.0, 'residual': 9.0, 'commercial_by': '00000000-0000-0000-0000-000000000030', 'credit_by': None}]})"
+    },
+    {
+      "test": "gate de previsão desligado ao fim (alinhado à produção)",
       "status": "PASS",
       "detail": null
     },
@@ -290,9 +305,9 @@
     }
   ],
   "ids": {
-    "assignment": "805b11a1-5075-4b1a-a542-3c04dd9cf459",
+    "assignment": "75e9e7df-972a-491a-9431-58525f77fc7d",
     "vendedor": {
-      "order_id": "9f19cada-8189-4af7-af0e-b9272fb16a6a",
+      "order_id": "721d91ee-80b0-4692-94d3-6e4f720fe8f6",
       "created": {
         "status": "em_analise_comercial",
         "created_by": "00000000-0000-0000-0000-000000000901",
@@ -309,7 +324,7 @@
         "origin_actor": "00000000-0000-0000-0000-000000000901",
         "terms": [
           {
-            "id": "f46578ff-86f5-42bb-8449-4d6c8af10a3f",
+            "id": "ab5fa154-8cb1-40a2-8743-a04230ca2090",
             "status": "pending",
             "approved_by": null
           }
@@ -339,7 +354,7 @@
         "origin_actor": "00000000-0000-0000-0000-000000000901",
         "terms": [
           {
-            "id": "f46578ff-86f5-42bb-8449-4d6c8af10a3f",
+            "id": "ab5fa154-8cb1-40a2-8743-a04230ca2090",
             "status": "approved",
             "approved_by": "00000000-0000-0000-0000-000000000029"
           }
@@ -370,7 +385,7 @@
         "origin_actor": "00000000-0000-0000-0000-000000000901",
         "terms": [
           {
-            "id": "f46578ff-86f5-42bb-8449-4d6c8af10a3f",
+            "id": "ab5fa154-8cb1-40a2-8743-a04230ca2090",
             "status": "approved",
             "approved_by": "00000000-0000-0000-0000-000000000029"
           }
@@ -386,7 +401,7 @@
       }
     },
     "gestor": {
-      "order_id": "b7b9d73d-fa38-4aca-b6bf-124386507d09",
+      "order_id": "2e8432d7-24c0-4226-aa3c-f6b10d251ac2",
       "created": {
         "status": "em_analise_comercial",
         "created_by": "00000000-0000-0000-0000-000000000030",
@@ -403,7 +418,7 @@
         "origin_actor": "00000000-0000-0000-0000-000000000030",
         "terms": [
           {
-            "id": "9fe899dc-0f5d-49e7-bea3-1dee3e2ad6c3",
+            "id": "66c88ffa-364a-45a4-9f2c-b51c91e7e885",
             "status": "pending",
             "approved_by": null
           }
@@ -433,7 +448,7 @@
         "origin_actor": "00000000-0000-0000-0000-000000000030",
         "terms": [
           {
-            "id": "9fe899dc-0f5d-49e7-bea3-1dee3e2ad6c3",
+            "id": "66c88ffa-364a-45a4-9f2c-b51c91e7e885",
             "status": "approved",
             "approved_by": "00000000-0000-0000-0000-000000000029"
           }
@@ -464,7 +479,7 @@
         "origin_actor": "00000000-0000-0000-0000-000000000030",
         "terms": [
           {
-            "id": "9fe899dc-0f5d-49e7-bea3-1dee3e2ad6c3",
+            "id": "66c88ffa-364a-45a4-9f2c-b51c91e7e885",
             "status": "approved",
             "approved_by": "00000000-0000-0000-0000-000000000029"
           }
@@ -480,21 +495,21 @@
       }
     },
     "gestor_terms_probe": {
-      "order_id": "9d5d3c65-0a4c-460a-879e-4d6eb1e261e1",
+      "order_id": "e5565925-30fb-4b63-98d5-e649a3815b6f",
       "result": {
         "status": "approved",
         "success": true
       },
       "terms": [
         {
-          "id": "964b2daf-8ae5-466a-98eb-2f52cc83a72d",
+          "id": "226341b9-42d8-4151-bfc0-1a9879174c5f",
           "status": "approved",
           "approved_by": "00000000-0000-0000-0000-000000000030"
         }
       ]
     },
     "comprador_ordem_inversa": {
-      "order_id": "5de2ffc0-11d9-4ded-a89c-993c59b4ecbd",
+      "order_id": "df4a6050-1131-4bcf-90be-3da3af8ab62e",
       "created": {
         "status": "em_analise_comercial",
         "created_by": "00000000-0000-0000-0000-000000000021",
@@ -511,7 +526,7 @@
         "origin_actor": null,
         "terms": [
           {
-            "id": "96ac9c64-26d7-4ffe-a820-f2f0857b7934",
+            "id": "d57084aa-c7b8-495c-9953-3becf21b9d12",
             "status": "pending",
             "approved_by": null
           }
@@ -541,7 +556,7 @@
         "origin_actor": null,
         "terms": [
           {
-            "id": "96ac9c64-26d7-4ffe-a820-f2f0857b7934",
+            "id": "d57084aa-c7b8-495c-9953-3becf21b9d12",
             "status": "approved",
             "approved_by": "00000000-0000-0000-0000-000000000029"
           }
@@ -572,7 +587,7 @@
         "origin_actor": null,
         "terms": [
           {
-            "id": "96ac9c64-26d7-4ffe-a820-f2f0857b7934",
+            "id": "d57084aa-c7b8-495c-9953-3becf21b9d12",
             "status": "approved",
             "approved_by": "00000000-0000-0000-0000-000000000029"
           }
@@ -589,7 +604,7 @@
       "finding_reverse_order_no_forecast": true
     },
     "comprador_canonico": {
-      "order_id": "7f9f59b4-fec2-4b3f-98fd-7b98dc07805c",
+      "order_id": "b0661864-645f-4910-bf03-bc71b8ed5207",
       "created": {
         "status": "em_analise_comercial",
         "created_by": "00000000-0000-0000-0000-000000000021",
@@ -606,7 +621,7 @@
         "origin_actor": null,
         "terms": [
           {
-            "id": "2b280d73-f983-4260-abee-28b562afcc58",
+            "id": "690ff4c9-d2fc-4ff3-a84a-0bf99349fdf9",
             "status": "pending",
             "approved_by": null
           }
@@ -620,6 +635,10 @@
         ],
         "forecasts": null
       },
+      "forecast_before": [
+        true,
+        null
+      ],
       "final": {
         "status": "aprovado",
         "created_by": "00000000-0000-0000-0000-000000000021",
@@ -636,7 +655,7 @@
         "origin_actor": null,
         "terms": [
           {
-            "id": "2b280d73-f983-4260-abee-28b562afcc58",
+            "id": "690ff4c9-d2fc-4ff3-a84a-0bf99349fdf9",
             "status": "approved",
             "approved_by": "00000000-0000-0000-0000-000000000029"
           }
@@ -648,9 +667,86 @@
             "amount": 9.0
           }
         ],
-        "forecasts": null
+        "forecasts": [
+          {
+            "id": "0ac0d654-c39b-40ee-a324-08334c91a9c8",
+            "state": "aguardando_fiscal",
+            "amount": 9.0,
+            "residual": 9.0,
+            "commercial_by": "00000000-0000-0000-0000-000000000030",
+            "credit_by": null
+          }
+        ]
       },
-      "forecast_read": true
+      "forecast_read": {
+        "state": "aguardando_fiscal",
+        "version": 1,
+        "order_id": "b0661864-645f-4910-bf03-bc71b8ed5207",
+        "schedule": [
+          {
+            "id": "7b015d5f-4c8a-40bb-8ad2-96547ab3bd5c",
+            "amount": 9.0,
+            "due_date": "2026-12-12",
+            "interest_amount": 0.0,
+            "partner_order_id": "b0661864-645f-4910-bf03-bc71b8ed5207",
+            "payment_terms_id": "690ff4c9-d2fc-4ff3-a84a-0bf99349fdf9",
+            "principal_amount": 9.0,
+            "installment_number": 1
+          }
+        ],
+        "created_at": "2026-11-12T13:07:36.868135+00:00",
+        "partner_id": "00000000-0000-0000-0000-000000000011",
+        "updated_at": "2026-11-12T13:07:36.868135+00:00",
+        "forecast_id": "0ac0d654-c39b-40ee-a324-08334c91a9c8",
+        "total_amount": 9.0,
+        "last_error_code": null,
+        "organization_id": "007bb519-cba0-4704-be2c-cb93ad010048",
+        "residual_amount": 9.0,
+        "fiscal_intent_id": null,
+        "due_dates_estimated": true
+      }
+    },
+    "inversa_com_concessao": {
+      "order_id": "39512ad5-87c1-421b-bd64-8abc59af2670",
+      "final": {
+        "status": "aprovado",
+        "created_by": "00000000-0000-0000-0000-000000000021",
+        "approved_by": "00000000-0000-0000-0000-000000000030",
+        "approved_at": true,
+        "financial_approval_status": "pending",
+        "numero": "PB-001025",
+        "table": 10.0,
+        "discount": 1.0,
+        "total": 9.0,
+        "final": 9.0,
+        "credit_approved_by": null,
+        "requires_fin": true,
+        "origin_actor": null,
+        "terms": [
+          {
+            "id": "accbb53b-b5d9-415c-8886-f92da4dd769a",
+            "status": "approved",
+            "approved_by": "00000000-0000-0000-0000-000000000029"
+          }
+        ],
+        "schedule": [
+          {
+            "n": 1,
+            "due": "2026-12-12",
+            "amount": 9.0
+          }
+        ],
+        "forecasts": [
+          {
+            "id": "7d362db4-aba2-44e0-9118-973e3efc42dd",
+            "state": "aguardando_fiscal",
+            "amount": 9.0,
+            "residual": 9.0,
+            "commercial_by": "00000000-0000-0000-0000-000000000030",
+            "credit_by": null
+          }
+        ]
+      }
     }
   },
   "executed_sha256": {

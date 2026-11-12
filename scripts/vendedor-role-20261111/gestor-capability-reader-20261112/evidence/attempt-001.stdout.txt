@@ -48,13 +48,16 @@ PASS comprador grava segundo pedido (sequência canônica)
 PASS comprador_canonico: gestor comercial aprova comercialmente 
 PASS comprador_canonico: sem previsão só com a comercial 
 PASS comprador_canonico: financeiro aprova termos 
-FAIL comprador_canonico: previsão única aguardando NF, autores distintos (gestor/financeiro) {'status': 'aprovado', 'created_by': '00000000-0000-0000-0000-000000000021', 'approved_by': '00000000-0000-0000-0000-000000000030', 'approved_at': True, 'financial_approval_status': 'pending', 'numero': 'PB-001024', 'table': 10.0, 'discount': 1.0, 'total': 9.0, 'final': 9.0, 'credit_approved_by': None, 'requires_fin': True, 'origin_actor': None, 'terms': [{'id': '2b280d73-f983-4260-abee-28b562afcc58', 'status': 'approved', 'approved_by': '00000000-0000-0000-0000-000000000029'}], 'schedule': [{'n
-FAIL comprador_canonico: repetição não duplica previsão (({'status': 'approved', 'success': True, 'replayed': True, 'approved_at': '2026-11-12T13:06:24.244406+00:00', 'approved_by': '00000000-0000-0000-0000-000000000029'}, None), {'status': 'aprovado', 'created_by': '00000000-0000-0000-0000-000000000021', 'approved_by': '00000000-0000-0000-0000-000000000030', 'approved_at': True, 'financial_approval_status': 'pending', 'numero': 'PB-001024', 'table': 10.0, 'discount': 1.0, 'total': 9.0, 'final': 9.0, 'credit_approved_by': None, 'requires_fin': True, 
+FAIL comprador_canonico: previsão única aguardando NF, autores distintos (gestor/financeiro) {'status': 'aprovado', 'created_by': '00000000-0000-0000-0000-000000000021', 'approved_by': '00000000-0000-0000-0000-000000000030', 'approved_at': True, 'financial_approval_status': 'pending', 'numero': 'PB-001024', 'table': 10.0, 'discount': 1.0, 'total': 9.0, 'final': 9.0, 'credit_approved_by': None, 'requires_fin': True, 'origin_actor': None, 'terms': [{'id': '690ff4c9-d2fc-4ff3-a84a-0bf99349fdf9', 'status': 'approved', 'approved_by': '00000000-0000-0000-0000-000000000029'}], 'schedule': [{'n
+PASS comprador_canonico: repetição não duplica previsão 
 PASS comprador_canonico: financeiro lê a previsão 
 PASS comprador_canonico: vendedor não lê a previsão 
+PASS comprador grava terceiro pedido (ordem inversa com concessão) 
+FAIL ordem inversa (termos→comercial) também gera previsão única com autores distintos (({'status': 'approved', 'success': True}, None), (True, None), {'status': 'aprovado', 'created_by': '00000000-0000-0000-0000-000000000021', 'approved_by': '00000000-0000-0000-0000-000000000030', 'approved_at': True, 'financial_approval_status': 'pending', 'numero': 'PB-001025', 'table': 10.0, 'discount': 1.0, 'total': 9.0, 'final': 9.0, 'credit_approved_by': None, 'requires_fin': True, 'origin_actor': None, 'terms': [{'id': 'accbb53b-b5d9-415c-8886-f92da4dd769a', 'status': 'approved', 'approved
+PASS gate de previsão desligado ao fim (alinhado à produção) 
 PASS gestor não grava para parceiro de outra empresa 
 PASS nenhum título/NF/evento fiscal/envio/reserva/entrega criado (recebível só após NF) 
 PASS ROLLBACK restaura LIVE 
 PASS rollback repetido recusa drift 
 PASS pedidos preservados após rollback 
-RESULT 55 PASS 2 FAIL attempt-001
+RESULT 58 PASS 2 FAIL attempt-001
