@@ -83,11 +83,15 @@ try:
  for kind in ['pendente','sem-previsao','sem-concessao','estrangeiro']:
   d=clone();version=d.last(f"select version from platform_private.b2b_financial_forecasts where order_id='{order}'")
   d.sql(f"INSERT INTO platform_private.b2b_forecast_lifecycle_allowlist_v1(operation,actor_id,organization_id,partner_id,order_id,synthetic,valid_until,created_by) VALUES('forecast_cancel','{u(30)}','{u(1)}','{partner}','{order}',true,now()+interval '1 hour','{u(24)}')")
-  if kind=='pendente':
-   r=call(d,f"UPDATE partner_orders SET status='solicitado',approved_at=NULL,approved_by=NULL WHERE id='{order}';",u(24),'authenticated')
-   if r.returncode!=0:check('alteração de pedido histórico barrada; nenhum bypass', 'ERROR' in r.stderr,r.stderr);continue
-  if kind=='sem-previsao':
-   target=d.last("select po.id from partner_orders po where NOT EXISTS(select 1 from platform_private.b2b_financial_forecasts f where f.order_id=po.id) limit 1");assert target
+  if kind in ['pendente','sem-previsao']:
+   items=json.dumps([dict(item_id=u(32),item_tipo='produto',packaging_id=u(51),quantidade=2)])
+   choice=json.dumps(dict(payment_method='boleto',payment_condition_version=1,payment_deadline_days=30))
+   r=call(d,f"UPDATE company_fiscal_settings SET configuration_status='PENDING_ACCOUNTING',accounting_validated_at=NULL WHERE id=(select company_settings_id from fiscal_invoices where id='{invoice}');");assert r.returncode==0,r.stderr
+   sim=val(call(d,f"SELECT simulate_b2b_payment_condition_secure('{partner}','{u(81)}','{items}'::jsonb,'{choice}'::jsonb);",u(21),'authenticated'));assert sim
+   journal=val(call(d,f"SELECT recover_partner_order_attempt_v1('{partner}',NULL,NULL,false,NULL);",u(21),'authenticated'));assert journal
+   if journal.get('state')=='committed':journal=val(call(d,f"SELECT recover_partner_order_attempt_v1('{partner}','{journal['key']}',{journal['generation']},true,'{journal['order_id']}');",u(21),'authenticated'))
+   r=call(d,f"SELECT create_partner_order_condition_secure('{partner}',NULL,'{items}'::jsonb,NULL,'{u(81)}','{sim['cart_hash']}','{journal['key']}','{choice}'::jsonb);",u(21),'authenticated');created=val(r);assert created,r.stderr
+   target=created['id'];check(kind+' entrada real C2 pendente sem previsão',d.last(f"select (approved_at IS NULL AND approved_by IS NULL AND c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' AND internal_economic_snapshot IS NULL AND NOT EXISTS(select 1 from platform_private.b2b_financial_forecasts where order_id=po.id)) from partner_orders po where id='{target}'")=='t')
   else:target=order
   if kind=='sem-concessao':d.sql(f"UPDATE platform_private.b2b_forecast_lifecycle_allowlist_v1 SET revoked_at=now() WHERE actor_id='{u(30)}'")
   actor=u(25) if kind=='estrangeiro' else u(30);before=snapshot(d)
