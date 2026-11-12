@@ -91,8 +91,10 @@ def generate():
   m=re.search(r'AS (\$\w*\$)',body);assert m
   prosrc=body[m.end():body.index(m[1],m.end())]
   src_md5=hashlib.md5(prosrc.encode()).hexdigest()
-  CHECKER_PIN+=f"IF (SELECT jsonb_build_array(md5(prosrc),pg_get_userbyid(proowner),prosecdef,(SELECT coalesce(jsonb_agg(a::text ORDER BY a::text),'[]'::jsonb) FROM unnest(proacl) a)) FROM pg_proc WHERE oid=to_regprocedure('{sig}')) IS DISTINCT FROM jsonb_build_array('{src_md5}','postgres',true,'[\"postgres=X/postgres\"]'::jsonb) THEN RAISE EXCEPTION 'CHECKER_PIN_DRIFT:{sig}'; END IF;\n"
-  (initdir/f'{i:02d}-install-checker.sql.review').write_text("-- HOMOLOG ONLY; catalog validation infrastructure, no business grants.\nBEGIN;SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='30s';\n"+TARGET+body+"COMMIT;\n")
+  config=['search_path=public, pg_catalog'] if sig=='platform_private.cancel_homolog_catalog_check_v1()' else ['search_path=""']
+  CHECKER_PIN+=f"IF (SELECT jsonb_build_array(md5(prosrc),pg_get_userbyid(proowner),prosecdef,proconfig,(SELECT coalesce(jsonb_agg(a::text ORDER BY a::text),'[]'::jsonb) FROM unnest(proacl) a)) FROM pg_proc WHERE oid=to_regprocedure('{sig}')) IS DISTINCT FROM jsonb_build_array('{src_md5}','postgres',true,{quote(json.dumps(config))}::jsonb,'[\"postgres=X/postgres\"]'::jsonb) THEN RAISE EXCEPTION 'CHECKER_PIN_DRIFT:{sig}'; END IF;\n"
+  absence=f"DO $absence$ BEGIN IF to_regprocedure('{sig}') IS NOT NULL THEN RAISE EXCEPTION 'CHECKER_ALREADY_PRESENT:{sig}'; END IF;END $absence$;\n"
+  (initdir/f'{i:02d}-install-checker.sql.review').write_text("-- HOMOLOG ONLY; catalog validation infrastructure, no business grants.\nBEGIN;SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='30s';\n"+TARGET+absence+body+"COMMIT;\n")
  CHECKER_PIN+='END $checker_pin$;\n'
  (initdir/'99-verify-checker.sql.readonly').write_text('BEGIN READ ONLY;\n'+TARGET+CHECKER_PIN+'SELECT platform_private.cancel_homolog_catalog_check_v1();\nROLLBACK;\n')
  b4=B4.read_text();bridge=BR.read_text();candidate=(C/'candidate.sql').read_text()
@@ -125,13 +127,22 @@ def generate():
  etables=['platform_private.cancel_homolog_fixture_'+n+'_v1' for n in ['gate','grants','permits']]
  efunctions=['platform_private.cancel_homolog_fixture_scope_v1(text,uuid,jsonb,boolean)','platform_private.cancel_homolog_fixture_row_guard_v1()']
  post=closed_post(etables,efunctions)+"DO $Eoff$ BEGIN IF EXISTS(SELECT 1 FROM platform_private.cancel_homolog_fixture_gate_v1 WHERE enabled) OR EXISTS(SELECT 1 FROM platform_private.cancel_homolog_fixture_grants_v1) OR EXISTS(SELECT 1 FROM platform_private.cancel_homolog_fixture_permits_v1) THEN RAISE EXCEPTION 'E_FIXTURE_NOT_CLOSED_EMPTY'; END IF;IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='a00_homolog_validation_no_receivable' AND tgrelid='public.accounts_receivable'::regclass AND tgenabled='O' AND tgfoid='platform_private.homolog_validation_block_receivable_insert()'::regprocedure) OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='zz_cancel_homolog_fixture_row_guard_v1' AND tgrelid='public.accounts_receivable'::regclass AND tgenabled='O') OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='zz_cancel_homolog_fixture_payment_guard_v1' AND tgrelid='public.receivable_payments'::regclass AND tgenabled='O') THEN RAISE EXCEPTION 'E_ROW_OR_STATEMENT_GUARD_MISSING'; END IF;END $Eoff$;\n"
+ # Body/config/owner pins for every new E helper and replaced statement guard.
+ epins='DO $Epin$ BEGIN\n'
+ for sig in efunctions+[statement['signature']]:
+  name=sig.split('(')[0];body=definition(ebody,name);m=re.search(r'AS (\$\w*\$)',body);assert m
+  src=body[m.end():body.index(m[1],m.end())]
+  epins+=f"IF (SELECT jsonb_build_array(md5(prosrc),pg_get_userbyid(proowner),proconfig,prosecdef) FROM pg_proc WHERE oid=to_regprocedure('{sig}')) IS DISTINCT FROM jsonb_build_array('{hashlib.md5(src.encode()).hexdigest()}','postgres','[\"search_path=\\\"\\\"\"]'::jsonb,true) THEN RAISE EXCEPTION 'E_FUNCTION_PIN_DRIFT:{sig}'; END IF;\n"
+ epins+='END $Epin$;\n'
+ post+=epins
+ for n in etables:pre+=f"DO $absence$ BEGIN IF to_regclass('{n}') IS NOT NULL THEN RAISE EXCEPTION 'E_ALREADY_PRESENT:{n}'; END IF;END $absence$;\n"
  head="-- HOMOLOG ONLY; reviewed exception infrastructure, gate OFF/no issuer/no client grant.\nBEGIN;SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='30s';\n"
  (H/'E-pre.sql.readonly').write_text(head+pre+'ROLLBACK;\n')
  (H/'E-install-closed.sql.review').write_text(head+pre+ebody+post+'COMMIT;\n')
  (H/'E-post.sql.readonly').write_text(head+TARGET+post+'ROLLBACK;\n')
  rollback=TARGET+"UPDATE platform_private.cancel_homolog_fixture_gate_v1 SET enabled=false;\n"
  for sig in efunctions:rollback+=f'REVOKE ALL ON FUNCTION {sig} FROM PUBLIC,anon,authenticated,service_role;\n'
- (H/'E-rollback-deny.sql.review').write_text(head+rollback+closed_post(etables,efunctions)+'COMMIT;\n')
+ (H/'E-rollback-deny.sql.review').write_text(head+epins+rollback+closed_post(etables,efunctions)+'COMMIT;\n')
  (H/'E-required-statement-guard.sql.readonly').write_text('-- SUPERSEDED: exact body received 01:49; no further inventory requested.\nSELECT \'STATEMENT_GUARD_CAPTURE_RECEIVED\' AS status;\n')
  (H/'manifest.json').write_text(json.dumps(dict(target_ref='vrlcdwmlytukrjezrrnf',stage_A='INSTALLED_POST_PASS_OWNER_REPORTED_NOT_RERUN_HOSTED',capture_sha256=hashlib.sha256((H/'capture/catalog.json').read_bytes()).hexdigest(),stages=stages,E='CLOSED_BARRIER_INFRASTRUCTURE_NO_ISSUER',checker_segments=len(checkparts),operational_installable=False,decision='AUTHORIZE_AND_REVIEW_EXACT_SYNTHETIC_INTENT_ISSUER_BEFORE_ANY_ENABLEMENT',hosted_executed=False,source_sha256={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [B4,BR,C/'candidate.sql',H/'fixture_barrier.sql.source']}),indent=2)+'\n')
  sums=[]
