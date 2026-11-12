@@ -100,14 +100,15 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
   const [approvalOpen, setApprovalOpen] = useState(false);
 
   useEffect(() => {
-    const key = JSON.stringify([open, produto?.id, editor.scope]);
-    if (key !== observedProduct.current) { observedProduct.current = key; dirty.current = false; }
-    if (dirty.current) return;
     if (open && produto) log({ entidade_tipo: "produto", entidade_id: produto.id, origem });
   }, [open, produto, log, origem]);
 
-  // CAT-09: o estado é sempre substituído por completo — nunca herda a ficha anterior.
+  // Hydrate once per identity/item; refetch must not overwrite a dirty draft.
   useEffect(() => {
+    const key = JSON.stringify([open, produto?.id, editor.scope]);
+    if (key !== observedProduct.current) { observedProduct.current = key; dirty.current = false; }
+    if (dirty.current) return;
+
     if (isError) return;
     if (!produto) {
       setForm(emptyProductForm());
@@ -234,9 +235,9 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
             </TabsList>
 
             <TabsContent value="resumo" className="space-y-3 pt-3 min-w-0">
-              <ProfileFieldAI label="Resumo curto" rows={4} value={form.resumo_curto} readOnly={ehReadOnly("full")} onChange={(v) => setForm({ ...form, resumo_curto: v })}
+              <ProfileFieldAI label="Resumo curto" rows={4} value={form.resumo_curto} readOnly={ehReadOnly("full")} onChange={(v) => editForm({ ...form, resumo_curto: v })}
                 entidadeTipo="produto" entidadeId={produto.id} campo="resumo_curto" canGenerateAI={canEditFull} />
-              <ProfileFieldAI label="Explicação técnica" rows={5} value={form.explicacao_tecnica} readOnly={ehReadOnly("full")} onChange={(v) => setForm({ ...form, explicacao_tecnica: v })}
+              <ProfileFieldAI label="Explicação técnica" rows={5} value={form.explicacao_tecnica} readOnly={ehReadOnly("full")} onChange={(v) => editForm({ ...form, explicacao_tecnica: v })}
                 entidadeTipo="produto" entidadeId={produto.id} campo="explicacao_tecnica" canGenerateAI={canEditFull} />
             </TabsContent>
 
@@ -254,7 +255,7 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
                   </Button>
                 )}
               </div>
-              <Textarea rows={10} value={form.beneficio_combinado} readOnly={ehReadOnly("full")} onChange={(e) => setForm({ ...form, beneficio_combinado: e.target.value })} />
+              <Textarea rows={10} value={form.beneficio_combinado} readOnly={ehReadOnly("full")} onChange={(e) => editForm({ ...form, beneficio_combinado: e.target.value })} />
               {!data?.profile?.beneficio_combinado && form.beneficio_combinado && (
                 <Alert className="border-amber-200 bg-amber-50">
                   <Info className="h-4 w-4" />
@@ -264,9 +265,9 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
             </TabsContent>
 
             <TabsContent value="indic" className="space-y-3 pt-3 min-w-0">
-              <ProfileFieldAI label="Indicações de uso" rows={5} value={form.indicacoes_uso} readOnly={ehReadOnly("full")} onChange={(v) => setForm({ ...form, indicacoes_uso: v })}
+              <ProfileFieldAI label="Indicações de uso" rows={5} value={form.indicacoes_uso} readOnly={ehReadOnly("full")} onChange={(v) => editForm({ ...form, indicacoes_uso: v })}
                 entidadeTipo="produto" entidadeId={produto.id} campo="indicacoes_uso" canGenerateAI={canEditFull} />
-              <ProfileFieldAI label="Janela de aplicação" rows={3} value={form.janela_aplicacao} readOnly={ehReadOnly("full")} onChange={(v) => setForm({ ...form, janela_aplicacao: v })}
+              <ProfileFieldAI label="Janela de aplicação" rows={3} value={form.janela_aplicacao} readOnly={ehReadOnly("full")} onChange={(v) => editForm({ ...form, janela_aplicacao: v })}
                 entidadeTipo="produto" entidadeId={produto.id} campo="janela_aplicacao" canGenerateAI={canEditFull} />
             </TabsContent>
 
@@ -279,22 +280,22 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
             </TabsContent>
 
             <TabsContent value="produtor" className="space-y-3 pt-3 min-w-0">
-              <ProfileFieldAI label="Linguagem para o produtor" rows={8} value={form.explicacao_produtor} readOnly={ehReadOnly("full")} onChange={(v) => setForm({ ...form, explicacao_produtor: v })}
+              <ProfileFieldAI label="Linguagem para o produtor" rows={8} value={form.explicacao_produtor} readOnly={ehReadOnly("full")} onChange={(v) => editForm({ ...form, explicacao_produtor: v })}
                 entidadeTipo="produto" entidadeId={produto.id} campo="explicacao_produtor" canGenerateAI={canEditFull} />
             </TabsContent>
 
             <TabsContent value="b2b" className="space-y-3 pt-3 min-w-0">
-              <ProfileFieldAI label="Linguagem para parceiro B2B" rows={8} value={form.explicacao_b2b} readOnly={ehReadOnly("b2b")} onChange={(v) => setForm({ ...form, explicacao_b2b: v })}
+              <ProfileFieldAI label="Linguagem para parceiro B2B" rows={8} value={form.explicacao_b2b} readOnly={ehReadOnly("b2b")} onChange={(v) => editForm({ ...form, explicacao_b2b: v })}
                 entidadeTipo="produto" entidadeId={produto.id} campo="explicacao_b2b" canGenerateAI={canEditFull} />
             </TabsContent>
 
 
             <TabsContent value="cuidados" className="space-y-3 pt-3 min-w-0">
-              <ProfileFieldAI label="Cuidados na aplicação" rows={5} value={form.cuidados_aplicacao} readOnly={ehReadOnly("full")} onChange={(v) => setForm({ ...form, cuidados_aplicacao: v })}
+              <ProfileFieldAI label="Cuidados na aplicação" rows={5} value={form.cuidados_aplicacao} readOnly={ehReadOnly("full")} onChange={(v) => editForm({ ...form, cuidados_aplicacao: v })}
                 entidadeTipo="produto" entidadeId={produto.id} campo="cuidados_aplicacao" canGenerateAI={canEditFull} />
-              <ProfileFieldAI label="Compatibilidade" rows={3} value={form.compatibilidade} readOnly={ehReadOnly("full")} onChange={(v) => setForm({ ...form, compatibilidade: v })}
+              <ProfileFieldAI label="Compatibilidade" rows={3} value={form.compatibilidade} readOnly={ehReadOnly("full")} onChange={(v) => editForm({ ...form, compatibilidade: v })}
                 entidadeTipo="produto" entidadeId={produto.id} campo="compatibilidade" canGenerateAI={canEditFull} />
-              <ProfileFieldAI label="Observações regulatórias" rows={3} value={form.observacoes_regulatorias} readOnly={ehReadOnly("full")} onChange={(v) => setForm({ ...form, observacoes_regulatorias: v })}
+              <ProfileFieldAI label="Observações regulatórias" rows={3} value={form.observacoes_regulatorias} readOnly={ehReadOnly("full")} onChange={(v) => editForm({ ...form, observacoes_regulatorias: v })}
                 entidadeTipo="produto" entidadeId={produto.id} campo="observacoes_regulatorias" canGenerateAI={canEditFull} />
             </TabsContent>
 
@@ -340,7 +341,7 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
               const current = editor.capture();
               try {
                 await upsert.mutateAsync({ produto_id: produto.id, ...form, status_validacao: data?.profile?.status_validacao ?? "rascunho" });
-                if (current()) toast.success("Conteúdo da ficha salvo");
+                if (current()) { dirty.current = false; toast.success("Conteúdo da ficha salvo"); }
               } catch (e) { if (current()) toast.error((e as Error).message); }
             }}>Salvar conteúdo</Button>}
             {!isError && canEditFull && data?.profile?.id && (
