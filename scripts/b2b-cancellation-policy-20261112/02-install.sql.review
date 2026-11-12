@@ -54,9 +54,11 @@ BEGIN
  IF platform_private.c2p1_internal_actor(ARRAY['administrador','gestor_comercial']::public.app_role[]) IS DISTINCT FROM org
   OR platform_private.c2p1_settings_allowed(po.partner_id,true) IS NOT TRUE THEN
   RAISE EXCEPTION 'B2B_FORECAST_CANCEL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ PERFORM 1 FROM platform_private.b2b_cancel_policy_gate_v1 WHERE singleton FOR SHARE;
+ IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_cancel_policy_gate_v1 WHERE singleton AND enabled) THEN RAISE EXCEPTION 'CANCEL_POLICY_DISABLED' USING ERRCODE='42501'; END IF;
  IF po.approved_at IS NULL OR po.approved_by IS NULL OR po.status::text NOT IN ('aprovado','entregue') THEN RAISE EXCEPTION 'B2B_CANCEL_ORDER_NOT_APPROVED' USING ERRCODE='PT409'; END IF;
  IF f.state IN ('cancelado_antes_nf','cancelado_residual') THEN
-  IF EXISTS(SELECT 1 FROM platform_private.b2b_financial_forecast_events e WHERE e.forecast_id=f.id AND e.event_type='FORECAST_CANCELED' AND e.payload->>'reason'=p_reason) THEN RETURN jsonb_build_object('forecast_id',f.id,'state',f.state,'version',f.version,'idempotentReplay',true); END IF;
+  IF f.version=p_expected_version+1 AND EXISTS(SELECT 1 FROM platform_private.b2b_financial_forecast_events e WHERE e.forecast_id=f.id AND e.event_type='FORECAST_CANCELED' AND e.payload->>'reason'=p_reason) THEN RETURN jsonb_build_object('forecast_id',f.id,'state',f.state,'version',f.version,'idempotentReplay',true); END IF;
   RAISE EXCEPTION 'B2B_FORECAST_CAS_CONFLICT' USING ERRCODE='PT409'; END IF;
  -- An emission/consultation still open or an authorized return awaiting close must settle first.
  IF EXISTS(SELECT 1 FROM public.fiscal_invoices i JOIN public.fiscal_sefaz_transmissions t ON t.fiscal_invoice_id=i.id
@@ -238,6 +240,7 @@ BEGIN
  SELECT * INTO r FROM public.accounts_receivable WHERE id=i.receivable_id AND organization_id=i.organization_id AND b2b_document_id=i.id AND origin_type='B2B_ORDER' AND origin_id=i.partner_order_id AND partner_id=i.debtor_partner_id FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_CANCEL_LINK_MISMATCH' USING ERRCODE='42501'; END IF;
  PERFORM 1 FROM public.accounts_receivable_installments WHERE receivable_id=r.id ORDER BY id FOR UPDATE;
+ IF public.h15_actor_organization() IS DISTINCT FROM actor_org OR public.fn_fiscal_can_operate(auth.uid()) IS NOT TRUE OR NOT EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id=i.debtor_partner_id AND pa.commercial_owner_organization_id=i.organization_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL) THEN RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;
  SELECT EXISTS(SELECT 1 FROM public.receivable_payments p JOIN public.accounts_receivable_installments x ON x.id=p.installment_id WHERE x.receivable_id=r.id) OR EXISTS(SELECT 1 FROM public.accounts_receivable_installments x WHERE x.receivable_id=r.id AND (x.received_amount IS NULL OR x.received_amount<>0 OR x.status='PAID')) INTO paid;
  IF i.normalized_status<>'CANCELED' THEN UPDATE public.fiscal_invoices SET status='CANCELED',normalized_status='CANCELED',canceled_at=clock_timestamp(),cancel_reason=e.sefaz_reason,reconciliation_status=CASE WHEN paid THEN 'REQUIRES_REVIEW' ELSE 'RECONCILED' END WHERE id=i.id; END IF;
  IF paid THEN RETURN jsonb_build_object('final',true,'financialReconciliationRequired',true,'code','FISCAL_CANCEL_PAYMENT_REVIEW'); END IF;
