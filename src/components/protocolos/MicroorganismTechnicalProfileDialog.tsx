@@ -242,7 +242,7 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
             hasExplicacaoB2B={!!form.explicacao_b2b.trim()}
             showInternalApprovalMarkers={isAdminOrGestor}
           />
-          {tenantContent && <TenantProfileLinks key={editor.scope + micro.id} entity="microrganismo" parent={micro.id} />}
+          {tenantContent && <TenantProfileLinks key={editor.scope + micro.id} entity="microrganismo" parent={micro.id} onDirty={() => { dirty.current = true; }} />}
           <Tabs defaultValue="resumo" className="mt-2 min-w-0">
             <TabsList className="flex flex-wrap h-auto w-full justify-start gap-1 p-1">
               <TabsTrigger value="resumo" className="whitespace-nowrap px-2.5 py-1 text-xs">Resumo</TabsTrigger>

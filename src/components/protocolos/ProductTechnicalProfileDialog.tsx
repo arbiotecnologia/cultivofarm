@@ -223,7 +223,7 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
             hasExplicacaoB2B={!!form.explicacao_b2b.trim()}
             showInternalApprovalMarkers={isAdminOrGestor}
           />
-          {tenantContent && <TenantProfileLinks key={editor.scope + produto.id} entity="produto" parent={produto.id} />}
+          {tenantContent && <TenantProfileLinks key={editor.scope + produto.id} entity="produto" parent={produto.id} onDirty={() => { dirty.current = true; }} />}
           <Tabs defaultValue="resumo" className="mt-2 min-w-0">
             <TabsList className="flex flex-wrap h-auto w-full justify-start gap-1 p-1">
               <TabsTrigger value="resumo" className="whitespace-nowrap px-2.5 py-1 text-xs">Resumo</TabsTrigger>
