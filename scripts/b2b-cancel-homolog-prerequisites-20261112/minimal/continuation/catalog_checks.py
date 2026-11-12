@@ -84,3 +84,13 @@ def compact_data(data):
   result['definitions'][-1]['acl']=sorted(filter(None,(d['acl'] or '{}').strip('{}').split(',')))
  return result
 def source(data):return IDENTITY_SQL+CHECK_SQL.replace('__DATA__',literal(compact_data(data)))
+
+def segmented_sources(data):
+ compact=compact_data(data);parts=[];getters=[]
+ for i,r in enumerate(compact['schema']):
+  name=f'platform_private.cancel_homolog_catalog_part_{i:02d}_v1'
+  body=f"CREATE OR REPLACE FUNCTION {name}() RETURNS jsonb LANGUAGE sql SECURITY DEFINER SET search_path='' AS $part$ SELECT {literal(r)} $part$;\nREVOKE ALL ON FUNCTION {name}() FROM PUBLIC,anon,authenticated,service_role;\n"
+  parts.append((name+'()',body));getters.append(name+'()')
+ rest={k:v for k,v in compact.items() if k!='schema'}
+ expression=literal(rest)+"||jsonb_build_object('schema',jsonb_build_array("+','.join(getters)+'))'
+ return [('platform_private.cancel_homolog_resolve_function_v1(text,text)',IDENTITY_SQL),*parts,('platform_private.cancel_homolog_catalog_check_v1()',CHECK_SQL.replace('__DATA__',expression))]
