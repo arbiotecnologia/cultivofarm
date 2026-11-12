@@ -1,3 +1,4 @@
+import type {} from "./models.d.ts";
 import { generateResponse } from "npm:@lovable.dev/ai-gateway@0.1.11";
 import { documentarySchema, retainVerifiedSources, type DocumentaryIdentity } from "./documentarySuggestions.ts";
 

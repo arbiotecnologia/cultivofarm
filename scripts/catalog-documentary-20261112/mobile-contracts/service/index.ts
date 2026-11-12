@@ -20,7 +20,7 @@ Deno.serve(async req => {
   try {
     const body = await req.json();
     const id = body.identity;
-    if (!id || !['produto','microrganismo'].includes(id.entity) || typeof id.name !== 'string' || !id.name.trim() || id.name.length > 500 || typeof id.manufacturer !== 'string' || id.manufacturer.length > 500 || typeof id.registration !== 'string' || id.registration.length > 200 || !Array.isArray(body.fields) || !body.fields.length || body.fields.some(f => !DOCUMENTARY_FIELDS.includes(f))) return json({ error: 'invalid_request' }, 400);
+    if (!id || !['produto','microrganismo'].includes(id.entity) || typeof id.name !== 'string' || !id.name.trim() || id.name.length > 500 || typeof id.manufacturer !== 'string' || id.manufacturer.length > 500 || typeof id.registration !== 'string' || id.registration.length > 200 || !Array.isArray(body.fields) || !body.fields.length || body.fields.some((f: unknown) => typeof f !== "string" || !DOCUMENTARY_FIELDS.some(field => field === f))) return json({ error: 'invalid_request' }, 400);
     // Existing catalog authority is evaluated on the server, not inferred from a readable product/JWT role.
     const { data: capability, error } = await client.rpc('tenant_catalog_documentary_capability_v1', { p_entity: id.entity, p_id: id.id ?? null });
     if (error || capability?.allowed !== true || capability?.actor_id !== user.user.id) return json({ error: 'catalog_authority_unavailable' }, 403);
