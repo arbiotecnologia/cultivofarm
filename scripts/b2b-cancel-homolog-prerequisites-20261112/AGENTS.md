@@ -1,0 +1,4 @@
+- Prepare only for vrlcdwmlytukrjezrrnf; never connect hosted, deploy, change the original client or publish — preserves the owner's isolated homolog scope.
+- Inventory catalog metadata only; never copy business rows, Auth records, credentials or Vault content — prevents production fixture reuse and secret export.
+- Do not re-pin divergent bodies or transplant historical production installers; installation stays blocked until exact homolog catalog closure and a schema-only disposable roundtrip — prevents false parity.
+- Fixtures reuse canonical authenticated commands with retained idempotency keys; service-only fiscal callbacks are never granted to session users — prevents synthetic fiscal authority.
