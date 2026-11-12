@@ -1,0 +1,3 @@
+- Local isolated validation only; no hosted migration, grants, inference credentials or publication.
+- New own problems and links use private storage and the existing catalog_tenant_actor modes, with parent locks, post-wait authority, CAS/idempotent receipts and a default-OFF gate; global historical rows are never reowned.
+- Captured canonical authority is loaded verbatim in tests; synthetic identity dependencies must be explicitly reported, never certified as JWT evidence.
