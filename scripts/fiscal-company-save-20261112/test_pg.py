@@ -39,6 +39,8 @@ policies = []
 for line in policy_lines:
     name = re.search(r'"([^"]+)"', line).group(1)
     command = name.rsplit('_', 1)[1].upper()
+    if command == 'READ':
+        command = 'SELECT'
     tail = line.split(' ON public.company_fiscal_settings ', 1)[1]
     policies.append(f'CREATE POLICY "{name}" ON public.company_fiscal_settings FOR {command} TO authenticated {tail}')
 A = '11111111-1111-4111-8111-111111111111'
