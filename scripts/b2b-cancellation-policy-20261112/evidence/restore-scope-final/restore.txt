@@ -1,0 +1,5 @@
+restore_exit=0 (pre/data/post com --exit-on-error)
+profiles_user_id_fkey|true
+user_roles_user_id_fkey|true
+felig2arg|70dba08838cd4d5eea29f37f5f8a3373
+8e7f04c393fcdef71760c3681bfbadea5215e1cf8d1ab0c48aa18f5d1564a3e6  /tmp/r12/fullstack.dump

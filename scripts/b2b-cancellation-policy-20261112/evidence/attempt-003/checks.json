@@ -1,0 +1,129 @@
+[
+  {
+    "test": "preparo real",
+    "status": "PASS",
+    "detail": {
+      "reason": "LOCAL POLICY CANCEL REASON",
+      "eventId": "520ed55a-b9d1-412c-824b-d813a6fc0719",
+      "protocol": "LOCAL-INTEGRATED-PROTOCOL",
+      "accessKey": "35261111111111111111111111111111111111111111",
+      "eventCode": "110111",
+      "seqEvento": 2,
+      "idempotentReplay": false,
+      "companySettingsId": "ee471d0b-d982-4e4c-b911-8fdc69c2ed5b"
+    }
+  },
+  {
+    "test": "assinatura real sobre entrada sintética",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "test": "573 não cancela nota/título",
+    "status": "PASS",
+    "detail": {
+      "out": "{\"nRec\": null, \"cStat\": \"573\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-573\", \"state\": \"SUCCEEDED\", \"outcome\": \"REJECTED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_NOT_FINAL\", \"final\": false}, \"protocolCStat\": \"573\", \"transmissionId\": \"6d6d3f9d-b167-4f54-9737-98f032de12a4\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"OPEN\", \"invoice\": \"AUTHORIZED\"}\n",
+      "err": ""
+    }
+  },
+  {
+    "test": "103 não cancela nota/título",
+    "status": "PASS",
+    "detail": {
+      "out": "{\"nRec\": null, \"cStat\": \"103\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-103\", \"state\": \"SUCCEEDED\", \"outcome\": \"PROCESSING\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_NOT_FINAL\", \"final\": false}, \"protocolCStat\": \"103\", \"transmissionId\": \"2c398b35-db70-4a2a-b465-13e623c96a1a\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"OPEN\", \"invoice\": \"AUTHORIZED\"}\n",
+      "err": ""
+    }
+  },
+  {
+    "test": "136 não cancela nota/título",
+    "status": "PASS",
+    "detail": {
+      "out": "{\"nRec\": null, \"cStat\": \"136\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-136\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_NOT_FINAL\", \"final\": false}, \"protocolCStat\": \"136\", \"transmissionId\": \"7897c751-30a6-4678-8aff-822b499639c1\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"OPEN\", \"invoice\": \"AUTHORIZED\"}\n",
+      "err": ""
+    }
+  },
+  {
+    "test": "135 final vinculado cancela nota e título aberto na transação",
+    "status": "PASS",
+    "detail": {
+      "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-135\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"final\": true, \"idempotentReplay\": false, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"3596a189-9946-40fe-be76-b94f233f696c\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"CANCELED\", \"invoice\": \"CANCELED\"}\n",
+      "err": ""
+    }
+  },
+  {
+    "test": "135 rollback conserva previsão/estoque/entrega/título",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "155 final vinculado cancela nota e título aberto na transação",
+    "status": "PASS",
+    "detail": {
+      "out": "{\"nRec\": null, \"cStat\": \"155\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-155\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"final\": true, \"idempotentReplay\": false, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"155\", \"transmissionId\": \"7db8fb25-454a-4c59-a5e0-ec36bc53ca89\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"CANCELED\", \"invoice\": \"CANCELED\"}\n",
+      "err": ""
+    }
+  },
+  {
+    "test": "155 rollback conserva previsão/estoque/entrega/título",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "pagamento R$1 persistido por RPC real",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "test": "primeiro final da própria NF paga marca nota sem cancelar título",
+    "status": "PASS",
+    "detail": {
+      "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-135\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_PAYMENT_REVIEW\", \"final\": true, \"financialReconciliationRequired\": true}, \"protocolCStat\": \"135\", \"transmissionId\": \"d2c7e090-6008-4a7c-9c48-19437ac49917\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"PARTIAL\", \"invoice\": \"CANCELED\"}\n",
+      "err": ""
+    }
+  },
+  {
+    "test": "rollback pago preserva previsão/estoque/entrega/pagamento",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "residual RBAC 24",
+    "status": "PASS",
+    "detail": {
+      "out": "{\"actor\": \"00000000-0000-0000-0000-000000000024\", \"state\": \"cancelado_residual\", \"version\": 9, \"order_id\": \"3e582f33-7107-4f03-a5a2-1493560fe5fc\", \"forecast_id\": \"88fbb433-ae86-47dc-91cf-baeaacb10932\"}\n",
+      "err": ""
+    }
+  },
+  {
+    "test": "residual RBAC 30",
+    "status": "PASS",
+    "detail": {
+      "out": "{\"actor\": \"00000000-0000-0000-0000-000000000030\", \"state\": \"cancelado_residual\", \"version\": 9, \"order_id\": \"3e582f33-7107-4f03-a5a2-1493560fe5fc\", \"forecast_id\": \"88fbb433-ae86-47dc-91cf-baeaacb10932\"}\n",
+      "err": ""
+    }
+  },
+  {
+    "test": "residual RBAC 29",
+    "status": "PASS",
+    "detail": {
+      "out": "",
+      "err": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  },
+  {
+    "test": "residual RBAC 25",
+    "status": "PASS",
+    "detail": {
+      "out": "",
+      "err": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  },
+  {
+    "test": "residual RBAC 21",
+    "status": "PASS",
+    "detail": {
+      "out": "",
+      "err": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  }
+]
