@@ -93,7 +93,9 @@ def independent_verify(xml_bytes, tmp, expected_cert_der=None):
 def deno(*args):
     r = subprocess.run(["deno", "run", "--quiet", "--allow-read", "--allow-write", "--allow-env", "--allow-net",
                         str(HERE / "sign_fixture.ts"), *map(str, args)], capture_output=True, text=True, cwd=HERE)
-    if r.returncode: raise RuntimeError(r.stderr[-400:])
+    if r.returncode:
+        import re
+        raise RuntimeError(re.sub(r"\x1b\[[0-9;]*m", "", r.stderr)[:600])
     return json.loads(r.stdout.strip().splitlines()[-1])
 
 def main():

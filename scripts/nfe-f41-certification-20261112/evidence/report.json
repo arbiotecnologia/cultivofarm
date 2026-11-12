@@ -1,6 +1,6 @@
 {
   "harness": "F4.1 NF-e 55 offline",
-  "generated_at": "2026-11-12T17:30:50.614735+00:00",
+  "generated_at": "2026-11-12T17:31:09.992199+00:00",
   "tools": {
     "xmllint": "xmllint: using libxml version 21504",
     "openssl": "OpenSSL 3.6.5 29 Sep 2026 (Library: OpenSSL 3.6.5 29 Sep 2026)",
@@ -64,14 +64,14 @@
       "expected": "PASS",
       "observed": "PASS",
       "result": "OK",
-      "detail": "/tmp/f41-5qo0jwzv/signed.xml validates"
+      "detail": "/tmp/f41-nzsmbm6z/signed.xml validates"
     },
     {
       "case": "pos.xsd.PL_010e_motor",
       "expected": "PASS",
       "observed": "PASS",
       "result": "OK",
-      "detail": "/tmp/f41-5qo0jwzv/signed.xml validates"
+      "detail": "/tmp/f41-nzsmbm6z/signed.xml validates"
     },
     {
       "case": "pos.sig.independente_libxml2_openssl",
@@ -141,7 +141,7 @@
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
-      "detail": "/tmp/f41-5qo0jwzv/nosig.xml fails to validate"
+      "detail": "/tmp/f41-nzsmbm6z/nosig.xml fails to validate"
     },
     {
       "case": "neg.sig.ausente",
@@ -155,14 +155,14 @@
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
-      "detail": "/tmp/f41-5qo0jwzv/badcfop.xml fails to validate"
+      "detail": "/tmp/f41-nzsmbm6z/badcfop.xml fails to validate"
     },
     {
       "case": "neg.xsd.tpAmb_invalido",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
-      "detail": "/tmp/f41-5qo0jwzv/badamb.xml fails to validate"
+      "detail": "/tmp/f41-nzsmbm6z/badamb.xml fails to validate"
     },
     {
       "case": "neg.sign.certificado_expirado",
@@ -176,7 +176,7 @@
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
-      "detail": "33m25\u001b[0m)\n    at \u001b[0m\u001b[2m\u001b[38;5;245mfile:///dev-server/scripts/nfe-f41-certification-20261112/\u001b[0m\u001b[0m\u001b[36msign_fixture.ts\u001b[0m:\u001b[0m\u001b[33m13\u001b[0m:\u001b[0m\u001b[33m15\u001b[0m\n"
+      "detail": "CERTIFICATE_KEY_MISMATCH"
     }
   ]
 }
