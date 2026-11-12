@@ -1,3 +1,7 @@
+## 12/11 03:21 — Credenciamento declarado e PIS/COFINS
+- [ ] Integrar campos opcionais no cadastro original, com JSON canônico preservado e sem inferência contábil/SEFAZ.
+- [ ] Testar null, merge, reabertura, conflito e isolamento; entregar evidências locais sem publicação ou dados hosted.
+
 ## 12/11 03:13 — Salvamento fiscal original
 - [x] READY_FOR_HOMOLOGATION removido do save; quatro estados lidos, status/atestados omitidos; rascunho e CAS observados preservados.
 - [x] 160 testes PASS +26 checks PG: formulário/SDK original, AR Bio sintética, reabertura/erros/isolamento; implantação frontend somente, REPORT/SHA e sem remoto/publicação.
