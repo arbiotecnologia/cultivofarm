@@ -1,0 +1,4 @@
+- Local preparation only: never apply hosted, publish or deploy from here; the auditor installs after PRE_PASS on ref swzpzcwiasxmjutrmvkm, after 02e.
+- Delta changes only public.approve_partner_order(uuid,text,date): internal/external-origin approval sets ready_for_production=false and is accepted only when the trigger sealed internal_economic_snapshot for the same origin and actor; legacy orders keep the old behaviour — commercial approval never releases production or billing.
+- Credit re-evaluation, authority re-check after lock, anti-replay status CAS, operational/fiscal guards, ACL, gestor terms authority and automatic credit policy stay untouched — those are separate business decisions.
+- Files only via generate.py with pinned md5/ACL; the E2E runs the exact bytes (SHA checked); rollback reinstalls the LIVE body and refuses drift.
