@@ -1,0 +1,7 @@
+[
+  {
+    "test": "harness controles",
+    "status": "FAIL",
+    "detail": "RuntimeError('ERROR:  COMMERCIAL_PLAN_TENANT_IMMUTABLE\\nCONTEXT:  PL/pgSQL function platform_private.commercial_plan_tenant_guard() line 4 at RAISE\\n')"
+  }
+]

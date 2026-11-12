@@ -14,5 +14,9 @@
   {
     "step": "final-roundtrip-awaiting",
     "exit": 0
+  },
+  {
+    "step": "original-control-behaviors",
+    "exit": 1
   }
 ]
