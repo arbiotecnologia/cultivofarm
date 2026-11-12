@@ -23,6 +23,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 
 import { ProdutosTab } from "@/components/protocolos/ProdutosTab";
+import { TenantReferencePanel } from "@/components/protocolos/TenantReferencePanel";
 import { CatalogoTecnicoTab } from "@/components/protocolos/CatalogoTecnicoTab";
 import { DeleteProtocoloButton } from "@/components/protocolos/DeleteProtocoloButton";
 import { useCulturas } from "@/hooks/useCulturas";
@@ -39,6 +40,9 @@ import { TENANT_OWNED_CATALOG_ENABLED } from "@/lib/catalogo/tenantCatalogOwners
 // (global_culturas_client_write_containment); não existe writer servidor
 // auditado. Esta aba é somente consulta para todos os perfis.
 export function CulturasTab() {
+  return <TenantReferencePanel root="culturas" />;
+}
+function LegacyCulturasTab() {
   const [showArchived, setShowArchived] = useState(false);
   const [ownedOffset, setOwnedOffset] = useState(0);
   const [search, setSearch] = useState("");
@@ -507,7 +511,7 @@ export default function Protocolos() {
       <Card>
         <CardContent className="pt-6">
           <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className={`grid w-full ${allowedTabs.length === 1 ? "grid-cols-1" : "grid-cols-5"}`}>
+            <TabsList className="flex h-auto w-full justify-start overflow-x-auto [&>button]:min-h-10 [&>button]:shrink-0">
               {allowedTabs.includes("produtos") && <TabsTrigger value="produtos">Produtos</TabsTrigger>}
               {allowedTabs.includes("microrganismos") && <TabsTrigger value="microrganismos">Microrganismos</TabsTrigger>}
               {allowedTabs.includes("catalogo-tecnico") && <TabsTrigger value="catalogo-tecnico">Catálogo Técnico</TabsTrigger>}

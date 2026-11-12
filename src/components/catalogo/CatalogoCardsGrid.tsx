@@ -19,6 +19,7 @@ import { CatalogoQueryErrorState } from "@/components/catalogo/CatalogoQueryErro
 import { CatalogFamilyFilter } from "@/components/catalogo/CatalogFamilyFilter";
 import { catalogFamilyMatches, catalogFamilyLabel, type CatalogFamilyFilter as FamilyFilter } from "@/lib/catalogo/catalogFamilyRead";
 import type { CatalogFilterBinding } from "@/lib/catalogo/catalogFilterPreferences";
+import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
 
 type SortKey = "nome_asc" | "nome_desc" | "tipo" | "codigo";
 
@@ -77,6 +78,7 @@ function CatalogGridView({
   filterPreferences,
 }: Props & { source: CatalogGridSource }) {
   const { data, isLoading, error, refetch, isFetching } = source;
+  const editor = useTenantCatalogEditor();
 
   const [search, setSearch] = useState(filterPreferences?.initial.search ?? "");
   const [tipo, setTipo] = useState<CatalogTipoFiltro>(filterPreferences?.initial.tipo ?? "todos");
@@ -162,7 +164,7 @@ function CatalogGridView({
         variant="outline"
         onClick={() => abrirVerFicha(r)}
       >
-        Ver ficha
+        {scope === "admin" && editor.canEdit && r.raw?.owner_organization_id ? (r.ficha_status ? "Editar ficha" : "Criar ficha") : "Ver ficha"}
       </Button>
       <Button
         size="sm"

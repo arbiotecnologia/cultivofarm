@@ -1757,6 +1757,13 @@
 - [x] Cadeia integral 203 exit 0, 55/55: intenções, begin×cancel, 217/negativas, drift ACL, 18/9/9, 747→738, pagamento 9, callback tardio, rollback; SQL promovido igual ao espelho.
 - [ ] Leitor positivo rpc_receivable_money_projection_v1: ACL candidata só owner; exige decisão de revisão (sem grant amplo).
 - [ ] Contagem específica de 38 gatilhos do terms-wait não verificada separadamente na 203.
+
+## 12/11 — Base Técnica e sugestões documentais (prévia somente)
+- [x] Famílias canônicas vazias/preseleção, referências culturas/microrganismos via RPC e ficha manual da empresa, preservando leitura/permissões/rascunhos.
+- [x] UI de IA documental e fonte servidor revisável INATIVA fora de deploy automático; 116 testes locais PASS, desktop/mobile sintéticos, relatório em scripts/catalog-documentary-20261112/REPORT.md.
+- [ ] Problemas/cadastro inline/vínculos: dependem de contrato tenant canônico revisado; escritores globais continuam fechados.
+- [ ] Pesquisa IA real: depende de revisão e implantação autorizada do servidor/capability; nenhum modelo foi chamado.
+- [ ] Família ativa dinâmica e JWT/RLS real: contrato de ativação não encontrado e sessão externa indisponível; valores canônicos apresentados sem inferência.
 - [ ] Revisão independente, JWT/RLS/Storage hospedado e piloto (sem abrir gate logístico global): fora deste ambiente.
 - [x] Revisão 209/584d530: piloto antes das revalidações fiscais no início, pins completos do leitor financeiro com rollback deny-only sem quebrar pagamento; tentativa 212 exit 0, 56/56, 38 gatilhos, 747→738; manifesto `final-manifest-20261110.json`. Pendente (externo): revisão independente, captura READONLY dos pins locais, prova hospedada JWT/RLS/Storage, gate fiscal e decisão de gate próprio do lifecycle sem abrir logística global.
 - [x] Revisão 212/09537e49: gate próprio lifecycle, pins ACL com opção de concessão, manifesto executável, roteiro A/B; tentativa 214 exit 0 56/56. Pendente externo: revisão independente, diagnóstico READONLY pelo operador, prova hospedada A/B, gate fiscal.

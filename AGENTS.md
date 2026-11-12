@@ -24,6 +24,7 @@
 - Fixtures need Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
+- Documentary catalog suggestions are draft-only, identity/tenant-fenced and selected per sourced field; server candidates stay outside automatic deploy paths with no client grants — prevents research UI from activating writes or publishing unsupported facts.
 - Homolog cancellation prerequisites allow a deny-only additive private foundation without writer hooks; later deltas require exact canonical body hashes, captured relation guards and isolated roundtrip before session fiscal adapters — prevents blind repinning and broad service grants.
 - Homolog cancellation follows its continuation rules: qualified OID catalog pins and closed statement-plus-row permits, with no session issuer until the canonical synthetic-intent chain is reviewed — prevents namespace drift and fabricated hosted readiness.
 - Cancellation review UI uses the canonical order detail extra slot and a fresh exact-order server capability; isolated transport is disposable-only and production entrypoints remain unchanged — prevents candidate preparation from activating writers.

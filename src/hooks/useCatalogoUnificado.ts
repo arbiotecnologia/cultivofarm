@@ -34,9 +34,9 @@ export type CatalogoScope = "admin" | "b2b" | "interno";
  * precisa permanecer previsível.
  */
 export const PRODUTOS_SELECT =
-  "id,nome,codigo,tipo,familia_catalogo,classe_catalogo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled";
+  "id,nome,codigo,tipo,familia_catalogo,classe_catalogo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled,owner_organization_id";
 export const MICROORGANISMOS_SELECT =
-  "id,nome,codigo,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled";
+  "id,nome,codigo,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled,owner_organization_id";
 export const PRODUCT_PROFILES_SELECT =
   "produto_id,status_validacao,resumo_curto,explicacao_b2b,explicacao_produtor,explicacao_tecnica";
 export const MICRO_PROFILES_SELECT =

@@ -50,6 +50,8 @@ import { gerarProximoCodigoProduto, ehCodigoAutomatico, PREFIXOS_PRODUTO } from 
 import { normalizeVersaoCatalogoForSave, versaoCatalogoToInput } from "@/lib/protocolos/produtoFormFields";
 import { formatConcentracaoDisplay } from "@/lib/cqFormat";
 import { useActiveTenantName } from "@/hooks/useActiveTenantName";
+import { PRODUCT_FAMILY_TABS, productMatchesFamily, familyForNewProduct, type ProductFamilyTab } from "@/lib/catalogo/productFamilies";
+import { DocumentaryAI } from "./catalog/DocumentaryAI";
 
 interface Microrganismo {
   id: string;
@@ -221,6 +223,7 @@ export function ProdutosTab() {
   const savingRef = useRef(false);
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState("todos");
+  const [familyTab, setFamilyTab] = useState<ProductFamilyTab>("todos");
   const [showArchived, setShowArchived] = useState(false);
   const productList = useTenantProducts(showArchived);
   const details = useTenantProductDetails();
@@ -298,7 +301,7 @@ export function ProdutosTab() {
     setPartialMessage(null);
     setPartialAck(null); setPartialKind(null); setPartialExport(null); setReconciling(false);
     setOpen(false); resetForm();
-    setVolumesEdit(null); setFichaProduto(null); setSearch(""); setFilterTipo("todos");
+    setVolumesEdit(null); setFichaProduto(null); setSearch(""); setFilterTipo("todos"); setFamilyTab("todos");
     return () => { localGeneration.current += 1; };
   }, [activeScopeKey]);
   const items = useMemo(() => {
@@ -310,7 +313,7 @@ export function ProdutosTab() {
     return rows;
   }, [productList.data, details.data]);
   const filteredItems = items.filter(p => (!search || `${p.nome} ${p.codigo ?? ""} ${p.funcao_completa ?? ""}`.toLowerCase().includes(search.toLowerCase())) &&
-    (filterTipo === "todos" || p.tipo === filterTipo));
+    (filterTipo === "todos" || p.tipo === filterTipo) && productMatchesFamily(p.familia_catalogo, familyTab));
   const tenantVis = { displayed: filteredItems, map: undefined as Map<string, any> | undefined, error: null };
   const canManageVis = false;
 
@@ -679,6 +682,11 @@ export function ProdutosTab() {
 
   return (
     <div className="space-y-4">
+      <Tabs value={familyTab} onValueChange={v => setFamilyTab(v as ProductFamilyTab)}>
+        <TabsList aria-label="Famílias de produtos" className="flex h-auto w-full justify-start overflow-x-auto">
+          {PRODUCT_FAMILY_TABS.map(t => <TabsTrigger key={t.value} value={t.value} className="min-h-10 shrink-0">{t.label}</TabsTrigger>)}
+        </TabsList>
+      </Tabs>
       <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -690,7 +698,7 @@ export function ProdutosTab() {
           />
         </div>
         
-        <div className="flex gap-2 w-full md:w-auto">
+        <div className="flex flex-wrap gap-2 w-full md:w-auto min-w-0">
           <Select value={filterTipo} onValueChange={setFilterTipo}>
             <SelectTrigger className="w-[140px]">
               <Filter className="h-4 w-4 mr-2" />
@@ -710,8 +718,8 @@ export function ProdutosTab() {
           </Button>
 
           {editor.canEdit && (
-            <Button size="sm" disabled={!!partialMessage} onClick={() => { resetForm(); setPartialExport(null); composicaoTouched.current = false; setOpen(true); }}>
-              <Plus className="h-4 w-4 mr-1" />Novo produto
+            <Button size="sm" disabled={!!partialMessage} onClick={() => { resetForm(); setForm(f => ({ ...f, familia_catalogo: familyForNewProduct(familyTab) })); setPartialExport(null); composicaoTouched.current = false; setOpen(true); }}>
+              <Plus className="h-4 w-4 mr-1" />{familyTab === "todos" ? "Novo produto" : "Adicionar produto"}
             </Button>
           )}
           {canConsultFiscal && <Button asChild variant="outline" size="sm"><Link to="/configuracoes/fiscal/produtos"><FileText className="h-4 w-4 mr-1" />Perfis fiscais</Link></Button>}
@@ -754,6 +762,7 @@ export function ProdutosTab() {
                   </TabsList>
 
                   <TabsContent value="geral" className="space-y-4">
+                    <DocumentaryAI identity={{ name: form.nome, manufacturer: "", registration: "", entity: "produto", id: form.id || undefined }} values={form} allowed={["descricao", "modo_acao", "funcao_completa", "modo_aplicacao"]} onApply={fields => setForm(f => ({ ...f, ...fields }))} />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Código (Referência)</Label>
