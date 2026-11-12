@@ -18,7 +18,7 @@ BEGIN
    (SELECT coalesce(jsonb_agg(a::text ORDER BY a::text),'[]'::jsonb) FROM unnest(relacl) a)) INTO x FROM pg_class WHERE oid=rel;
   IF x IS DISTINCT FROM jsonb_build_array(r->>'owner',r->'relrowsecurity',r->'relforcerowsecurity',r->'acl') THEN RAISE EXCEPTION 'RELATION_OWNER_RLS_ACL_DRIFT:%',r->>'name';END IF;
   FOR c IN SELECT value FROM jsonb_array_elements(r->'columns') LOOP
-   SELECT jsonb_build_array(format_type(a.atttypid,a.atttypmod),a.attnotnull,pg_get_expr(d.adbin,d.adrelid),a.attidentity,a.attgenerated) INTO x FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid=rel AND a.attname=c->>'name' AND NOT a.attisdropped;
+   SELECT jsonb_build_array(format_type(a.atttypid,a.atttypmod),a.attnotnull,pg_get_expr(ad.adbin,ad.adrelid),a.attidentity,a.attgenerated) INTO x FROM pg_attribute a LEFT JOIN pg_attrdef ad ON ad.adrelid=a.attrelid AND ad.adnum=a.attnum WHERE a.attrelid=rel AND a.attname=c->>'name' AND NOT a.attisdropped;
    IF x IS DISTINCT FROM jsonb_build_array(c->>'type',c->'not_null',c->'default',c->>'identity',c->>'generated') THEN RAISE EXCEPTION 'COLUMN_DRIFT:%.%',r->>'name',c->>'name'; END IF;
   END LOOP;
   FOR c IN SELECT value FROM jsonb_array_elements(r->'constraints') LOOP
