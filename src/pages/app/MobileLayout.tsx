@@ -19,6 +19,9 @@ import { useEntitlements } from "@/hooks/useEntitlements";
 import { isPathEntitled } from "@/lib/saas/featureRouteMap";
 import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
 import { PortalContextUnavailable } from "@/components/guards/PortalContextUnavailable";
+import { onboardingStateBloqueia, useOnboardingState, useOnboardingTransitionFences } from "@/hooks/useOrgOnboarding";
+import { OnboardingEmpresa } from "@/components/onboarding/OnboardingEmpresa";
+import { OnboardingRevalidando } from "@/components/onboarding/OnboardingRevalidando";
 
 // Tabs derivam da fonte declarativa única (`src/config/navigation.ts`).
 // Fase 2 preserva rotas, ícones e rótulos anteriores — apenas centraliza a fonte.
@@ -35,7 +38,7 @@ const produtorTabs = itemsForPlatform("mobile-produtor").map((it) => ({
 }));
 
 export default function MobileLayout() {
-  const { user, primaryRole, roles, loading, authzReady = true } = useAuth();
+  const { user, profile, primaryRole, roles, loading, authzReady = true } = useAuth();
   const entitlements = useEntitlements();
   const location = useLocation();
   const { isOnline, pendingCount, syncing, syncAll, progress } = useOfflineSync();
@@ -43,6 +46,13 @@ export default function MobileLayout() {
   const { data: contexts, isLoading: contextsLoading, isFetching, isError, refetch } = useAvailableContexts({ requireFresh: true });
   const { config, defaults } = useSystemConfig();
   const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
+  // Mesmo bloqueio global do AppLayout: acesso direto pelo celular também mostra a revisão.
+  const onboarding = useOnboardingState(
+    !!user && !!profile?.organization_id && profile?.senha_provisoria !== true,
+    { userId: user?.id, organizationId: profile?.organization_id },
+  );
+  const onboardingBloqueado = onboarding.data ? onboardingStateBloqueia(onboarding.data) : null;
+  useOnboardingTransitionFences(onboardingBloqueado);
 
   // C2 (INACTIVE candidate): mode/menus derive ONLY from the canonical fresh projection
   // (C2_MULTIPROFILE_V1 adds "producer"). Raw roles never grant producer mode; an error or
@@ -82,6 +92,9 @@ export default function MobileLayout() {
   }
 
   if (!user) return <Navigate to="/app/login" replace />;
+
+  if (onboarding.revalidando) return <OnboardingRevalidando />;
+  if (onboarding.data && onboardingBloqueado) return <OnboardingEmpresa state={onboarding.data} />;
 
   if (isError || !contexts) return <PortalContextUnavailable refetch={refetch} />;
 
