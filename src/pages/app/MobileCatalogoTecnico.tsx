@@ -41,6 +41,9 @@ interface Row {
 export default function MobileCatalogoTecnico() {
   const editor = useTenantCatalogEditor();
   const [section, setSection] = useState("catalogo");
+  const [visitedProducts, setVisitedProducts] = useState(false);
+  useEffect(() => { if (section === "produtos") setVisitedProducts(true); }, [section]);
+  useEffect(() => { setSection("catalogo"); setVisitedProducts(false); setOpenProd(null); setOpenMicro(null); setSearch(""); setFamily("todos"); setTipo("todos"); }, [editor.scope]);
   const { label: tenantLabel } = useActiveTenantName();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,7 +126,8 @@ export default function MobileCatalogoTecnico() {
     <div className="p-3 space-y-3 min-w-0 [&_button]:min-h-11 [&_input]:min-h-11">
       <h1 className="text-lg font-bold">Catálogo técnico</h1>
       <CompactCatalogSelect label="Seção do catálogo" value={section} onChange={setSection} options={[{value:"catalogo",label:"Catálogo técnico"},...(editor.canEdit ? [{value:"produtos",label:"Produtos"},{value:"microrganismos",label:"Microrganismos"},{value:"culturas",label:"Culturas"},{value:"problemas",label:"Problemas"}] : [])]} />
-      {section === "produtos" ? <ProdutosTab initialFamily={family} /> : section === "culturas" || section === "microrganismos" ? <TenantReferencePanel root={section} /> : section === "problemas" ? <TenantProblemPanel /> : <>
+      {visitedProducts && editor.canEdit && <div hidden={section !== "produtos"}><ProdutosTab initialFamily={family} /></div>}
+      {section === "produtos" ? null : section === "culturas" || section === "microrganismos" ? <TenantReferencePanel root={section} /> : section === "problemas" ? <TenantProblemPanel /> : <>
       <CatalogFamilyFilter value={family} onChange={setFamily} />
 
       {editor.canEdit && <Button onClick={() => setSection("produtos")}>Adicionar produto</Button>}
