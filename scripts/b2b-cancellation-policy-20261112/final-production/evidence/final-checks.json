@@ -3,7 +3,7 @@
     "test": "bytes exatos 03-post.sql.readonly",
     "status": "PASS",
     "detail": {
-      "sha256": "10bf1b2b8ec4ca9c86e476a77a88af62ab0275dcd58b2a0fcb30a3c0f72c1b49",
+      "sha256": "6495c565455cac8be5962688bb46bc6123bb65737ecf508e07e8938d568a6a76",
       "stderr": ""
     }
   },
@@ -11,7 +11,7 @@
     "test": "bytes exatos 04-rollback-deny.sql.review",
     "status": "PASS",
     "detail": {
-      "sha256": "1108ba21b77cc2d6243124132d8be74f854e926333a9eee01093556c64fa4e72",
+      "sha256": "43523bd6fb186f2268eb438c3ed00975b65f3ac75b4ec7ed7d157fc291b37ed8",
       "stderr": ""
     }
   },
@@ -19,7 +19,7 @@
     "test": "bytes exatos 05-post-rollback.sql.readonly",
     "status": "PASS",
     "detail": {
-      "sha256": "10bf1b2b8ec4ca9c86e476a77a88af62ab0275dcd58b2a0fcb30a3c0f72c1b49",
+      "sha256": "6495c565455cac8be5962688bb46bc6123bb65737ecf508e07e8938d568a6a76",
       "stderr": ""
     }
   },
