@@ -14,5 +14,5 @@ BEGIN
  IF NOT FOUND OR f.residual_amount IS NULL OR f.residual_amount<=0 OR f.state NOT IN ('aguardando_fiscal','faturado_parcial') OR EXISTS(SELECT 1 FROM public.fiscal_invoices i JOIN platform_private.fiscal_close_pending cp ON cp.fiscal_invoice_id=i.id WHERE i.partner_order_id=po.id) OR EXISTS(SELECT 1 FROM public.fiscal_invoices i JOIN public.fiscal_sefaz_transmissions t ON t.fiscal_invoice_id=i.id WHERE i.partner_order_id=po.id AND t.state IN ('PENDING','SENT')) THEN RETURN jsonb_build_object('available',false); END IF;
  RETURN jsonb_build_object('available',true,'order_id',po.id,'version',f.version,'residual_amount',f.residual_amount);
 END $fn$;
-DO $post$ BEGIN IF md5((SELECT prosrc FROM pg_proc WHERE oid='public.rpc_b2b_cancel_residual_capability_v1(uuid)'::regprocedure)) IS DISTINCT FROM 'a6a826663a03d6f236d68b9e66f4e5ca' THEN RAISE EXCEPTION 'NORMALIZATION_SOURCE_DRIFT'; END IF;END $post$;
+DO $post$ BEGIN IF md5((SELECT prosrc FROM pg_proc WHERE oid='public.rpc_b2b_cancel_residual_capability_v1(uuid)'::regprocedure)) IS DISTINCT FROM '45b58c8beabf4904e096695974f48f2f' THEN RAISE EXCEPTION 'NORMALIZATION_SOURCE_DRIFT'; END IF;END $post$;
 COMMIT;

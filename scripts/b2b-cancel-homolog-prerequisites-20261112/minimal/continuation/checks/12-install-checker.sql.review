@@ -6,6 +6,7 @@ DO $target$ BEGIN
  IF to_regclass('platform_private.b2b_financial_forecasts') IS NULL THEN RAISE EXCEPTION 'STAGE_A_REQUIRED'; END IF;
  IF EXISTS(SELECT 1 FROM platform_private.b2b_forecast_creation_gate_v1 WHERE enabled) OR EXISTS(SELECT 1 FROM platform_private.b2b_forecast_lifecycle_gate_v1 WHERE enabled) THEN RAISE EXCEPTION 'FOUNDATION_MUST_REMAIN_CLOSED'; END IF;
 END $target$;
+DO $absence$ BEGIN IF to_regprocedure('platform_private.cancel_homolog_catalog_check_v1()') IS NOT NULL THEN RAISE EXCEPTION 'CHECKER_ALREADY_PRESENT:platform_private.cancel_homolog_catalog_check_v1()'; END IF;END $absence$;
 
 CREATE OR REPLACE FUNCTION platform_private.cancel_homolog_catalog_check_v1()
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path='public','pg_catalog' AS $checker$

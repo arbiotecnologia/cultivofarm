@@ -1,5 +1,10 @@
 -- HOMOLOG ONLY; reviewed exception infrastructure, gate OFF/no issuer/no client grant.
 BEGIN;SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='30s';
+DO $Epin$ BEGIN
+IF (SELECT jsonb_build_array(md5(prosrc),pg_get_userbyid(proowner),proconfig,prosecdef) FROM pg_proc WHERE oid=to_regprocedure('platform_private.cancel_homolog_fixture_scope_v1(text,uuid,jsonb,boolean)')) IS DISTINCT FROM jsonb_build_array('f6c76f15138439687bf234cea3234d67','postgres','["search_path=\"\""]'::jsonb,true) THEN RAISE EXCEPTION 'E_FUNCTION_PIN_DRIFT:platform_private.cancel_homolog_fixture_scope_v1(text,uuid,jsonb,boolean)'; END IF;
+IF (SELECT jsonb_build_array(md5(prosrc),pg_get_userbyid(proowner),proconfig,prosecdef) FROM pg_proc WHERE oid=to_regprocedure('platform_private.cancel_homolog_fixture_row_guard_v1()')) IS DISTINCT FROM jsonb_build_array('8383b359faac2d27d8b8188b2bf6cb29','postgres','["search_path=\"\""]'::jsonb,true) THEN RAISE EXCEPTION 'E_FUNCTION_PIN_DRIFT:platform_private.cancel_homolog_fixture_row_guard_v1()'; END IF;
+IF (SELECT jsonb_build_array(md5(prosrc),pg_get_userbyid(proowner),proconfig,prosecdef) FROM pg_proc WHERE oid=to_regprocedure('platform_private.homolog_validation_block_receivable_insert()')) IS DISTINCT FROM jsonb_build_array('d3b7d73f997e46f2fb778c0fd77c8a76','postgres','["search_path=\"\""]'::jsonb,true) THEN RAISE EXCEPTION 'E_FUNCTION_PIN_DRIFT:platform_private.homolog_validation_block_receivable_insert()'; END IF;
+END $Epin$;
 DO $target$ BEGIN
  IF NOT EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref='vrlcdwmlytukrjezrrnf' AND production_emission_allowed IS FALSE) OR EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref IS DISTINCT FROM 'vrlcdwmlytukrjezrrnf' OR production_emission_allowed IS DISTINCT FROM FALSE) THEN RAISE EXCEPTION 'HOMOLOG_MARKER_REQUIRED'; END IF;
  IF EXISTS(SELECT 1 FROM cron.job WHERE active) THEN RAISE EXCEPTION 'HOMOLOG_CRON_ACTIVE'; END IF;
