@@ -10,7 +10,7 @@ SIGS={"public.c2_internal_order_entry_capability_v1()":"e2619c71becfebf38c8d0356
 "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)":"97bcdb9884b54adb3bd4aae4915e32d0"}
 def main():
     assert not os.environ.get('PGHOST'),'HOSTED_PG_ENV_REFUSED'
-    out=H/'evidence'/'measure';out.mkdir(parents=True,exist_ok=True)
+    out=H/'evidence'/os.environ.get('VENDEDOR_MEASURE_DIR','measure');out.mkdir(parents=True,exist_ok=True)
     work=Path(tempfile.mkdtemp(prefix='vendedor-measure-',dir='/tmp'));mirror=work/'project';mirror.mkdir()
     shutil.copytree(ROOT/'scripts',mirror/'scripts',ignore=shutil.ignore_patterns('__pycache__','.git'))
     fixture=mirror/'scripts/b2b-solid-packaging-order-20261106/test-local-pg.py'
