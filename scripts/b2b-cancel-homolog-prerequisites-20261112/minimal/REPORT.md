@@ -36,7 +36,7 @@ Busca computada em PostgreSQL descartável por `md5(pg_get_functiondef)` sobre v
 | rpc_fiscal_invoice_apply_authorization_v1 | `9c94985d80502c8aea8bfb5da3abdecd` | H12, `matched/rpc_fiscal_invoice_apply_authorization_v1.sql` |
 | rpc_fiscal_sefaz_transmit_record_v1 | `e340a643e46c6cc0dea0fcebd207f612` | H13, `matched/rpc_fiscal_sefaz_transmit_record_v1.sql` |
 
-Essas fontes recuperadas são **baseline de comparação, não arquivos para reinstalar**. Busca final de 68 variantes e caminhos/SHA completos em `evidence/canonical-body-matches.json`. Catálogo descartável usou tipos compostos vazios e check_function_bodies=off apenas para medir hash; não prova JWT/RLS nem execução fiscal/financeira.
+Essas fontes recuperadas são **baseline de comparação, não arquivos para reinstalar**. Busca final de 65 variantes e caminhos/SHA completos em `evidence/canonical-body-matches.json`. Catálogo descartável usou tipos compostos vazios e check_function_bodies=off apenas para medir hash; não prova JWT/RLS nem execução fiscal/financeira.
 
 ## Somente três definições indispensáveis ainda ausentes das fontes com o hash informado
 

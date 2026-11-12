@@ -3,7 +3,7 @@
 - [ ] Integração residual/fiscal depende só de três definições exatas begin/prepare/respond e trechos estruturais/ACL/guards da captura já existente; nenhuma nova rodada de inventário geral nem decisão comercial necessária.
 - [x] Inventário específico em scripts/b2b-cancel-homolog-prerequisites-20261112: 149 nomes de função/64 relações, cinco segmentos somente leitura; onze hashes = 5 ausências/4 divergências/2 coincidências de corpo.
 - [x] Fontes inativas fixture e Financeiro para localizar título por NF/empresa; 8/8 fontes, 16/16 UI/regressões e cinco consultas sem erro em catálogo PG sintético. Manifesto canônico/hashes/REPORT entregues; original intacto.
-- [ ] INSTALL/POST/rollback e roundtrip bloqueados por catálogo exato homolog (ACL/columns/guards/corpos divergentes); sessão fiscal simulada precisa contrato específico sem grant service-only. Consultas 01–05 fornecidas, nada remoto.
+- [x] Entrega inicial substituída parcialmente: etapa A fechada tem INSTALL/POST/rollback/roundtrip 18/18; integração cancelamento/fixture permanece no bloqueio específico acima. Não repetir inventário 01–05.
 
 ## 11/11 23:28 — Implementação candidata da política humana de cancelamento
 - [x] Pacote separado inativo preparado: residual Comercial/Admin com motivo/CAS; helper fiscal final vinculado e título aberto; pagamentos exigem Financeiro, sem estorno automático.

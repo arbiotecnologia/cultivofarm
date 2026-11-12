@@ -1,5 +1,7 @@
 # Homologação de cancelamento — dependência concreta, instalação bloqueada
 
+**Continuação 01:33:** etapa aditiva privada fechada com PRE/INSTALL/POST/rollback e roundtrip 18/18 em `minimal/`; seis corpos homolog recuperados por hash exato, três definições específicas faltantes. Ver `minimal/REPORT.md` para estado atual; a seção abaixo preserva a entrega anterior de inventário, não descreve a fundação nova como inexistente.
+
 **Alvo exclusivo:** CultivoFarm-Homolog `vrlcdwmlytukrjezrrnf`. Candidato informado: `8cf02e2b`.
 Nenhum SQL remoto, publicação, alteração do cliente/rotas do original, exportação/importação de dados ou chamada externa.
 
