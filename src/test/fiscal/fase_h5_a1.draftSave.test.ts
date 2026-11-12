@@ -41,7 +41,8 @@ describe("H5-A.1 · rascunho parcial: schema não exige nada", () => {
     const contaminated = {
       cnpj: "11.222.333/0001-81",
       // simula tentativa de mudar production_enabled via UI
-      ...(Object.fromEntries(FORBIDDEN_PAYLOAD_KEYS.map((k) => [k, "x"])) as Record<string, unknown>),
+      ...(Object.fromEntries(FORBIDDEN_PAYLOAD_KEYS.filter((k) => k !== "configuration_status").map((k) => [k, "x"])) as Record<string, unknown>),
+      configuration_status: "VALIDATED" as const,
     };
     // buildUpdatePayload só copia colunas mapeadas — production_enabled
     // e demais chaves proibidas jamais entram no payload.

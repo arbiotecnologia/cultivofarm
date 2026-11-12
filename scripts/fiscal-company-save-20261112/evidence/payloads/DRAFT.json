@@ -1,0 +1,15 @@
+{
+  "fiscal_provider": "NONE",
+  "cnpj": "11222333000181",
+  "legal_name": "AR Bio FICTÍCIA revisada",
+  "state_registration": "ISENTO",
+  "fiscal_environment": "HOMOLOGATION",
+  "nfe_enabled": false,
+  "nfe_environment_code": "2",
+  "nfse_enabled": false,
+  "nfe_provider": "NONE",
+  "nfse_provider": "NONE",
+  "nfe_configuration": {},
+  "nfse_configuration": {},
+  "configuration_version": 8
+}

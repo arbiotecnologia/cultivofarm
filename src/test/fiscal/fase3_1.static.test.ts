@@ -104,7 +104,7 @@ describe("Fase 3.1 — payload não vaza campos proibidos", () => {
   });
 
   test("status permitidos (não incluem estados de emissão)", () => {
-    expect(ALLOWED_STATUSES).toEqual(["DRAFT", "PENDING_ACCOUNTING", "READY_FOR_HOMOLOGATION"]);
+    expect(ALLOWED_STATUSES).toEqual(["DRAFT", "PENDING_ACCOUNTING", "VALIDATED", "BLOCKED"]);
     expect(companyFiscalFormSchema.safeParse({ configuration_status: "AUTHORIZED" }).success).toBe(false);
   });
 

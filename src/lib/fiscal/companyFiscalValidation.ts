@@ -9,8 +9,7 @@
  * - `nfe_configuration` / `nfse_configuration` / `last_validation_summary`
  *   são rejeitados recursivamente se contiverem chaves sensíveis.
  * - `fiscal_environment` limitado a NOT_CONFIGURED / HOMOLOGATION.
- * - `configuration_status` limitado a DRAFT / PENDING_ACCOUNTING /
- *   READY_FOR_HOMOLOGATION (validação contábil externa).
+ * - Estados contábeis refletem o banco; salvar nunca altera sua revisão.
  * - `nfe_provider` / `nfse_provider` são configuráveis mas NÃO autorizam
  *   conexão nem emissão.
  * - `fiscal_provider` legacy permanece `NONE`.
@@ -77,7 +76,7 @@ export function isValidCnpj(value: string): boolean {
 
 // Enums ---------------------------------------------------------------
 export const ALLOWED_ENVIRONMENTS = ["NOT_CONFIGURED", "HOMOLOGATION"] as const;
-export const ALLOWED_STATUSES = ["DRAFT", "PENDING_ACCOUNTING", "READY_FOR_HOMOLOGATION"] as const;
+export const ALLOWED_STATUSES = ["DRAFT", "PENDING_ACCOUNTING", "VALIDATED", "BLOCKED"] as const;
 export const ALLOWED_PROVIDERS = [
   "NONE", "NOT_CONFIGURED", "FOCUS_NFE", "PLUGNOTAS",
   "SEFAZ_DIRETO", "NFSE_NACIONAL", "MUNICIPAL", "OTHER_FUTURE",
@@ -263,6 +262,7 @@ export const FORBIDDEN_PAYLOAD_KEYS = [
   "updated_by",
   "accounting_validated_at",
   "accounting_validated_by",
+  "configuration_status",
   "is_active",
   "last_validation_at",
 ] as const;
@@ -316,14 +316,13 @@ export function buildUpdatePayload(values: CompanyFiscalFormValues): Update {
   assignText("configuration_notes", parsed.configuration_notes);
 
   if (parsed.fiscal_environment !== undefined) payload.fiscal_environment = parsed.fiscal_environment;
-  if (parsed.configuration_status !== undefined) payload.configuration_status = parsed.configuration_status;
   payload.nfe_enabled = false;
   payload.nfe_environment_code = "2";
   if (parsed.nfe_series_number !== undefined) {
     payload.nfe_series_number = parsed.nfe_series_number;
     payload.nfe_series = parsed.nfe_series_number === null ? null : String(parsed.nfe_series_number);
   }
-  if (parsed.nfse_enabled !== undefined) payload.nfse_enabled = parsed.nfse_enabled;
+  payload.nfse_enabled = false;
   if (parsed.nfe_provider !== undefined) payload.nfe_provider = parsed.nfe_provider;
   if (parsed.nfse_provider !== undefined) payload.nfse_provider = parsed.nfse_provider;
   if (parsed.nfe_configuration !== undefined) {

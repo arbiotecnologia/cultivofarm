@@ -1,3 +1,8 @@
+## 12/11 03:13 — Salvamento fiscal original
+- [x] READY_FOR_HOMOLOGATION removido do save; quatro estados lidos, status/atestados omitidos; rascunho e CAS observados preservados.
+- [x] 160 testes PASS +26 checks PG: formulário/SDK original, AR Bio sintética, reabertura/erros/isolamento; implantação frontend somente, REPORT/SHA e sem remoto/publicação.
+- [ ] Espelho completo original r12: indisponível (/tmp anterior removido); validado espelho componente canônico, não certificação JWT/PostgREST/produção.
+
 ## 12/11 02:48 — Painel original de aprovações e diagnóstico
 - [x] Painel econômico montado na carteira real; economicDiagnosis escopado, mensagem correta, eligible/reasons preservados.
 - [x] 92 testes focados PASS: AR Bio sintética, papéis/tenant, previsão única, reconciliação/parcial R$1 e bloqueios; harness visual sintético desktop/mobile; build automático OK.

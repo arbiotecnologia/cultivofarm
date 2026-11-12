@@ -40,6 +40,8 @@ export const FISCAL_ENVIRONMENT = make({
 export const FISCAL_CONFIGURATION_STATUS = make({
   DRAFT: "Rascunho",
   PENDING_ACCOUNTING: "Aguardando contabilidade",
+  VALIDATED: "Validado pela contabilidade",
+  BLOCKED: "Bloqueado",
   READY_FOR_HOMOLOGATION: "Pronto para homologação",
 });
 

@@ -142,7 +142,7 @@ function Checklist({ items }: { items: Array<{ key: string; label: string; ok: b
 }
 
 export default function FiscalEmpresa() {
-  const { role, roles } = useAuth();
+  const { role, roles, user, profile, authzEpoch } = useAuth();
   const access = getAccessLevel(role, "/configuracoes/fiscal/empresa");
   const canEdit = access === "rw";
   // Gestão de certificados é estritamente admin — financeiro/gestor só visualizam.
@@ -153,6 +153,9 @@ export default function FiscalEmpresa() {
   const settingsQuery = useFiscalCompanySettings({ enabled: uiEnabled && access !== "none" });
   const update = useUpdateFiscalCompanySettings();
   const saveInFlight = useRef(false);
+  const draftDirty = useRef(false);
+  const editRevision = useRef(0);
+  const hydratedId = useRef<string | null>(null);
   const init = useInitFiscalCompanySettings();
 
   const [values, setValues] = useState<CompanyFiscalFormValues>(() => rowToFormValues(null));
@@ -198,8 +201,19 @@ export default function FiscalEmpresa() {
 
 
   useEffect(() => {
-    if (settingsQuery.data) setValues(rowToFormValues(settingsQuery.data));
-  }, [settingsQuery.data]);
+    draftDirty.current = false;
+    hydratedId.current = null;
+    editRevision.current += 1;
+    setValues(rowToFormValues(null));
+    setErrors({});
+  }, [user?.id, profile?.organization_id, authzEpoch]);
+
+  useEffect(() => {
+    if (settingsQuery.data && !draftDirty.current && !saveInFlight.current) {
+      hydratedId.current = settingsQuery.data.id;
+      setValues(rowToFormValues(settingsQuery.data));
+    }
+  }, [settingsQuery.data, user?.id, profile?.organization_id, authzEpoch]);
 
   const permissionDenied = useMemo(
     () => settingsQuery.error?.message === "permission_denied",
@@ -223,7 +237,8 @@ export default function FiscalEmpresa() {
 
   const statusBadge = useMemo(() => {
     const s = values.configuration_status ?? "DRAFT";
-    if (s === "READY_FOR_HOMOLOGATION") return <Badge variant="default">Pronto para homologação</Badge>;
+    if (s === "VALIDATED") return <Badge variant="default">Validado pela contabilidade</Badge>;
+    if (s === "BLOCKED") return <Badge variant="destructive">Bloqueado</Badge>;
     if (s === "PENDING_ACCOUNTING") return <Badge variant="secondary">Aguardando contabilidade</Badge>;
     return <Badge variant="outline">Rascunho</Badge>;
   }, [values.configuration_status]);
@@ -343,12 +358,18 @@ export default function FiscalEmpresa() {
   const readonly = !canEdit;
 
   function set<K extends keyof CompanyFiscalFormValues>(key: K, val: CompanyFiscalFormValues[K]) {
+    draftDirty.current = true;
+    editRevision.current += 1;
     setValues((prev) => ({ ...prev, [key]: val }));
   }
   function setNfe(key: string, val: unknown) {
+    draftDirty.current = true;
+    editRevision.current += 1;
     setValues((prev) => ({ ...prev, nfe_configuration: { ...(prev.nfe_configuration ?? {}), [key]: val } }));
   }
   function setNfse(key: string, val: unknown) {
+    draftDirty.current = true;
+    editRevision.current += 1;
     setValues((prev) => ({ ...prev, nfse_configuration: { ...(prev.nfse_configuration ?? {}), [key]: val } }));
   }
 
@@ -368,7 +389,7 @@ export default function FiscalEmpresa() {
   }
 
   async function onSave() {
-    if (!settingsQuery.data || saveInFlight.current) return;
+    if (!canEdit || !settingsQuery.data || saveInFlight.current) return;
     if (!validateLocal()) {
       toast({ title: "Verifique os campos", description: "Há dados inválidos.", variant: "destructive" });
       return;
@@ -383,12 +404,17 @@ export default function FiscalEmpresa() {
       state_registration: normalizeIE(values.state ?? null, values.state_registration, { allowIsento: true }),
     };
     saveInFlight.current = true;
+    const submittedRevision = editRevision.current;
     try {
-      await update.mutateAsync({
-        id: settingsQuery.data.id,
-        expectedVersion: settingsQuery.data.configuration_version ?? 1,
+      const saved = await update.mutateAsync({
+        id: hydratedId.current ?? settingsQuery.data.id,
+        expectedVersion: values.configuration_version ?? 0,
         values: normalizedValues,
       });
+      if (submittedRevision === editRevision.current) {
+        draftDirty.current = false;
+        setValues(rowToFormValues(saved));
+      }
       toast({ title: "Configuração fiscal salva." });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "unknown";
@@ -485,7 +511,11 @@ export default function FiscalEmpresa() {
                       cnpj={values.cnpj}
                       currentValues={values}
                       disabled={readonly || update.isPending}
-                      onApply={(patch) => setValues((prev) => ({ ...prev, ...patch }))}
+                      onApply={(patch) => {
+                        draftDirty.current = true;
+                        editRevision.current += 1;
+                        setValues((prev) => ({ ...prev, ...patch }));
+                      }}
                     />
                   </div>
                 </FieldRow>
@@ -629,7 +659,7 @@ export default function FiscalEmpresa() {
                   <SelectNative id="fiscal_environment" value={values.fiscal_environment} options={FISCAL_ENVIRONMENT.toOptions(ALLOWED_ENVIRONMENTS)} onChange={(v) => set("fiscal_environment", v as (typeof ALLOWED_ENVIRONMENTS)[number])} />
                 </FieldRow>
                 <FieldRow id="configuration_status" label="Status de configuração">
-                  <SelectNative id="configuration_status" value={values.configuration_status} options={FISCAL_CONFIGURATION_STATUS.toOptions(ALLOWED_STATUSES)} onChange={(v) => set("configuration_status", v as (typeof ALLOWED_STATUSES)[number])} />
+                  <SelectNative id="configuration_status" value={values.configuration_status} options={FISCAL_CONFIGURATION_STATUS.toOptions(ALLOWED_STATUSES)} disabled onChange={() => {}} />
                 </FieldRow>
               </CardContent>
             </Card>

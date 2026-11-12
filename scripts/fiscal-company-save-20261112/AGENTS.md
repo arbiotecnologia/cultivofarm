@@ -1,0 +1,2 @@
+- Offline original-form audit only; never hosted SQL, Edge deployment, publication or fiscal/provider calls — preserves production containment.
+- Execute exact SDK-captured payloads against canonical extracted table/check and H15 controls in a socket-only disposable component mirror; synthetic identity and additive column seams never certify the full original database or JWT/PostgREST — prevents simulated production claims.

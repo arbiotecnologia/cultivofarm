@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/fiscal-company-save-20261112/test_pg.py", line 54, in <module>
+        pg("""CREATE ROLE authenticated; CREATE ROLE anon; CREATE SCHEMA auth;
+        ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    CREATE TYPE public.app_role AS ENUM ('administrador','gestor','financeiro','consultor_tecnico');
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<15 lines>...
+    ALTER TABLE public.company_fiscal_settings ENABLE ROW LEVEL SECURITY;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    """ + actor + "\nREVOKE ALL ON FUNCTION public.h15_actor_organization() FROM PUBLIC,anon; GRANT EXECUTE ON FUNCTION public.h15_actor_organization() TO authenticated;\n" + integrity + '\n'.join(policies))
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/fiscal-company-save-20261112/test_pg.py", line 21, in pg
+    raise AssertionError(result.stderr)
+AssertionError: ERROR:  syntax error at or near "READ"
+LINE 1: ...tings_read" ON public.company_fiscal_settings FOR READ TO au...
+                                                             ^
+

@@ -1,0 +1,115 @@
+{
+  "scope": "disposable canonical component mirror, not full r12/JWT/PostgREST",
+  "checks": [
+    {
+      "name": "canonical CHECK contains exactly four states",
+      "pass": true
+    },
+    {
+      "name": "DRAFT: original invalid status reproduces constraint failure",
+      "pass": true
+    },
+    {
+      "name": "DRAFT: exact SDK payload omits accounting fields",
+      "pass": true
+    },
+    {
+      "name": "DRAFT: real UPDATE returns saved fields and unchanged accounting state",
+      "pass": true
+    },
+    {
+      "name": "DRAFT: reopen reads persisted fields/state",
+      "pass": true
+    },
+    {
+      "name": "DRAFT: stale CAS returns zero rows",
+      "pass": true
+    },
+    {
+      "name": "PENDING_ACCOUNTING: original invalid status reproduces constraint failure",
+      "pass": true
+    },
+    {
+      "name": "PENDING_ACCOUNTING: exact SDK payload omits accounting fields",
+      "pass": true
+    },
+    {
+      "name": "PENDING_ACCOUNTING: real UPDATE returns saved fields and unchanged accounting state",
+      "pass": true
+    },
+    {
+      "name": "PENDING_ACCOUNTING: reopen reads persisted fields/state",
+      "pass": true
+    },
+    {
+      "name": "PENDING_ACCOUNTING: stale CAS returns zero rows",
+      "pass": true
+    },
+    {
+      "name": "VALIDATED: original invalid status reproduces constraint failure",
+      "pass": true
+    },
+    {
+      "name": "VALIDATED: exact SDK payload omits accounting fields",
+      "pass": true
+    },
+    {
+      "name": "VALIDATED: real UPDATE returns saved fields and unchanged accounting state",
+      "pass": true
+    },
+    {
+      "name": "VALIDATED: reopen reads persisted fields/state",
+      "pass": true
+    },
+    {
+      "name": "VALIDATED: stale CAS returns zero rows",
+      "pass": true
+    },
+    {
+      "name": "BLOCKED: original invalid status reproduces constraint failure",
+      "pass": true
+    },
+    {
+      "name": "BLOCKED: exact SDK payload omits accounting fields",
+      "pass": true
+    },
+    {
+      "name": "BLOCKED: real UPDATE returns saved fields and unchanged accounting state",
+      "pass": true
+    },
+    {
+      "name": "BLOCKED: reopen reads persisted fields/state",
+      "pass": true
+    },
+    {
+      "name": "BLOCKED: stale CAS returns zero rows",
+      "pass": true
+    },
+    {
+      "name": "foreign tenant sees zero rows",
+      "pass": true
+    },
+    {
+      "name": "foreign tenant changes zero rows",
+      "pass": true
+    },
+    {
+      "name": "Financeiro reads existing row",
+      "pass": true
+    },
+    {
+      "name": "Financeiro cannot update",
+      "pass": true
+    },
+    {
+      "name": "CHECK unchanged after entire flow",
+      "pass": true
+    }
+  ],
+  "constraint": "CHECK ((configuration_status = ANY (ARRAY['DRAFT'::text, 'PENDING_ACCOUNTING'::text, 'VALIDATED'::text, 'BLOCKED'::text])))",
+  "sources": {
+    "supabase/migrations/20260721000000_fiscal_fase2_fundacao.sql": "e22db0bc2f1112266ce6cf34cb1373f1be5a382e5563f65c3b827a09111de941",
+    "supabase/migrations/20260723000000_fiscal_fase3_15_central_config.sql": "f2a508fa674572dd0e323569dac8321e87ed333062ce65ae2d398794f412ade3",
+    "supabase/migrations/20260919015635_h15_fiscal_company_isolation.sql": "66f09bfde33988ec057baff35626679b2b9b8ec5c399420fb202fb362c5f4645"
+  }
+}
