@@ -48,12 +48,13 @@ export const ONBOARDING_CAMPOS: Record<string, number> = {
   cep: 9, logradouro: 200, numero: 20, complemento: 120, bairro: 120, cidade: 120, uf: 2, telefone: 20,
   email_contato: 255, responsavel_nome: 160, responsavel_cargo: 120, fuso_horario: 64, idioma: 10,
 };
-export type OrgStatus = "rascunho" | "aguardando_ativacao" | "onboarding" | "ativa" | "suspensa" | "cancelada";
+export type OrgStatus = "rascunho" | "aguardando_ativacao" | "onboarding" | "aguardando_revisao" | "ativa" | "suspensa" | "cancelada";
 
 export const ORG_STATUS_LABEL: Record<OrgStatus, string> = {
   rascunho: "Rascunho",
   aguardando_ativacao: "Aguardando ativação",
   onboarding: "Em onboarding",
+  aguardando_revisao: "Aguardando revisão",
   ativa: "Ativa",
   suspensa: "Suspensa",
   cancelada: "Cancelada",
@@ -62,8 +63,9 @@ export const ORG_STATUS_LABEL: Record<OrgStatus, string> = {
 const TRANSICOES: Record<OrgStatus, OrgStatus[]> = {
   rascunho: ["aguardando_ativacao", "cancelada"],
   aguardando_ativacao: ["onboarding", "rascunho", "cancelada"],
-  onboarding: ["ativa", "cancelada", "suspensa"],
-  ativa: ["suspensa", "cancelada"],
+  onboarding: ["ativa", "aguardando_revisao", "cancelada", "suspensa"],
+  aguardando_revisao: ["ativa", "cancelada"],
+  ativa: ["suspensa", "cancelada", "aguardando_revisao"],
   suspensa: ["ativa", "cancelada"],
   cancelada: [],
 };
@@ -85,7 +87,7 @@ export function cnpjValido(v: string | null | undefined): boolean {
 
 /** Organizações com onboarding pendente bloqueiam os módulos operacionais. */
 export function onboardingBloqueia(status: string | null | undefined): boolean {
-  return status === "aguardando_ativacao" || status === "onboarding" || status === "rascunho";
+  return status === "aguardando_ativacao" || status === "onboarding" || status === "rascunho" || status === "aguardando_revisao";
 }
 
 export interface OnboardingDados {
@@ -146,3 +148,20 @@ export function sanitizarPayloadOnboarding(d: Record<string, unknown>): Record<s
   }
   return out;
 }
+
+/** Ações genéricas de status na plataforma: ativação de empresa em revisão e remessa à revisão têm fluxo próprio. */
+export function acaoStatusGenericaPermitida(de: OrgStatus, para: OrgStatus): boolean {
+  if (!transicaoPermitida(de, para)) return false;
+  if (de === "onboarding" && para === "ativa") return false;
+  if (para === "aguardando_revisao") return false;
+  if (de === "aguardando_revisao" && para !== "cancelada") return false;
+  return true;
+}
+
+export const MOTIVO_REVISAO_LABEL: Record<string, string> = {
+  sem_evidencia_servidor: "Cadastro manual ou sem consulta oficial registrada no servidor",
+  evidencia_expirada: "Consulta oficial com mais de 7 dias",
+  situacao_cadastral_nao_ativa: "Situação cadastral diferente de ATIVA",
+  razao_social_divergente: "Razão social diferente da consulta oficial",
+  remessa_manual_plataforma: "Remetida à revisão pela equipe CultivoFarm",
+};

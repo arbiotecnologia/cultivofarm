@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { mensagemErroPlataforma, useAlterarStatusEmpresa, useOrganizacoesSaaS, type OrganizacaoSaaS } from "@/hooks/usePlataformaSaaS";
-import { ORG_STATUS_LABEL, type OrgStatus, transicaoPermitida } from "@/lib/saas/orgOnboarding";
+import { mensagemErroPlataforma, useAlterarStatusEmpresa, useOrganizacoesSaaS, useRevisoesCadastro, type OrganizacaoSaaS } from "@/hooks/usePlataformaSaaS";
+import { acaoStatusGenericaPermitida, MOTIVO_REVISAO_LABEL, ORG_STATUS_LABEL, type OrgStatus } from "@/lib/saas/orgOnboarding";
 import { filtrarEmpresas, formatarCnpj } from "@/components/plataforma/empresaEdicao";
 import OrganizationOnboardingFlow from "./OrganizationOnboardingFlow";
 import EmpresaDetalhe from "./EmpresaDetalhe";
@@ -27,6 +27,7 @@ export interface PlataformaEmpresasProps {
 export default function PlataformaEmpresas({ onAbrirAdministradores, onAbrirAssinaturas = () => {}, onAbrirHistorico = () => {} }: PlataformaEmpresasProps) {
   const orgs = useOrganizacoesSaaS();
   const alterar = useAlterarStatusEmpresa();
+  const fila = useRevisoesCadastro(null);
   const [visao, setVisao] = useState<Visao>({ tipo: "lista" });
   const [filtro, setFiltro] = useState("");
   const [motivoDlg, setMotivoDlg] = useState<{ org: string; status: OrgStatus } | null>(null);
@@ -79,7 +80,7 @@ export default function PlataformaEmpresas({ onAbrirAdministradores, onAbrirAssi
 
   const menuAcoes = (org: OrganizacaoSaaS) => {
     const status = org.status as OrgStatus;
-    const transicoes = ACOES_SUPERADMIN.filter((next) => transicaoPermitida(status, next) && !(status === "onboarding" && next === "ativa"));
+    const transicoes = ACOES_SUPERADMIN.filter((next) => acaoStatusGenericaPermitida(status, next));
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -109,6 +110,23 @@ export default function PlataformaEmpresas({ onAbrirAdministradores, onAbrirAssi
         </div>
         <Button className="min-h-10 shrink-0" onClick={() => setVisao({ tipo: "nova" })}><Plus className="mr-2 h-4 w-4" aria-hidden="true" />Nova Empresa</Button>
       </div>
+
+      {fila.data && fila.data.length > 0 && (
+        <section aria-labelledby="fila-revisao-titulo" className="rounded-md border p-3 space-y-2">
+          <h3 id="fila-revisao-titulo" className="text-sm font-semibold">Cadastros aguardando revisão ({fila.data.length})</h3>
+          <ul className="space-y-2">
+            {fila.data.map((r) => (
+              <li key={r.review_id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium break-words">{r.razao_social ?? r.nome}</p>
+                  <p className="text-xs text-muted-foreground">{formatarCnpj(r.cnpj)} · {MOTIVO_REVISAO_LABEL[r.motivo_codigo] ?? r.motivo_codigo}</p>
+                </div>
+                <Button size="sm" variant="outline" className="min-h-10 shrink-0" onClick={() => abrir(r.organization_id)}>Revisar</Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="max-w-sm space-y-1">
         <Label htmlFor="emp-filtro">Buscar empresa</Label>

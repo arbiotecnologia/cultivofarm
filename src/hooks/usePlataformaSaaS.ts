@@ -1046,3 +1046,59 @@ export function mascararEmail(email: string): string {
   if (!d) return "***";
   return `${u.slice(0, 2)}***@${d}`;
 }
+
+// ===== Revisão de cadastro (onboarding) — fila, aprovação e remessa auditadas no servidor =====
+
+export interface RevisaoCadastro {
+  review_id: string;
+  organization_id: string;
+  nome: string;
+  razao_social: string | null;
+  cnpj: string | null;
+  status: string;
+  origem: "onboarding" | "remessa_plataforma";
+  motivo_codigo: string;
+  observacao: string | null;
+  submetido_em: string;
+  dados: { razao_social?: string | null; cidade?: string | null; uf?: string | null; responsavel_nome?: string | null };
+  evidencia: { razao_social: string | null; situacao_cadastral: string | null; consultado_em: string; vigente: boolean; fonte: string } | null;
+}
+
+export function useRevisoesCadastro(organizationId?: string | null, enabled = true) {
+  return useQuery<RevisaoCadastro[]>({
+    queryKey: ["plataforma", "revisoes-cadastro", organizationId ?? "todas"],
+    enabled,
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await db.rpc("platform_list_onboarding_reviews", { _org: organizationId ?? null });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as RevisaoCadastro[];
+    },
+  });
+}
+
+export function useAprovarRevisaoCadastro() {
+  const invalidar = useInvalidarPlataforma();
+  return useMutation({
+    retry: false,
+    mutationFn: async (v: { org: string; motivo: string }) => {
+      const { data, error } = await db.rpc("platform_approve_onboarding_review", { _org: v.org, _motivo: v.motivo });
+      if (error) throw new Error(error.message);
+      return data as { status: string; idempotent: boolean };
+    },
+    onSuccess: invalidar,
+  });
+}
+
+export function useRemeterEmpresaRevisao() {
+  const invalidar = useInvalidarPlataforma();
+  return useMutation({
+    retry: false,
+    mutationFn: async (v: { org: string; motivo: string }) => {
+      const { data, error } = await db.rpc("platform_return_organization_to_review", { _org: v.org, _motivo: v.motivo });
+      if (error) throw new Error(error.message);
+      return data as { status: string; idempotent: boolean };
+    },
+    onSuccess: invalidar,
+  });
+}

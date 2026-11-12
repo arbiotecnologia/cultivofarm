@@ -1,0 +1,263 @@
+{
+ "postgres": "postgres (PostgreSQL) 17.11",
+ "level": "PostgreSQL descartável; corpos LIVE capturados; claims SQL sintéticas; não é prova JWT/PostgREST/Edge hospedados",
+ "results": [
+  {
+   "check": "captured bodies reproduce LIVE md5 locally",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "check": "BEFORE: manual onboarding activates without review (bug reproduced)",
+   "pass": true,
+   "detail": "ativa"
+  },
+  {
+   "check": "install.sql.review (preflight+core+fiscal+postflight) commits",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "check": "rerun blocked by preflight",
+   "pass": true,
+   "detail": "psql:<stdin>:34: ERROR:  PRE: pacote já instalado (rerun bloqueado)\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\n"
+  },
+  {
+   "check": "existing active orgs untouched (no backfill)",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "check": "manual completion -> aguardando_revisao (sem_evidencia_servidor)",
+   "pass": true,
+   "detail": "{\"motivo\": \"sem_evidencia_servidor\", \"status\": \"aguardando_revisao\", \"idempotent\": false}"
+  },
+  {
+   "check": "reload state: required+review_pending, motivo exposto ao admin",
+   "pass": true,
+   "detail": "{\"cnpj\": \"11222333000181\", \"nome\": \"Emitente Fictício M\", \"dados\": {\"uf\": \"MG\", \"cep\": \"38600-000\", \"cnpj\": \"11222333000181\", \"cidade\": \"Paracatu\", \"telefone\": \"38999990000\", \"confirmado\": true, \"logradouro\": \"Rua Fictícia\", \"fuso_horario\": \"America/Sao_Paulo\", \"razao_social\": \"Emitente Manual Ltda\""
+  },
+  {
+   "check": "non-admin tenant user: required+review_pending, sem dados",
+   "pass": true,
+   "detail": "{\"status\": \"aguardando_revisao\", \"blocked\": false, \"is_admin\": false, \"required\": true, \"review_pending\": true}"
+  },
+  {
+   "check": "no re-edit while in review",
+   "pass": true,
+   "detail": "psql:<stdin>:2: ERROR:  org_invalid: empresa não está em onboarding\nCONTEXT:  PL/pgSQL function public.org_onboarding_save(jsonb) line 9 at RAISE"
+  },
+  {
+   "check": "re-submit idempotent, no duplicate review",
+   "pass": true,
+   "detail": "{\"status\": \"aguardando_revisao\", \"idempotent\": true}1"
+  },
+  {
+   "check": "fiscal init RPC denied while in review",
+   "pass": true,
+   "detail": "psql:<stdin>:2: ERROR:  ORG_REVIEW_PENDING: Central Fiscal indisponível até a liberação da empresa\nCONTEXT:  PL/pgSQL function platform_private.fiscal_require_released_org() line 7 at RAISE\nSQL statement \"SELECT platform_private.fiscal_require_released_org()\"\nPL/pgSQL function rpc_fiscal_company_set"
+  },
+  {
+   "check": "fiscal read RPC denied while in review (gestor)",
+   "pass": true,
+   "detail": "psql:<stdin>:2: ERROR:  ORG_REVIEW_PENDING: Central Fiscal indisponível até a liberação da empresa\nCONTEXT:  PL/pgSQL function platform_private.fiscal_require_released_org() line 7 at RAISE\nSQL statement \"SELECT platform_private.fiscal_require_released_org()\"\nPL/pgSQL function rpc_fiscal_company_rtc"
+  },
+  {
+   "check": "direct table INSERT denied while in review",
+   "pass": true,
+   "detail": "psql:<stdin>:2: ERROR:  ORG_REVIEW_PENDING: Central Fiscal indisponível até a liberação da empresa\nCONTEXT:  PL/pgSQL function platform_private.fiscal_release_write_gate() line 7 at RAISE"
+  },
+  {
+   "check": "direct SELECT returns nothing while in review",
+   "pass": true,
+   "detail": "0"
+  },
+  {
+   "check": "tenant admin cannot approve own review",
+   "pass": true,
+   "detail": "psql:<stdin>:2: ERROR:  platform_forbidden: apenas superadmin\nCONTEXT:  PL/pgSQL function public.platform_approve_onboarding_review(uuid,text) line 5 at RAISE"
+  },
+  {
+   "check": "tenant admin cannot read review queue",
+   "pass": true,
+   "detail": "psql:<stdin>:2: ERROR:  platform_forbidden: apenas superadmin\nCONTEXT:  PL/pgSQL function public.platform_list_onboarding_reviews(uuid) line 4 at RAISE"
+  },
+  {
+   "check": "review table not readable by clients",
+   "pass": true,
+   "detail": "psql:<stdin>:2: ERROR:  permission denied for table organization_onboarding_reviews"
+  },
+  {
+   "check": "direct status write blocked by existing guard",
+   "pass": true,
+   "detail": "psql:<stdin>:2: ERROR:  org_forbidden: alteração apenas via fluxo do servidor\nCONTEXT:  PL/pgSQL function public.organizations_guard_status() line 18 at RAISE"
+  },
+  {
+   "check": "client cannot write evidence (no EXECUTE)",
+   "pass": true,
+   "detail": "psql:<stdin>:2: ERROR:  permission denied for function svc_onboarding_record_cnpj_evidence"
+  },
+  {
+   "check": "service evidence rejects actor from another org",
+   "pass": true,
+   "detail": "psql:<stdin>:2: ERROR:  org_forbidden: ator não é administrador da empresa\nCONTEXT:  PL/pgSQL function public.svc_onboarding_record_cnpj_evidence(uuid,uuid,jsonb,text,text) line 11 at RAISE"
+  },
+  {
+   "check": "service records evidence V",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "check": "service records evidence D",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "check": "service records evidence S",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "check": "verified evidence (ATIVA + razão coerente) -> ativa",
+   "pass": true,
+   "detail": "ativa"
+  },
+  {
+   "check": "verified org opens Central Fiscal (init)",
+   "pass": true,
+   "detail": "5de54399-10c0-45f8-9ecb-15375ba9c8dd"
+  },
+  {
+   "check": "discrepant razão -> revisão razao_social_divergente",
+   "pass": true,
+   "detail": "{\"motivo\": \"razao_social_divergente\", \"status\": \"aguardando_revisao\", \"idempotent\": false}"
+  },
+  {
+   "check": "situação não ATIVA -> revisão",
+   "pass": true,
+   "detail": "{\"motivo\": \"situacao_cadastral_nao_ativa\", \"status\": \"aguardando_revisao\", \"idempotent\": false}"
+  },
+  {
+   "check": "superadmin queue lists 3 pending (M,D,S)",
+   "pass": true,
+   "detail": "3"
+  },
+  {
+   "check": "generic status cannot activate org in review",
+   "pass": true,
+   "detail": "psql:<stdin>:2: ERROR:  platform_invalid: empresa em revisão só é liberada pela aprovação da revisão\nCONTEXT:  PL/pgSQL function public.platform_set_organization_status(uuid,text,text) line 13 at RAISE"
+  },
+  {
+   "check": "approval requires motivo",
+   "pass": true,
+   "detail": "psql:<stdin>:2: ERROR:  platform_invalid: motivo obrigatório\nCONTEXT:  PL/pgSQL function public.platform_approve_onboarding_review(uuid,text) line 6 at RAISE"
+  },
+  {
+   "check": "superadmin approval -> ativa",
+   "pass": true,
+   "detail": "{\"status\": \"ativa\", \"review_id\": \"34aaf23a-6b36-4838-a58f-7ebbf3aacb86\", \"idempotent\": false}"
+  },
+  {
+   "check": "approval idempotent (second superadmin)",
+   "pass": true,
+   "detail": "{\"status\": \"ativa\", \"review_id\": \"34aaf23a-6b36-4838-a58f-7ebbf3aacb86\", \"idempotent\": true}"
+  },
+  {
+   "check": "audit: one review entry, one activation, decision by approver",
+   "pass": true,
+   "detail": "1|1 aprovada|true"
+  },
+  {
+   "check": "after approval reload: not required",
+   "pass": true,
+   "detail": "false"
+  },
+  {
+   "check": "after approval: Central Fiscal init allowed",
+   "pass": true,
+   "detail": "0c83824d-9342-4ec8-8a33-da9c7186f3b9"
+  },
+  {
+   "check": "after approval: gestor reads RTC",
+   "pass": true,
+   "detail": "true"
+  },
+  {
+   "check": "after approval: consultor still denied by existing role rule",
+   "pass": true,
+   "detail": "psql:<stdin>:2: ERROR:  FISCAL_FORBIDDEN\nCONTEXT:  PL/pgSQL function rpc_fiscal_company_rtc_get() line 8 at RAISE"
+  },
+  {
+   "check": "no cross-tenant fiscal read",
+   "pass": true,
+   "detail": "0"
+  },
+  {
+   "check": "homolog active before remessa: fiscal readable",
+   "pass": true,
+   "detail": "true"
+  },
+  {
+   "check": "tenant admin cannot return own org to review",
+   "pass": true,
+   "detail": "psql:<stdin>:2: ERROR:  platform_forbidden: apenas superadmin\nCONTEXT:  PL/pgSQL function public.platform_return_organization_to_review(uuid,text) line 5 at RAISE"
+  },
+  {
+   "check": "superadmin returns homolog org to review",
+   "pass": true,
+   "detail": "{\"status\": \"aguardando_revisao\", \"review_id\": \"41a35e80-7fb2-45ea-8da4-fb5f934ef390\", \"idempotent\": false}"
+  },
+  {
+   "check": "remessa idempotent",
+   "pass": true,
+   "detail": "{\"status\": \"aguardando_revisao\", \"review_id\": \"41a35e80-7fb2-45ea-8da4-fb5f934ef390\", \"idempotent\": true}"
+  },
+  {
+   "check": "homolog in review: fiscal RPC denied",
+   "pass": true,
+   "detail": "psql:<stdin>:2: ERROR:  ORG_REVIEW_PENDING: Central Fiscal indisponível até a liberação da empresa\nCONTEXT:  PL/pgSQL function platform_private.fiscal_require_released_org() line 7 at RAISE\nSQL statement \"SELECT platform_private.fiscal_require_released_org()\"\nPL/pgSQL function rpc_fiscal_company_rtc"
+  },
+  {
+   "check": "homolog in review: direct select hidden (data preserved)",
+   "pass": true,
+   "detail": "0"
+  },
+  {
+   "check": "homolog in review: direct update affects 0 rows",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "check": "other active org unaffected during homolog review",
+   "pass": true,
+   "detail": "9c5c90d6-1b2e-4f59-82d5-8e6bbecff182"
+  },
+  {
+   "check": "homolog approved -> ativa",
+   "pass": true,
+   "detail": "ativa"
+  },
+  {
+   "check": "homolog after approval: fiscal readable again",
+   "pass": true,
+   "detail": "true"
+  },
+  {
+   "check": "cancel from review closes review as rejeitada",
+   "pass": true,
+   "detail": "rejeitada"
+  },
+  {
+   "check": "generic status cannot send to review",
+   "pass": true,
+   "detail": "psql:<stdin>:2: ERROR:  platform_invalid: use a ação Remeter à revisão\nCONTEXT:  PL/pgSQL function public.platform_set_organization_status(uuid,text,text) line 11 at RAISE"
+  },
+  {
+   "check": "rollback deny-only: approvals closed, org stays in review",
+   "pass": true,
+   "detail": "psql:<stdin>:2: ERROR:  permission denied for function platform_approve_onboarding_review"
+  }
+ ],
+ "passed": 51,
+ "total": 51
+}

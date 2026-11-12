@@ -1,0 +1,5 @@
+- Preparation only: never apply install/rollback hosted or publish from here; the owner reviews and applies via the connector.
+- Activation on onboarding completion requires server-side CNPJ evidence (written only by the onboarding-cnpj-lookup Edge via service-only RPC) that is current, ATIVA and matches the submitted razão social; anything else goes to aguardando_revisao — browser flags never verify.
+- Orgs in review are released only by platform_approve_onboarding_review (superadmin, motive, idempotent, audited); generic status changes cannot activate or send to review.
+- Central Fiscal containment is deny-only for pre-active statuses: RESTRICTIVE policy + write trigger on fiscal tables and a guard injected after h15_require_staff in captured fiscal RPC bodies; generate.py from live-capture only, never hand-edit.
+- Rollback is deny-only (closes approval/remessa/evidence writer); never restore automatic activation or remove containment.
