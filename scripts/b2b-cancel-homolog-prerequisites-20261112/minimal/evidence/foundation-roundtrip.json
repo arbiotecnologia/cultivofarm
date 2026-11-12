@@ -32,7 +32,7 @@
       "test": "01d-rollback-foundation-deny.sql.review",
       "status": "PASS",
       "detail": {
-        "sha256": "768b61f9bbc17eececa148144f1cc672ab03acad2dce358d7b22ea1f7de14d26",
+        "sha256": "7935837514d63086a618e2ac9df555e330649d245c815b22b1814b20542dcb5f",
         "error": ""
       }
     },
