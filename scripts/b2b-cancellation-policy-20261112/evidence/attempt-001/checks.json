@@ -1,0 +1,12 @@
+[
+  {
+    "test": "preparo real",
+    "status": "FAIL",
+    "detail": null
+  },
+  {
+    "test": "harness",
+    "status": "FAIL",
+    "detail": "TypeError(\"'NoneType' object is not subscriptable\")"
+  }
+]
