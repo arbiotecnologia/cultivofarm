@@ -1,0 +1,19 @@
+$ vitest run src/test/fiscal/companyAccreditations.test.ts src/test/fiscal/companyFiscalSave.original.test.tsx "src/test/fiscal/fase3_1.static.test.ts" "src/test/fiscal/fase3_15.static.test.ts" "--maxWorkers=2"
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/fiscal/fase3_15.static.test.ts (24 tests) 30ms
+stderr | src/test/fiscal/companyFiscalSave.original.test.tsx > Contrato canônico de salvamento sem validação contábil > AR Bio salva declaração MG, mantém SP/metadados e null; reabre sem atestado fictício
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/fase3_1.static.test.ts (35 tests) 26ms
+ ✓ src/test/fiscal/companyAccreditations.test.ts (5 tests) 17ms
+ ✓ src/test/fiscal/companyFiscalSave.original.test.tsx (16 tests) 2326ms
+   ✓ Contrato canônico de salvamento sem validação contábil > AR Bio salva declaração MG, mantém SP/metadados e null; reabre sem atestado fictício  574ms
+
+ Test Files  4 passed (4)
+      Tests  80 passed (80)
+   Start at  03:23:43
+   Duration  4.98s (transform 522ms, setup 461ms, collect 1.35s, tests 2.40s, environment 2.89s, prepare 438ms)
+

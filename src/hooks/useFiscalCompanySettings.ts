@@ -12,7 +12,7 @@
  */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/cultivofarm.types";
+import type { Database, Json } from "@/integrations/supabase/cultivofarm.types";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import {
@@ -29,6 +29,8 @@ export type CompanyFiscalRow = CompanyFiscalBaseRow & {
   phone?: string | null;
   tax_regime?: string | null;
   crt?: string | null;
+  uf_accreditations?: Json;
+  pis_cofins_regime?: string | null;
   primary_cnae?: string | null;
   municipal_registration?: string | null;
   state_registration?: string | null;

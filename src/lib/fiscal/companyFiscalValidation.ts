@@ -15,6 +15,7 @@
  * - `fiscal_provider` legacy permanece `NONE`.
  */
 import { z } from "zod";
+import { PIS_COFINS_REGIMES } from "./companyAccreditations";
 import type { Database, Json } from "@/integrations/supabase/cultivofarm.types";
 
 type CompanyFiscalExtraColumns = {
@@ -23,6 +24,8 @@ type CompanyFiscalExtraColumns = {
   tax_regime?: string | null;
   crt?: string | null;
   primary_cnae?: string | null;
+  uf_accreditations?: Json;
+  pis_cofins_regime?: string | null;
   additional_cnaes?: string[] | null;
   municipal_registration?: string | null;
   state_registration?: string | null;
@@ -214,6 +217,8 @@ export const companyFiscalFormSchema = z.object({
   phone: optionalTrimmedString(40),
   tax_regime: optionalTrimmedString(60),
   crt: optionalTrimmedString(20),
+  pis_cofins_regime: z.enum(PIS_COFINS_REGIMES).nullable().optional(),
+  uf_accreditations: z.array(z.custom<Json>()).refine((v) => !hasSensitiveKey(v), { message: "Conteúdo sensível não é permitido." }).optional(),
   primary_cnae: optionalTrimmedString(20),
   additional_cnaes: z
     .array(z.string().trim().min(1).max(20))
@@ -291,6 +296,8 @@ export function buildUpdatePayload(values: CompanyFiscalFormValues): Update {
   assignText("phone", parsed.phone);
   assignText("tax_regime", parsed.tax_regime);
   assignText("crt", parsed.crt);
+  assignText("pis_cofins_regime", parsed.pis_cofins_regime);
+  if (parsed.uf_accreditations !== undefined) payload.uf_accreditations = parsed.uf_accreditations;
   assignText("primary_cnae", parsed.primary_cnae);
   if (parsed.additional_cnaes !== undefined) {
     (payload as Record<string, string[] | null>).additional_cnaes =
@@ -378,6 +385,8 @@ export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
     phone: row.phone ?? undefined,
     tax_regime: row.tax_regime ?? undefined,
     crt: row.crt ?? undefined,
+    pis_cofins_regime: row.pis_cofins_regime as CompanyFiscalFormValues["pis_cofins_regime"] ?? null,
+    uf_accreditations: Array.isArray(row.uf_accreditations) ? row.uf_accreditations : undefined,
     primary_cnae: row.primary_cnae ?? undefined,
     additional_cnaes: Array.isArray(row.additional_cnaes)
       ? row.additional_cnaes.filter((c): c is string => typeof c === "string" && c.trim().length > 0)

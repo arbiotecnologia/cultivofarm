@@ -1,3 +1,7 @@
+## 12/11 03:21 — Credenciamento declarado e PIS/COFINS
+- [x] Campos opcionais integrados na aba Empresa; MG declarado com JSON canônico, PIS/COFINS null preservado, sem inferência/prova SEFAZ.
+- [x] 169 testes PASS, incluindo 33 checks PG locais; frontend apenas, sem publicação ou dados hospedados. Sessão real/SEFAZ não verificadas.
+
 ## 12/11 03:13 — Salvamento fiscal original
 - [x] READY_FOR_HOMOLOGATION removido do save; quatro estados lidos, status/atestados omitidos; rascunho e CAS observados preservados.
 - [x] 160 testes PASS +26 checks PG: formulário/SDK original, AR Bio sintética, reabertura/erros/isolamento; implantação frontend somente, REPORT/SHA e sem remoto/publicação.

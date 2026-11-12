@@ -2,6 +2,7 @@
   "fiscal_provider": "NONE",
   "cnpj": "11222333000181",
   "legal_name": "AR Bio FICTÍCIA revisada",
+  "pis_cofins_regime": null,
   "state_registration": "ISENTO",
   "fiscal_environment": "HOMOLOGATION",
   "nfe_enabled": false,

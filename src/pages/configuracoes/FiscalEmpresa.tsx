@@ -70,6 +70,7 @@ import HomologacaoSecao from "@/components/fiscal/homologacao/HomologacaoSecao";
 import { RtcCompanyCard } from "@/components/fiscal/RtcCompanyCard";
 import { CnpjLookupButton } from "@/components/fiscal/CnpjLookupButton";
 import { useFiscalFieldFocus } from "@/lib/fiscal/useFiscalFieldFocus";
+import CompanyAccreditationsFields from "@/components/fiscal/CompanyAccreditationsFields";
 
 
 const PAGE_TITLE = "Central de Configuração Fiscal";
@@ -580,6 +581,17 @@ export default function FiscalEmpresa() {
                 <FieldRow id="crt" label="CRT" description="Código do Regime Tributário oficial.">
                   <SelectNative id="crt" value={values.crt ?? ""} options={CRT_OPTIONS} onChange={(v) => set("crt", v)} />
                 </FieldRow>
+                <FieldRow id="pis_cofins_regime" label="Regime de PIS/COFINS" description="Opcional no salvamento; aguarda confirmação da contabilidade. Não é deduzido do regime tributário ou CRT.">
+                  <SelectNative id="pis_cofins_regime" value={values.pis_cofins_regime ?? ""} disabled={readonly} options={[
+                    { value: "", label: "Não informado — pendente de confirmação" },
+                    { value: "CUMULATIVO", label: "Cumulativo" },
+                    { value: "NAO_CUMULATIVO", label: "Não cumulativo" },
+                    { value: "MISTO", label: "Misto" },
+                    { value: "SIMPLES_NACIONAL", label: "Simples Nacional" },
+                  ]} onChange={(v) => set("pis_cofins_regime", v === "" ? null : v as CompanyFiscalFormValues["pis_cofins_regime"])} />
+                </FieldRow>
+                <CompanyAccreditationsFields key={`${user?.id}:${profile?.organization_id}:${authzEpoch}`} records={values.uf_accreditations ?? []} disabled={readonly || update.isPending} onChange={(records) => set("uf_accreditations", records)} />
+                {errors.uf_accreditations ? <p className="text-xs text-destructive" role="alert">{errors.uf_accreditations}</p> : null}
                 <CompanyCnaeFields
                   primary={values.primary_cnae ?? null}
                   secondary={values.additional_cnaes ?? []}
