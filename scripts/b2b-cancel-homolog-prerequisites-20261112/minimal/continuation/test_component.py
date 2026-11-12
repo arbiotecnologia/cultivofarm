@@ -17,8 +17,9 @@ def main():
   setup="CREATE SCHEMA platform_private;CREATE SCHEMA auth;CREATE SCHEMA extensions;CREATE SCHEMA cron;CREATE TABLE cron.job(active boolean);CREATE ROLE anon;CREATE ROLE authenticated;CREATE ROLE service_role;CREATE TYPE public.app_role AS ENUM('administrador','gestor_comercial','financeiro');CREATE TABLE public.fiscal_environment_marker(project_ref text,production_emission_allowed boolean);INSERT INTO public.fiscal_environment_marker VALUES('vrlcdwmlytukrjezrrnf',false);"
   assert sql(setup).returncode==0
   d=json.loads((H/'capture/catalog.json').read_text())
-  labels=[t['enumlabel'] for t in d['types'] if t['typname']=='partner_order_status' and t['enumlabel'] is not None]
-  z=sql('CREATE TYPE public.partner_order_status AS ENUM('+','.join(G.quote(s) for s in labels)+');');assert z.returncode==0,z.stderr
+  for name in sorted({t['typname'] for t in d['types'] if t['typtype']=='e' and t['nspname']=='public' and t['typname']!='app_role'}):
+   labels=[t['enumlabel'] for t in d['types'] if t['typname']==name and t['enumlabel'] is not None]
+   z=sql('CREATE TYPE public.'+name+' AS ENUM('+','.join(G.quote(s) for s in labels)+');');assert z.returncode==0,z.stderr
   # Column types/NOT NULL captured exactly; constraints/defaults/guards not claimed reconstructed.
   for r in d['schema']:
    cols=','.join('"'+c['name']+'" '+c['type']+(' NOT NULL' if c['not_null'] else '') for c in r['columns'])
