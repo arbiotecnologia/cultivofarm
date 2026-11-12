@@ -60,12 +60,12 @@ END $closed$;
 
 
 def security_checks():
-    baseline = H / 'capture/security-pins.json'
+    baseline = H / 'capture/security-md5.json'
     if not baseline.exists():
         raise RuntimeError('FINAL_ORIGINAL_SECURITY_CAPTURE_REQUIRED')
-    expected = json.dumps(json.loads(baseline.read_text()), separators=(',', ':')).replace("'", "''")
+    expected = json.loads(baseline.read_text())['md5']
     state = (H / 'security-state.sql').read_text().strip().rstrip(';')
-    return "DO $security$ BEGIN IF (" + state + ") IS DISTINCT FROM '" + expected + "'::jsonb THEN RAISE EXCEPTION 'FINAL_ORIGINAL_SECURITY_DRIFT' USING ERRCODE='42501'; END IF; END $security$;\n"
+    return "DO $security$ BEGIN IF md5((" + state + ")::text) IS DISTINCT FROM '" + expected + "' THEN RAISE EXCEPTION 'FINAL_ORIGINAL_SECURITY_DRIFT' USING ERRCODE='42501'; END IF; END $security$;\n"
 
 
 def main():

@@ -40,7 +40,7 @@ try:
     order = functional.last("SELECT partner_order_id FROM fiscal_invoices WHERE id='00000000-0000-0000-0000-000000000900'")
     forecast = functional.last(f"SELECT id FROM platform_private.b2b_financial_forecasts WHERE order_id='{order}'")
     clone = 'final_awaiting'
-    db.DB('postgres').sql(f'CREATE DATABASE {clone} TEMPLATE c2')
+    db.DB('postgres').sql(f'DROP DATABASE IF EXISTS {clone} WITH (FORCE);CREATE DATABASE {clone} TEMPLATE c2')
     d = db.DB(clone)
     # A canonically emitted/rejected intent resets the original forecast to awaiting,
     # preserving the existing 10 residual and 10 confirmed fiscal amount.

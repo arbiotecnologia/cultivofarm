@@ -30,7 +30,6 @@ if db.DB('postgres').raw('SELECT 1').returncode:
     result = subprocess.run(bootstrap + ['postgres'], input='CREATE ROLE postgres SUPERUSER LOGIN;', text=True, capture_output=True)
     if result.returncode:
         raise RuntimeError('LOCAL_BOOTSTRAP_ROLE:' + result.stderr)
-result = db.DB('postgres').raw(globals_sql)
 existing_roles = set(db.DB('postgres').sql('SELECT rolname FROM pg_roles').splitlines())
 globals_sql = re.sub(r'^CREATE ROLE (\w+);$', lambda m: '' if m.group(1) in existing_roles else m.group(0), globals_sql, flags=re.M)
 result = db.DB('postgres').raw(globals_sql)
@@ -45,6 +44,7 @@ state = (H / 'security-state.sql').read_text()
 (H / 'capture').mkdir(exist_ok=True)
 pins = json.loads(d.last(state))
 (H / 'capture/security-pins.json').write_text(json.dumps(pins, indent=2) + '\n')
+(H / 'capture/security-md5.json').write_text(json.dumps({'md5': d.last('SELECT md5((' + state.strip().rstrip(';') + ')::text)')}) + '\n')
 subprocess.run([sys.executable, str(H / 'generate.py')], check=True)
 marker = "SET b2b_cancel_final.review_project_ref='swzpzcwiasxmjutrmvkm';"
 d.sql(marker + (H / '01-pre.sql.readonly').read_text())
@@ -65,7 +65,7 @@ for file in ['01-pre.sql.readonly', '02-install-closed.sql.review', '03-post.sql
     if result.returncode:
         raise RuntimeError(result.stderr)
 # Keep exact closed clone for roundtrip; enabling synthetic scope happens only below in c2.
-db.DB('postgres').sql('CREATE DATABASE final_closed TEMPLATE c2')
+db.DB('postgres').sql('DROP DATABASE IF EXISTS final_closed WITH (FORCE);CREATE DATABASE final_closed TEMPLATE c2')
 d.sql("GRANT EXECUTE ON FUNCTION public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text),public.rpc_b2b_cancel_residual_capability_v1(uuid) TO authenticated;")
 d.sql("INSERT INTO saas_features(module_id,key,name) SELECT id,'emissao_nfe_nfse','LOCAL FISCAL FEATURE' FROM saas_modules LIMIT 1; INSERT INTO organization_feature_overrides(organization_id,feature_id,mode,reason,created_by) SELECT '00000000-0000-0000-0000-000000000001',id,'GRANT','LOCAL ONLY INPUT','00000000-0000-0000-0000-000000000024' FROM saas_features WHERE key='emissao_nfe_nfse'")
 d.sql('UPDATE platform_private.b2b_cancel_policy_gate_v1 SET enabled=true')
