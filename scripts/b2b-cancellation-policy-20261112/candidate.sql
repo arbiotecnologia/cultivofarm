@@ -1,3 +1,6 @@
+CREATE TABLE platform_private.b2b_cancel_policy_gate_v1(singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),enabled boolean NOT NULL DEFAULT false);
+REVOKE ALL ON platform_private.b2b_cancel_policy_gate_v1 FROM PUBLIC,anon,authenticated,service_role;
+INSERT INTO platform_private.b2b_cancel_policy_gate_v1(singleton,enabled) VALUES(true,false);
 CREATE OR REPLACE FUNCTION public.rpc_b2b_forecast_cancel_residual_v1(p_order uuid, p_expected_version integer, p_reason text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -198,6 +201,7 @@ CREATE OR REPLACE FUNCTION platform_private.b2b_cancel_confirmed_fiscal_v1(p_tx 
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $fn$
 DECLARE t public.fiscal_sefaz_transmissions;e public.fiscal_events;i public.fiscal_invoices;r public.accounts_receivable;paid boolean;actor_org uuid;
 BEGIN
+ IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_cancel_policy_gate_v1 WHERE singleton AND enabled) THEN RETURN jsonb_build_object('final',false,'code','CANCEL_POLICY_DISABLED'); END IF;
  SELECT * INTO t FROM public.fiscal_sefaz_transmissions WHERE id=p_tx;
  IF NOT FOUND OR t.service<>'NFeRecepcaoEvento4' OR t.fiscal_event_id IS NULL THEN RETURN jsonb_build_object('final',false,'code','NOT_LINKED_CANCEL'); END IF;
  actor_org:=public.h15_actor_organization();
@@ -242,6 +246,7 @@ DECLARE
   v_prot    text;
   v_outcome text;
   v_close_error text := NULL;
+  v_cancel jsonb := NULL;
   v_invoice_id uuid;
 BEGIN
   IF _state NOT IN ('SENT','SUCCEEDED','FAILED','BLOCKED') THEN
@@ -328,7 +333,8 @@ BEGIN
       PERFORM public.rpc_fiscal_event_sefaz_reconcile_v1(
         v_row.fiscal_event_id, v_row.id, v_cstat,
         coalesce(_patch->>'xMotivo', ''), v_row.n_prot, v_row.dh_recbto);
-      PERFORM platform_private.b2b_cancel_confirmed_fiscal_v1(v_row.id);
+      v_cancel:=platform_private.b2b_cancel_confirmed_fiscal_v1(v_row.id);
+      IF v_cancel->>'code' IN ('FISCAL_AUTHORIZATION_RECONCILIATION_PENDING','FISCAL_CANCEL_TITLE_LINK_UNPROVEN') THEN v_close_error:='FISCAL_EVENT_RECONCILIATION_PENDING'; END IF;
     EXCEPTION WHEN OTHERS THEN
       v_close_error := 'FISCAL_EVENT_RECONCILIATION_PENDING';
     END;
@@ -357,6 +363,7 @@ BEGIN
   END IF;
 
   RETURN jsonb_build_object(
+    'cancellation',v_cancel,
     'transmissionId', v_row.id, 'state', v_row.state, 'outcome', v_row.outcome,
     'cStat', v_row.c_stat, 'protocolCStat', coalesce(v_row.protocol_c_stat,v_row.c_stat), 'xMotivo', v_row.x_motivo,
     'chNFe', v_row.ch_nfe, 'nProt', v_row.n_prot, 'nRec', v_row.n_rec,
