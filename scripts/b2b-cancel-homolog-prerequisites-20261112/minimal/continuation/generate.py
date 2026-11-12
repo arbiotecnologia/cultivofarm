@@ -36,6 +36,11 @@ def catalog_guard(data):
    s+=f"IF (SELECT jsonb_build_array(format_type(a.atttypid,a.atttypmod),a.attnotnull,pg_get_expr(d.adbin,d.adrelid),a.attidentity,a.attgenerated) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid=to_regclass('{name}') AND a.attname={quote(col['name'])} AND NOT a.attisdropped) IS DISTINCT FROM {quote(json.dumps(expect))}::jsonb THEN RAISE EXCEPTION 'COLUMN_DRIFT:{name}.{col['name']}'; END IF;\n"
   for con in r['constraints'] or []:
    s+=f"IF (SELECT pg_get_constraintdef(oid,true) FROM pg_constraint WHERE conrelid=to_regclass('{name}') AND conname={quote(con['name'])}) IS DISTINCT FROM {quote(con['definition'])} THEN RAISE EXCEPTION 'CONSTRAINT_DRIFT:{name}.{con['name']}'; END IF;\n"
+  for ix in r['indexes'] or []:
+   s+=f"IF NOT EXISTS(SELECT 1 FROM pg_index WHERE indrelid=to_regclass('{name}') AND pg_get_indexdef(indexrelid)={quote(ix)}) THEN RAISE EXCEPTION 'INDEX_DRIFT:{name}'; END IF;\n"
+  for p in r['policies'] or []:
+   expected=[p['command'],p['permissive'],p['roles'],p['using'],p['check']]
+   s+=f"IF (SELECT jsonb_build_array(polcmd,polpermissive,polroles,pg_get_expr(polqual,polrelid),pg_get_expr(polwithcheck,polrelid)) FROM pg_policy WHERE polrelid=to_regclass('{name}') AND polname={quote(p['name'])}) IS DISTINCT FROM {quote(json.dumps(expected))}::jsonb THEN RAISE EXCEPTION 'POLICY_DRIFT:{name}.{p['name']}'; END IF;\n"
   for t in r['triggers'] or []:
    s+=f"IF (SELECT jsonb_build_array(tgenabled,md5(pg_get_functiondef(tgfoid)),tgfoid::regprocedure::text,pg_get_triggerdef(oid,true)) FROM pg_trigger WHERE tgrelid=to_regclass('{name}') AND tgname={quote(t['name'])}) IS DISTINCT FROM {quote(json.dumps([t['enabled'],t['body_md5'],t['function'],t['definition']]))}::jsonb THEN RAISE EXCEPTION 'TRIGGER_DRIFT:{name}.{t['name']}'; END IF;\n"
   s+=f"IF (SELECT count(*) FROM pg_trigger WHERE tgrelid=to_regclass('{name}') AND NOT tgisinternal)<>{len(r['triggers'] or [])} THEN RAISE EXCEPTION 'TRIGGER_SET_DRIFT:{name}'; END IF;\n"
@@ -71,7 +76,7 @@ def stage(label,body,tables,functions,extra_post=''):
  for n in tables:rollback+=f'REVOKE ALL ON {n} FROM PUBLIC,anon,authenticated,service_role;\n'
  rollback+=post+'COMMIT;\n'
  (H/(label+'-rollback-deny.sql.review')).write_text(rollback)
- return dict(stage=label,tables=tables,functions=functions,status='INSTALLABLE_CLOSED_ADDITIVE_ONLY')
+ return dict(stage=label,tables=tables,functions=functions,status='REVIEW_CLOSED_ADDITIVE_FULL_CATALOG_ROUNDTRIP_NOT_PROVEN')
 def generate():
  global DATA
  DATA=json.loads((H/'capture/catalog.json').read_text())
