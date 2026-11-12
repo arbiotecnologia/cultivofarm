@@ -9,7 +9,8 @@
     "public.rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid)": "a518f355f035d485f720419e05e89906",
     "public.approve_partner_order(uuid,text,date)": "778476b1d93df2069f78f1426823e106",
     "public.approve_b2b_credit(uuid,text)": "9909cf85ef63a2adf3358ad71d20c73c",
-    "public.approve_b2b_payment_terms_secure(uuid,text)": "5fa8f5b2894ade8f6a6b4eb275961916"
+    "public.approve_b2b_payment_terms_secure(uuid,text)": "5fa8f5b2894ade8f6a6b4eb275961916",
+    "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": "b8fbd43d7a019fbf2f12d572bd79ba60"
   },
   "matched": {
     "public.approve_b2b_payment_terms_secure(uuid,text)": {
@@ -61,7 +62,8 @@
   },
   "missing": [
     "public.rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid)",
-    "public.rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid)"
+    "public.rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid)",
+    "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)"
   ],
   "variants": [
     {
@@ -153,6 +155,41 @@
         "supabase/migrations/20260729023833_96d32366-672c-4efa-a43f-0b3a39965deb.sql",
         "restoration/promocao-b2b/steps/070_96d32366_672c_4efa_a43f_0b3a39965deb.sql",
         "restoration/promocao-producao-h9/promotion-sql/20260729023833__promocao.sql"
+      ],
+      "error": null
+    },
+    {
+      "signature": "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "expected": "b8fbd43d7a019fbf2f12d572bd79ba60",
+      "measured": "638fa2a6d5356fa7ad0d08c1bd7cee3c",
+      "source_sha256": "d16036a198dd5db303f42fe11e5f4d6860fa646179f4c99b712460e11495d406",
+      "paths": [
+        "supabase/migrations/20260729024657_74bc95b7-7040-483e-a176-ac8a833e6b62.sql",
+        "restoration/promocao-b2b/steps/080_74bc95b7_7040_483e_a176_ac8a833e6b62.sql"
+      ],
+      "error": null
+    },
+    {
+      "signature": "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "expected": "b8fbd43d7a019fbf2f12d572bd79ba60",
+      "measured": "081b4840499477f7556f047813708758",
+      "source_sha256": "43ba4b79cddb2a29d43b655b512a15abf9850064107a3b9a79608b800c792ccd",
+      "paths": [
+        "supabase/migrations/20260729032021_45b5a40f-58dd-414e-b17a-461d0a1fad07.sql",
+        "restoration/promocao-b2b/steps/100_45b5a40f_58dd_414e_b17a_461d0a1fad07.sql",
+        "restoration/promocao-producao-h9/promotion-sql/20260729032021__promocao.sql"
+      ],
+      "error": null
+    },
+    {
+      "signature": "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "expected": "b8fbd43d7a019fbf2f12d572bd79ba60",
+      "measured": "db2b182a14a8c22c8243936d920a6655",
+      "source_sha256": "69861bb7dc97afecb805f1858a8f51759beb3d6554c6d29a5e319c5944b8c1b4",
+      "paths": [
+        "supabase/migrations/20260729034858_1c2d1541-f796-4d9f-8d80-be06a07e2c01.sql",
+        "restoration/promocao-b2b/steps/120_1c2d1541_f796_4d9f_8d80_be06a07e2c01.sql",
+        "restoration/promocao-producao-h9/promotion-sql/20260729034858__promocao.sql"
       ],
       "error": null
     },
@@ -507,6 +544,40 @@
       "error": null
     },
     {
+      "signature": "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "expected": "b8fbd43d7a019fbf2f12d572bd79ba60",
+      "measured": "97bcdb9884b54adb3bd4aae4915e32d0",
+      "source_sha256": "4a7975a13b6d72f08e778c20604b80e1adf43ba79acdea855aaec10133071fbe",
+      "paths": [
+        "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/respond.seller91.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-28/seller-respond-fix/91-respond-fix-install.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-28/seller-respond-fix/respond.candidate.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-29/seller-respond-fix/91-respond-fix-install.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-29/seller-respond-fix/respond.candidate.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-30/seller-respond-fix/91-respond-fix-install.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-30/seller-respond-fix/respond.candidate.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-31/seller-respond-fix/91-respond-fix-install.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-31/seller-respond-fix/respond.candidate.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-32/seller-respond-fix/91-respond-fix-install.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-32/seller-respond-fix/respond.candidate.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-33/seller-respond-fix/91-respond-fix-install.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-33/seller-respond-fix/respond.candidate.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-34/seller-respond-fix/91-respond-fix-install.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-34/seller-respond-fix/respond.candidate.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-35/seller-respond-fix/91-respond-fix-install.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-35/seller-respond-fix/respond.candidate.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-36/seller-respond-fix/91-respond-fix-install.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-36/seller-respond-fix/respond.candidate.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-37/seller-respond-fix/91-respond-fix-install.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-37/seller-respond-fix/respond.candidate.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/seller-respond-fix-20261109/91-respond-fix-install.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/seller-respond-fix-20261109/respond.candidate.sql",
+        "scripts/vendedor-role-20261111/writers-20261111/04c-rollback-writers.sql.review",
+        "scripts/vendedor-role-20261111/writers-20261111/evidence/measure/public.respond_b2b_order_quote_secure_uuid_jsonb_date_integer_text.sql"
+      ],
+      "error": null
+    },
+    {
       "signature": "public.rpc_register_receivable_payment(uuid,jsonb)",
       "expected": "f59c6c09309dfa8bb5fedfa53f0873d0",
       "measured": "98f577574e8b1889416d59cbfb00c437",
@@ -527,6 +598,40 @@
       "paths": [
         "scripts/b2b-downstream-audit-20261107/b4/review-458b6012/manual-null-1813/historical-pre-reproduction/02-install.sql.review",
         "scripts/b2b-downstream-audit-20261107/b4/review-458b6012/manual-null-1813/historical-pre-reproduction/b4-candidate.sql.review"
+      ],
+      "error": null
+    },
+    {
+      "signature": "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "expected": "b8fbd43d7a019fbf2f12d572bd79ba60",
+      "measured": "4926a99c3fa3086b34ff25bb4b4038bb",
+      "source_sha256": "c265607284a92ad153de7be2c276765408447d01ce0404329019e120327727c5",
+      "paths": [
+        "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/02-install.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-28/seller-respond-fix/97-respond-fix-rollback.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-28/seller-respond-fix/respond.live-4926a99c.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-29/seller-respond-fix/97-respond-fix-rollback.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-29/seller-respond-fix/respond.live-4926a99c.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-30/seller-respond-fix/97-respond-fix-rollback.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-30/seller-respond-fix/respond.live-4926a99c.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-31/seller-respond-fix/97-respond-fix-rollback.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-31/seller-respond-fix/respond.live-4926a99c.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-32/seller-respond-fix/97-respond-fix-rollback.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-32/seller-respond-fix/respond.live-4926a99c.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-33/seller-respond-fix/97-respond-fix-rollback.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-33/seller-respond-fix/respond.live-4926a99c.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-34/seller-respond-fix/97-respond-fix-rollback.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-34/seller-respond-fix/respond.live-4926a99c.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-35/seller-respond-fix/97-respond-fix-rollback.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-35/seller-respond-fix/respond.live-4926a99c.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-36/seller-respond-fix/97-respond-fix-rollback.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-36/seller-respond-fix/respond.live-4926a99c.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-37/seller-respond-fix/97-respond-fix-rollback.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/evidence/attempt-37/seller-respond-fix/respond.live-4926a99c.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/seller-respond-fix-20261109/97-respond-fix-rollback.sql.review",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/seller-respond-fix-20261109/respond.live-4926a99c.sql",
+        "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109/writer-live-diff/respond_b2b_order_quote_secure.live-candidate.sql",
+        "scripts/commercial-plans-tenant-20261108/02-install.sql.review"
       ],
       "error": null
     },
@@ -572,6 +677,38 @@
       "paths": [
         "scripts/b2b-downstream-audit-20261107/review-31430566/seller-team-1744/package/02-install.sql.review",
         "scripts/b2b-downstream-audit-20261107/review-31430566/seller-team-1744/package/candidate/public.approve_b2b_payment_terms_secure.sql.review"
+      ],
+      "error": null
+    },
+    {
+      "signature": "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "expected": "b8fbd43d7a019fbf2f12d572bd79ba60",
+      "measured": "e7cb6a6c7fd3a305a54e62184dacd9be",
+      "source_sha256": "2c39306e1184e64c54c58182ff5c5927913d1d43fc536dd295ecb17c305ddf3c",
+      "paths": [
+        "scripts/b2b-payment-condition-v1-rebase-20261106/02-install.sql.review",
+        "scripts/commercial-plans-tenant-20261108/capture/functions/respond_b2b_order_quote_secure.sql"
+      ],
+      "error": null
+    },
+    {
+      "signature": "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "expected": "b8fbd43d7a019fbf2f12d572bd79ba60",
+      "measured": "aff017340ee77e8aa702224963ac0225",
+      "source_sha256": "9e1a99362bf5f34088db9e772fda7c42b52bc5574f6fc25f882564d377dafea2",
+      "paths": [
+        "scripts/b2b-payment-condition-v1-rebase-20261106/04-rollback-deny.sql.review"
+      ],
+      "error": null
+    },
+    {
+      "signature": "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "expected": "b8fbd43d7a019fbf2f12d572bd79ba60",
+      "measured": "e57d3a6416910937bd02c9180dff0cf1",
+      "source_sha256": "ce3f37f972c72ab14bd782a6a65f0f207b50232353d45e495834cb05a1227171",
+      "paths": [
+        "scripts/b2b-solid-packaging-order-20261106/captured/public.respond_b2b_order_quote_secure.e57d3a64.live-20261106.sql",
+        "scripts/owner-orders-20261023/accounting-pending-request-20261024/src/live-respond_b2b_order_quote_secure.sql"
       ],
       "error": null
     },
@@ -700,6 +837,16 @@
       "source_sha256": "c09eecbc454ae62e2b40de7a56bcd78a481845849e53c7908f40b88c4e865834",
       "paths": [
         "scripts/rbac-audit/applied-20261010005653-financial-payments-reversal-tenant-scope.sql"
+      ],
+      "error": null
+    },
+    {
+      "signature": "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "expected": "b8fbd43d7a019fbf2f12d572bd79ba60",
+      "measured": "964b79ecd6f293c4bf81fd8ee5f5bbf5",
+      "source_sha256": "2fc9655eae9e760a1c23d4d46acd7d1b6608bfb5627c2866e9c64fd79def5916",
+      "paths": [
+        "scripts/vendedor-role-20261111/writers-20261111/02c-install-writers.sql.review"
       ],
       "error": null
     },
