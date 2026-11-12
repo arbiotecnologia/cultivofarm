@@ -1,0 +1,18 @@
+[
+  {
+    "step": "prepare-exact",
+    "exit": 0
+  },
+  {
+    "step": "test_deterministic.py",
+    "exit": 0
+  },
+  {
+    "step": "test_integration.py",
+    "exit": 0
+  },
+  {
+    "step": "final-roundtrip-awaiting",
+    "exit": 0
+  }
+]

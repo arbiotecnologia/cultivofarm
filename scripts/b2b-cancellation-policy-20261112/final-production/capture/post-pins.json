@@ -37,7 +37,7 @@
       "postgres=X/postgres",
       "service_role=X/postgres"
     ],
-    "md5": "9af2e91f3dbea476bffb4328fa288b2f",
+    "md5": "aa4153c528a3c73311969e07cabf3fd4",
     "owner": "postgres",
     "config": [
       "search_path=public, pg_temp"

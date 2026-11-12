@@ -1,0 +1,5320 @@
+{
+  "relations": {
+    "public.profiles": {
+      "acl": [
+        "anon=arwdm/postgres",
+        "authenticated=arwdm/postgres",
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "id",
+          "uuid",
+          true,
+          "gen_random_uuid()"
+        ],
+        [
+          "user_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "nome",
+          "text",
+          true,
+          "''::text"
+        ],
+        [
+          "email",
+          "text",
+          false,
+          null
+        ],
+        [
+          "created_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "updated_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "telefone",
+          "text",
+          false,
+          null
+        ],
+        [
+          "cargo",
+          "text",
+          false,
+          null
+        ],
+        [
+          "cpf_cnpj",
+          "text",
+          false,
+          null
+        ],
+        [
+          "ativo",
+          "boolean",
+          true,
+          "true"
+        ],
+        [
+          "cliente_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "crea",
+          "text",
+          false,
+          null
+        ],
+        [
+          "especialidade",
+          "text",
+          false,
+          null
+        ],
+        [
+          "data_admissao",
+          "date",
+          false,
+          null
+        ],
+        [
+          "observacoes_internas",
+          "text",
+          false,
+          null
+        ],
+        [
+          "organization_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "senha_provisoria",
+          "boolean",
+          true,
+          "false"
+        ]
+      ],
+      "indexes": [
+        [
+          "idx_profiles_ativo",
+          "CREATE INDEX idx_profiles_ativo ON public.profiles USING btree (ativo)",
+          true
+        ],
+        [
+          "idx_profiles_email",
+          "CREATE INDEX idx_profiles_email ON public.profiles USING btree (email)",
+          true
+        ],
+        [
+          "idx_profiles_user_id_covering",
+          "CREATE INDEX idx_profiles_user_id_covering ON public.profiles USING btree (user_id) INCLUDE (nome, email)",
+          true
+        ],
+        [
+          "profiles_organization_id_idx",
+          "CREATE INDEX profiles_organization_id_idx ON public.profiles USING btree (organization_id)",
+          true
+        ],
+        [
+          "profiles_pkey",
+          "CREATE UNIQUE INDEX profiles_pkey ON public.profiles USING btree (id)",
+          true
+        ],
+        [
+          "profiles_user_id_key",
+          "CREATE UNIQUE INDEX profiles_user_id_key ON public.profiles USING btree (user_id)",
+          true
+        ]
+      ],
+      "policies": [
+        [
+          "Tenant admins can update same organization profiles",
+          "w",
+          true,
+          [
+            "authenticated"
+          ],
+          "platform_private.is_tenant_admin_for_user(user_id)",
+          "platform_private.is_tenant_admin_for_user(user_id)"
+        ],
+        [
+          "Tenant admins can view same organization profiles",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "((user_id = auth.uid()) OR platform_private.is_tenant_admin_for_user(user_id))",
+          null
+        ],
+        [
+          "Users can insert own profile",
+          "a",
+          true,
+          [
+            "PUBLIC"
+          ],
+          null,
+          "(( SELECT auth.uid() AS uid) = user_id)"
+        ],
+        [
+          "Users can update own non sensitive profile fields",
+          "w",
+          true,
+          [
+            "authenticated"
+          ],
+          "(user_id = auth.uid())",
+          "(user_id = auth.uid())"
+        ],
+        [
+          "Users can view own profile",
+          "r",
+          true,
+          [
+            "PUBLIC"
+          ],
+          "(( SELECT auth.uid() AS uid) = user_id)",
+          null
+        ]
+      ],
+      "triggers": [
+        [
+          "a00_cf_user_gate",
+          "CREATE TRIGGER a00_cf_user_gate BEFORE INSERT OR DELETE OR UPDATE ON public.profiles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_gate()",
+          "O",
+          "b0dd9a14d5fd799a40df0975baf4c5a6"
+        ],
+        [
+          "a00_cf_user_no_truncate",
+          "CREATE TRIGGER a00_cf_user_no_truncate BEFORE TRUNCATE ON public.profiles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.block_truncate()",
+          "O",
+          "a919901eb1e045461a5bc6e4da178624"
+        ],
+        [
+          "guard_profile_senha_provisoria",
+          "CREATE TRIGGER guard_profile_senha_provisoria BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION guard_profile_senha_provisoria()",
+          "O",
+          "e38505f726490b064e61d9aa4e3be5a7"
+        ],
+        [
+          "guard_profile_senha_ticket",
+          "CREATE TRIGGER guard_profile_senha_ticket BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION guard_profile_senha_ticket()",
+          "O",
+          "bb9ea2f95f8f151ebd4b97c2a2e747b7"
+        ],
+        [
+          "guard_profile_sensitive_fields",
+          "CREATE TRIGGER guard_profile_sensitive_fields BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION guard_profile_sensitive_fields()",
+          "O",
+          "1c2ad8d0ef38ea66866f8b85d3acb109"
+        ],
+        [
+          "h15_profile_organization_guard",
+          "CREATE TRIGGER h15_profile_organization_guard BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION h15_profile_organization_guard()",
+          "O",
+          "43be4da16aae664a48fa4c73315b4420"
+        ],
+        [
+          "trg_guard_profile_tenant_fields",
+          "CREATE TRIGGER trg_guard_profile_tenant_fields BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION guard_profile_tenant_fields()",
+          "O",
+          "bd6d513d936f5c5fb0490b5d1d2f9f1d"
+        ],
+        [
+          "trg_profiles_enforce_cliente",
+          "CREATE TRIGGER trg_profiles_enforce_cliente BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION enforce_cliente_id_for_produtor()",
+          "O",
+          "ecad56badcb2120f7048fad7519f76f4"
+        ],
+        [
+          "update_profiles_updated_at",
+          "CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()",
+          "O",
+          "b1930ed5bca3be839f783c6202ab8147"
+        ],
+        [
+          "z99_cf_profile_stamp",
+          "CREATE TRIGGER z99_cf_profile_stamp BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION cf_user_guards_v1.advance_stamp()",
+          "O",
+          "ce295ff5799d306ad81578047cd9bff5"
+        ],
+        [
+          "z99_cf_require_admin",
+          "CREATE TRIGGER z99_cf_require_admin AFTER INSERT OR DELETE OR UPDATE ON public.profiles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.require_admin()",
+          "O",
+          "ec8e7077521cdee212be924bfb400e8a"
+        ]
+      ],
+      "force_rls": false,
+      "constraints": [
+        [
+          "profiles_cliente_id_fkey",
+          "FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL",
+          true
+        ],
+        [
+          "profiles_organization_id_fkey",
+          "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL",
+          true
+        ],
+        [
+          "profiles_pkey",
+          "PRIMARY KEY (id)",
+          true
+        ],
+        [
+          "profiles_user_id_fkey",
+          "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+          true
+        ],
+        [
+          "profiles_user_id_key",
+          "UNIQUE (user_id)",
+          true
+        ]
+      ]
+    },
+    "public.user_roles": {
+      "acl": [
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "id",
+          "uuid",
+          true,
+          "gen_random_uuid()"
+        ],
+        [
+          "user_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "role",
+          "app_role",
+          true,
+          null
+        ]
+      ],
+      "indexes": [
+        [
+          "idx_user_roles_user_id",
+          "CREATE INDEX idx_user_roles_user_id ON public.user_roles USING btree (user_id)",
+          true
+        ],
+        [
+          "user_roles_pkey",
+          "CREATE UNIQUE INDEX user_roles_pkey ON public.user_roles USING btree (id)",
+          true
+        ],
+        [
+          "user_roles_user_id_role_key",
+          "CREATE UNIQUE INDEX user_roles_user_id_role_key ON public.user_roles USING btree (user_id, role)",
+          true
+        ]
+      ],
+      "policies": [
+        [
+          "Tenant admins can delete same organization roles",
+          "d",
+          true,
+          [
+            "authenticated"
+          ],
+          "((role <> 'superadmin'::app_role) AND platform_private.is_tenant_admin_for_user(user_id))",
+          null
+        ],
+        [
+          "Tenant admins can insert same organization roles",
+          "a",
+          true,
+          [
+            "authenticated"
+          ],
+          null,
+          "((role <> 'superadmin'::app_role) AND platform_private.is_tenant_admin_for_user(user_id))"
+        ],
+        [
+          "Tenant admins can read same organization roles",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "platform_private.is_tenant_admin_for_user(user_id)",
+          null
+        ],
+        [
+          "Tenant admins can update same organization roles",
+          "w",
+          true,
+          [
+            "authenticated"
+          ],
+          "((role <> 'superadmin'::app_role) AND platform_private.is_tenant_admin_for_user(user_id))",
+          "((role <> 'superadmin'::app_role) AND platform_private.is_tenant_admin_for_user(user_id))"
+        ],
+        [
+          "Users can view own roles",
+          "r",
+          true,
+          [
+            "PUBLIC"
+          ],
+          "(( SELECT auth.uid() AS uid) = user_id)",
+          null
+        ]
+      ],
+      "triggers": [
+        [
+          "a00_cf_user_gate",
+          "CREATE TRIGGER a00_cf_user_gate BEFORE INSERT OR DELETE OR UPDATE ON public.user_roles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_gate()",
+          "O",
+          "b0dd9a14d5fd799a40df0975baf4c5a6"
+        ],
+        [
+          "a00_cf_user_no_truncate",
+          "CREATE TRIGGER a00_cf_user_no_truncate BEFORE TRUNCATE ON public.user_roles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.block_truncate()",
+          "O",
+          "a919901eb1e045461a5bc6e4da178624"
+        ],
+        [
+          "trg_guard_superadmin_role_assignment",
+          "CREATE TRIGGER trg_guard_superadmin_role_assignment BEFORE INSERT OR DELETE OR UPDATE ON public.user_roles FOR EACH ROW EXECUTE FUNCTION guard_superadmin_role_assignment()",
+          "O",
+          "4a59f48e25096848a79be6de9d959cef"
+        ],
+        [
+          "trg_user_roles_enforce_cliente",
+          "CREATE TRIGGER trg_user_roles_enforce_cliente BEFORE INSERT OR UPDATE ON public.user_roles FOR EACH ROW EXECUTE FUNCTION enforce_cliente_id_for_produtor()",
+          "O",
+          "ecad56badcb2120f7048fad7519f76f4"
+        ],
+        [
+          "z90_cf_touch_profile",
+          "CREATE TRIGGER z90_cf_touch_profile AFTER INSERT OR DELETE OR UPDATE ON public.user_roles FOR EACH ROW EXECUTE FUNCTION cf_user_guards_v1.touch_related_profiles()",
+          "O",
+          "e5911c3801be399f9de57e038b390e79"
+        ],
+        [
+          "z99_cf_require_admin",
+          "CREATE TRIGGER z99_cf_require_admin AFTER INSERT OR DELETE OR UPDATE ON public.user_roles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.require_admin()",
+          "O",
+          "ec8e7077521cdee212be924bfb400e8a"
+        ]
+      ],
+      "force_rls": false,
+      "constraints": [
+        [
+          "user_roles_pkey",
+          "PRIMARY KEY (id)",
+          true
+        ],
+        [
+          "user_roles_user_id_fkey",
+          "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+          true
+        ],
+        [
+          "user_roles_user_id_role_key",
+          "UNIQUE (user_id, role)",
+          true
+        ]
+      ]
+    },
+    "public.fiscal_events": {
+      "acl": [
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "id",
+          "uuid",
+          true,
+          "gen_random_uuid()"
+        ],
+        [
+          "fiscal_invoice_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "event_type",
+          "text",
+          true,
+          null
+        ],
+        [
+          "status_before",
+          "text",
+          false,
+          null
+        ],
+        [
+          "status_after",
+          "text",
+          false,
+          null
+        ],
+        [
+          "event_source",
+          "text",
+          true,
+          "'INTERNAL'::text"
+        ],
+        [
+          "provider_event_id",
+          "text",
+          false,
+          null
+        ],
+        [
+          "request_snapshot",
+          "jsonb",
+          false,
+          null
+        ],
+        [
+          "response_snapshot",
+          "jsonb",
+          false,
+          null
+        ],
+        [
+          "error_code",
+          "text",
+          false,
+          null
+        ],
+        [
+          "error_message",
+          "text",
+          false,
+          null
+        ],
+        [
+          "performed_by",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "created_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "notes",
+          "text",
+          false,
+          null
+        ],
+        [
+          "idempotency_key",
+          "text",
+          false,
+          null
+        ],
+        [
+          "payload_fingerprint",
+          "text",
+          false,
+          null
+        ],
+        [
+          "related_event_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "sefaz_event_code",
+          "text",
+          false,
+          null
+        ],
+        [
+          "sefaz_seq_evento",
+          "integer",
+          false,
+          null
+        ],
+        [
+          "sefaz_access_key",
+          "text",
+          false,
+          null
+        ],
+        [
+          "sefaz_reason",
+          "text",
+          false,
+          null
+        ],
+        [
+          "signed_xml_path",
+          "text",
+          false,
+          null
+        ],
+        [
+          "signed_xml_sha256",
+          "text",
+          false,
+          null
+        ],
+        [
+          "sefaz_c_stat",
+          "text",
+          false,
+          null
+        ],
+        [
+          "sefaz_n_prot",
+          "text",
+          false,
+          null
+        ],
+        [
+          "sefaz_transmission_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "organization_id",
+          "uuid",
+          false,
+          null
+        ]
+      ],
+      "indexes": [
+        [
+          "fiscal_events_organization_id_idx",
+          "CREATE INDEX fiscal_events_organization_id_idx ON public.fiscal_events USING btree (organization_id)",
+          true
+        ],
+        [
+          "fiscal_events_pkey",
+          "CREATE UNIQUE INDEX fiscal_events_pkey ON public.fiscal_events USING btree (id)",
+          true
+        ],
+        [
+          "ix_fe_related_event_id",
+          "CREATE INDEX ix_fe_related_event_id ON public.fiscal_events USING btree (related_event_id)",
+          true
+        ],
+        [
+          "ix_fiscal_events_created_at",
+          "CREATE INDEX ix_fiscal_events_created_at ON public.fiscal_events USING btree (created_at DESC)",
+          true
+        ],
+        [
+          "ix_fiscal_events_invoice",
+          "CREATE INDEX ix_fiscal_events_invoice ON public.fiscal_events USING btree (fiscal_invoice_id)",
+          true
+        ],
+        [
+          "ux_fiscal_events_idempotency",
+          "CREATE UNIQUE INDEX ux_fiscal_events_idempotency ON public.fiscal_events USING btree (fiscal_invoice_id, event_type, idempotency_key) WHERE (idempotency_key IS NOT NULL)",
+          true
+        ]
+      ],
+      "policies": [
+        [
+          "fiscal_events_no_delete",
+          "d",
+          true,
+          [
+            "authenticated"
+          ],
+          "(false AND h15_invoice_access(fiscal_invoice_id))",
+          null
+        ],
+        [
+          "fiscal_events_no_update",
+          "w",
+          true,
+          [
+            "authenticated"
+          ],
+          "(false AND h15_invoice_access(fiscal_invoice_id))",
+          "(false AND h15_invoice_access(fiscal_invoice_id))"
+        ],
+        [
+          "fiscal_events_read",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "((platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role)) AND h15_invoice_access(fiscal_invoice_id))",
+          null
+        ],
+        [
+          "tenant_isolation_d51_5",
+          "*",
+          false,
+          [
+            "authenticated"
+          ],
+          "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))",
+          "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"
+        ]
+      ],
+      "triggers": [
+        [
+          "a00_delivery_no_downstream",
+          "CREATE TRIGGER a00_delivery_no_downstream BEFORE INSERT OR DELETE OR UPDATE ON public.fiscal_events FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_no_downstream_20261030()",
+          "O",
+          "95e0e5a84ef511cd72d7807351f61cf4"
+        ],
+        [
+          "h15_related_integrity",
+          "CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_events FOR EACH ROW EXECUTE FUNCTION h15_related_integrity('fiscal_invoice_id', 'fiscal_invoices', 'related_event_id', 'fiscal_events', 'sefaz_transmission_id', 'fiscal_sefaz_transmissions')",
+          "O",
+          "0ff600469a00ffb6d4cd4ec4450d29b5"
+        ],
+        [
+          "tenant_organization_guard",
+          "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.fiscal_events FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()",
+          "O",
+          "d01a740c1e3e02407131d2b9228bf658"
+        ],
+        [
+          "trg_fiscal_audit_fiscal_events",
+          "CREATE TRIGGER trg_fiscal_audit_fiscal_events AFTER INSERT OR DELETE OR UPDATE ON public.fiscal_events FOR EACH ROW EXECUTE FUNCTION fiscal_audit_trigger()",
+          "O",
+          "5083ccb4946ee883c08011bfafce4513"
+        ],
+        [
+          "trg_h7_fiscal_events_append_only",
+          "CREATE TRIGGER trg_h7_fiscal_events_append_only BEFORE DELETE OR UPDATE ON public.fiscal_events FOR EACH ROW EXECUTE FUNCTION tg_h7_fiscal_events_append_only()",
+          "O",
+          "2c855b70ac813ac7125dcc869c20b111"
+        ]
+      ],
+      "force_rls": false,
+      "constraints": [
+        [
+          "chk_fiscal_events_notes_len",
+          "CHECK (((notes IS NULL) OR (char_length(notes) <= 2000)))",
+          true
+        ],
+        [
+          "chk_fiscal_events_sefaz_code",
+          "CHECK (((sefaz_event_code IS NULL) OR (sefaz_event_code = ANY (ARRAY['110110'::text, '110111'::text]))))",
+          true
+        ],
+        [
+          "chk_fiscal_events_sefaz_key",
+          "CHECK (((sefaz_access_key IS NULL) OR (sefaz_access_key ~ '^[0-9]{44}$'::text)))",
+          true
+        ],
+        [
+          "fiscal_events_event_type_check",
+          "CHECK ((event_type = ANY (ARRAY['CREATED'::text, 'MANUAL_UPDATED'::text, 'DOCUMENT_ATTACHED'::text, 'VALIDATION_REQUESTED'::text, 'VALIDATION_FAILED'::text, 'READY_FOR_FUTURE_INTEGRATION'::text, 'RECONCILIATION_REQUIRED'::text, 'RECONCILIATION_COMPLETED'::text, 'DOCUMENT_CANCELED_FINANCIAL_REVIEW_REQUIRED'::text, 'TOTAL_MISMATCH'::text, 'CUSTOMER_MISMATCH'::text, 'SOURCE_MISMATCH'::text, 'REPLACEMENT_REQUIRED'::text, 'SINIEF_ADVANCE_PAYMENT_ISSUED'::text, 'SINIEF_EFFECTIVE_SALE_ISSUED'::text, 'SINIEF_STOCK_LOSS_ISSUED'::text, 'SINIEF_VALUE_QUANTITY_REDUCTION_ISSUED'::text, 'SINIEF_DELIVERY_REFUSAL_TOTAL_ISSUED'::text, 'SINIEF_DELIVERY_REFUSAL_PARTIAL_ISSUED'::text, 'SINIEF_RECIPIENT_NOT_FOUND_ISSUED'::text, 'SINIEF20_ICMS_EVALUATED'::text, 'SINIEF20_RECIPIENT_SNAPSHOT_CAPTURED'::text, 'SEFAZ_CANCELLATION_PREPARED'::text, 'SEFAZ_CORRECTION_PREPARED'::text, 'SEFAZ_EVENT_SIGNED'::text, 'SEFAZ_EVENT_REGISTERED'::text, 'SEFAZ_EVENT_REJECTED'::text])))",
+          true
+        ],
+        [
+          "fiscal_events_fiscal_invoice_id_fkey",
+          "FOREIGN KEY (fiscal_invoice_id) REFERENCES fiscal_invoices(id) ON DELETE RESTRICT",
+          true
+        ],
+        [
+          "fiscal_events_organization_id_fkey",
+          "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+          true
+        ],
+        [
+          "fiscal_events_pkey",
+          "PRIMARY KEY (id)",
+          true
+        ],
+        [
+          "fiscal_events_related_event_id_fkey",
+          "FOREIGN KEY (related_event_id) REFERENCES fiscal_events(id) ON DELETE RESTRICT",
+          true
+        ]
+      ]
+    },
+    "public.partner_orders": {
+      "acl": [
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "id",
+          "uuid",
+          true,
+          "gen_random_uuid()"
+        ],
+        [
+          "numero",
+          "text",
+          true,
+          "('PB-'::text || lpad((nextval('partner_orders_numero_seq'::regclass))::text, 6, '0'::text))"
+        ],
+        [
+          "partner_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "status",
+          "partner_order_status",
+          true,
+          "'pendente'::partner_order_status"
+        ],
+        [
+          "subtotal",
+          "numeric(12,2)",
+          true,
+          "0"
+        ],
+        [
+          "desconto_total",
+          "numeric(12,2)",
+          true,
+          "0"
+        ],
+        [
+          "total",
+          "numeric(12,2)",
+          true,
+          "0"
+        ],
+        [
+          "observacoes",
+          "text",
+          false,
+          null
+        ],
+        [
+          "created_by",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "created_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "updated_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "approved_by",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "approved_at",
+          "timestamp with time zone",
+          false,
+          null
+        ],
+        [
+          "approval_notes",
+          "text",
+          false,
+          null
+        ],
+        [
+          "requested_delivery_date",
+          "date",
+          false,
+          null
+        ],
+        [
+          "estimated_delivery_date",
+          "date",
+          false,
+          null
+        ],
+        [
+          "commercial_notes",
+          "text",
+          false,
+          null
+        ],
+        [
+          "ready_for_production",
+          "boolean",
+          true,
+          "false"
+        ],
+        [
+          "future_financial_link",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "financial_status",
+          "text",
+          true,
+          "'pendente'::text"
+        ],
+        [
+          "receivable_generated",
+          "boolean",
+          true,
+          "false"
+        ],
+        [
+          "receivable_generated_at",
+          "timestamp with time zone",
+          false,
+          null
+        ],
+        [
+          "receivable_generated_by",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "payment_due_date",
+          "date",
+          false,
+          null
+        ],
+        [
+          "payment_method",
+          "text",
+          false,
+          null
+        ],
+        [
+          "credit_block_reason",
+          "text",
+          false,
+          null
+        ],
+        [
+          "credit_approved_by",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "credit_approved_at",
+          "timestamp with time zone",
+          false,
+          null
+        ],
+        [
+          "credit_approval_notes",
+          "text",
+          false,
+          null
+        ],
+        [
+          "priority",
+          "partner_order_priority",
+          true,
+          "'normal'::partner_order_priority"
+        ],
+        [
+          "itens_pendentes_motivo",
+          "text",
+          false,
+          null
+        ],
+        [
+          "itens_pendentes_solicitado_em",
+          "timestamp with time zone",
+          false,
+          null
+        ],
+        [
+          "itens_pendentes_solicitado_por",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "itens_pendentes_resolvido_em",
+          "timestamp with time zone",
+          false,
+          null
+        ],
+        [
+          "cultura",
+          "text",
+          false,
+          null
+        ],
+        [
+          "area_total_ha",
+          "numeric",
+          false,
+          null
+        ],
+        [
+          "origin_simulation_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "cliente_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "payment_plan_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "payment_terms_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "payment_condition_status",
+          "text",
+          true,
+          "'pending'::text"
+        ],
+        [
+          "table_amount",
+          "numeric(14,2)",
+          false,
+          "0"
+        ],
+        [
+          "commercial_discount_amount",
+          "numeric(14,2)",
+          false,
+          "0"
+        ],
+        [
+          "net_amount_after_discount",
+          "numeric(14,2)",
+          false,
+          "0"
+        ],
+        [
+          "financial_interest_amount",
+          "numeric(14,2)",
+          false,
+          "0"
+        ],
+        [
+          "final_amount_with_interest",
+          "numeric(14,2)",
+          false,
+          "0"
+        ],
+        [
+          "requires_financial_approval",
+          "boolean",
+          true,
+          "false"
+        ],
+        [
+          "financial_approval_status",
+          "text",
+          true,
+          "'not_required'::text"
+        ],
+        [
+          "internal_origin_snapshot",
+          "jsonb",
+          false,
+          null
+        ],
+        [
+          "internal_economic_snapshot",
+          "jsonb",
+          false,
+          null
+        ],
+        [
+          "c2_external_origin_snapshot",
+          "jsonb",
+          false,
+          null
+        ]
+      ],
+      "indexes": [
+        [
+          "idx_partner_orders_cliente",
+          "CREATE INDEX idx_partner_orders_cliente ON public.partner_orders USING btree (cliente_id)",
+          true
+        ],
+        [
+          "idx_partner_orders_created",
+          "CREATE INDEX idx_partner_orders_created ON public.partner_orders USING btree (created_at DESC)",
+          true
+        ],
+        [
+          "idx_partner_orders_full",
+          "CREATE INDEX idx_partner_orders_full ON public.partner_orders USING btree (partner_id, status, priority, created_at DESC)",
+          true
+        ],
+        [
+          "idx_partner_orders_origin_simulation",
+          "CREATE INDEX idx_partner_orders_origin_simulation ON public.partner_orders USING btree (origin_simulation_id)",
+          true
+        ],
+        [
+          "idx_partner_orders_partner",
+          "CREATE INDEX idx_partner_orders_partner ON public.partner_orders USING btree (partner_id)",
+          true
+        ],
+        [
+          "idx_partner_orders_payment_approval",
+          "CREATE INDEX idx_partner_orders_payment_approval ON public.partner_orders USING btree (payment_condition_status, financial_approval_status)",
+          true
+        ],
+        [
+          "idx_partner_orders_payment_plan",
+          "CREATE INDEX idx_partner_orders_payment_plan ON public.partner_orders USING btree (payment_plan_id)",
+          true
+        ],
+        [
+          "idx_partner_orders_priority",
+          "CREATE INDEX idx_partner_orders_priority ON public.partner_orders USING btree (priority)",
+          true
+        ],
+        [
+          "idx_partner_orders_status",
+          "CREATE INDEX idx_partner_orders_status ON public.partner_orders USING btree (status)",
+          true
+        ],
+        [
+          "partner_orders_numero_key",
+          "CREATE UNIQUE INDEX partner_orders_numero_key ON public.partner_orders USING btree (numero)",
+          true
+        ],
+        [
+          "partner_orders_pkey",
+          "CREATE UNIQUE INDEX partner_orders_pkey ON public.partner_orders USING btree (id)",
+          true
+        ]
+      ],
+      "policies": [
+        [
+          "Financeiro read partner_orders",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "platform_private.has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role)",
+          null
+        ],
+        [
+          "b2b_phase1_tenant_guard_delete",
+          "d",
+          false,
+          [
+            "authenticated"
+          ],
+          "platform_private.b2b_phase1_partner_visible(partner_id, false)",
+          null
+        ],
+        [
+          "b2b_phase1_tenant_guard_insert",
+          "a",
+          false,
+          [
+            "authenticated"
+          ],
+          null,
+          "platform_private.b2b_phase1_partner_visible(partner_id, false)"
+        ],
+        [
+          "b2b_phase1_tenant_guard_select",
+          "r",
+          false,
+          [
+            "authenticated"
+          ],
+          "(platform_private.b2b_phase1_partner_visible(partner_id, false) OR platform_private.b2b_owner_internal_partner_readable(partner_id))",
+          null
+        ],
+        [
+          "b2b_phase1_tenant_guard_update",
+          "w",
+          false,
+          [
+            "authenticated"
+          ],
+          "platform_private.b2b_phase1_partner_visible(partner_id, false)",
+          "platform_private.b2b_phase1_partner_visible(partner_id, false)"
+        ],
+        [
+          "partner_orders_insert",
+          "a",
+          true,
+          [
+            "authenticated"
+          ],
+          null,
+          "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role))"
+        ],
+        [
+          "partner_orders_select",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role) OR (platform_private.has_role(( SELECT auth.uid() AS uid), 'parceiro_b2b'::app_role) AND (partner_id = get_user_partner_id())))",
+          null
+        ],
+        [
+          "partner_orders_update",
+          "w",
+          true,
+          [
+            "authenticated"
+          ],
+          "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role))",
+          "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role))"
+        ]
+      ],
+      "triggers": [
+        [
+          "a00_delivery_order_transition_closed",
+          "CREATE TRIGGER a00_delivery_order_transition_closed BEFORE UPDATE OF status ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_order_transition_guard_20261030()",
+          "O",
+          "aa01b7e77b9eca76ce52eea8a79c4bab"
+        ],
+        [
+          "b2b_payment_condition_required",
+          "CREATE CONSTRAINT TRIGGER b2b_payment_condition_required AFTER INSERT ON public.partner_orders DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_condition_required_check()",
+          "O",
+          "236b821b0ca568c81a9667512dae5def"
+        ],
+        [
+          "partner_order_timeline_ins",
+          "CREATE TRIGGER partner_order_timeline_ins AFTER INSERT ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION trg_partner_order_timeline()",
+          "O",
+          "833de323eb590a831924d5a5fcb490bd"
+        ],
+        [
+          "partner_order_timeline_upd",
+          "CREATE TRIGGER partner_order_timeline_upd AFTER UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION trg_partner_order_timeline()",
+          "O",
+          "833de323eb590a831924d5a5fcb490bd"
+        ],
+        [
+          "trg_00_b2b_internal_snapshot",
+          "CREATE TRIGGER trg_00_b2b_internal_snapshot BEFORE INSERT OR UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_internal_order_snapshot_guard()",
+          "O",
+          "1c342be2cdaf7bf458a3cd1aa15e7ba5"
+        ],
+        [
+          "trg_audit_po_commercial",
+          "CREATE TRIGGER trg_audit_po_commercial AFTER UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_audit_partner_order_commercial()",
+          "O",
+          "b537eb6807fbfc48b43b59d49ef7297a"
+        ],
+        [
+          "trg_auto_b2b_receivable",
+          "CREATE TRIGGER trg_auto_b2b_receivable AFTER UPDATE OF status ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_auto_b2b_receivable()",
+          "O",
+          "d179755ea3701a723338d08283d42fe5"
+        ],
+        [
+          "trg_b2b_guard_credit_approval_fields",
+          "CREATE TRIGGER trg_b2b_guard_credit_approval_fields BEFORE UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION fn_b2b_guard_credit_approval_fields()",
+          "O",
+          "8902498ed09c4c5804b1749ee0c31cd7"
+        ],
+        [
+          "trg_b2b_plan_selectable_orders",
+          "CREATE TRIGGER trg_b2b_plan_selectable_orders BEFORE INSERT OR UPDATE OF payment_plan_id ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_b2b_enforce_plan_selectable()",
+          "O",
+          "3477a02b069c20ae3e1c832ecca6b1e7"
+        ],
+        [
+          "trg_block_partner_order_delete",
+          "CREATE TRIGGER trg_block_partner_order_delete BEFORE DELETE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_block_partner_order_delete()",
+          "O",
+          "55b4f2fa662f1d14dbbb663cb475d6a6"
+        ],
+        [
+          "trg_block_partner_order_edit_after_op",
+          "CREATE TRIGGER trg_block_partner_order_edit_after_op BEFORE UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_block_partner_order_edit_after_op()",
+          "O",
+          "2884dea0a9efa9ab7badac6bd8b5e46c"
+        ],
+        [
+          "trg_notify_payment_terms_pending",
+          "CREATE TRIGGER trg_notify_payment_terms_pending AFTER INSERT OR UPDATE OF requires_financial_approval, financial_approval_status ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_notify_payment_terms_pending()",
+          "O",
+          "671f9cb3a245cfccc30a27c16172d802"
+        ],
+        [
+          "trg_partner_order_to_planning",
+          "CREATE TRIGGER trg_partner_order_to_planning AFTER UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION trg_partner_order_to_planning_fn()",
+          "O",
+          "e5915037d03892fffc5d388595cba685"
+        ],
+        [
+          "trg_partner_orders_audit",
+          "CREATE TRIGGER trg_partner_orders_audit AFTER INSERT OR UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION partner_orders_audit_trigger()",
+          "O",
+          "df139ef01591892436854b7f8c82f2db"
+        ],
+        [
+          "trg_partner_orders_credit_guard",
+          "CREATE TRIGGER trg_partner_orders_credit_guard BEFORE INSERT OR UPDATE OF status, total ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_partner_orders_credit_guard()",
+          "O",
+          "b24a3c30910832e8b14456d912a67589"
+        ],
+        [
+          "trg_partner_orders_require_items",
+          "CREATE TRIGGER trg_partner_orders_require_items BEFORE UPDATE OF status ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_partner_orders_require_items()",
+          "O",
+          "2b756289555b287255876e635a516c9a"
+        ],
+        [
+          "trg_partner_orders_updated_at",
+          "CREATE TRIGGER trg_partner_orders_updated_at BEFORE UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()",
+          "O",
+          "b1930ed5bca3be839f783c6202ab8147"
+        ],
+        [
+          "trg_refresh_engagement",
+          "CREATE TRIGGER trg_refresh_engagement AFTER INSERT OR DELETE OR UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_refresh_engagement()",
+          "O",
+          "87b1de282cdc198d0898cdc5ca08a4c4"
+        ],
+        [
+          "trg_saas_gate",
+          "CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature('pedidos_b2b')",
+          "O",
+          "13ed48832f81cbb35434688ca35fda4b"
+        ],
+        [
+          "zz_c2_accounting_pending",
+          "CREATE TRIGGER zz_c2_accounting_pending BEFORE INSERT OR UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION platform_private.c2_accounting_pending_guard()",
+          "O",
+          "669b19490a7a9700f0158db4b31885ad"
+        ],
+        [
+          "zz_c2_external_final_state",
+          "CREATE TRIGGER zz_c2_external_final_state BEFORE UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION platform_private.c2_external_final_state_guard()",
+          "O",
+          "3f1a5a6b11161bd8204293a8c64371e2"
+        ]
+      ],
+      "force_rls": false,
+      "constraints": [
+        [
+          "b2b_payment_condition_required",
+          "TRIGGER DEFERRABLE INITIALLY DEFERRED",
+          true
+        ],
+        [
+          "partner_orders_cliente_id_fkey",
+          "FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL",
+          true
+        ],
+        [
+          "partner_orders_credit_approved_by_fkey",
+          "FOREIGN KEY (credit_approved_by) REFERENCES auth.users(id)",
+          true
+        ],
+        [
+          "partner_orders_financial_status_check",
+          "CHECK ((financial_status = ANY (ARRAY['pendente'::text, 'gerado'::text, 'parcial'::text, 'recebido'::text, 'vencido'::text, 'cancelado'::text])))",
+          true
+        ],
+        [
+          "partner_orders_numero_key",
+          "UNIQUE (numero)",
+          true
+        ],
+        [
+          "partner_orders_origin_simulation_id_fkey",
+          "FOREIGN KEY (origin_simulation_id) REFERENCES partner_simulations(id) ON DELETE SET NULL",
+          true
+        ],
+        [
+          "partner_orders_partner_id_fkey",
+          "FOREIGN KEY (partner_id) REFERENCES partner_accounts(id) ON DELETE RESTRICT",
+          true
+        ],
+        [
+          "partner_orders_payment_plan_id_fkey",
+          "FOREIGN KEY (payment_plan_id) REFERENCES commercial_payment_plans(id)",
+          true
+        ],
+        [
+          "partner_orders_payment_terms_id_fkey",
+          "FOREIGN KEY (payment_terms_id) REFERENCES partner_order_payment_terms(id)",
+          true
+        ],
+        [
+          "partner_orders_pkey",
+          "PRIMARY KEY (id)",
+          true
+        ]
+      ]
+    },
+    "public.fiscal_invoices": {
+      "acl": [
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "id",
+          "uuid",
+          true,
+          "gen_random_uuid()"
+        ],
+        [
+          "receivable_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "delivery_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "invoice_type",
+          "text",
+          true,
+          null
+        ],
+        [
+          "invoice_number",
+          "text",
+          false,
+          null
+        ],
+        [
+          "series",
+          "text",
+          false,
+          null
+        ],
+        [
+          "access_key",
+          "text",
+          false,
+          null
+        ],
+        [
+          "issue_date",
+          "date",
+          false,
+          null
+        ],
+        [
+          "total_amount",
+          "numeric(14,2)",
+          false,
+          null
+        ],
+        [
+          "status",
+          "text",
+          true,
+          "'PENDING'::text"
+        ],
+        [
+          "xml_document_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "danfe_document_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "notes",
+          "text",
+          false,
+          null
+        ],
+        [
+          "created_by",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "created_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "updated_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "document_model",
+          "text",
+          false,
+          null
+        ],
+        [
+          "document_origin",
+          "text",
+          false,
+          null
+        ],
+        [
+          "environment",
+          "text",
+          false,
+          null
+        ],
+        [
+          "provider",
+          "text",
+          false,
+          null
+        ],
+        [
+          "provider_reference",
+          "text",
+          false,
+          null
+        ],
+        [
+          "idempotency_key",
+          "text",
+          false,
+          null
+        ],
+        [
+          "normalized_status",
+          "text",
+          false,
+          null
+        ],
+        [
+          "provider_status_raw",
+          "text",
+          false,
+          null
+        ],
+        [
+          "source_type",
+          "text",
+          false,
+          null
+        ],
+        [
+          "source_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "parent_invoice_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "substitution_invoice_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "authorized_at",
+          "timestamp with time zone",
+          false,
+          null
+        ],
+        [
+          "rejected_at",
+          "timestamp with time zone",
+          false,
+          null
+        ],
+        [
+          "canceled_at",
+          "timestamp with time zone",
+          false,
+          null
+        ],
+        [
+          "cancel_reason",
+          "text",
+          false,
+          null
+        ],
+        [
+          "reconciliation_status",
+          "text",
+          false,
+          null
+        ],
+        [
+          "company_snapshot",
+          "jsonb",
+          false,
+          null
+        ],
+        [
+          "customer_snapshot",
+          "jsonb",
+          false,
+          null
+        ],
+        [
+          "fiscal_totals_snapshot",
+          "jsonb",
+          false,
+          null
+        ],
+        [
+          "payload_schema_version",
+          "integer",
+          false,
+          null
+        ],
+        [
+          "locked_at",
+          "timestamp with time zone",
+          false,
+          null
+        ],
+        [
+          "locked_by",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "company_cnpj",
+          "text",
+          false,
+          null
+        ],
+        [
+          "draft_version",
+          "integer",
+          true,
+          "1"
+        ],
+        [
+          "homologation_validation_status",
+          "text",
+          true,
+          "'NOT_VALIDATED'::text"
+        ],
+        [
+          "homologation_validation_at",
+          "timestamp with time zone",
+          false,
+          null
+        ],
+        [
+          "homologation_validation_summary",
+          "jsonb",
+          true,
+          "'{}'::jsonb"
+        ],
+        [
+          "customer_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "fiscal_profile_snapshot",
+          "jsonb",
+          true,
+          "'{}'::jsonb"
+        ],
+        [
+          "tax_snapshot",
+          "jsonb",
+          true,
+          "'{}'::jsonb"
+        ],
+        [
+          "direction",
+          "text",
+          false,
+          null
+        ],
+        [
+          "fiscal_operation_type",
+          "text",
+          false,
+          null
+        ],
+        [
+          "fin_nfe",
+          "smallint",
+          false,
+          null
+        ],
+        [
+          "tp_nf_debito",
+          "smallint",
+          false,
+          null
+        ],
+        [
+          "tp_nf_credito",
+          "smallint",
+          false,
+          null
+        ],
+        [
+          "nature_operation",
+          "text",
+          false,
+          null
+        ],
+        [
+          "tax_authority_notes",
+          "text",
+          false,
+          null
+        ],
+        [
+          "legal_basis",
+          "text",
+          false,
+          null
+        ],
+        [
+          "legal_version",
+          "text",
+          false,
+          null
+        ],
+        [
+          "legal_effective_date",
+          "date",
+          false,
+          null
+        ],
+        [
+          "icms_due",
+          "boolean",
+          false,
+          null
+        ],
+        [
+          "icms_amount",
+          "numeric(18,2)",
+          false,
+          null
+        ],
+        [
+          "original_recipient_snapshot",
+          "jsonb",
+          false,
+          null
+        ],
+        [
+          "partner_order_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "sales_channel",
+          "text",
+          false,
+          null
+        ],
+        [
+          "debtor_type",
+          "text",
+          false,
+          null
+        ],
+        [
+          "debtor_partner_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "debtor_customer_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "billing_scope",
+          "text",
+          false,
+          null
+        ],
+        [
+          "tp_emis",
+          "smallint",
+          true,
+          "1"
+        ],
+        [
+          "company_settings_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "organization_id",
+          "uuid",
+          false,
+          null
+        ]
+      ],
+      "indexes": [
+        [
+          "fi_debtor_ix",
+          "CREATE INDEX fi_debtor_ix ON public.fiscal_invoices USING btree (debtor_type, debtor_partner_id, debtor_customer_id)",
+          true
+        ],
+        [
+          "fi_partner_order_ix",
+          "CREATE INDEX fi_partner_order_ix ON public.fiscal_invoices USING btree (partner_order_id) WHERE (partner_order_id IS NOT NULL)",
+          true
+        ],
+        [
+          "fiscal_invoices_organization_id_idx",
+          "CREATE INDEX fiscal_invoices_organization_id_idx ON public.fiscal_invoices USING btree (organization_id)",
+          true
+        ],
+        [
+          "fiscal_invoices_pkey",
+          "CREATE UNIQUE INDEX fiscal_invoices_pkey ON public.fiscal_invoices USING btree (id)",
+          true
+        ],
+        [
+          "idx_fi_receivable",
+          "CREATE INDEX idx_fi_receivable ON public.fiscal_invoices USING btree (receivable_id)",
+          true
+        ],
+        [
+          "idx_fi_status",
+          "CREATE INDEX idx_fi_status ON public.fiscal_invoices USING btree (status)",
+          true
+        ],
+        [
+          "ix_fi_danfe_document_id",
+          "CREATE INDEX ix_fi_danfe_document_id ON public.fiscal_invoices USING btree (danfe_document_id)",
+          true
+        ],
+        [
+          "ix_fi_debtor_customer_id",
+          "CREATE INDEX ix_fi_debtor_customer_id ON public.fiscal_invoices USING btree (debtor_customer_id)",
+          true
+        ],
+        [
+          "ix_fi_debtor_partner_id",
+          "CREATE INDEX ix_fi_debtor_partner_id ON public.fiscal_invoices USING btree (debtor_partner_id)",
+          true
+        ],
+        [
+          "ix_fi_delivery_id",
+          "CREATE INDEX ix_fi_delivery_id ON public.fiscal_invoices USING btree (delivery_id)",
+          true
+        ],
+        [
+          "ix_fi_direction",
+          "CREATE INDEX ix_fi_direction ON public.fiscal_invoices USING btree (direction) WHERE (direction IS NOT NULL)",
+          true
+        ],
+        [
+          "ix_fi_fiscal_operation_type",
+          "CREATE INDEX ix_fi_fiscal_operation_type ON public.fiscal_invoices USING btree (fiscal_operation_type) WHERE (fiscal_operation_type IS NOT NULL)",
+          true
+        ],
+        [
+          "ix_fi_parent_invoice_id",
+          "CREATE INDEX ix_fi_parent_invoice_id ON public.fiscal_invoices USING btree (parent_invoice_id)",
+          true
+        ],
+        [
+          "ix_fi_substitution_invoice_id",
+          "CREATE INDEX ix_fi_substitution_invoice_id ON public.fiscal_invoices USING btree (substitution_invoice_id)",
+          true
+        ],
+        [
+          "ix_fi_xml_document_id",
+          "CREATE INDEX ix_fi_xml_document_id ON public.fiscal_invoices USING btree (xml_document_id)",
+          true
+        ],
+        [
+          "ix_fiscal_invoices_company_settings",
+          "CREATE INDEX ix_fiscal_invoices_company_settings ON public.fiscal_invoices USING btree (company_settings_id)",
+          true
+        ],
+        [
+          "ix_fiscal_invoices_customer_id",
+          "CREATE INDEX ix_fiscal_invoices_customer_id ON public.fiscal_invoices USING btree (customer_id)",
+          true
+        ],
+        [
+          "ux_fi_access_key",
+          "CREATE UNIQUE INDEX ux_fi_access_key ON public.fiscal_invoices USING btree (access_key) WHERE (access_key IS NOT NULL)",
+          true
+        ],
+        [
+          "ux_fi_env_doc_model_series_number_company",
+          "CREATE UNIQUE INDEX ux_fi_env_doc_model_series_number_company ON public.fiscal_invoices USING btree (company_cnpj, document_model, environment, series, invoice_number) WHERE ((document_model IS NOT NULL) AND (series IS NOT NULL) AND (invoice_number IS NOT NULL) AND (company_cnpj IS NOT NULL) AND (environment IS NOT NULL))",
+          true
+        ],
+        [
+          "ux_fi_idempotency_key",
+          "CREATE UNIQUE INDEX ux_fi_idempotency_key ON public.fiscal_invoices USING btree (idempotency_key) WHERE (idempotency_key IS NOT NULL)",
+          true
+        ],
+        [
+          "ux_fi_provider_env_model_ref",
+          "CREATE UNIQUE INDEX ux_fi_provider_env_model_ref ON public.fiscal_invoices USING btree (provider, environment, document_model, provider_reference) WHERE (provider_reference IS NOT NULL)",
+          true
+        ],
+        [
+          "ux_fiscal_invoice_scope_nfe",
+          "CREATE UNIQUE INDEX ux_fiscal_invoice_scope_nfe ON public.fiscal_invoices USING btree (source_type, source_id, billing_scope) WHERE ((document_model = 'NFE'::text) AND (source_id IS NOT NULL) AND (status <> 'CANCELED'::text))",
+          true
+        ]
+      ],
+      "policies": [
+        [
+          "fi_producer_read",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "(platform_private.has_role(( SELECT auth.uid() AS uid), 'cliente_produtor'::app_role) AND (((receivable_id IS NOT NULL) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = fiscal_invoices.receivable_id) AND (ar.customer_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))))))) OR ((delivery_id IS NOT NULL) AND (EXISTS ( SELECT 1\n   FROM entregas e\n  WHERE ((e.id = fiscal_invoices.delivery_id) AND (e.cliente_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid))))))))))",
+          null
+        ],
+        [
+          "fi_staff_delete",
+          "d",
+          true,
+          [
+            "authenticated"
+          ],
+          "(false AND h15_company_access(company_settings_id))",
+          null
+        ],
+        [
+          "fi_staff_insert",
+          "a",
+          true,
+          [
+            "authenticated"
+          ],
+          null,
+          "((platform_private.has_role(auth.uid(), 'administrador'::app_role) OR platform_private.has_role(auth.uid(), 'financeiro'::app_role)) AND h15_company_access(company_settings_id) AND (organization_id = platform_private.h15_actor_organization()))"
+        ],
+        [
+          "fi_staff_select",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "((platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role)) AND h15_company_access(company_settings_id))",
+          null
+        ],
+        [
+          "fi_staff_update",
+          "w",
+          true,
+          [
+            "authenticated"
+          ],
+          "((platform_private.has_role(auth.uid(), 'administrador'::app_role) OR platform_private.has_role(auth.uid(), 'financeiro'::app_role)) AND h15_company_access(company_settings_id) AND (organization_id = platform_private.h15_actor_organization()))",
+          "((platform_private.has_role(auth.uid(), 'administrador'::app_role) OR platform_private.has_role(auth.uid(), 'financeiro'::app_role)) AND h15_company_access(company_settings_id) AND (organization_id = platform_private.h15_actor_organization()))"
+        ],
+        [
+          "tenant_isolation_d51_5",
+          "*",
+          false,
+          [
+            "authenticated"
+          ],
+          "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))",
+          "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"
+        ]
+      ],
+      "triggers": [
+        [
+          "a00_delivery_no_downstream",
+          "CREATE TRIGGER a00_delivery_no_downstream BEFORE INSERT OR DELETE OR UPDATE ON public.fiscal_invoices FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_no_downstream_20261030()",
+          "O",
+          "95e0e5a84ef511cd72d7807351f61cf4"
+        ],
+        [
+          "h15_invoice_integrity",
+          "CREATE TRIGGER h15_invoice_integrity BEFORE INSERT OR UPDATE ON public.fiscal_invoices FOR EACH ROW EXECUTE FUNCTION h15_invoice_integrity()",
+          "O",
+          "3935fc3eef39373ab7c2cede1894d812"
+        ],
+        [
+          "h15_related_integrity",
+          "CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_invoices FOR EACH ROW EXECUTE FUNCTION h15_related_integrity('company_settings_id', 'company_fiscal_settings', 'parent_invoice_id', 'fiscal_invoices', 'substitution_invoice_id', 'fiscal_invoices')",
+          "O",
+          "0ff600469a00ffb6d4cd4ec4450d29b5"
+        ],
+        [
+          "tenant_organization_guard",
+          "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.fiscal_invoices FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()",
+          "O",
+          "d01a740c1e3e02407131d2b9228bf658"
+        ],
+        [
+          "trg_audit_fiscal_status",
+          "CREATE TRIGGER trg_audit_fiscal_status AFTER UPDATE ON public.fiscal_invoices FOR EACH ROW EXECUTE FUNCTION fn_audit_fiscal_status()",
+          "O",
+          "89ad79839a81240ee52c659060ab1795"
+        ],
+        [
+          "trg_fi_audit",
+          "CREATE TRIGGER trg_fi_audit AFTER INSERT OR DELETE OR UPDATE ON public.fiscal_invoices FOR EACH ROW EXECUTE FUNCTION fn_financial_audit()",
+          "O",
+          "46f777c2020ff9a059a80ae6dab4bd12"
+        ],
+        [
+          "trg_fi_sinief20_snapshot_immutable",
+          "CREATE TRIGGER trg_fi_sinief20_snapshot_immutable BEFORE UPDATE OF original_recipient_snapshot ON public.fiscal_invoices FOR EACH ROW EXECUTE FUNCTION fiscal_sinief20_snapshot_immutable()",
+          "O",
+          "b3d75f4259360b3c7c7c4f5977f4c7ac"
+        ],
+        [
+          "trg_fi_updated",
+          "CREATE TRIGGER trg_fi_updated BEFORE UPDATE ON public.fiscal_invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()",
+          "O",
+          "b1930ed5bca3be839f783c6202ab8147"
+        ],
+        [
+          "trg_fiscal_audit_fiscal_invoices",
+          "CREATE TRIGGER trg_fiscal_audit_fiscal_invoices AFTER INSERT OR DELETE OR UPDATE ON public.fiscal_invoices FOR EACH ROW EXECUTE FUNCTION fiscal_audit_trigger()",
+          "O",
+          "5083ccb4946ee883c08011bfafce4513"
+        ],
+        [
+          "trg_fiscal_invoice_sync_normalized_status",
+          "CREATE TRIGGER trg_fiscal_invoice_sync_normalized_status BEFORE INSERT OR UPDATE OF status ON public.fiscal_invoices FOR EACH ROW EXECUTE FUNCTION tg_fiscal_invoice_sync_normalized_status()",
+          "O",
+          "384e42b0041d59a86e4f696be8b4b50a"
+        ],
+        [
+          "trg_h7_fiscal_invoice_immutable",
+          "CREATE TRIGGER trg_h7_fiscal_invoice_immutable BEFORE UPDATE ON public.fiscal_invoices FOR EACH ROW EXECUTE FUNCTION tg_h7_fiscal_invoice_immutable_v1()",
+          "O",
+          "8476dc6c6672b500406d0388da380e83"
+        ],
+        [
+          "trg_h7j_fiscal_invoice_delete_guard",
+          "CREATE TRIGGER trg_h7j_fiscal_invoice_delete_guard BEFORE DELETE ON public.fiscal_invoices FOR EACH ROW EXECUTE FUNCTION fn_h7j_fiscal_invoice_delete_guard()",
+          "O",
+          "91542df1170e1989da0cd96200c3a0ee"
+        ]
+      ],
+      "force_rls": false,
+      "constraints": [
+        [
+          "chk_fi_direction",
+          "CHECK (((direction IS NULL) OR (direction = ANY (ARRAY['OUT'::text, 'IN'::text]))))",
+          true
+        ],
+        [
+          "chk_fi_document_model",
+          "CHECK (((document_model IS NULL) OR (document_model = ANY (ARRAY['NFE'::text, 'NFSE'::text, 'OTHER'::text]))))",
+          true
+        ],
+        [
+          "chk_fi_document_origin",
+          "CHECK (((document_origin IS NULL) OR (document_origin = ANY (ARRAY['MANUAL_RECORD'::text, 'EXTERNAL_IMPORTED'::text, 'SYSTEM_PREPARED'::text, 'PROVIDER_INTEGRATED'::text]))))",
+          true
+        ],
+        [
+          "chk_fi_environment",
+          "CHECK (((environment IS NULL) OR (environment = ANY (ARRAY['NOT_CONFIGURED'::text, 'HOMOLOGATION'::text, 'PRODUCTION'::text]))))",
+          true
+        ],
+        [
+          "chk_fi_fin_nfe",
+          "CHECK (((fin_nfe IS NULL) OR (fin_nfe = ANY (ARRAY[1, 2, 3, 4, 5, 6]))))",
+          true
+        ],
+        [
+          "chk_fi_fiscal_operation_type",
+          "CHECK (((fiscal_operation_type IS NULL) OR (fiscal_operation_type = ANY (ARRAY['NORMAL'::text, 'ADVANCE_PAYMENT'::text, 'EFFECTIVE_SALE_AFTER_ADVANCE'::text, 'STOCK_LOSS'::text, 'VALUE_QUANTITY_REDUCTION'::text, 'DELIVERY_REFUSAL_TOTAL'::text, 'DELIVERY_REFUSAL_PARTIAL'::text, 'RECIPIENT_NOT_FOUND'::text]))))",
+          true
+        ],
+        [
+          "chk_fi_no_self_parent",
+          "CHECK (((parent_invoice_id IS NULL) OR (parent_invoice_id <> id)))",
+          true
+        ],
+        [
+          "chk_fi_no_self_substitution",
+          "CHECK (((substitution_invoice_id IS NULL) OR (substitution_invoice_id <> id)))",
+          true
+        ],
+        [
+          "chk_fi_normalized_status",
+          "CHECK (((normalized_status IS NULL) OR (normalized_status = ANY (ARRAY['LEGACY_RECORDED'::text, 'DRAFT'::text, 'VALIDATING'::text, 'READY'::text, 'QUEUED'::text, 'PROCESSING'::text, 'AUTHORIZED'::text, 'REJECTED'::text, 'ERROR'::text, 'CANCEL_REQUESTED'::text, 'CANCELED'::text, 'SUBSTITUTED'::text]))))",
+          true
+        ],
+        [
+          "chk_fi_reconciliation_status",
+          "CHECK (((reconciliation_status IS NULL) OR (reconciliation_status = ANY (ARRAY['NOT_APPLICABLE'::text, 'PENDING'::text, 'RECONCILED'::text, 'DIVERGENT'::text, 'REQUIRES_REVIEW'::text]))))",
+          true
+        ],
+        [
+          "chk_fi_sinief20_icms_conditional",
+          "CHECK (((icms_amount IS NULL) OR ((icms_due IS TRUE) AND (icms_amount >= (0)::numeric))))",
+          true
+        ],
+        [
+          "chk_fi_sinief20_reduction_dest_snapshot",
+          "CHECK (((fiscal_operation_type IS DISTINCT FROM 'VALUE_QUANTITY_REDUCTION'::text) OR ((original_recipient_snapshot IS NOT NULL) AND (jsonb_typeof(original_recipient_snapshot) = 'object'::text) AND (original_recipient_snapshot ?& ARRAY['kind'::text, 'cnpjCpf'::text, 'capturedAt'::text, 'source'::text]) AND (btrim(COALESCE((original_recipient_snapshot ->> 'kind'::text), ''::text)) = ANY (ARRAY['EXTERNAL'::text, 'INTERNAL'::text])) AND (btrim(COALESCE((original_recipient_snapshot ->> 'cnpjCpf'::text), ''::text)) <> ''::text) AND (btrim(COALESCE((original_recipient_snapshot ->> 'source'::text), ''::text)) <> ''::text) AND (btrim(COALESCE((original_recipient_snapshot ->> 'capturedAt'::text), ''::text)) <> ''::text) AND\nCASE\n    WHEN (btrim((original_recipient_snapshot ->> 'capturedAt'::text)) ~ '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:?\\d{2})$'::text) THEN ((btrim((original_recipient_snapshot ->> 'capturedAt'::text)))::timestamp with time zone IS NOT NULL)\n    ELSE false\nEND)))",
+          true
+        ],
+        [
+          "chk_fi_tp_nf_credito",
+          "CHECK (((tp_nf_credito IS NULL) OR ((tp_nf_credito >= 1) AND (tp_nf_credito <= 99))))",
+          true
+        ],
+        [
+          "chk_fi_tp_nf_debito",
+          "CHECK (((tp_nf_debito IS NULL) OR ((tp_nf_debito >= 1) AND (tp_nf_debito <= 99))))",
+          true
+        ],
+        [
+          "fi_customer_id_fk",
+          "FOREIGN KEY (customer_id) REFERENCES clientes(id) ON DELETE RESTRICT",
+          true
+        ],
+        [
+          "fi_fiscal_profile_snapshot_object",
+          "CHECK (((jsonb_typeof(fiscal_profile_snapshot) = 'object'::text) AND (NOT fiscal_json_has_sensitive_key(fiscal_profile_snapshot))))",
+          true
+        ],
+        [
+          "fi_homologation_status_domain",
+          "CHECK ((homologation_validation_status = ANY (ARRAY['NOT_VALIDATED'::text, 'READY'::text, 'INCOMPLETE'::text, 'BLOCKED'::text])))",
+          true
+        ],
+        [
+          "fi_homologation_summary_no_secrets",
+          "CHECK ((NOT fiscal_json_has_sensitive_key(homologation_validation_summary)))",
+          true
+        ],
+        [
+          "fi_homologation_summary_object",
+          "CHECK ((jsonb_typeof(homologation_validation_summary) = 'object'::text))",
+          true
+        ],
+        [
+          "fi_tax_snapshot_object",
+          "CHECK (((jsonb_typeof(tax_snapshot) = 'object'::text) AND (NOT fiscal_json_has_sensitive_key(tax_snapshot))))",
+          true
+        ],
+        [
+          "fiscal_invoices_company_settings_id_fkey",
+          "FOREIGN KEY (company_settings_id) REFERENCES company_fiscal_settings(id) ON DELETE RESTRICT",
+          true
+        ],
+        [
+          "fiscal_invoices_danfe_document_id_fkey",
+          "FOREIGN KEY (danfe_document_id) REFERENCES financial_documents(id)",
+          true
+        ],
+        [
+          "fiscal_invoices_debtor_customer_id_fkey",
+          "FOREIGN KEY (debtor_customer_id) REFERENCES clientes(id)",
+          true
+        ],
+        [
+          "fiscal_invoices_debtor_partner_id_fkey",
+          "FOREIGN KEY (debtor_partner_id) REFERENCES partner_accounts(id)",
+          true
+        ],
+        [
+          "fiscal_invoices_delivery_id_fkey",
+          "FOREIGN KEY (delivery_id) REFERENCES entregas(id) ON DELETE SET NULL",
+          true
+        ],
+        [
+          "fiscal_invoices_invoice_type_check",
+          "CHECK ((invoice_type = ANY (ARRAY['NFE'::text, 'NFSE'::text, 'NFCE'::text, 'OUTRO'::text])))",
+          true
+        ],
+        [
+          "fiscal_invoices_organization_id_fkey",
+          "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+          true
+        ],
+        [
+          "fiscal_invoices_parent_invoice_id_fkey",
+          "FOREIGN KEY (parent_invoice_id) REFERENCES fiscal_invoices(id) ON DELETE RESTRICT",
+          true
+        ],
+        [
+          "fiscal_invoices_partner_order_id_fkey",
+          "FOREIGN KEY (partner_order_id) REFERENCES partner_orders(id) ON DELETE SET NULL",
+          true
+        ],
+        [
+          "fiscal_invoices_pkey",
+          "PRIMARY KEY (id)",
+          true
+        ],
+        [
+          "fiscal_invoices_receivable_id_fkey",
+          "FOREIGN KEY (receivable_id) REFERENCES accounts_receivable(id) ON DELETE SET NULL",
+          true
+        ],
+        [
+          "fiscal_invoices_status_check",
+          "CHECK ((status = ANY (ARRAY['DRAFT'::text, 'PENDING'::text, 'ISSUED'::text, 'CANCELED'::text, 'ERROR'::text])))",
+          true
+        ],
+        [
+          "fiscal_invoices_substitution_invoice_id_fkey",
+          "FOREIGN KEY (substitution_invoice_id) REFERENCES fiscal_invoices(id) ON DELETE RESTRICT",
+          true
+        ],
+        [
+          "fiscal_invoices_tp_emis_chk",
+          "CHECK ((tp_emis = 1))",
+          true
+        ],
+        [
+          "fiscal_invoices_xml_document_id_fkey",
+          "FOREIGN KEY (xml_document_id) REFERENCES financial_documents(id)",
+          true
+        ]
+      ]
+    },
+    "public.partner_accounts": {
+      "acl": [
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "id",
+          "uuid",
+          true,
+          "gen_random_uuid()"
+        ],
+        [
+          "client_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "codigo",
+          "text",
+          false,
+          null
+        ],
+        [
+          "razao_social",
+          "text",
+          true,
+          null
+        ],
+        [
+          "nome_fantasia",
+          "text",
+          false,
+          null
+        ],
+        [
+          "cnpj",
+          "text",
+          false,
+          null
+        ],
+        [
+          "desconto_padrao",
+          "numeric(5,2)",
+          true,
+          "0"
+        ],
+        [
+          "observacoes",
+          "text",
+          false,
+          null
+        ],
+        [
+          "ativo",
+          "boolean",
+          true,
+          "true"
+        ],
+        [
+          "deleted_at",
+          "timestamp with time zone",
+          false,
+          null
+        ],
+        [
+          "created_by",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "created_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "updated_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "partner_type",
+          "partner_type_enum",
+          false,
+          null
+        ],
+        [
+          "commercial_region",
+          "text",
+          false,
+          null
+        ],
+        [
+          "commercial_state",
+          "text",
+          false,
+          null
+        ],
+        [
+          "commercial_city",
+          "text",
+          false,
+          null
+        ],
+        [
+          "consultor_responsavel",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "origem_parceiro",
+          "text",
+          false,
+          null
+        ],
+        [
+          "inscricao_estadual",
+          "text",
+          false,
+          null
+        ],
+        [
+          "inscricao_municipal",
+          "text",
+          false,
+          null
+        ],
+        [
+          "regime_tributario",
+          "partner_regime_tributario",
+          false,
+          null
+        ],
+        [
+          "suframa",
+          "text",
+          false,
+          null
+        ],
+        [
+          "segmento",
+          "partner_segmento",
+          false,
+          null
+        ],
+        [
+          "porte",
+          "partner_porte",
+          false,
+          null
+        ],
+        [
+          "data_inicio_parceria",
+          "date",
+          false,
+          null
+        ],
+        [
+          "cep",
+          "text",
+          false,
+          null
+        ],
+        [
+          "endereco_logradouro",
+          "text",
+          false,
+          null
+        ],
+        [
+          "endereco_numero",
+          "text",
+          false,
+          null
+        ],
+        [
+          "endereco_complemento",
+          "text",
+          false,
+          null
+        ],
+        [
+          "endereco_bairro",
+          "text",
+          false,
+          null
+        ],
+        [
+          "email_comercial",
+          "text",
+          false,
+          null
+        ],
+        [
+          "email_financeiro",
+          "text",
+          false,
+          null
+        ],
+        [
+          "email_nfe",
+          "text",
+          false,
+          null
+        ],
+        [
+          "telefone_comercial",
+          "text",
+          false,
+          null
+        ],
+        [
+          "whatsapp_comercial",
+          "text",
+          false,
+          null
+        ],
+        [
+          "site",
+          "text",
+          false,
+          null
+        ],
+        [
+          "limite_credito_brl",
+          "numeric(14,2)",
+          false,
+          null
+        ],
+        [
+          "prazo_pagamento_padrao_dias",
+          "integer",
+          false,
+          null
+        ],
+        [
+          "condicao_pagamento_padrao",
+          "text",
+          false,
+          null
+        ],
+        [
+          "forma_pagamento_preferida",
+          "text",
+          false,
+          null
+        ],
+        [
+          "dados_bancarios",
+          "jsonb",
+          false,
+          null
+        ],
+        [
+          "comissao_percentual",
+          "numeric(5,2)",
+          false,
+          null
+        ],
+        [
+          "meta_mensal_brl",
+          "numeric(14,2)",
+          false,
+          null
+        ],
+        [
+          "endereco_entrega_igual_comercial",
+          "boolean",
+          true,
+          "true"
+        ],
+        [
+          "entrega_cep",
+          "text",
+          false,
+          null
+        ],
+        [
+          "entrega_logradouro",
+          "text",
+          false,
+          null
+        ],
+        [
+          "entrega_numero",
+          "text",
+          false,
+          null
+        ],
+        [
+          "entrega_complemento",
+          "text",
+          false,
+          null
+        ],
+        [
+          "entrega_bairro",
+          "text",
+          false,
+          null
+        ],
+        [
+          "entrega_cidade",
+          "text",
+          false,
+          null
+        ],
+        [
+          "entrega_estado",
+          "text",
+          false,
+          null
+        ],
+        [
+          "transportadora_preferida",
+          "text",
+          false,
+          null
+        ],
+        [
+          "incoterm",
+          "text",
+          false,
+          null
+        ],
+        [
+          "marca_nome",
+          "text",
+          false,
+          null
+        ],
+        [
+          "marca_logo_url",
+          "text",
+          false,
+          null
+        ],
+        [
+          "marca_cor_primaria",
+          "text",
+          false,
+          null
+        ],
+        [
+          "commercial_owner_organization_id",
+          "uuid",
+          false,
+          null
+        ]
+      ],
+      "indexes": [
+        [
+          "idx_partner_accounts_ativo",
+          "CREATE INDEX idx_partner_accounts_ativo ON public.partner_accounts USING btree (ativo)",
+          true
+        ],
+        [
+          "idx_partner_accounts_client",
+          "CREATE INDEX idx_partner_accounts_client ON public.partner_accounts USING btree (client_id)",
+          true
+        ],
+        [
+          "idx_partner_accounts_codigo",
+          "CREATE INDEX idx_partner_accounts_codigo ON public.partner_accounts USING btree (codigo)",
+          true
+        ],
+        [
+          "idx_partner_accounts_consultor",
+          "CREATE INDEX idx_partner_accounts_consultor ON public.partner_accounts USING btree (consultor_responsavel)",
+          true
+        ],
+        [
+          "idx_partner_accounts_region",
+          "CREATE INDEX idx_partner_accounts_region ON public.partner_accounts USING btree (commercial_region)",
+          true
+        ],
+        [
+          "idx_partner_accounts_type",
+          "CREATE INDEX idx_partner_accounts_type ON public.partner_accounts USING btree (partner_type)",
+          true
+        ],
+        [
+          "partner_accounts_codigo_key",
+          "CREATE UNIQUE INDEX partner_accounts_codigo_key ON public.partner_accounts USING btree (codigo)",
+          true
+        ],
+        [
+          "partner_accounts_pkey",
+          "CREATE UNIQUE INDEX partner_accounts_pkey ON public.partner_accounts USING btree (id)",
+          true
+        ]
+      ],
+      "policies": [
+        [
+          "b2b_direct_partner_row_containment",
+          "*",
+          false,
+          [
+            "authenticated"
+          ],
+          "platform_private.b2b_direct_partner_row_allowed()",
+          "platform_private.b2b_direct_partner_row_allowed()"
+        ],
+        [
+          "d51_5_partner_accounts_tenant_guard",
+          "*",
+          false,
+          [
+            "authenticated"
+          ],
+          "(platform_private.b2b_coherent_self_partner(id) OR ((commercial_owner_organization_id = h15_actor_organization()) AND ((client_id IS NULL) OR (EXISTS ( SELECT 1\n   FROM clientes c\n  WHERE ((c.id = partner_accounts.client_id) AND (c.organization_id = partner_accounts.commercial_owner_organization_id)))))) OR ((commercial_owner_organization_id IS NULL) AND (EXISTS ( SELECT 1\n   FROM clientes c\n  WHERE ((c.id = partner_accounts.client_id) AND (c.organization_id = h15_actor_organization()))))))",
+          "((commercial_owner_organization_id = h15_actor_organization()) AND ((client_id IS NULL) OR (EXISTS ( SELECT 1\n   FROM clientes c\n  WHERE ((c.id = partner_accounts.client_id) AND (c.organization_id = partner_accounts.commercial_owner_organization_id))))))"
+        ],
+        [
+          "partner_accounts_insert",
+          "a",
+          true,
+          [
+            "authenticated"
+          ],
+          null,
+          "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role))"
+        ],
+        [
+          "partner_accounts_select",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role))",
+          null
+        ],
+        [
+          "partner_accounts_self_select",
+          "r",
+          true,
+          [
+            "PUBLIC"
+          ],
+          "platform_private.b2b_coherent_self_partner(id)",
+          null
+        ],
+        [
+          "partner_accounts_update",
+          "w",
+          true,
+          [
+            "authenticated"
+          ],
+          "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role))",
+          "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role))"
+        ]
+      ],
+      "triggers": [
+        [
+          "commercial_partner_registration_guard",
+          "CREATE TRIGGER commercial_partner_registration_guard BEFORE INSERT OR UPDATE ON public.partner_accounts FOR EACH ROW EXECUTE FUNCTION guard_commercial_partner_registration()",
+          "O",
+          "f60abac756fb4f371d6fccbb133dc2af"
+        ],
+        [
+          "trg_create_default_pfs",
+          "CREATE TRIGGER trg_create_default_pfs AFTER INSERT ON public.partner_accounts FOR EACH ROW EXECUTE FUNCTION tg_create_default_pfs()",
+          "O",
+          "76bd832ba608662d84f1641f8a3b8226"
+        ],
+        [
+          "trg_partner_accounts_audit",
+          "CREATE TRIGGER trg_partner_accounts_audit AFTER INSERT OR UPDATE ON public.partner_accounts FOR EACH ROW EXECUTE FUNCTION partner_audit_trigger()",
+          "O",
+          "3b8aa711642b2d6fd5b739a21d36e4ba"
+        ],
+        [
+          "trg_partner_accounts_updated_at",
+          "CREATE TRIGGER trg_partner_accounts_updated_at BEFORE UPDATE ON public.partner_accounts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()",
+          "O",
+          "b1930ed5bca3be839f783c6202ab8147"
+        ],
+        [
+          "trg_recalc_partner_prices_on_default_change",
+          "CREATE TRIGGER trg_recalc_partner_prices_on_default_change AFTER UPDATE OF desconto_padrao ON public.partner_accounts FOR EACH ROW EXECUTE FUNCTION recalc_partner_prices_on_default_change()",
+          "O",
+          "127917c3a793e927e217159e4fbf3122"
+        ]
+      ],
+      "force_rls": false,
+      "constraints": [
+        [
+          "partner_accounts_client_id_fkey",
+          "FOREIGN KEY (client_id) REFERENCES clientes(id) ON DELETE SET NULL",
+          true
+        ],
+        [
+          "partner_accounts_codigo_key",
+          "UNIQUE (codigo)",
+          true
+        ],
+        [
+          "partner_accounts_comissao_range",
+          "CHECK (((comissao_percentual IS NULL) OR ((comissao_percentual >= (0)::numeric) AND (comissao_percentual <= (100)::numeric))))",
+          true
+        ],
+        [
+          "partner_accounts_commercial_owner_organization_id_fkey",
+          "FOREIGN KEY (commercial_owner_organization_id) REFERENCES organizations(id)",
+          true
+        ],
+        [
+          "partner_accounts_consultor_responsavel_fkey",
+          "FOREIGN KEY (consultor_responsavel) REFERENCES profiles(id) ON DELETE SET NULL",
+          true
+        ],
+        [
+          "partner_accounts_desconto_padrao_check",
+          "CHECK (((desconto_padrao >= (0)::numeric) AND (desconto_padrao <= (100)::numeric)))",
+          true
+        ],
+        [
+          "partner_accounts_limite_credito_pos",
+          "CHECK (((limite_credito_brl IS NULL) OR (limite_credito_brl >= (0)::numeric)))",
+          true
+        ],
+        [
+          "partner_accounts_marca_cor_hex",
+          "CHECK (((marca_cor_primaria IS NULL) OR (marca_cor_primaria ~ '^#[0-9a-fA-F]{6}$'::text)))",
+          true
+        ],
+        [
+          "partner_accounts_marca_nome_len",
+          "CHECK (((marca_nome IS NULL) OR ((char_length(btrim(marca_nome)) >= 2) AND (char_length(btrim(marca_nome)) <= 80))))",
+          true
+        ],
+        [
+          "partner_accounts_pkey",
+          "PRIMARY KEY (id)",
+          true
+        ]
+      ]
+    },
+    "public.accounts_receivable": {
+      "acl": [
+        "anon=arwdm/postgres",
+        "authenticated=arwdm/postgres",
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "id",
+          "uuid",
+          true,
+          "gen_random_uuid()"
+        ],
+        [
+          "origin_type",
+          "text",
+          true,
+          null
+        ],
+        [
+          "origin_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "customer_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "description",
+          "text",
+          true,
+          null
+        ],
+        [
+          "category_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "cost_center_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "total_amount",
+          "numeric(14,2)",
+          true,
+          null
+        ],
+        [
+          "issue_date",
+          "date",
+          true,
+          "CURRENT_DATE"
+        ],
+        [
+          "first_due_date",
+          "date",
+          true,
+          null
+        ],
+        [
+          "installment_count",
+          "integer",
+          true,
+          "1"
+        ],
+        [
+          "status",
+          "text",
+          true,
+          "'OPEN'::text"
+        ],
+        [
+          "fiscal_invoice_required",
+          "boolean",
+          true,
+          "false"
+        ],
+        [
+          "fiscal_invoice_status",
+          "text",
+          true,
+          "'NOT_REQUIRED'::text"
+        ],
+        [
+          "notes",
+          "text",
+          false,
+          null
+        ],
+        [
+          "created_by",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "created_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "updated_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "payment_method_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "fiscal_invoice_number",
+          "text",
+          false,
+          null
+        ],
+        [
+          "fiscal_access_key",
+          "text",
+          false,
+          null
+        ],
+        [
+          "fiscal_issue_date",
+          "date",
+          false,
+          null
+        ],
+        [
+          "recurring_template_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "reference_month",
+          "date",
+          false,
+          null
+        ],
+        [
+          "auto_generated",
+          "boolean",
+          true,
+          "false"
+        ],
+        [
+          "partner_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "external_payment_id",
+          "text",
+          false,
+          null
+        ],
+        [
+          "payment_gateway",
+          "text",
+          false,
+          null
+        ],
+        [
+          "pix_qr_code",
+          "text",
+          false,
+          null
+        ],
+        [
+          "pix_copia_cola",
+          "text",
+          false,
+          null
+        ],
+        [
+          "boleto_url",
+          "text",
+          false,
+          null
+        ],
+        [
+          "fiscal_requirement_source",
+          "text",
+          false,
+          null
+        ],
+        [
+          "fiscal_policy_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "fiscal_exemption_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "organization_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "b2b_document_id",
+          "uuid",
+          false,
+          null
+        ]
+      ],
+      "indexes": [
+        [
+          "accounts_receivable_organization_id_idx",
+          "CREATE INDEX accounts_receivable_organization_id_idx ON public.accounts_receivable USING btree (organization_id)",
+          true
+        ],
+        [
+          "accounts_receivable_pkey",
+          "CREATE UNIQUE INDEX accounts_receivable_pkey ON public.accounts_receivable USING btree (id)",
+          true
+        ],
+        [
+          "b2b_one_title_per_document",
+          "CREATE UNIQUE INDEX b2b_one_title_per_document ON public.accounts_receivable USING btree (b2b_document_id) WHERE (b2b_document_id IS NOT NULL)",
+          true
+        ],
+        [
+          "idx_ar_created_at",
+          "CREATE INDEX idx_ar_created_at ON public.accounts_receivable USING btree (created_at DESC)",
+          true
+        ],
+        [
+          "idx_ar_customer",
+          "CREATE INDEX idx_ar_customer ON public.accounts_receivable USING btree (customer_id)",
+          true
+        ],
+        [
+          "idx_ar_customer_status",
+          "CREATE INDEX idx_ar_customer_status ON public.accounts_receivable USING btree (customer_id, status)",
+          true
+        ],
+        [
+          "idx_ar_issue_date",
+          "CREATE INDEX idx_ar_issue_date ON public.accounts_receivable USING btree (issue_date)",
+          true
+        ],
+        [
+          "idx_ar_origin",
+          "CREATE INDEX idx_ar_origin ON public.accounts_receivable USING btree (origin_type, origin_id)",
+          true
+        ],
+        [
+          "idx_ar_partner_b2b",
+          "CREATE INDEX idx_ar_partner_b2b ON public.accounts_receivable USING btree (partner_id) WHERE (origin_type = 'B2B_ORDER'::text)",
+          true
+        ],
+        [
+          "idx_ar_refmonth",
+          "CREATE INDEX idx_ar_refmonth ON public.accounts_receivable USING btree (reference_month)",
+          true
+        ],
+        [
+          "idx_ar_status",
+          "CREATE INDEX idx_ar_status ON public.accounts_receivable USING btree (status)",
+          true
+        ],
+        [
+          "idx_ar_status_due",
+          "CREATE INDEX idx_ar_status_due ON public.accounts_receivable USING btree (status, first_due_date)",
+          true
+        ],
+        [
+          "ux_ar_one_active_per_b2b_order",
+          "CREATE UNIQUE INDEX ux_ar_one_active_per_b2b_order ON public.accounts_receivable USING btree (origin_id) WHERE ((origin_type = 'B2B_ORDER'::text) AND (status <> 'CANCELED'::text) AND (b2b_document_id IS NULL))",
+          true
+        ],
+        [
+          "ux_ar_one_per_delivery",
+          "CREATE UNIQUE INDEX ux_ar_one_per_delivery ON public.accounts_receivable USING btree (origin_id) WHERE ((origin_type = 'DELIVERY'::text) AND (status <> 'CANCELED'::text))",
+          true
+        ]
+      ],
+      "policies": [
+        [
+          "accounts_receivable_insert_financial",
+          "a",
+          true,
+          [
+            "authenticated"
+          ],
+          null,
+          "is_financial_staff(( SELECT auth.uid() AS uid))"
+        ],
+        [
+          "accounts_receivable_select_financial",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "is_financial_staff(( SELECT auth.uid() AS uid))",
+          null
+        ],
+        [
+          "accounts_receivable_update_financial",
+          "w",
+          true,
+          [
+            "authenticated"
+          ],
+          "is_financial_staff(( SELECT auth.uid() AS uid))",
+          "is_financial_staff(( SELECT auth.uid() AS uid))"
+        ],
+        [
+          "ar_b2b_readers",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "((origin_type = 'B2B_ORDER'::text) AND (platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role)))",
+          null
+        ],
+        [
+          "ar_partner_select_own_b2b",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "((origin_type = 'B2B_ORDER'::text) AND platform_private.has_role(( SELECT auth.uid() AS uid), 'parceiro_b2b'::app_role) AND (partner_id = ( SELECT ((platform_private.b2b_commercial_context() ->> 'partner_id'::text))::uuid AS uuid)))",
+          null
+        ],
+        [
+          "ar_producer_read",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "(platform_private.has_role(( SELECT auth.uid() AS uid), 'cliente_produtor'::app_role) AND (customer_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))) AND (partner_id IS NULL) AND (origin_type IS DISTINCT FROM 'B2B_ORDER'::text))",
+          null
+        ],
+        [
+          "financial_rpc_only_delete",
+          "d",
+          false,
+          [
+            "authenticated"
+          ],
+          "false",
+          null
+        ],
+        [
+          "financial_rpc_only_insert",
+          "a",
+          false,
+          [
+            "authenticated"
+          ],
+          null,
+          "false"
+        ],
+        [
+          "financial_rpc_only_update",
+          "w",
+          false,
+          [
+            "authenticated"
+          ],
+          "false",
+          "false"
+        ],
+        [
+          "tenant_isolation_d51_5",
+          "*",
+          false,
+          [
+            "authenticated"
+          ],
+          "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))",
+          "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"
+        ]
+      ],
+      "triggers": [
+        [
+          "a00_delivery_no_downstream",
+          "CREATE TRIGGER a00_delivery_no_downstream BEFORE INSERT OR DELETE OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_no_downstream_20261030()",
+          "O",
+          "95e0e5a84ef511cd72d7807351f61cf4"
+        ],
+        [
+          "a01_b2b_fiscal_title_fence",
+          "CREATE TRIGGER a01_b2b_fiscal_title_fence BEFORE INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_title_insert_fence()",
+          "O",
+          "1c52d40031b79294adb6fa7f72bcdc61"
+        ],
+        [
+          "a01_b2b_fiscal_title_identity",
+          "CREATE TRIGGER a01_b2b_fiscal_title_identity BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_title_insert_fence()",
+          "O",
+          "1c52d40031b79294adb6fa7f72bcdc61"
+        ],
+        [
+          "b2b_fiscal_created_by_guard",
+          "CREATE TRIGGER b2b_fiscal_created_by_guard BEFORE INSERT OR UPDATE OF created_by, b2b_document_id, organization_id, partner_id ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_fiscal_created_by_guard()",
+          "O",
+          "fda23bf991e059ae8257adf232e56a1d"
+        ],
+        [
+          "d51_5_validate_tenant_links",
+          "CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, customer_id ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()",
+          "O",
+          "f470a25ba7e65b366c62ad3ac8aa3112"
+        ],
+        [
+          "tenant_organization_guard",
+          "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()",
+          "O",
+          "d01a740c1e3e02407131d2b9228bf658"
+        ],
+        [
+          "trg_ar_gen_installments",
+          "CREATE TRIGGER trg_ar_gen_installments AFTER INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_generate_receivable_installments()",
+          "O",
+          "4fa47b35665c13d3c9f0ce15262dd98c"
+        ],
+        [
+          "trg_ar_uat",
+          "CREATE TRIGGER trg_ar_uat BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()",
+          "O",
+          "b1930ed5bca3be839f783c6202ab8147"
+        ],
+        [
+          "trg_audit_ar",
+          "CREATE TRIGGER trg_audit_ar AFTER INSERT OR DELETE OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_financial_audit()",
+          "O",
+          "46f777c2020ff9a059a80ae6dab4bd12"
+        ],
+        [
+          "trg_h6_ar_snapshot",
+          "CREATE TRIGGER trg_h6_ar_snapshot BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_title_snapshot()",
+          "O",
+          "d9cc5c95f837de9d77cec2159e24bbf9"
+        ],
+        [
+          "trg_h6d_ar_no_delete",
+          "CREATE TRIGGER trg_h6d_ar_no_delete BEFORE DELETE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()",
+          "O",
+          "5c07dd23a0c9355c3fe11811004b0381"
+        ],
+        [
+          "trg_saas_gate",
+          "CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature('contas_receber')",
+          "O",
+          "13ed48832f81cbb35434688ca35fda4b"
+        ],
+        [
+          "trg_sync_b2b_financial_status",
+          "CREATE TRIGGER trg_sync_b2b_financial_status AFTER UPDATE OF status ON public.accounts_receivable FOR EACH ROW WHEN ((old.status IS DISTINCT FROM new.status)) EXECUTE FUNCTION tg_sync_b2b_financial_status()",
+          "O",
+          "e636fcf74c5e1c7c8037d5a17f525c27"
+        ],
+        [
+          "zz_b2b_shared_credit_guard",
+          "CREATE TRIGGER zz_b2b_shared_credit_guard BEFORE INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_shared_receivable_credit_guard()",
+          "O",
+          "dbcf1a2b836bebe5175dcfa6cd0bab83"
+        ]
+      ],
+      "force_rls": false,
+      "constraints": [
+        [
+          "accounts_receivable_b2b_document_id_fkey",
+          "FOREIGN KEY (b2b_document_id) REFERENCES platform_private.b2b_authorized_documents(id)",
+          true
+        ],
+        [
+          "accounts_receivable_category_id_fkey",
+          "FOREIGN KEY (category_id) REFERENCES financial_categories(id)",
+          true
+        ],
+        [
+          "accounts_receivable_cost_center_id_fkey",
+          "FOREIGN KEY (cost_center_id) REFERENCES financial_cost_centers(id)",
+          true
+        ],
+        [
+          "accounts_receivable_created_by_fkey",
+          "FOREIGN KEY (created_by) REFERENCES auth.users(id)",
+          true
+        ],
+        [
+          "accounts_receivable_customer_id_fkey",
+          "FOREIGN KEY (customer_id) REFERENCES clientes(id)",
+          true
+        ],
+        [
+          "accounts_receivable_fiscal_exemption_id_fkey",
+          "FOREIGN KEY (fiscal_exemption_id) REFERENCES fiscal_requirement_exemptions(id)",
+          true
+        ],
+        [
+          "accounts_receivable_fiscal_invoice_status_check",
+          "CHECK ((fiscal_invoice_status = ANY (ARRAY['NOT_REQUIRED'::text, 'PENDING'::text, 'ISSUED'::text, 'CANCELED'::text, 'PENDING_PARAMETRIZATION'::text, 'EXEMPT'::text])))",
+          true
+        ],
+        [
+          "accounts_receivable_installment_count_check",
+          "CHECK ((installment_count >= 1))",
+          true
+        ],
+        [
+          "accounts_receivable_organization_id_fkey",
+          "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+          true
+        ],
+        [
+          "accounts_receivable_origin_type_check",
+          "CHECK ((origin_type = ANY (ARRAY['DELIVERY'::text, 'SERVICE'::text, 'MANUAL'::text, 'RECURRING'::text, 'CONTRACT'::text, 'B2B_ORDER'::text])))",
+          true
+        ],
+        [
+          "accounts_receivable_partner_id_fkey",
+          "FOREIGN KEY (partner_id) REFERENCES partner_accounts(id)",
+          true
+        ],
+        [
+          "accounts_receivable_payment_method_id_fkey",
+          "FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id)",
+          true
+        ],
+        [
+          "accounts_receivable_pkey",
+          "PRIMARY KEY (id)",
+          true
+        ],
+        [
+          "accounts_receivable_recurring_template_id_fkey",
+          "FOREIGN KEY (recurring_template_id) REFERENCES recurring_financial_templates(id)",
+          true
+        ],
+        [
+          "accounts_receivable_status_check",
+          "CHECK ((status = ANY (ARRAY['OPEN'::text, 'PARTIAL'::text, 'PAID'::text, 'CANCELED'::text, 'OVERDUE'::text])))",
+          true
+        ],
+        [
+          "accounts_receivable_total_amount_check",
+          "CHECK ((total_amount >= (0)::numeric))",
+          true
+        ],
+        [
+          "ar_customer_or_partner",
+          "CHECK (((customer_id IS NOT NULL) OR (partner_id IS NOT NULL)))",
+          true
+        ]
+      ]
+    },
+    "public.financial_audit_log": {
+      "acl": [
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "id",
+          "uuid",
+          true,
+          "gen_random_uuid()"
+        ],
+        [
+          "entity_type",
+          "text",
+          true,
+          null
+        ],
+        [
+          "entity_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "action",
+          "text",
+          true,
+          null
+        ],
+        [
+          "old_data",
+          "jsonb",
+          false,
+          null
+        ],
+        [
+          "new_data",
+          "jsonb",
+          false,
+          null
+        ],
+        [
+          "performed_by",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "performed_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "reason",
+          "text",
+          false,
+          null
+        ]
+      ],
+      "indexes": [
+        [
+          "financial_audit_log_pkey",
+          "CREATE UNIQUE INDEX financial_audit_log_pkey ON public.financial_audit_log USING btree (id)",
+          true
+        ],
+        [
+          "idx_fal_entity",
+          "CREATE INDEX idx_fal_entity ON public.financial_audit_log USING btree (entity_type, entity_id)",
+          true
+        ]
+      ],
+      "policies": [
+        [
+          "Financial staff read audit",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "is_financial_staff(( SELECT auth.uid() AS uid))",
+          null
+        ],
+        [
+          "financial_audit_source_tenant_scope",
+          "r",
+          false,
+          [
+            "authenticated"
+          ],
+          "((( SELECT h15_actor_organization() AS h15_actor_organization) IS NOT NULL) AND\nCASE\n    WHEN ((action = 'FINANCIAL_INSTALLMENTS_CUSTOMIZED'::text) AND (entity_type = 'accounts_receivable_installments'::text)) THEN (EXISTS ( SELECT 1\n       FROM accounts_receivable source\n      WHERE ((source.id = financial_audit_log.entity_id) AND (source.organization_id = ( SELECT h15_actor_organization() AS h15_actor_organization)))))\n    WHEN ((action = 'FINANCIAL_INSTALLMENTS_CUSTOMIZED'::text) AND (entity_type = 'accounts_payable_installments'::text)) THEN (EXISTS ( SELECT 1\n       FROM accounts_payable source\n      WHERE ((source.id = financial_audit_log.entity_id) AND (source.organization_id = ( SELECT h15_actor_organization() AS h15_actor_organization)))))\n    WHEN (entity_type = 'accounts_receivable'::text) THEN (EXISTS ( SELECT 1\n       FROM accounts_receivable source\n      WHERE ((source.id = financial_audit_log.entity_id) AND (source.organization_id = ( SELECT h15_actor_organization() AS h15_actor_organization)))))\n    WHEN (entity_type = 'accounts_payable'::text) THEN (EXISTS ( SELECT 1\n       FROM accounts_payable source\n      WHERE ((source.id = financial_audit_log.entity_id) AND (source.organization_id = ( SELECT h15_actor_organization() AS h15_actor_organization)))))\n    WHEN (entity_type = 'accounts_receivable_installments'::text) THEN (EXISTS ( SELECT 1\n       FROM accounts_receivable_installments source\n      WHERE ((source.id = financial_audit_log.entity_id) AND (source.organization_id = ( SELECT h15_actor_organization() AS h15_actor_organization)))))\n    WHEN (entity_type = 'accounts_payable_installments'::text) THEN (EXISTS ( SELECT 1\n       FROM accounts_payable_installments source\n      WHERE ((source.id = financial_audit_log.entity_id) AND (source.organization_id = ( SELECT h15_actor_organization() AS h15_actor_organization)))))\n    WHEN (entity_type = 'receivable_payments'::text) THEN (EXISTS ( SELECT 1\n       FROM receivable_payments source\n      WHERE ((source.id = financial_audit_log.entity_id) AND (source.organization_id = ( SELECT h15_actor_organization() AS h15_actor_organization)))))\n    WHEN (entity_type = 'payable_payments'::text) THEN (EXISTS ( SELECT 1\n       FROM payable_payments source\n      WHERE ((source.id = financial_audit_log.entity_id) AND (source.organization_id = ( SELECT h15_actor_organization() AS h15_actor_organization)))))\n    WHEN (entity_type = 'financial_documents'::text) THEN (EXISTS ( SELECT 1\n       FROM financial_documents source\n      WHERE ((source.id = financial_audit_log.entity_id) AND (source.organization_id = ( SELECT h15_actor_organization() AS h15_actor_organization)))))\n    WHEN (entity_type = 'financial_receipts'::text) THEN (EXISTS ( SELECT 1\n       FROM financial_receipts source\n      WHERE ((source.id = financial_audit_log.entity_id) AND (source.organization_id = ( SELECT h15_actor_organization() AS h15_actor_organization)))))\n    WHEN (entity_type = 'financial_report_exports'::text) THEN (EXISTS ( SELECT 1\n       FROM financial_report_exports source\n      WHERE ((source.id = financial_audit_log.entity_id) AND (source.organization_id = ( SELECT h15_actor_organization() AS h15_actor_organization)))))\n    WHEN (entity_type = 'fiscal_invoices'::text) THEN (EXISTS ( SELECT 1\n       FROM fiscal_invoices source\n      WHERE ((source.id = financial_audit_log.entity_id) AND (source.organization_id = ( SELECT h15_actor_organization() AS h15_actor_organization)))))\n    WHEN (entity_type = ANY (ARRAY['recurring_financial_templates'::text, 'RECURRING_TEMPLATE'::text])) THEN (EXISTS ( SELECT 1\n       FROM recurring_financial_templates source\n      WHERE ((source.id = financial_audit_log.entity_id) AND (source.organization_id = ( SELECT h15_actor_organization() AS h15_actor_organization)))))\n    WHEN (entity_type = ANY (ARRAY['entrega'::text, 'entregas'::text])) THEN (EXISTS ( SELECT 1\n       FROM entregas source\n      WHERE ((source.id = financial_audit_log.entity_id) AND (source.organization_id = ( SELECT h15_actor_organization() AS h15_actor_organization)))))\n    ELSE false\nEND)",
+          null
+        ]
+      ],
+      "triggers": [],
+      "force_rls": false,
+      "constraints": [
+        [
+          "financial_audit_log_performed_by_fkey",
+          "FOREIGN KEY (performed_by) REFERENCES auth.users(id)",
+          true
+        ],
+        [
+          "financial_audit_log_pkey",
+          "PRIMARY KEY (id)",
+          true
+        ]
+      ]
+    },
+    "public.receivable_payments": {
+      "acl": [
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "id",
+          "uuid",
+          true,
+          "gen_random_uuid()"
+        ],
+        [
+          "installment_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "payment_date",
+          "date",
+          true,
+          "CURRENT_DATE"
+        ],
+        [
+          "amount_received",
+          "numeric(14,2)",
+          true,
+          null
+        ],
+        [
+          "payment_method_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "bank_account_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "discount_amount",
+          "numeric(14,2)",
+          true,
+          "0"
+        ],
+        [
+          "interest_amount",
+          "numeric(14,2)",
+          true,
+          "0"
+        ],
+        [
+          "penalty_amount",
+          "numeric(14,2)",
+          true,
+          "0"
+        ],
+        [
+          "notes",
+          "text",
+          false,
+          null
+        ],
+        [
+          "created_by",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "created_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "is_reversal",
+          "boolean",
+          true,
+          "false"
+        ],
+        [
+          "reversed_payment_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "reversal_reason",
+          "text",
+          false,
+          null
+        ],
+        [
+          "idempotency_key",
+          "text",
+          false,
+          null
+        ],
+        [
+          "request_fingerprint",
+          "text",
+          false,
+          null
+        ],
+        [
+          "organization_id",
+          "uuid",
+          false,
+          null
+        ]
+      ],
+      "indexes": [
+        [
+          "idx_rp_date",
+          "CREATE INDEX idx_rp_date ON public.receivable_payments USING btree (payment_date)",
+          true
+        ],
+        [
+          "receivable_payments_organization_id_idx",
+          "CREATE INDEX receivable_payments_organization_id_idx ON public.receivable_payments USING btree (organization_id)",
+          true
+        ],
+        [
+          "receivable_payments_pkey",
+          "CREATE UNIQUE INDEX receivable_payments_pkey ON public.receivable_payments USING btree (id)",
+          true
+        ],
+        [
+          "ux_receivable_payments_one_reversal",
+          "CREATE UNIQUE INDEX ux_receivable_payments_one_reversal ON public.receivable_payments USING btree (reversed_payment_id) WHERE ((is_reversal = true) AND (reversed_payment_id IS NOT NULL))",
+          true
+        ],
+        [
+          "ux_rp_idempotency",
+          "CREATE UNIQUE INDEX ux_rp_idempotency ON public.receivable_payments USING btree (installment_id, idempotency_key) WHERE (idempotency_key IS NOT NULL)",
+          true
+        ]
+      ],
+      "policies": [
+        [
+          "rp_select_financial",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "is_financial_staff(( SELECT auth.uid() AS uid))",
+          null
+        ],
+        [
+          "tenant_isolation_d51_5",
+          "*",
+          false,
+          [
+            "authenticated"
+          ],
+          "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))",
+          "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"
+        ]
+      ],
+      "triggers": [
+        [
+          "d51_5_validate_tenant_links",
+          "CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, installment_id ON public.receivable_payments FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()",
+          "O",
+          "f470a25ba7e65b366c62ad3ac8aa3112"
+        ],
+        [
+          "tenant_organization_guard",
+          "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.receivable_payments FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()",
+          "O",
+          "d01a740c1e3e02407131d2b9228bf658"
+        ],
+        [
+          "trg_audit_rp",
+          "CREATE TRIGGER trg_audit_rp AFTER INSERT OR DELETE OR UPDATE ON public.receivable_payments FOR EACH ROW EXECUTE FUNCTION fn_financial_audit()",
+          "O",
+          "46f777c2020ff9a059a80ae6dab4bd12"
+        ],
+        [
+          "trg_h6_rp_append_only",
+          "CREATE TRIGGER trg_h6_rp_append_only BEFORE DELETE OR UPDATE ON public.receivable_payments FOR EACH ROW EXECUTE FUNCTION fn_h6_payments_append_only()",
+          "O",
+          "6857b23b4aef5402b1449a004c94ba7b"
+        ],
+        [
+          "trg_recalc_ar_inst",
+          "CREATE TRIGGER trg_recalc_ar_inst AFTER INSERT OR DELETE OR UPDATE ON public.receivable_payments FOR EACH ROW EXECUTE FUNCTION fn_recalc_receivable_installment()",
+          "O",
+          "c8a1d33461c76eb3da3c7af1c011cf2b"
+        ]
+      ],
+      "force_rls": false,
+      "constraints": [
+        [
+          "receivable_payments_amount_sign_check",
+          "CHECK ((((COALESCE(is_reversal, false) = false) AND (amount_received > (0)::numeric)) OR ((is_reversal = true) AND (amount_received < (0)::numeric))))",
+          true
+        ],
+        [
+          "receivable_payments_bank_account_id_fkey",
+          "FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id)",
+          true
+        ],
+        [
+          "receivable_payments_created_by_fkey",
+          "FOREIGN KEY (created_by) REFERENCES auth.users(id)",
+          true
+        ],
+        [
+          "receivable_payments_installment_id_fkey",
+          "FOREIGN KEY (installment_id) REFERENCES accounts_receivable_installments(id) ON DELETE CASCADE",
+          true
+        ],
+        [
+          "receivable_payments_organization_id_fkey",
+          "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+          true
+        ],
+        [
+          "receivable_payments_payment_method_id_fkey",
+          "FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id)",
+          true
+        ],
+        [
+          "receivable_payments_pkey",
+          "PRIMARY KEY (id)",
+          true
+        ],
+        [
+          "receivable_payments_reversal_consistency_check",
+          "CHECK ((((COALESCE(is_reversal, false) = false) AND (reversed_payment_id IS NULL)) OR ((is_reversal = true) AND (reversed_payment_id IS NOT NULL))))",
+          true
+        ],
+        [
+          "receivable_payments_reversed_payment_id_fkey",
+          "FOREIGN KEY (reversed_payment_id) REFERENCES receivable_payments(id)",
+          true
+        ]
+      ]
+    },
+    "public.fiscal_sefaz_transmissions": {
+      "acl": [
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "id",
+          "uuid",
+          true,
+          "gen_random_uuid()"
+        ],
+        [
+          "fiscal_invoice_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "xml_run_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "service",
+          "text",
+          true,
+          null
+        ],
+        [
+          "environment_code",
+          "text",
+          true,
+          "'2'::text"
+        ],
+        [
+          "endpoint_host",
+          "text",
+          true,
+          null
+        ],
+        [
+          "endpoint_url",
+          "text",
+          true,
+          null
+        ],
+        [
+          "correlation_id",
+          "uuid",
+          true,
+          "gen_random_uuid()"
+        ],
+        [
+          "idempotency_key",
+          "text",
+          true,
+          null
+        ],
+        [
+          "request_fingerprint",
+          "text",
+          true,
+          null
+        ],
+        [
+          "state",
+          "text",
+          true,
+          "'PENDING'::text"
+        ],
+        [
+          "attempt",
+          "integer",
+          true,
+          "0"
+        ],
+        [
+          "c_stat",
+          "text",
+          false,
+          null
+        ],
+        [
+          "x_motivo",
+          "text",
+          false,
+          null
+        ],
+        [
+          "ch_nfe",
+          "text",
+          false,
+          null
+        ],
+        [
+          "n_prot",
+          "text",
+          false,
+          null
+        ],
+        [
+          "n_rec",
+          "text",
+          false,
+          null
+        ],
+        [
+          "dh_recbto",
+          "timestamp with time zone",
+          false,
+          null
+        ],
+        [
+          "ambiente_retorno",
+          "text",
+          false,
+          null
+        ],
+        [
+          "response_summary",
+          "jsonb",
+          true,
+          "'{}'::jsonb"
+        ],
+        [
+          "error_code",
+          "text",
+          false,
+          null
+        ],
+        [
+          "created_by",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "created_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "updated_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "completed_at",
+          "timestamp with time zone",
+          false,
+          null
+        ],
+        [
+          "fiscal_event_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "outcome",
+          "text",
+          true,
+          "'PENDING'::text"
+        ],
+        [
+          "protocol_c_stat",
+          "text",
+          false,
+          null
+        ]
+      ],
+      "indexes": [
+        [
+          "fiscal_sefaz_transmissions_pkey",
+          "CREATE UNIQUE INDEX fiscal_sefaz_transmissions_pkey ON public.fiscal_sefaz_transmissions USING btree (id)",
+          true
+        ],
+        [
+          "ix_fiscal_sefaz_tx_event",
+          "CREATE INDEX ix_fiscal_sefaz_tx_event ON public.fiscal_sefaz_transmissions USING btree (fiscal_event_id, created_at DESC)",
+          true
+        ],
+        [
+          "ix_fiscal_sefaz_tx_invoice",
+          "CREATE INDEX ix_fiscal_sefaz_tx_invoice ON public.fiscal_sefaz_transmissions USING btree (fiscal_invoice_id, service, created_at DESC)",
+          true
+        ],
+        [
+          "ix_fst_xml_run_id",
+          "CREATE INDEX ix_fst_xml_run_id ON public.fiscal_sefaz_transmissions USING btree (xml_run_id)",
+          true
+        ],
+        [
+          "ux_fiscal_sefaz_tx_idem",
+          "CREATE UNIQUE INDEX ux_fiscal_sefaz_tx_idem ON public.fiscal_sefaz_transmissions USING btree (idempotency_key)",
+          true
+        ]
+      ],
+      "policies": [
+        [
+          "fiscal_sefaz_tx_no_delete",
+          "d",
+          true,
+          [
+            "authenticated"
+          ],
+          "(false AND h15_invoice_access(fiscal_invoice_id))",
+          null
+        ],
+        [
+          "fiscal_sefaz_tx_no_insert",
+          "a",
+          true,
+          [
+            "authenticated"
+          ],
+          null,
+          "(false AND h15_invoice_access(fiscal_invoice_id))"
+        ],
+        [
+          "fiscal_sefaz_tx_no_update",
+          "w",
+          true,
+          [
+            "authenticated"
+          ],
+          "(false AND h15_invoice_access(fiscal_invoice_id))",
+          null
+        ],
+        [
+          "fiscal_sefaz_tx_read",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "(fn_fiscal_can_read_internal(( SELECT auth.uid() AS uid)) AND h15_invoice_access(fiscal_invoice_id))",
+          null
+        ]
+      ],
+      "triggers": [
+        [
+          "h15_related_integrity",
+          "CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_sefaz_transmissions FOR EACH ROW EXECUTE FUNCTION h15_related_integrity('fiscal_invoice_id', 'fiscal_invoices', 'xml_run_id', 'fiscal_xml_runs', 'fiscal_event_id', 'fiscal_events')",
+          "O",
+          "0ff600469a00ffb6d4cd4ec4450d29b5"
+        ],
+        [
+          "trg_fiscal_sefaz_tx_guard",
+          "CREATE TRIGGER trg_fiscal_sefaz_tx_guard BEFORE DELETE OR UPDATE ON public.fiscal_sefaz_transmissions FOR EACH ROW EXECUTE FUNCTION fn_fiscal_sefaz_tx_guard()",
+          "O",
+          "1661123d056217810d8fb175b46fdd8b"
+        ],
+        [
+          "trg_fiscal_sefaz_tx_link_guard",
+          "CREATE TRIGGER trg_fiscal_sefaz_tx_link_guard BEFORE INSERT ON public.fiscal_sefaz_transmissions FOR EACH ROW EXECUTE FUNCTION fn_fiscal_sefaz_tx_link_guard()",
+          "O",
+          "d908116081eff89e5979055a2e99e0a1"
+        ]
+      ],
+      "force_rls": false,
+      "constraints": [
+        [
+          "chk_fiscal_sefaz_tx_outcome",
+          "CHECK ((outcome = ANY (ARRAY['PENDING'::text, 'AUTHORIZED'::text, 'REJECTED'::text, 'PROCESSING'::text, 'EVENT_REGISTERED'::text, 'SERVICE_INFO'::text, 'TRANSPORT_ERROR'::text])))",
+          true
+        ],
+        [
+          "fiscal_sefaz_transmissions_attempt_check",
+          "CHECK ((attempt >= 0))",
+          true
+        ],
+        [
+          "fiscal_sefaz_transmissions_endpoint_host_check",
+          "CHECK ((endpoint_host = 'hnfe.fazenda.mg.gov.br'::text))",
+          true
+        ],
+        [
+          "fiscal_sefaz_transmissions_endpoint_url_check",
+          "CHECK ((endpoint_url ~~ 'https://hnfe.fazenda.mg.gov.br/%'::text))",
+          true
+        ],
+        [
+          "fiscal_sefaz_transmissions_environment_code_check",
+          "CHECK ((environment_code = '2'::text))",
+          true
+        ],
+        [
+          "fiscal_sefaz_transmissions_fiscal_event_id_fkey",
+          "FOREIGN KEY (fiscal_event_id) REFERENCES fiscal_events(id) ON DELETE RESTRICT",
+          true
+        ],
+        [
+          "fiscal_sefaz_transmissions_fiscal_invoice_id_fkey",
+          "FOREIGN KEY (fiscal_invoice_id) REFERENCES fiscal_invoices(id) ON DELETE RESTRICT",
+          true
+        ],
+        [
+          "fiscal_sefaz_transmissions_pkey",
+          "PRIMARY KEY (id)",
+          true
+        ],
+        [
+          "fiscal_sefaz_transmissions_service_check",
+          "CHECK ((service = ANY (ARRAY['NFeStatusServico4'::text, 'NFeAutorizacao4'::text, 'NFeRetAutorizacao4'::text, 'NFeConsultaProtocolo4'::text, 'NFeRecepcaoEvento4'::text, 'NFeInutilizacao4'::text])))",
+          true
+        ],
+        [
+          "fiscal_sefaz_transmissions_state_check",
+          "CHECK ((state = ANY (ARRAY['PENDING'::text, 'SENT'::text, 'SUCCEEDED'::text, 'FAILED'::text, 'BLOCKED'::text])))",
+          true
+        ],
+        [
+          "fiscal_sefaz_transmissions_xml_run_id_fkey",
+          "FOREIGN KEY (xml_run_id) REFERENCES fiscal_xml_runs(id) ON DELETE RESTRICT",
+          true
+        ]
+      ]
+    },
+    "platform_private.fiscal_close_pending": {
+      "acl": [],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "transmission_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "fiscal_invoice_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "error_code",
+          "text",
+          true,
+          null
+        ],
+        [
+          "first_error_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "last_error_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "attempts",
+          "integer",
+          true,
+          "1"
+        ]
+      ],
+      "indexes": [
+        [
+          "fiscal_close_pending_pkey",
+          "CREATE UNIQUE INDEX fiscal_close_pending_pkey ON platform_private.fiscal_close_pending USING btree (transmission_id)",
+          true
+        ]
+      ],
+      "policies": [],
+      "triggers": [],
+      "force_rls": false,
+      "constraints": [
+        [
+          "fiscal_close_pending_attempts_check",
+          "CHECK ((attempts >= 1))",
+          true
+        ],
+        [
+          "fiscal_close_pending_error_code_check",
+          "CHECK ((error_code = ANY (ARRAY['FISCAL_AUTHORIZATION_CLOSE_PENDING'::text, 'FISCAL_EVENT_RECONCILIATION_PENDING'::text])))",
+          true
+        ],
+        [
+          "fiscal_close_pending_fiscal_invoice_id_fkey",
+          "FOREIGN KEY (fiscal_invoice_id) REFERENCES fiscal_invoices(id) ON DELETE RESTRICT",
+          true
+        ],
+        [
+          "fiscal_close_pending_pkey",
+          "PRIMARY KEY (transmission_id)",
+          true
+        ],
+        [
+          "fiscal_close_pending_transmission_id_fkey",
+          "FOREIGN KEY (transmission_id) REFERENCES fiscal_sefaz_transmissions(id) ON DELETE RESTRICT",
+          true
+        ]
+      ]
+    },
+    "public.accounts_receivable_installments": {
+      "acl": [
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "id",
+          "uuid",
+          true,
+          "gen_random_uuid()"
+        ],
+        [
+          "receivable_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "installment_number",
+          "integer",
+          true,
+          null
+        ],
+        [
+          "due_date",
+          "date",
+          true,
+          null
+        ],
+        [
+          "original_amount",
+          "numeric(14,2)",
+          true,
+          null
+        ],
+        [
+          "received_amount",
+          "numeric(14,2)",
+          true,
+          "0"
+        ],
+        [
+          "discount_amount",
+          "numeric(14,2)",
+          true,
+          "0"
+        ],
+        [
+          "interest_amount",
+          "numeric(14,2)",
+          true,
+          "0"
+        ],
+        [
+          "penalty_amount",
+          "numeric(14,2)",
+          true,
+          "0"
+        ],
+        [
+          "net_amount",
+          "numeric(14,2)",
+          true,
+          null
+        ],
+        [
+          "status",
+          "text",
+          true,
+          "'OPEN'::text"
+        ],
+        [
+          "paid_at",
+          "timestamp with time zone",
+          false,
+          null
+        ],
+        [
+          "created_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "organization_id",
+          "uuid",
+          false,
+          null
+        ]
+      ],
+      "indexes": [
+        [
+          "accounts_receivable_installments_organization_id_idx",
+          "CREATE INDEX accounts_receivable_installments_organization_id_idx ON public.accounts_receivable_installments USING btree (organization_id)",
+          true
+        ],
+        [
+          "accounts_receivable_installments_pkey",
+          "CREATE UNIQUE INDEX accounts_receivable_installments_pkey ON public.accounts_receivable_installments USING btree (id)",
+          true
+        ],
+        [
+          "idx_ar_inst_due",
+          "CREATE INDEX idx_ar_inst_due ON public.accounts_receivable_installments USING btree (due_date)",
+          true
+        ],
+        [
+          "idx_ar_inst_status",
+          "CREATE INDEX idx_ar_inst_status ON public.accounts_receivable_installments USING btree (status)",
+          true
+        ],
+        [
+          "idx_ari_receivable",
+          "CREATE INDEX idx_ari_receivable ON public.accounts_receivable_installments USING btree (receivable_id)",
+          true
+        ]
+      ],
+      "policies": [
+        [
+          "accounts_receivable_installments_insert_financial",
+          "a",
+          true,
+          [
+            "authenticated"
+          ],
+          null,
+          "is_financial_staff(( SELECT auth.uid() AS uid))"
+        ],
+        [
+          "accounts_receivable_installments_select_financial",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "is_financial_staff(( SELECT auth.uid() AS uid))",
+          null
+        ],
+        [
+          "accounts_receivable_installments_update_financial",
+          "w",
+          true,
+          [
+            "authenticated"
+          ],
+          "is_financial_staff(( SELECT auth.uid() AS uid))",
+          "is_financial_staff(( SELECT auth.uid() AS uid))"
+        ],
+        [
+          "ari_b2b_readers",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "((platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role)) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = accounts_receivable_installments.receivable_id) AND (ar.origin_type = 'B2B_ORDER'::text)))))",
+          null
+        ],
+        [
+          "ari_partner_select_own_b2b",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "(platform_private.has_role(( SELECT auth.uid() AS uid), 'parceiro_b2b'::app_role) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = accounts_receivable_installments.receivable_id) AND (ar.origin_type = 'B2B_ORDER'::text) AND (ar.partner_id = ( SELECT ((platform_private.b2b_commercial_context() ->> 'partner_id'::text))::uuid AS uuid))))))",
+          null
+        ],
+        [
+          "ari_producer_read",
+          "r",
+          true,
+          [
+            "authenticated"
+          ],
+          "(platform_private.has_role(( SELECT auth.uid() AS uid), 'cliente_produtor'::app_role) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = accounts_receivable_installments.receivable_id) AND (ar.customer_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))) AND (ar.partner_id IS NULL) AND (ar.origin_type IS DISTINCT FROM 'B2B_ORDER'::text)))))",
+          null
+        ],
+        [
+          "financial_rpc_only_delete",
+          "d",
+          false,
+          [
+            "authenticated"
+          ],
+          "false",
+          null
+        ],
+        [
+          "financial_rpc_only_insert",
+          "a",
+          false,
+          [
+            "authenticated"
+          ],
+          null,
+          "false"
+        ],
+        [
+          "financial_rpc_only_update",
+          "w",
+          false,
+          [
+            "authenticated"
+          ],
+          "false",
+          "false"
+        ],
+        [
+          "tenant_isolation_d51_5",
+          "*",
+          false,
+          [
+            "authenticated"
+          ],
+          "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))",
+          "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"
+        ]
+      ],
+      "triggers": [
+        [
+          "a00_delivery_no_downstream",
+          "CREATE TRIGGER a00_delivery_no_downstream BEFORE INSERT OR DELETE OR UPDATE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_no_downstream_20261030()",
+          "O",
+          "95e0e5a84ef511cd72d7807351f61cf4"
+        ],
+        [
+          "d51_5_validate_tenant_links",
+          "CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, receivable_id ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()",
+          "O",
+          "f470a25ba7e65b366c62ad3ac8aa3112"
+        ],
+        [
+          "tenant_organization_guard",
+          "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()",
+          "O",
+          "d01a740c1e3e02407131d2b9228bf658"
+        ],
+        [
+          "trg_h6_ari_snapshot",
+          "CREATE TRIGGER trg_h6_ari_snapshot BEFORE UPDATE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_ar_installment_snapshot()",
+          "O",
+          "c3f26bc5217a5d86227c7e74f762b3ad"
+        ],
+        [
+          "trg_h6d_ari_no_delete",
+          "CREATE TRIGGER trg_h6d_ari_no_delete BEFORE DELETE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()",
+          "O",
+          "5c07dd23a0c9355c3fe11811004b0381"
+        ],
+        [
+          "trg_recalc_risk_on_ar_change",
+          "CREATE TRIGGER trg_recalc_risk_on_ar_change AFTER INSERT OR UPDATE OF status, received_amount ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION tg_recalc_risk_on_ar_change()",
+          "O",
+          "2d38119a0bb885471ba0112c300a4144"
+        ]
+      ],
+      "force_rls": false,
+      "constraints": [
+        [
+          "accounts_receivable_installments_organization_id_fkey",
+          "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+          true
+        ],
+        [
+          "accounts_receivable_installments_pkey",
+          "PRIMARY KEY (id)",
+          true
+        ],
+        [
+          "accounts_receivable_installments_receivable_id_fkey",
+          "FOREIGN KEY (receivable_id) REFERENCES accounts_receivable(id) ON DELETE CASCADE",
+          true
+        ],
+        [
+          "accounts_receivable_installments_status_check",
+          "CHECK ((status = ANY (ARRAY['OPEN'::text, 'PARTIAL'::text, 'PAID'::text, 'CANCELED'::text, 'OVERDUE'::text])))",
+          true
+        ]
+      ]
+    },
+    "platform_private.b2b_financial_forecasts": {
+      "acl": [],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "id",
+          "uuid",
+          true,
+          "gen_random_uuid()"
+        ],
+        [
+          "order_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "organization_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "partner_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "total_amount",
+          "numeric(14,2)",
+          true,
+          null
+        ],
+        [
+          "residual_amount",
+          "numeric(14,2)",
+          true,
+          null
+        ],
+        [
+          "state",
+          "text",
+          true,
+          null
+        ],
+        [
+          "due_dates_estimated",
+          "boolean",
+          true,
+          "true"
+        ],
+        [
+          "economic_snapshot",
+          "jsonb",
+          true,
+          null
+        ],
+        [
+          "schedule_snapshot",
+          "jsonb",
+          true,
+          null
+        ],
+        [
+          "items_snapshot",
+          "jsonb",
+          true,
+          null
+        ],
+        [
+          "credit_decision_snapshot",
+          "jsonb",
+          true,
+          null
+        ],
+        [
+          "commercial_approved_by",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "commercial_approved_at",
+          "timestamp with time zone",
+          true,
+          null
+        ],
+        [
+          "credit_approved_by",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "credit_approved_at",
+          "timestamp with time zone",
+          false,
+          null
+        ],
+        [
+          "fiscal_intent_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "last_error_code",
+          "text",
+          false,
+          null
+        ],
+        [
+          "version",
+          "integer",
+          true,
+          "1"
+        ],
+        [
+          "created_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "updated_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ]
+      ],
+      "indexes": [
+        [
+          "b2b_financial_forecasts_order_id_key",
+          "CREATE UNIQUE INDEX b2b_financial_forecasts_order_id_key ON platform_private.b2b_financial_forecasts USING btree (order_id)",
+          true
+        ],
+        [
+          "b2b_financial_forecasts_pkey",
+          "CREATE UNIQUE INDEX b2b_financial_forecasts_pkey ON platform_private.b2b_financial_forecasts USING btree (id)",
+          true
+        ]
+      ],
+      "policies": [],
+      "triggers": [
+        [
+          "b2b_forecast_guard",
+          "CREATE TRIGGER b2b_forecast_guard BEFORE DELETE OR UPDATE ON platform_private.b2b_financial_forecasts FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_financial_forecast_guard()",
+          "O",
+          "2a28194f419c5e7627cb9ec04bb8bebe"
+        ]
+      ],
+      "force_rls": false,
+      "constraints": [
+        [
+          "b2b_financial_forecasts_check",
+          "CHECK (((residual_amount >= (0)::numeric) AND (residual_amount <= total_amount)))",
+          true
+        ],
+        [
+          "b2b_financial_forecasts_due_dates_estimated_check",
+          "CHECK (due_dates_estimated)",
+          true
+        ],
+        [
+          "b2b_financial_forecasts_items_snapshot_check",
+          "CHECK ((jsonb_typeof(items_snapshot) = 'array'::text))",
+          true
+        ],
+        [
+          "b2b_financial_forecasts_order_id_fkey",
+          "FOREIGN KEY (order_id) REFERENCES partner_orders(id)",
+          true
+        ],
+        [
+          "b2b_financial_forecasts_order_id_key",
+          "UNIQUE (order_id)",
+          true
+        ],
+        [
+          "b2b_financial_forecasts_pkey",
+          "PRIMARY KEY (id)",
+          true
+        ],
+        [
+          "b2b_financial_forecasts_schedule_snapshot_check",
+          "CHECK ((jsonb_typeof(schedule_snapshot) = 'array'::text))",
+          true
+        ],
+        [
+          "b2b_financial_forecasts_state_check",
+          "CHECK ((state = ANY (ARRAY['aguardando_fiscal'::text, 'emissao_em_andamento'::text, 'consulta_fiscal_obrigatoria'::text, 'faturado_parcial'::text, 'faturado_total'::text, 'cancelado_antes_nf'::text, 'cancelado_residual'::text])))",
+          true
+        ],
+        [
+          "b2b_financial_forecasts_total_amount_check",
+          "CHECK ((total_amount > (0)::numeric))",
+          true
+        ],
+        [
+          "b2b_financial_forecasts_version_check",
+          "CHECK ((version > 0))",
+          true
+        ]
+      ]
+    },
+    "platform_private.b2b_allocation_reversals": {
+      "acl": [],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "document_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "replacement_document_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "source_digest",
+          "text",
+          true,
+          null
+        ],
+        [
+          "created_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ]
+      ],
+      "indexes": [
+        [
+          "b2b_allocation_reversals_pkey",
+          "CREATE UNIQUE INDEX b2b_allocation_reversals_pkey ON platform_private.b2b_allocation_reversals USING btree (document_id)",
+          true
+        ]
+      ],
+      "policies": [],
+      "triggers": [
+        [
+          "immutable_truncate",
+          "CREATE TRIGGER immutable_truncate BEFORE TRUNCATE ON platform_private.b2b_allocation_reversals FOR EACH STATEMENT EXECUTE FUNCTION platform_private.price_immutable()",
+          "O",
+          "d001f9720ad2c42c6d1d62c210e043dd"
+        ],
+        [
+          "immutable_update_delete",
+          "CREATE TRIGGER immutable_update_delete BEFORE DELETE OR UPDATE ON platform_private.b2b_allocation_reversals FOR EACH ROW EXECUTE FUNCTION platform_private.price_immutable()",
+          "O",
+          "d001f9720ad2c42c6d1d62c210e043dd"
+        ]
+      ],
+      "force_rls": false,
+      "constraints": [
+        [
+          "b2b_allocation_reversals_document_id_fkey",
+          "FOREIGN KEY (document_id) REFERENCES platform_private.b2b_document_allocations(document_id)",
+          true
+        ],
+        [
+          "b2b_allocation_reversals_pkey",
+          "PRIMARY KEY (document_id)",
+          true
+        ],
+        [
+          "b2b_allocation_reversals_replacement_document_id_fkey",
+          "FOREIGN KEY (replacement_document_id) REFERENCES platform_private.b2b_authorized_documents(id)",
+          true
+        ]
+      ]
+    },
+    "platform_private.b2b_document_allocations": {
+      "acl": [],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "document_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "organization_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "order_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "partner_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "receivable_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "source_digest",
+          "text",
+          true,
+          null
+        ],
+        [
+          "principal",
+          "numeric",
+          true,
+          null
+        ],
+        [
+          "financed_interest",
+          "numeric",
+          true,
+          null
+        ],
+        [
+          "items",
+          "jsonb",
+          true,
+          null
+        ],
+        [
+          "item_money",
+          "jsonb",
+          true,
+          null
+        ],
+        [
+          "rows",
+          "jsonb",
+          true,
+          null
+        ],
+        [
+          "created_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ]
+      ],
+      "indexes": [
+        [
+          "b2b_document_allocations_pkey",
+          "CREATE UNIQUE INDEX b2b_document_allocations_pkey ON platform_private.b2b_document_allocations USING btree (document_id)",
+          true
+        ],
+        [
+          "b2b_document_allocations_receivable_id_key",
+          "CREATE UNIQUE INDEX b2b_document_allocations_receivable_id_key ON platform_private.b2b_document_allocations USING btree (receivable_id)",
+          true
+        ]
+      ],
+      "policies": [],
+      "triggers": [
+        [
+          "immutable_truncate",
+          "CREATE TRIGGER immutable_truncate BEFORE TRUNCATE ON platform_private.b2b_document_allocations FOR EACH STATEMENT EXECUTE FUNCTION platform_private.price_immutable()",
+          "O",
+          "d001f9720ad2c42c6d1d62c210e043dd"
+        ],
+        [
+          "immutable_update_delete",
+          "CREATE TRIGGER immutable_update_delete BEFORE DELETE OR UPDATE ON platform_private.b2b_document_allocations FOR EACH ROW EXECUTE FUNCTION platform_private.price_immutable()",
+          "O",
+          "d001f9720ad2c42c6d1d62c210e043dd"
+        ]
+      ],
+      "force_rls": false,
+      "constraints": [
+        [
+          "b2b_document_allocations_document_id_fkey",
+          "FOREIGN KEY (document_id) REFERENCES platform_private.b2b_authorized_documents(id)",
+          true
+        ],
+        [
+          "b2b_document_allocations_financed_interest_check",
+          "CHECK ((financed_interest >= (0)::numeric))",
+          true
+        ],
+        [
+          "b2b_document_allocations_item_money_check",
+          "CHECK ((jsonb_typeof(item_money) = 'array'::text))",
+          true
+        ],
+        [
+          "b2b_document_allocations_order_id_fkey",
+          "FOREIGN KEY (order_id) REFERENCES partner_orders(id)",
+          true
+        ],
+        [
+          "b2b_document_allocations_pkey",
+          "PRIMARY KEY (document_id)",
+          true
+        ],
+        [
+          "b2b_document_allocations_principal_check",
+          "CHECK ((principal > (0)::numeric))",
+          true
+        ],
+        [
+          "b2b_document_allocations_receivable_id_fkey",
+          "FOREIGN KEY (receivable_id) REFERENCES accounts_receivable(id)",
+          true
+        ],
+        [
+          "b2b_document_allocations_receivable_id_key",
+          "UNIQUE (receivable_id)",
+          true
+        ]
+      ]
+    },
+    "platform_private.b2b_fiscal_service_permits": {
+      "acl": [],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "transaction_id",
+          "bigint",
+          true,
+          null
+        ],
+        [
+          "invoice_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "document_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "organization_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "order_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "partner_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "created_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ]
+      ],
+      "indexes": [
+        [
+          "b2b_fiscal_service_permits_pkey",
+          "CREATE UNIQUE INDEX b2b_fiscal_service_permits_pkey ON platform_private.b2b_fiscal_service_permits USING btree (transaction_id, invoice_id)",
+          true
+        ]
+      ],
+      "policies": [],
+      "triggers": [],
+      "force_rls": false,
+      "constraints": [
+        [
+          "b2b_fiscal_service_permits_pkey",
+          "PRIMARY KEY (transaction_id, invoice_id)",
+          true
+        ]
+      ]
+    },
+    "platform_private.b2b_fiscal_invoice_snapshots": {
+      "acl": [],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "invoice_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "transmission_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "protocol",
+          "text",
+          true,
+          null
+        ],
+        [
+          "source_digest",
+          "text",
+          true,
+          null
+        ],
+        [
+          "snapshot",
+          "jsonb",
+          true,
+          null
+        ],
+        [
+          "created_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ]
+      ],
+      "indexes": [
+        [
+          "b2b_fiscal_invoice_snapshots_pkey",
+          "CREATE UNIQUE INDEX b2b_fiscal_invoice_snapshots_pkey ON platform_private.b2b_fiscal_invoice_snapshots USING btree (invoice_id)",
+          true
+        ]
+      ],
+      "policies": [],
+      "triggers": [
+        [
+          "b2b_fiscal_snapshot_immutable",
+          "CREATE TRIGGER b2b_fiscal_snapshot_immutable BEFORE DELETE OR UPDATE ON platform_private.b2b_fiscal_invoice_snapshots FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_fiscal_snapshot_immutable()",
+          "O",
+          "dd0433334a08719d271b2da60c53a463"
+        ],
+        [
+          "b2b_fiscal_snapshot_no_truncate",
+          "CREATE TRIGGER b2b_fiscal_snapshot_no_truncate BEFORE TRUNCATE ON platform_private.b2b_fiscal_invoice_snapshots FOR EACH STATEMENT EXECUTE FUNCTION platform_private.b2b_fiscal_snapshot_immutable()",
+          "O",
+          "dd0433334a08719d271b2da60c53a463"
+        ]
+      ],
+      "force_rls": false,
+      "constraints": [
+        [
+          "b2b_fiscal_invoice_snapshots_pkey",
+          "PRIMARY KEY (invoice_id)",
+          true
+        ]
+      ]
+    },
+    "platform_private.b2b_financial_forecast_events": {
+      "acl": [],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "id",
+          "bigint",
+          true,
+          null
+        ],
+        [
+          "forecast_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "event_type",
+          "text",
+          true,
+          null
+        ],
+        [
+          "event_reference",
+          "text",
+          true,
+          null
+        ],
+        [
+          "payload",
+          "jsonb",
+          true,
+          "'{}'::jsonb"
+        ],
+        [
+          "actor_id",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "created_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ]
+      ],
+      "indexes": [
+        [
+          "b2b_financial_forecast_events_forecast_id_event_type_event__key",
+          "CREATE UNIQUE INDEX b2b_financial_forecast_events_forecast_id_event_type_event__key ON platform_private.b2b_financial_forecast_events USING btree (forecast_id, event_type, event_reference)",
+          true
+        ],
+        [
+          "b2b_financial_forecast_events_pkey",
+          "CREATE UNIQUE INDEX b2b_financial_forecast_events_pkey ON platform_private.b2b_financial_forecast_events USING btree (id)",
+          true
+        ]
+      ],
+      "policies": [],
+      "triggers": [
+        [
+          "b2b_forecast_events_no_change",
+          "CREATE TRIGGER b2b_forecast_events_no_change BEFORE DELETE OR UPDATE ON platform_private.b2b_financial_forecast_events FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_financial_forecast_events_immutable()",
+          "O",
+          "ac137a2a6a7e9134b380ec8743bf4564"
+        ]
+      ],
+      "force_rls": false,
+      "constraints": [
+        [
+          "b2b_financial_forecast_events_forecast_id_event_type_event__key",
+          "UNIQUE (forecast_id, event_type, event_reference)",
+          true
+        ],
+        [
+          "b2b_financial_forecast_events_forecast_id_fkey",
+          "FOREIGN KEY (forecast_id) REFERENCES platform_private.b2b_financial_forecasts(id)",
+          true
+        ],
+        [
+          "b2b_financial_forecast_events_pkey",
+          "PRIMARY KEY (id)",
+          true
+        ]
+      ]
+    },
+    "platform_private.b2b_forecast_lifecycle_gate_v1": {
+      "acl": [],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "singleton",
+          "boolean",
+          true,
+          "true"
+        ],
+        [
+          "enabled",
+          "boolean",
+          true,
+          "false"
+        ],
+        [
+          "updated_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "updated_by",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "reason",
+          "text",
+          false,
+          null
+        ]
+      ],
+      "indexes": [
+        [
+          "b2b_forecast_lifecycle_gate_v1_pkey",
+          "CREATE UNIQUE INDEX b2b_forecast_lifecycle_gate_v1_pkey ON platform_private.b2b_forecast_lifecycle_gate_v1 USING btree (singleton)",
+          true
+        ]
+      ],
+      "policies": [],
+      "triggers": [],
+      "force_rls": false,
+      "constraints": [
+        [
+          "b2b_forecast_lifecycle_gate_v1_pkey",
+          "PRIMARY KEY (singleton)",
+          true
+        ],
+        [
+          "b2b_forecast_lifecycle_gate_v1_singleton_check",
+          "CHECK (singleton)",
+          true
+        ]
+      ]
+    },
+    "platform_private.b2b_forecast_lifecycle_allowlist_v1": {
+      "acl": [],
+      "rls": true,
+      "owner": "postgres",
+      "columns": [
+        [
+          "id",
+          "uuid",
+          true,
+          "gen_random_uuid()"
+        ],
+        [
+          "operation",
+          "text",
+          true,
+          null
+        ],
+        [
+          "actor_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "organization_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "partner_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "order_id",
+          "uuid",
+          true,
+          null
+        ],
+        [
+          "synthetic",
+          "boolean",
+          true,
+          "true"
+        ],
+        [
+          "valid_from",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "valid_until",
+          "timestamp with time zone",
+          true,
+          null
+        ],
+        [
+          "revoked_at",
+          "timestamp with time zone",
+          false,
+          null
+        ],
+        [
+          "revoked_by",
+          "uuid",
+          false,
+          null
+        ],
+        [
+          "revoke_reason",
+          "text",
+          false,
+          null
+        ],
+        [
+          "created_at",
+          "timestamp with time zone",
+          true,
+          "now()"
+        ],
+        [
+          "created_by",
+          "uuid",
+          false,
+          null
+        ]
+      ],
+      "indexes": [
+        [
+          "b2b_forecast_lifecycle_allowlist_v1_pkey",
+          "CREATE UNIQUE INDEX b2b_forecast_lifecycle_allowlist_v1_pkey ON platform_private.b2b_forecast_lifecycle_allowlist_v1 USING btree (id)",
+          true
+        ]
+      ],
+      "policies": [],
+      "triggers": [],
+      "force_rls": false,
+      "constraints": [
+        [
+          "b2b_forecast_lifecycle_allowlist_v1_check",
+          "CHECK ((valid_until > valid_from))",
+          true
+        ],
+        [
+          "b2b_forecast_lifecycle_allowlist_v1_check1",
+          "CHECK (((revoked_at IS NULL) OR (revoked_at >= valid_from)))",
+          true
+        ],
+        [
+          "b2b_forecast_lifecycle_allowlist_v1_operation_check",
+          "CHECK ((operation = ANY (ARRAY['forecast_sync'::text, 'forecast_cancel'::text, 'forecast_begin'::text])))",
+          true
+        ],
+        [
+          "b2b_forecast_lifecycle_allowlist_v1_pkey",
+          "PRIMARY KEY (id)",
+          true
+        ],
+        [
+          "b2b_forecast_lifecycle_allowlist_v1_synthetic_check",
+          "CHECK ((synthetic IS TRUE))",
+          true
+        ]
+      ]
+    }
+  },
+  "downstream": [
+    "95e0e5a84ef511cd72d7807351f61cf4",
+    "postgres",
+    [
+      "postgres=X/postgres"
+    ],
+    [
+      "search_path=\"\""
+    ]
+  ],
+  "order_enum": [
+    "rascunho",
+    "pendente",
+    "solicitado",
+    "em_analise_comercial",
+    "aprovado",
+    "reprovado",
+    "em_producao",
+    "produzido",
+    "aguardando_entrega",
+    "confirmado",
+    "em_separacao",
+    "enviado",
+    "entregue",
+    "faturado",
+    "cancelado",
+    "aguardando_aprovacao_credito",
+    "aguardando_ajuste_comercial",
+    "aguardando_itens",
+    "reprovado_sem_itens",
+    "aguardando_cotacao"
+  ]
+}

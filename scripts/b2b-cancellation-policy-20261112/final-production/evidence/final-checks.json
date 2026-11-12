@@ -3,7 +3,7 @@
     "test": "bytes exatos 03-post.sql.readonly",
     "status": "PASS",
     "detail": {
-      "sha256": "6495c565455cac8be5962688bb46bc6123bb65737ecf508e07e8938d568a6a76",
+      "sha256": "0694801149380dd274d2da73b5764eb210ad4f6438473216384bfe5aeca6867c",
       "stderr": ""
     }
   },
@@ -11,7 +11,7 @@
     "test": "bytes exatos 04-rollback-deny.sql.review",
     "status": "PASS",
     "detail": {
-      "sha256": "43523bd6fb186f2268eb438c3ed00975b65f3ac75b4ec7ed7d157fc291b37ed8",
+      "sha256": "ec7b1628e969081b27fd9146157a911063c9df09627eaf8f4bfdd03852808a8d",
       "stderr": ""
     }
   },
@@ -19,7 +19,7 @@
     "test": "bytes exatos 05-post-rollback.sql.readonly",
     "status": "PASS",
     "detail": {
-      "sha256": "6495c565455cac8be5962688bb46bc6123bb65737ecf508e07e8938d568a6a76",
+      "sha256": "0694801149380dd274d2da73b5764eb210ad4f6438473216384bfe5aeca6867c",
       "stderr": ""
     }
   },
@@ -88,7 +88,7 @@
     "status": "PASS",
     "detail": {
       "version": 10,
-      "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+      "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
       "available": true,
       "residual_amount": 10.0
     }
