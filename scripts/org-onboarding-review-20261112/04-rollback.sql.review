@@ -1,0 +1,8 @@
+-- Rollback deny-only: NÃO restaura a ativação automática nem remove a contenção fiscal
+-- (restaurar reabriria o defeito). Fecha apenas as novas entradas, preservando fila, evidências e histórico.
+BEGIN;
+REVOKE EXECUTE ON FUNCTION public.platform_approve_onboarding_review(uuid,text) FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.platform_return_organization_to_review(uuid,text) FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.svc_onboarding_record_cnpj_evidence(uuid,uuid,jsonb,text,text) FROM service_role;
+-- Sem evidência nova, toda conclusão de onboarding vai para revisão; empresas em revisão permanecem bloqueadas.
+COMMIT;
