@@ -28,6 +28,7 @@ BEGIN
  IF actor_org IS NULL OR public.fn_fiscal_can_operate(auth.uid()) IS NOT TRUE THEN RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;
  SELECT * INTO i FROM public.fiscal_invoices WHERE id=t.fiscal_invoice_id AND organization_id=actor_org;
  IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_cancel_policy_allowlist_v1 g WHERE g.actor_id=auth.uid() AND g.organization_id=i.organization_id AND g.invoice_id=i.id AND g.order_id=i.partner_order_id AND g.revoked_at IS NULL AND g.valid_from<=clock_timestamp() AND g.valid_until>clock_timestamp() AND g.synthetic) THEN RETURN jsonb_build_object('final',false,'code','CANCEL_POLICY_SCOPE_DENIED'); END IF;
  SELECT * INTO e FROM public.fiscal_events WHERE id=t.fiscal_event_id AND organization_id=i.organization_id AND fiscal_invoice_id=i.id;
  IF NOT FOUND OR e.event_type<>'SEFAZ_CANCELLATION_PREPARED' OR e.sefaz_event_code<>'110111' OR e.sefaz_access_key IS DISTINCT FROM i.access_key THEN RETURN jsonb_build_object('final',false,'code','NOT_LINKED_CANCEL'); END IF;
  -- 136 is registration without final linkage: consultation remains necessary.
@@ -38,6 +39,8 @@ BEGIN
  PERFORM 1 FROM platform_private.b2b_cancel_policy_gate_v1 WHERE singleton FOR SHARE;
  IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_cancel_policy_gate_v1 WHERE singleton AND enabled) THEN RETURN jsonb_build_object('final',false,'code','CANCEL_POLICY_DISABLED'); END IF;
  SELECT * INTO i FROM public.fiscal_invoices WHERE id=i.id;
+ PERFORM 1 FROM platform_private.b2b_cancel_policy_allowlist_v1 g WHERE g.actor_id=auth.uid() AND g.organization_id=i.organization_id AND g.invoice_id=i.id AND g.order_id=i.partner_order_id FOR SHARE;
+ IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_cancel_policy_allowlist_v1 g WHERE g.actor_id=auth.uid() AND g.organization_id=i.organization_id AND g.invoice_id=i.id AND g.order_id=i.partner_order_id AND g.revoked_at IS NULL AND g.valid_from<=clock_timestamp() AND g.valid_until>clock_timestamp() AND g.synthetic) THEN RETURN jsonb_build_object('final',false,'code','CANCEL_POLICY_SCOPE_DENIED'); END IF;
  IF i.normalized_status NOT IN ('AUTHORIZED','CANCELED') OR EXISTS(SELECT 1 FROM platform_private.fiscal_close_pending p WHERE p.fiscal_invoice_id=i.id AND p.error_code='FISCAL_AUTHORIZATION_CLOSE_PENDING') THEN RETURN jsonb_build_object('final',false,'code','FISCAL_AUTHORIZATION_RECONCILIATION_PENDING'); END IF;
  IF i.partner_order_id IS NULL OR i.debtor_partner_id IS NULL OR i.receivable_id IS NULL THEN RETURN jsonb_build_object('final',false,'code','FISCAL_CANCEL_TITLE_LINK_UNPROVEN'); END IF;
  IF NOT EXISTS(SELECT 1 FROM public.partner_orders po JOIN public.partner_accounts pa ON pa.id=po.partner_id WHERE po.id=i.partner_order_id AND po.partner_id=i.debtor_partner_id AND pa.commercial_owner_organization_id=i.organization_id) THEN RAISE EXCEPTION 'FISCAL_CANCEL_LINK_MISMATCH' USING ERRCODE='42501'; END IF;
@@ -58,6 +61,7 @@ END $fn$;
 REVOKE ALL ON FUNCTION platform_private.b2b_cancel_confirmed_fiscal_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
 """
 record=read('record')
+record=replace(record,'  v_invoice_id := v_cur.fiscal_invoice_id;',"  IF v_cur.service='NFeRecepcaoEvento4' AND v_cur.fiscal_event_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.fiscal_invoices i WHERE i.id=v_cur.fiscal_invoice_id AND i.organization_id=public.h15_actor_organization() AND public.fn_fiscal_can_operate(auth.uid()) IS TRUE) THEN RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;\n  v_invoice_id := v_cur.fiscal_invoice_id;")
 record=replace(record,'  v_close_error text := NULL;',"  v_close_error text := NULL;\n  v_cancel jsonb := NULL;")
 record=replace(record,'      PERFORM public.rpc_fiscal_event_sefaz_reconcile_v1(', '      PERFORM public.rpc_fiscal_event_sefaz_reconcile_v1(') # exact anchor sanity
 record=replace(record,"        coalesce(_patch->>'xMotivo', ''), v_row.n_prot, v_row.dh_recbto);", "        coalesce(_patch->>'xMotivo', ''), v_row.n_prot, v_row.dh_recbto);\n      v_cancel:=platform_private.b2b_cancel_confirmed_fiscal_v1(v_row.id);\n      IF v_cancel->>'code' IN ('FISCAL_AUTHORIZATION_RECONCILIATION_PENDING','FISCAL_CANCEL_TITLE_LINK_UNPROVEN') THEN v_close_error:='FISCAL_EVENT_RECONCILIATION_PENDING'; END IF;")
@@ -73,6 +77,8 @@ pins=json.loads((H/'capture/pins.json').read_text());pre=guard(pins)
 gate="""CREATE TABLE platform_private.b2b_cancel_policy_gate_v1(singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),enabled boolean NOT NULL DEFAULT false);
 REVOKE ALL ON platform_private.b2b_cancel_policy_gate_v1 FROM PUBLIC,anon,authenticated,service_role;
 INSERT INTO platform_private.b2b_cancel_policy_gate_v1(singleton,enabled) VALUES(true,false);
+CREATE TABLE platform_private.b2b_cancel_policy_allowlist_v1(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),actor_id uuid NOT NULL,organization_id uuid NOT NULL,invoice_id uuid NOT NULL,order_id uuid NOT NULL,synthetic boolean NOT NULL DEFAULT true,valid_from timestamptz NOT NULL DEFAULT clock_timestamp(),valid_until timestamptz NOT NULL,revoked_at timestamptz);
+REVOKE ALL ON platform_private.b2b_cancel_policy_allowlist_v1 FROM PUBLIC,anon,authenticated,service_role;
 """
 (H/'candidate.sql').write_text(gate+residual+';\n'+payment+';\n'+helper+record+';\n')
 (H/'01-pre.sql.readonly').write_text('BEGIN READ ONLY;\n'+pre+'ROLLBACK;\n')
