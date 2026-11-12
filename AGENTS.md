@@ -25,6 +25,7 @@
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
 - Homolog cancellation prerequisites allow a deny-only additive private foundation without writer hooks; later deltas require exact canonical body hashes, captured relation guards and isolated roundtrip before session fiscal adapters — prevents blind repinning and broad service grants.
+- Homolog cancellation continuation pins the supplied catalog and retains statement-level receivable barriers; private closed preparation never counts as a session fixture or authorizes callbacks — prevents row-ticket bypass assumptions and false hosted readiness.
 - Cancellation review UI uses the canonical order detail extra slot and a fresh exact-order server capability; isolated transport is disposable-only and production entrypoints remain unchanged — prevents candidate preparation from activating writers.
 - Seller pending-term rejection candidates follow scripts/b2b-downstream-audit-20261107/seller-reject-pending-20261111/AGENTS.md; use the canonical existing endpoint and isolated generated delta — prevents parallel writers and unreviewed release.
 - Payment-term approval captures the observed linked child revision, locks order before child, and revalidates canonical active actor/scope after waits; missing commercial approval defers forecast without undoing valid terms — prevents stale approval and premature financial creation.

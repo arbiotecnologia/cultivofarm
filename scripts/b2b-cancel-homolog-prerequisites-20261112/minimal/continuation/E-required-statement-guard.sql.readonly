@@ -1,0 +1,8 @@
+-- FOCAL READ ONLY: exact statement barrier omitted from supplied function definitions.
+-- No business rows, Auth, secrets or data export. Only operator-reviewed source.
+BEGIN READ ONLY;
+SELECT p.oid::regprocedure::text AS signature,md5(pg_get_functiondef(p.oid)) AS current_md5,
+ '1b7e286b1391c986604df2b171025c62' AS expected_md5,pg_get_userbyid(p.proowner) AS owner,
+ p.proacl::text AS acl,p.proconfig,pg_get_functiondef(p.oid) AS exact_definition
+FROM pg_proc p WHERE p.oid=to_regprocedure('platform_private.homolog_validation_block_receivable_insert()');
+ROLLBACK;

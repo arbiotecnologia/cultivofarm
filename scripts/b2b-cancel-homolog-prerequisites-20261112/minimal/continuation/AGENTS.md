@@ -1,0 +1,3 @@
+- Prepare only for the exact homolog marker; never execute hosted SQL or modify runtime — preserves the original and installed Stage A.
+- Generate closed additive stages from the supplied catalog and pinned canonical sources; no writer hooks or client grants until the homolog statement-level receivable barrier is reviewed — prevents an unproven fixture bypass.
+- Schema-shell and synthetic identity tests are component evidence only; hosted fiscal fixtures remain blocked rather than inserting final financial or fiscal results — prevents false session certification.

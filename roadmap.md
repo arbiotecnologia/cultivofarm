@@ -1,6 +1,8 @@
 ## 12/11 01:22 — Pré-requisitos específicos de cancelamento em homologação
+- [x] Continuação 01:41: captura gzip validada, três hashes conferidos, B/C/D aditivos privados gerados, aguardando_fiscal corrigido sem alterar estados; 22 checks PG e 16 UI PASS, logs de falhas preservados, sem remoto/publicação.
+- [ ] E/fixture hospedada e composição operacional bloqueadas pelo corpo exato de platform_private.homolog_validation_block_receivable_insert() MD5 1b7e286b1391c986604df2b171025c62; query focal e limites em minimal/continuation/REPORT.md. Não há roundtrip integral homolog ou prova de sessão real.
 - [x] Continuação 01:33: seis corpos homolog recuperados por MD5 calculado, etapa A privada fechada gerada e roundtrip 18/18; caminho mínimo B–E documentado em minimal/REPORT.md sem copiar produção.
-- [ ] Integração residual/fiscal depende só de três definições exatas begin/prepare/respond e trechos estruturais/ACL/guards da captura já existente; nenhuma nova rodada de inventário geral nem decisão comercial necessária.
+- [x] Três definições begin/prepare/respond e estruturas/ACL/guards recebidos em 01:41 e decodificados; dependência focal atual substitui a pendência anterior, sem repetir inventário geral.
 - [x] Inventário específico em scripts/b2b-cancel-homolog-prerequisites-20261112: 149 nomes de função/64 relações, cinco segmentos somente leitura; onze hashes = 5 ausências/4 divergências/2 coincidências de corpo.
 - [x] Fontes inativas fixture e Financeiro para localizar título por NF/empresa; 8/8 fontes, 16/16 UI/regressões e cinco consultas sem erro em catálogo PG sintético. Manifesto canônico/hashes/REPORT entregues; original intacto.
 - [x] Entrega inicial substituída parcialmente: etapa A fechada tem INSTALL/POST/rollback/roundtrip 18/18; integração cancelamento/fixture permanece no bloqueio específico acima. Não repetir inventário 01–05.

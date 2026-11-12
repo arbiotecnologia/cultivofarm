@@ -1,0 +1,124 @@
+{
+  "real_session": false,
+  "remote": false,
+  "exact_full_catalog_roundtrip": false,
+  "seams": [
+    "captured column shells without business guards/defaults",
+    "synthetic auth/role/settings/features",
+    "Stage A payload only",
+    "forecast parent FK removed only in disposable state-contract test",
+    "synthetic statement barrier, not hosted body"
+  ],
+  "checks": [
+    {
+      "test": "exact supplied definition public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "exact supplied definition public.rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid)",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "exact supplied definition public.rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid)",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "B exact additive payload + closed POST",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "C exact additive payload + closed POST",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "D exact additive payload + closed POST",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "B exact rollback",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "C exact rollback",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "D exact rollback",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "full PRE refuses reduced catalog",
+      "status": "PASS",
+      "detail": "ERROR:  RELATION_OWNER_RLS_DRIFT:public.accounts_receivable\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\n"
+    },
+    {
+      "test": "private residual command has no client grant",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "capability gate OFF denies without payload",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "fiscal helper gate OFF denies finality",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "aguardando_fiscal 20 becomes canceled residual 0",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "stale CAS cannot cancel twice",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "one cancellation event retained",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "emissao_em_andamento stays blocked",
+      "status": "PASS",
+      "detail": "ERROR:  B2B_FORECAST_STATE_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text) line 7 at RAISE\n"
+    },
+    {
+      "test": "consulta_fiscal_obrigatoria stays blocked",
+      "status": "PASS",
+      "detail": "ERROR:  B2B_FORECAST_STATE_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text) line 7 at RAISE\n"
+    },
+    {
+      "test": "faturado_total stays blocked",
+      "status": "PASS",
+      "detail": "ERROR:  B2B_FORECAST_STATE_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text) line 7 at RAISE\n"
+    },
+    {
+      "test": "statement barrier blocks even empty INSERT without row permit",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "no title or payment fabricated",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "wrong marker refuses rollback",
+      "status": "PASS",
+      "detail": null
+    }
+  ]
+}
