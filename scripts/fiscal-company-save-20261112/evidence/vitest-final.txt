@@ -1,0 +1,29 @@
+$ vitest run src/test/fiscal/companyFiscalSave.original.test.tsx src/test/fiscal/companyFiscalSave.pg.test.ts "src/test/fiscal/fase3_1.static.test.ts" "src/test/fiscal/fase3_1.ui.test.tsx" "src/test/fiscal/fase3_15.static.test.ts" "src/test/fiscal/fase_h5_a1.draftSave.test.ts" src/test/fiscal/arbioSyntheticFiscal.audit.test.ts "src/test/fiscal/h17Readiness.test.ts" src/test/fiscal/fiscal_labels_pt_br.test.ts "--maxWorkers=2"
+
+ RUN  v3.2.4 /dev-server
+
+stderr | src/test/fiscal/companyFiscalSave.original.test.tsx > Contrato canônico de salvamento sem validação contábil > reabre DRAFT, salva dados e mantém a revisão sem promover emissão
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/fiscal/fase3_1.ui.test.tsx > FiscalEmpresa — flag OFF (default) > admin vê estado de preparação, sem formulário
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/fase3_1.ui.test.tsx (18 tests) 613ms
+ ✓ src/test/fiscal/companyFiscalSave.original.test.tsx (14 tests) 1775ms
+   ✓ Contrato canônico de salvamento sem validação contábil > reabre DRAFT, salva dados e mantém a revisão sem promover emissão  442ms
+ ✓ src/test/fiscal/h17Readiness.test.ts (15 tests) 17ms
+ ✓ src/test/fiscal/fase3_15.static.test.ts (24 tests) 23ms
+ ✓ src/test/fiscal/fiscal_labels_pt_br.test.ts (45 tests) 37ms
+ ✓ src/test/fiscal/fase3_1.static.test.ts (35 tests) 19ms
+ ✓ src/test/fiscal/fase_h5_a1.draftSave.test.ts (4 tests) 12ms
+ ✓ src/test/fiscal/arbioSyntheticFiscal.audit.test.ts (4 tests) 8ms
+ ✓ src/test/fiscal/companyFiscalSave.pg.test.ts (1 test) 2429ms
+   ✓ payloads reais do SDK exercitam CHECK/H15/CAS no espelho componente descartável  2428ms
+
+ Test Files  9 passed (9)
+      Tests  160 passed (160)
+   Start at  03:20:36
+   Duration  11.40s (transform 899ms, setup 1.16s, collect 3.08s, tests 4.93s, environment 6.52s, prepare 1.31s)
+
