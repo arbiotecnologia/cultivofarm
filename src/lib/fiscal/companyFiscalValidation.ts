@@ -294,8 +294,50 @@ export const FORBIDDEN_PAYLOAD_KEYS = [
  * colunas reais de company_fiscal_settings — sem casts estruturais
  * (nenhum any). Chaves proibidas nunca são incluídas.
  */
-export function buildUpdatePayload(values: CompanyFiscalFormValues): Update {
-  const parsed = companyFiscalFormSchema.parse(values);
+function sameJson(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+/**
+ * Separa chaves JSON idênticas às lidas do banco (legado, zero, null, tipos
+ * antigos) para que não sejam revalidadas nem normalizadas; só chaves
+ * editadas passam pelo schema. Sensíveis continuam bloqueadas.
+ */
+function splitUnchanged(current: unknown, baseline: unknown): { edited: Record<string, unknown>; kept: Record<string, unknown> } {
+  const cur = (current && typeof current === "object" && !Array.isArray(current)) ? current as Record<string, unknown> : {};
+  const base = (baseline && typeof baseline === "object" && !Array.isArray(baseline)) ? baseline as Record<string, unknown> : {};
+  const edited: Record<string, unknown> = {};
+  const kept: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(cur)) {
+    if (v === undefined) continue;
+    if (k in base && sameJson(v, base[k])) kept[k] = v; else edited[k] = v;
+  }
+  return { edited, kept };
+}
+
+/** Valores a validar: chaves JSON inalteradas desde a leitura não são revalidadas. */
+export function valuesForValidation(values: CompanyFiscalFormValues, baseline?: CompanyFiscalFormValues): CompanyFiscalFormValues {
+  if (!baseline) return values;
+  return {
+    ...values,
+    ...(values.nfe_configuration !== undefined ? { nfe_configuration: splitUnchanged(values.nfe_configuration, baseline.nfe_configuration).edited as CompanyFiscalFormValues["nfe_configuration"] } : {}),
+    ...(values.nfse_configuration !== undefined ? { nfse_configuration: splitUnchanged(values.nfse_configuration, baseline.nfse_configuration).edited as CompanyFiscalFormValues["nfse_configuration"] } : {}),
+  };
+}
+
+export function buildUpdatePayload(values: CompanyFiscalFormValues, baseline?: CompanyFiscalFormValues): Update {
+  const nfeSplit = baseline ? splitUnchanged(values.nfe_configuration, baseline.nfe_configuration) : null;
+  const nfseSplit = baseline ? splitUnchanged(values.nfse_configuration, baseline.nfse_configuration) : null;
+  if ((nfeSplit && hasSensitiveKey(nfeSplit.kept)) || (nfseSplit && hasSensitiveKey(nfseSplit.kept))) {
+    throw new Error("Conteúdo sensível não é permitido.");
+  }
+  const parsed = companyFiscalFormSchema.parse({
+    ...values,
+    ...(nfeSplit && values.nfe_configuration !== undefined ? { nfe_configuration: nfeSplit.edited } : {}),
+    ...(nfseSplit && values.nfse_configuration !== undefined ? { nfse_configuration: nfseSplit.edited } : {}),
+  });
+  if (nfeSplit && parsed.nfe_configuration) parsed.nfe_configuration = { ...nfeSplit.kept, ...parsed.nfe_configuration } as typeof parsed.nfe_configuration;
+  if (nfseSplit && parsed.nfse_configuration) parsed.nfse_configuration = { ...nfseSplit.kept, ...parsed.nfse_configuration } as typeof parsed.nfse_configuration;
   const payload: Update = {
     // Trava: provider legacy sempre NONE.
     fiscal_provider: LOCKED_PROVIDER,

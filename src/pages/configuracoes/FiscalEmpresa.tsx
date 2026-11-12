@@ -20,6 +20,7 @@ import {
 import {
   companyFiscalFormSchema,
   rowToFormValues,
+  valuesForValidation,
   ALLOWED_ENVIRONMENTS,
   ALLOWED_STATUSES,
   ALLOWED_PROVIDERS,
@@ -72,9 +73,11 @@ import { CnpjLookupButton } from "@/components/fiscal/CnpjLookupButton";
 import { useFiscalFieldFocus } from "@/lib/fiscal/useFiscalFieldFocus";
 import CompanyAccreditationsFields from "@/components/fiscal/CompanyAccreditationsFields";
 import PisCofinsHistory from "@/components/fiscal/PisCofinsHistory";
+import { PROVIDER_OPTIONS } from "@/lib/fiscal/providerLabels";
 
 
 const PAGE_TITLE = "Central de Configuração Fiscal";
+const SAVE_TABS = ["empresa", "nfe", "nfse", "integracao"] as const;
 const EMISSION_BANNER = "Emissão fiscal desativada — ambiente em preparação";
 
 function FieldRow({
@@ -90,30 +93,39 @@ function FieldRow({
 }
 
 type SelectOption = string | { value: string; label: string };
+/**
+ * Select nativo. Campos opcionais sempre exibem "Não informado" (valor "")
+ * quando nada foi gravado — nunca o primeiro item como se estivesse salvo.
+ * `required` só para colunas com valor obrigatório no banco.
+ */
 function SelectNative({
-  id, value, onChange, options, disabled,
+  id, value, onChange, options, disabled, required, emptyLabel,
 }: {
   id: string;
-  value: string | undefined;
+  value: string | number | null | undefined;
   onChange: (v: string) => void;
   options: readonly SelectOption[];
   disabled?: boolean;
+  required?: boolean;
+  emptyLabel?: string;
 }) {
   const normalized = options.map((o) =>
     typeof o === "string" ? { value: o, label: o } : o,
-  );
-  const currentValue = value ?? normalized[0]?.value ?? "";
-  const missing = value != null && value !== "" && !normalized.some((o) => o.value === value);
+  ).filter((o) => o.value !== "");
+  const raw = value === null || value === undefined ? "" : String(value);
+  const missing = raw !== "" && !normalized.some((o) => o.value === raw);
+  const showEmpty = !required || raw === "";
   return (
     <select
       id={id}
       disabled={disabled}
-      className="h-10 border rounded-md px-3 bg-background disabled:opacity-60"
-      value={currentValue}
+      className="h-11 w-full min-w-0 border rounded-md px-3 bg-background text-sm disabled:opacity-60"
+      value={raw}
       onChange={(e) => onChange(e.target.value)}
     >
+      {showEmpty ? <option value="">{emptyLabel ?? "Não informado"}</option> : null}
       {missing ? (
-        <option value={value}>{`— manter valor atual (${value}) —`}</option>
+        <option value={raw}>{`Valor atual não listado (${raw}) — mantido`}</option>
       ) : null}
       {normalized.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
@@ -161,6 +173,8 @@ export default function FiscalEmpresa() {
   const init = useInitFiscalCompanySettings();
 
   const [values, setValues] = useState<CompanyFiscalFormValues>(() => rowToFormValues(null));
+  // Último estado lido/salvo do servidor: base para preservar chaves não editadas.
+  const [baseline, setBaseline] = useState<CompanyFiscalFormValues>(() => rowToFormValues(null));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const canViewHomologation = Array.isArray(roles) && roles.some((r) => r === "administrador" || r === "gestor" || r === "financeiro");
   type FiscalEmpresaTab = "empresa" | "nfe" | "nfse" | "certificado" | "integracao" | "rtc" | "homologacao" | "revisao";
@@ -207,6 +221,7 @@ export default function FiscalEmpresa() {
     hydratedId.current = null;
     editRevision.current += 1;
     setValues(rowToFormValues(null));
+    setBaseline(rowToFormValues(null));
     setErrors({});
   }, [user?.id, profile?.organization_id, authzEpoch]);
 
@@ -214,6 +229,7 @@ export default function FiscalEmpresa() {
     if (settingsQuery.data && !draftDirty.current && !saveInFlight.current) {
       hydratedId.current = settingsQuery.data.id;
       setValues(rowToFormValues(settingsQuery.data));
+      setBaseline(rowToFormValues(settingsQuery.data));
     }
   }, [settingsQuery.data, user?.id, profile?.organization_id, authzEpoch]);
 
@@ -367,17 +383,17 @@ export default function FiscalEmpresa() {
   function setNfe(key: string, val: unknown) {
     draftDirty.current = true;
     editRevision.current += 1;
-    setValues((prev) => ({ ...prev, nfe_configuration: { ...(prev.nfe_configuration ?? {}), [key]: val } }));
+    setValues((prev) => { const next = { ...((prev.nfe_configuration ?? {}) as Record<string, unknown>) }; if (val === undefined) delete next[key]; else next[key] = val; return { ...prev, nfe_configuration: next as CompanyFiscalFormValues["nfe_configuration"] }; });
   }
   function setNfse(key: string, val: unknown) {
     draftDirty.current = true;
     editRevision.current += 1;
-    setValues((prev) => ({ ...prev, nfse_configuration: { ...(prev.nfse_configuration ?? {}), [key]: val } }));
+    setValues((prev) => { const next = { ...((prev.nfse_configuration ?? {}) as Record<string, unknown>) }; if (val === undefined) delete next[key]; else next[key] = val; return { ...prev, nfse_configuration: next as CompanyFiscalFormValues["nfse_configuration"] }; });
   }
 
   function validateLocal(): boolean {
     setErrors({});
-    const parsed = companyFiscalFormSchema.safeParse(values);
+    const parsed = companyFiscalFormSchema.safeParse(valuesForValidation(values, baseline));
     if (!parsed.success) {
       const flat: Record<string, string> = {};
       for (const issue of parsed.error.issues) {
@@ -412,7 +428,9 @@ export default function FiscalEmpresa() {
         id: hydratedId.current ?? settingsQuery.data.id,
         expectedVersion: values.configuration_version ?? 0,
         values: normalizedValues,
+        baseline,
       });
+      setBaseline(rowToFormValues(saved));
       if (submittedRevision === editRevision.current) {
         draftDirty.current = false;
         setValues(rowToFormValues(saved));
@@ -577,14 +595,13 @@ export default function FiscalEmpresa() {
                   />
                 </FieldRow>
                 <FieldRow id="tax_regime" label="Regime tributário">
-                  <SelectNative id="tax_regime" value={values.tax_regime ?? ""} options={TAX_REGIME_OPTIONS} onChange={(v) => set("tax_regime", v)} />
+                  <SelectNative id="tax_regime" value={values.tax_regime} options={TAX_REGIME_OPTIONS} onChange={(v) => set("tax_regime", v === "" ? null : v)} />
                 </FieldRow>
                 <FieldRow id="crt" label="CRT" description="Código do Regime Tributário oficial.">
-                  <SelectNative id="crt" value={values.crt ?? ""} options={CRT_OPTIONS} onChange={(v) => set("crt", v)} />
+                  <SelectNative id="crt" value={values.crt} options={CRT_OPTIONS} onChange={(v) => set("crt", v === "" ? null : v)} />
                 </FieldRow>
                 <FieldRow id="pis_cofins_regime" label="Regime de PIS/COFINS" description="Opcional no salvamento; aguarda confirmação da contabilidade. Não é deduzido do regime tributário ou CRT.">
-                  <SelectNative id="pis_cofins_regime" value={values.pis_cofins_regime ?? ""} disabled={readonly} options={[
-                    { value: "", label: "Não informado — pendente de confirmação" },
+                  <SelectNative id="pis_cofins_regime" value={values.pis_cofins_regime} disabled={readonly} emptyLabel="Não informado — pendente de confirmação" options={[
                     { value: "CUMULATIVO", label: "Cumulativo" },
                     { value: "NAO_CUMULATIVO", label: "Não cumulativo" },
                     { value: "MISTO", label: "Misto" },
@@ -606,7 +623,7 @@ export default function FiscalEmpresa() {
                   {errors.pis_cofins_regime_effective_from ? <p className="text-xs text-destructive" role="alert">{errors.pis_cofins_regime_effective_from}</p> : null}
                 </FieldRow>
                 <PisCofinsHistory companySettingsId={settingsQuery.data.id} currentUserId={user?.id} />
-                <CompanyAccreditationsFields key={`${user?.id}:${profile?.organization_id}:${authzEpoch}`} records={values.uf_accreditations ?? []} disabled={readonly || update.isPending} onChange={(records) => set("uf_accreditations", records)} />
+                <CompanyAccreditationsFields key={`${user?.id}:${profile?.organization_id}:${authzEpoch}:${hydratedId.current ?? "none"}`} records={values.uf_accreditations ?? []} savedRecords={baseline.uf_accreditations ?? []} disabled={readonly || update.isPending} onChange={(records) => set("uf_accreditations", records)} />
                 {errors.uf_accreditations ? <p className="text-xs text-destructive" role="alert">{errors.uf_accreditations}</p> : null}
                 <CompanyCnaeFields
                   primary={values.primary_cnae ?? null}
@@ -640,7 +657,7 @@ export default function FiscalEmpresa() {
                 <FieldRow id="complement" label="Complemento"><Input id="complement" value={values.complement ?? ""} onChange={(e) => set("complement", e.target.value)} /></FieldRow>
                 <FieldRow id="neighborhood" label="Bairro"><Input id="neighborhood" value={values.neighborhood ?? ""} onChange={(e) => set("neighborhood", e.target.value)} /></FieldRow>
                 <FieldRow id="state" label="UF">
-                  <SelectNative id="state" value={values.state ?? ""} options={UF_OPTIONS} onChange={(v) => set("state", v)} />
+                  <SelectNative id="state" value={values.state} options={UF_OPTIONS} onChange={(v) => set("state", v === "" ? null : v)} />
                 </FieldRow>
                 <FieldRow
                   id="city"
@@ -672,7 +689,7 @@ export default function FiscalEmpresa() {
                   />
                 </FieldRow>
                 <FieldRow id="country_code" label="Código do país">
-                  <SelectNative id="country_code" value={values.country_code ?? "1058"} options={COUNTRY_OPTIONS} onChange={(v) => set("country_code", v)} />
+                  <SelectNative id="country_code" value={values.country_code} options={COUNTRY_OPTIONS} onChange={(v) => set("country_code", v === "" ? null : v)} />
                 </FieldRow>
               </CardContent>
             </Card>
@@ -684,10 +701,10 @@ export default function FiscalEmpresa() {
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FieldRow id="fiscal_environment" label="Ambiente">
-                  <SelectNative id="fiscal_environment" value={values.fiscal_environment} options={FISCAL_ENVIRONMENT.toOptions(ALLOWED_ENVIRONMENTS)} onChange={(v) => set("fiscal_environment", v as (typeof ALLOWED_ENVIRONMENTS)[number])} />
+                  <SelectNative id="fiscal_environment" required value={values.fiscal_environment} options={FISCAL_ENVIRONMENT.toOptions(ALLOWED_ENVIRONMENTS)} onChange={(v) => set("fiscal_environment", v as (typeof ALLOWED_ENVIRONMENTS)[number])} />
                 </FieldRow>
                 <FieldRow id="configuration_status" label="Status de configuração">
-                  <SelectNative id="configuration_status" value={values.configuration_status} options={FISCAL_CONFIGURATION_STATUS.toOptions(ALLOWED_STATUSES)} disabled onChange={() => {}} />
+                  <SelectNative id="configuration_status" required value={values.configuration_status} options={FISCAL_CONFIGURATION_STATUS.toOptions(ALLOWED_STATUSES)} disabled onChange={() => {}} />
                 </FieldRow>
               </CardContent>
             </Card>
@@ -705,7 +722,7 @@ export default function FiscalEmpresa() {
                     <div className="text-sm font-medium">Habilitada para preparação</div>
                     <div className="text-xs text-muted-foreground">Não autoriza emissão.</div>
                   </div>
-                  <Switch checked={nfe.enabled_for_preparation === true} onCheckedChange={(v) => setNfe("enabled_for_preparation", v)} />
+                  <Switch aria-label="NF-e habilitada para preparação" checked={nfe.enabled_for_preparation === true} onCheckedChange={(v) => setNfe("enabled_for_preparation", v)} />
                 </div>
                 <FieldRow id="nfe_environment_code" label="Ambiente NF-e">
                   <Input id="nfe_environment_code" value="Homologação (2)" readOnly />
@@ -715,7 +732,7 @@ export default function FiscalEmpresa() {
                   {errors.nfe_series_number ? <p role="alert" className="text-xs text-destructive">Informe uma série inteira entre 1 e 999.</p> : null}
                 </FieldRow>
                 <FieldRow id="nfe_numbering_mode" label="Modo de numeração">
-                  <SelectNative id="nfe_numbering_mode" value={(nfe.numbering_mode as string) ?? "MANUAL_REFERENCE"} options={NFE_NUMBERING_MODE.toOptions(NFE_NUMBERING_MODES)} onChange={(v) => setNfe("numbering_mode", v)} />
+                  <SelectNative id="nfe_numbering_mode" value={nfe.numbering_mode as string | undefined} options={NFE_NUMBERING_MODE.toOptions(NFE_NUMBERING_MODES)} onChange={(v) => setNfe("numbering_mode", v === "" ? undefined : v)} />
                 </FieldRow>
                 <FieldRow id="nfe_default_nature" label="Natureza padrão da operação">
                   <NatureOperationCombobox
@@ -728,27 +745,27 @@ export default function FiscalEmpresa() {
                   />
                 </FieldRow>
                 <FieldRow id="nfe_default_finality" label="Finalidade padrão">
-                  <SelectNative id="nfe_default_finality" value={(nfe.default_finality as string) ?? "NORMAL"} options={NFE_FINALITY.toOptions(NFE_FINALIDADES)} onChange={(v) => setNfe("default_finality", v)} />
+                  <SelectNative id="nfe_default_finality" value={nfe.default_finality as string | undefined} options={NFE_FINALITY.toOptions(NFE_FINALIDADES)} onChange={(v) => setNfe("default_finality", v === "" ? undefined : v)} />
                 </FieldRow>
                 <FieldRow id="nfe_presence_indicator" label="Indicador de presença" description="Código conforme NT2011.004.">
-                  <SelectNative id="nfe_presence_indicator" value={(nfe.presence_indicator as string) ?? ""} options={PRESENCE_OPTIONS} onChange={(v) => setNfe("presence_indicator", v)} />
+                  <SelectNative id="nfe_presence_indicator" value={nfe.presence_indicator as string | number | undefined} options={PRESENCE_OPTIONS} onChange={(v) => setNfe("presence_indicator", v === "" ? undefined : v)} />
                 </FieldRow>
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <Label className="m-0">Consumidor final padrão</Label>
-                  <Switch checked={nfe.default_end_consumer === true} onCheckedChange={(v) => setNfe("default_end_consumer", v)} />
+                  <Switch aria-label="Consumidor final padrão" checked={nfe.default_end_consumer === true} onCheckedChange={(v) => setNfe("default_end_consumer", v)} />
                 </div>
                 <FieldRow id="nfe_freight_modality" label="Modalidade de frete">
-                  <SelectNative id="nfe_freight_modality" value={(nfe.freight_modality as string) ?? ""} options={FREIGHT_MODALITY_OPTIONS} onChange={(v) => setNfe("freight_modality", v)} />
+                  <SelectNative id="nfe_freight_modality" value={nfe.freight_modality as string | number | undefined} options={FREIGHT_MODALITY_OPTIONS} onChange={(v) => setNfe("freight_modality", v === "" ? undefined : v)} />
                 </FieldRow>
                 <FieldRow id="nfe_danfe_layout" label="Layout DANFE">
-                  <SelectNative id="nfe_danfe_layout" value={(nfe.danfe_layout as string) ?? "PORTRAIT"} options={NFE_DANFE_LAYOUT.toOptions(NFE_DANFE_LAYOUTS)} onChange={(v) => setNfe("danfe_layout", v)} />
+                  <SelectNative id="nfe_danfe_layout" value={nfe.danfe_layout as string | undefined} options={NFE_DANFE_LAYOUT.toOptions(NFE_DANFE_LAYOUTS)} onChange={(v) => setNfe("danfe_layout", v === "" ? undefined : v)} />
                 </FieldRow>
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <Label className="m-0">Enviar e-mail após autorização futura</Label>
-                  <Switch checked={nfe.send_email_after_authorization === true} onCheckedChange={(v) => setNfe("send_email_after_authorization", v)} />
+                  <Switch aria-label="NF-e: enviar e-mail após autorização futura" checked={nfe.send_email_after_authorization === true} onCheckedChange={(v) => setNfe("send_email_after_authorization", v)} />
                 </div>
                 <FieldRow id="nfe_contingency_mode" label="Modo de contingência">
-                  <SelectNative id="nfe_contingency_mode" value={(nfe.contingency_mode as string) ?? "DISABLED"} options={NFE_CONTINGENCY.toOptions(NFE_CONTINGENCIA)} onChange={(v) => setNfe("contingency_mode", v)} />
+                  <SelectNative id="nfe_contingency_mode" value={nfe.contingency_mode as string | undefined} options={NFE_CONTINGENCY.toOptions(NFE_CONTINGENCIA)} onChange={(v) => setNfe("contingency_mode", v === "" ? undefined : v)} />
                 </FieldRow>
                 <FieldRow id="nfe_cfop_in" label="CFOP interno sugerido" description="Ex.: 5102 — Venda de mercadoria adquirida.">
                   <FiscalCatalogCombobox id="nfe_cfop_in" catalogType="CFOP" parentCode="SAIDA" codePrefix="5" metadataFilter={{ direction: "OUT", scope: "INTRA" }} preferredCodes={["5101", "5102"]} value={(nfe.suggested_cfop_in_state as string) || null} onChange={(code) => setNfe("suggested_cfop_in_state", code ?? "")} placeholder="Selecionar CFOP interno…" searchPlaceholder="Buscar por código ou descrição…" multiline disabled={readonly} />
@@ -781,18 +798,18 @@ export default function FiscalEmpresa() {
                     <div className="text-sm font-medium">Habilitada para preparação</div>
                     <div className="text-xs text-muted-foreground">Não autoriza emissão.</div>
                   </div>
-                  <Switch checked={nfse.enabled_for_preparation === true} onCheckedChange={(v) => setNfse("enabled_for_preparation", v)} />
+                  <Switch aria-label="NFS-e habilitada para preparação" checked={nfse.enabled_for_preparation === true} onCheckedChange={(v) => setNfse("enabled_for_preparation", v)} />
                 </div>
                 <FieldRow id="nfse_environment" label="Ambiente NFS-e">
-                  <SelectNative id="nfse_environment" value={(nfse.environment as string) ?? "NOT_CONFIGURED"} options={FISCAL_ENVIRONMENT.toOptions(ALLOWED_ENVIRONMENTS)} onChange={(v) => setNfse("environment", v)} />
+                  <SelectNative id="nfse_environment" value={nfse.environment as string | undefined} options={FISCAL_ENVIRONMENT.toOptions(ALLOWED_ENVIRONMENTS)} onChange={(v) => setNfse("environment", v === "" ? undefined : v)} />
                 </FieldRow>
                 <FieldRow id="nfse_mode" label="Modo">
-                  <SelectNative id="nfse_mode" value={(nfse.mode as string) ?? "MUNICIPAL"} options={NFSE_MODE.toOptions(NFSE_MODES)} onChange={(v) => setNfse("mode", v)} />
+                  <SelectNative id="nfse_mode" value={nfse.mode as string | undefined} options={NFSE_MODE.toOptions(NFSE_MODES)} onChange={(v) => setNfse("mode", v === "" ? undefined : v)} />
                 </FieldRow>
                 <FieldRow id="nfse_series" label="Série NFS-e"><Input id="nfse_series" value={values.nfse_series ?? ""} onChange={(e) => set("nfse_series", e.target.value)} /></FieldRow>
                 <FieldRow id="nfse_rps_series" label="Série RPS"><Input id="nfse_rps_series" value={(nfse.rps_series as string) ?? ""} onChange={(e) => setNfse("rps_series", e.target.value)} /></FieldRow>
                 <FieldRow id="nfse_rps_type" label="Tipo RPS">
-                  <SelectNative id="nfse_rps_type" value={(nfse.rps_type as string) ?? ""} options={RPS_TYPE_OPTIONS} onChange={(v) => setNfse("rps_type", v)} />
+                  <SelectNative id="nfse_rps_type" value={nfse.rps_type as string | number | undefined} options={RPS_TYPE_OPTIONS} onChange={(v) => setNfse("rps_type", v === "" ? undefined : v)} />
                 </FieldRow>
                 <FieldRow id="nfse_national_code" label="Cód. tributação nacional"><Input id="nfse_national_code" value={(nfse.national_taxation_code as string) ?? ""} onChange={(e) => setNfse("national_taxation_code", e.target.value)} /></FieldRow>
                 <FieldRow id="nfse_municipal_code" label="Cód. tributação municipal"><Input id="nfse_municipal_code" value={(nfse.municipal_taxation_code as string) ?? ""} onChange={(e) => setNfse("municipal_taxation_code", e.target.value)} /></FieldRow>
@@ -812,14 +829,14 @@ export default function FiscalEmpresa() {
                 </FieldRow>
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <Label className="m-0">ISS retido por padrão</Label>
-                  <Switch checked={nfse.iss_withheld_default === true} onCheckedChange={(v) => setNfse("iss_withheld_default", v)} />
+                  <Switch aria-label="ISS retido por padrão" checked={nfse.iss_withheld_default === true} onCheckedChange={(v) => setNfse("iss_withheld_default", v)} />
                 </div>
                 <FieldRow id="nfse_regime" label="Regime especial de tributação">
-                  <SelectNative id="nfse_regime" value={(nfse.special_taxation_regime as string) ?? ""} options={NFSE_SPECIAL_REGIME_OPTIONS} onChange={(v) => setNfse("special_taxation_regime", v)} />
+                  <SelectNative id="nfse_regime" value={nfse.special_taxation_regime as string | number | undefined} options={NFSE_SPECIAL_REGIME_OPTIONS} onChange={(v) => setNfse("special_taxation_regime", v === "" ? undefined : v)} />
                 </FieldRow>
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <Label className="m-0">Incentivo fiscal</Label>
-                  <Switch checked={nfse.fiscal_incentive === true} onCheckedChange={(v) => setNfse("fiscal_incentive", v)} />
+                  <Switch aria-label="Incentivo fiscal" checked={nfse.fiscal_incentive === true} onCheckedChange={(v) => setNfse("fiscal_incentive", v)} />
                 </div>
                 <FieldRow id="nfse_op_nature" label="Natureza da operação">
                   <Input id="nfse_op_nature" value={(nfse.operation_nature as string) ?? ""} onChange={(e) => setNfse("operation_nature", e.target.value)} />
@@ -834,7 +851,7 @@ export default function FiscalEmpresa() {
                 </div>
                 <div className="flex items-center justify-between rounded-md border p-3 md:col-span-2">
                   <Label className="m-0">Enviar e-mail após autorização futura</Label>
-                  <Switch checked={nfse.send_email_after_authorization === true} onCheckedChange={(v) => setNfse("send_email_after_authorization", v)} />
+                  <Switch aria-label="NFS-e: enviar e-mail após autorização futura" checked={nfse.send_email_after_authorization === true} onCheckedChange={(v) => setNfse("send_email_after_authorization", v)} />
                 </div>
               </CardContent>
             </Card>
@@ -868,10 +885,10 @@ export default function FiscalEmpresa() {
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FieldRow id="nfe_provider" label="Provedor NF-e">
-                  <SelectNative id="nfe_provider" value={values.nfe_provider ?? "NONE"} options={ALLOWED_PROVIDERS} onChange={(v) => set("nfe_provider", v as (typeof ALLOWED_PROVIDERS)[number])} />
+                  <SelectNative id="nfe_provider" required value={values.nfe_provider ?? "NONE"} options={PROVIDER_OPTIONS} onChange={(v) => set("nfe_provider", v as (typeof ALLOWED_PROVIDERS)[number])} />
                 </FieldRow>
                 <FieldRow id="nfse_provider" label="Provedor NFS-e">
-                  <SelectNative id="nfse_provider" value={values.nfse_provider ?? "NONE"} options={ALLOWED_PROVIDERS} onChange={(v) => set("nfse_provider", v as (typeof ALLOWED_PROVIDERS)[number])} />
+                  <SelectNative id="nfse_provider" required value={values.nfse_provider ?? "NONE"} options={PROVIDER_OPTIONS} onChange={(v) => set("nfse_provider", v as (typeof ALLOWED_PROVIDERS)[number])} />
                 </FieldRow>
                 <FieldRow id="nfe_credential_ref" label="Referência de credencial NF-e" description="Cadastre o segredo futuramente no cofre seguro; não cole aqui.">
                   <Input id="nfe_credential_ref" value={values.nfe_credential_ref ?? ""} onChange={(e) => set("nfe_credential_ref", e.target.value)} aria-invalid={!!errors.nfe_credential_ref} />
@@ -947,20 +964,18 @@ export default function FiscalEmpresa() {
         </fieldset>
       </Tabs>
 
-      {canEdit ? (
-        <div className="flex flex-wrap justify-end gap-2 sticky bottom-2 bg-background/80 backdrop-blur-sm p-2 rounded-md border">
-          <Button variant="outline" onClick={onSave} disabled={update.isPending} data-testid="fiscal-empresa-save-draft">
-            Salvar rascunho
-          </Button>
-          <Button onClick={onSave} disabled={update.isPending} data-testid="fiscal-empresa-save">
+      {canEdit && (SAVE_TABS as readonly string[]).includes(tab) ? (
+        <div className="flex flex-wrap items-center justify-end gap-2 sticky bottom-2 bg-background/80 backdrop-blur-sm p-2 rounded-md border">
+          <p className="mr-auto text-xs text-muted-foreground">Salva Empresa, NF-e, NFS-e e Integração juntas. RTC, certificado e homologação têm ações próprias.</p>
+          <Button className="min-h-11" onClick={onSave} disabled={update.isPending} data-testid="fiscal-empresa-save">
             {update.isPending ? <><Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden />Salvando…</> : "Salvar configuração"}
           </Button>
         </div>
-      ) : (
+      ) : !canEdit ? (
         <p className="text-xs text-muted-foreground" data-testid="fiscal-empresa-readonly-note">
           Modo somente leitura. Solicite alterações ao administrador.
         </p>
-      )}
+      ) : null}
     </div>
   );
 }

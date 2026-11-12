@@ -1,0 +1,462 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/fiscal/scanners.test.ts (4 tests) 1256ms
+   ✓ fiscal-secrets-scan > FAIL: fixture com JWT/serviço/pg/PEM dispara alertas mascarados  430ms
+ ✓ src/test/fiscal/fase3_9.static.test.ts (38 tests) 521ms
+   ✓ Fase 3.9 · (H) Server-only — nenhum import em src/** > nenhum arquivo de produção em src/** importa o entrypoint  497ms
+ ✓ src/test/fiscal/rtcCompanyCasHttp409.test.tsx (13 tests) 745ms
+stderr | src/test/fiscal/companyFiscalSave.original.test.tsx > Início da vigência PIS/COFINS na aba Empresa > legado sem coluna: campo desabilitado e PATCH não envia a data
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/rtcOperationConcurrency.test.tsx (32 tests) 2005ms
+ ✓ src/test/fiscal/regulatorioContencao.test.tsx (18 tests) 594ms
+stderr | src/test/fiscal/fiscalProdutos.platformUx.test.tsx > product (global) vs micro (canonical) edit split > administrador: route stays rw for micro; product read-only; micro editable
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/fiscalCatalogCombobox.test.tsx (7 tests) 706ms
+   ✓ FiscalCatalogCombobox > lista códigos do catálogo publicado com o sugerido primeiro  306ms
+stderr | src/test/fiscal/fase3_20.unified_list.ui.test.tsx > FiscalProdutos — perfil fiscal próprio de microrganismos (Fase 3.21) > tenant admin saves own product draft only via writer: reason + idempotency key, no guessed tax codes
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/fiscalProdutos.platformUx.test.tsx (7 tests) 738ms
+ ✓ src/test/fiscal/fiscalServicos.globalAuthorization.test.tsx (5 tests) 851ms
+   ✓ serviço global — página real com leitores simulados > administrador apenas consulta e não recebe editor IBS/CBS  376ms
+stderr | src/test/fiscal/sinief49/phase32.test.tsx > Fase 3.2 · estados do catálogo no ProdutoPicker > exibe 'Buscando…' quando carregando
+Warning: validateDOMNesting(...): <div> cannot appear as a descendant of <p>.
+    at div
+    at /dev-server/src/components/ui/badge.tsx:22:65
+    at p
+    at ItemProfileStatusLine (/dev-server/src/components/fiscal/documentos/sinief49/SinefOperationsPanel.tsx:2275:34)
+    at div
+    at div
+    at div
+    at div
+    at /dev-server/src/components/ui/card.tsx:47:71
+    at div
+    at /dev-server/src/components/ui/card.tsx:7:64
+    at fieldset
+    at div
+    at SinefOperationsPanel (/dev-server/src/components/fiscal/documentos/sinief49/SinefOperationsPanel.tsx:76:33)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+
+stderr | src/test/fiscal/fase3_1.ui.test.tsx > FiscalEmpresa — flag OFF (default) > admin vê estado de preparação, sem formulário
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/fase3_20.unified_list.ui.test.tsx (14 tests) 1638ms
+   ✓ FiscalProdutos — perfil fiscal próprio de microrganismos (Fase 3.21) > tenant admin saves own product draft only via writer: reason + idempotency key, no guessed tax codes  645ms
+ ✓ src/test/fiscal/fase3_1.ui.test.tsx (18 tests) 1004ms
+   ✓ FiscalEmpresa — flag ON > administrador vê formulário editável e botão Salvar  463ms
+ ✓ src/test/fiscal/sinief49/phase32.test.tsx (17 tests) 1374ms
+ ❯ src/test/fiscal/h7i.ingestaoCertificado.static.test.ts (4 tests | 1 failed) 7876ms
+   ✓ H7i — ingestão segura do certificado A1 > gitignore cobre material criptográfico 7ms
+   × H7i — ingestão segura do certificado A1 > nenhum arquivo de certificado está presente na árvore do projeto 7863ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   ✓ H7i — ingestão segura do certificado A1 > upload trata a senha apenas em memória e nunca a retorna 2ms
+   ✓ H7i — ingestão segura do certificado A1 > binding de frontend permanece no CultivoFarm autorizado 1ms
+ ✓ src/test/fiscal/companyFiscalSave.original.test.tsx (24 tests) 6458ms
+   ✓ Início da vigência PIS/COFINS na aba Empresa > legado sem coluna: campo desabilitado e PATCH não envia a data  507ms
+   ✓ Início da vigência PIS/COFINS na aba Empresa > salva data informada com CAS, reabre e mostra histórico sem duplicar ao salvar igual  673ms
+   ✓ Contrato canônico de salvamento sem validação contábil > AR Bio salva declaração MG, mantém SP/metadados e null; reabre sem atestado fictício  529ms
+   ✓ Contrato canônico de salvamento sem validação contábil > conflito mantém declaração e regime explicitamente escolhido sem rebase ou retry  415ms
+   ✓ Contrato canônico de salvamento sem validação contábil > reabre DRAFT, salva dados e mantém a revisão sem promover emissão  323ms
+   ✓ Contrato canônico de salvamento sem validação contábil > reabre PENDING_ACCOUNTING, salva dados e mantém a revisão sem promover emissão  316ms
+   ✓ Auditoria Central Fiscal — UF, Não informado, legados e botão único > várias UFs: nada pré-selecionado, editar carrega a UF certa, nova UF em branco, pendente até salvar  674ms
+   ✓ Auditoria Central Fiscal — UF, Não informado, legados e botão único > selects opcionais mostram Não informado; salvar outro campo preserva zero, legado numérico, null e ausência  414ms
+   ✓ Auditoria Central Fiscal — UF, Não informado, legados e botão único > botão único só em Empresa/NF-e/NFS-e/Integração  427ms
+ ✓ src/test/fiscal/fase3_8.static.test.ts (81 tests) 688ms
+   ✓ Fase 3.8 · (H) Server-only — nenhum import em src/** > nenhum arquivo em src importa o módulo server-only  617ms
+ ✓ src/test/fiscal/companyFiscalSave.pg.test.ts (1 test) 10074ms
+   ✓ payloads reais do SDK exercitam CHECK/H15/CAS no espelho componente descartável  10072ms
+ ✓ src/test/fiscal/xmlEngineXercesRuntime.test.ts (14 tests) 550ms
+   ✓ validação normativa real contra o XSD oficial da NF-e > rejeita XML deliberadamente inválido (raiz inexistente)  319ms
+ ✓ src/test/fiscal/companyAccreditations.pg.test.ts (1 test) 11938ms
+   ✓ declaração MG com null preserva merge/CAS/RLS e CHECKs canônicos no PostgreSQL local  11936ms
+stderr | src/test/fiscal/sinief49/ui.test.tsx > SinefOperationsPanel · visibilidade por papel > administrador vê o painel
+Warning: validateDOMNesting(...): <div> cannot appear as a descendant of <p>.
+    at div
+    at /dev-server/src/components/ui/badge.tsx:22:65
+    at p
+    at ItemProfileStatusLine (/dev-server/src/components/fiscal/documentos/sinief49/SinefOperationsPanel.tsx:2275:34)
+    at div
+    at div
+    at div
+    at div
+    at /dev-server/src/components/ui/card.tsx:47:71
+    at div
+    at /dev-server/src/components/ui/card.tsx:7:64
+    at fieldset
+    at div
+    at SinefOperationsPanel (/dev-server/src/components/fiscal/documentos/sinief49/SinefOperationsPanel.tsx:76:33)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+
+ ✓ src/test/fiscal/fiscalXmlAuthenticatedDownload.test.tsx (14 tests) 552ms
+ ✓ src/test/fiscal/natureOperationCombobox.test.tsx (2 tests) 726ms
+   ✓ NatureOperationCombobox > lista políticas publicadas e preserva opção personalizada  439ms
+ ✓ src/test/fiscal/sinief49/ui.test.tsx (11 tests) 526ms
+ ✓ src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts (44 tests) 525ms
+ ✓ src/test/fiscal/eligibilityEconomicDiagnosis.ui.test.tsx (7 tests) 497ms
+ ✓ src/test/fiscal/fase3_19_4.audit.test.tsx (19 tests) 531ms
+ ✓ src/test/fiscal/productFiscalProfiles.session.test.tsx (14 tests) 416ms
+stderr | src/test/fiscal/fase3_16_2c.ui.test.tsx > CertificadoDigitalSecao — modo somente leitura > exibe a seção mesmo sem canManageCertificates
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+Warning: An update to OsCertificateCard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OsCertificateCard (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:700:30)
+    at div
+    at div
+    at div
+    at CertificadoDigitalSecao (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:140:36)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///dev-server/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+    at wrapper (/dev-server/src/test/helpers/renderWithProviders.tsx:28:24)
+Warning: An update to OsCertificateCard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OsCertificateCard (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:700:30)
+    at div
+    at div
+    at div
+    at CertificadoDigitalSecao (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:140:36)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///dev-server/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+    at wrapper (/dev-server/src/test/helpers/renderWithProviders.tsx:28:24)
+Warning: An update to OsCertificateCard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OsCertificateCard (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:700:30)
+    at div
+    at div
+    at div
+    at CertificadoDigitalSecao (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:140:36)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///dev-server/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+    at wrapper (/dev-server/src/test/helpers/renderWithProviders.tsx:28:24)
+
+stderr | src/test/fiscal/fase3_16_2c.ui.test.tsx > CertificadoDigitalSecao — modo somente leitura > não renderiza botões de escrita (revogar / upload / registrar)
+Warning: An update to OsCertificateCard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OsCertificateCard (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:700:30)
+    at div
+    at div
+    at div
+    at CertificadoDigitalSecao (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:140:36)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///dev-server/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+    at wrapper (/dev-server/src/test/helpers/renderWithProviders.tsx:28:24)
+Warning: An update to OsCertificateCard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OsCertificateCard (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:700:30)
+    at div
+    at div
+    at div
+    at CertificadoDigitalSecao (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:140:36)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///dev-server/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+    at wrapper (/dev-server/src/test/helpers/renderWithProviders.tsx:28:24)
+Warning: An update to OsCertificateCard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OsCertificateCard (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:700:30)
+    at div
+    at div
+    at div
+    at CertificadoDigitalSecao (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:140:36)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///dev-server/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+    at wrapper (/dev-server/src/test/helpers/renderWithProviders.tsx:28:24)
+
+stderr | src/test/fiscal/fase3_16_2c.ui.test.tsx > CertificadoDigitalSecao — modo somente leitura > fingerprint é sempre mascarado, nunca renderizado integralmente
+Warning: An update to OsCertificateCard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OsCertificateCard (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:700:30)
+    at div
+    at div
+    at div
+    at CertificadoDigitalSecao (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:140:36)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///dev-server/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+    at wrapper (/dev-server/src/test/helpers/renderWithProviders.tsx:28:24)
+Warning: An update to OsCertificateCard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OsCertificateCard (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:700:30)
+    at div
+    at div
+    at div
+    at CertificadoDigitalSecao (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:140:36)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///dev-server/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+    at wrapper (/dev-server/src/test/helpers/renderWithProviders.tsx:28:24)
+Warning: An update to OsCertificateCard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OsCertificateCard (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:700:30)
+    at div
+    at div
+    at div
+    at CertificadoDigitalSecao (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:140:36)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///dev-server/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+    at wrapper (/dev-server/src/test/helpers/renderWithProviders.tsx:28:24)
+
+ ✓ src/test/fiscal/fase3_16_2c.ui.test.tsx (4 tests) 623ms
+   ✓ CertificadoDigitalSecao — modo somente leitura > não renderiza botões de escrita (revogar / upload / registrar)  312ms
+ ✓ src/test/fiscal/fase8.xsd.icms20.test.ts (3 tests) 365ms
+ ✓ src/test/fiscal/h14PostAudit.test.ts (11 tests) 247ms
+ ✓ src/test/fiscal/cancellationPolicyCandidate.ui.test.tsx (10 tests) 421ms
+ ✓ src/test/fiscal/companyCnaeFields.test.tsx (3 tests) 253ms
+ ✓ src/test/fiscal/fiscal_labels_pt_br.test.ts (45 tests) 128ms
+stderr | src/test/fiscal/CertificadoValidadeBanner.test.tsx > CertificadoValidadeBanner > sem companySettingsId => não renderiza
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/draftSaveCasClient.test.tsx (14 tests) 108ms
+ ✓ src/test/fiscal/CertificadoValidadeBanner.test.tsx (13 tests) 183ms
+ ✓ src/test/fiscal/h7d.cofreSemSenha.test.ts (22 tests) 29ms
+ ✓ src/test/fiscal/fase3_17.static.test.ts (38 tests) 81ms
+ ✓ src/test/fiscal/fase3_19_1.cnpjInput.test.tsx (3 tests) 103ms
+stderr | src/test/fiscal/fase_h4_a3.test.tsx > H4-A3 · Certificado A1 pendente (Central de Homologação) > sem certificado + showAllStates => renderiza pendente sem bloquear
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/fase_h4_a3.test.tsx (7 tests) 169ms
+stderr | src/test/fiscal/useFiscalFieldFocus.test.tsx > useFiscalFieldFocus > aplica foco quando `campo` está presente e alvo existe, e consome o parâmetro
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/useFiscalFieldFocus.test.tsx (9 tests) 138ms
+ ✓ src/test/fiscal/fase3_20_2.rpc_associate_microorganism.test.ts (3 tests) 179ms
+ ✓ src/test/fiscal/fase3_19_2.audit.test.ts (27 tests) 55ms
+ ✓ src/test/fiscal/fase3_7.static.test.ts (64 tests) 46ms
+ ✓ src/test/fiscal/fase3_11.static.test.ts (36 tests) 49ms
+ ✓ src/test/fiscal/fase3_16.static.test.ts (58 tests) 61ms
+ ✓ src/test/fiscal/fase3_3.static.test.ts (43 tests) 47ms
+ ✓ src/test/fiscal/fase3_5.static.test.ts (66 tests) 50ms
+ ✓ src/test/fiscal/h7g.vinculoEvento.test.ts (23 tests) 23ms
+ ✓ src/test/fiscal/nfeXmlEngine.test.ts (26 tests) 55ms
+ ✓ src/test/fiscal/fase3_6.static.test.ts (49 tests) 32ms
+ ✓ src/test/fiscal/verify-fiscal-types.test.ts (16 tests) 36ms
+ ✓ src/test/fiscal/fase3_2.static.test.ts (34 tests) 44ms
+ ✓ src/test/fiscal/fase3_15.static.test.ts (24 tests) 37ms
+ ✓ src/test/fiscal/fase3_1.static.test.ts (35 tests) 42ms
+ ✓ src/test/fiscal/h17Readiness.test.ts (15 tests) 60ms
+ ✓ src/test/fiscal/fiscalXmlCandidate.typesBehavior.test.ts (7 tests) 31ms
+ ✓ src/test/fiscal/cnpjLookup.test.ts (17 tests) 44ms
+ ✓ src/test/fiscal/sinief49/staging/artifacts.static.test.ts (43 tests) 38ms
+ ✓ src/test/fiscal/sinief49/integration.static.test.ts (5 tests) 24ms
+ ✓ src/test/fiscal/fase_sinief1.migration.static.test.ts (14 tests) 34ms
+ ✓ src/test/fiscal/h7c.asn1Screen.test.ts (14 tests) 33ms
+ ✓ src/test/fiscal/fase3_4.icms20.test.ts (10 tests) 21ms
+ ✓ src/test/fiscal/fase_corretiva_blocos_2_6.test.ts (15 tests) 42ms
+ ✓ src/test/fiscal/h7j.deleteGuard.static.test.ts (7 tests) 28ms
+ ✓ src/test/fiscal/fase3_4.static.test.ts (45 tests) 43ms
+ ✓ src/test/fiscal/correcao_cirurgica_final.test.ts (5 tests) 11ms
+ ✓ src/test/fiscal/sinief49/formAdapter.test.ts (13 tests) 26ms
+ ✓ src/test/fiscal/h7f.transporteSefaz.test.ts (26 tests) 36ms
+ ✓ src/test/fiscal/sinief49/staging/verifier.test.ts (4 tests) 18ms
+ ✓ src/test/fiscal/fase3_19_1.audit.test.ts (10 tests) 40ms
+ ✓ src/test/fiscal/fase3_0_2a.static.test.ts (23 tests) 33ms
+ ✓ src/test/fiscal/nfeProcClosure.test.ts (18 tests) 19ms
+ ✓ src/test/fiscal/cnpjAlpha.test.ts (13 tests) 28ms
+ ✓ src/test/fiscal/fase3_10.orchestrator.test.ts (32 tests) 18ms
+ ✓ src/test/fiscal/h7.sefazEndpoints.test.ts (9 tests) 18ms
+ ✓ src/test/fiscal/h7e.corsAllowlist.static.test.ts (6 tests) 17ms
+ ✓ src/test/fiscal/fase3_21.migration.static.test.ts (8 tests) 11ms
+ ✓ src/test/fiscal/faseF2.regulatorio.test.ts (18 tests) 21ms
+ ✓ src/test/fiscal/xmlEngineXsdBundle.test.ts (19 tests) 23ms
+ ✓ src/test/fiscal/fase3_19_6.canonical.test.ts (16 tests) 11ms
+ ✓ src/test/fiscal/ownedProductFiscal.test.ts (16 tests) 25ms
+ ✓ src/test/fiscal/fase2.contract.test.ts (6 tests) 19ms
+ ✓ src/test/fiscal/fiscalXml.v96Cors.test.ts (5 tests) 29ms
+ ✓ src/test/fiscal/companyMissingFields.test.ts (17 tests) 41ms
+ ✓ src/test/fiscal/companyAccreditations.test.ts (5 tests) 20ms
+ ✓ src/test/fiscal/sinief49/crossCutting.test.ts (13 tests) 16ms
+ ✓ src/test/fiscal/fase_h5_a1.connectionsLinks.test.ts (9 tests) 43ms
+ ✓ src/test/fiscal/arbioSyntheticFiscal.audit.test.ts (4 tests) 20ms
+ ✓ src/test/fiscal/h7k.preflight.static.test.ts (8 tests) 15ms
+ ✓ src/test/fiscal/xmlEngineXsdSelftest.test.ts (14 tests) 14ms
+ ✓ src/test/fiscal/mask.test.ts (9 tests) 18ms
+ ✓ src/test/fiscal/sinief49/sinief20.test.ts (13 tests) 33ms
+ ✓ src/test/fiscal/fase_h5_a.connectionsReadiness.test.ts (17 tests) 19ms
+ ✓ src/test/fiscal/policyParityDiff.test.ts (6 tests) 16ms
+ ✓ src/test/fiscal/transportPersistenceSafety.test.ts (9 tests) 10ms
+ ✓ src/test/fiscal/fase3_12.static.test.ts (34 tests) 17ms
+ ✓ src/test/fiscal/pisCofinsEffectiveFrom.test.ts (5 tests) 14ms
+ ✓ src/test/fiscal/sinief49/valueReduction.test.ts (6 tests) 17ms
+ ✓ src/test/fiscal/fase3_20_2.migration.static.test.ts (7 tests) 13ms
+ ✓ src/test/fiscal/xmlEngineCertificateStorage.test.ts (20 tests) 12ms
+ ✓ src/test/fiscal/fase3_20.migration.static.test.ts (9 tests) 20ms
+ ✓ src/test/fiscal/fase3_10.static.test.ts (15 tests) 16ms
+ ✓ src/test/fiscal/invoice_items_state_guard.test.ts (17 tests) 15ms
+ ✓ src/test/fiscal/document_model_contract.test.ts (3 tests) 14ms
+ ✓ src/test/fiscal/fase3_19_7.parity.test.ts (11 tests) 14ms
+ ✓ src/test/fiscal/fase2_1.ui.test.tsx (5 tests) 24ms
+ ✓ src/test/fiscal/h7e.certHolderCnpj.test.ts (13 tests) 25ms
+ ✓ src/test/fiscal/sinief49/staging/guard.test.ts (10 tests) 13ms
+ ✓ src/test/fiscal/fase_corretiva_blocos_3_4.test.ts (17 tests) 15ms
+ ✓ src/test/fiscal/bloco5_service_profile_ibs_cbs.test.ts (13 tests) 12ms
+ ✓ src/test/fiscal/fase3_19_5.canonical.test.ts (12 tests) 15ms
+ ✓ src/test/fiscal/certificateExpiryStatus.test.ts (10 tests) 13ms
+ ✓ src/test/fiscal/rls_financial_documents_no_hard_delete.test.ts (6 tests) 10ms
+ ✓ src/test/fiscal/rls_perfis_split_write.test.ts (6 tests) 8ms
+ ✓ src/test/fiscal/rpc_financial_document_soft_delete.test.ts (10 tests) 16ms
+ ✓ src/test/fiscal/sinief49/recipientNotFound.test.ts (4 tests) 14ms
+ ✓ src/test/fiscal/h7b.idempotencia.test.ts (9 tests) 11ms
+ ✓ src/test/fiscal/rls/runner.unit.test.ts (15 tests) 22ms
+ ✓ src/test/fiscal/eligibilityDiagnostic.test.ts (4 tests) 13ms
+ ✓ src/test/fiscal/revoke_structural_privileges.test.ts (7 tests) 18ms
+ ✓ src/test/fiscal/fase_h5_a1.draftSave.test.ts (4 tests) 14ms
+ ✓ src/test/fiscal/ownedProductFiscal.strictReceipt.review.test.ts (15 tests) 38ms
+ ✓ src/test/fiscal/sinief49/stockLoss.test.ts (6 tests) 16ms
+ ✓ src/test/fiscal/h7h.matrizStatusGuard.test.ts (14 tests) 18ms
+ ✓ src/test/fiscal/cnpjSharedParity.test.ts (13 tests) 20ms
+ ✓ src/test/fiscal/sinief49/effectiveSale.test.ts (6 tests) 17ms
+ ✓ src/test/fiscal/fiscal_certificates_revoke_privileges.test.ts (5 tests) 13ms
+ ✓ src/test/fiscal/sinief49/advancePayment.test.ts (6 tests) 10ms
+ ✓ src/test/fiscal/fase_corretiva_bloco1.routes.test.ts (12 tests) 10ms
+ ✓ src/test/fiscal/productFiscalPreparation.test.ts (5 tests) 16ms
+ ✓ src/test/fiscal/h7m.smokesHomologacao.test.ts (12 tests) 17ms
+ ✓ src/test/fiscal/rls/harness.config.test.ts (4 tests) 10ms
+ ✓ src/test/fiscal/sinief49/deliveryRefusal.test.ts (6 tests) 11ms
+ ✓ src/test/fiscal/h7k.certificadoAlertas.test.ts (17 tests) 16ms
+ ✓ src/test/fiscal/h7a.certificateRef.static.test.ts (6 tests) 9ms
+ ✓ src/test/fiscal/sinief49/persistenceMapper.test.ts (4 tests) 8ms
+ ✓ src/test/fiscal/homologacao_customer_picker.test.ts (11 tests) 18ms
+ ✓ src/test/fiscal/bloco3_labels_pt_br.test.ts (4 tests) 10ms
+ ✓ src/test/fiscal/sinief49/permissions.test.ts (4 tests) 14ms
+ ✓ src/test/fiscal/h12ServiceCalculationUi.test.ts (4 tests) 14ms
+ ✓ src/test/fiscal/h7b.binding.static.test.ts (7 tests) 9ms
+ ✓ src/test/fiscal/orderEconomicStatus.test.ts (6 tests) 27ms
+ ✓ src/test/fiscal/revoke_anon_table_privileges.test.ts (4 tests) 41ms
+ ✓ src/test/fiscal/h7l.selfTestAssinatura.static.test.ts (5 tests) 10ms
+ ✓ src/test/fiscal/f42HarnessFixtures.static.test.ts (4 tests) 10ms
+ ✓ src/test/fiscal/fase3_21.resolver_micro.test.ts (6 tests) 11ms
+stderr | src/test/fiscal/rls/harness.test.ts > Fase Fiscal 3.0.2-B.1 — Harness RLS > SKIP EXPLÍCITO — staging não provisionado (todas as envs ausentes)
+[fiscal-harness] SKIP: FISCAL_TEST_ENV/FISCAL_TEST_PROJECT_REF/PGURL_STAGING/PGREST_STAGING/PGREST_ANON_KEY/PGREST_SERVICE_ROLE_KEY ausentes — staging não provisionado
+
+ ✓ src/test/fiscal/rls/harness.test.ts (4 tests | 2 skipped) 6ms
+ ✓ src/test/fiscal/rls/mask.sql.test.ts (2 tests | 1 skipped) 4ms
+ ↓ src/test/fiscal/fase3_20_1.microorganism_product_resolver.test.tsx (1 test | 1 skipped)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/fiscal/h7i.ingestaoCertificado.static.test.ts > H7i — ingestão segura do certificado A1 > nenhum arquivo de certificado está presente na árvore do projeto
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ src/test/fiscal/h7i.ingestaoCertificado.static.test.ts:39:3
+     37|   });
+     38| 
+     39|   it("nenhum arquivo de certificado está presente na árvore do projeto…
+       |   ^
+     40|     const offenders = walk("src")
+     41|       .concat(walk("supabase"), walk("restoration"), walk("scripts"))
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 144 passed | 1 skipped (146)
+      Tests  1 failed | 2118 passed | 4 skipped (2123)
+   Start at  14:48:33
+   Duration  92.35s (transform 9.92s, setup 151.13s, collect 105.62s, tests 58.26s, environment 754.77s, prepare 120.12s)
+

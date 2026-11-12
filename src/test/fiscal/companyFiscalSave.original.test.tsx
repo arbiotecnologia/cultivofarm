@@ -209,3 +209,71 @@ describe("Contrato canônico de salvamento sem validação contábil", () => {
     });
   }
 });
+describe("Auditoria Central Fiscal — UF, Não informado, legados e botão único", () => {
+  it("UF única abre selecionada com situação salva; false ≠ ausente", async () => {
+    Object.assign(row, { uf_accreditations: [{ uf: "MG", accredited: false, meta: "x" }] });
+    open(); await form();
+    expect(screen.getByLabelText("UF do credenciamento")).toHaveValue("MG");
+    expect(screen.getByLabelText("Aptidão declarada")).toHaveValue("no");
+  });
+  it("várias UFs: nada pré-selecionado, editar carrega a UF certa, nova UF em branco, pendente até salvar", async () => {
+    Object.assign(row, { uf_accreditations: [{ uf: "SP", accredited: true, note: "n" }, { uf: "MG", meta: 1 }] });
+    open(); await form();
+    expect(screen.getByLabelText("UF do credenciamento")).toHaveValue("");
+    fireEvent.click(screen.getByRole("button", { name: "Editar credenciamento MG" }));
+    expect(screen.getByLabelText("Aptidão declarada")).toHaveValue("");
+    fireEvent.click(screen.getByRole("button", { name: "Editar credenciamento SP" }));
+    expect(screen.getByLabelText("Aptidão declarada")).toHaveValue("yes");
+    fireEvent.change(screen.getByLabelText("UF do credenciamento"), { target: { value: "RJ" } });
+    expect(screen.getByLabelText("Aptidão declarada")).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Registrar declaração" })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("UF do credenciamento"), { target: { value: "SP" } });
+    fireEvent.change(screen.getByLabelText("Aptidão declarada"), { target: { value: "no" } });
+    fireEvent.click(screen.getByRole("button", { name: "Registrar declaração" }));
+    expect(screen.getByLabelText("UF do credenciamento")).toHaveValue("SP");
+    expect(screen.getByTestId("accreditations-pending")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("fiscal-empresa-save"));
+    await waitFor(() => expect(row.configuration_version).toBe(8));
+    expect(writes[0]?.body.uf_accreditations).toEqual([{ uf: "SP", accredited: false, note: "n" }, { uf: "MG", meta: 1 }]);
+    await waitFor(() => expect(screen.queryByTestId("accreditations-pending")).toBeNull());
+    expect(screen.getByLabelText("UF do credenciamento")).toHaveValue("SP");
+  });
+  it("selects opcionais mostram Não informado; salvar outro campo preserva zero, legado numérico, null e ausência", async () => {
+    Object.assign(row, { country_code: null, nfe_configuration: { presence_indicator: 1, freight_modality: "0", danfe_layout: "LEGADO_X", default_finality: null }, nfse_configuration: { iss_rate: 0, rps_type: 7 } });
+    open(); await form();
+    expect(screen.getByLabelText("Código do país")).toHaveValue("");
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "NF-e" }));
+    expect(await screen.findByLabelText("Modo de numeração")).toHaveValue("");
+    expect(screen.getByLabelText("Modo de contingência")).toHaveValue("");
+    expect(screen.getByLabelText("Indicador de presença")).toHaveValue("1");
+    expect(screen.getByLabelText("Modalidade de frete")).toHaveValue("0");
+    expect(screen.getByLabelText("Layout DANFE")).toHaveValue("LEGADO_X");
+    expect(screen.getByRole("switch", { name: "Consumidor final padrão" })).toBeInTheDocument();
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "NFS-e" }));
+    expect(await screen.findByLabelText("Tipo RPS")).toHaveValue("7");
+    expect(screen.getByLabelText("Regime especial de tributação")).toHaveValue("");
+    fireEvent.change(screen.getByLabelText("Série RPS"), { target: { value: "A1" } });
+    fireEvent.click(screen.getByTestId("fiscal-empresa-save"));
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0]?.body.nfe_configuration).toEqual({ presence_indicator: 1, freight_modality: "0", danfe_layout: "LEGADO_X", default_finality: null });
+    expect(writes[0]?.body.nfse_configuration).toEqual({ iss_rate: 0, rps_type: 7, rps_series: "A1" });
+    expect(writes[0]?.body).not.toHaveProperty("country_code");
+  });
+  it("Não informado remove só a chave escolhida", async () => {
+    Object.assign(row, { nfe_configuration: { presence_indicator: "2", contingency_mode: "DISABLED" } });
+    open(); await form();
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "NF-e" }));
+    fireEvent.change(await screen.findByLabelText("Indicador de presença"), { target: { value: "" } });
+    fireEvent.click(screen.getByTestId("fiscal-empresa-save"));
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0]?.body.nfe_configuration).toEqual({ contingency_mode: "DISABLED" });
+  });
+  it("botão único só em Empresa/NF-e/NFS-e/Integração", async () => {
+    open(); await form();
+    expect(screen.queryByTestId("fiscal-empresa-save-draft")).toBeNull();
+    for (const [name, visible] of [["NF-e", true], ["NFS-e", true], ["Integração e segurança", true], ["Reforma Tributária 2026", false], ["Certificado digital", false], ["Revisão", false], ["Empresa", true]] as const) {
+      fireEvent.mouseDown(screen.getByRole("tab", { name }));
+      await waitFor(() => expect(!!screen.queryByTestId("fiscal-empresa-save")).toBe(visible));
+    }
+  });
+});
