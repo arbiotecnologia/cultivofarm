@@ -39,6 +39,7 @@ import { buildNfeXml, NFE_NAMESPACE, type NfePayload } from "../_shared/fiscal/n
 import { validateNfeXml } from "../_shared/fiscal/nfe/validateNfeXml.ts";
 import { signNfeXml, verifyNfeSignature } from "../_shared/fiscal/nfe/signNfeXml.ts";
 import { isSupportedVaultFormat, parseSigningBundle } from "../_shared/fiscal/certificateVault.ts";
+import { decodeMasterKey } from "../_shared/fiscal/masterKey.ts";
 import {
   isAlreadyExistingObject,
   verifyExistingObject,

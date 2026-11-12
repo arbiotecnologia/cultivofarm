@@ -40,6 +40,7 @@ import {
   SIGNING_BUNDLE_ALGORITHM,
   SIGNING_BUNDLE_FORMAT,
 } from "../_shared/fiscal/certificateVault.ts";
+import { decodeMasterKey } from "../_shared/fiscal/masterKey.ts";
 
 
 const MAX_BYTES = 10 * 1024 * 1024;

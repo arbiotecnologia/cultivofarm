@@ -13,6 +13,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { fiscalCorsHeaders } from "../_shared/fiscal/corsAllowlist.ts";
 import { isSupportedVaultFormat, parseSigningBundle } from "../_shared/fiscal/certificateVault.ts";
+import { decodeMasterKey } from "../_shared/fiscal/masterKey.ts";
 import { buildEventoXml, FiscalEventXmlError } from "../_shared/fiscal/nfe/buildEventoXml.ts";
 import { signEventoXml } from "../_shared/fiscal/nfe/signEventoXml.ts";
 import { runSigningSelfTest } from "../_shared/fiscal/nfe/signSelfTest.ts";
