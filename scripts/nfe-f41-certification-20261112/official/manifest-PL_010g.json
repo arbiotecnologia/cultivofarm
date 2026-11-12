@@ -1,0 +1,37 @@
+{
+  "package": "PL_010g_v1.03",
+  "package_label": "Schemas XML NF-e - Pacote de Liberação nº 010g v.1.03 - NT 2026.006 v.1.00 e NT 2026.008 v.1.00",
+  "published_at": "2026-10-26",
+  "source_url": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=EQhOQMgipXY=",
+  "source_page": "https://www.nfe.fazenda.gov.br/portal/listaConteudo.aspx?tipoConteudo=BMPFMBoln3w%3D",
+  "retrieved_at": "2026-11-12T17:28:00Z",
+  "package_sha256": "b329ecbe7e4c05a41bfbc1527f105defb7047328acfeada7c77e1666da485eaf",
+  "note": "Somente os 5 XSD de NFe/ extraídos; Evento/ não usado.",
+  "files": [
+    {
+      "name": "DFeTiposBasicos_v1.00.xsd",
+      "bytes": 74349,
+      "sha256": "2da0785a6c70db4f93571187a28514dde715cfd0b0f41e746176fbf3444549f2"
+    },
+    {
+      "name": "leiauteNFe_v4.00.xsd",
+      "bytes": 354692,
+      "sha256": "e8470f5d85ded3d99010676087907214aef71c9626140b672abbafa72656c0f5"
+    },
+    {
+      "name": "nfe_v4.00.xsd",
+      "bytes": 716,
+      "sha256": "adce3646c13ceb54922ec3142fc1dc45bd4fb839ac35ad583e86c733c07d27df"
+    },
+    {
+      "name": "tiposBasico_v4.00.xsd",
+      "bytes": 22532,
+      "sha256": "772619c85723e598840667ca66e7298a250442df47eeb94b397d2a333ce62047"
+    },
+    {
+      "name": "xmldsig-core-schema_v1.01.xsd",
+      "bytes": 3747,
+      "sha256": "f56744a5f51c03f027de13f39f869307091781a9ef1d91b1ebe14719ce28e1ac"
+    }
+  ]
+}
