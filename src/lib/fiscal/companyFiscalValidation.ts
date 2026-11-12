@@ -26,6 +26,7 @@ type CompanyFiscalExtraColumns = {
   primary_cnae?: string | null;
   uf_accreditations?: Json;
   pis_cofins_regime?: string | null;
+  pis_cofins_regime_effective_from?: string | null;
   additional_cnaes?: string[] | null;
   municipal_registration?: string | null;
   state_registration?: string | null;
@@ -201,6 +202,17 @@ export const integrationRefsSchema = z
   })
   .strict();
 
+/** Data civil AAAA-MM-DD com validação de calendário, sem normalização. */
+export function isValidCivilDate(v: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+  if (!m) return false;
+  const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+  if (y < 1988 || y > 2100 || mo < 1 || mo > 12 || d < 1) return false;
+  const days = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+  if (d > days) return false;
+  return v >= "1988-10-05";
+}
+
 // Form schema --------------------------------------------------------
 export const companyFiscalFormSchema = z.object({
   cnpj: optionalCnpj,
@@ -218,6 +230,11 @@ export const companyFiscalFormSchema = z.object({
   tax_regime: optionalTrimmedString(60),
   crt: optionalTrimmedString(20),
   pis_cofins_regime: z.enum(PIS_COFINS_REGIMES).nullable().optional(),
+  pis_cofins_regime_effective_from: z
+    .string()
+    .nullable()
+    .refine((v) => v === null || isValidCivilDate(v), { message: "Data inválida." })
+    .optional(),
   uf_accreditations: z.array(z.custom<Json>()).refine((v) => !hasSensitiveKey(v), { message: "Conteúdo sensível não é permitido." }).optional(),
   primary_cnae: optionalTrimmedString(20),
   additional_cnaes: z
@@ -297,6 +314,8 @@ export function buildUpdatePayload(values: CompanyFiscalFormValues): Update {
   assignText("tax_regime", parsed.tax_regime);
   assignText("crt", parsed.crt);
   assignText("pis_cofins_regime", parsed.pis_cofins_regime);
+  // Só enviado quando a coluna existe na linha lida (undefined = coluna ausente/legado).
+  assignText("pis_cofins_regime_effective_from", parsed.pis_cofins_regime_effective_from);
   if (parsed.uf_accreditations !== undefined) payload.uf_accreditations = parsed.uf_accreditations;
   assignText("primary_cnae", parsed.primary_cnae);
   if (parsed.additional_cnaes !== undefined) {
@@ -386,6 +405,9 @@ export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
     tax_regime: row.tax_regime ?? undefined,
     crt: row.crt ?? undefined,
     pis_cofins_regime: row.pis_cofins_regime as CompanyFiscalFormValues["pis_cofins_regime"] ?? null,
+    ...("pis_cofins_regime_effective_from" in row
+      ? { pis_cofins_regime_effective_from: row.pis_cofins_regime_effective_from ?? null }
+      : {}),
     uf_accreditations: Array.isArray(row.uf_accreditations) ? row.uf_accreditations : undefined,
     primary_cnae: row.primary_cnae ?? undefined,
     additional_cnaes: Array.isArray(row.additional_cnaes)
