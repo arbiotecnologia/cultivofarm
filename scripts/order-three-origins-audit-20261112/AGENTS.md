@@ -1,0 +1,3 @@
+- Audit only in disposable local environments; no hosted SQL/Auth/data, publication, fiscal or collection effects.
+- Three origins and individual roles stay separate; never add roles, disable guards or fabricate final invoice/title/payment states to make a flow pass.
+- Missing current mirror blocks SQL-backed browser certification; component SQL and synthetic browser results are labeled separately from real sessions.

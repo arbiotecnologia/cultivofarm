@@ -1,0 +1,22 @@
+{
+  "commit": "fe7e81d50393201efdb4ff4f7cecc57e24557364",
+  "checks": [
+    {
+      "path": "/tmp/r12/fullstack.dump",
+      "exists": false,
+      "sha256": null
+    },
+    {
+      "path": "/tmp/r12/globals.sql",
+      "exists": false,
+      "sha256": null
+    },
+    {
+      "historical_rebuild": "scripts/c2-pilot-economic-approval-20261111/billing-delivery-20261111/fiscal-final-20261111/harness-diff/r12-compose_current.py",
+      "status": "NOT_RUN",
+      "reason": "upstream helpers use session_replication_role=replica; excluded from no-bypass three-origin E2E"
+    }
+  ],
+  "status": "BLOCKED_CURRENT_MIRROR",
+  "hosted": false
+}
