@@ -156,7 +156,7 @@ describe("Contrato canônico de salvamento sem validação contábil", () => {
       expect(row.nfe_enabled).toBe(false); expect(row.nfse_enabled).toBe(false);
       first.unmount(); open(); await form();
       expect(screen.getByLabelText("Razão social")).toHaveValue("AR Bio FICTÍCIA revisada");
-      expect(requests.every((path) => path === "/rest/v1/company_fiscal_settings")).toBe(true);
+      expect(requests.every((path) => path === "/rest/v1/company_fiscal_settings" || path === "/rest/v1/company_fiscal_pis_cofins_history")).toBe(true);
     });
   }
   it("payload não concede revisão mesmo que adulterado e mantém todos os campos preparatórios", () => {
