@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DocumentaryAI } from "./catalog/DocumentaryAI";
 
 type Reference = { id: string; nome: string; descricao: string | null; nome_cientifico?: string | null; tipo?: string; updated_at: string | null; owner_organization_id?: string | null };
 export type ReferenceRoot = "culturas" | "microrganismos";
@@ -44,6 +45,7 @@ export function TenantReferenceDialog({ root, item, onClose, onSaved }: {
   return <Dialog open onOpenChange={v => { if (!v && !busy) onClose(); }}><DialogContent className="max-h-[90dvh] overflow-y-auto" aria-describedby={undefined}>
     <DialogHeader><DialogTitle>{item ? "Editar" : "Adicionar"} {names[root]}</DialogTitle></DialogHeader>
     <fieldset disabled={busy} className="space-y-3">
+      {root === "microrganismos" && <DocumentaryAI identity={{ name: values.nome, manufacturer: "", registration: "", entity: "microrganismo", id: item?.id }} values={values} allowed={["descricao"]} onApply={fields => setValues(v => ({ ...v, ...fields }))} />}
       <div><Label htmlFor="reference-name">Nome</Label><Input id="reference-name" value={values.nome} onChange={e => setValues(v => ({ ...v, nome: e.target.value }))} /></div>
       {root === "microrganismos" && <><div><Label htmlFor="reference-scientific">Nome científico</Label><Input id="reference-scientific" value={values.nome_cientifico} onChange={e => setValues(v => ({ ...v, nome_cientifico: e.target.value }))} /></div>
         <Label>Tipo</Label><Select value={values.tipo} onValueChange={tipo => setValues(v => ({ ...v, tipo }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["bacteria", "fungo", "levedura", "consorcio"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></>}

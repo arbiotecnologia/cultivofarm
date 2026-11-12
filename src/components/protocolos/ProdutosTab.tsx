@@ -51,6 +51,7 @@ import { normalizeVersaoCatalogoForSave, versaoCatalogoToInput } from "@/lib/pro
 import { formatConcentracaoDisplay } from "@/lib/cqFormat";
 import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 import { PRODUCT_FAMILY_TABS, productMatchesFamily, familyForNewProduct, type ProductFamilyTab } from "@/lib/catalogo/productFamilies";
+import { DocumentaryAI } from "./catalog/DocumentaryAI";
 
 interface Microrganismo {
   id: string;
@@ -761,6 +762,7 @@ export function ProdutosTab() {
                   </TabsList>
 
                   <TabsContent value="geral" className="space-y-4">
+                    <DocumentaryAI identity={{ name: form.nome, manufacturer: "", registration: "", entity: "produto", id: form.id || undefined }} values={form} allowed={["descricao", "modo_acao", "funcao_completa", "modo_aplicacao"]} onApply={fields => setForm(f => ({ ...f, ...fields }))} />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Código (Referência)</Label>
