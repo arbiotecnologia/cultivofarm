@@ -31,6 +31,7 @@ function mount() {
   return render(<QueryClientProvider client={client}><C2PilotEconomicApproval orderId={ORDER} /></QueryClientProvider>);
 }
 const writes = () => s.rpc.mock.calls.filter((c) => c[0] === "c2_pilot_economic_approve_v1");
+const commercialApproval = { kind: "commercial", approved_by: "commercial", actor_role: "gestor_comercial", approved_at: "2026-11-11T09:00:00Z", evidence_hash: H };
 beforeEach(() => vi.clearAllMocks());
 afterEach(cleanup);
 
@@ -38,7 +39,7 @@ it("Financeiro com concessão: aprova crédito uma vez com hash da evidência e 
   let cur = state();
   s.rpc.mockImplementation((name: string, args: any) => {
     if (name === "c2_pilot_economic_approve_v1") {
-      cur = state({ approvals: [{ kind: "credit", approved_by: "fin", actor_role: "financeiro", approved_at: "2026-11-11T10:00:00Z", evidence_hash: H }],
+      cur = state({ approvals: [commercialApproval, { kind: "credit", approved_by: "fin", actor_role: "financeiro", approved_at: "2026-11-11T10:00:00Z", evidence_hash: H }],
         can_approve_credit: false, forecast: { forecast_id: "f1", state: "aguardando_fiscal", total_amount: 20, due_dates_estimated: true, created_at: "2026-11-11T10:00:00Z" } });
       return ok({ contract: "C2_PILOT_ECON_APPROVAL_V1", kind: args.p_kind, approval_id: "a1", approved_by: "fin", approved_at: "2026-11-11T10:00:00Z", forecast_id: "f1", replayed: false });
     }
@@ -54,7 +55,7 @@ it("Financeiro com concessão: aprova crédito uma vez com hash da evidência e 
   expect(screen.getByTestId("c2-pilot-credit")).toHaveTextContent(/Aprovado em .*financeiro/);
   expect(screen.getByTestId("c2-pilot-forecast")).toHaveTextContent(/não é cobrança/);
   expect(s.table).not.toHaveBeenCalled();
-  expect(s.rpc.mock.calls.map((c) => c[0]).filter((n) => !n.startsWith("c2_pilot_"))).toEqual([]);
+  expect(s.rpc.mock.calls.map((c) => c[0]).filter((n) => !n.startsWith("c2_pilot_") && n !== "fn_fiscal_invoice_eligibility")).toEqual([]);
 });
 
 it("resposta incerta: mantém a mesma chave na repetição explícita; sem retry automático", async () => {
@@ -114,4 +115,30 @@ it("parser: indisponível só sem payload financeiro/autor; disponível exige av
   expect(() => parseC2PilotRead({ contract: "C2_PILOT_ECON_STATE_V1", order_id: ORDER, available: false, reason: "OUTRO" }, ORDER)).toThrow();
   expect(() => parseC2PilotState(state({ available: undefined }), ORDER)).toThrow();
   expect(parseC2PilotRead(state(), ORDER).state).toBe("ready");
+});
+
+it("previsão exige duas aprovações distintas vinculadas à mesma evidência", () => {
+  const forecast = { forecast_id: "f", state: "aguardando_fiscal", total_amount: 20, due_dates_estimated: true };
+  const credit = { ...commercialApproval, kind: "credit", actor_role: "financeiro" };
+  expect(() => parseC2PilotState(state({ forecast, approvals: [commercialApproval] }), ORDER)).toThrow();
+  expect(() => parseC2PilotState(state({ forecast, approvals: [commercialApproval, commercialApproval] }), ORDER)).toThrow();
+  expect(() => parseC2PilotState(state({ forecast, approvals: [commercialApproval, { ...credit, evidence_hash: "b".repeat(32) }] }), ORDER)).toThrow();
+  expect(parseC2PilotState(state({ forecast, approvals: [commercialApproval, credit] }), ORDER).forecast?.total_amount).toBe(20);
+});
+
+it.each([
+  ["Financeiro", false, true, "credit"],
+  ["Gestor Comercial", true, false, "commercial"],
+  ["outros papéis", false, false, null],
+] as const)("%s despacha somente o tipo concedido pelo servidor", async (_role, commercial, credit, kind) => {
+  s.rpc.mockImplementation((name: string, args: any) => name === "c2_pilot_economic_approve_v1"
+    ? ok({ contract: "C2_PILOT_ECON_APPROVAL_V1", kind: args.p_kind, approved_at: "2026-11-12T02:48:00Z", forecast_id: null })
+    : ok(state({ can_approve_commercial: commercial, can_approve_credit: credit })));
+  mount();
+  await screen.findByTestId("c2-pilot-economic");
+  const buttons = screen.queryAllByRole("button", { name: "Aprovar" });
+  expect(buttons).toHaveLength(kind ? 1 : 0);
+  if (buttons[0]) fireEvent.click(buttons[0]);
+  await waitFor(() => expect(writes()).toHaveLength(kind ? 1 : 0));
+  if (kind) expect(writes()[0][1].p_kind).toBe(kind);
 });
