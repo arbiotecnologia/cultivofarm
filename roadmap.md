@@ -1,4 +1,5 @@
 ## 12/11 01:22 — Pré-requisitos específicos de cancelamento em homologação
+- [ ] Continuação 01:49: corrigir identidade OID qualificada dos triggers e compactar verificações sem perda de pins; guard E recebido, preparar exceção homolog-only fechada com proteção por linha e testes/decisão explícita, sem remoto/publicação.
 - [x] Continuação 01:41: captura gzip validada, três hashes conferidos, B/C/D aditivos privados gerados, aguardando_fiscal corrigido sem alterar estados; 22 checks PG e 16 UI PASS, logs de falhas preservados, sem remoto/publicação.
 - [ ] E/fixture hospedada e composição operacional bloqueadas pelo corpo exato de platform_private.homolog_validation_block_receivable_insert() MD5 1b7e286b1391c986604df2b171025c62; query focal e limites em minimal/continuation/REPORT.md. Não há roundtrip integral homolog ou prova de sessão real.
 - [x] Continuação 01:33: seis corpos homolog recuperados por MD5 calculado, etapa A privada fechada gerada e roundtrip 18/18; caminho mínimo B–E documentado em minimal/REPORT.md sem copiar produção.
