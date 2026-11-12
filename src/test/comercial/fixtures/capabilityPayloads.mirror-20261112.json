@@ -1,0 +1,76 @@
+{
+  "gestor_comercial": {
+    "actor": "00000000-0000-0000-0000-000000000030",
+    "org": "007bb519-cba0-4704-be2c-cb93ad010048",
+    "payload": {
+      "reason": null,
+      "contract": "C2_INTERNAL_ORDER_ENTRY_V1",
+      "partners": [
+        {
+          "partner_id": "00000000-0000-0000-0000-000000000011",
+          "razao_social": "LOCAL B3 PARTNER",
+          "commercial_owner_organization_id": "007bb519-cba0-4704-be2c-cb93ad010048"
+        },
+        {
+          "partner_id": "00000000-0000-0000-0000-000000000012",
+          "razao_social": "LOCAL B3 PARTNER",
+          "commercial_owner_organization_id": "007bb519-cba0-4704-be2c-cb93ad010048"
+        },
+        {
+          "partner_id": "00000000-0000-0000-0000-000000000085",
+          "razao_social": "LOCAL B3 PARTNER",
+          "commercial_owner_organization_id": "007bb519-cba0-4704-be2c-cb93ad010048"
+        },
+        {
+          "partner_id": "00000000-0000-0000-0000-000000000100",
+          "razao_social": "LOCAL B3 PARTNER",
+          "commercial_owner_organization_id": "007bb519-cba0-4704-be2c-cb93ad010048"
+        }
+      ],
+      "profile_ok": true,
+      "order_create": true,
+      "organization_id": "007bb519-cba0-4704-be2c-cb93ad010048"
+    }
+  },
+  "vendedor": {
+    "actor": "00000000-0000-0000-0000-000000000901",
+    "org": "007bb519-cba0-4704-be2c-cb93ad010048",
+    "payload": {
+      "reason": "actor_not_allowed",
+      "contract": "C2_INTERNAL_ORDER_ENTRY_V1",
+      "partners": [],
+      "profile_ok": false,
+      "order_create": false,
+      "organization_id": null
+    },
+    "seller": {
+      "ready": true,
+      "reason": null,
+      "version": 2,
+      "contract": "seller_portfolio_capability_v1",
+      "partners": [
+        {
+          "partner_id": "00000000-0000-0000-0000-000000000011",
+          "order_create": true,
+          "razao_social": "LOCAL B3 PARTNER"
+        }
+      ],
+      "fiscal_block": null,
+      "order_create": true,
+      "quote_respond": true,
+      "organization_id": "007bb519-cba0-4704-be2c-cb93ad010048"
+    }
+  },
+  "financeiro": {
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "org": "007bb519-cba0-4704-be2c-cb93ad010048",
+    "payload": {
+      "reason": "actor_not_allowed",
+      "contract": "C2_INTERNAL_ORDER_ENTRY_V1",
+      "partners": [],
+      "profile_ok": false,
+      "order_create": false,
+      "organization_id": null
+    }
+  }
+}
