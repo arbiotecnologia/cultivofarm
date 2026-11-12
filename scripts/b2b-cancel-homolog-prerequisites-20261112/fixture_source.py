@@ -22,14 +22,14 @@ def create_order(context, rpc, inputs, receipt):
  if any(set(x)-{'item_id','item_tipo','volume_id','packaging_id','quantidade'} for x in inputs['items']):
   raise ValueError('PRICE_FREE_ITEMS_REQUIRED')
  if not receipt.get('key'):
-  journal=rpc('recover_partner_order_attempt_v1',dict(p_partner_id=inputs['partner_id'],p_key=None,p_generation=None,p_new_attempt=False,p_terminal_order_id=None))
+  journal=rpc('recover_partner_order_attempt_v1',dict(p_partner=inputs['partner_id'],p_expected_key=None,p_expected_generation=None,p_advance=False,p_ack_order=None))
   if journal.get('state')=='committed': raise ValueError('UNRELATED_COMMITTED_JOURNAL_REQUIRES_REVIEW')
   if not journal.get('key') or not journal.get('generation'): raise ValueError('JOURNAL_UNPROVEN')
   receipt.update(key=journal['key'],generation=journal['generation'],state='reserved')
- sim=rpc('simulate_b2b_payment_condition_secure',dict(p_partner_id=inputs['partner_id'],p_plan_id=inputs['plan_id'],p_items=inputs['items'],p_payment_choice=inputs['payment_choice']))
+ sim=rpc('simulate_b2b_payment_condition_secure',dict(p_partner_id=inputs['partner_id'],p_payment_plan_id=inputs['plan_id'],p_items=inputs['items'],p_payment_choice=inputs['payment_choice']))
  if not sim.get('cart_hash'): raise ValueError('CANONICAL_SIMULATION_UNPROVEN')
  receipt['state']='uncertain' # Persist this receipt before dispatch in the integrating caller.
- result=rpc('create_partner_order_condition_secure',dict(p_partner_id=inputs['partner_id'],p_notes=inputs.get('reason'),p_items=inputs['items'],p_requested_delivery_date=None,p_plan_id=inputs['plan_id'],p_cart_hash=sim['cart_hash'],p_idempotency_key=receipt['key'],p_payment_choice=inputs['payment_choice']))
+ result=rpc('create_partner_order_condition_secure',dict(p_partner_id=inputs['partner_id'],p_observacoes=inputs.get('reason'),p_items=inputs['items'],p_requested_delivery_date=None,p_payment_plan_id=inputs['plan_id'],p_expected_cart_hash=sim['cart_hash'],p_idempotency_key=receipt['key'],p_payment_choice=inputs['payment_choice']))
  if not result.get('id'): raise ValueError('ORDER_ACK_UNPROVEN')
  receipt.update(state='committed',order_id=result['id'])
  return receipt
