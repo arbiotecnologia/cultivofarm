@@ -1,0 +1,113 @@
+{
+  "scope": "GENERATED_ADDITIVE_INSTALLER_ONLY",
+  "synthetic_parent_marker_event_triggers": true,
+  "hosted": false,
+  "real_session": false,
+  "checks": [
+    {
+      "test": "01a-pre-foundation.sql.review",
+      "status": "PASS",
+      "detail": {
+        "sha256": "55c46d0c4663024e430117e5a33d454c49aee65b80fd84551b11bfb340321dbd",
+        "error": ""
+      }
+    },
+    {
+      "test": "01b-install-foundation-closed.sql.review",
+      "status": "PASS",
+      "detail": {
+        "sha256": "11e3f05357e3908c2f045c96f47d6fbb2b2f9fdf4b45330d005884cac57932ae",
+        "error": ""
+      }
+    },
+    {
+      "test": "01c-post-foundation.sql.readonly",
+      "status": "PASS",
+      "detail": {
+        "sha256": "a3bc14ad980bb332739bfb11a0b09467f83bca8c54d0558e8b7a40c7849e84ac",
+        "error": ""
+      }
+    },
+    {
+      "test": "01d-rollback-foundation-deny.sql.review",
+      "status": "PASS",
+      "detail": {
+        "sha256": "7935837514d63086a618e2ac9df555e330649d245c815b22b1814b20542dcb5f",
+        "error": ""
+      }
+    },
+    {
+      "test": "01c-post-foundation.sql.readonly",
+      "status": "PASS",
+      "detail": {
+        "sha256": "a3bc14ad980bb332739bfb11a0b09467f83bca8c54d0558e8b7a40c7849e84ac",
+        "error": ""
+      }
+    },
+    {
+      "test": "existing writer body unchanged",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "private residual core denied to authenticated",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "direct forecast INSERT denied",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "repeat installer aborts",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "closed creation prefilter false",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "closed lifecycle prefilter false",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "history empty after rollback",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "fresh disposable reinstall",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "fresh reinstall remains closed",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "production marker refused before DDL",
+      "status": "PASS",
+      "detail": "ERROR:  HOMOLOG_MARKER_REQUIRED\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\n"
+    },
+    {
+      "test": "active cron refused before DDL",
+      "status": "PASS",
+      "detail": "ERROR:  HOMOLOG_CRON_ACTIVE\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE\n"
+    },
+    {
+      "test": "event drift refused before DDL",
+      "status": "PASS",
+      "detail": "ERROR:  HOMOLOG_EVENT_TRIGGER_PIN_REQUIRED\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\n"
+    },
+    {
+      "test": "failed stages leave no forecast relation",
+      "status": "PASS",
+      "detail": null
+    }
+  ]
+}

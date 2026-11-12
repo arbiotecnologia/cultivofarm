@@ -1,0 +1,11 @@
+BEGIN;SET LOCAL lock_timeout='3s';
+DO $target$ BEGIN IF NOT EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref='vrlcdwmlytukrjezrrnf' AND production_emission_allowed IS FALSE) OR EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref IS DISTINCT FROM 'vrlcdwmlytukrjezrrnf' OR production_emission_allowed IS DISTINCT FROM FALSE) THEN RAISE EXCEPTION 'HOMOLOG_MARKER_REQUIRED'; END IF; END $target$;
+UPDATE platform_private.b2b_forecast_creation_gate_v1 SET enabled=false;UPDATE platform_private.b2b_forecast_lifecycle_gate_v1 SET enabled=false;
+REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_events_immutable() FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_guard() FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION platform_private.b2b_forecast_creation_scope_v1(uuid,uuid,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION platform_private.b2b_forecast_creation_allowed_v1(uuid,uuid,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION platform_private.b2b_forecast_lifecycle_scope_v1(text,uuid,uuid,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION platform_private.b2b_forecast_lifecycle_allowed_v1(text,uuid,uuid,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text) FROM PUBLIC,anon,authenticated,service_role;
+COMMIT;
