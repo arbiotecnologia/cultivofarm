@@ -52,6 +52,19 @@ try:
     writer = d.body('public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text)')
     check('capacidade reconhece exatamente awaiting/partial, sem estado fictício', "f.state NOT IN ('aguardando_fiscal','faturado_parcial')" in capability and 'aprovado_previsto' not in capability)
     check('writer exige residual positivo e awaiting/partial', "f.residual_amount<=0 OR f.state NOT IN ('aguardando_fiscal','faturado_parcial')" in writer)
+    ref = '00000000-0000-0000-0000-000000000900'
+    d.sql(f"SELECT platform_private.b2b_financial_forecast_transition_v1('{forecast}',{f['version']},'EMISSION_STARTED','{ref}','{{\"attempt\":99}}')")
+    d.sql(f"SELECT platform_private.b2b_financial_forecast_transition_v1('{forecast}',{f['version']+1},'EMISSION_REJECTED','{ref}','{{\"attempt\":99}}')")
+    check('motor canônico devolve aguardando_fiscal com residual 10 preservado', d.last(f"SELECT state='aguardando_fiscal' AND residual_amount=10 FROM platform_private.b2b_financial_forecasts WHERE id='{forecast}'") == 't')
+    d.sql(f"INSERT INTO platform_private.b2b_forecast_lifecycle_allowlist_v1(operation,actor_id,organization_id,partner_id,order_id,synthetic,valid_until,created_by) SELECT 'forecast_cancel','00000000-0000-0000-0000-000000000030',organization_id,partner_id,order_id,true,now()+interval '1 hour','00000000-0000-0000-0000-000000000024' FROM platform_private.b2b_financial_forecasts WHERE id='{forecast}'")
+    claims = "SET ROLE authenticated;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000030';SET request.jwt.claims='{\"sub\":\"00000000-0000-0000-0000-000000000030\",\"role\":\"authenticated\",\"iat\":1}';"
+    observed = json.loads(d.last(claims + f"SELECT public.rpc_b2b_cancel_residual_capability_v1('{order}')"))
+    check('awaiting capacidade real versão observada e residual 10', observed.get('available') is True and observed.get('version') == f['version']+2 and observed.get('residual_amount') == 10, observed)
+    unchanged = history(d)
+    stale = d.raw(claims + f"SELECT public.rpc_b2b_forecast_cancel_residual_v1('{order}',{f['version']},'LOCAL AWAITING')")
+    check('awaiting CAS antigo nega e conserva histórico', stale.returncode != 0 and 'B2B_FORECAST_CAS_CONFLICT' in stale.stderr and history(d) == unchanged)
+    result = d.raw(claims + f"SELECT public.rpc_b2b_forecast_cancel_residual_v1('{order}',{f['version']+2},'LOCAL AWAITING')")
+    check('awaiting cancela somente saldo 10 uma vez', result.returncode == 0 and d.last(f"SELECT state='cancelado_residual' AND residual_amount=0 FROM platform_private.b2b_financial_forecasts WHERE id='{forecast}'") == 't', result.stderr)
 except Exception as error:
     check('harness final', False, repr(error))
 (OUT / 'final-checks.json').write_text(json.dumps(rows, indent=2, ensure_ascii=False) + '\n')
