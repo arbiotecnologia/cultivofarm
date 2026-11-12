@@ -45,9 +45,10 @@ try:
  check('recuperação canônica remove pendência sem recriar título/parcela',r.returncode==0 and d.last(f"select count(*) from platform_private.fiscal_close_pending where transmission_id='{tx}'")=='0' and snapshot(d)==before,r.stdout)
  tid,cancel=prepared(d);r=call(d,cancel);check('após recuperação cancela uma vez',r.returncode==0 and d.last(f"select normalized_status from fiscal_invoices where id='{invoice}'")=='CANCELED',r.stderr)
  s=snapshot(d);r=call(d,q);check('replay autorização terminal não ressuscita NF ou título',r.returncode==0 and snapshot(d)==s and d.last(f"select count(*) from platform_private.fiscal_close_pending where transmission_id='{tx}'")=='0',r.stdout)
- # True pending: remove reconciliation event as a declared negative seam, never fabricate success.
- d=clone();tx,q=authq(d);d.sql(f"DELETE FROM platform_private.b2b_financial_forecast_events WHERE event_type='FISCAL_CONFIRMED' AND event_reference='{invoice}'");r=call(d,q)
- check('evento ausente mantém pendência real',d.last(f"select count(*) from platform_private.fiscal_close_pending where transmission_id='{tx}'")=='1',r.stdout)
+ # True pending: revoke accounting validation input, preserving immutable events.
+ d=clone();tx,q=authq(d);r=call(d,f"UPDATE company_fiscal_settings SET configuration_status='PENDING_ACCOUNTING',accounting_validated_at=NULL WHERE id=(select company_settings_id from fiscal_invoices where id='{invoice}');");assert r.returncode==0,r.stderr
+ r=call(d,q)
+ check('contabilidade inválida mantém pendência real',d.last(f"select count(*) from platform_private.fiscal_close_pending where transmission_id='{tx}'")=='1',r.stdout)
  _,cancel=prepared(d);before=snapshot(d);r=call(d,cancel);check('pendência verdadeira bloqueia cancelamento financeiro',snapshot(d)==before and 'FISCAL_AUTHORIZATION_RECONCILIATION_PENDING' in r.stdout,r.stdout)
  # Both deterministic orders: lock invoice until the other callback is waiting.
  for first in ['authorization','cancellation']:
