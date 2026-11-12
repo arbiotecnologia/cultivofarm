@@ -19,7 +19,9 @@ def snapshot(d):
 def prepared(d,variant='normal'):
  e=val(call(d,f"SELECT rpc_fiscal_event_sefaz_prepare_v1('{invoice}','CANCELLATION','LOCAL DETERMINISTIC CANCEL','det-{uuid.uuid4()}','{u(29)}');"));assert e
  sha=hashlib.sha256(b'local deterministic signed input').hexdigest();r=call(d,f"SELECT rpc_fiscal_event_sefaz_mark_signed_v1('{e['eventId']}','eventos/local/det.xml','{sha}','{u(29)}');");assert r.returncode==0,r.stderr
- tid=str(uuid.uuid4());event_sql='NULL' if variant=='sem-evento' else "'"+e['eventId']+"'";r=call(d,f"INSERT INTO fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('{tid}','{invoice}',{event_sql},'NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','{tid}','{sha}','SENT','PENDING','{u(29)}');");assert r.returncode==0,r.stderr
+ tid=str(uuid.uuid4());event_sql='NULL' if variant=='sem-evento' else "'"+e['eventId']+"'";r=call(d,f"INSERT INTO fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('{tid}','{invoice}',{event_sql},'NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','{tid}','{sha}','SENT','PENDING','{u(29)}');")
+ if variant=='sem-evento':return tid,r
+ assert r.returncode==0,r.stderr
  body=json.dumps(dict(cStat='136' if variant=='registro-nao-cancelamento' else '135',nProt='LOCAL-DETERMINISTIC',chNFe='9'*44 if variant=='chave' else e['accessKey'],tpAmb='2',xMotivo='LOCAL FINAL'))
  return tid,f"SELECT rpc_fiscal_sefaz_transmit_record_v1('{tid}','SUCCEEDED','{body}'::jsonb);"
 def authq(d):
@@ -72,7 +74,10 @@ try:
  # Event provenance negatives and scope uniformity.
  for kind in ['sem-evento','chave','evento-empresa','ator-empresa','registro-nao-cancelamento']:
   d=clone();tid,cancel=prepared(d,kind)
-  if kind=='evento-empresa':r=call(d,f"UPDATE fiscal_events SET organization_id='{u(2)}' WHERE id=(select fiscal_event_id from fiscal_sefaz_transmissions where id='{tid}');");assert r.returncode==0,r.stderr
+  if kind=='sem-evento':check('entrada sem evento negada pela guarda real',cancel.returncode!=0 and 'SEFAZ_EVENT_REQUIRED' in cancel.stderr,cancel.stderr);continue
+  if kind=='evento-empresa':
+   r=call(d,f"UPDATE fiscal_events SET organization_id='{u(2)}' WHERE id=(select fiscal_event_id from fiscal_sefaz_transmissions where id='{tid}');")
+   if r.returncode!=0:check('evento estrangeiro barrado por integridade real',True,r.stderr);continue
   before=snapshot(d);r=call(d,cancel,u(25) if kind=='ator-empresa' else u(29));check(kind+' não cancela documento/título/estoque/OS/entrega',snapshot(d)==before and (r.returncode!=0 or '"final": true' not in r.stdout),dict(out=r.stdout,err=r.stderr))
  # Residual capability and writer negative states; only input seams, rollback assertions.
  for kind in ['pendente','sem-previsao','sem-concessao','estrangeiro']:
