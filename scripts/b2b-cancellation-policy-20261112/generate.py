@@ -7,6 +7,7 @@ def replace(source,a,b):
  if source.count(a)!=1:raise RuntimeError('ANCHOR_COUNT:'+a[:70])
  return source.replace(a,b)
 residual=read('residual').replace("ARRAY['administrador','financeiro']", "ARRAY['administrador','gestor_comercial']")
+residual=replace(residual,'BEGIN\n',"BEGIN\n IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_cancel_policy_gate_v1 WHERE singleton AND enabled) THEN RAISE EXCEPTION 'CANCEL_POLICY_DISABLED' USING ERRCODE='42501'; END IF;\n")
 # Keep features, scope and revocable lifecycle gates; reject unapproved operational order.
 residual=replace(residual,' -- An emission/consultation still open'," IF po.approved_at IS NULL OR po.approved_by IS NULL OR po.status::text NOT IN ('aprovado','entregue') THEN RAISE EXCEPTION 'B2B_CANCEL_ORDER_NOT_APPROVED' USING ERRCODE='PT409'; END IF;\n IF f.state IN ('cancelado_antes_nf','cancelado_residual') THEN\n  IF EXISTS(SELECT 1 FROM platform_private.b2b_financial_forecast_events e WHERE e.forecast_id=f.id AND e.event_type='FORECAST_CANCELED' AND e.payload->>'reason'=p_reason) THEN RETURN jsonb_build_object('forecast_id',f.id,'state',f.state,'version',f.version,'idempotentReplay',true); END IF;\n  RAISE EXCEPTION 'B2B_FORECAST_CAS_CONFLICT' USING ERRCODE='PT409'; END IF;\n -- An emission/consultation still open")
 payment=read('payment')
@@ -17,6 +18,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $fn$
 DECLARE t public.fiscal_sefaz_transmissions;e public.fiscal_events;i public.fiscal_invoices;r public.accounts_receivable;paid boolean;actor_org uuid;
 BEGIN
  IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_cancel_policy_gate_v1 WHERE singleton AND enabled) THEN RETURN jsonb_build_object('final',false,'code','CANCEL_POLICY_DISABLED'); END IF;
+ IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed' THEN RAISE EXCEPTION 'CANCEL_READ_COMMITTED_REQUIRED' USING ERRCODE='42501'; END IF;
  SELECT * INTO t FROM public.fiscal_sefaz_transmissions WHERE id=p_tx;
  IF NOT FOUND OR t.service<>'NFeRecepcaoEvento4' OR t.fiscal_event_id IS NULL THEN RETURN jsonb_build_object('final',false,'code','NOT_LINKED_CANCEL'); END IF;
  actor_org:=public.h15_actor_organization();
@@ -30,6 +32,8 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM public.fiscal_events x WHERE x.related_event_id=e.id AND x.sefaz_transmission_id=t.id AND x.organization_id=i.organization_id AND x.fiscal_invoice_id=i.id AND x.event_type='SEFAZ_EVENT_REGISTERED' AND x.sefaz_c_stat=t.c_stat AND x.sefaz_n_prot=t.n_prot AND x.sefaz_access_key=i.access_key AND x.sefaz_event_code='110111' AND x.sefaz_seq_evento=e.sefaz_seq_evento) THEN RETURN jsonb_build_object('final',false,'code','FISCAL_CANCEL_UNPROVEN'); END IF;
  PERFORM 1 FROM public.fiscal_invoices WHERE id=i.id FOR UPDATE;
  IF public.h15_actor_organization() IS DISTINCT FROM actor_org OR public.fn_fiscal_can_operate(auth.uid()) IS NOT TRUE THEN RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM platform_private.b2b_cancel_policy_gate_v1 WHERE singleton FOR SHARE;
+ IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_cancel_policy_gate_v1 WHERE singleton AND enabled) THEN RETURN jsonb_build_object('final',false,'code','CANCEL_POLICY_DISABLED'); END IF;
  SELECT * INTO i FROM public.fiscal_invoices WHERE id=i.id;
  IF i.normalized_status NOT IN ('AUTHORIZED','CANCELED') OR EXISTS(SELECT 1 FROM platform_private.fiscal_close_pending p WHERE p.fiscal_invoice_id=i.id AND p.error_code='FISCAL_AUTHORIZATION_CLOSE_PENDING') THEN RETURN jsonb_build_object('final',false,'code','FISCAL_AUTHORIZATION_RECONCILIATION_PENDING'); END IF;
  IF i.partner_order_id IS NULL OR i.debtor_partner_id IS NULL OR i.receivable_id IS NULL THEN RETURN jsonb_build_object('final',false,'code','FISCAL_CANCEL_TITLE_LINK_UNPROVEN'); END IF;
@@ -54,6 +58,7 @@ record=replace(record,'  v_close_error text := NULL;',"  v_close_error text := N
 record=replace(record,'      PERFORM public.rpc_fiscal_event_sefaz_reconcile_v1(', '      PERFORM public.rpc_fiscal_event_sefaz_reconcile_v1(') # exact anchor sanity
 record=replace(record,"        coalesce(_patch->>'xMotivo', ''), v_row.n_prot, v_row.dh_recbto);", "        coalesce(_patch->>'xMotivo', ''), v_row.n_prot, v_row.dh_recbto);\n      v_cancel:=platform_private.b2b_cancel_confirmed_fiscal_v1(v_row.id);\n      IF v_cancel->>'code' IN ('FISCAL_AUTHORIZATION_RECONCILIATION_PENDING','FISCAL_CANCEL_TITLE_LINK_UNPROVEN') THEN v_close_error:='FISCAL_EVENT_RECONCILIATION_PENDING'; END IF;")
 record=replace(record,"    'transmissionId', v_row.id, 'state', v_row.state, 'outcome', v_row.outcome,", "    'cancellation',v_cancel,\n    'transmissionId', v_row.id, 'state', v_row.state, 'outcome', v_row.outcome,")
+record=replace(record,"  ELSIF v_row.outcome = 'AUTHORIZED' THEN", "  ELSIF v_cancel->>'final'='true' THEN\n    DELETE FROM platform_private.fiscal_close_pending WHERE transmission_id=v_row.id AND error_code='FISCAL_EVENT_RECONCILIATION_PENDING';\n  ELSIF v_row.outcome = 'AUTHORIZED' THEN")
 def guard(pins):
  result='DO $g$ BEGIN\n'
  for sig,p in pins.items():
