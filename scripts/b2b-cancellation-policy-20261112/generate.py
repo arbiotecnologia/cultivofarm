@@ -87,4 +87,7 @@ post=H/'capture/post-pins.json'
 if post.exists():
  pg=guard(json.loads(post.read_text()));(H/'03-post.sql.readonly').write_text('BEGIN READ ONLY;\n'+pg+'ROLLBACK;\n')
  (H/'04-rollback-deny.sql.review').write_text('BEGIN;\n'+pg+"UPDATE platform_private.b2b_cancel_policy_gate_v1 SET enabled=false;\nREVOKE EXECUTE ON FUNCTION public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) FROM PUBLIC,anon,authenticated,service_role;\nCOMMIT;\n")
+ rollbackpins=json.loads(post.read_text())
+ rollbackpins['public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text)']['acl']=['postgres=X/postgres']
+ (H/'05-post-rollback.sql.readonly').write_text('BEGIN READ ONLY;\n'+guard(rollbackpins)+"DO $g$ BEGIN IF EXISTS(SELECT 1 FROM platform_private.b2b_cancel_policy_gate_v1 WHERE enabled) THEN RAISE EXCEPTION 'ROLLBACK_GATE_OPEN'; END IF; END $g$;\nROLLBACK;\n")
 (H/'SHA256SUMS').write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n' for p in sorted(H.glob('*.sql*'))))
