@@ -1,3 +1,8 @@
+## 12/11 04:13 — Auditoria E2E adicional após catálogo
+- [x] Três entradas/perfis auditados por regressões e bloqueios UI; primeira falha de famílias B2B reproduzida/corrigida, retestes 67/67 e 16/16. Relatório/matriz/hashes em scripts/order-three-origins-audit-20261112.
+- [ ] E2E UI→persistência das três origens: BLOCKED espelho atual ausente; reconstrução histórica usa bypass de fixtures e não foi usada como prova. Papéis/gates intactos, nenhum pedido/NF/título real ou sintético final fabricado.
+- [ ] Faturamento homologatório/sessões reais: NÃO COMPROVADOS; dependem da composição local completa e conclusão das pendências catálogo, sem publicação.
+
 ## 12/11 03:56 — Continuação mobile e contratos locais
 - [x] Entradas reais: seleção compacta/famílias, cards, editor canônico/rascunhos, toques 44px; navegador sintético 360/390 sem overflow/pageerror.
 - [x] Contratos executáveis locais problemas/vínculos/famílias, gate OFF e rollback; 17 checks PG componente.

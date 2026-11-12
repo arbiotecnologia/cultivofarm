@@ -1,0 +1,30 @@
+{
+  "commit_initial": "c6321e19f489223ae9368a8d50ed700fbb6cea99",
+  "commit_observed_before_report": "06db4ab534d96da91c50fb7f0774feb00fb5ab59",
+  "sources": [
+    {
+      "path": "src/hooks/useActiveCatalogFamilies.ts",
+      "sha256": "6c053121146225d78bce2dcd72994386747a16129952c25379c79d31859ddac8"
+    },
+    {
+      "path": "src/test/catalogo/catalogMobileExtensions.realClient.test.tsx",
+      "sha256": "8a448dc835c93042d6e45648451fd89ca65a18489310139c2625c08fee549253"
+    },
+    {
+      "path": "src/App.tsx",
+      "sha256": "4e02e63ff37e5a4a71d5540d9b0de3ee6553fe38e2560b5d8eaec253fb4bc61e"
+    },
+    {
+      "path": "src/pages/portal-parceiro/NovoPedido.tsx",
+      "sha256": "7f6738a863a9753104c5f1a3b07e9875b41361a8ec621a5adc2e1cbf52147375"
+    },
+    {
+      "path": "src/pages/comercial/ComercialNovoPedido.tsx",
+      "sha256": "ec89d9f1f05b810a6762163d93115936e16ed1d7e26235545ac094c9adf74084"
+    },
+    {
+      "path": "src/pages/comercial/VendedorNovoPedido.tsx",
+      "sha256": "1653ff297aa87e76a4592f9495b40a425676af20c2ab229be1a07db1e4888556"
+    }
+  ]
+}
