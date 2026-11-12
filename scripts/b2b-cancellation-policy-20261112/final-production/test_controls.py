@@ -47,7 +47,7 @@ try:
     assignment = m.call(X.UADM, f"public.rpc_cc_upsert_assignment(NULL,'{X.PLQ}','partner','{X.P}',NULL,current_date,NULL,'LOCAL CONTROLS')")
     if assignment[0] is None:
         raise RuntimeError(('assignment', assignment))
-    aid = assignment[0].get('id') or assignment[0].get('assignment_id')
+    aid = assignment[0] if isinstance(assignment[0], str) else assignment[0].get('id') or assignment[0].get('assignment_id')
     submitted = m.call(X.UADM, f"public.rpc_cc_publish_assignment('{aid}','LOCAL CONTROLS')")
     check('atribuição comercial publicada pelo writer original', submitted[0] is not None, submitted)
     settings_actor = f"SET request.jwt.claim.sub='{X.UADM}';SET request.jwt.claims='{{\"sub\":\"{X.UADM}\",\"role\":\"authenticated\",\"iat\":1}}';"
