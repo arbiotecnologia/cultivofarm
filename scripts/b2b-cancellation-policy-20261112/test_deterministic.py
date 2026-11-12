@@ -55,6 +55,9 @@ try:
  r=call(d,q)
  check('contabilidade inválida mantém pendência real',d.last(f"select count(*) from platform_private.fiscal_close_pending where transmission_id='{tx}'")=='1',r.stdout)
  _,cancel=prepared(d);before=snapshot(d);r=call(d,cancel);check('pendência verdadeira bloqueia cancelamento financeiro',snapshot(d)==before and 'FISCAL_AUTHORIZATION_RECONCILIATION_PENDING' in r.stdout,r.stdout)
+ r=call(d,f"UPDATE company_fiscal_settings SET configuration_status='VALIDATED',accounting_validated_at=clock_timestamp() WHERE id=(select company_settings_id from fiscal_invoices where id='{invoice}');");assert r.returncode==0,r.stderr
+ r=call(d,q);check('reconciliação após validação contábil real remove pendência',r.returncode==0 and d.last(f"select count(*) from platform_private.fiscal_close_pending where transmission_id='{tx}'")=='0')
+ r=call(d,cancel);check('recuperação após pendência verdadeira cancela sem duplicar',r.returncode==0 and d.last(f"select normalized_status from fiscal_invoices where id='{invoice}'")=='CANCELED' and d.last("select count(*) from financial_audit_log where action='AR_CANCELED'")=='1',r.stderr)
  # Both deterministic orders: lock invoice until the other callback is waiting.
  for first in ['authorization','cancellation']:
   d=clone();_,cancel=prepared(d);_,q=authq(d)
@@ -77,7 +80,7 @@ try:
   if kind=='sem-evento':check('entrada sem evento negada pela guarda real',cancel.returncode!=0 and 'SEFAZ_EVENT_REQUIRED' in cancel.stderr,cancel.stderr);continue
   if kind=='evento-empresa':
    r=call(d,f"UPDATE fiscal_events SET organization_id='{u(2)}' WHERE id=(select fiscal_event_id from fiscal_sefaz_transmissions where id='{tid}');")
-   if r.returncode!=0:check('evento estrangeiro barrado por integridade real',True,r.stderr);continue
+   if r.returncode!=0:check('evento estrangeiro barrado por integridade real', 'H15_' in r.stderr,r.stderr);continue
   before=snapshot(d);r=call(d,cancel,u(25) if kind=='ator-empresa' else u(29));check(kind+' não cancela documento/título/estoque/OS/entrega',snapshot(d)==before and (r.returncode!=0 or '"final": true' not in r.stdout),dict(out=r.stdout,err=r.stderr))
  # Residual capability and writer negative states; only input seams, rollback assertions.
  for kind in ['pendente','sem-previsao','sem-concessao','estrangeiro']:
@@ -93,10 +96,18 @@ try:
    if journal.get('state')=='committed':journal=val(call(d,f"SELECT recover_partner_order_attempt_v1('{partner}','{journal['key']}',{journal['generation']},true,'{journal['order_id']}');",u(21),'authenticated'))
    r=call(d,f"SELECT create_partner_order_condition_secure('{partner}',NULL,'{items}'::jsonb,NULL,'{u(81)}','{sim['cart_hash']}','{journal['key']}','{choice}'::jsonb);",u(21),'authenticated');created=val(r);assert created,r.stderr
    target=created['id'];check(kind+' entrada real C2 pendente sem previsão',d.last(f"select (approved_at IS NULL AND approved_by IS NULL AND c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' AND internal_economic_snapshot IS NULL AND NOT EXISTS(select 1 from platform_private.b2b_financial_forecasts where order_id=po.id)) from partner_orders po where id='{target}'")=='t')
+   d.sql(f"INSERT INTO platform_private.b2b_forecast_lifecycle_allowlist_v1(operation,actor_id,organization_id,partner_id,order_id,synthetic,valid_until,created_by) VALUES('forecast_cancel','{u(30)}','{u(1)}','{partner}','{target}',true,now()+interval '1 hour','{u(24)}')")
   else:target=order
   if kind=='sem-concessao':d.sql(f"UPDATE platform_private.b2b_forecast_lifecycle_allowlist_v1 SET revoked_at=now() WHERE actor_id='{u(30)}'")
   actor=u(25) if kind=='estrangeiro' else u(30);before=snapshot(d)
   r=call(d,f"SELECT rpc_b2b_cancel_residual_capability_v1('{target}');",actor,'authenticated');check(kind+' capacidade opaca indisponível',val(r)=={'available':False},dict(out=r.stdout,err=r.stderr))
   r=call(d,f"SELECT rpc_b2b_forecast_cancel_residual_v1('{target}',{version},'LOCAL NEGATIVE');",actor,'authenticated');check(kind+' writer nega sem efeitos',r.returncode!=0 and snapshot(d)==before,r.stderr)
+ # Residual revocation after a proven order wait, same canonical grant/gate.
+ for kind,mutation in [('ator',f"UPDATE profiles SET ativo=false WHERE user_id='{u(30)}'"),('empresa',f"UPDATE profiles SET organization_id='{u(2)}' WHERE user_id='{u(30)}'"),('gate','UPDATE platform_private.b2b_cancel_policy_gate_v1 SET enabled=false'),('concessão',f"UPDATE platform_private.b2b_forecast_lifecycle_allowlist_v1 SET revoked_at=clock_timestamp() WHERE actor_id='{u(30)}'")]:
+  d=clone();v=d.last(f"select version from platform_private.b2b_financial_forecasts where order_id='{order}'")
+  d.sql(f"INSERT INTO platform_private.b2b_forecast_lifecycle_allowlist_v1(operation,actor_id,organization_id,partner_id,order_id,synthetic,valid_until,created_by) VALUES('forecast_cancel','{u(30)}','{u(1)}','{partner}','{order}',true,now()+interval '1 hour','{u(24)}')")
+  before=snapshot(d);q=f"SELECT rpc_b2b_forecast_cancel_residual_v1('{order}',{v},'LOCAL WAIT');"
+  r=blocked(d,f"SELECT id FROM partner_orders WHERE id='{order}' FOR UPDATE",q,mutation,u(30),'authenticated')
+  check('residual '+kind+' revogado após espera nega e preserva 1+1',r.returncode!=0 and '42501' in r.stderr and snapshot(d)==before,r.stderr)
 except Exception as e:check('harness',False,repr(e))
 (out/'checks.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2)+'\n');code=int(any(x['status']=='FAIL' for x in rows));(out/'exitcode').write_text(str(code));print(out);sys.exit(code)
