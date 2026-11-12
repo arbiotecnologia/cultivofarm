@@ -1,0 +1,15 @@
+{
+  "sig": "public.approve_partner_order(uuid,text,date)",
+  "live": "0d3b85049e3b3b799ba81b4cb95be0da",
+  "candidate": "fe848f1857be66113b1a268f29c6c6fb",
+  "acl": "postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f,postgres>service_role:EXECUTE:f|postgres",
+  "requires_02e": "7ec80e2596cac468063dc167f2f90165",
+  "guard": "platform_private.b2b_internal_order_snapshot_guard()",
+  "guard_md5": "1f82005554748b8545403372160e68a9",
+  "files": {
+    "01f-pre.sql.readonly": "74eeef9785444be550dfdc3955dab2e92a7b07363c9e4d2993664ba09ce1a955",
+    "02f-install.sql.review": "ca115901b624ce4b490ea61d36134637649f6b02295b55b2c4917c6631fa8061",
+    "03f-post.sql.readonly": "d09bbf234246a580a197407a8900168465dd67d974cc0e23efbbf52580f8323f",
+    "04f-rollback.sql.review": "149fb3a721ebda400556ca4ed203b35c46bc218cb0483fdb1b36b661ace89c3e"
+  }
+}

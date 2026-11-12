@@ -1,0 +1,7 @@
+-- READ ONLY.
+DO $p$ BEGIN
+ IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM 'fe848f1857be66113b1a268f29c6c6fb' THEN RAISE EXCEPTION 'IAP_POST_DRIFT:public.approve_partner_order(uuid,text,date)'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_internal_order_snapshot_guard()'::regprocedure)) IS DISTINCT FROM '1f82005554748b8545403372160e68a9' THEN RAISE EXCEPTION 'IAP_POST_GUARD:platform_private.b2b_internal_order_snapshot_guard()'; END IF;
+ IF (SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='public.approve_partner_order(uuid,text,date)'::regprocedure) IS DISTINCT FROM 'postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f,postgres>service_role:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'IAP_POST_ACL:public.approve_partner_order(uuid,text,date)'; END IF;
+END $p$;
+SELECT 'IAP_POST_PASS';
