@@ -79,7 +79,7 @@ ALTER TABLE public.company_fiscal_settings ENABLE ROW LEVEL SECURITY;
     before = pg("SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='company_fiscal_settings_configuration_status_check'").stdout.strip()
     check('canonical CHECK contains exactly four states', all(s in before for s in ['DRAFT','PENDING_ACCOUNTING','VALIDATED','BLOCKED']) and 'READY_FOR_HOMOLOGATION' not in before)
     for status in ['DRAFT','PENDING_ACCOUNTING','VALIDATED','BLOCKED']:
-        pg(f"UPDATE company_fiscal_settings SET configuration_status='{status}',configuration_version=7,accounting_validated_at={'now()' if status == 'VALIDATED' else 'NULL'} WHERE id='{ID}';")
+        pg(session + f"UPDATE company_fiscal_settings SET configuration_status='{status}',configuration_version=7,accounting_validated_at={'now()' if status == 'VALIDATED' else 'NULL'} WHERE id='{ID}';COMMIT;")
         old = pg(session + f"UPDATE company_fiscal_settings SET configuration_status='READY_FOR_HOMOLOGATION' WHERE id='{ID}'; COMMIT;", False)
         check(f'{status}: original invalid status reproduces constraint failure', old.returncode != 0 and 'company_fiscal_settings_configuration_status_check' in old.stderr)
         payload = json.loads((OUT / 'payloads' / f'{status}.json').read_text())
