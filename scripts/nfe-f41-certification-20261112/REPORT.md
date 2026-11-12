@@ -25,3 +25,16 @@ Saída: `evidence/report.json`, `evidence/REPORT-run.md`, `evidence/run.log`, `e
 - Uma fixture (ICMS20, sem IBS/CBS); chave de acesso sem DV conferido; não cobre NFC-e, eventos ou contingência.
 - C14N independente cobre o caso do motor (namespace default só em NFe); deepcopy no lxml evita um artefato `xmlns=""` do subconjunto.
 - Nenhum banco, segredo, flag ou gate foi lido/alterado; nada publicado.
+
+## Atualização 12/11/2026 17:3x UTC — motor alinhado ao PL_010g v1.03
+- ZIP oficial baixado de novo do portal; SHA-256 `b329ecbe…5eaf` (49 751 bytes) igual ao registrado; os 5 XSD NFe/ conferidos por hash antes de copiar para `supabase/functions/fiscal-xml-engine/xsd/`.
+- `xsd/manifest.json` reescrito (PL_010g_v1.03.zip, `supersedes` PL_010e_v1.02.zip); `xsdBundle.ts` regenerado por `scripts/generate-xsd-bundle.mjs`; `XSD_PACKAGE` = `PL_010g_v1.03` e comentários atualizados. NFS-e/eventos não usam este bundle e não mudaram.
+- PL_010e preservado em `official/PL_010e` + `manifest-PL_010e.json` só para checagem de compatibilidade.
+- Nova fixture `fixtures/synthetic-mg-icms00.json`: MG interna, indFinal=1, indIEDest=9, CFOP 5101, CST 00, orig 0, NCM 48021000, R$1,00; ICMS 18%, PIS 1,65%, COFINS 7,6% SINTÉTICOS. Chave `31261111222333000181550010000000021876543216` (DV 6). A fixture ICMS20 teve o DV corrigido para 8.
+- Harness: 66 checks, 0 falhas, 2 divergências de ferramenta. Por fixture: Xerces do motor + libxml2 (PL_010g motor/oficial, PL_010e compat), assinatura independente, DV/coerência da chave, campos da fixture e negativos (assinatura, certificado, URI, DV, cDV, CFOP, tpAmb, NCM, sem Signature, indFinal). Mais certificado expirado e chave errada.
+- **Divergência real de ferramenta:** o libxml2 2.15 aceita NCM de 9 dígitos contra o padrão `[0-9]{2}|[0-9]{8}`; o Xerces normativo do motor rejeita. Registrado como KNOWN_TOOL_DEFECT, não como OK.
+- Vitest `src/test/fiscal`: 145 arquivos, 2119 aprovados, 4 pulados (já existentes); estáticos config/segurança 48/48.
+
+## Limitações adicionais
+- `fiscal_xsd_registry` no banco e Edge publicada continuam no estado anterior: nada foi aplicado/implantado.
+- Builder não gera campos novos do PL_010g (vUnComLiq, vProdLiqTot, IBS/CBS): compatível, mas não exercitados.
