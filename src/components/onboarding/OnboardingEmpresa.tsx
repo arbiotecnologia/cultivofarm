@@ -25,6 +25,7 @@ import {
   mensagemConsulta, planejarAplicacao,
 } from "@/lib/saas/onboardingCnpj";
 import { mensagemErroPlataforma } from "@/hooks/usePlataformaSaaS";
+import { MOTIVO_REVISAO_LABEL } from "@/lib/saas/orgOnboarding";
 import { supportContact } from "@/config/brand";
 
 const suporte = supportContact();
@@ -87,7 +88,12 @@ export function OnboardingEmpresa({ state }: { state: OnboardingState }) {
       const alvo = pend.has("Razão social") || pend.has("CNPJ válido") ? 1
         : pend.has("CEP") || pend.has("Endereço") || pend.has("Cidade") || pend.has("UF") || pend.has("Telefone") ? 2
         : pend.has("Responsável") ? 3 : pend.has("Fuso horário") ? 4 : 5;
-      setEmpresa({ cnpj: inicial.cnpj ?? "", razao_social: inicial.razao_social, situacao_cadastral: "ATIVA" } as DadosEmpresa);
+      // Retomada: só a evidência registrada no servidor para este CNPJ conta como verificação.
+      // Sem ela, o cadastro segue como não verificado (revisão obrigatória).
+      const ev = state.evidencia;
+      setEmpresa(ev && ev.vigente
+        ? ({ cnpj: ev.cnpj, razao_social: ev.razao_social, situacao_cadastral: ev.situacao_cadastral } as DadosEmpresa)
+        : null);
       setEtapa(alvo);
       setPronto(true);
     } else {
@@ -97,6 +103,10 @@ export function OnboardingEmpresa({ state }: { state: OnboardingState }) {
 
   const inativa = !!empresa && !!empresa.situacao_cadastral && empresa.situacao_cadastral !== "ATIVA";
   const campoBloqueado = (k: keyof OnboardingDados) => k === "cnpj" || (k === "razao_social" && !!empresa);
+
+  if (state.status === "aguardando_revisao" || state.review_pending) {
+    return <CadastroEmRevisao state={state} onSair={() => signOut()} />;
+  }
 
   if (!state.is_admin) {
     return (
@@ -187,9 +197,13 @@ export function OnboardingEmpresa({ state }: { state: OnboardingState }) {
     if (inativa) { toast.error("Situação cadastral não ATIVA: a conclusão exige revisão da equipe CultivoFarm."); return; }
     try {
       await salvar.mutateAsync(d);
-      await concluir.mutateAsync();
-      toast.success("Cadastro concluído. Empresa ativa.");
-      navigate("/", { replace: true });
+      const r = await concluir.mutateAsync();
+      if (r?.status === "ativa") {
+        toast.success("Cadastro concluído. Empresa ativa.");
+        navigate("/", { replace: true });
+      } else {
+        toast.success("Cadastro enviado para revisão da equipe CultivoFarm.");
+      }
     } catch (e) {
       toast.error(mensagemErroPlataforma(e));
     }
@@ -429,6 +443,37 @@ export function OnboardingEmpresa({ state }: { state: OnboardingState }) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Empresa aguardando revisão: sem edição nem reenvio; liberação só pela equipe CultivoFarm. */
+function CadastroEmRevisao({ state, onSair }: { state: OnboardingState; onSair: () => void }) {
+  const motivo = state.review?.motivo_codigo ? MOTIVO_REVISAO_LABEL[state.review.motivo_codigo] : null;
+  return (
+    <div className="flex min-h-screen items-center justify-center p-4 sm:p-6">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Cadastro em revisão</CardTitle>
+          <CardDescription>
+            {state.is_admin
+              ? "Recebemos o cadastro da empresa. A equipe CultivoFarm vai revisá-lo antes de liberar o acesso, inclusive à Central Fiscal."
+              : "O cadastro da empresa está em revisão pela equipe CultivoFarm. O acesso será liberado após a aprovação."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {state.is_admin && motivo && (
+            <p className="text-sm"><span className="text-muted-foreground">Motivo da revisão: </span>{motivo}</p>
+          )}
+          {state.is_admin && state.review?.submetido_em && (
+            <p className="text-sm text-muted-foreground">Enviado em {new Date(state.review.submetido_em).toLocaleString("pt-BR")}</p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {suporte && <Button variant="ghost" asChild className="min-h-11"><a href={suporte.href} target="_blank" rel="noreferrer">{suporte.label}</a></Button>}
+            <Button variant="outline" className="min-h-11" onClick={onSair}>Sair</Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
