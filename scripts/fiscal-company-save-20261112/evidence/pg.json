@@ -110,6 +110,7 @@
   "sources": {
     "supabase/migrations/20260721000000_fiscal_fase2_fundacao.sql": "e22db0bc2f1112266ce6cf34cb1373f1be5a382e5563f65c3b827a09111de941",
     "supabase/migrations/20260723000000_fiscal_fase3_15_central_config.sql": "f2a508fa674572dd0e323569dac8321e87ed333062ce65ae2d398794f412ade3",
-    "supabase/migrations/20260919015635_h15_fiscal_company_isolation.sql": "66f09bfde33988ec057baff35626679b2b9b8ec5c399420fb202fb362c5f4645"
+    "supabase/migrations/20260919015635_h15_fiscal_company_isolation.sql": "66f09bfde33988ec057baff35626679b2b9b8ec5c399420fb202fb362c5f4645",
+    "supabase/migrations/20260816000000_fase_f3_prontidao_calculo_nfe.sql": "f1125b8aafdfdeb8e6034f8a79945a0e160356d3ed0cb7c2cbfc493ba2f9c511"
   }
 }
