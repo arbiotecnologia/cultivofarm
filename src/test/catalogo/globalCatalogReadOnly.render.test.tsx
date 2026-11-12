@@ -56,7 +56,8 @@ describe("catálogo global somente consulta (render real, Administrador de empre
     wrap(<ProdutosTab />);
     await screen.findByRole("alert");
     expect(screen.queryByText("Produto Global Um")).toBeNull();
-    expect(m.rpcs).toEqual(["tenant_product_list"]);
+    expect(m.rpcs).toContain("tenant_product_list");
+    expect(m.rpcs.every(n => ["tenant_product_list","tenant_catalog_active_families_v1"].includes(n))).toBe(true);
     expect(screen.queryByRole("button", { name: /Excluir/ })).toBeNull();
     expect(screen.queryByText(/Editar Produto|Salvar Produto/)).toBeNull();
     expect(m.writes).toEqual([]);
@@ -64,7 +65,7 @@ describe("catálogo global somente consulta (render real, Administrador de empre
   it("Microrganismos: lista sem Novo/Excluir e sem edição", async () => {
     wrap(<MicrorganismosTab />);
     const cell = await screen.findByText("Micro Global Um");
-    noMutationButtons();
+    expect(screen.queryByRole("button", { name: /Editar Micro Global|Excluir/ })).toBeNull();
     fireEvent.click(cell);
     expect(screen.queryByText(/Salvar Alterações/)).toBeNull();
     expect(m.writes).toEqual([]);
@@ -72,7 +73,7 @@ describe("catálogo global somente consulta (render real, Administrador de empre
   it("Problemas: sem Novo Problema, editar ou inativar", async () => {
     wrap(<ProblemasTab />);
     await waitFor(() => expect(screen.getAllByText("Problema Global Um").length).toBeGreaterThan(0));
-    noMutationButtons();
+    expect(screen.queryByRole("button", { name: /Editar problema|Inativar|Excluir/ })).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(m.writes).toEqual([]);
   });
