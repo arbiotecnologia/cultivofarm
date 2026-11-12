@@ -1,0 +1,182 @@
+{
+  "harness": "F4.1 NF-e 55 offline",
+  "generated_at": "2026-11-12T17:31:09.992199+00:00",
+  "tools": {
+    "xmllint": "xmllint: using libxml version 21504",
+    "openssl": "OpenSSL 3.6.5 29 Sep 2026 (Library: OpenSSL 3.6.5 29 Sep 2026)",
+    "deno": "deno 2.8.3 (stable, release, x86_64-unknown-linux-gnu)"
+  },
+  "lxml_libxml": [
+    2,
+    14,
+    6
+  ],
+  "total": 23,
+  "failed": 1,
+  "network_sefaz": false,
+  "database": false,
+  "secrets": false,
+  "results": [
+    {
+      "case": "prov.PL_010g_vigente.sha256",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "Schemas XML NF-e - Pacote de Liberação nº 010g v.1.03 - NT 2026.006 v.1.00 e NT 2026.008 v.1.00"
+    },
+    {
+      "case": "prov.PL_010e_motor.sha256",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "Schemas XML NF-e - 010e_v.1.02 - NT 2025.002 v.1.40, NT 2026.002 v.1.0 e NT 2026.003 v.1.0"
+    },
+    {
+      "case": "prov.motor_alinhado_ao_vigente",
+      "expected": "PASS",
+      "observed": "REJECT",
+      "result": "FAIL",
+      "detail": "difere: ['DFeTiposBasicos_v1.00.xsd', 'leiauteNFe_v4.00.xsd']"
+    },
+    {
+      "case": "neg.prov.xsd_adulterado",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "['leiauteNFe_v4.00.xsd']"
+    },
+    {
+      "case": "pos.motor.verifyNfeSignature",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "{'valid': True, 'digestMatches': True, 'signatureMatches': True, 'referenceUri': '#NFe51261111222333000181550010000000011123456780', 'code': None}"
+    },
+    {
+      "case": "pos.tpAmb_homologacao",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "tpAmb=2"
+    },
+    {
+      "case": "pos.xsd.PL_010g_vigente",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "/tmp/f41-nzsmbm6z/signed.xml validates"
+    },
+    {
+      "case": "pos.xsd.PL_010e_motor",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "/tmp/f41-nzsmbm6z/signed.xml validates"
+    },
+    {
+      "case": "pos.sig.independente_libxml2_openssl",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "RSA_SHA1_OK"
+    },
+    {
+      "case": "neg.sig.valor_alterado_infNFe",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "DIGEST_MISMATCH"
+    },
+    {
+      "case": "neg.sig.valor_alterado_infNFe.motor",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "SIGNATURE_DIGEST_MISMATCH"
+    },
+    {
+      "case": "neg.sig.signaturevalue_adulterado",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "SIGNATURE_VALUE_MISMATCH"
+    },
+    {
+      "case": "neg.sig.signaturevalue_adulterado.motor",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "SIGNATURE_VALUE_MISMATCH"
+    },
+    {
+      "case": "neg.sig.uri_referencia_trocada",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "REFERENCE_URI_MISMATCH"
+    },
+    {
+      "case": "neg.sig.uri_referencia_trocada.motor",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "SIGNATURE_VALUE_MISMATCH"
+    },
+    {
+      "case": "neg.sig.certificado_substituido",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "SIGNATURE_VALUE_MISMATCH"
+    },
+    {
+      "case": "neg.sig.certificado_nao_esperado",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "CERT_NOT_EXPECTED"
+    },
+    {
+      "case": "neg.xsd.sem_signature",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "/tmp/f41-nzsmbm6z/nosig.xml fails to validate"
+    },
+    {
+      "case": "neg.sig.ausente",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "SIGNATURE_COUNT_0"
+    },
+    {
+      "case": "neg.xsd.cfop_invalido",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "/tmp/f41-nzsmbm6z/badcfop.xml fails to validate"
+    },
+    {
+      "case": "neg.xsd.tpAmb_invalido",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "/tmp/f41-nzsmbm6z/badamb.xml fails to validate"
+    },
+    {
+      "case": "neg.sign.certificado_expirado",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "CERTIFICATE_EXPIRED"
+    },
+    {
+      "case": "neg.sign.chave_nao_corresponde",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "CERTIFICATE_KEY_MISMATCH"
+    }
+  ]
+}
