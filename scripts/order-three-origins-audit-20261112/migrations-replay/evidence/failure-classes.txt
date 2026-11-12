@@ -1,0 +1,14 @@
+      1 supabase/migrations/20261037000000_h14_nfeproc_document_closure.sql:18
+      1 supabase/migrations/20261036000000_h13_fiscal_acl_and_authorization_re
+      1 supabase/migrations/20261035000000_h12_fiscal_totals_certificate_autho
+      1 supabase/migrations/20261034000000_fiscal_transport_preview_safety.sql
+      1 supabase/migrations/20261032000000_h10b_fiscal_audit_reason_v1.sql:293
+      1 supabase/migrations/20261031000000_h10a_fiscal_draft_apportion_engine_
+      1 supabase/migrations/20261030000000_fiscal_base_reduction_audit_v1.sql:
+      1 supabase/migrations/20261029000000_fiscal_base_reduction_v1.sql:11: ER
+      1 supabase/migrations/20261026000000_h9g_retorno_tecnico_tipo_demanda_v1
+      1 supabase/migrations/20261025000000_h9g_retorno_tecnico_duracao_estimad
+      1 supabase/migrations/20261016164932_90ae7f02-5145-4598-8caf-70f5dbb1130
+      1 supabase/migrations/20261016164730_14f748f7-c231-4fe9-b630-a8d87e7d152
+forbidden_ref_markers=126
+capability_rpcs_in_migrations=0
