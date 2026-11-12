@@ -1,0 +1,3 @@
+- F4.1 harness is offline-only: never transmit to SEFAZ, touch DB/secrets/flags or persist private keys; synthetic certs are ephemeral in /tmp.
+- Signature checks must stay independent of the engine (libxml2 C14N + OpenSSL); the engine verifier is only a cross-check.
+- Do not replace the engine XSD bundle from this package without a reviewed bundle/hash update (xsdBundle.ts + manifest + tests); the alignment check must keep failing until then.

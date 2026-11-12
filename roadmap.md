@@ -1785,3 +1785,5 @@
 - [ ] Instalar 02e no original — aguarda auditor
 - [ ] Aprovação comercial de pedidos internos (B2B_INTERNAL_DOWNSTREAM_UNVERIFIED) — aguarda decisão do proprietário
 - [ ] Segregação gestor x termos financeiros — aguarda decisão do proprietário
+
+- [ ] F4.1 harness NF-e: alinhar bundle XSD do motor ao PL_010g (revisão pendente); harness em scripts/nfe-f41-certification-20261112/
