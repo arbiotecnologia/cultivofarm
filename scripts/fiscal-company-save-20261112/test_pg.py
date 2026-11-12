@@ -30,7 +30,7 @@ h15 = ROOT / 'supabase/migrations/20260919015635_h15_fiscal_company_isolation.sq
 f3 = ROOT / 'supabase/migrations/20260816000000_fase_f3_prontidao_calculo_nfe.sql'
 f3text = f3.read_text()
 f3columns = f3text[f3text.index('ALTER TABLE public.company_fiscal_settings'):f3text.index('DO $$ BEGIN', f3text.index('ALTER TABLE public.company_fiscal_settings'))]
-scanner = re.search(r'CREATE OR REPLACE FUNCTION public.fiscal_json_has_sensitive_key\(.*?\$\$;', f3text, re.S).group(0)
+scanner = re.search(r'CREATE OR REPLACE FUNCTION public.fiscal_json_has_sensitive_key\(.*?\$\$;', central.read_text(), re.S).group(0)
 f3checks = []
 for name in ['cfs_pis_cofins_regime_domain', 'cfs_uf_accreditations_shape']:
     f3checks.append(re.search(r'ALTER TABLE public.company_fiscal_settings\s+ADD CONSTRAINT '+name+r'.*?;', f3text, re.S).group(0))
