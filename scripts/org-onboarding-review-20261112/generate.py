@@ -16,6 +16,10 @@ for k in ['platform_private.issue_ticket(text,uuid)','platform_private.onboardin
           'platform_private.cnpj_normalizar(text)','platform_private.cnpj_valido(text)']:
     PINS[k] = next(p['md5'] for p in cap['priv'] if p['sig'] == k)
 
+def acl_sorted(a):
+    items = sorted(a.strip('{}').split(','))
+    return "ARRAY[" + ",".join("'"+i+"'" for i in items) + "]::text[]"
+
 def regproc(sig):
     return sig if sig.startswith('platform_private.') else 'public.' + sig
 
@@ -39,9 +43,9 @@ for s in FISCAL:
 post = ["DO $post$ BEGIN"]
 for s in FISCAL:
     post.append(f"  IF position('fiscal_require_released_org' in pg_get_functiondef('public.{s}'::regprocedure)) = 0 THEN RAISE EXCEPTION 'POST guard ausente {s}'; END IF;")
-    post.append(f"  IF (SELECT proacl::text FROM pg_proc WHERE oid='public.{s}'::regprocedure) IS DISTINCT FROM '{funcs[s]['acl']}' THEN RAISE EXCEPTION 'POST ACL alterada {s}'; END IF;")
+    post.append(f"  IF (SELECT array(SELECT x::text FROM pg_proc, unnest(proacl) x WHERE oid='public.{s}'::regprocedure ORDER BY 1)) IS DISTINCT FROM {acl_sorted(funcs[s]['acl'])} THEN RAISE EXCEPTION 'POST ACL alterada {s}'; END IF;")
 for s in CORE:
-    post.append(f"  IF (SELECT proacl::text FROM pg_proc WHERE oid='public.{s}'::regprocedure) IS DISTINCT FROM '{funcs[s]['acl']}' THEN RAISE EXCEPTION 'POST ACL alterada {s}'; END IF;")
+    post.append(f"  IF (SELECT array(SELECT x::text FROM pg_proc, unnest(proacl) x WHERE oid='public.{s}'::regprocedure ORDER BY 1)) IS DISTINCT FROM {acl_sorted(funcs[s]['acl'])} THEN RAISE EXCEPTION 'POST ACL alterada {s}'; END IF;")
 post += [
  "  IF has_function_privilege('authenticated','public.svc_onboarding_record_cnpj_evidence(uuid,uuid,jsonb,text,text)','EXECUTE') THEN RAISE EXCEPTION 'POST svc exposto'; END IF;",
  "  IF has_function_privilege('anon','public.platform_approve_onboarding_review(uuid,text)','EXECUTE') THEN RAISE EXCEPTION 'POST anon aprova'; END IF;",
