@@ -14,7 +14,7 @@ describe("Credenciamento declarado e PIS/COFINS opcionais", () => {
   it("merge retém outras UFs, chaves e registros opacos sem mutar origem", () => {
     const original = [{ uf: "SP", accredited: true, note: "existente" }, { uf: "MG", accredited: false, evidence_ref: "original" }, "legado"];
     expect(mergeDeclaredAccreditation(original, "MG", true)).toEqual([original[0], { uf: "MG", accredited: true, evidence_ref: "original" }, "legado"]);
-    expect(original[1].accredited).toBe(false);
+    expect(original[1]).toEqual({ uf: "MG", accredited: false, evidence_ref: "original" });
     expect(mergeDeclaredAccreditation(original, "RJ", false)).toEqual([...original, { uf: "RJ", accredited: false }]);
   });
   it("UF duplicada aborta sem descartar ou escolher evidência", () => {

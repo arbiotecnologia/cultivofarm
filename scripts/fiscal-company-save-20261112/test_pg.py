@@ -27,6 +27,13 @@ def check(name, yes):
 foundation = ROOT / 'supabase/migrations/20260721000000_fiscal_fase2_fundacao.sql'
 central = ROOT / 'supabase/migrations/20260723000000_fiscal_fase3_15_central_config.sql'
 h15 = ROOT / 'supabase/migrations/20260919015635_h15_fiscal_company_isolation.sql'
+f3 = ROOT / 'supabase/migrations/20260816000000_fase_f3_prontidao_calculo_nfe.sql'
+f3text = f3.read_text()
+f3columns = f3text[f3text.index('ALTER TABLE public.company_fiscal_settings'):f3text.index('DO $$ BEGIN', f3text.index('ALTER TABLE public.company_fiscal_settings'))]
+scanner = re.search(r'CREATE OR REPLACE FUNCTION public.fiscal_json_has_sensitive_key\(.*?\$\$;', f3text, re.S).group(0)
+f3checks = []
+for name in ['cfs_pis_cofins_regime_domain', 'cfs_uf_accreditations_shape']:
+    f3checks.append(re.search(r'ALTER TABLE public.company_fiscal_settings\s+ADD CONSTRAINT '+name+r'.*?;', f3text, re.S).group(0))
 src = foundation.read_text()
 table = re.search(r'CREATE TABLE IF NOT EXISTS public.company_fiscal_settings \(.*?\n\);', src, re.S).group(0)
 additive = central.read_text().split('-- 4. Helper:')[0].split('-- 1. NOVAS COLUNAS')[1]
@@ -68,10 +75,8 @@ GRANT EXECUTE ON FUNCTION public.has_role(uuid,public.app_role) TO authenticated
 GRANT USAGE ON SCHEMA auth TO authenticated;
 """ + table + "\nGRANT SELECT,INSERT,UPDATE ON public.company_fiscal_settings TO authenticated;\n" + additive + """
 ALTER TABLE public.company_fiscal_settings ADD COLUMN organization_id uuid NOT NULL;
-ALTER TABLE public.company_fiscal_settings ADD COLUMN nfe_series_number integer;
-ALTER TABLE public.company_fiscal_settings ADD COLUMN nfe_environment_code text;
 ALTER TABLE public.company_fiscal_settings ENABLE ROW LEVEL SECURITY;
-""" + actor + "\nREVOKE ALL ON FUNCTION public.h15_actor_organization() FROM PUBLIC,anon; GRANT EXECUTE ON FUNCTION public.h15_actor_organization() TO authenticated;\n" + integrity + '\n'.join(policies))
+""" + scanner + f3columns + '\n'.join(f3checks) + actor + "\nREVOKE ALL ON FUNCTION public.h15_actor_organization() FROM PUBLIC,anon; GRANT EXECUTE ON FUNCTION public.h15_actor_organization() TO authenticated;\n" + integrity + '\n'.join(policies))
     pg(f"INSERT INTO organizations VALUES('{A}',true),('{B}',true); INSERT INTO profiles VALUES('{U}','{A}',true); INSERT INTO user_roles VALUES('{U}','administrador');")
     # INSERT fixture through canonical H15 guard; only accounting baseline is synthetic test setup, never a save approval.
     session = f"BEGIN; SET LOCAL ROLE authenticated; SET LOCAL request.jwt.claim.sub='{U}';"
@@ -105,7 +110,27 @@ ALTER TABLE public.company_fiscal_settings ENABLE ROW LEVEL SECURITY;
     check('Financeiro cannot update', ID not in pg(session + f"UPDATE company_fiscal_settings SET legal_name='forged' WHERE id='{ID}' RETURNING id;COMMIT;").stdout)
     after = pg("SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='company_fiscal_settings_configuration_status_check'").stdout.strip()
     check('CHECK unchanged after entire flow', before == after)
-    (OUT / 'pg.json').write_text(json.dumps({'scope':'disposable canonical component mirror, not full r12/JWT/PostgREST','checks':checks,'constraint':before,'sources':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [foundation,central,h15]}}, ensure_ascii=False, indent=2)+'\n')
+    if os.environ.get('TEST_ACCREDITATIONS') == '1':
+        pg(f"UPDATE user_roles SET role='administrador' WHERE user_id='{U}';")
+        pg(session + f"UPDATE company_fiscal_settings SET configuration_version=7,configuration_status='PENDING_ACCOUNTING',accounting_validated_at=NULL,tax_regime='LUCRO_PRESUMIDO',crt='3',pis_cofins_regime=NULL,uf_accreditations='[{{\"uf\":\"SP\",\"accredited\":true,\"note\":\"preservar\"}},{{\"uf\":\"MG\",\"accredited\":false,\"evidence_ref\":\"original\"}}]' WHERE id='{ID}';COMMIT;")
+        payload = json.loads((OUT/'accreditations/payload.json').read_text())
+        quoted = json.dumps(payload, ensure_ascii=False).replace("'", "''")
+        assignment = ','.join(f'"{k}"=p."{k}"' for k in payload)
+        sql = f"UPDATE company_fiscal_settings c SET {assignment} FROM jsonb_populate_record(NULL::company_fiscal_settings,'{quoted}'::jsonb) p WHERE c.id='{ID}' AND c.organization_id='{A}' AND c.configuration_version=7 RETURNING c.id;"
+        check('declaration only exact SDK PATCH commits', ID in pg(session+sql+'COMMIT;').stdout)
+        result = pg(session+f"SELECT jsonb_build_object('records',uf_accreditations,'regime',pis_cofins_regime,'status',configuration_status,'accounting',accounting_validated_at,'crt',crt,'tax',tax_regime) FROM company_fiscal_settings WHERE id='{ID}';COMMIT;").stdout
+        reopened = json.loads(next(line for line in result.splitlines() if line.startswith('{')))
+        check('MG merge/SP/metadata reopen intact', reopened['records'] == payload['uf_accreditations'])
+        check('null/regime/status/accounting preserved', reopened['regime'] is None and reopened['status']=='PENDING_ACCOUNTING' and reopened['accounting'] is None and reopened['crt']=='3' and reopened['tax']=='LUCRO_PRESUMIDO')
+        check('stale accreditation patch cannot replace concurrent JSON', ID not in pg(session+sql+'COMMIT;').stdout)
+        invalid = pg(session+f"UPDATE company_fiscal_settings SET pis_cofins_regime='LUCRO_PRESUMIDO' WHERE id='{ID}';COMMIT;",False)
+        check('canonical PIS domain rejects invented inference', 'cfs_pis_cofins_regime_domain' in invalid.stderr)
+        invalid = pg(session+f"UPDATE company_fiscal_settings SET uf_accreditations='{{}}' WHERE id='{ID}';COMMIT;",False)
+        check('canonical accreditation shape rejects object', 'cfs_uf_accreditations_shape' in invalid.stderr)
+        pg(f"UPDATE profiles SET organization_id='{B}' WHERE user_id='{U}';")
+        check('foreign tenant cannot overwrite declarations', ID not in pg(session+f"UPDATE company_fiscal_settings SET uf_accreditations='[]' WHERE id='{ID}' RETURNING id;COMMIT;").stdout)
+        OUT = OUT / 'accreditations'
+    (OUT / 'pg.json').write_text(json.dumps({'scope':'disposable canonical component mirror, not full r12/JWT/PostgREST','checks':checks,'constraint':before,'sources':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [foundation,central,h15,f3]}}, ensure_ascii=False, indent=2)+'\n')
     print(f'{len(checks)} PostgreSQL checks PASS (component mirror)')
 finally:
     run(PRIV + ['pg_ctl','-D',str(TMP/'data'),'-m','immediate','-w','stop'])
