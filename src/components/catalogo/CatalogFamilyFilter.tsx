@@ -11,8 +11,8 @@ export function CatalogFamilyFilter({ value, onChange }: { value: CatalogFamilyF
   return <ToggleGroup type="single" value={value === "todos" ? "" : value}
     onValueChange={v => onChange(v === "sem_classificacao" ? v : readCatalogFamily(v) ?? "todos")}
     aria-label="Família do catálogo" className="flex flex-wrap justify-start gap-1">
-    {READ_CATALOG_FAMILIES.map(f => <ToggleGroupItem key={f} value={f} className="h-auto min-h-9 whitespace-normal text-sm" aria-label={READ_FAMILY_LABEL[f]}>
-      {READ_FAMILY_LABEL[f]}
+    {families.options.filter(f => f.value !== "todos" && f.value !== "sem_classificacao").map(f => <ToggleGroupItem key={f.value} value={f.value} className="h-auto min-h-11 whitespace-normal text-sm" aria-label={f.label}>
+      {f.label}
     </ToggleGroupItem>)}
     <ToggleGroupItem value="sem_classificacao" className="min-h-11">Sem classificação</ToggleGroupItem>
   </ToggleGroup>;

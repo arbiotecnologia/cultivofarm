@@ -691,7 +691,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
     <div className="space-y-4 min-w-0 [&_button]:min-h-11 [&_input]:min-h-11 [&_button[role=combobox]]:min-h-11">
       {mobile ? <CompactCatalogSelect label="Família de produtos" value={familyTab} options={activeFamilies.options} onChange={v => setFamilyTab(v as ProductFamilyTab)} /> : <Tabs value={familyTab} onValueChange={v => setFamilyTab(v as ProductFamilyTab)}>
         <TabsList aria-label="Famílias de produtos" className="flex h-auto w-full justify-start overflow-x-auto">
-          {PRODUCT_FAMILY_TABS.map(t => <TabsTrigger key={t.value} value={t.value} className="min-h-10 shrink-0">{t.label}</TabsTrigger>)}
+          {activeFamilies.options.map(t => <TabsTrigger key={t.value} value={t.value} className="min-h-11 shrink-0">{t.value === "todos" ? "Todos" : t.label}</TabsTrigger>)}
         </TabsList>
       </Tabs>}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
@@ -762,7 +762,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
                 </details>}
                 <fieldset disabled={saving || !!partialMessage} className="min-w-0">
                 <Tabs defaultValue="geral">
-                  <TabsList className="grid w-full grid-cols-3 mb-4">
+                  <TabsList className="flex w-full h-auto flex-wrap mb-4 [&_button]:flex-1 [&_button]:whitespace-normal [&_button]:min-w-20">
                     <TabsTrigger value="geral">Identificação</TabsTrigger>
                     <TabsTrigger value="aplicacao">Aplicação & Custo</TabsTrigger>
                     <TabsTrigger value="composicao">Composição</TabsTrigger>
