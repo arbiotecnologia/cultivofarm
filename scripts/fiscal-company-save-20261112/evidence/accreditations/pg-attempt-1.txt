@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/fiscal-company-save-20261112/test_pg.py", line 33, in <module>
+    scanner = re.search(r'CREATE OR REPLACE FUNCTION public.fiscal_json_has_sensitive_key\(.*?\$\$;', f3text, re.S).group(0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'group'
