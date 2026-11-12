@@ -16,6 +16,7 @@ helper="""CREATE OR REPLACE FUNCTION platform_private.b2b_cancel_confirmed_fisca
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $fn$
 DECLARE t public.fiscal_sefaz_transmissions;e public.fiscal_events;i public.fiscal_invoices;r public.accounts_receivable;paid boolean;actor_org uuid;
 BEGIN
+ IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_cancel_policy_gate_v1 WHERE singleton AND enabled) THEN RETURN jsonb_build_object('final',false,'code','CANCEL_POLICY_DISABLED'); END IF;
  SELECT * INTO t FROM public.fiscal_sefaz_transmissions WHERE id=p_tx;
  IF NOT FOUND OR t.service<>'NFeRecepcaoEvento4' OR t.fiscal_event_id IS NULL THEN RETURN jsonb_build_object('final',false,'code','NOT_LINKED_CANCEL'); END IF;
  actor_org:=public.h15_actor_organization();
@@ -49,8 +50,10 @@ END $fn$;
 REVOKE ALL ON FUNCTION platform_private.b2b_cancel_confirmed_fiscal_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
 """
 record=read('record')
+record=replace(record,'  v_close_error text := NULL;',"  v_close_error text := NULL;\n  v_cancel jsonb := NULL;")
 record=replace(record,'      PERFORM public.rpc_fiscal_event_sefaz_reconcile_v1(', '      PERFORM public.rpc_fiscal_event_sefaz_reconcile_v1(') # exact anchor sanity
-record=replace(record,"        coalesce(_patch->>'xMotivo', ''), v_row.n_prot, v_row.dh_recbto);", "        coalesce(_patch->>'xMotivo', ''), v_row.n_prot, v_row.dh_recbto);\n      PERFORM platform_private.b2b_cancel_confirmed_fiscal_v1(v_row.id);")
+record=replace(record,"        coalesce(_patch->>'xMotivo', ''), v_row.n_prot, v_row.dh_recbto);", "        coalesce(_patch->>'xMotivo', ''), v_row.n_prot, v_row.dh_recbto);\n      v_cancel:=platform_private.b2b_cancel_confirmed_fiscal_v1(v_row.id);\n      IF v_cancel->>'code' IN ('FISCAL_AUTHORIZATION_RECONCILIATION_PENDING','FISCAL_CANCEL_TITLE_LINK_UNPROVEN') THEN v_close_error:='FISCAL_EVENT_RECONCILIATION_PENDING'; END IF;")
+record=replace(record,"    'transmissionId', v_row.id, 'state', v_row.state, 'outcome', v_row.outcome,", "    'cancellation',v_cancel,\n    'transmissionId', v_row.id, 'state', v_row.state, 'outcome', v_row.outcome,")
 def guard(pins):
  result='DO $g$ BEGIN\n'
  for sig,p in pins.items():
@@ -58,11 +61,15 @@ def guard(pins):
   result+=f"IF (SELECT jsonb_build_object('md5',md5(pg_get_functiondef(oid)),'owner',pg_get_userbyid(proowner),'acl',(SELECT coalesce(jsonb_agg(x::text ORDER BY x::text),'[]'::jsonb) FROM unnest(proacl)x),'config',to_jsonb(proconfig)) FROM pg_proc WHERE oid=to_regprocedure('{sig}')) IS DISTINCT FROM '{value}'::jsonb THEN RAISE EXCEPTION 'CANCEL_PIN_DRIFT:{sig}'; END IF;\n"
  return result+'END $g$;\n'
 pins=json.loads((H/'capture/pins.json').read_text());pre=guard(pins)
-(H/'candidate.sql').write_text(residual+';\n'+payment+';\n'+helper+record+';\n')
+gate="""CREATE TABLE platform_private.b2b_cancel_policy_gate_v1(singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),enabled boolean NOT NULL DEFAULT false);
+REVOKE ALL ON platform_private.b2b_cancel_policy_gate_v1 FROM PUBLIC,anon,authenticated,service_role;
+INSERT INTO platform_private.b2b_cancel_policy_gate_v1(singleton,enabled) VALUES(true,false);
+"""
+(H/'candidate.sql').write_text(gate+residual+';\n'+payment+';\n'+helper+record+';\n')
 (H/'01-pre.sql.readonly').write_text('BEGIN READ ONLY;\n'+pre+'ROLLBACK;\n')
 (H/'02-install.sql.review').write_text('BEGIN;\n'+pre+"IF_NOT_USED".replace('IF_NOT_USED','')+(H/'candidate.sql').read_text()+'COMMIT;\n')
 post=H/'capture/post-pins.json'
 if post.exists():
  pg=guard(json.loads(post.read_text()));(H/'03-post.sql.readonly').write_text('BEGIN READ ONLY;\n'+pg+'ROLLBACK;\n')
- (H/'04-rollback-deny.sql.review').write_text('BEGIN;\n'+pg+"REVOKE EXECUTE ON FUNCTION public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text),public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;\nCOMMIT;\n")
+ (H/'04-rollback-deny.sql.review').write_text('BEGIN;\n'+pg+"UPDATE platform_private.b2b_cancel_policy_gate_v1 SET enabled=false;\nREVOKE EXECUTE ON FUNCTION public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) FROM PUBLIC,anon,authenticated,service_role;\nCOMMIT;\n")
 (H/'SHA256SUMS').write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n' for p in sorted(H.glob('*.sql*'))))
