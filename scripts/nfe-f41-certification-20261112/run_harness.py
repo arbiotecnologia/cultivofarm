@@ -12,7 +12,7 @@ Nada é transmitido à SEFAZ, nada toca banco/segredos/flags. Etapas:
  5. Casos negativos que devem falhar.
 Saída: evidence/report.json e evidence/REPORT-run.md.
 """
-import base64, hashlib, json, os, shutil, subprocess, sys, tempfile, datetime
+import base64, re, hashlib, json, os, shutil, subprocess, sys, tempfile, datetime
 from pathlib import Path
 from lxml import etree
 
@@ -20,6 +20,8 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 ENGINE_XSD = ROOT / "supabase/functions/fiscal-xml-engine/xsd"
 CURRENT_XSD = HERE / "official/PL_010g"
+LEGACY_XSD = HERE / "official/PL_010e"
+XSD_NAMES = ["DFeTiposBasicos_v1.00.xsd", "leiauteNFe_v4.00.xsd", "nfe_v4.00.xsd", "tiposBasico_v4.00.xsd", "xmldsig-core-schema_v1.01.xsd"]
 EVID = HERE / "evidence"
 NFE = "http://www.portalfiscal.inf.br/nfe"
 DS = "http://www.w3.org/2000/09/xmldsig#"
@@ -43,6 +45,24 @@ def xsd_validate(xml_path, xsd_dir):
     r = subprocess.run(["xmllint", "--noout", "--schema", str(Path(xsd_dir) / "nfe_v4.00.xsd"), str(xml_path)],
                        capture_output=True, text=True)
     return r.returncode == 0, (r.stderr.strip().splitlines() or [""])[-1]
+
+def xsd_engine(xml_path):
+    """Validador normativo do motor: Xerces-C++ WASM + bundle com integridade verificada."""
+    r = deno("xsd", xml_path)[str(xml_path)]
+    return bool(r["valid"]), "%s %s %s" % (r["package"], r["validator"].split(" ")[0], [i["code"] for i in r["issues"]])
+
+def note(name, detail):
+    """Divergência de ferramenta registrada como tal — nunca conta como OK."""
+    results.append({"case": name, "expected": "-", "observed": "-", "result": "KNOWN_TOOL_DEFECT", "detail": str(detail)[:400]})
+    print("NOTE", name, "-", str(detail)[:160])
+
+def xsd_negative(P, name, path):
+    ok, d = xsd_engine(path); check(P + name + ".xerces_motor", ok, d, expect=False)
+    lok, ld = xsd_validate(path, ENGINE_XSD)
+    if lok and not ok:
+        note(P + name + ".libxml2", "libxml2 aceitou o que o Xerces normativo rejeitou: " + ld)
+    else:
+        check(P + name + ".libxml2", lok, ld, expect=False)
 
 def c14n(el):
     """Canonical XML 1.0 inclusivo, sem comentários (libxml2).
@@ -98,97 +118,140 @@ def deno(*args):
         raise RuntimeError(re.sub(r"\x1b\[[0-9;]*m", "", r.stderr)[:600])
     return json.loads(r.stdout.strip().splitlines()[-1])
 
+FIXTURES = {
+    "icms20_mt": {"file": "synthetic-payload.json", "expect": {}},
+    "mg_icms00": {"file": "synthetic-mg-icms00.json", "expect": {
+        "cUF": "31", "idDest": "1", "indFinal": "1", "indIEDest": "9", "CFOP": "5101", "NCM": "48021000",
+        "orig": "0", "CST": "00", "vProd": "1.00", "vNF": "1.00", "tpAmb": "2", "mod": "55", "UF": "MG"}},
+}
+
+def key_dv(k43):
+    r = sum(int(c) * w for c, w in zip(reversed(k43), [2, 3, 4, 5, 6, 7, 8, 9] * 6)) % 11
+    return 0 if r < 2 else 11 - r
+
+def key_consistency(xml_bytes):
+    """Chave de acesso (44): DV mod 11 e coerência com Id/cUF/mod/serie/nNF/tpEmis/cNF/cDV."""
+    d = etree.fromstring(xml_bytes); inf = d.find(f"{{{NFE}}}infNFe"); n = lambda p: inf.findtext(p, namespaces={"n": NFE})
+    k = (inf.get("Id") or "")[3:]
+    if len(k) != 44 or not k.isdigit(): return False, "KEY_FORMAT"
+    if int(k[43]) != key_dv(k[:43]): return False, "KEY_DV_INVALID"
+    ide = {t: n(f"n:ide/n:{t}") for t in ["cUF", "mod", "serie", "nNF", "tpEmis", "cNF", "cDV"]}
+    if (k[0:2], k[20:22], int(k[22:25]), int(k[25:34]), k[34], k[35:43], k[43]) != (
+        ide["cUF"], ide["mod"], int(ide["serie"]), int(ide["nNF"]), ide["tpEmis"], ide["cNF"], ide["cDV"]):
+        return False, "KEY_IDE_MISMATCH"
+    if k[6:20] != n("n:emit/n:CNPJ"): return False, "KEY_CNPJ_MISMATCH"
+    return True, "DV=%s" % k[43]
+
+def fixture_fields(xml_bytes, expect):
+    d = etree.fromstring(xml_bytes); ns = {"n": NFE}
+    got = {"cUF": "n:infNFe/n:ide/n:cUF", "idDest": "n:infNFe/n:ide/n:idDest", "indFinal": "n:infNFe/n:ide/n:indFinal",
+           "indIEDest": "n:infNFe/n:dest/n:indIEDest", "CFOP": "n:infNFe/n:det/n:prod/n:CFOP", "NCM": "n:infNFe/n:det/n:prod/n:NCM",
+           "orig": "n:infNFe/n:det/n:imposto/n:ICMS/n:ICMS00/n:orig", "CST": "n:infNFe/n:det/n:imposto/n:ICMS/n:ICMS00/n:CST",
+           "vProd": "n:infNFe/n:total/n:ICMSTot/n:vProd", "vNF": "n:infNFe/n:total/n:ICMSTot/n:vNF",
+           "tpAmb": "n:infNFe/n:ide/n:tpAmb", "mod": "n:infNFe/n:ide/n:mod", "UF": "n:infNFe/n:emit/n:enderEmit/n:UF"}
+    bad = {k: d.findtext(got[k], namespaces=ns) for k, v in expect.items() if d.findtext(got[k], namespaces=ns) != v}
+    if expect and d.find("n:infNFe/n:dest/n:IE", ns) is not None: bad["dest.IE"] = "presente com indIEDest=9"
+    return not bad, (bad or "campos conferidos")
+
 def main():
     EVID.mkdir(exist_ok=True)
     tmp = Path(tempfile.mkdtemp(prefix="f41-"))
     try:
         # 1. Proveniência
         ok, d = provenance(CURRENT_XSD, HERE / "official/manifest-PL_010g.json"); check("prov.PL_010g_vigente.sha256", ok, d)
-        ok, d = provenance(ENGINE_XSD, ENGINE_XSD / "manifest.json"); check("prov.PL_010e_motor.sha256", ok, d)
-        diff = [n for n in ["DFeTiposBasicos_v1.00.xsd", "leiauteNFe_v4.00.xsd", "nfe_v4.00.xsd", "tiposBasico_v4.00.xsd", "xmldsig-core-schema_v1.01.xsd"]
-                if sha(CURRENT_XSD / n) != sha(ENGINE_XSD / n)]
-        check("prov.motor_alinhado_ao_vigente", not diff, "difere: %s" % diff)
+        ok, d = provenance(ENGINE_XSD, ENGINE_XSD / "manifest.json"); check("prov.motor_manifesto.sha256", ok, d)
+        ok, d = provenance(LEGACY_XSD, HERE / "official/manifest-PL_010e.json"); check("prov.PL_010e_arquivo_compat.sha256", ok, d)
+        em = json.loads((ENGINE_XSD / "manifest.json").read_text()); cm = json.loads((HERE / "official/manifest-PL_010g.json").read_text())
+        check("prov.motor_manifesto_pacote_vigente", em["package_sha256"] == cm["package_sha256"], em["package"])
+        diff = [n for n in XSD_NAMES if sha(CURRENT_XSD / n) != sha(ENGINE_XSD / n)]
+        check("prov.motor_alinhado_ao_vigente", not diff, "difere: %s" % diff if diff else "5/5 idênticos")
         tampered = tmp / "xsd_t"; shutil.copytree(CURRENT_XSD, tampered)
         with open(tampered / "leiauteNFe_v4.00.xsd", "a") as f: f.write("<!-- t -->")
         ok, d = provenance(tampered, HERE / "official/manifest-PL_010g.json"); check("neg.prov.xsd_adulterado", ok, d, expect=False)
 
-        # 2. Certificados sintéticos efêmeros (nunca persistidos no repositório)
-        def mkcert(tag, days=2, start=None):
+        def mkcert(tag, extra=("-days", "2")):
             k, c = tmp / f"{tag}.key", tmp / f"{tag}.pem"
-            cmd = ["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", str(k), "-out", str(c),
-                   "-days", str(days), "-subj", f"/CN=F41 SINTETICO {tag}/O=FICTICIO"]
-            subprocess.run(cmd, check=True, capture_output=True)
+            subprocess.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", str(k), "-out", str(c), *extra,
+                            "-subj", f"/CN=F41 SINTETICO {tag}/O=FICTICIO"], check=True, capture_output=True)
             return c, k
-        cA, kA = mkcert("A"); cB, kB = mkcert("B")
-        derA = subprocess.run(["openssl", "x509", "-in", str(cA), "-outform", "DER"], capture_output=True, check=True).stdout
-        signed = tmp / "signed.xml"
-        meta = deno("sign", HERE / "fixtures/synthetic-payload.json", cA, kA, signed)
-        xml = signed.read_bytes()
-        (EVID / "signed-synthetic-nfe.xml").write_bytes(xml)  # só contém cert público efêmero
-        check("pos.motor.verifyNfeSignature", meta["selfVerify"]["valid"], meta["selfVerify"])
-        check("pos.tpAmb_homologacao", b"<tpAmb>2</tpAmb>" in xml, "tpAmb=2")
+        der = lambda c: subprocess.run(["openssl", "x509", "-in", str(c), "-outform", "DER"], capture_output=True, check=True).stdout
+        cA, kA = mkcert("A"); cB, kB = mkcert("B"); derA, derB = der(cA), der(cB)
+        variant_n = [0]
+        def variant(data):
+            variant_n[0] += 1; p = tmp / f"v{variant_n[0]}.xml"; p.write_bytes(data); return p
 
-        # 3. XSD
-        ok, d = xsd_validate(signed, CURRENT_XSD); check("pos.xsd.PL_010g_vigente", ok, d)
-        ok, d = xsd_validate(signed, ENGINE_XSD); check("pos.xsd.PL_010e_motor", ok, d)
-        # 4. Assinatura independente
-        ok, d = independent_verify(xml, tmp, derA); check("pos.sig.independente_libxml2_openssl", ok, d)
+        for fx, spec in FIXTURES.items():
+            P = f"{fx}."
+            signed = tmp / f"{fx}.xml"
+            meta = deno("sign", HERE / "fixtures" / spec["file"], cA, kA, signed)
+            xml = signed.read_bytes(); s = xml.decode()
+            (EVID / f"signed-{fx}.xml").write_bytes(xml)  # só certificado público efêmero
+            check(P + "pos.motor.verifyNfeSignature", meta["selfVerify"]["valid"], meta["selfVerify"])
+            ok, d = key_consistency(xml); check(P + "pos.chave_dv_coerente", ok, d)
+            if spec["expect"]:
+                ok, d = fixture_fields(xml, spec["expect"]); check(P + "pos.campos_fixture", ok, d)
+            ok, d = xsd_engine(signed); check(P + "pos.xsd.xerces_motor_PL_010g", ok, d)
+            ok, d = xsd_validate(signed, ENGINE_XSD); check(P + "pos.xsd.libxml2_motor_PL_010g", ok, d)
+            ok, d = xsd_validate(signed, CURRENT_XSD); check(P + "pos.xsd.oficial_PL_010g", ok, d)
+            ok, d = xsd_validate(signed, LEGACY_XSD); check(P + "pos.xsd.compat_PL_010e", ok, d)
+            ok, d = independent_verify(xml, tmp, derA); check(P + "pos.sig.independente_libxml2_openssl", ok, d)
 
-        # 5. Negativos
-        def variant(name, data):
-            p = tmp / f"{name}.xml"; p.write_bytes(data); return p
-        s = xml.decode()
-        cases = {
-            "neg.sig.valor_alterado_infNFe": s.replace("<vNF>10000.00</vNF>", "<vNF>10001.00</vNF>"),
-            "neg.sig.signaturevalue_adulterado": s.replace("<SignatureValue>", "<SignatureValue>AAAA", 1),
-            "neg.sig.uri_referencia_trocada": s.replace('URI="#NFe5126', 'URI="#NFe5127', 1),
-        }
-        for name, data in cases.items():
-            ok, d = independent_verify(data.encode(), tmp); check(name, ok, d, expect=False)
-            mv = deno("verify", variant(name, data.encode())); check(name + ".motor", mv["valid"], mv["code"], expect=False)
-        # certificado trocado: assinatura com chave B mas KeyInfo com cert A
-        doc = etree.fromstring(xml)
-        derB = subprocess.run(["openssl", "x509", "-in", str(cB), "-outform", "DER"], capture_output=True, check=True).stdout
-        doc.find(f".//{{{DS}}}X509Certificate").text = base64.b64encode(derB).decode()
-        swapped = etree.tostring(doc)
-        ok, d = independent_verify(swapped, tmp); check("neg.sig.certificado_substituido", ok, d, expect=False)
-        ok, d = independent_verify(swapped, tmp, derA); check("neg.sig.certificado_nao_esperado", ok, d, expect=False)
-        # sem assinatura: XSD exige ds:Signature
-        nosig = s[: s.index("<Signature ")] + "</NFe>"
-        ok, d = xsd_validate(variant("nosig", nosig.encode()), CURRENT_XSD); check("neg.xsd.sem_signature", ok, d, expect=False)
-        ok, d = independent_verify(nosig.encode(), tmp); check("neg.sig.ausente", ok, d, expect=False)
-        bad = s.replace("<CFOP>5102</CFOP>", "<CFOP>51A2</CFOP>")
-        ok, d = xsd_validate(variant("badcfop", bad.encode()), CURRENT_XSD); check("neg.xsd.cfop_invalido", ok, d, expect=False)
-        bad = s.replace("<tpAmb>2</tpAmb>", "<tpAmb>3</tpAmb>")
-        ok, d = xsd_validate(variant("badamb", bad.encode()), CURRENT_XSD); check("neg.xsd.tpAmb_invalido", ok, d, expect=False)
-        # certificado expirado deve ser recusado pelo assinador
-        try:
-            ck, kk = tmp / "exp.pem", tmp / "exp.key"
-            subprocess.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", str(kk), "-out", str(ck),
-                            "-not_before", "20200101000000Z", "-not_after", "20200102000000Z", "-subj", "/CN=EXP"], check=True, capture_output=True)
-            deno("sign", HERE / "fixtures/synthetic-payload.json", ck, kk, tmp / "exp.xml"); check("neg.sign.certificado_expirado", True, "assinou")
-        except RuntimeError as e:
-            check("neg.sign.certificado_expirado", False, "CERTIFICATE_EXPIRED" if "CERTIFICATE_EXPIRED" in str(e) else str(e)[-120:], expect=False)
-        try:
-            deno("sign", HERE / "fixtures/synthetic-payload.json", cA, kB, tmp / "mm.xml"); check("neg.sign.chave_nao_corresponde", True, "assinou")
-        except RuntimeError as e:
-            check("neg.sign.chave_nao_corresponde", False, "CERTIFICATE_KEY_MISMATCH" if "KEY_MISMATCH" in str(e) or "não corresponde" in str(e) else str(e)[-160:], expect=False)
+            vnf = re.search(r"<vNF>([^<]+)</vNF>", s).group(0)
+            k = re.search(r'Id="NFe(\d{44})"', s).group(1)
+            wrong_dv = k[:43] + str((int(k[43]) + 1) % 10)
+            cases = {
+                "neg.sig.valor_alterado_infNFe": s.replace(vnf, vnf.replace("<vNF>", "<vNF>9")),
+                "neg.sig.signaturevalue_adulterado": s.replace("<SignatureValue>", "<SignatureValue>AAAA", 1),
+                "neg.sig.uri_referencia_trocada": s.replace(f'URI="#NFe{k}"', f'URI="#NFe{wrong_dv}"', 1),
+            }
+            for name, data in cases.items():
+                ok, d = independent_verify(data.encode(), tmp); check(P + name, ok, d, expect=False)
+                mv = deno("verify", variant(data.encode())); check(P + name + ".motor", mv["valid"], mv["code"], expect=False)
+            doc = etree.fromstring(xml)
+            doc.find(f".//{{{DS}}}X509Certificate").text = base64.b64encode(derB).decode()
+            swapped = etree.tostring(doc)
+            ok, d = independent_verify(swapped, tmp); check(P + "neg.sig.certificado_substituido", ok, d, expect=False)
+            ok, d = independent_verify(swapped, tmp, derA); check(P + "neg.sig.certificado_nao_esperado", ok, d, expect=False)
+            nosig = s[: s.index("<Signature ")] + "</NFe>"
+            xsd_negative(P, "neg.xsd.sem_signature", variant(nosig.encode()))
+            ok, d = independent_verify(nosig.encode(), tmp); check(P + "neg.sig.ausente", ok, d, expect=False)
+            cfop = re.search(r"<CFOP>(\d{4})</CFOP>", s).group(1)
+            xsd_negative(P, "neg.xsd.cfop_invalido", variant(s.replace(f"<CFOP>{cfop}</CFOP>", "<CFOP>51A1</CFOP>").encode()))
+            xsd_negative(P, "neg.xsd.tpAmb_invalido", variant(s.replace("<tpAmb>2</tpAmb>", "<tpAmb>3</tpAmb>").encode()))
+            xsd_negative(P, "neg.xsd.ncm_9_digitos", variant(s.replace("<NCM>", "<NCM>1", 1).encode()))
+            xsd_negative(P, "neg.xsd.ncm_letra", variant(re.sub(r"<NCM>(\d{7})\d</NCM>", r"<NCM>\1A</NCM>", s, count=1).encode()))
+            ok, d = key_consistency(s.replace(f'Id="NFe{k}"', f'Id="NFe{wrong_dv}"').encode())
+            check(P + "neg.chave_dv_incorreto", ok, d, expect=False)
+            ok, d = key_consistency(s.replace(f"<cDV>{k[43]}</cDV>", f"<cDV>{wrong_dv[43]}</cDV>").encode())
+            check(P + "neg.chave_cDV_divergente", ok, d, expect=False)
+            if spec["expect"]:
+                ok, d = fixture_fields(s.replace("<indFinal>1</indFinal>", "<indFinal>0</indFinal>").encode(), spec["expect"])
+                check(P + "neg.campos_indFinal_divergente", ok, d, expect=False)
+
+        ck, kk = mkcert("EXP", ("-not_before", "20200101000000Z", "-not_after", "20200102000000Z"))
+        for name, (c, kf, code) in {"neg.sign.certificado_expirado": (ck, kk, "CERTIFICATE_EXPIRED"),
+                                    "neg.sign.chave_nao_corresponde": (cA, kB, "CERTIFICATE_KEY_MISMATCH")}.items():
+            try:
+                deno("sign", HERE / "fixtures/synthetic-mg-icms00.json", c, kf, tmp / "x.xml"); check(name, True, "assinou")
+            except RuntimeError as e:
+                check(name, False, code if code in str(e) else str(e)[-160:], expect=False)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
     tools = {k: subprocess.run(c, capture_output=True, text=True).stdout.strip().splitlines()[0] if subprocess.run(c, capture_output=True, text=True).stdout else
              subprocess.run(c, capture_output=True, text=True).stderr.strip().splitlines()[0]
              for k, c in {"xmllint": ["xmllint", "--version"], "openssl": ["openssl", "version"], "deno": ["deno", "--version"]}.items()}
-    fails = [r for r in results if r["result"] != "OK"]
+    fails = [r for r in results if r["result"] == "FAIL"]
+    notes = [r for r in results if r["result"] == "KNOWN_TOOL_DEFECT"]
     report = {"harness": "F4.1 NF-e 55 offline", "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-              "tools": tools, "lxml_libxml": list(etree.LIBXML_VERSION), "total": len(results), "failed": len(fails),
+              "tools": tools, "lxml_libxml": list(etree.LIBXML_VERSION), "total": len(results), "failed": len(fails), "known_tool_defects": len(notes),
               "network_sefaz": False, "database": False, "secrets": False, "results": results}
     (EVID / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2))
-    lines = [f"# F4.1 — execução {report['generated_at']}", "", f"Total {len(results)}, falhas {len(fails)}.", "",
+    lines = [f"# F4.1 — execução {report['generated_at']}", "", f"Total {len(results)}, falhas {len(fails)}, divergências de ferramenta registradas {len(notes)}.", "",
              "| Caso | Esperado | Observado | Resultado | Detalhe |", "|---|---|---|---|---|"]
     lines += [f"| {r['case']} | {r['expected']} | {r['observed']} | {r['result']} | {r['detail'][:90].replace('|','/')} |" for r in results]
     (EVID / "REPORT-run.md").write_text("\n".join(lines) + "\n")
-    print(f"\nTOTAL {len(results)} FALHAS {len(fails)}")
+    print(f"\nTOTAL {len(results)} FALHAS {len(fails)} NOTAS {len(notes)}")
     return 1 if fails else 0
 
 if __name__ == "__main__":

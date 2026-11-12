@@ -16,7 +16,7 @@
  * Nenhum fallback heurístico é aceito como validação normativa: se o schema
  * não compilar, a validação falha fechada.
  *
- * Pacote XSD oficial: PL_010e_v1.02 (Portal Nacional da NF-e, 10/07/2026).
+ * Pacote XSD oficial: PL_010g_v1.03 (Portal Nacional da NF-e, 26/10/2026; substitui PL_010e_v1.02).
  */
 import XercesModule from "npm:xerces-wasm@2.0.1/wasm/xerces_validator.js";
 import {
@@ -37,7 +37,7 @@ export interface XsdReport {
   issues: XsdIssue[];
 }
 
-export const XSD_PACKAGE = "PL_010e_v1.02";
+export const XSD_PACKAGE = "PL_010g_v1.03";
 export const XSD_VALIDATOR = `${XERCES_WASM_PACKAGE} (Apache Xerces-C++, XSD 1.0, in-process WASM)`;
 export const XSD_ENTRY_SCHEMA = ENTRY;
 export const XERCES_WASM_DIGEST = XERCES_WASM_SHA256;

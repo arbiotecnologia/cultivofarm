@@ -4,7 +4,7 @@
  * O compilador de schema do Xerces tolera includes ausentes/inválidos (compila
  * uma gramática parcial). Por isso a integridade NÃO pode depender do
  * compilador: antes de compilar, conferimos presença, ordem e SHA-256 de cada
- * um dos 5 XSDs contra os hashes do manifesto oficial (PL_010e_v1.02).
+ * um dos 5 XSDs contra os hashes do manifesto oficial (PL_010g_v1.03).
  *
  * Módulo sem dependências externas (sem npm:, sem disco, sem rede) para poder
  * ser exercitado tanto pelo runtime Deno quanto pelos testes.

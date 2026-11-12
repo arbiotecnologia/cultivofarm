@@ -1786,4 +1786,4 @@
 - [ ] Aprovação comercial de pedidos internos (B2B_INTERNAL_DOWNSTREAM_UNVERIFIED) — aguarda decisão do proprietário
 - [ ] Segregação gestor x termos financeiros — aguarda decisão do proprietário
 
-- [ ] F4.1 harness NF-e: alinhar bundle XSD do motor ao PL_010g (revisão pendente); harness em scripts/nfe-f41-certification-20261112/
+- [x] F4.1 harness NF-e: bundle do motor alinhado ao PL_010g v1.03; harness 66 checks em scripts/nfe-f41-certification-20261112/

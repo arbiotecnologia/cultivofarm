@@ -13,7 +13,7 @@
  *   1. `generate`  — prepara (RPC), constrói o XML, aplica o precheck de
  *                    gramática, armazena o não assinado, assina com o A1,
  *                    valida o documento ASSINADO contra o XSD 1.0 OFICIAL
- *                    (bundle PL_010e_v1.02 compilado em ./xsdBundle.ts, via
+ *                    (bundle PL_010g_v1.03 compilado em ./xsdBundle.ts, via
  *                    Apache Xerces-C++ WASM em processo),
  *                    verifica a XMLDSig e só então registra
  *                    XSD_VALIDATED → SIGNED. Teto: SIGNED.
