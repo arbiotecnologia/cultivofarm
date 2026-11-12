@@ -34,5 +34,6 @@ with tempfile.TemporaryDirectory(prefix='original-cancel-final-tests-', dir='/tm
         run(name, [sys.executable, str(work / name)])
     shutil.copytree(work / 'evidence', OUT / 'original-harness', dirs_exist_ok=True)
 run('final-roundtrip-awaiting', [sys.executable, str(H / 'test_final.py')])
+run('original-control-behaviors', [sys.executable, str(H / 'test_controls.py')])
 (OUT / 'exitcode').write_text('0\n')
 print('FINAL_LOCAL_SUITE_PASS', OUT)

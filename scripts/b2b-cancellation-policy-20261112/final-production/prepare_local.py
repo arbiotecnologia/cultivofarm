@@ -61,6 +61,7 @@ subprocess.run([sys.executable, str(H / 'generate.py')], check=True)
 with (OUT / 'restore-exact-output.txt').open('w') as log:
     subprocess.run(['bash', str(restore), str(OUT)], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=True)
 d = compose(OUT / 'controls-exact')
+db.DB('postgres').sql('DROP DATABASE IF EXISTS final_prepared WITH (FORCE);CREATE DATABASE final_prepared TEMPLATE c2')
 for file in ['01-pre.sql.readonly', '02-install-closed.sql.review', '03-post.sql.readonly']:
     result = d.raw(marker + (H / file).read_text())
     (OUT / (file + '.result.json')).write_text(json.dumps({'exit': result.returncode, 'stderr': result.stderr}) + '\n')
