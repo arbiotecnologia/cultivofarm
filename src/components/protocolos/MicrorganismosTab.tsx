@@ -104,7 +104,9 @@ interface Microrganismo {
   updated_at?: string | null;
 }
 
-export function MicrorganismosTab() {
+export { TenantMicroorganismsTab as MicrorganismosTab };
+function TenantMicroorganismsTab() { return <TenantReferencePanel root="microrganismos" />; }
+function LegacyMicrorganismosTab() {
   const { name: tenantName } = useActiveTenantName();
   const [items, setItems] = useState<Microrganismo[]>([]);
   const [filteredItems, setFilteredItems] = useState<Microrganismo[]>([]);
