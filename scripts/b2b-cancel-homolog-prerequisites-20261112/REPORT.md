@@ -1,5 +1,7 @@
 # Homologação de cancelamento — dependência concreta, instalação bloqueada
 
+**Continuação 01:49:** identidade de trigger corrigida por OID/MD5, checks segmentados (máximo inferior a 28 KB), guard real recebido e E fechado com barreira de linha/ticket único testado. Não falta outra captura geral: há decisão concreta sobre a emissão canônica de permissões para fixture/sessão; composição operacional ainda NÃO aplicável. Ver `minimal/continuation/DECISION-0149.md` e `FOLLOWUP-0149.md`.
+
 **Continuação 01:41:** A instalada/POST PASS relatados; captura offline validada, três hashes exatos confirmados, B/C/D aditivos privados segmentados e estado `aguardando_fiscal` corrigido na capacidade candidata. Ver `minimal/continuation/REPORT.md`; E/fixture hospedada bloqueados pelo corpo focal `homolog_validation_block_receivable_insert()` MD5 `1b7e286b1391c986604df2b171025c62`, não fornecido. As seções anteriores abaixo são históricas.
 
 **Continuação 01:33:** etapa aditiva privada fechada com PRE/INSTALL/POST/rollback e roundtrip 18/18 em `minimal/`; seis corpos homolog recuperados por hash exato, três definições específicas faltantes. Ver `minimal/REPORT.md` para estado atual; a seção abaixo preserva a entrega anterior de inventário, não descreve a fundação nova como inexistente.
