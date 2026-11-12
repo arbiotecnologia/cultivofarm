@@ -13,6 +13,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/cultivofarm.types";
+import { useAuth } from "@/hooks/useAuth";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import {
   buildUpdatePayload,
   type CompanyFiscalFormValues,
@@ -82,17 +84,23 @@ function errorMessage(err: unknown, fallback: string): string {
 }
 
 export function useFiscalCompanySettings(options: { enabled?: boolean } = {}) {
-  const enabled = options.enabled ?? true;
+  const scope = useStorageAccessScope("fiscal-company-settings");
+  const { profile } = useAuth();
+  const organizationId = profile?.organization_id;
+  const enabled = (options.enabled ?? true) && scope.ready;
   return useQuery<CompanyFiscalRow | null, Error>({
-    queryKey: FISCAL_COMPANY_KEYS.settings,
+    queryKey: [...FISCAL_COMPANY_KEYS.settings, scope.scope],
     enabled,
     queryFn: async () => {
+      const valid = scope.capture();
+      if (!valid() || !organizationId) throw new Error("permission_denied");
       const { data, error } = await supabase
         .from("company_fiscal_settings")
         .select("*")
         .eq("is_active", true)
-        .limit(1)
+        .eq("organization_id", organizationId)
         .maybeSingle();
+      if (!valid()) throw new Error("permission_denied");
       if (error) {
         if (isPermissionError(error)) throw new Error("permission_denied");
         throw new Error(error.message);
@@ -105,9 +113,14 @@ export function useFiscalCompanySettings(options: { enabled?: boolean } = {}) {
 /** Inicializa o singleton (admin-only, idempotente, anti-corrida no DB). */
 export function useInitFiscalCompanySettings() {
   const qc = useQueryClient();
+  const scope = useStorageAccessScope("fiscal-company-settings");
   return useMutation<CompanyFiscalRow, Error, void>({
+    retry: false,
     mutationFn: async () => {
+      const valid = scope.capture();
+      if (!valid()) throw new Error("permission_denied");
       const { data, error } = await supabase.rpc("rpc_fiscal_company_settings_init");
+      if (!valid()) throw new Error("permission_denied");
       if (error) {
         if (isPermissionError(error)) throw new Error("permission_denied");
         throw new Error(errorMessage(error, "init_failed"));
@@ -115,19 +128,26 @@ export function useInitFiscalCompanySettings() {
       if (!data) throw new Error("init_failed");
       return data as CompanyFiscalRow;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: FISCAL_COMPANY_KEYS.settings }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...FISCAL_COMPANY_KEYS.settings, scope.scope] }),
   });
 }
 
 /** UPDATE com concorrência otimista por `configuration_version`. */
 export function useUpdateFiscalCompanySettings() {
   const qc = useQueryClient();
+  const scope = useStorageAccessScope("fiscal-company-settings");
+  const { profile } = useAuth();
+  const organizationId = profile?.organization_id;
   return useMutation<
     CompanyFiscalRow,
     Error,
     { id: string; expectedVersion: number; values: CompanyFiscalFormValues }
   >({
+    retry: false,
     mutationFn: async ({ id, expectedVersion, values }) => {
+      const valid = scope.capture();
+      if (!valid() || !organizationId) throw new Error("permission_denied");
+      if (!Number.isSafeInteger(expectedVersion) || expectedVersion <= 0) throw new Error("conflict");
       const payload = buildUpdatePayload(values);
       payload.configuration_version = expectedVersion + 1;
       const { data, error } = await supabase
@@ -136,17 +156,20 @@ export function useUpdateFiscalCompanySettings() {
         // Structural annotation retains the complete runtime payload without a parallel client.
         .update(payload as Database["public"]["Tables"]["company_fiscal_settings"]["Update"])
         .eq("id", id)
+        .eq("organization_id", organizationId)
         .eq("configuration_version", expectedVersion)
         .select("*")
         .maybeSingle();
+      if (!valid()) throw new Error("permission_denied");
       if (error) {
         if (isPermissionError(error)) throw new Error("permission_denied");
         throw new Error(errorMessage(error, "update_failed"));
       }
       if (!data) throw new Error("conflict");
+      if (data.id !== id || data.organization_id !== organizationId || data.configuration_version !== expectedVersion + 1) throw new Error("update_failed");
       return data as CompanyFiscalRow;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: FISCAL_COMPANY_KEYS.settings }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...FISCAL_COMPANY_KEYS.settings, scope.scope] }),
   });
 }
 

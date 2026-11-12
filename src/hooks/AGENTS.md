@@ -1,3 +1,4 @@
+- Fiscal company settings use actor/tenant-scoped reads and fenced CAS updates; dirty forms retain their observed revision, and saving omits accounting status/attestations — prevents cross-tenant adoption and implicit accounting approval.
 - Notification caches, reads, counters and mutations require resolved Auth, a matching active profile, tenant, roles and individual portal recipient; server RLS remains authoritative to prevent stale-context disclosure.
 - Portal client selection must fence late requests and scope remembered selection by identity/tenant, so logout or organization changes cannot reuse previous client data.
 - Technical guards/layout provide inherited context-query freshness to all descendant readers, including default consumers and portal-switch hooks; other portals keep defaults — prevents stale mount/refetch/hide loops without weakening uncertainty hiding.

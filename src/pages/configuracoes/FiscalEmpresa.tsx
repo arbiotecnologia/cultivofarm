@@ -142,7 +142,7 @@ function Checklist({ items }: { items: Array<{ key: string; label: string; ok: b
 }
 
 export default function FiscalEmpresa() {
-  const { role, roles } = useAuth();
+  const { role, roles, user, profile, authzEpoch } = useAuth();
   const access = getAccessLevel(role, "/configuracoes/fiscal/empresa");
   const canEdit = access === "rw";
   // Gestão de certificados é estritamente admin — financeiro/gestor só visualizam.
@@ -155,6 +155,7 @@ export default function FiscalEmpresa() {
   const saveInFlight = useRef(false);
   const draftDirty = useRef(false);
   const editRevision = useRef(0);
+  const hydratedId = useRef<string | null>(null);
   const init = useInitFiscalCompanySettings();
 
   const [values, setValues] = useState<CompanyFiscalFormValues>(() => rowToFormValues(null));
@@ -200,10 +201,19 @@ export default function FiscalEmpresa() {
 
 
   useEffect(() => {
+    draftDirty.current = false;
+    hydratedId.current = null;
+    editRevision.current += 1;
+    setValues(rowToFormValues(null));
+    setErrors({});
+  }, [user?.id, profile?.organization_id, authzEpoch]);
+
+  useEffect(() => {
     if (settingsQuery.data && !draftDirty.current && !saveInFlight.current) {
+      hydratedId.current = settingsQuery.data.id;
       setValues(rowToFormValues(settingsQuery.data));
     }
-  }, [settingsQuery.data]);
+  }, [settingsQuery.data, user?.id, profile?.organization_id, authzEpoch]);
 
   const permissionDenied = useMemo(
     () => settingsQuery.error?.message === "permission_denied",
@@ -397,8 +407,8 @@ export default function FiscalEmpresa() {
     const submittedRevision = editRevision.current;
     try {
       const saved = await update.mutateAsync({
-        id: settingsQuery.data.id,
-        expectedVersion: settingsQuery.data.configuration_version ?? 1,
+        id: hydratedId.current ?? settingsQuery.data.id,
+        expectedVersion: values.configuration_version ?? 0,
         values: normalizedValues,
       });
       if (submittedRevision === editRevision.current) {
@@ -501,7 +511,11 @@ export default function FiscalEmpresa() {
                       cnpj={values.cnpj}
                       currentValues={values}
                       disabled={readonly || update.isPending}
-                      onApply={(patch) => setValues((prev) => ({ ...prev, ...patch }))}
+                      onApply={(patch) => {
+                        draftDirty.current = true;
+                        editRevision.current += 1;
+                        setValues((prev) => ({ ...prev, ...patch }));
+                      }}
                     />
                   </div>
                 </FieldRow>

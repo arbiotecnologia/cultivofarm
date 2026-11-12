@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { productFiscalFormSchema, productFiscalPreparation } from '@/lib/fiscal/productFiscalValidation';
-import { ALLOWED_ENVIRONMENTS, ALLOWED_STATUSES, hasSensitiveKey } from '@/lib/fiscal/companyFiscalValidation';
+import { ALLOWED_ENVIRONMENTS, buildUpdatePayload, hasSensitiveKey } from '@/lib/fiscal/companyFiscalValidation';
 import { FISCAL_PRODUCTION_EMISSION_ALLOWED } from '@/config/fiscalBinding';
 
 // Synthetic formatting only: these codes/issuer never assert lawful real taxation.
@@ -15,7 +15,7 @@ it('AUD-FISC-002 fiscal incompleto permanece rascunho e indevido por tamanho é 
 });
 it('AUD-FISC-003 emitente não recebe estado de produção ou atestado contábil pelo editor', () => {
   expect(ALLOWED_ENVIRONMENTS).not.toContain('PRODUCTION');
-  expect(ALLOWED_STATUSES).not.toContain('VALIDATED');
+  expect(buildUpdatePayload({ configuration_status: 'VALIDATED' })).not.toHaveProperty('configuration_status');
   expect(FISCAL_PRODUCTION_EMISSION_ALLOWED).toBe(false);
 });
 it('AUD-FISC-004 credencial embutida em configuração é indevida', () => {
