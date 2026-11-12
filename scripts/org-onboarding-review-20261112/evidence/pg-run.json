@@ -125,7 +125,7 @@
   {
    "check": "verified org opens Central Fiscal (init)",
    "pass": true,
-   "detail": "164e8d9d-29b8-4e48-93e0-1c31dcb88bd4"
+   "detail": "5de54399-10c0-45f8-9ecb-15375ba9c8dd"
   },
   {
    "check": "discrepant razão -> revisão razao_social_divergente",
@@ -155,12 +155,12 @@
   {
    "check": "superadmin approval -> ativa",
    "pass": true,
-   "detail": "{\"status\": \"ativa\", \"review_id\": \"c0dbb1c0-4dd6-4461-a228-06b0e5ef1c4f\", \"idempotent\": false}"
+   "detail": "{\"status\": \"ativa\", \"review_id\": \"34aaf23a-6b36-4838-a58f-7ebbf3aacb86\", \"idempotent\": false}"
   },
   {
    "check": "approval idempotent (second superadmin)",
    "pass": true,
-   "detail": "{\"status\": \"ativa\", \"review_id\": \"c0dbb1c0-4dd6-4461-a228-06b0e5ef1c4f\", \"idempotent\": true}"
+   "detail": "{\"status\": \"ativa\", \"review_id\": \"34aaf23a-6b36-4838-a58f-7ebbf3aacb86\", \"idempotent\": true}"
   },
   {
    "check": "audit: one review entry, one activation, decision by approver",
@@ -175,7 +175,7 @@
   {
    "check": "after approval: Central Fiscal init allowed",
    "pass": true,
-   "detail": "18601ba0-cce0-409f-af69-27faaa17c990"
+   "detail": "0c83824d-9342-4ec8-8a33-da9c7186f3b9"
   },
   {
    "check": "after approval: gestor reads RTC",
@@ -205,12 +205,12 @@
   {
    "check": "superadmin returns homolog org to review",
    "pass": true,
-   "detail": "{\"status\": \"aguardando_revisao\", \"review_id\": \"dca1822b-8fcf-4ca6-ada1-4bf14e6b02ac\", \"idempotent\": false}"
+   "detail": "{\"status\": \"aguardando_revisao\", \"review_id\": \"41a35e80-7fb2-45ea-8da4-fb5f934ef390\", \"idempotent\": false}"
   },
   {
    "check": "remessa idempotent",
    "pass": true,
-   "detail": "{\"status\": \"aguardando_revisao\", \"review_id\": \"dca1822b-8fcf-4ca6-ada1-4bf14e6b02ac\", \"idempotent\": true}"
+   "detail": "{\"status\": \"aguardando_revisao\", \"review_id\": \"41a35e80-7fb2-45ea-8da4-fb5f934ef390\", \"idempotent\": true}"
   },
   {
    "check": "homolog in review: fiscal RPC denied",
@@ -230,7 +230,7 @@
   {
    "check": "other active org unaffected during homolog review",
    "pass": true,
-   "detail": "b562aa5a-d01f-4570-865c-45fc9579962d"
+   "detail": "9c5c90d6-1b2e-4f59-82d5-8e6bbecff182"
   },
   {
    "check": "homolog approved -> ativa",
