@@ -1,3 +1,4 @@
+import { TenantProblemPanel } from "@/components/protocolos/TenantProblemPanel";
 import { CompactCatalogSelect } from "@/components/catalogo/CompactCatalogSelect";
 import { assertGlobalCatalogWriteBlocked, TENANT_CAN_EDIT_GLOBAL_CATALOG } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useMemo, useState } from "react";
@@ -173,7 +174,8 @@ const CATEGORIA_LABELS: Record<string, string> = {
   outro: "Outros",
 };
 
-export function ProblemasTab() {
+export function ProblemasTab() { return <TenantProblemPanel />; }
+function LegacyProblemasTab() {
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");

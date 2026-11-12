@@ -1,3 +1,4 @@
+import { TenantProblemPanel } from "@/components/protocolos/TenantProblemPanel";
 import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
 import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { CompactCatalogSelect } from "@/components/catalogo/CompactCatalogSelect";
