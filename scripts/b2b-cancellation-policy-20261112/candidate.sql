@@ -1,0 +1,365 @@
+CREATE OR REPLACE FUNCTION public.rpc_b2b_forecast_cancel_residual_v1(p_order uuid, p_expected_version integer, p_reason text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE po public.partner_orders;f platform_private.b2b_financial_forecasts;org uuid;
+BEGIN
+ IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed' THEN
+  RAISE EXCEPTION 'B2B_FORECAST_READ_COMMITTED_REQUIRED' USING ERRCODE='42501';END IF;
+ org:=platform_private.c2p1_internal_actor(ARRAY['administrador','gestor_comercial']::public.app_role[]);
+ IF org IS NULL THEN RAISE EXCEPTION 'B2B_FORECAST_CANCEL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ IF public._saas_user_has_feature(auth.uid(),'pedidos_b2b') IS NOT TRUE
+  OR public._saas_user_has_feature(auth.uid(),'contas_receber') IS NOT TRUE THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FEATURE_DENIED' USING ERRCODE='42501';END IF;
+ IF p_order IS NULL OR p_expected_version IS NULL OR nullif(btrim(coalesce(p_reason,'')),'') IS NULL THEN
+  RAISE EXCEPTION 'B2B_FORECAST_CANCEL_REASON_REQUIRED' USING ERRCODE='22023';END IF;
+ -- Canonical order: order row first, then forecast (same as approval and the bridge).
+ SELECT * INTO po FROM public.partner_orders WHERE id=p_order
+  AND EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id=partner_orders.partner_id
+   AND pa.commercial_owner_organization_id=org)
+  AND platform_private.c2p1_settings_allowed(partner_id,true)
+  AND platform_private.b2b_forecast_lifecycle_scope_v1('forecast_cancel',auth.uid(),org,
+   partner_id,id) IS TRUE FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'B2B_FORECAST_CANCEL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ SELECT * INTO f FROM platform_private.b2b_financial_forecasts WHERE order_id=p_order AND organization_id=org FOR UPDATE;
+ IF NOT FOUND OR f.partner_id IS DISTINCT FROM po.partner_id THEN
+  RAISE EXCEPTION 'B2B_FORECAST_CAS_CONFLICT' USING ERRCODE='PT409';END IF;
+ IF platform_private.c2p1_internal_actor(ARRAY['administrador','gestor_comercial']::public.app_role[]) IS DISTINCT FROM f.organization_id
+  OR NOT platform_private.c2p1_settings_allowed(f.partner_id,true) THEN
+  RAISE EXCEPTION 'B2B_FORECAST_CANCEL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ IF platform_private.b2b_forecast_lifecycle_allowed_v1('forecast_cancel',auth.uid(),org,
+   po.partner_id,po.id) IS NOT TRUE THEN
+  RAISE EXCEPTION 'B2B_FORECAST_PILOT_DENIED' USING ERRCODE='42501';END IF;
+ IF public._saas_user_has_feature(auth.uid(),'pedidos_b2b') IS NOT TRUE
+  OR public._saas_user_has_feature(auth.uid(),'contas_receber') IS NOT TRUE THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FEATURE_DENIED' USING ERRCODE='42501';END IF;
+ IF platform_private.c2p1_internal_actor(ARRAY['administrador','gestor_comercial']::public.app_role[]) IS DISTINCT FROM org
+  OR platform_private.c2p1_settings_allowed(po.partner_id,true) IS NOT TRUE THEN
+  RAISE EXCEPTION 'B2B_FORECAST_CANCEL_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ IF po.approved_at IS NULL OR po.approved_by IS NULL OR po.status::text NOT IN ('aprovado','entregue') THEN RAISE EXCEPTION 'B2B_CANCEL_ORDER_NOT_APPROVED' USING ERRCODE='PT409'; END IF;
+ IF f.state IN ('cancelado_antes_nf','cancelado_residual') THEN
+  IF EXISTS(SELECT 1 FROM platform_private.b2b_financial_forecast_events e WHERE e.forecast_id=f.id AND e.event_type='FORECAST_CANCELED' AND e.payload->>'reason'=p_reason) THEN RETURN jsonb_build_object('forecast_id',f.id,'state',f.state,'version',f.version,'idempotentReplay',true); END IF;
+  RAISE EXCEPTION 'B2B_FORECAST_CAS_CONFLICT' USING ERRCODE='PT409'; END IF;
+ -- An emission/consultation still open or an authorized return awaiting close must settle first.
+ IF EXISTS(SELECT 1 FROM public.fiscal_invoices i JOIN public.fiscal_sefaz_transmissions t ON t.fiscal_invoice_id=i.id
+   WHERE i.partner_order_id=p_order AND t.state IN ('PENDING','SENT')) THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FISCAL_IN_FLIGHT' USING ERRCODE='PT409';END IF;
+ IF EXISTS(SELECT 1 FROM public.fiscal_invoices i JOIN platform_private.fiscal_close_pending cp ON cp.fiscal_invoice_id=i.id
+   WHERE i.partner_order_id=p_order) THEN
+  RAISE EXCEPTION 'B2B_FORECAST_FISCAL_RECONCILIATION_PENDING' USING ERRCODE='PT409';END IF;
+ RETURN platform_private.b2b_financial_forecast_cancel_residual_v1(f.id,p_expected_version,p_reason)
+  ||jsonb_build_object('actor',auth.uid(),'order_id',p_order);
+END
+$function$;
+CREATE OR REPLACE FUNCTION public.rpc_register_receivable_payment(p_installment_id uuid, p_payload jsonb)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_proven jsonb; v_origin public.accounts_receivable%ROWTYPE; v_interest numeric; v_financed numeric; v_debtor uuid;
+  v_uid uuid := auth.uid();
+  v_org uuid := platform_private.h15_actor_organization();
+  v_inst public.accounts_receivable_installments%ROWTYPE;
+  v_amount numeric; v_disc numeric; v_int numeric; v_pen numeric; v_saldo numeric;
+  v_pm uuid; v_ba uuid; v_pay_date date; v_notes text;
+  v_has_receipt boolean; v_require_receipt boolean;
+  v_payment_id uuid; v_idem text; v_fp text; v_existing record;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Sessão inválida.' USING ERRCODE='insufficient_privilege';
+  END IF;
+  IF NOT public.is_financial_staff(v_uid) THEN
+    RAISE EXCEPTION 'Sem permissão para registrar recebimento.' USING ERRCODE='insufficient_privilege';
+  END IF;
+
+  -- H6-001: idempotency_key obrigatoria (fail-closed)
+  IF v_org IS NULL OR NOT EXISTS (SELECT 1 FROM public.accounts_receivable_installments WHERE id=p_installment_id AND organization_id=v_org) THEN
+    RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501';
+  END IF;
+  IF (p_payload ? 'organization_id' AND NULLIF(p_payload->>'organization_id','')::uuid IS DISTINCT FROM v_org)
+     OR (p_payload ? 'tenant_id' AND NULLIF(p_payload->>'tenant_id','')::uuid IS DISTINCT FROM v_org) THEN
+    RAISE EXCEPTION 'FINANCIAL_TENANT_MISMATCH' USING ERRCODE='42501';
+  END IF;
+  v_idem := NULLIF(trim(p_payload->>'idempotency_key'), '');
+  IF v_idem IS NULL OR length(v_idem) < 8 THEN
+    RAISE EXCEPTION 'FIN_IDEMPOTENCY_REQUIRED: idempotency_key obrigatória (mín. 8 caracteres).'
+      USING ERRCODE='check_violation';
+  END IF;
+
+  v_fp := public.fn_h6b_payment_fingerprint('receivable', p_installment_id, p_payload);
+
+  -- lock determinístico por tipo + parcela + chave, ANTES da decisao de replay
+  PERFORM pg_advisory_xact_lock(
+    hashtextextended('fin_pay:receivable:' || p_installment_id::text || ':' || v_idem, 0));
+
+  -- Lock title before installment, shared with fiscal cancellation.
+  SELECT * INTO v_origin FROM public.accounts_receivable WHERE organization_id=v_org AND id=(SELECT receivable_id FROM public.accounts_receivable_installments WHERE id=p_installment_id AND organization_id=v_org) FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+  SELECT * INTO v_inst FROM public.accounts_receivable_installments
+   WHERE id = p_installment_id AND organization_id=v_org FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Parcela não encontrada.'; END IF;
+
+  IF auth.uid() IS DISTINCT FROM v_uid OR public.h15_actor_organization() IS DISTINCT FROM v_org OR public.is_financial_staff(v_uid) IS NOT TRUE THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+  SELECT * INTO v_origin FROM public.accounts_receivable WHERE id=v_inst.receivable_id AND organization_id=v_org;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+  v_debtor:=platform_private.b2b_receivable_partner_scope(v_origin.id);
+  IF v_origin.origin_type='B2B_ORDER' OR v_debtor IS NOT NULL THEN
+   SELECT r INTO v_proven FROM jsonb_array_elements(public.rpc_receivable_money_projection_v1(v_inst.receivable_id,0,1000)) r WHERE r->>'id'=v_inst.id::text;
+   IF v_proven IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+   v_interest:=(v_proven->>'interest_amount')::numeric;
+   v_financed:=(v_proven->>'financed_interest_amount')::numeric;
+  ELSE
+   -- Caminho capturado para MANUAL não B2B sem parceiro; não é prova de origem B4.
+   v_interest:=v_inst.interest_amount; v_financed:=0;
+  END IF;
+  SELECT id, request_fingerprint INTO v_existing FROM public.receivable_payments
+   WHERE installment_id = p_installment_id AND idempotency_key = v_idem;
+  IF v_existing.id IS NOT NULL THEN
+    IF v_existing.request_fingerprint IS NOT NULL AND v_existing.request_fingerprint <> v_fp THEN
+      RAISE EXCEPTION 'FIN_IDEMPOTENCY_CONFLICT: mesma idempotency_key com payload divergente.'
+        USING ERRCODE='check_violation';
+    END IF;
+    RETURN v_existing.id;
+  END IF;
+
+  IF v_inst.status = 'CANCELED' THEN
+    RAISE EXCEPTION 'Parcela cancelada.' USING ERRCODE='check_violation';
+  END IF;
+  IF v_inst.status = 'PAID' THEN
+    RAISE EXCEPTION 'Parcela já quitada.' USING ERRCODE='check_violation';
+  END IF;
+
+  v_amount   := COALESCE((p_payload->>'amount_received')::numeric, 0);
+  v_disc     := COALESCE((p_payload->>'discount_amount')::numeric, 0);
+  v_int      := COALESCE((p_payload->>'interest_amount')::numeric, 0);
+  v_pen      := COALESCE((p_payload->>'penalty_amount')::numeric, 0);
+  v_pm       := NULLIF(p_payload->>'payment_method_id','')::uuid;
+  v_ba       := NULLIF(p_payload->>'bank_account_id','')::uuid;
+  v_pay_date := COALESCE((p_payload->>'payment_date')::date, (pg_catalog.now() AT TIME ZONE 'America/Sao_Paulo')::date);
+  v_notes    := NULLIF(p_payload->>'notes','');
+  v_has_receipt := COALESCE((p_payload->>'has_receipt')::boolean, false);
+
+  IF v_amount::text IN ('NaN','Infinity','-Infinity') OR v_disc::text IN ('NaN','Infinity','-Infinity') OR v_int::text IN ('NaN','Infinity','-Infinity') OR v_pen::text IN ('NaN','Infinity','-Infinity') OR v_disc < 0 OR v_int < 0 OR v_pen < 0 OR v_amount <> round(v_amount,2) OR v_disc <> round(v_disc,2) OR v_int <> round(v_int,2) OR v_pen <> round(v_pen,2) THEN
+ RAISE EXCEPTION 'FIN_INVALID_AMOUNT: valores monetários inválidos.' USING ERRCODE='23514';
+ END IF;
+ IF v_amount <= 0 THEN
+    RAISE EXCEPTION 'Valor inválido.' USING ERRCODE='check_violation';
+  END IF;
+  IF v_pm IS NULL OR NOT EXISTS (SELECT 1 FROM public.payment_methods WHERE id = v_pm AND active) THEN
+    RAISE EXCEPTION 'Forma de pagamento inválida ou inativa.' USING ERRCODE='check_violation';
+  END IF;
+  IF v_ba IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.bank_accounts WHERE id = v_ba AND active) THEN
+    RAISE EXCEPTION 'Conta bancária inválida ou inativa.' USING ERRCODE='check_violation';
+  END IF;
+
+  v_saldo := v_inst.original_amount + (v_interest-v_financed) + COALESCE(v_inst.penalty_amount,0) - COALESCE(v_inst.discount_amount,0) - COALESCE(v_inst.received_amount,0) + v_int + v_pen - v_disc;
+  IF v_amount - v_saldo > 0.005 THEN
+    RAISE EXCEPTION 'Valor excede o saldo da parcela (saldo: %).', v_saldo USING ERRCODE='check_violation';
+  END IF;
+
+  SELECT require_receipt_on_receivable_payment INTO v_require_receipt
+    FROM public.financial_settings LIMIT 1;
+  IF COALESCE(v_require_receipt,false) AND NOT v_has_receipt THEN
+    RAISE EXCEPTION 'Comprovante de recebimento é obrigatório.' USING ERRCODE='check_violation';
+  END IF;
+
+  BEGIN
+    INSERT INTO public.receivable_payments (
+      organization_id, installment_id, payment_date, amount_received, payment_method_id, bank_account_id,
+      discount_amount, interest_amount, penalty_amount, notes, created_by,
+      idempotency_key, request_fingerprint
+    ) VALUES (
+      v_org, p_installment_id, v_pay_date, v_amount, v_pm, v_ba,
+      v_disc, v_int, v_pen, v_notes, v_uid, v_idem, v_fp
+    ) RETURNING id INTO v_payment_id;
+  EXCEPTION WHEN unique_violation THEN
+    SELECT id, request_fingerprint INTO v_existing FROM public.receivable_payments
+     WHERE installment_id = p_installment_id AND idempotency_key = v_idem;
+    IF v_existing.request_fingerprint IS NOT NULL AND v_existing.request_fingerprint <> v_fp THEN
+      RAISE EXCEPTION 'FIN_IDEMPOTENCY_CONFLICT: mesma idempotency_key com payload divergente.'
+        USING ERRCODE='check_violation';
+    END IF;
+    RETURN v_existing.id;
+  END;
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, performed_by)
+  VALUES ('receivable_payments', v_payment_id, 'PAYMENT_REGISTERED',
+    jsonb_build_object('installment_id', p_installment_id, 'amount', v_amount,
+      'payment_method_id', v_pm, 'bank_account_id', v_ba, 'payment_date', v_pay_date,
+      'idempotency_key', v_idem, 'request_fingerprint', v_fp), v_uid);
+
+  RETURN v_payment_id;
+END $function$;
+CREATE OR REPLACE FUNCTION platform_private.b2b_cancel_confirmed_fiscal_v1(p_tx uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $fn$
+DECLARE t public.fiscal_sefaz_transmissions;e public.fiscal_events;i public.fiscal_invoices;r public.accounts_receivable;paid boolean;actor_org uuid;
+BEGIN
+ SELECT * INTO t FROM public.fiscal_sefaz_transmissions WHERE id=p_tx;
+ IF NOT FOUND OR t.service<>'NFeRecepcaoEvento4' OR t.fiscal_event_id IS NULL THEN RETURN jsonb_build_object('final',false,'code','NOT_LINKED_CANCEL'); END IF;
+ actor_org:=public.h15_actor_organization();
+ IF actor_org IS NULL OR public.fn_fiscal_can_operate(auth.uid()) IS NOT TRUE THEN RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ SELECT * INTO i FROM public.fiscal_invoices WHERE id=t.fiscal_invoice_id AND organization_id=actor_org;
+ IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ SELECT * INTO e FROM public.fiscal_events WHERE id=t.fiscal_event_id AND organization_id=i.organization_id AND fiscal_invoice_id=i.id;
+ IF NOT FOUND OR e.event_type<>'SEFAZ_CANCELLATION_PREPARED' OR e.sefaz_event_code<>'110111' OR e.sefaz_access_key IS DISTINCT FROM i.access_key THEN RETURN jsonb_build_object('final',false,'code','NOT_LINKED_CANCEL'); END IF;
+ -- 136 is registration without final linkage: consultation remains necessary.
+ IF t.state<>'SUCCEEDED' OR t.outcome<>'EVENT_REGISTERED' OR t.c_stat NOT IN ('135','155') OR nullif(btrim(t.n_prot),'') IS NULL OR t.ch_nfe IS DISTINCT FROM i.access_key OR t.ambiente_retorno IS DISTINCT FROM '2' THEN RETURN jsonb_build_object('final',false,'code','FISCAL_CANCEL_NOT_FINAL'); END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.fiscal_events x WHERE x.related_event_id=e.id AND x.sefaz_transmission_id=t.id AND x.organization_id=i.organization_id AND x.fiscal_invoice_id=i.id AND x.event_type='SEFAZ_EVENT_REGISTERED' AND x.sefaz_c_stat=t.c_stat AND x.sefaz_n_prot=t.n_prot AND x.sefaz_access_key=i.access_key AND x.sefaz_event_code='110111' AND x.sefaz_seq_evento=e.sefaz_seq_evento) THEN RETURN jsonb_build_object('final',false,'code','FISCAL_CANCEL_UNPROVEN'); END IF;
+ PERFORM 1 FROM public.fiscal_invoices WHERE id=i.id FOR UPDATE;
+ IF public.h15_actor_organization() IS DISTINCT FROM actor_org OR public.fn_fiscal_can_operate(auth.uid()) IS NOT TRUE THEN RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ SELECT * INTO i FROM public.fiscal_invoices WHERE id=i.id;
+ IF i.normalized_status NOT IN ('AUTHORIZED','CANCELED') OR EXISTS(SELECT 1 FROM platform_private.fiscal_close_pending p WHERE p.fiscal_invoice_id=i.id AND p.error_code='FISCAL_AUTHORIZATION_CLOSE_PENDING') THEN RETURN jsonb_build_object('final',false,'code','FISCAL_AUTHORIZATION_RECONCILIATION_PENDING'); END IF;
+ IF i.partner_order_id IS NULL OR i.debtor_partner_id IS NULL OR i.receivable_id IS NULL THEN RETURN jsonb_build_object('final',false,'code','FISCAL_CANCEL_TITLE_LINK_UNPROVEN'); END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.partner_orders po JOIN public.partner_accounts pa ON pa.id=po.partner_id WHERE po.id=i.partner_order_id AND po.partner_id=i.debtor_partner_id AND pa.commercial_owner_organization_id=i.organization_id) THEN RAISE EXCEPTION 'FISCAL_CANCEL_LINK_MISMATCH' USING ERRCODE='42501'; END IF;
+ SELECT * INTO r FROM public.accounts_receivable WHERE id=i.receivable_id AND organization_id=i.organization_id AND b2b_document_id=i.id AND origin_type='B2B_ORDER' AND origin_id=i.partner_order_id AND partner_id=i.debtor_partner_id FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_CANCEL_LINK_MISMATCH' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.accounts_receivable_installments WHERE receivable_id=r.id ORDER BY id FOR UPDATE;
+ SELECT EXISTS(SELECT 1 FROM public.receivable_payments p JOIN public.accounts_receivable_installments x ON x.id=p.installment_id WHERE x.receivable_id=r.id) OR EXISTS(SELECT 1 FROM public.accounts_receivable_installments x WHERE x.receivable_id=r.id AND (x.received_amount IS NULL OR x.received_amount<>0 OR x.status='PAID')) INTO paid;
+ IF i.normalized_status<>'CANCELED' THEN UPDATE public.fiscal_invoices SET status='CANCELED',normalized_status='CANCELED',canceled_at=clock_timestamp(),cancel_reason=e.sefaz_reason,reconciliation_status=CASE WHEN paid THEN 'REQUIRES_REVIEW' ELSE 'RECONCILED' END WHERE id=i.id; END IF;
+ IF paid THEN RETURN jsonb_build_object('final',true,'financialReconciliationRequired',true,'code','FISCAL_CANCEL_PAYMENT_REVIEW'); END IF;
+ IF r.status='CANCELED' THEN RETURN jsonb_build_object('final',true,'financialReconciliationRequired',false,'idempotentReplay',true); END IF;
+ IF r.status NOT IN ('OPEN','OVERDUE') OR EXISTS(SELECT 1 FROM public.accounts_receivable_installments x WHERE x.receivable_id=r.id AND (x.organization_id IS DISTINCT FROM i.organization_id OR x.status NOT IN ('OPEN','OVERDUE') OR x.discount_amount IS NULL OR x.discount_amount<>0)) OR NOT EXISTS(SELECT 1 FROM public.accounts_receivable_installments WHERE receivable_id=r.id) THEN RAISE EXCEPTION 'FISCAL_CANCEL_FINANCIAL_STATE_UNDECIDED' USING ERRCODE='PT409'; END IF;
+ UPDATE public.accounts_receivable_installments SET status='CANCELED' WHERE receivable_id=r.id;
+ UPDATE public.accounts_receivable SET status='CANCELED' WHERE id=r.id;
+ INSERT INTO public.financial_audit_log(entity_type,entity_id,action,performed_by,reason,new_data) VALUES('accounts_receivable',r.id,'AR_CANCELED',auth.uid(),e.sefaz_reason,jsonb_build_object('source','FINAL_FISCAL_CANCELLATION','invoice_id',i.id,'transmission_id',t.id));
+ RETURN jsonb_build_object('final',true,'financialReconciliationRequired',false,'idempotentReplay',false);
+END $fn$;
+REVOKE ALL ON FUNCTION platform_private.b2b_cancel_confirmed_fiscal_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
+CREATE OR REPLACE FUNCTION public.rpc_fiscal_sefaz_transmit_record_v1(_transmission_id uuid, _state text, _patch jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_row     public.fiscal_sefaz_transmissions;
+  v_cur     public.fiscal_sefaz_transmissions;
+  v_cstat   text;
+  v_prot    text;
+  v_outcome text;
+  v_close_error text := NULL;
+  v_invoice_id uuid;
+BEGIN
+  IF _state NOT IN ('SENT','SUCCEEDED','FAILED','BLOCKED') THEN
+    RAISE EXCEPTION 'FISCAL_TRANSMISSION_STATE_INVALID';
+  END IF;
+
+  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_TRANSMISSION_NOT_FOUND'; END IF;
+  v_invoice_id := v_cur.fiscal_invoice_id;
+  IF v_invoice_id IS NOT NULL THEN
+    PERFORM 1 FROM public.fiscal_invoices WHERE id=v_invoice_id FOR UPDATE;
+  END IF;
+  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_TRANSMISSION_NOT_FOUND'; END IF;
+  IF v_cur.fiscal_invoice_id IS DISTINCT FROM v_invoice_id THEN
+    RAISE EXCEPTION 'FISCAL_TRANSMISSION_LINK_CHANGED' USING ERRCODE='PT409';
+  END IF;
+
+  v_cstat := coalesce(_patch->>'protocolCStat', _patch->>'cStat', v_cur.protocol_c_stat, v_cur.c_stat);
+  v_prot  := coalesce(_patch->>'nProt', v_cur.n_prot);
+
+  IF _state IN ('FAILED','BLOCKED') THEN
+    v_outcome := 'TRANSPORT_ERROR';
+  ELSIF _state = 'SENT' THEN
+    v_outcome := 'PENDING';
+  ELSIF v_cstat IN ('100','150') AND v_prot IS NOT NULL THEN
+    v_outcome := 'AUTHORIZED';
+  ELSIF v_cstat IN ('135','136','155') THEN
+    v_outcome := 'EVENT_REGISTERED';
+  ELSIF v_cstat IN ('103','105','104','106','107','108','109','111','128') THEN
+    v_outcome := CASE WHEN v_cur.service = 'NFeStatusServico4'
+                      THEN 'SERVICE_INFO' ELSE 'PROCESSING' END;
+  ELSE
+    v_outcome := 'REJECTED';
+  END IF;
+
+  IF v_cur.outcome = 'AUTHORIZED' AND v_outcome IS DISTINCT FROM 'AUTHORIZED' THEN
+    RETURN jsonb_build_object(
+      'transmissionId',v_cur.id,'state',v_cur.state,'outcome',v_cur.outcome,
+      'cStat',v_cur.c_stat,'protocolCStat',coalesce(v_cur.protocol_c_stat,v_cur.c_stat),
+      'xMotivo',v_cur.x_motivo,'chNFe',v_cur.ch_nfe,'nProt',v_cur.n_prot,'nRec',v_cur.n_rec,
+      'reconciliationPending',EXISTS(SELECT 1 FROM platform_private.fiscal_close_pending cp WHERE cp.transmission_id=v_cur.id),
+      'reconciliationCode',(SELECT cp.error_code FROM platform_private.fiscal_close_pending cp WHERE cp.transmission_id=v_cur.id));
+  END IF;
+  IF v_cur.outcome = 'AUTHORIZED' AND (
+    v_cur.ch_nfe IS DISTINCT FROM coalesce(_patch->>'chNFe',v_cur.ch_nfe)
+    OR v_cur.n_prot IS DISTINCT FROM v_prot
+    OR coalesce(v_cur.protocol_c_stat,v_cur.c_stat) IS DISTINCT FROM v_cstat
+  ) THEN RAISE EXCEPTION 'FISCAL_AUTHORIZATION_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
+
+  IF v_cur.state IN ('SUCCEEDED','FAILED','BLOCKED') THEN
+    -- A guarda canonica torna a transmissao terminal imutavel. O replay exato
+    -- reutiliza a evidencia; somente o fechamento documental pode ser retentado.
+    v_row := v_cur;
+  ELSE
+    UPDATE public.fiscal_sefaz_transmissions SET
+    state            = _state,
+    outcome          = v_outcome,
+    c_stat           = coalesce(_patch->>'cStat', c_stat),
+    protocol_c_stat  = CASE WHEN _patch ? 'protocolCStat' THEN _patch->>'protocolCStat'
+                            WHEN _patch->>'cStat' IN ('100','150') THEN _patch->>'cStat'
+                            ELSE protocol_c_stat END,
+    x_motivo         = coalesce(_patch->>'xMotivo', x_motivo),
+    ch_nfe           = coalesce(_patch->>'chNFe', ch_nfe),
+    n_prot           = coalesce(_patch->>'nProt', n_prot),
+    n_rec            = coalesce(_patch->>'nRec', n_rec),
+    ambiente_retorno = coalesce(_patch->>'tpAmb', ambiente_retorno),
+    dh_recbto        = coalesce((_patch->>'dhRecbto')::timestamptz, dh_recbto),
+    error_code       = coalesce(_patch->>'errorCode', error_code),
+    response_summary = coalesce(_patch->'responseSummary', response_summary),
+    completed_at     = CASE WHEN _state IN ('SUCCEEDED','FAILED','BLOCKED')
+                            THEN now() ELSE completed_at END
+  WHERE id = _transmission_id
+  RETURNING * INTO v_row;
+  END IF;
+
+  IF v_row.ambiente_retorno IS NOT NULL AND v_row.ambiente_retorno <> '2' THEN
+    RAISE EXCEPTION 'FISCAL_PRODUCTION_ENDPOINT_BLOCKED';
+  END IF;
+
+  IF v_row.service = 'NFeRecepcaoEvento4' AND v_row.fiscal_event_id IS NOT NULL
+     AND _state = 'SUCCEEDED' AND v_cstat IS NOT NULL THEN
+    BEGIN
+      PERFORM public.rpc_fiscal_event_sefaz_reconcile_v1(
+        v_row.fiscal_event_id, v_row.id, v_cstat,
+        coalesce(_patch->>'xMotivo', ''), v_row.n_prot, v_row.dh_recbto);
+      PERFORM platform_private.b2b_cancel_confirmed_fiscal_v1(v_row.id);
+    EXCEPTION WHEN OTHERS THEN
+      v_close_error := 'FISCAL_EVENT_RECONCILIATION_PENDING';
+    END;
+  END IF;
+
+  -- H13: o fechamento documental nao pode descartar o retorno ja recebido.
+  IF v_row.outcome = 'AUTHORIZED' AND v_row.fiscal_invoice_id IS NOT NULL
+     AND v_row.ch_nfe IS NOT NULL AND v_row.n_prot IS NOT NULL THEN
+    BEGIN
+      PERFORM public.rpc_fiscal_invoice_apply_authorization_v1(
+        v_row.fiscal_invoice_id, v_row.ch_nfe, v_row.n_prot, v_row.dh_recbto,
+        coalesce(v_row.protocol_c_stat,v_row.c_stat), v_row.x_motivo, v_row.id);
+    EXCEPTION WHEN OTHERS THEN
+      v_close_error := 'FISCAL_AUTHORIZATION_CLOSE_PENDING';
+    END;
+  END IF;
+
+  IF v_close_error IS NOT NULL THEN
+    INSERT INTO platform_private.fiscal_close_pending(transmission_id,fiscal_invoice_id,error_code)
+    VALUES(v_row.id,v_row.fiscal_invoice_id,v_close_error)
+    ON CONFLICT(transmission_id) DO UPDATE SET fiscal_invoice_id=EXCLUDED.fiscal_invoice_id,
+      error_code=EXCLUDED.error_code,last_error_at=now(),attempts=platform_private.fiscal_close_pending.attempts+1;
+  ELSIF v_row.outcome = 'AUTHORIZED' THEN
+    DELETE FROM platform_private.fiscal_close_pending
+     WHERE transmission_id=v_row.id AND error_code='FISCAL_AUTHORIZATION_CLOSE_PENDING';
+  END IF;
+
+  RETURN jsonb_build_object(
+    'transmissionId', v_row.id, 'state', v_row.state, 'outcome', v_row.outcome,
+    'cStat', v_row.c_stat, 'protocolCStat', coalesce(v_row.protocol_c_stat,v_row.c_stat), 'xMotivo', v_row.x_motivo,
+    'chNFe', v_row.ch_nfe, 'nProt', v_row.n_prot, 'nRec', v_row.n_rec,
+    'reconciliationPending',EXISTS(SELECT 1 FROM platform_private.fiscal_close_pending cp WHERE cp.transmission_id=v_row.id),
+    'reconciliationCode',(SELECT cp.error_code FROM platform_private.fiscal_close_pending cp WHERE cp.transmission_id=v_row.id));
+END $function$;
