@@ -43,6 +43,18 @@ def main():
   check('row display normalization preserves definition',z.returncode==0 and z.stdout.strip()=='t',z.stderr)
   z=sql("SELECT regexp_replace('EXECUTE FUNCTION row_identity(\"different\")','EXECUTE FUNCTION [^(]+\\(','EXECUTE FUNCTION FUNCTION_ID(')<>regexp_replace('EXECUTE FUNCTION extensions.row_identity(\"arg\")','EXECUTE FUNCTION [^(]+\\(','EXECUTE FUNCTION FUNCTION_ID(');")
   check('argument change not normalized away',z.returncode==0 and z.stdout.strip()=='t',z.stderr)
+  # Exercise all compact row-catalog branches, not only the event-only fixture.
+  assert_sql=sql("DROP EVENT TRIGGER issue_graphql_placeholder;ALTER TABLE public.row_parent ADD PRIMARY KEY(id);ALTER TABLE public.row_parent ENABLE ROW LEVEL SECURITY;CREATE POLICY row_policy ON public.row_parent FOR SELECT TO authenticated USING(id IS NOT NULL);")
+  assert assert_sql.returncode==0,assert_sql.stderr
+  capture_sql="""SELECT jsonb_build_object('name','public.row_parent','owner','postgres','raw_acl',(SELECT relacl::text FROM pg_class WHERE oid='public.row_parent'::regclass),'relrowsecurity',true,'relforcerowsecurity',false,'columns',jsonb_build_array(jsonb_build_object('name','id','type','uuid','not_null',true,'default',NULL,'identity','','generated','')),'constraints',(SELECT jsonb_agg(jsonb_build_object('name',conname,'definition',pg_get_constraintdef(oid,true),'validated',convalidated)) FROM pg_constraint WHERE conrelid='public.row_parent'::regclass),'indexes',(SELECT jsonb_agg(pg_get_indexdef(indexrelid)) FROM pg_index WHERE indrelid='public.row_parent'::regclass),'policies',(SELECT jsonb_agg(jsonb_build_object('name',polname,'command',polcmd,'permissive',polpermissive,'roles',polroles,'using',pg_get_expr(polqual,polrelid),'check',pg_get_expr(polwithcheck,polrelid))) FROM pg_policy WHERE polrelid='public.row_parent'::regclass),'triggers',(SELECT jsonb_agg(jsonb_build_object('name',tgname,'enabled',tgenabled,'function','row_identity()','body_md5',md5(pg_get_functiondef(tgfoid)),'definition',pg_get_triggerdef(oid,true))) FROM pg_trigger WHERE tgrelid='public.row_parent'::regclass AND NOT tgisinternal));"""
+  record=json.loads(sql(capture_sql).stdout.strip())
+  full={'schema':[record],'definitions':[],'triggers':[]}
+  for sig,body in C.segmented_sources(full):
+   z=sql(body);assert z.returncode==0,z.stderr
+  z=sql('SELECT platform_private.cancel_homolog_catalog_check_v1();')
+  check('compact checker executes columns constraints indexes policies row triggers',z.returncode==0,z.stderr)
+  z=sql('ALTER TABLE public.row_parent ALTER COLUMN id SET DEFAULT gen_random_uuid();SELECT platform_private.cancel_homolog_catalog_check_v1();')
+  check('compact column-default drift denied',z.returncode!=0 and 'COLUMN_DRIFT' in z.stderr,z.stderr)
  finally:cmd(['pg_ctl','-D',data,'stop','-m','fast','-w'])
  out=H/'evidence'/('identity-'+Path(tmp).name+'.json');out.write_text(json.dumps(dict(hosted=False,synthetic_event_body=True,checks=rows),indent=2)+'\n')
  assert all(r['status']=='PASS' for r in rows),str(out)
