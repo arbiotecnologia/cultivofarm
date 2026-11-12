@@ -6,6 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 import db
+from compose_controls import compose
 
 H = Path(__file__).resolve().parent
 ROOT = H.parents[2]
@@ -39,7 +40,7 @@ if result.returncode:
 restore = ROOT / 'scripts/c2-pilot-economic-approval-20261111/billing-delivery-20261111/fiscal-final-20261111/prep_restore.sh'
 with (OUT / 'restore-output.txt').open('w') as log:
     subprocess.run(['bash', str(restore), str(OUT)], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=True)
-d = db.DB()
+d = compose(OUT / 'controls')
 state = (H / 'security-state.sql').read_text()
 (H / 'capture').mkdir(exist_ok=True)
 pins = json.loads(d.last(state))
@@ -59,6 +60,7 @@ subprocess.run([sys.executable, str(H / 'generate.py')], check=True)
 # Restore clean AGAIN: no tested partial installation, final installer includes both PRE and POST atomically.
 with (OUT / 'restore-exact-output.txt').open('w') as log:
     subprocess.run(['bash', str(restore), str(OUT)], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=True)
+d = compose(OUT / 'controls-exact')
 for file in ['01-pre.sql.readonly', '02-install-closed.sql.review', '03-post.sql.readonly']:
     result = d.raw(marker + (H / file).read_text())
     (OUT / (file + '.result.json')).write_text(json.dumps({'exit': result.returncode, 'stderr': result.stderr}) + '\n')
