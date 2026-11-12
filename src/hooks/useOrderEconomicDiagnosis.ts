@@ -10,7 +10,11 @@ export function useOrderEconomicDiagnosis(orderId: string | null) {
     queryKey: [ORDER_ECONOMIC_DIAGNOSIS_KEY, orderId], enabled: !!orderId, staleTime: 0,
     queryFn: async (signal) => {
       if (!orderId) return null;
-      const { data, error } = await supabase.rpc("fn_fiscal_invoice_eligibility", {
+      // Generated canonical types lag this installed overload; bind the existing client, never create another one.
+      const rpc = supabase.rpc.bind(supabase) as unknown as (name: string, args: Record<string, unknown>) => {
+        abortSignal(signal: AbortSignal): Promise<{ data: unknown; error: { message: string } | null }>;
+      };
+      const { data, error } = await rpc("fn_fiscal_invoice_eligibility", {
         _source_type: "PARTNER_ORDER", _source_id: orderId,
       }).abortSignal(signal);
       if (error) throw error;
