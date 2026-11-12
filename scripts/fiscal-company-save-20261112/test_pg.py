@@ -12,7 +12,7 @@ HERE = Path(__file__).resolve().parent
 OUT = HERE / 'evidence'
 TMP = Path(tempfile.mkdtemp(prefix='fiscal-save-'))
 os.chmod(TMP, 0o777)
-PRIV = ['runuser', '-u', 'lovable', '--'] if os.getuid() == 0 else []
+PRIV = ['setpriv', '--reuid=1000', '--regid=1000', '--clear-groups'] if os.getuid() == 0 else []
 def run(args, **kwargs):
     return subprocess.run(args, text=True, capture_output=True, **kwargs)
 def pg(sql, ok=True):
