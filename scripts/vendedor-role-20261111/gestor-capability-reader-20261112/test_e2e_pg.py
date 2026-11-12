@@ -34,10 +34,10 @@ q=d.last
 cnt=lambda: {t:q(f"select count(*) from public.{t}") for t in ['accounts_receivable','accounts_receivable_installments','fiscal_invoices','fiscal_events','comunicacao_outbox','estoque_movimentacoes','entregas']}
 def state(oid):
     return json.loads(q(f"""select json_build_object('status',o.status,'created_by',o.created_by,'approved_by',o.approved_by,'approved_at',o.approved_at is not null,
-      'financial_approval_status',o.financial_approval_status,'total',o.valor_total,'origin_actor',o.internal_origin_snapshot->>'actor_user_id',
+      'financial_approval_status',o.financial_approval_status,'numero',o.numero,'table',o.table_amount,'discount',o.commercial_discount_amount,'total',o.total,'final',o.final_amount_with_interest,'credit_approved_by',o.credit_approved_by,'requires_fin',o.requires_financial_approval,'origin_actor',o.internal_origin_snapshot->>'actor_user_id',
       'terms',(select json_agg(json_build_object('id',t.id,'status',t.approval_status,'approved_by',t.approved_by)) from public.partner_order_payment_terms t where t.partner_order_id=o.id),
       'schedule',(select json_agg(json_build_object('n',s.installment_number,'due',s.due_date,'amount',s.amount) order by s.installment_number) from public.partner_order_payment_schedule s where s.partner_order_id=o.id),
-      'forecasts',(select json_agg(json_build_object('id',f.id,'status',f.status,'amount',f.amount)) from platform_private.b2b_financial_forecasts f where f.order_id=o.id))::text
+      'forecasts',(select json_agg(json_build_object('id',f.id,'state',f.state,'amount',f.total_amount,'residual',f.residual_amount,'commercial_by',f.commercial_approved_by,'credit_by',f.credit_approved_by)) from platform_private.b2b_financial_forecasts f where f.order_id=o.id))::text
       from public.partner_orders o where o.id='{oid}'"""))
 def approve_flow(label,oid):
     s0=state(oid);ids[label]=dict(order_id=oid,created=s0)

@@ -1,7 +1,7 @@
 {
   "attempt": 1,
-  "pass_": 9,
-  "fail": 0,
+  "pass_": 39,
+  "fail": 10,
   "checks": [
     {
       "test": "restore sem erros além das FKs auth",
@@ -47,11 +47,417 @@
       "test": "V1 grava pedido para P pela entrada canônica",
       "status": "PASS",
       "detail": null
+    },
+    {
+      "test": "pedido do vendedor com origem server-side = V1",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V2 não vê o pedido",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor de outra empresa não vê",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 não grava para parceiro fora da carteira",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor de outra empresa não grava para P",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor: vendedor não aprova comercialmente",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor: financeiro não aprova comercialmente",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor: gestor comercial aprova comercialmente",
+      "status": "FAIL",
+      "detail": "(None, 'ERROR:  42501: B2B_INTERNAL_DOWNSTREAM_UNVERIFIED')"
+    },
+    {
+      "test": "vendedor: aprovação comercial registra o gestor e não cria previsão sem termos",
+      "status": "FAIL",
+      "detail": "{'status': 'em_analise_comercial', 'created_by': '00000000-0000-0000-0000-000000000901', 'approved_by': None, 'approved_at': False, 'financial_approval_status': 'pending', 'numero': 'PB-001020', 'table': 10.0, 'discount': 1.0, 'total': 9.0, 'final': 9.0, 'credit_approved_by': None, 'requires_fin': True, 'origin_actor': '00000000-0000-0000-0000-000000000901', 'terms': [{'id': '763874b1-c82d-4b21-bb7f-9943622c009b', 'status': 'pending', 'approved_by': None}], 'schedule': [{'n': 1, 'due': '2026-12-12', 'amount': 9.0}], 'forecasts': None}"
+    },
+    {
+      "test": "vendedor: gestor comercial NÃO deveria aprovar termos (segregação)",
+      "status": "FAIL",
+      "detail": "({'status': 'approved', 'success': True}, None)"
+    },
+    {
+      "test": "vendedor: vendedor não aprova termos",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor: financeiro aprova termos",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "vendedor: termos aprovados pelo financeiro (papel distinto do comercial)",
+      "status": "FAIL",
+      "detail": "{'status': 'em_analise_comercial', 'created_by': '00000000-0000-0000-0000-000000000901', 'approved_by': None, 'approved_at': False, 'financial_approval_status': 'pending', 'numero': 'PB-001020', 'table': 10.0, 'discount': 1.0, 'total': 9.0, 'final': 9.0, 'credit_approved_by': None, 'requires_fin': True, 'origin_actor': '00000000-0000-0000-0000-000000000901', 'terms': [{'id': '763874b1-c82d-4b21-bb7f-9943622c009b', 'status': 'approved', 'approved_by': '00000000-0000-0000-0000-000000000030'}], 'schedule': [{'n': 1, 'due': '2026-12-12', 'amount': 9.0}], 'forecasts': None}"
+    },
+    {
+      "test": "vendedor: uma previsão única após as duas aprovações",
+      "status": "FAIL",
+      "detail": "{'status': 'em_analise_comercial', 'created_by': '00000000-0000-0000-0000-000000000901', 'approved_by': None, 'approved_at': False, 'financial_approval_status': 'pending', 'numero': 'PB-001020', 'table': 10.0, 'discount': 1.0, 'total': 9.0, 'final': 9.0, 'credit_approved_by': None, 'requires_fin': True, 'origin_actor': '00000000-0000-0000-0000-000000000901', 'terms': [{'id': '763874b1-c82d-4b21-bb7f-9943622c009b', 'status': 'approved', 'approved_by': '00000000-0000-0000-0000-000000000030'}], 'schedule': [{'n': 1, 'due': '2026-12-12', 'amount': 9.0}], 'forecasts': None}"
+    },
+    {
+      "test": "vendedor: repetição não duplica previsão",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "PRE ref divergente falha fechada",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "PRE_PASS",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "INSTALL 02e",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "POST_PASS",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "reinstalação recusada por drift",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "DEPOIS: gestor abre com parceiros da própria empresa",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "DEPOIS: vendedor continua fora da capacidade do gestor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "DEPOIS: financeiro fora da capacidade do gestor",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "DEPOIS: comprador externo fora",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "gestor grava pedido para P",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "gestor: vendedor não aprova comercialmente",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "gestor: financeiro não aprova comercialmente",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "gestor: gestor comercial aprova comercialmente",
+      "status": "FAIL",
+      "detail": "(None, 'ERROR:  42501: B2B_INTERNAL_DOWNSTREAM_UNVERIFIED')"
+    },
+    {
+      "test": "gestor: aprovação comercial registra o gestor e não cria previsão sem termos",
+      "status": "FAIL",
+      "detail": "{'status': 'em_analise_comercial', 'created_by': '00000000-0000-0000-0000-000000000030', 'approved_by': None, 'approved_at': False, 'financial_approval_status': 'pending', 'numero': 'PB-001021', 'table': 10.0, 'discount': 1.0, 'total': 9.0, 'final': 9.0, 'credit_approved_by': None, 'requires_fin': True, 'origin_actor': '00000000-0000-0000-0000-000000000030', 'terms': [{'id': '41d7db15-4af3-47c7-8b11-0f457279f32f', 'status': 'pending', 'approved_by': None}], 'schedule': [{'n': 1, 'due': '2026-12-12', 'amount': 9.0}], 'forecasts': None}"
+    },
+    {
+      "test": "gestor: gestor comercial NÃO deveria aprovar termos (segregação)",
+      "status": "FAIL",
+      "detail": "({'status': 'approved', 'success': True}, None)"
+    },
+    {
+      "test": "gestor: vendedor não aprova termos",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "gestor: financeiro aprova termos",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "gestor: termos aprovados pelo financeiro (papel distinto do comercial)",
+      "status": "FAIL",
+      "detail": "{'status': 'em_analise_comercial', 'created_by': '00000000-0000-0000-0000-000000000030', 'approved_by': None, 'approved_at': False, 'financial_approval_status': 'pending', 'numero': 'PB-001021', 'table': 10.0, 'discount': 1.0, 'total': 9.0, 'final': 9.0, 'credit_approved_by': None, 'requires_fin': True, 'origin_actor': '00000000-0000-0000-0000-000000000030', 'terms': [{'id': '41d7db15-4af3-47c7-8b11-0f457279f32f', 'status': 'approved', 'approved_by': '00000000-0000-0000-0000-000000000030'}], 'schedule': [{'n': 1, 'due': '2026-12-12', 'amount': 9.0}], 'forecasts': None}"
+    },
+    {
+      "test": "gestor: uma previsão única após as duas aprovações",
+      "status": "FAIL",
+      "detail": "{'status': 'em_analise_comercial', 'created_by': '00000000-0000-0000-0000-000000000030', 'approved_by': None, 'approved_at': False, 'financial_approval_status': 'pending', 'numero': 'PB-001021', 'table': 10.0, 'discount': 1.0, 'total': 9.0, 'final': 9.0, 'credit_approved_by': None, 'requires_fin': True, 'origin_actor': '00000000-0000-0000-0000-000000000030', 'terms': [{'id': '41d7db15-4af3-47c7-8b11-0f457279f32f', 'status': 'approved', 'approved_by': '00000000-0000-0000-0000-000000000030'}], 'schedule': [{'n': 1, 'due': '2026-12-12', 'amount': 9.0}], 'forecasts': None}"
+    },
+    {
+      "test": "gestor: repetição não duplica previsão",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "gestor não grava para parceiro de outra empresa",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "nenhum recebível/NF/evento fiscal/envio/reserva/entrega criado",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "ROLLBACK restaura LIVE",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "rollback repetido recusa drift",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "pedidos preservados após rollback",
+      "status": "PASS",
+      "detail": null
     }
   ],
   "ids": {
-    "assignment": "c9eb6f6b-f425-40ef-bfb7-1491ac860067"
+    "assignment": "9d7fae9c-1e86-4027-b6ec-c95ff7314d3a",
+    "vendedor": {
+      "order_id": "85253ccb-fcfc-45c2-a75c-de5552767ca8",
+      "created": {
+        "status": "em_analise_comercial",
+        "created_by": "00000000-0000-0000-0000-000000000901",
+        "approved_by": null,
+        "approved_at": false,
+        "financial_approval_status": "pending",
+        "numero": "PB-001020",
+        "table": 10.0,
+        "discount": 1.0,
+        "total": 9.0,
+        "final": 9.0,
+        "credit_approved_by": null,
+        "requires_fin": true,
+        "origin_actor": "00000000-0000-0000-0000-000000000901",
+        "terms": [
+          {
+            "id": "763874b1-c82d-4b21-bb7f-9943622c009b",
+            "status": "pending",
+            "approved_by": null
+          }
+        ],
+        "schedule": [
+          {
+            "n": 1,
+            "due": "2026-12-12",
+            "amount": 9.0
+          }
+        ],
+        "forecasts": null
+      },
+      "fin_commercial_denied": "ERROR:  P0001: forbidden",
+      "after_commercial": {
+        "status": "em_analise_comercial",
+        "created_by": "00000000-0000-0000-0000-000000000901",
+        "approved_by": null,
+        "approved_at": false,
+        "financial_approval_status": "pending",
+        "numero": "PB-001020",
+        "table": 10.0,
+        "discount": 1.0,
+        "total": 9.0,
+        "final": 9.0,
+        "credit_approved_by": null,
+        "requires_fin": true,
+        "origin_actor": "00000000-0000-0000-0000-000000000901",
+        "terms": [
+          {
+            "id": "763874b1-c82d-4b21-bb7f-9943622c009b",
+            "status": "pending",
+            "approved_by": null
+          }
+        ],
+        "schedule": [
+          {
+            "n": 1,
+            "due": "2026-12-12",
+            "amount": 9.0
+          }
+        ],
+        "forecasts": null
+      },
+      "gestor_terms": "ALLOWED",
+      "after_terms": {
+        "status": "em_analise_comercial",
+        "created_by": "00000000-0000-0000-0000-000000000901",
+        "approved_by": null,
+        "approved_at": false,
+        "financial_approval_status": "pending",
+        "numero": "PB-001020",
+        "table": 10.0,
+        "discount": 1.0,
+        "total": 9.0,
+        "final": 9.0,
+        "credit_approved_by": null,
+        "requires_fin": true,
+        "origin_actor": "00000000-0000-0000-0000-000000000901",
+        "terms": [
+          {
+            "id": "763874b1-c82d-4b21-bb7f-9943622c009b",
+            "status": "approved",
+            "approved_by": "00000000-0000-0000-0000-000000000030"
+          }
+        ],
+        "schedule": [
+          {
+            "n": 1,
+            "due": "2026-12-12",
+            "amount": 9.0
+          }
+        ],
+        "forecasts": null
+      }
+    },
+    "gestor": {
+      "order_id": "97026fb6-4932-4caf-83e3-42f61f4659e6",
+      "created": {
+        "status": "em_analise_comercial",
+        "created_by": "00000000-0000-0000-0000-000000000030",
+        "approved_by": null,
+        "approved_at": false,
+        "financial_approval_status": "pending",
+        "numero": "PB-001021",
+        "table": 10.0,
+        "discount": 1.0,
+        "total": 9.0,
+        "final": 9.0,
+        "credit_approved_by": null,
+        "requires_fin": true,
+        "origin_actor": "00000000-0000-0000-0000-000000000030",
+        "terms": [
+          {
+            "id": "41d7db15-4af3-47c7-8b11-0f457279f32f",
+            "status": "pending",
+            "approved_by": null
+          }
+        ],
+        "schedule": [
+          {
+            "n": 1,
+            "due": "2026-12-12",
+            "amount": 9.0
+          }
+        ],
+        "forecasts": null
+      },
+      "fin_commercial_denied": "ERROR:  P0001: forbidden",
+      "after_commercial": {
+        "status": "em_analise_comercial",
+        "created_by": "00000000-0000-0000-0000-000000000030",
+        "approved_by": null,
+        "approved_at": false,
+        "financial_approval_status": "pending",
+        "numero": "PB-001021",
+        "table": 10.0,
+        "discount": 1.0,
+        "total": 9.0,
+        "final": 9.0,
+        "credit_approved_by": null,
+        "requires_fin": true,
+        "origin_actor": "00000000-0000-0000-0000-000000000030",
+        "terms": [
+          {
+            "id": "41d7db15-4af3-47c7-8b11-0f457279f32f",
+            "status": "pending",
+            "approved_by": null
+          }
+        ],
+        "schedule": [
+          {
+            "n": 1,
+            "due": "2026-12-12",
+            "amount": 9.0
+          }
+        ],
+        "forecasts": null
+      },
+      "gestor_terms": "ALLOWED",
+      "after_terms": {
+        "status": "em_analise_comercial",
+        "created_by": "00000000-0000-0000-0000-000000000030",
+        "approved_by": null,
+        "approved_at": false,
+        "financial_approval_status": "pending",
+        "numero": "PB-001021",
+        "table": 10.0,
+        "discount": 1.0,
+        "total": 9.0,
+        "final": 9.0,
+        "credit_approved_by": null,
+        "requires_fin": true,
+        "origin_actor": "00000000-0000-0000-0000-000000000030",
+        "terms": [
+          {
+            "id": "41d7db15-4af3-47c7-8b11-0f457279f32f",
+            "status": "approved",
+            "approved_by": "00000000-0000-0000-0000-000000000030"
+          }
+        ],
+        "schedule": [
+          {
+            "n": 1,
+            "due": "2026-12-12",
+            "amount": 9.0
+          }
+        ],
+        "forecasts": null
+      }
+    }
   },
-  "executed_sha256": {},
+  "executed_sha256": {
+    "01e-pre.sql.readonly": [
+      "e6aa88a6465a7bf9d46a6e0661a39434e2aa2b1485776655fc470ec9315a8c42",
+      "e6aa88a6465a7bf9d46a6e0661a39434e2aa2b1485776655fc470ec9315a8c42"
+    ],
+    "02e-install.sql.review": [
+      "e570b3d17694f52b8db195af1c61f6425b1942b09dc53348d60f2642beb840a4",
+      "e570b3d17694f52b8db195af1c61f6425b1942b09dc53348d60f2642beb840a4"
+    ],
+    "03e-post.sql.readonly": [
+      "388b726ecd00e6c132a41d40cc9fa12bfd9d57bd6e59dc1b96cedc987e1636f9"
+    ],
+    "04e-rollback.sql.review": [
+      "6b6ade500f6f09f3705fcd309aaaada8e251bed1fa3e63be00840fd5ea95ff92",
+      "6b6ade500f6f09f3705fcd309aaaada8e251bed1fa3e63be00840fd5ea95ff92"
+    ]
+  },
   "note": "PostgreSQL descartável (espelho composto + 02b/catálogo/02c/02d + 02e); dados só nesta base, destruída ao fim; Auth sintética"
 }
