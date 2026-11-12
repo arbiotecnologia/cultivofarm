@@ -71,6 +71,7 @@ import { RtcCompanyCard } from "@/components/fiscal/RtcCompanyCard";
 import { CnpjLookupButton } from "@/components/fiscal/CnpjLookupButton";
 import { useFiscalFieldFocus } from "@/lib/fiscal/useFiscalFieldFocus";
 import CompanyAccreditationsFields from "@/components/fiscal/CompanyAccreditationsFields";
+import PisCofinsHistory from "@/components/fiscal/PisCofinsHistory";
 
 
 const PAGE_TITLE = "Central de Configuração Fiscal";
@@ -590,6 +591,21 @@ export default function FiscalEmpresa() {
                     { value: "SIMPLES_NACIONAL", label: "Simples Nacional" },
                   ]} onChange={(v) => set("pis_cofins_regime", v === "" ? null : v as CompanyFiscalFormValues["pis_cofins_regime"])} />
                 </FieldRow>
+                <FieldRow id="pis_cofins_regime_effective_from" label="Início da vigência" description={values.pis_cofins_regime_effective_from === undefined ? "Disponível após a instalação do campo no banco. Nada é preenchido automaticamente." : "Opcional. Informe somente a data confirmada; não é deduzida."}>
+                  <Input
+                    id="pis_cofins_regime_effective_from"
+                    type="date"
+                    min="1988-10-05"
+                    max="2100-12-31"
+                    className="min-h-11"
+                    value={values.pis_cofins_regime_effective_from ?? ""}
+                    disabled={readonly || values.pis_cofins_regime_effective_from === undefined}
+                    onChange={(e) => set("pis_cofins_regime_effective_from", e.target.value === "" ? null : e.target.value)}
+                    aria-invalid={!!errors.pis_cofins_regime_effective_from}
+                  />
+                  {errors.pis_cofins_regime_effective_from ? <p className="text-xs text-destructive" role="alert">{errors.pis_cofins_regime_effective_from}</p> : null}
+                </FieldRow>
+                <PisCofinsHistory companySettingsId={settingsQuery.data.id} currentUserId={user?.id} />
                 <CompanyAccreditationsFields key={`${user?.id}:${profile?.organization_id}:${authzEpoch}`} records={values.uf_accreditations ?? []} disabled={readonly || update.isPending} onChange={(records) => set("uf_accreditations", records)} />
                 {errors.uf_accreditations ? <p className="text-xs text-destructive" role="alert">{errors.uf_accreditations}</p> : null}
                 <CompanyCnaeFields
