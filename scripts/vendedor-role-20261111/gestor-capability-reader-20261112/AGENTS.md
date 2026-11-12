@@ -1,0 +1,4 @@
+- Local preparation only: never apply hosted, publish or deploy from here; the auditor installs after PRE_PASS on ref swzpzcwiasxmjutrmvkm.
+- Delta changes exactly one literal in public.c2_internal_order_entry_capability_v1(): the pinned catalogue reader md5 moves from b5684d35 to the portfolio-aware reader installed by writers-20261111 (66899286); every other byte, ACL and helper stays LIVE — prevents widening the gestor capability.
+- Files are produced only by generate.py from the composed mirror with pinned md5s; the E2E harness runs the exact bytes (SHA checked) — prevents drift.
+- Vendedor never enters b2b_internal_commercial_actor; approvals stay with gestor_comercial (commercial) and financeiro (terms) — preserves separation of duties.
