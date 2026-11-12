@@ -2,10 +2,12 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { READ_CATALOG_FAMILIES, READ_FAMILY_LABEL, readCatalogFamily, type CatalogFamilyFilter } from "@/lib/catalogo/catalogFamilyRead";
 import { CompactCatalogSelect } from "./CompactCatalogSelect";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useActiveCatalogFamilies } from "@/hooks/useActiveCatalogFamilies";
 
 export function CatalogFamilyFilter({ value, onChange }: { value: CatalogFamilyFilter; onChange: (value: CatalogFamilyFilter) => void }) {
   const mobile = useIsMobile();
-  if (mobile) return <CompactCatalogSelect label="Família do catálogo" value={value} onChange={v => onChange(v as CatalogFamilyFilter)} options={[{ value: "todos", label: "Todas as famílias" }, ...READ_CATALOG_FAMILIES.map(value => ({ value, label: READ_FAMILY_LABEL[value] })), { value: "sem_classificacao", label: "Sem classificação" }]} />;
+  const families = useActiveCatalogFamilies();
+  if (mobile) return <CompactCatalogSelect label="Família do catálogo" value={value} onChange={v => onChange(v as CatalogFamilyFilter)} options={families.options} />;
   return <ToggleGroup type="single" value={value === "todos" ? "" : value}
     onValueChange={v => onChange(v === "sem_classificacao" ? v : readCatalogFamily(v) ?? "todos")}
     aria-label="Família do catálogo" className="flex flex-wrap justify-start gap-1">

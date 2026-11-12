@@ -1,6 +1,7 @@
 import { CompactCatalogSelect } from "@/components/catalogo/CompactCatalogSelect";
 import { DraftExitConfirmation } from "@/components/catalogo/DraftExitConfirmation";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useActiveCatalogFamilies } from "@/hooks/useActiveCatalogFamilies";
 import { TenantHiddenBadge, TenantVisibilityBar, TenantVisibilityToggle, useCanManageTenantVisibility, useManagedVisibility } from "@/components/protocolos/TenantVisibilityControls";
 import { TENANT_CAN_EDIT_GLOBAL_CATALOG, GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -218,6 +219,7 @@ export async function carregarCatalogoProdutos(client: any): Promise<
 
 export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFamily?: ProductFamilyTab; onCreated?: () => void } = {}) {
   const mobile = useIsMobile();
+  const activeFamilies = useActiveCatalogFamilies();
   const [exitOpen, setExitOpen] = useState(false);
   const { name: tenantName } = useActiveTenantName();
   
@@ -687,7 +689,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
 
   return (
     <div className="space-y-4 min-w-0 [&_button]:min-h-11 [&_input]:min-h-11 [&_button[role=combobox]]:min-h-11">
-      {mobile ? <CompactCatalogSelect label="Família de produtos" value={familyTab} options={PRODUCT_FAMILY_TABS} onChange={v => setFamilyTab(v as ProductFamilyTab)} /> : <Tabs value={familyTab} onValueChange={v => setFamilyTab(v as ProductFamilyTab)}>
+      {mobile ? <CompactCatalogSelect label="Família de produtos" value={familyTab} options={activeFamilies.options} onChange={v => setFamilyTab(v as ProductFamilyTab)} /> : <Tabs value={familyTab} onValueChange={v => setFamilyTab(v as ProductFamilyTab)}>
         <TabsList aria-label="Famílias de produtos" className="flex h-auto w-full justify-start overflow-x-auto">
           {PRODUCT_FAMILY_TABS.map(t => <TabsTrigger key={t.value} value={t.value} className="min-h-10 shrink-0">{t.label}</TabsTrigger>)}
         </TabsList>
