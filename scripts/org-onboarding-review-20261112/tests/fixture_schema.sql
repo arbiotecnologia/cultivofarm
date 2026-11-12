@@ -8,6 +8,9 @@ CREATE FUNCTION auth.role() RETURNS text LANGUAGE sql STABLE AS $$ SELECT curren
 CREATE TYPE public.app_role AS ENUM ('administrador','gestor','financeiro','consultor','superadmin');
 CREATE SCHEMA platform_private; GRANT USAGE ON SCHEMA platform_private TO authenticated, service_role;
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+-- Placeholders substituídos pelos corpos LIVE capturados (CREATE OR REPLACE) logo após este arquivo.
+CREATE FUNCTION platform_private.h15_actor_organization() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT NULL::uuid $$;
+CREATE FUNCTION platform_private.has_role(_user_id uuid, _role public.app_role) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT false $$;
 CREATE TABLE public.organizations(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), nome text NOT NULL, partner_account_id uuid,
   ativo boolean NOT NULL DEFAULT true, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
   responsavel_user_id uuid, responsavel_definido_em timestamptz, status text NOT NULL DEFAULT 'ativa', razao_social text, nome_fantasia text,
