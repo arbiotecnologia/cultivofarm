@@ -60,7 +60,7 @@ try:
     result = run(PRIV + ['pg_ctl', '-D', str(TMP / 'data'), '-l', str(TMP / 'server.log'), '-o', f'-k {TMP} -h "" -p 55931', '-w', 'start'])
     assert result.returncode == 0, result.stderr
     # Synthetic identity seam: no auth users/exported rows/secrets. The canonical guard reads these local-only records.
-    pg("""CREATE ROLE authenticated; CREATE ROLE anon; CREATE SCHEMA auth;
+    pg("""CREATE ROLE authenticated; CREATE ROLE anon; CREATE ROLE service_role; CREATE SCHEMA auth;
 CREATE TYPE public.app_role AS ENUM ('administrador','gestor','financeiro','consultor_tecnico');
 CREATE TABLE public.organizations(id uuid PRIMARY KEY,ativo boolean);
 GRANT SELECT ON public.organizations TO authenticated;
