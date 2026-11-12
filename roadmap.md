@@ -1,3 +1,7 @@
+## 12/11 02:20 — Reconstrução FINAL com controles LIVE relatados
+- [ ] Reconstruir composição original com coerência, snapshot e barreira C2 reais; ACLs restritivas do delta, sem repin isolado.
+- [ ] Reexecutar PRE/INSTALL/POST, integração, concorrência, barreira e rollback exatos; separar diagnóstico econômico e sequência NF, hashes e dependências concretas.
+
 ## 12/11 02:00 — Candidato FINAL de cancelamento no original
 - [x] Candidato final-production entregue: PRE/INSTALL fechado/POST/rollback, awaiting normalizado, 37 integração +49 determinísticos +18 roundtrip/awaiting +21 UI PASS; hashes/REPORT; instalação real depende de PRE/revisão LIVE, fora do escopo autorizado.
 - [x] Trabalho de homolog hospedada encerrado por mudança expressa; dependências e liberações artificiais não serão transportadas.
