@@ -20,6 +20,7 @@ import {
 import {
   companyFiscalFormSchema,
   rowToFormValues,
+  valuesForValidation,
   ALLOWED_ENVIRONMENTS,
   ALLOWED_STATUSES,
   ALLOWED_PROVIDERS,
@@ -392,7 +393,7 @@ export default function FiscalEmpresa() {
 
   function validateLocal(): boolean {
     setErrors({});
-    const parsed = companyFiscalFormSchema.safeParse(values);
+    const parsed = companyFiscalFormSchema.safeParse(valuesForValidation(values, baseline));
     if (!parsed.success) {
       const flat: Record<string, string> = {};
       for (const issue of parsed.error.issues) {

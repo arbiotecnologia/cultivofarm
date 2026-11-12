@@ -315,6 +315,16 @@ function splitUnchanged(current: unknown, baseline: unknown): { edited: Record<s
   return { edited, kept };
 }
 
+/** Valores a validar: chaves JSON inalteradas desde a leitura não são revalidadas. */
+export function valuesForValidation(values: CompanyFiscalFormValues, baseline?: CompanyFiscalFormValues): CompanyFiscalFormValues {
+  if (!baseline) return values;
+  return {
+    ...values,
+    ...(values.nfe_configuration !== undefined ? { nfe_configuration: splitUnchanged(values.nfe_configuration, baseline.nfe_configuration).edited as CompanyFiscalFormValues["nfe_configuration"] } : {}),
+    ...(values.nfse_configuration !== undefined ? { nfse_configuration: splitUnchanged(values.nfse_configuration, baseline.nfse_configuration).edited as CompanyFiscalFormValues["nfse_configuration"] } : {}),
+  };
+}
+
 export function buildUpdatePayload(values: CompanyFiscalFormValues, baseline?: CompanyFiscalFormValues): Update {
   const nfeSplit = baseline ? splitUnchanged(values.nfe_configuration, baseline.nfe_configuration) : null;
   const nfseSplit = baseline ? splitUnchanged(values.nfse_configuration, baseline.nfse_configuration) : null;
