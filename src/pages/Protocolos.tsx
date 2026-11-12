@@ -507,7 +507,7 @@ export default function Protocolos() {
       <Card>
         <CardContent className="pt-6">
           <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className={`grid w-full ${allowedTabs.length === 1 ? "grid-cols-1" : "grid-cols-5"}`}>
+            <TabsList className="flex h-auto w-full justify-start overflow-x-auto [&>button]:min-h-10 [&>button]:shrink-0">
               {allowedTabs.includes("produtos") && <TabsTrigger value="produtos">Produtos</TabsTrigger>}
               {allowedTabs.includes("microrganismos") && <TabsTrigger value="microrganismos">Microrganismos</TabsTrigger>}
               {allowedTabs.includes("catalogo-tecnico") && <TabsTrigger value="catalogo-tecnico">Catálogo Técnico</TabsTrigger>}

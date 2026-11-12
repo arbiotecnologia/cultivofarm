@@ -1757,6 +1757,12 @@
 - [x] Cadeia integral 203 exit 0, 55/55: intenções, begin×cancel, 217/negativas, drift ACL, 18/9/9, 747→738, pagamento 9, callback tardio, rollback; SQL promovido igual ao espelho.
 - [ ] Leitor positivo rpc_receivable_money_projection_v1: ACL candidata só owner; exige decisão de revisão (sem grant amplo).
 - [ ] Contagem específica de 38 gatilhos do terms-wait não verificada separadamente na 203.
+
+## 12/11 — Base Técnica e sugestões documentais (prévia somente)
+- [ ] 1. Famílias canônicas de produtos, criação pré-selecionada e cadastros auxiliares pelos contratos existentes.
+- [ ] 2. Criar/editar ficha manual no catálogo, culturas/problemas e cadastro inline sem perder rascunho.
+- [ ] 3. IA documental com fontes por campo, comparação/seleção, ambiguidade e erro sem gravação automática; servidor revisável fora de supabase/functions.
+- [ ] Testes focados, desktop/mobile e relatório de dependências; sem publicação ou dados hospedados.
 - [ ] Revisão independente, JWT/RLS/Storage hospedado e piloto (sem abrir gate logístico global): fora deste ambiente.
 - [x] Revisão 209/584d530: piloto antes das revalidações fiscais no início, pins completos do leitor financeiro com rollback deny-only sem quebrar pagamento; tentativa 212 exit 0, 56/56, 38 gatilhos, 747→738; manifesto `final-manifest-20261110.json`. Pendente (externo): revisão independente, captura READONLY dos pins locais, prova hospedada JWT/RLS/Storage, gate fiscal e decisão de gate próprio do lifecycle sem abrir logística global.
 - [x] Revisão 212/09537e49: gate próprio lifecycle, pins ACL com opção de concessão, manifesto executável, roteiro A/B; tentativa 214 exit 0 56/56. Pendente externo: revisão independente, diagnóstico READONLY pelo operador, prova hospedada A/B, gate fiscal.
