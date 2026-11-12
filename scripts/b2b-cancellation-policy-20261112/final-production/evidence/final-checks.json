@@ -1,0 +1,106 @@
+[
+  {
+    "test": "bytes exatos 03-post.sql.readonly",
+    "status": "PASS",
+    "detail": {
+      "sha256": "6495c565455cac8be5962688bb46bc6123bb65737ecf508e07e8938d568a6a76",
+      "stderr": ""
+    }
+  },
+  {
+    "test": "bytes exatos 04-rollback-deny.sql.review",
+    "status": "PASS",
+    "detail": {
+      "sha256": "43523bd6fb186f2268eb438c3ed00975b65f3ac75b4ec7ed7d157fc291b37ed8",
+      "stderr": ""
+    }
+  },
+  {
+    "test": "bytes exatos 05-post-rollback.sql.readonly",
+    "status": "PASS",
+    "detail": {
+      "sha256": "6495c565455cac8be5962688bb46bc6123bb65737ecf508e07e8938d568a6a76",
+      "stderr": ""
+    }
+  },
+  {
+    "test": "rollback preserva histórico original financeiro/pedido/físico",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "gate e escopo de instalação permanecem fechados",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "instalação não concede writer/capacidade/helper a anon",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "instalação não concede writer/capacidade/helper a authenticated",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "instalação não concede writer/capacidade/helper a service_role",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "destino ausente/divergente falha fechado ''",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "destino ausente/divergente falha fechado 'not-the-original'",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "reinstalação não duplica objetos/histórico",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "estado aguardando_fiscal é contrato da previsão, não enum do pedido",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "capacidade reconhece exatamente awaiting/partial, sem estado fictício",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "writer exige residual positivo e awaiting/partial",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "motor canônico devolve aguardando_fiscal com residual 10 preservado",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "awaiting capacidade real versão observada e residual 10",
+    "status": "PASS",
+    "detail": {
+      "version": 10,
+      "order_id": "3980d5b7-4854-41ea-aa97-8f3dee8f80a4",
+      "available": true,
+      "residual_amount": 10.0
+    }
+  },
+  {
+    "test": "awaiting CAS antigo nega e conserva histórico",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "awaiting cancela somente saldo 10 uma vez",
+    "status": "PASS",
+    "detail": ""
+  }
+]

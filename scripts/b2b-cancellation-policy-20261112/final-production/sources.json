@@ -1,0 +1,62 @@
+{
+  "target": "swzpzcwiasxmjutrmvkm",
+  "provenance": [
+    {
+      "path": "scripts/b2b-cancellation-policy-20261112/generate.py",
+      "sha256": "217f81f1469185a3f6cdd736a5fb56ad161c1289b8bceeab7d53bcf141dfdfca"
+    },
+    {
+      "path": "scripts/b2b-cancellation-policy-20261112/capture/actor.sql",
+      "sha256": "d4f71952edd67bf0f25eb1f7c95cea041b345e190c6962f65ac57c2c8b3a7cad"
+    },
+    {
+      "path": "scripts/b2b-cancellation-policy-20261112/capture/apply.sql",
+      "sha256": "99d25e2c4f8b4e538fc0fecd4fa5b536059ae63f4065fbb7fb48401577854da3"
+    },
+    {
+      "path": "scripts/b2b-cancellation-policy-20261112/capture/bridge.sql",
+      "sha256": "8c775ec14fa6f705fa32bdeb70ff4f9c6c7ab1aec74845e0d426aad6dc119c07"
+    },
+    {
+      "path": "scripts/b2b-cancellation-policy-20261112/capture/cancel_core.sql",
+      "sha256": "481afdf930717af71784b25c32f3873c2187e2082b7a4b27d33e1c0cdf115f27"
+    },
+    {
+      "path": "scripts/b2b-cancellation-policy-20261112/capture/lifecycle_allowed.sql",
+      "sha256": "ad9b2f4ac1bcb3770c254f4185bee5bbffcc5c25e908d6291a66e0d7dc998a03"
+    },
+    {
+      "path": "scripts/b2b-cancellation-policy-20261112/capture/lifecycle_scope.sql",
+      "sha256": "b9f03ee9120d8d8e8c3356a92d8aac5bec8d70e71c2c80986c1e83be1cc7ec71"
+    },
+    {
+      "path": "scripts/b2b-cancellation-policy-20261112/capture/payment.sql",
+      "sha256": "96d90d81a3ae6997ba9f3cf9fae5cd55860d7995063bc25b10a88da33ee906fa"
+    },
+    {
+      "path": "scripts/b2b-cancellation-policy-20261112/capture/pins.json",
+      "sha256": "3549b99fb95b6aa0b216f2c23c40fc61bea9f07e64b78528801bdf7e32716860"
+    },
+    {
+      "path": "scripts/b2b-cancellation-policy-20261112/capture/post-pins.json",
+      "sha256": "a9b8e04329ea2a0bea7416dea03fc9826235124f99df906a558770f9cb49b65e"
+    },
+    {
+      "path": "scripts/b2b-cancellation-policy-20261112/capture/prepare.sql",
+      "sha256": "8eb10fcfe7e9095838ab0e488e8883679ed091c1297d20c8ac3571d1a84ce03c"
+    },
+    {
+      "path": "scripts/b2b-cancellation-policy-20261112/capture/reconcile.sql",
+      "sha256": "3ed55417b45fff026a2dc3c566c1634837e6a86a8cf63b64fee2ce6324eb94f0"
+    },
+    {
+      "path": "scripts/b2b-cancellation-policy-20261112/capture/record.sql",
+      "sha256": "2d92ffe418f28652352910e5443cc0563e52bdd7f623f2bb348d83eff5b8cde3"
+    },
+    {
+      "path": "scripts/b2b-cancellation-policy-20261112/capture/residual.sql",
+      "sha256": "65cb84f95996dcada6006304b8b5154a0a6806bd0acb2b7b40fe0d1ad4aed35d"
+    }
+  ],
+  "homolog_sources": []
+}

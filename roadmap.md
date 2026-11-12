@@ -1,6 +1,10 @@
-## 12/11 01:22 — Pré-requisitos específicos de cancelamento em homologação
+## 12/11 02:00 — Candidato FINAL de cancelamento no original
+- [x] Candidato final-production entregue: PRE/INSTALL fechado/POST/rollback, awaiting normalizado, 37 integração +49 determinísticos +18 roundtrip/awaiting +21 UI PASS; hashes/REPORT; instalação real depende de PRE/revisão LIVE, fora do escopo autorizado.
+- [x] Trabalho de homolog hospedada encerrado por mudança expressa; dependências e liberações artificiais não serão transportadas.
+
+## 12/11 01:22 — Pré-requisitos específicos de cancelamento em homologação (ENCERRADO pelo proprietário às 02:00)
 - [x] Continuação 01:49: OID/MD5 qualificado e verificador segmentado, guard real recebido, E statement+row fechado, overlay estado produção separado e UI cópia por capacidade; 27 identidade, 29 componentes, 24 barreira e 22 UI PASS, sem remoto/publicação.
-- [ ] Composição operacional e emissor canônico de permissões/intenções sintéticas aguardam decisão explícita A/B em minimal/continuation/DECISION-0149.md e implementação integral sob guards reais; infraestrutura E sem issuer/grants/gate, nenhum GO ou roundtrip integral de homolog.
+- [x] Composição operacional/emissor homolog encerrados sem implementação por mudança expressa às 02:00; infraestrutura E permanece fechada, sem GO.
 - [x] Continuação 01:41: captura gzip validada, três hashes conferidos, B/C/D aditivos privados gerados, aguardando_fiscal corrigido sem alterar estados; 22 checks PG e 16 UI PASS, logs de falhas preservados, sem remoto/publicação.
 - [x] Corpo exato E recebido 01:49/MD5 conferido; pendência de captura resolvida, sem nova consulta geral. Estado operacional atual em FOLLOWUP-0149.md, relatório 01:41 histórico preservado.
 - [x] Continuação 01:33: seis corpos homolog recuperados por MD5 calculado, etapa A privada fechada gerada e roundtrip 18/18; caminho mínimo B–E documentado em minimal/REPORT.md sem copiar produção.

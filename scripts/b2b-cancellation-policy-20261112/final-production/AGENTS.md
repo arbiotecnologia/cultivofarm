@@ -1,0 +1,3 @@
+- Generate only from the original policy capture and generator; never import homolog DDL, permits or grants — preserves original-schema provenance.
+- Install and rollback deny client execution with the new gate OFF; activation is a separate reviewed decision, not this package — prevents preparation from releasing operations.
+- Local original-schema integration, concurrent wait and rollback evidence is not hosted JWT/RLS/provider certification; never touch PB-001042 or hosted fixtures — prevents synthetic proof and live mutations.

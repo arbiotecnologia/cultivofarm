@@ -1,0 +1,49 @@
+BEGIN READ ONLY;
+SET LOCAL search_path TO pg_catalog,public;
+DO $destination$ BEGIN
+ -- Review marker is a destination fence, NEVER actor authority. The operator must
+ -- independently verify the connection project ref before setting this marker.
+ IF current_setting('b2b_cancel_final.review_project_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm'
+ THEN RAISE EXCEPTION 'FINAL_ORIGINAL_REF_NOT_VERIFIED' USING ERRCODE='42501'; END IF;
+ IF current_user<>'postgres' THEN RAISE EXCEPTION 'FINAL_OWNER_REQUIRED' USING ERRCODE='42501'; END IF;
+END $destination$;
+DO $pins$ DECLARE sig text; expected jsonb; actual jsonb; BEGIN
+ FOR sig,expected IN SELECT * FROM jsonb_each('{"public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text)":{"acl":["authenticated=X/postgres","postgres=X/postgres"],"md5":"9b930e51d8a95a1f516573d5dc64e937","owner":"postgres","config":["search_path=\"\""]},"public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb)":{"acl":["postgres=X/postgres","service_role=X/postgres"],"md5":"766034ca6a25074dd5aeb6e57300c1d4","owner":"postgres","config":["search_path=public, pg_temp"]},"public.rpc_register_receivable_payment(uuid,jsonb)":{"acl":["authenticated=X/postgres","postgres=X/postgres","service_role=X/postgres"],"md5":"db0ef1369e8a98630afb98368d391678","owner":"postgres","config":["search_path=public"]},"public.rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid)":{"acl":["postgres=X/postgres","service_role=X/postgres"],"md5":"9af2e91f3dbea476bffb4328fa288b2f","owner":"postgres","config":["search_path=public, pg_temp"]},"public.rpc_fiscal_event_sefaz_reconcile_v1(uuid,uuid,text,text,text,timestamptz)":{"acl":["postgres=X/postgres","service_role=X/postgres"],"md5":"474c1e8cb40a15bc9fcb2544fef1c4b6","owner":"postgres","config":["search_path=public, pg_temp"]},"platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text)":{"acl":["postgres=X/postgres"],"md5":"40c8315020d521125868794349ad5e16","owner":"postgres","config":["search_path=\"\""]},"platform_private.c2p1_internal_actor(public.app_role[])":{"acl":["authenticated=X/postgres","postgres=X/postgres"],"md5":"97bab97591a9f662bad7b1ccf837bfcd","owner":"postgres","config":["search_path=\"\""]},"platform_private.b2b_forecast_lifecycle_scope_v1(text,uuid,uuid,uuid,uuid)":{"acl":["postgres=X/postgres"],"md5":"ff7fd0bf839a91befa13600fd0b3faf1","owner":"postgres","config":["search_path=\"\""]},"platform_private.b2b_forecast_lifecycle_allowed_v1(text,uuid,uuid,uuid,uuid)":{"acl":["postgres=X/postgres"],"md5":"5347eaece2bbf5a05e5b581d4b2cd262","owner":"postgres","config":["search_path=\"\""]},"public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid)":{"acl":["postgres=X/postgres","service_role=X/postgres"],"md5":"766fb81a3c7dafa71de7806e559f0730","owner":"postgres","config":["search_path=public, pg_temp"]},"platform_private.b2b_fiscal_invoice_bridge_v1(uuid)":{"acl":["postgres=X/postgres","service_role=X/postgres"],"md5":"9b14fa08913075c08bc905074fb98a10","owner":"postgres","config":["search_path=\"\""]}}'::jsonb) LOOP
+  SELECT jsonb_build_object('md5',md5(pg_get_functiondef(p.oid)),
+   'owner',pg_get_userbyid(p.proowner),'acl',(SELECT coalesce(jsonb_agg(x::text ORDER BY x::text),'[]'::jsonb) FROM unnest(p.proacl)x),
+   'config',to_jsonb(p.proconfig)) INTO actual FROM pg_proc p WHERE p.oid=to_regprocedure(sig);
+  IF actual IS DISTINCT FROM expected THEN RAISE EXCEPTION 'FINAL_FUNCTION_DRIFT:%',sig USING ERRCODE='42501'; END IF;
+ END LOOP;
+END $pins$;
+DO $security$ BEGIN IF md5((SELECT jsonb_build_object(
+ 'relations',(SELECT jsonb_object_agg(name,state ORDER BY name) FROM (
+  SELECT n.nspname||'.'||c.relname AS name,jsonb_build_object(
+   'owner',pg_get_userbyid(c.relowner),'rls',c.relrowsecurity,'force_rls',c.relforcerowsecurity,
+   'acl',(SELECT coalesce(jsonb_agg(x::text ORDER BY x::text),'[]'::jsonb) FROM unnest(c.relacl)x),
+   'columns',(SELECT jsonb_agg(jsonb_build_array(a.attname,format_type(a.atttypid,a.atttypmod),a.attnotnull,pg_get_expr(d.adbin,d.adrelid)) ORDER BY a.attnum) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped),
+   'constraints',(SELECT coalesce(jsonb_agg(jsonb_build_array(x.conname,pg_get_constraintdef(x.oid),x.convalidated) ORDER BY x.conname),'[]'::jsonb) FROM pg_constraint x WHERE x.conrelid=c.oid),
+   'indexes',(SELECT coalesce(jsonb_agg(jsonb_build_array(x.relname,pg_get_indexdef(x.oid),i.indisvalid) ORDER BY x.relname),'[]'::jsonb) FROM pg_index i JOIN pg_class x ON x.oid=i.indexrelid WHERE i.indrelid=c.oid),
+   'policies',(SELECT coalesce(jsonb_agg(jsonb_build_array(p.polname,p.polcmd,p.polpermissive,(SELECT array_agg(CASE WHEN r=0 THEN 'PUBLIC' ELSE pg_get_userbyid(r) END ORDER BY r) FROM unnest(p.polroles)r),pg_get_expr(p.polqual,p.polrelid),pg_get_expr(p.polwithcheck,p.polrelid)) ORDER BY p.polname),'[]'::jsonb) FROM pg_policy p WHERE p.polrelid=c.oid),
+   'triggers',(SELECT coalesce(jsonb_agg(jsonb_build_array(t.tgname,pg_get_triggerdef(t.oid),t.tgenabled,md5(pg_get_functiondef(t.tgfoid))) ORDER BY t.tgname),'[]'::jsonb) FROM pg_trigger t WHERE t.tgrelid=c.oid AND NOT t.tgisinternal)
+  ) state FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+  WHERE (n.nspname,c.relname) IN (
+   ('public','partner_orders'),('public','partner_accounts'),('public','fiscal_invoices'),('public','fiscal_events'),
+   ('public','fiscal_sefaz_transmissions'),('public','accounts_receivable'),('public','accounts_receivable_installments'),
+   ('public','receivable_payments'),('public','financial_audit_log'),('public','profiles'),('public','user_roles'),
+   ('platform_private','b2b_financial_forecasts'),('platform_private','b2b_financial_forecast_events'),
+   ('platform_private','b2b_forecast_lifecycle_gate_v1'),('platform_private','b2b_forecast_lifecycle_allowlist_v1'),
+   ('platform_private','b2b_fiscal_invoice_snapshots'),('platform_private','b2b_document_allocations'),
+   ('platform_private','b2b_allocation_reversals'),('platform_private','b2b_fiscal_service_permits'),
+   ('platform_private','fiscal_close_pending'))
+ ) v),
+ 'order_enum',(SELECT jsonb_agg(e.enumlabel ORDER BY e.enumsortorder) FROM pg_enum e WHERE e.enumtypid='public.partner_order_status'::regtype),
+ 'downstream',(SELECT jsonb_build_array(md5(pg_get_functiondef(p.oid)),pg_get_userbyid(p.proowner),(SELECT array_agg(x::text ORDER BY x::text) FROM unnest(p.proacl)x),p.proconfig) FROM pg_proc p WHERE p.oid='platform_private.delivery_no_downstream_20261030()'::regprocedure)
+))::text) IS DISTINCT FROM '0ad2c295ef146ff0aa1b16fd8ee455e6' THEN RAISE EXCEPTION 'FINAL_ORIGINAL_SECURITY_DRIFT' USING ERRCODE='42501'; END IF; END $security$;
+DO $fresh$ BEGIN
+ IF to_regclass('platform_private.b2b_cancel_policy_gate_v1') IS NOT NULL
+ OR to_regclass('platform_private.b2b_cancel_policy_allowlist_v1') IS NOT NULL
+ OR to_regprocedure('platform_private.b2b_cancel_confirmed_fiscal_v1(uuid)') IS NOT NULL
+ OR to_regprocedure('public.rpc_b2b_cancel_residual_capability_v1(uuid)') IS NOT NULL THEN
+ RAISE EXCEPTION 'FINAL_ALREADY_INSTALLED_OR_PARTIAL' USING ERRCODE='42501'; END IF;
+END $fresh$;
+ROLLBACK;
