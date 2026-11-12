@@ -4148,6 +4148,67 @@ export type Database = {
           },
         ]
       }
+      company_fiscal_pis_cofins_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          company_settings_id: string
+          configuration_version: number | null
+          id: string
+          new_effective_from: string | null
+          new_regime: string | null
+          old_effective_from: string | null
+          old_regime: string | null
+          organization_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          company_settings_id: string
+          configuration_version?: number | null
+          id?: string
+          new_effective_from?: string | null
+          new_regime?: string | null
+          old_effective_from?: string | null
+          old_regime?: string | null
+          organization_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          company_settings_id?: string
+          configuration_version?: number | null
+          id?: string
+          new_effective_from?: string | null
+          new_regime?: string | null
+          old_effective_from?: string | null
+          old_regime?: string | null
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_fiscal_pis_cofins_history_company_settings_id_fkey"
+            columns: ["company_settings_id"]
+            isOneToOne: false
+            referencedRelation: "company_fiscal_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_fiscal_pis_cofins_history_company_settings_id_fkey"
+            columns: ["company_settings_id"]
+            isOneToOne: false
+            referencedRelation: "v_fiscal_company_readiness"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_fiscal_pis_cofins_history_company_settings_id_fkey"
+            columns: ["company_settings_id"]
+            isOneToOne: false
+            referencedRelation: "v_fiscal_nfe_emitter_readiness"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_fiscal_settings: {
         Row: {
           accounting_validated_at: string | null
@@ -4199,6 +4260,7 @@ export type Database = {
           organization_id: string
           phone: string | null
           pis_cofins_regime: string | null
+          pis_cofins_regime_effective_from: string | null
           postal_code: string | null
           primary_cnae: string | null
           production_enabled: boolean
@@ -4266,6 +4328,7 @@ export type Database = {
           organization_id: string
           phone?: string | null
           pis_cofins_regime?: string | null
+          pis_cofins_regime_effective_from?: string | null
           postal_code?: string | null
           primary_cnae?: string | null
           production_enabled?: boolean
@@ -4333,6 +4396,7 @@ export type Database = {
           organization_id?: string
           phone?: string | null
           pis_cofins_regime?: string | null
+          pis_cofins_regime_effective_from?: string | null
           postal_code?: string | null
           primary_cnae?: string | null
           production_enabled?: boolean
@@ -25644,6 +25708,7 @@ export type Database = {
           organization_id: string
           phone: string | null
           pis_cofins_regime: string | null
+          pis_cofins_regime_effective_from: string | null
           postal_code: string | null
           primary_cnae: string | null
           production_enabled: boolean
