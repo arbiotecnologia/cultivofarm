@@ -3,7 +3,7 @@
 e capacidade do gestor antes/depois do delta 02e. PostgreSQL descartável; Auth por claims SQL (sintética, não prova JWT/RLS)."""
 import hashlib,json,sys
 from pathlib import Path
-H=Path(__file__).resolve().parent;W=H.parent/'writers-20261111';sys.path.insert(0,str(W));sys.path.insert(0,str(H.parent/'gestor-capability-reader-20261112'));sys.path.insert(0,str(H))
+H=Path(__file__).resolve().parent;W=H.parent/'writers-20261111';sys.path.insert(0,str(W));sys.path.insert(0,str(H.parent/'gestor-capability-reader-20261112'))
 import mirror_db, generate as G
 import importlib.util as _iu
 _s=_iu.spec_from_file_location('gen_f',H/'generate.py');F_=_iu.module_from_spec(_s);_s.loader.exec_module(F_)
