@@ -37,7 +37,9 @@ try:
     m = X.Mirror.__new__(X.Mirror)
     m.d = d
     # Input configuration through normal SQL with every trigger enabled; no replica mode.
-    d.sql(f"UPDATE public.commercial_payment_plans SET organization_id='{X.A}' WHERE id='{X.PLQ}'")
+    source_plan = X.PLQ
+    X.PLQ = str(uuid.uuid4())
+    d.sql(f"INSERT INTO public.commercial_payment_plans SELECT (jsonb_populate_record(NULL::public.commercial_payment_plans,to_jsonb(p)||jsonb_build_object('id','{X.PLQ}','organization_id','{X.A}','nome','LOCAL CONTROLS {X.PLQ}','is_default',false))).* FROM public.commercial_payment_plans p WHERE id='{source_plan}'")
     r = m.call(X.UADM, f"public.b2b_payment_condition_publish('{X.PLQ}','boleto','{u(92)}','{u(97)}',30,1,0::numeric,0)")
     check('plano de entrada publicado pelo writer original', r[0] is not None, r)
     r = m.call(X.UADM, f"public.b2b_payment_condition_assign('{X.P}','{X.PLQ}','boleto',1,true)")
