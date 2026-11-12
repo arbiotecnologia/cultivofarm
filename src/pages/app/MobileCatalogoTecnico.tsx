@@ -1,3 +1,9 @@
+import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
+import { CompactCatalogSelect } from "@/components/catalogo/CompactCatalogSelect";
+import { ProdutosTab } from "@/components/protocolos/ProdutosTab";
+import { TenantReferencePanel } from "@/components/protocolos/TenantReferencePanel";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,6 +39,9 @@ interface Row {
 }
 
 export default function MobileCatalogoTecnico() {
+  const editor = useTenantCatalogEditor();
+  const [section, setSection] = useState("catalogo");
+  const [adding, setAdding] = useState(false);
   const { label: tenantLabel } = useActiveTenantName();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +64,7 @@ export default function MobileCatalogoTecnico() {
 
   useEffect(() => {
     if (!hiddenReady) { setRows([]); setLoading(!hiddenError); return; }
+    const current = editor.capture();
     let alive = true;
     const hiddenProd = hp.status === "ready" ? hp.ids : [];
     const hiddenMicro = hm.status === "ready" ? hm.ids : [];
@@ -62,8 +72,8 @@ export default function MobileCatalogoTecnico() {
       setLoading(true);
       setLoadError(null);
       const [prod, micro, pp, mp] = await Promise.all([
-        catalogoExcludeHidden(supabase.from("produtos").select("id,nome,codigo,tipo,familia_catalogo,classe_catalogo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled").eq("ativo", true), hiddenProd).order("nome"),
-        catalogoExcludeHidden(supabase.from("microrganismos").select("id,nome,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled").eq("ativo", true), hiddenMicro).order("nome"),
+        catalogoExcludeHidden(supabase.from("produtos").select("id,nome,codigo,tipo,familia_catalogo,classe_catalogo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled,owner_organization_id").eq("ativo", true), hiddenProd).order("nome"),
+        catalogoExcludeHidden(supabase.from("microrganismos").select("id,nome,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled,owner_organization_id").eq("ativo", true), hiddenMicro).order("nome"),
         supabase.from("product_technical_profiles").select("produto_id,status_validacao,resumo_curto"),
         supabase.from("microorganism_technical_profiles").select("microrganismo_id,status_validacao,resumo_curto"),
       ]);
@@ -81,13 +91,13 @@ export default function MobileCatalogoTecnico() {
           resumo: (mpMap.get(m.id) as any)?.resumo_curto ?? m.descricao ?? null, raw: m,
         })),
       ];
-      if (!alive) return; // resposta tardia de escopo anterior é descartada
-      if (prod.error || micro.error) { setRows([]); setLoadError("Não foi possível carregar o catálogo."); setLoading(false); return; }
+      if (!alive || !current()) return; // resposta tardia de escopo anterior é descartada
+      if (prod.error || micro.error || pp.error || mp.error) { setRows([]); setLoadError("Não foi possível carregar o catálogo."); setLoading(false); return; }
       setRows(result); setLoading(false);
     })();
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hiddenReady, hiddenError, hpKey, hmKey]);
+  }, [hiddenReady, hiddenError, hpKey, hmKey, editor.scope]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -111,10 +121,13 @@ export default function MobileCatalogoTecnico() {
   };
 
   return (
-    <div className="p-3 space-y-3">
+    <div className="p-3 space-y-3 min-w-0 [&_button]:min-h-11 [&_input]:min-h-11">
       <h1 className="text-lg font-bold">Catálogo técnico</h1>
+      <CompactCatalogSelect label="Seção do catálogo" value={section} onChange={setSection} options={[{value:"catalogo",label:"Catálogo técnico"},...(editor.canEdit ? [{value:"produtos",label:"Produtos"},{value:"microrganismos",label:"Microrganismos"},{value:"culturas",label:"Culturas"},{value:"problemas",label:"Problemas"}] : [])]} />
+      {section === "produtos" ? <ProdutosTab initialFamily={family} /> : section === "culturas" || section === "microrganismos" ? <TenantReferencePanel root={section} /> : section === "problemas" ? <TenantProblemPanel /> : <>
       <CatalogFamilyFilter value={family} onChange={setFamily} />
 
+      {editor.canEdit && <Button onClick={() => setAdding(true)}>Adicionar produto</Button>}
       <div className="relative">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input placeholder="Buscar..." className="pl-8 h-10" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -135,11 +148,11 @@ export default function MobileCatalogoTecnico() {
       ) : loading ? (
         <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin" /></div>
       ) : filtered.length === 0 ? (
-        <p className="text-center text-sm text-muted-foreground py-6">Nada encontrado.</p>
+        <div className="py-6 space-y-3"><p>Nada encontrado.</p><Button variant="outline" onClick={() => { setFamily("todos"); setTipo("todos"); }}>Buscar em todas as famílias</Button></div>
       ) : (
         <div className="space-y-2">
           {filtered.map((r) => (
-            <Card key={`${r.tipo}-${r.id}`}>
+            <Card key={`${r.tipo}-${r.id}`} onClick={() => r.tipo === "produto" ? setOpenProd(r.raw) : setOpenMicro(r.raw)}>
               <CardContent className="p-3 space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -176,9 +189,9 @@ export default function MobileCatalogoTecnico() {
                     </div>
                   );
                 })()}
-                <div className="flex gap-1 pt-1">
+                <div className="flex gap-1 pt-1" onClick={e => e.stopPropagation()}>
                   <Button size="sm" variant="outline" className="flex-1 h-8" onClick={() => r.tipo === "produto" ? setOpenProd(r.raw) : setOpenMicro(r.raw)}>
-                    <FileText className="h-3.5 w-3.5 mr-1" /> Ver
+                    <FileText className="h-3.5 w-3.5 mr-1" />{editor.canEdit && r.raw.owner_organization_id ? (r.ficha_status ? "Editar ficha" : "Criar ficha") : "Ver ficha"}
                   </Button>
                   <Button size="sm" variant="outline" className="h-8 px-2" onClick={() => copyResumo(r)}>
                     <Copy className="h-3.5 w-3.5" />
@@ -193,6 +206,8 @@ export default function MobileCatalogoTecnico() {
         </div>
       )}
 
+      </>}
+      <Dialog open={adding} onOpenChange={setAdding}><DialogContent className="w-[calc(100%-24px)] max-h-[92dvh] overflow-y-auto"><DialogTitle>Produtos</DialogTitle><ProdutosTab initialFamily={family} onCreated={() => setAdding(false)} /></DialogContent></Dialog>
       <MicroorganismTechnicalProfileDialog open={!!openMicro} onOpenChange={(v) => !v && setOpenMicro(null)} micro={openMicro} origem="app_mobile" />
       <ProductTechnicalProfileDialog open={!!openProd} onOpenChange={(v) => !v && setOpenProd(null)} produto={openProd} origem="app_mobile" />
     </div>
