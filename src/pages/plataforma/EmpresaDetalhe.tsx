@@ -20,6 +20,7 @@ import {
 } from "@/hooks/usePlataformaSaaS";
 import { FUSOS_BRASIL, ORG_STATUS_LABEL, REGIMES_TRIBUTARIOS, type OrgStatus } from "@/lib/saas/orgOnboarding";
 import { CadastroEmpresaCampos } from "@/components/plataforma/CadastroEmpresaCampos";
+import { RevisaoCadastroPanel } from "@/components/plataforma/RevisaoCadastroPanel";
 import {
   camposFaltantes, dadosCadastroAtuais, divergenciasFiscais, errosFormEmpresa, formEmpresaAlterado, formatarCnpj,
   formatarTelefone, mensagemErroEdicaoEmpresa, montarPatchCadastro, type FormEmpresa,
@@ -156,6 +157,11 @@ export default function EmpresaDetalhe({ organizationId, onVoltar, onAbrirAdmini
           <Button size="sm" variant="outline" onClick={() => detalhe.refetch()}><RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />Tentar novamente</Button></div>
       )}
       {detalhe.data === null && <p className="text-sm text-muted-foreground">Empresa não encontrada.</p>}
+
+      {superadmin && org && (
+        <RevisaoCadastroPanel organizationId={organizationId} status={org.status}
+          onConcluido={() => { void detalhe.refetch(); void auditoria.refetch(); }} />
+      )}
 
       {org && (
         <div className="grid gap-4 lg:grid-cols-2">
