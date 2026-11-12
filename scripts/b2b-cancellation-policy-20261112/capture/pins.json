@@ -95,5 +95,27 @@
     "config": [
       "search_path=\"\""
     ]
+  },
+  "public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid)": {
+    "acl": [
+      "postgres=X/postgres",
+      "service_role=X/postgres"
+    ],
+    "md5": "766fb81a3c7dafa71de7806e559f0730",
+    "owner": "postgres",
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  "platform_private.b2b_fiscal_invoice_bridge_v1(uuid)": {
+    "acl": [
+      "postgres=X/postgres",
+      "service_role=X/postgres"
+    ],
+    "md5": "9b14fa08913075c08bc905074fb98a10",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ]
   }
 }
