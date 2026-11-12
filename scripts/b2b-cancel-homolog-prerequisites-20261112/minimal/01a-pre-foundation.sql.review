@@ -1,0 +1,26 @@
+-- HOMOLOG ONLY vrlcdwmlytukrjezrrnf; review-only; psql -v ON_ERROR_STOP=1 -v approved_event_trigger_md5=<MD5 FROM THE SEVEN CAPTURED EVENT TRIGGERS>
+BEGIN;SET LOCAL lock_timeout='3s';
+CREATE TEMP TABLE cancel_homolog_review_pins(event_md5 text) ON COMMIT DROP;
+INSERT INTO cancel_homolog_review_pins VALUES (:'approved_event_trigger_md5');
+DO $pre$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref='vrlcdwmlytukrjezrrnf' AND production_emission_allowed IS FALSE) OR EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref IS DISTINCT FROM 'vrlcdwmlytukrjezrrnf' OR production_emission_allowed IS DISTINCT FROM FALSE) THEN RAISE EXCEPTION 'HOMOLOG_MARKER_REQUIRED'; END IF;
+ IF EXISTS(SELECT 1 FROM cron.job WHERE active) THEN RAISE EXCEPTION 'HOMOLOG_CRON_ACTIVE'; END IF;
+ IF (SELECT event_md5 FROM cancel_homolog_review_pins) IS DISTINCT FROM (SELECT md5(coalesce(jsonb_agg(jsonb_build_array(evtname,evtevent,evtenabled,evttags,evtfoid::regprocedure::text,md5(pg_get_functiondef(evtfoid))) ORDER BY evtname COLLATE "C")::text,'null')) FROM pg_event_trigger) THEN RAISE EXCEPTION 'HOMOLOG_EVENT_TRIGGER_PIN_REQUIRED'; END IF;
+ IF (SELECT format_type(atttypid,atttypmod) FROM pg_attribute WHERE attrelid='public.partner_orders'::regclass AND attname='id' AND NOT attisdropped) IS DISTINCT FROM 'uuid' OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.partner_orders'::regclass AND contype='p' AND conkey=ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid='public.partner_orders'::regclass AND attname='id')]::smallint[]) THEN RAISE EXCEPTION 'HOMOLOG_ORDER_PARENT_SHAPE'; END IF;
+END $pre$;
+DO $absence$ BEGIN
+IF to_regclass('platform_private.b2b_financial_forecasts') IS NOT NULL THEN RAISE EXCEPTION 'STAGE_A_ALREADY_PRESENT:b2b_financial_forecasts'; END IF;
+IF to_regclass('platform_private.b2b_financial_forecast_events') IS NOT NULL THEN RAISE EXCEPTION 'STAGE_A_ALREADY_PRESENT:b2b_financial_forecast_events'; END IF;
+IF to_regclass('platform_private.b2b_forecast_creation_gate_v1') IS NOT NULL THEN RAISE EXCEPTION 'STAGE_A_ALREADY_PRESENT:b2b_forecast_creation_gate_v1'; END IF;
+IF to_regclass('platform_private.b2b_forecast_creation_allowlist_v1') IS NOT NULL THEN RAISE EXCEPTION 'STAGE_A_ALREADY_PRESENT:b2b_forecast_creation_allowlist_v1'; END IF;
+IF to_regclass('platform_private.b2b_forecast_lifecycle_gate_v1') IS NOT NULL THEN RAISE EXCEPTION 'STAGE_A_ALREADY_PRESENT:b2b_forecast_lifecycle_gate_v1'; END IF;
+IF to_regclass('platform_private.b2b_forecast_lifecycle_allowlist_v1') IS NOT NULL THEN RAISE EXCEPTION 'STAGE_A_ALREADY_PRESENT:b2b_forecast_lifecycle_allowlist_v1'; END IF;
+IF to_regprocedure('platform_private.b2b_financial_forecast_events_immutable()') IS NOT NULL THEN RAISE EXCEPTION 'STAGE_A_FUNCTION_PRESENT:b2b_financial_forecast_events_immutable()'; END IF;
+IF to_regprocedure('platform_private.b2b_financial_forecast_guard()') IS NOT NULL THEN RAISE EXCEPTION 'STAGE_A_FUNCTION_PRESENT:b2b_financial_forecast_guard()'; END IF;
+IF to_regprocedure('platform_private.b2b_forecast_creation_scope_v1(uuid,uuid,uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'STAGE_A_FUNCTION_PRESENT:b2b_forecast_creation_scope_v1(uuid,uuid,uuid,uuid)'; END IF;
+IF to_regprocedure('platform_private.b2b_forecast_creation_allowed_v1(uuid,uuid,uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'STAGE_A_FUNCTION_PRESENT:b2b_forecast_creation_allowed_v1(uuid,uuid,uuid,uuid)'; END IF;
+IF to_regprocedure('platform_private.b2b_forecast_lifecycle_scope_v1(text,uuid,uuid,uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'STAGE_A_FUNCTION_PRESENT:b2b_forecast_lifecycle_scope_v1(text,uuid,uuid,uuid,uuid)'; END IF;
+IF to_regprocedure('platform_private.b2b_forecast_lifecycle_allowed_v1(text,uuid,uuid,uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'STAGE_A_FUNCTION_PRESENT:b2b_forecast_lifecycle_allowed_v1(text,uuid,uuid,uuid,uuid)'; END IF;
+IF to_regprocedure('platform_private.b2b_financial_forecast_cancel_residual_v1(uuid,integer,text)') IS NOT NULL THEN RAISE EXCEPTION 'STAGE_A_FUNCTION_PRESENT:b2b_financial_forecast_cancel_residual_v1(uuid,integer,text)'; END IF;
+END $absence$;
+ROLLBACK;

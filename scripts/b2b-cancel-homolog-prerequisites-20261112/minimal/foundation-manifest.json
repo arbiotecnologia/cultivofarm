@@ -1,0 +1,37 @@
+{
+  "status": "PARTIAL_CLOSED_FOUNDATION_ONLY_REVIEW",
+  "target": "vrlcdwmlytukrjezrrnf",
+  "installs": [
+    "b2b_financial_forecasts",
+    "b2b_financial_forecast_events",
+    "b2b_forecast_creation_gate_v1",
+    "b2b_forecast_creation_allowlist_v1",
+    "b2b_forecast_lifecycle_gate_v1",
+    "b2b_forecast_lifecycle_allowlist_v1"
+  ],
+  "functions": [
+    "b2b_financial_forecast_events_immutable()",
+    "b2b_financial_forecast_guard()",
+    "b2b_forecast_creation_scope_v1(uuid,uuid,uuid,uuid)",
+    "b2b_forecast_creation_allowed_v1(uuid,uuid,uuid,uuid)",
+    "b2b_forecast_lifecycle_scope_v1(text,uuid,uuid,uuid,uuid)",
+    "b2b_forecast_lifecycle_allowed_v1(text,uuid,uuid,uuid,uuid)",
+    "b2b_financial_forecast_cancel_residual_v1(uuid,integer,text)"
+  ],
+  "existing_writers_replaced": [],
+  "live_actor_flow_verified": false,
+  "source_sha256": {
+    "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/02-install.sql.review": "84c9561d65508c1e40b1158ef9cb0470fe80787f7f034875a0891555bed1e788",
+    "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge-current-20261109/forecast-pre-nf-20261109/06-install-fiscal-reconcile.sql.review": "5909b731956a745d2b13d24c03559f48158aaad964b206ac4eed0da8c9571e22",
+    "scripts/b2b-cancellation-policy-20261112/capture/cancel_core.sql": "481afdf930717af71784b25c32f3873c2187e2082b7a4b27d33e1c0cdf115f27",
+    "scripts/b2b-cancellation-policy-20261112/capture/lifecycle_scope.sql": "b9f03ee9120d8d8e8c3356a92d8aac5bec8d70e71c2c80986c1e83be1cc7ec71",
+    "scripts/b2b-cancellation-policy-20261112/capture/lifecycle_allowed.sql": "ad9b2f4ac1bcb3770c254f4185bee5bbffcc5c25e908d6291a66e0d7dc998a03"
+  },
+  "prerequisites": [
+    "existing homolog fiscal marker exact/off",
+    "seven reviewed event trigger catalog MD5 supplied by operator",
+    "cron active zero",
+    "partner_orders UUID primary key",
+    "all new objects absent"
+  ]
+}
