@@ -1,0 +1,57 @@
+{
+  "attempt": 1,
+  "pass_": 9,
+  "fail": 0,
+  "checks": [
+    {
+      "test": "restore sem erros além das FKs auth",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "base: leitor oficial = carteira 66899286 e capacidade gestor = LIVE e2619c71",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "ANTES do delta: gestor fechado por catalog_reader_pending (falha reproduzida)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "admin atribui P a V1",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "gestor não atribui carteira",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "P não pode ir a segundo vendedor (exclusivo)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1: carteira só com P, order_create",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V2: sem parceiros",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "test": "V1 grava pedido para P pela entrada canônica",
+      "status": "PASS",
+      "detail": null
+    }
+  ],
+  "ids": {
+    "assignment": "c9eb6f6b-f425-40ef-bfb7-1491ac860067"
+  },
+  "executed_sha256": {},
+  "note": "PostgreSQL descartável (espelho composto + 02b/catálogo/02c/02d + 02e); dados só nesta base, destruída ao fim; Auth sintética"
+}
