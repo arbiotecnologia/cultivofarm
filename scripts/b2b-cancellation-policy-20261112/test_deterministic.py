@@ -80,7 +80,7 @@ try:
   if kind=='sem-evento':check('entrada sem evento negada pela guarda real',cancel.returncode!=0 and 'SEFAZ_EVENT_REQUIRED' in cancel.stderr,cancel.stderr);continue
   if kind=='evento-empresa':
    claims=json.dumps(dict(sub=u(29),role='authenticated',iat=1));r=d.raw(f"SET request.jwt.claim.sub='{u(29)}';SET request.jwt.claims='{claims}';UPDATE fiscal_events SET organization_id='{u(2)}' WHERE id=(select fiscal_event_id from fiscal_sefaz_transmissions where id='{tid}');")
-   if r.returncode!=0:check('evento estrangeiro barrado por integridade real', 'H15_' in r.stderr or 'TENANT' in r.stderr,r.stderr);continue
+   if r.returncode!=0:check('evento estrangeiro barrado por integridade real', 'tenant_scope_violation' in r.stderr,r.stderr);continue
   before=snapshot(d);r=call(d,cancel,u(25) if kind=='ator-empresa' else u(29));check(kind+' não cancela documento/título/estoque/OS/entrega',snapshot(d)==before and (r.returncode!=0 or '"final": true' not in r.stdout),dict(out=r.stdout,err=r.stderr))
  # Residual capability and writer negative states; only input seams, rollback assertions.
  for kind in ['pendente','sem-previsao','sem-concessao','estrangeiro']:
