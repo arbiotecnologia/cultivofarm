@@ -14,6 +14,7 @@ EXPECTED={
  'public.approve_partner_order(uuid,text,date)':'778476b1d93df2069f78f1426823e106',
  'public.approve_b2b_credit(uuid,text)':'9909cf85ef63a2adf3358ad71d20c73c',
  'public.approve_b2b_payment_terms_secure(uuid,text)':'5fa8f5b2894ade8f6a6b4eb275961916',
+ 'public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)':'b8fbd43d7a019fbf2f12d572bd79ba60',
 }
 def definitions(text):
  pattern=re.compile(r'CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+((?:public\.)?[a-z_0-9]+)\s*\(',re.I)
