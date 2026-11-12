@@ -139,13 +139,24 @@ describe("Contrato canônico de salvamento sem validação contábil", () => {
     });
   }
   it("outro tenant não recebe configuração nem pode salvar rascunho anterior", async () => {
+    Object.assign(row, { uf_accreditations: [{ uf: "MG", accredited: true }], pis_cofins_regime: null });
     const mounted = open(); await form();
     fireEvent.change(screen.getByLabelText("Razão social"), { target: { value: "rascunho A" } });
     actor.profile = { ...actor.profile, organization_id: "org-b" }; actor.authzEpoch += 1;
     mounted.rerender(<FiscalEmpresa />);
     await screen.findByTestId("fiscal-empresa-empty");
     expect(screen.queryByDisplayValue("rascunho A")).toBeNull();
+    expect(screen.queryByLabelText("UF do credenciamento")).toBeNull();
     expect(writes).toHaveLength(0);
+  });
+  it("regime escolhido explicitamente pode voltar a null sem apagar credenciamentos", async () => {
+    Object.assign(row, { pis_cofins_regime: "CUMULATIVO", uf_accreditations: [{ uf: "MG", accredited: true }] });
+    open(); await form();
+    fireEvent.change(screen.getByLabelText("Regime de PIS/COFINS"), { target: { value: "" } });
+    fireEvent.click(screen.getByTestId("fiscal-empresa-save"));
+    await waitFor(() => expect(row.configuration_version).toBe(8));
+    expect(row.pis_cofins_regime).toBeNull();
+    expect(row.uf_accreditations).toEqual([{ uf: "MG", accredited: true }]);
   });
   for (const role of ["financeiro", "gestor", "gestor_comercial", "consultor_tecnico"]) {
     it(`${role} não despacha salvamento`, async () => {

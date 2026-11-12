@@ -590,7 +590,7 @@ export default function FiscalEmpresa() {
                     { value: "SIMPLES_NACIONAL", label: "Simples Nacional" },
                   ]} onChange={(v) => set("pis_cofins_regime", v === "" ? null : v as CompanyFiscalFormValues["pis_cofins_regime"])} />
                 </FieldRow>
-                <CompanyAccreditationsFields records={values.uf_accreditations ?? []} disabled={readonly || update.isPending} onChange={(records) => set("uf_accreditations", records)} />
+                <CompanyAccreditationsFields key={`${user?.id}:${profile?.organization_id}:${authzEpoch}`} records={values.uf_accreditations ?? []} disabled={readonly || update.isPending} onChange={(records) => set("uf_accreditations", records)} />
                 {errors.uf_accreditations ? <p className="text-xs text-destructive" role="alert">{errors.uf_accreditations}</p> : null}
                 <CompanyCnaeFields
                   primary={values.primary_cnae ?? null}
