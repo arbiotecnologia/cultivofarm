@@ -83,7 +83,9 @@ try:
  for kind in ['pendente','sem-previsao','sem-concessao','estrangeiro']:
   d=clone();version=d.last(f"select version from platform_private.b2b_financial_forecasts where order_id='{order}'")
   d.sql(f"INSERT INTO platform_private.b2b_forecast_lifecycle_allowlist_v1(operation,actor_id,organization_id,partner_id,order_id,synthetic,valid_until,created_by) VALUES('forecast_cancel','{u(30)}','{u(1)}','{partner}','{order}',true,now()+interval '1 hour','{u(24)}')")
-  if kind=='pendente':d.sql(f"UPDATE partner_orders SET status='solicitado',approved_at=NULL,approved_by=NULL WHERE id='{order}'")
+  if kind=='pendente':
+   r=call(d,f"UPDATE partner_orders SET status='solicitado',approved_at=NULL,approved_by=NULL WHERE id='{order}';",u(24),'authenticated')
+   if r.returncode!=0:check('alteração de pedido histórico barrada; nenhum bypass', 'ERROR' in r.stderr,r.stderr);continue
   if kind=='sem-previsao':
    target=d.last("select po.id from partner_orders po where NOT EXISTS(select 1 from platform_private.b2b_financial_forecasts f where f.order_id=po.id) limit 1");assert target
   else:target=order
