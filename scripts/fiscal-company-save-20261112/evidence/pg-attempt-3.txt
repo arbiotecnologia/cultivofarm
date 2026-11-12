@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/fiscal-company-save-20261112/test_pg.py", line 82, in <module>
+    pg(f"UPDATE company_fiscal_settings SET configuration_status='{status}',configuration_version=7,accounting_validated_at={'now()' if status == 'VALIDATED' else 'NULL'} WHERE id='{ID}';")
+    ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/fiscal-company-save-20261112/test_pg.py", line 21, in pg
+    raise AssertionError(result.stderr)
+AssertionError: ERROR:  H15_COMPANY_FORBIDDEN
+CONTEXT:  PL/pgSQL function h15_company_integrity() line 4 at RAISE
+
