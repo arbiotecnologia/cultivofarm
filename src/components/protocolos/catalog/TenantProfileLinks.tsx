@@ -9,7 +9,7 @@ import { TenantReferenceDialog } from "../TenantReferencePanel";
 import { TenantProblemDialog } from "../TenantProblemPanel";
 export function TenantProfileLinks({ entity, parent, onDirty }: { entity: "produto" | "microrganismo"; parent: string; onDirty?(): void }) {
   const api = useCatalogExtensions("links", entity, parent); const problems = useCatalogExtensions("problems");
-  const cultures = useScopedPortalQuery({ queryKey: ["link-cultures"], queryFn: async signal => { const { data, error } = await supabase.from("culturas").select("id,nome").eq("ativo", true).abortSignal(signal); if (error) throw error; return data ?? []; } });
+  const cultures = useScopedPortalQuery({ queryKey: ["link-cultures"], queryFn: async signal => { const { data, error } = await supabase.from("culturas").select("id,nome").eq("ativo", true).abortSignal(signal); if (error) throw error; if (!Array.isArray(data)) throw new Error("Culturas indisponíveis"); return data; } });
   const [culture, setCulture] = useState("none"); const [problem, setProblem] = useState("none"); const [note, setNote] = useState(""); const [inline, setInline] = useState(""); const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
   return <section className="space-y-3"><h3 className="font-semibold">Culturas e problemas vinculados</h3>{api.isError && <p role="alert">Vínculos indisponíveis neste ambiente.</p>}
     {(api.data ?? []).map(r => <p key={r.id} className="border-b py-2">{cultures.data?.find(c => c.id === r.culture_id)?.nome} · {problems.data?.find(p => p.id === r.problem_id)?.nome} {r.observacao}</p>)}
