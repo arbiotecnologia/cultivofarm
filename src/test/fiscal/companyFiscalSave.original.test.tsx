@@ -1,6 +1,6 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor, cleanup } from "@testing-library/react";
-import { QueryClient } from "@tanstack/react-query";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { renderWithProviders } from "@/test/helpers/renderWithProviders";
 import { buildUpdatePayload, rowToFormValues, companyFiscalFormSchema, ALLOWED_STATUSES } from "@/lib/fiscal/companyFiscalValidation";
 import type { CompanyFiscalRow } from "@/hooks/useFiscalCompanySettings";
@@ -73,6 +73,8 @@ describe("Contrato canônico de salvamento sem validação contábil", () => {
       expect(writes[0]?.body).not.toHaveProperty("configuration_status");
       expect(writes[0]?.body).not.toHaveProperty("accounting_validated_at");
       expect(writes[0]?.body).not.toHaveProperty("production_enabled");
+      mkdirSync("scripts/fiscal-company-save-20261112/evidence/payloads", { recursive: true });
+      writeFileSync(`scripts/fiscal-company-save-20261112/evidence/payloads/${status}.json`, JSON.stringify(writes[0]?.body, null, 2) + "\n");
       expect(row.nfe_enabled).toBe(false); expect(row.nfse_enabled).toBe(false);
       first.unmount(); open(); await form();
       expect(screen.getByLabelText("Razão social")).toHaveValue("AR Bio FICTÍCIA revisada");
