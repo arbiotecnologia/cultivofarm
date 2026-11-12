@@ -4,7 +4,6 @@ import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { CompactCatalogSelect } from "@/components/catalogo/CompactCatalogSelect";
 import { ProdutosTab } from "@/components/protocolos/ProdutosTab";
 import { TenantReferencePanel } from "@/components/protocolos/TenantReferencePanel";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -42,7 +41,6 @@ interface Row {
 export default function MobileCatalogoTecnico() {
   const editor = useTenantCatalogEditor();
   const [section, setSection] = useState("catalogo");
-  const [adding, setAdding] = useState(false);
   const { label: tenantLabel } = useActiveTenantName();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,7 +126,7 @@ export default function MobileCatalogoTecnico() {
       {section === "produtos" ? <ProdutosTab initialFamily={family} /> : section === "culturas" || section === "microrganismos" ? <TenantReferencePanel root={section} /> : section === "problemas" ? <TenantProblemPanel /> : <>
       <CatalogFamilyFilter value={family} onChange={setFamily} />
 
-      {editor.canEdit && <Button onClick={() => setAdding(true)}>Adicionar produto</Button>}
+      {editor.canEdit && <Button onClick={() => setSection("produtos")}>Adicionar produto</Button>}
       <div className="relative">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input placeholder="Buscar..." className="pl-8 h-10" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -153,11 +151,11 @@ export default function MobileCatalogoTecnico() {
       ) : (
         <div className="space-y-2">
           {filtered.map((r) => (
-            <Card key={`${r.tipo}-${r.id}`} onClick={() => r.tipo === "produto" ? setOpenProd(r.raw) : setOpenMicro(r.raw)}>
+            <Card key={`${r.tipo}-${r.id}`} tabIndex={0} aria-label={`Detalhe de ${r.nome}`} onKeyDown={e => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); r.tipo === "produto" ? setOpenProd(r.raw) : setOpenMicro(r.raw); } }} onClick={() => r.tipo === "produto" ? setOpenProd(r.raw) : setOpenMicro(r.raw)}>
               <CardContent className="p-3 space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <Badge variant="outline" className="text-[9px] uppercase">{r.tipo}</Badge>
                       <Badge variant="outline" className="text-[10px]">{catalogFamilyLabel(r)}</Badge>
                       <TechnicalProfileStatusBadge status={r.ficha_status} />
@@ -208,7 +206,6 @@ export default function MobileCatalogoTecnico() {
       )}
 
       </>}
-      <Dialog open={adding} onOpenChange={setAdding}><DialogContent className="w-[calc(100%-24px)] max-h-[92dvh] overflow-y-auto"><DialogTitle>Produtos</DialogTitle><ProdutosTab initialFamily={family} onCreated={() => setAdding(false)} /></DialogContent></Dialog>
       <MicroorganismTechnicalProfileDialog open={!!openMicro} onOpenChange={(v) => !v && setOpenMicro(null)} micro={openMicro} origem="app_mobile" />
       <ProductTechnicalProfileDialog open={!!openProd} onOpenChange={(v) => !v && setOpenProd(null)} produto={openProd} origem="app_mobile" />
     </div>

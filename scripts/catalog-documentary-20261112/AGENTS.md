@@ -1,3 +1,3 @@
-- Keep server candidates here, never under automatic deployment paths; no hosted SQL, grants, data, inference or publication during preparation.
+- Keep server candidates here, never under automatic deployment paths; no hosted SQL, grants, data or publication during preparation. Explicit public documentary search validation is allowed without client data or mutations.
 - Reuse catalog_tenant_actor('mutate') for tenant authority; no service-role, global bypass or client claims as authorization.
 - Suggestions are ephemeral and field-sourced; native retrieved URLs must corroborate citations, ambiguous identity requires explicit selection, and no microbial cultivation/production instructions are allowed.
