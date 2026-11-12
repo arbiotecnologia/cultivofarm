@@ -1,3 +1,7 @@
+## 12/11 02:48 — Painel original de aprovações e diagnóstico
+- [ ] Montar painel econômico na carteira real e apresentar diagnóstico server-side sem confundir aprovação econômica com liberação operacional.
+- [ ] Testar AR Bio sintética, papéis/tenant, previsão única, reconciliação/parcial R$1 e bloqueios; informar limites de sessão e publicação.
+
 ## 12/11 02:20 — Reconstrução FINAL com controles LIVE relatados
 - [x] Composição original recomposta com CCR2/Vendedor/C2 e ACLs reais restritivas; fontes/etapas exatas e tentativas preservadas.
 - [x] PRE/INSTALL/POST +121 SQL +14 UI PASS; diagnóstico econômico/sequência NF separados, ordem/SHA/REPORT; PRE hospedado e revisão externa permanecem fora do escopo.
