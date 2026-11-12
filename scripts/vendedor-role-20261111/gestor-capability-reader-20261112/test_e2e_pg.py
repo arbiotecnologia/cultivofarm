@@ -27,6 +27,8 @@ def full_create(uid,partner):
     s,e=call(uid,f"public.simulate_b2b_payment_condition_secure('{partner}','{P3}','{js(ITEMS)}'::jsonb,'{js(CH)}'::jsonb)")
     if s is None: return None,e
     jr,e=call(uid,f"public.recover_partner_order_attempt_v1('{partner}',NULL,NULL,false,NULL)")
+    if jr and jr.get('state')=='committed':
+        jr,e=call(uid,f"public.recover_partner_order_attempt_v1('{partner}','{jr['key']}',{jr['generation']},true,'{jr['order_id']}')")
     if jr is None: return None,e
     c,e=call(uid,f"public.create_partner_order_condition_secure('{partner}',NULL,'{js(ITEMS)}'::jsonb,NULL,'{P3}','{s['cart_hash']}','{jr['key']}','{js(CH)}'::jsonb)")
     return (dict(order=c,sim=s) if c else None),e
@@ -92,7 +94,9 @@ try:
     c,e=call(UFIN,"public.c2_internal_order_entry_capability_v1()");ok('DEPOIS: financeiro fora da capacidade do gestor',c and c['order_create'] is False,c or e)
     c,e=call(UB,"public.c2_internal_order_entry_capability_v1()");ok('DEPOIS: comprador externo fora',c and c['order_create'] is False,c or e)
     o2,e=full_create(UGC,P);ok('gestor grava pedido para P',o2 is not None,e)
-    if o2: probe_gestor_terms(o2['order']['id']); approve_flow('gestor',o2['order']['id'],True)
+    if o2: approve_flow('gestor',o2['order']['id'],True)
+    o4,e=full_create(UGC,P);ok('gestor grava segundo pedido (sonda de alçada de termos)',o4 is not None,e)
+    if o4: probe_gestor_terms(o4['order']['id'])
     o3,e=full_create(UB,P);ok('comprador externo grava pedido para P (controle financeiro positivo)',o3 is not None,e)
     if o3: approve_flow('comprador',o3['order']['id'],False)
     r=full_create(UGC,PF);ok('gestor não grava para parceiro de outra empresa',r[0] is None,r)
