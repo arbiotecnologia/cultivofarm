@@ -20,6 +20,7 @@ let row: CompanyFiscalRow;
 let writes: Array<{ url: URL; body: Record<string, unknown> }>;
 let failure: string | null;
 let requests: string[];
+let history: Array<Record<string, unknown>>;
 const fixture = (): CompanyFiscalRow => ({
   id: "fiscal-a", organization_id: "org-a", legal_name: "AR Bio FICTÍCIA — SEM USO FISCAL",
   cnpj: "11222333000181", state_registration: "ISENTO", configuration_status: "DRAFT", configuration_version: 7,
@@ -28,13 +29,18 @@ const fixture = (): CompanyFiscalRow => ({
 } as CompanyFiscalRow);
 
 beforeEach(() => {
-  row = fixture(); writes = []; requests = []; failure = null;
+  row = fixture(); writes = []; requests = []; failure = null; history = [];
   Object.assign(actor, { role: "administrador", roles: ["administrador"], user: { id: "actor-a" }, profile: { user_id: "actor-a", organization_id: "org-a", ativo: true }, authzEpoch: 0 });
   // Canonical SDK and actual hook remain real; only fetch is replaced. No network is permitted.
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
     requests.push(url.pathname);
     expect(url.hostname).toBe("swzpzcwiasxmjutrmvkm.supabase.co");
+    if (url.pathname === "/rest/v1/company_fiscal_pis_cofins_history") {
+      if ((init?.method ?? "GET") !== "GET") throw new Error("HISTORY_IS_READ_ONLY");
+      const ok = url.searchParams.get("organization_id") === `eq.${row.organization_id}`;
+      return new Response(JSON.stringify(ok ? history : []), { headers: { "content-type": "application/json" } });
+    }
     if (url.pathname !== "/rest/v1/company_fiscal_settings") throw new Error("UNEXPECTED_NETWORK_PATH");
     const method = init?.method ?? "GET";
     const tenant = url.searchParams.get("organization_id");
@@ -43,7 +49,12 @@ beforeEach(() => {
       writes.push({ url, body });
       if (failure) return new Response(JSON.stringify({ code: failure, message: "Synthetic rejection" }), { status: 400, headers: { "content-type": "application/json" } });
       if (tenant !== `eq.${row.organization_id}` || url.searchParams.get("id") !== `eq.${row.id}` || url.searchParams.get("configuration_version") !== `eq.${row.configuration_version}`) return new Response("null", { headers: { "content-type": "application/json" } });
+      const prev = row;
       row = { ...row, ...body } as CompanyFiscalRow;
+      // Espelha o gatilho: registra só quando regime/data mudam.
+      if ("pis_cofins_regime_effective_from" in prev && (prev.pis_cofins_regime !== row.pis_cofins_regime || prev.pis_cofins_regime_effective_from !== row.pis_cofins_regime_effective_from)) {
+        history.unshift({ id: `h${history.length}`, old_regime: prev.pis_cofins_regime ?? null, new_regime: row.pis_cofins_regime ?? null, old_effective_from: prev.pis_cofins_regime_effective_from ?? null, new_effective_from: row.pis_cofins_regime_effective_from ?? null, changed_by: "actor-a", changed_at: "2026-11-12T14:00:00Z" });
+      }
     }
     return new Response(JSON.stringify(tenant === `eq.${row.organization_id}` ? row : null), { headers: { "content-type": "application/json" } });
   }));
@@ -52,6 +63,36 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 const open = () => renderWithProviders(<FiscalEmpresa />, { route: "/configuracoes/fiscal/empresa" });
 const form = async () => { await screen.findByTestId("fiscal-empresa-page"); await waitFor(() => expect(screen.getByLabelText("Razão social")).toHaveValue(row.legal_name)); };
+
+describe("Início da vigência PIS/COFINS na aba Empresa", () => {
+  it("legado sem coluna: campo desabilitado e PATCH não envia a data", async () => {
+    open(); await form();
+    expect(screen.getByLabelText("Início da vigência")).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("Razão social"), { target: { value: "AR Bio FICTÍCIA revisada" } });
+    fireEvent.click(screen.getByTestId("fiscal-empresa-save"));
+    await waitFor(() => expect(row.configuration_version).toBe(8));
+    expect(writes[0]?.body).not.toHaveProperty("pis_cofins_regime_effective_from");
+  });
+  it("salva data informada com CAS, reabre e mostra histórico sem duplicar ao salvar igual", async () => {
+    Object.assign(row, { pis_cofins_regime: null, pis_cofins_regime_effective_from: null });
+    const mounted = open(); await form();
+    expect(screen.getByLabelText("Início da vigência")).toHaveValue("");
+    fireEvent.change(screen.getByLabelText("Regime de PIS/COFINS"), { target: { value: "CUMULATIVO" } });
+    fireEvent.change(screen.getByLabelText("Início da vigência"), { target: { value: "2026-01-01" } });
+    fireEvent.click(screen.getByTestId("fiscal-empresa-save"));
+    await waitFor(() => expect(row.configuration_version).toBe(8));
+    expect(writes[0]?.url.searchParams.get("configuration_version")).toBe("eq.7");
+    expect(writes[0]?.body.pis_cofins_regime_effective_from).toBe("2026-01-01");
+    expect(row.configuration_status).toBe("DRAFT");
+    mounted.unmount(); open(); await form();
+    expect(screen.getByLabelText("Início da vigência")).toHaveValue("2026-01-01");
+    expect(await screen.findByText("Início da vigência: sem data → 01/01/2026")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Razão social"), { target: { value: "AR Bio FICTÍCIA revisada" } });
+    fireEvent.click(screen.getByTestId("fiscal-empresa-save"));
+    await waitFor(() => expect(row.configuration_version).toBe(9));
+    expect(history).toHaveLength(1);
+  });
+});
 
 describe("Contrato canônico de salvamento sem validação contábil", () => {
   it("AR Bio salva declaração MG, mantém SP/metadados e null; reabre sem atestado fictício", async () => {
