@@ -24,6 +24,7 @@ type CompanyFiscalBaseRow =
   Database["public"]["Tables"]["company_fiscal_settings"]["Row"];
 
 export type CompanyFiscalRow = CompanyFiscalBaseRow & {
+  organization_id?: string | null;
   fiscal_email?: string | null;
   phone?: string | null;
   tax_regime?: string | null;
@@ -98,7 +99,7 @@ export function useFiscalCompanySettings(options: { enabled?: boolean } = {}) {
         .from("company_fiscal_settings")
         .select("*")
         .eq("is_active", true)
-        .eq("organization_id", organizationId)
+        .filter("organization_id", "eq", organizationId)
         .maybeSingle();
       if (!valid()) throw new Error("permission_denied");
       if (error) {
@@ -156,7 +157,7 @@ export function useUpdateFiscalCompanySettings() {
         // Structural annotation retains the complete runtime payload without a parallel client.
         .update(payload as Database["public"]["Tables"]["company_fiscal_settings"]["Update"])
         .eq("id", id)
-        .eq("organization_id", organizationId)
+        .filter("organization_id", "eq", organizationId)
         .eq("configuration_version", expectedVersion)
         .select("*")
         .maybeSingle();
@@ -166,8 +167,9 @@ export function useUpdateFiscalCompanySettings() {
         throw new Error(errorMessage(error, "update_failed"));
       }
       if (!data) throw new Error("conflict");
-      if (data.id !== id || data.organization_id !== organizationId || data.configuration_version !== expectedVersion + 1) throw new Error("update_failed");
-      return data as CompanyFiscalRow;
+      const saved = data as CompanyFiscalRow;
+      if (saved.id !== id || saved.organization_id !== organizationId || saved.configuration_version !== expectedVersion + 1) throw new Error("update_failed");
+      return saved;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [...FISCAL_COMPANY_KEYS.settings, scope.scope] }),
   });
