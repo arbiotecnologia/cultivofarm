@@ -242,14 +242,14 @@ describe("Auditoria Central Fiscal — UF, Não informado, legados e botão úni
     Object.assign(row, { country_code: null, nfe_configuration: { presence_indicator: 1, freight_modality: "0", danfe_layout: "LEGADO_X", default_finality: null }, nfse_configuration: { iss_rate: 0, rps_type: 7 } });
     open(); await form();
     expect(screen.getByLabelText("Código do país")).toHaveValue("");
-    fireEvent.click(screen.getByRole("tab", { name: "NF-e" }));
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "NF-e" }));
     expect(await screen.findByLabelText("Modo de numeração")).toHaveValue("");
     expect(screen.getByLabelText("Modo de contingência")).toHaveValue("");
     expect(screen.getByLabelText("Indicador de presença")).toHaveValue("1");
     expect(screen.getByLabelText("Modalidade de frete")).toHaveValue("0");
     expect(screen.getByLabelText("Layout DANFE")).toHaveValue("LEGADO_X");
     expect(screen.getByRole("switch", { name: "Consumidor final padrão" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("tab", { name: "NFS-e" }));
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "NFS-e" }));
     expect(await screen.findByLabelText("Tipo RPS")).toHaveValue("7");
     expect(screen.getByLabelText("Regime especial de tributação")).toHaveValue("");
     fireEvent.change(screen.getByLabelText("Série RPS"), { target: { value: "A1" } });
@@ -262,7 +262,7 @@ describe("Auditoria Central Fiscal — UF, Não informado, legados e botão úni
   it("Não informado remove só a chave escolhida", async () => {
     Object.assign(row, { nfe_configuration: { presence_indicator: "2", contingency_mode: "DISABLED" } });
     open(); await form();
-    fireEvent.click(screen.getByRole("tab", { name: "NF-e" }));
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "NF-e" }));
     fireEvent.change(await screen.findByLabelText("Indicador de presença"), { target: { value: "" } });
     fireEvent.click(screen.getByTestId("fiscal-empresa-save"));
     await waitFor(() => expect(writes).toHaveLength(1));
@@ -272,7 +272,7 @@ describe("Auditoria Central Fiscal — UF, Não informado, legados e botão úni
     open(); await form();
     expect(screen.queryByTestId("fiscal-empresa-save-draft")).toBeNull();
     for (const [name, visible] of [["NF-e", true], ["NFS-e", true], ["Integração e segurança", true], ["Reforma Tributária 2026", false], ["Certificado digital", false], ["Revisão", false], ["Empresa", true]] as const) {
-      fireEvent.click(screen.getByRole("tab", { name }));
+      fireEvent.mouseDown(screen.getByRole("tab", { name }));
       await waitFor(() => expect(!!screen.queryByTestId("fiscal-empresa-save")).toBe(visible));
     }
   });
