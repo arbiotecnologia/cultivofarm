@@ -55,6 +55,11 @@ beforeEach(() => {
 });
 
 describe("1) KPI inclui juros e multa acumulados", () => {
+  it("parcial sintética R$1 de título R$20 mantém R$19 exigível, sem presumir cancelamento", () => {
+    const parcial = { original_amount: 20, received_amount: 1, discount_amount: 0, interest_amount: 0, penalty_amount: 0, status: "PARTIAL", due_date: "2026-11-12" };
+    expect(saldoParcela(parcial)).toBe(19);
+    expect(calcularKpisReceber([parcial], [], "2026-11-12").aberto).toBe(19);
+  });
   const parcela = {
     original_amount: 100,
     received_amount: 40,

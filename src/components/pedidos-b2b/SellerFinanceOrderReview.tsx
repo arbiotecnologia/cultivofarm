@@ -10,6 +10,8 @@ import { formatDateDisplay as fd } from "@/lib/date-utils";
 import { partnerOrderStatusLabel } from "@/lib/partnerOrderStatus";
 import { C2PilotEconomicApproval } from "./C2PilotEconomicApproval";
 import { useSellerFinanceOrderReview, useSellerFinanceReject, type RejectBlockReason } from "@/hooks/useSellerFinanceOrderReview";
+import { useOrderEconomicDiagnosis } from "@/hooks/useOrderEconomicDiagnosis";
+import { AccountingPendingNotice } from "@/components/pedidos/AccountingPendingNotice";
 
 const TERMS_LABEL: Record<string, string> = {
   pending: "Termos aguardando decisão financeira",
@@ -35,6 +37,7 @@ export function SellerFinanceOrderReview({ orderId, open, onOpenChange }: Props)
   const [reason, setReason] = useState("");
   const read = q.data;
   const review = read?.state === "ready" ? read.review : null;
+  const diagnosis = useOrderEconomicDiagnosis(open && review?.accounting_pending ? review.order_id : null);
 
   const submit = () => {
     if (!review || !review.reject_eligible || reject.isPending) return;
@@ -65,9 +68,7 @@ export function SellerFinanceOrderReview({ orderId, open, onOpenChange }: Props)
                 {review.accounting_pending && <Badge variant="destructive">Pendência contábil</Badge>}
               </div>
               {review.accounting_pending && (
-                <p className="text-sm text-muted-foreground" data-testid="accounting-pending-note">
-                  A contabilidade da empresa ainda não está validada: aprovação, nota fiscal, recebíveis e entregas continuam bloqueados. Termos pendentes ainda podem ser reprovados.
-                </p>
+                <AccountingPendingNotice audience="commercial" diagnosis={diagnosis.isError ? null : diagnosis.data} />
               )}
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-muted-foreground">Emissão {fd(review.created_at)}</span>

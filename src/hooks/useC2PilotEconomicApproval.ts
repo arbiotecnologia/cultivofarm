@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useScopedPortalQuery } from "./useScopedPortalQuery";
+import { ORDER_ECONOMIC_DIAGNOSIS_KEY } from "./useOrderEconomicDiagnosis";
 
 /** Camada econômica isolada do piloto C2 (scripts/c2-pilot-economic-approval-20261111). Nunca altera o pedido. */
 export const C2_PILOT_STATE_ENDPOINT = "c2_pilot_economic_state_v1";
@@ -43,13 +44,15 @@ export function parseC2PilotState(data: unknown, orderId: string): C2PilotState 
   const bad = () => { throw new Error("c2_pilot_state_contract_invalid"); };
   if (!d || d.contract !== "C2_PILOT_ECON_STATE_V1" || d.order_id !== orderId || d.available !== true || d.pilot_enabled !== true ||
       !Array.isArray(d.approvals) || typeof d.can_approve_commercial !== "boolean" || typeof d.can_approve_credit !== "boolean" ||
-      d.operational_blocked !== true || d.fiscal_blocked !== true || d.billing_blocked !== true || d.shipping_blocked !== true) bad();
-  for (const a of d!.approvals) if (!a || !["commercial", "credit"].includes(a.kind) || typeof a.approved_by !== "string" || typeof a.approved_at !== "string") bad();
-  const e = d!.evidence;
+      d.operational_blocked !== true || d.fiscal_blocked !== true || d.billing_blocked !== true || d.shipping_blocked !== true) return bad();
+  for (const a of d.approvals) if (!a || !["commercial", "credit"].includes(a.kind) || typeof a.approved_by !== "string" || typeof a.approved_at !== "string" || !HASH.test(a.evidence_hash)) bad();
+  if (new Set(d.approvals.map((a: C2PilotApproval) => a.kind)).size !== d.approvals.length) bad();
+  const e = d.evidence;
   if (e !== null && (!e || !HASH.test(e.evidence_hash) || !n(e.financed_total) || e.estimated !== true || !Array.isArray(e.schedule) || !Array.isArray(e.items))) bad();
-  if ((d!.can_approve_commercial || d!.can_approve_credit) && (e === null || !d!.pilot_enabled)) bad();
-  const f = d!.forecast;
+  if ((d.can_approve_commercial || d.can_approve_credit) && (e === null || !d.pilot_enabled)) bad();
+  const f = d.forecast;
   if (f !== null && (!f || typeof f.forecast_id !== "string" || !n(f.total_amount) || f.due_dates_estimated !== true)) bad();
+  if (f !== null && (d.approvals.length !== 2 || d.approvals[0].evidence_hash !== d.approvals[1].evidence_hash)) bad();
   return d as unknown as C2PilotState;
 }
 
@@ -83,6 +86,9 @@ export function useC2PilotEconomicApprove() {
       return data as { approval_id: string; kind: C2PilotKind; approved_by: string; approved_at: string; forecast_id: string | null; replayed: boolean };
     },
     retry: false,
-    onSettled: (_d, _e, v) => { qc.invalidateQueries({ queryKey: [C2_PILOT_STATE_KEY, v.orderId] }); },
+    onSettled: (_d, _e, v) => {
+      qc.invalidateQueries({ queryKey: [C2_PILOT_STATE_KEY, v.orderId] });
+      qc.invalidateQueries({ queryKey: [ORDER_ECONOMIC_DIAGNOSIS_KEY, v.orderId] });
+    },
   });
 }

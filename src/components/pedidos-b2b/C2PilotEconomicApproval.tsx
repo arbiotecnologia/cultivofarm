@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { brl } from "@/lib/financial/format";
 import { formatDateDisplay as fd } from "@/lib/date-utils";
 import { useC2PilotEconomicApprove, useC2PilotEconomicState, type C2PilotKind } from "@/hooks/useC2PilotEconomicApproval";
+import { useOrderEconomicDiagnosis } from "@/hooks/useOrderEconomicDiagnosis";
+import { economicOperationalPending, ECONOMIC_OPERATIONAL_PENDING } from "@/lib/fiscal/orderEconomicStatus";
 
 const KIND_LABEL: Record<C2PilotKind, string> = { commercial: "Aprovação comercial", credit: "Aprovação de crédito" };
 const newKey = () => `c2p-${crypto.randomUUID()}`;
@@ -18,6 +20,7 @@ const CONFLICT: Record<string, string> = {
 /** Painel do piloto: só aparece quando o servidor confirma estado; ações só com concessão vigente. */
 export function C2PilotEconomicApproval({ orderId }: { orderId: string | null }) {
   const q = useC2PilotEconomicState(orderId);
+  const diagnosis = useOrderEconomicDiagnosis(orderId);
   const approve = useC2PilotEconomicApprove();
   // Chave por (pedido, tipo, evidência): repetição explícita após resposta incerta reusa a mesma chave.
   const keys = useRef(new Map<string, string>());
@@ -25,12 +28,15 @@ export function C2PilotEconomicApproval({ orderId }: { orderId: string | null })
   const inFlight = useRef(false);
   const [uncertain, setUncertain] = useState<C2PilotKind | null>(null);
   const read = q.data;
-  if (!orderId || q.isError || !read || read.state !== "ready") return null;
+  if (!orderId) return null;
+  const pending = !diagnosis.isError && economicOperationalPending(diagnosis.data);
+  if (q.isError || !read || read.state !== "ready") return pending ? <p role="status" className="text-sm">{ECONOMIC_OPERATIONAL_PENDING}</p> : null;
   const p = read.pilot;
   if (!p.pilot_enabled && p.approvals.length === 0 && !p.forecast) return null;
 
   const act = (kind: C2PilotKind) => {
-    if (!p.evidence || approve.isPending || inFlight.current) return;
+    const permitted = kind === "commercial" ? p.can_approve_commercial : p.can_approve_credit;
+    if (!permitted || done(kind) || !p.evidence || approve.isPending || inFlight.current) return;
     inFlight.current = true;
     const k = `${orderId}:${kind}:${p.evidence.evidence_hash}`;
     const key = keys.current.get(k) ?? newKey();
@@ -54,8 +60,8 @@ export function C2PilotEconomicApproval({ orderId }: { orderId: string | null })
         <span className="font-semibold">Aprovação econômica (piloto)</span>
         <Badge variant="outline">{p.pilot_enabled ? "Piloto ativo" : "Piloto desligado"}</Badge>
       </div>
-      <p className="text-xs text-muted-foreground">
-        Registra apenas a aprovação econômica. O pedido continua em análise; nota fiscal, cobrança, reserva e entrega seguem bloqueadas.
+      <p className="text-xs text-muted-foreground" role="status">
+        {pending ? ECONOMIC_OPERATIONAL_PENDING : "Nota fiscal, cobrança, reserva e entrega seguem bloqueadas. Aprovações econômicas não liberam a operação."}
       </p>
       {p.evidence && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2" data-testid="c2-pilot-evidence">
@@ -78,7 +84,7 @@ export function C2PilotEconomicApproval({ orderId }: { orderId: string | null })
           </div>
         );
       })}
-      {p.forecast && (
+      {p.forecast && done("commercial") && done("credit") && (
         <p className="text-xs" data-testid="c2-pilot-forecast">
           Previsão financeira estimada: {brl(p.forecast.total_amount)} — não é cobrança e não gera título.
         </p>

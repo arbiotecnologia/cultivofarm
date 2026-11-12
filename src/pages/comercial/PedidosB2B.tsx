@@ -52,6 +52,8 @@ import { useInternalOrderEntry } from "@/hooks/useInternalOrderEntry";
 import { PEDIDOS_B2B_DEFAULT_STATUS, usePedidosB2BStatusFilter } from "@/hooks/usePedidosB2BStatusFilter";
 import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 import { ResaleOsAvailabilityPanel } from "@/components/comercial/ResaleOsAvailabilityPanel";
+import { C2PilotEconomicApproval } from "@/components/pedidos-b2b/C2PilotEconomicApproval";
+import { useOrderEconomicDiagnosis } from "@/hooks/useOrderEconomicDiagnosis";
 
 
 
@@ -96,6 +98,7 @@ export default function PedidosB2B() {
   const detail = detailState && detailState.scope === actorScope && actorReady
     ? (orders.find((o) => o.id === detailState.order.id) ?? detailState.order) : null;
   const setDetail = (o: PartnerOrderAdmin | null) => setDetailState(o ? { scope: actorScope, order: o } : null);
+  const economicDiagnosis = useOrderEconomicDiagnosis(detail && isAccountingPending(detail) ? detail.id : null);
   const [approvalNotes, setApprovalNotes] = useState("");
   const [estDate, setEstDate] = useState("");
   const [commercialNotes, setCommercialNotes] = useState("");
@@ -424,7 +427,10 @@ export default function PedidosB2B() {
                 </div>
 
                 <ResaleOsAvailabilityPanel orderId={detail.id} actorScope={actorScope} />
-                {isAccountingPending(detail) && <AccountingPendingNotice audience="commercial" />}
+                {isAccountingPending(detail) && <>
+                  <AccountingPendingNotice audience="commercial" diagnosis={economicDiagnosis.isError ? null : economicDiagnosis.data} />
+                  <C2PilotEconomicApproval key={`${actorScope}:${detail.id}`} orderId={detail.id} />
+                </>}
                 <PromoteAccountingPendingButton order={detail} canAttempt={canAttemptPromotion} />
                 {detail.status === "aguardando_aprovacao_credito" && (
                   <div className="border rounded-md p-3 space-y-2 bg-destructive/5">
