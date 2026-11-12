@@ -1,0 +1,7 @@
+-- Somente catálogo; executar manualmente APENAS no projeto vrlcdwmlytukrjezrrnf.
+-- Não comprova ref pelo SQL: operador deve conferir URL/ref no painel antes de executar.
+SELECT version() AS postgres_version,current_setting('server_version_num') AS server_version_num;
+SELECT extname,extversion FROM pg_extension WHERE extname IN ('pg_cron','pgcrypto','uuid-ossp','pg_net') ORDER BY extname;
+SELECT nspname,pg_get_userbyid(nspowner) AS owner,nspacl::text AS acl FROM pg_namespace WHERE nspname IN ('public','platform_private','auth','extensions');
+-- Executar o SELECT abaixo só se pg_cron/cron.job existir; apenas contador, nunca command.
+SELECT count(*) FILTER (WHERE active) AS active_jobs FROM cron.job;

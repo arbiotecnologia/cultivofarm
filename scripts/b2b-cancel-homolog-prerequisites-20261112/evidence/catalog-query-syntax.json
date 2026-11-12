@@ -1,0 +1,33 @@
+{
+  "scope": "SYNTAX_AND_ABSENT_OBJECTS_ONLY",
+  "synthetic_catalog": true,
+  "hosted": false,
+  "prerequisite_roundtrip": false,
+  "checks": [
+    {
+      "file": "01-pre-functions.sql.readonly",
+      "status": "PASS",
+      "error": ""
+    },
+    {
+      "file": "02-pre-runtime.sql.readonly",
+      "status": "PASS",
+      "error": ""
+    },
+    {
+      "file": "03-inventory-functions.sql.readonly",
+      "status": "PASS",
+      "error": ""
+    },
+    {
+      "file": "04-inventory-relations.sql.readonly",
+      "status": "PASS",
+      "error": ""
+    },
+    {
+      "file": "05-inventory-types-guards.sql.readonly",
+      "status": "PASS",
+      "error": ""
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+$ vitest run --config "scripts/b2b-cancel-homolog-prerequisites-20261112/vitest.config.ts"
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ scripts/b2b-cancel-homolog-prerequisites-20261112/ui/FinanceReconciliationCandidate.test.tsx (6 tests) 206ms
+ ✓ src/test/fiscal/cancellationPolicyCandidate.ui.test.tsx (10 tests) 197ms
+
+ Test Files  2 passed (2)
+      Tests  16 passed (16)
+   Start at  01:31:00
+   Duration  3.14s (transform 461ms, setup 390ms, collect 1.52s, tests 402ms, environment 2.05s, prepare 576ms)
+
