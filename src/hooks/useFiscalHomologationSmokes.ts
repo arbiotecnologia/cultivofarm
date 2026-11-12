@@ -57,10 +57,12 @@ export function useHomologationNfeDrafts(companySettingsId: string | null) {
       const { data, error } = await supabase
         .from("fiscal_invoices")
         .select("id, series, invoice_number, created_at")
-        .eq("company_settings_id", companySettingsId as string)
-        .eq("document_model", "NFE")
-        .eq("environment", "HOMOLOGATION")
-        .eq("normalized_status", "DRAFT")
+        .match({
+          company_settings_id: companySettingsId as string,
+          document_model: "NFE",
+          environment: "HOMOLOGATION",
+          normalized_status: "DRAFT",
+        })
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw new Error(error.message);

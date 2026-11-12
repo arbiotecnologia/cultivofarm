@@ -154,8 +154,9 @@ describe("H7M — contrato do hook e da UI", () => {
     expect(ui).toContain("disabled={!certGate.enabled || selfTest.isPending}");
     expect(ui).toContain("disabled={!envGate.enabled || sefazStatus.isPending || !draftId}");
     expect(hook).toContain("invoice_id: invoiceId");
-    expect(hook).toContain('.eq("environment", "HOMOLOGATION")');
-    expect(hook).toContain('.eq("normalized_status", "DRAFT")');
+    expect(hook).toContain('environment: "HOMOLOGATION"');
+    expect(hook).toContain('normalized_status: "DRAFT"');
+    expect(hook).toContain('document_model: "NFE"');
     expect(ui).toContain("if (!isAdmin) return null;");
   });
 

@@ -10,6 +10,8 @@
  * Upload, assinatura de evento, transporte SEFAZ e motor XML importam este
  * módulo — nenhuma outra variável de ambiente, fallback, log ou leitura extra.
  */
+declare const Deno: { env: { get(name: string): string | undefined } };
+
 export async function deriveMasterKey(raw: string | null | undefined): Promise<Uint8Array | null> {
   if (!raw) return null;
   try {
