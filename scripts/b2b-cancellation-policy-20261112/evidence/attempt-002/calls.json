@@ -1,0 +1,51 @@
+[
+  {
+    "sql": "SELECT rpc_fiscal_event_sefaz_prepare_v1('00000000-0000-0000-0000-000000000900','CANCELLATION','LOCAL POLICY CANCEL REASON','policy-25b126f9-8922-49d4-820a-deada78ff879','00000000-0000-0000-0000-000000000029');",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "exit": 0,
+    "out": "{\"reason\": \"LOCAL POLICY CANCEL REASON\", \"eventId\": \"3c4136ad-f2cb-4d89-be37-d5aa9a3041fa\", \"protocol\": \"LOCAL-INTEGRATED-PROTOCOL\", \"accessKey\": \"35261111111111111111111111111111111111111111\", \"eventCode\": \"110111\", \"seqEvento\": 1, \"idempotentReplay\": false, \"companySettingsId\": \"ee471d0b-d982-4e4c-b911-8fdc69c2ed5b\"}\n",
+    "err": ""
+  },
+  {
+    "sql": "SELECT rpc_fiscal_event_sefaz_mark_signed_v1('3c4136ad-f2cb-4d89-be37-d5aa9a3041fa','eventos/local/policy.xml','d9264d95b72387fedae18ef4f9882a77f916e8d433269737e70f2bd8d1aed74e','00000000-0000-0000-0000-000000000029');",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "exit": 0,
+    "out": "{\"state\": \"SIGNED\", \"eventId\": \"3c4136ad-f2cb-4d89-be37-d5aa9a3041fa\", \"idempotentReplay\": false, \"signatureEventId\": \"e6323038-98f9-4fd3-8df7-0be3703b7f9c\"}\n",
+    "err": ""
+  },
+  {
+    "sql": "BEGIN;INSERT INTO fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('e7f0f196-3731-434b-a836-2d074f2d87f9','00000000-0000-0000-0000-000000000900','3c4136ad-f2cb-4d89-be37-d5aa9a3041fa','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','policy-e7f0f196-3731-434b-a836-2d074f2d87f9','d9264d95b72387fedae18ef4f9882a77f916e8d433269737e70f2bd8d1aed74e','SENT','PENDING','00000000-0000-0000-0000-000000000029');SELECT rpc_fiscal_sefaz_transmit_record_v1('e7f0f196-3731-434b-a836-2d074f2d87f9','SUCCEEDED','{\"cStat\": \"573\", \"nProt\": \"LOCAL-POLICY-573\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"tpAmb\": \"2\", \"xMotivo\": \"LOCAL POLICY RESULT\"}'::jsonb);SELECT jsonb_build_object('invoice',(select normalized_status from fiscal_invoices where id='00000000-0000-0000-0000-000000000900'),'title',(select status from accounts_receivable where id='dfdb7f34-57a3-447f-b69d-14afba787dd4'));ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "exit": 0,
+    "out": "{\"nRec\": null, \"cStat\": \"573\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-573\", \"state\": \"SUCCEEDED\", \"outcome\": \"REJECTED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"protocolCStat\": \"573\", \"transmissionId\": \"e7f0f196-3731-434b-a836-2d074f2d87f9\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"OPEN\", \"invoice\": \"AUTHORIZED\"}\n",
+    "err": ""
+  },
+  {
+    "sql": "BEGIN;INSERT INTO fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('334bd100-5d46-479d-a6c5-0d549be0ced6','00000000-0000-0000-0000-000000000900','3c4136ad-f2cb-4d89-be37-d5aa9a3041fa','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','policy-334bd100-5d46-479d-a6c5-0d549be0ced6','d9264d95b72387fedae18ef4f9882a77f916e8d433269737e70f2bd8d1aed74e','SENT','PENDING','00000000-0000-0000-0000-000000000029');SELECT rpc_fiscal_sefaz_transmit_record_v1('334bd100-5d46-479d-a6c5-0d549be0ced6','SUCCEEDED','{\"cStat\": \"103\", \"nProt\": \"LOCAL-POLICY-103\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"tpAmb\": \"2\", \"xMotivo\": \"LOCAL POLICY RESULT\"}'::jsonb);SELECT jsonb_build_object('invoice',(select normalized_status from fiscal_invoices where id='00000000-0000-0000-0000-000000000900'),'title',(select status from accounts_receivable where id='dfdb7f34-57a3-447f-b69d-14afba787dd4'));ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "exit": 0,
+    "out": "{\"nRec\": null, \"cStat\": \"103\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-103\", \"state\": \"SUCCEEDED\", \"outcome\": \"PROCESSING\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"protocolCStat\": \"103\", \"transmissionId\": \"334bd100-5d46-479d-a6c5-0d549be0ced6\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"OPEN\", \"invoice\": \"AUTHORIZED\"}\n",
+    "err": ""
+  },
+  {
+    "sql": "BEGIN;INSERT INTO fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('cbad9983-6283-4120-8503-f65b86b70d93','00000000-0000-0000-0000-000000000900','3c4136ad-f2cb-4d89-be37-d5aa9a3041fa','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','policy-cbad9983-6283-4120-8503-f65b86b70d93','d9264d95b72387fedae18ef4f9882a77f916e8d433269737e70f2bd8d1aed74e','SENT','PENDING','00000000-0000-0000-0000-000000000029');SELECT rpc_fiscal_sefaz_transmit_record_v1('cbad9983-6283-4120-8503-f65b86b70d93','SUCCEEDED','{\"cStat\": \"136\", \"nProt\": \"LOCAL-POLICY-136\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"tpAmb\": \"2\", \"xMotivo\": \"LOCAL POLICY RESULT\"}'::jsonb);SELECT jsonb_build_object('invoice',(select normalized_status from fiscal_invoices where id='00000000-0000-0000-0000-000000000900'),'title',(select status from accounts_receivable where id='dfdb7f34-57a3-447f-b69d-14afba787dd4'));ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "exit": 0,
+    "out": "{\"nRec\": null, \"cStat\": \"136\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-136\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"protocolCStat\": \"136\", \"transmissionId\": \"cbad9983-6283-4120-8503-f65b86b70d93\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"OPEN\", \"invoice\": \"AUTHORIZED\"}\n",
+    "err": ""
+  },
+  {
+    "sql": "BEGIN;INSERT INTO fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('9eb4091a-abed-443c-865a-a5a9c1a33361','00000000-0000-0000-0000-000000000900','3c4136ad-f2cb-4d89-be37-d5aa9a3041fa','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','policy-9eb4091a-abed-443c-865a-a5a9c1a33361','d9264d95b72387fedae18ef4f9882a77f916e8d433269737e70f2bd8d1aed74e','SENT','PENDING','00000000-0000-0000-0000-000000000029');SELECT rpc_fiscal_sefaz_transmit_record_v1('9eb4091a-abed-443c-865a-a5a9c1a33361','SUCCEEDED','{\"cStat\": \"135\", \"nProt\": \"LOCAL-POLICY-135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"tpAmb\": \"2\", \"xMotivo\": \"LOCAL POLICY RESULT\"}'::jsonb);SELECT jsonb_build_object('invoice',(select normalized_status from fiscal_invoices where id='00000000-0000-0000-0000-000000000900'),'title',(select status from accounts_receivable where id='dfdb7f34-57a3-447f-b69d-14afba787dd4'));ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "exit": 0,
+    "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-135\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"protocolCStat\": \"135\", \"transmissionId\": \"9eb4091a-abed-443c-865a-a5a9c1a33361\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"CANCELED\", \"invoice\": \"CANCELED\"}\n",
+    "err": ""
+  },
+  {
+    "sql": "BEGIN;INSERT INTO fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('589760f6-c202-41b1-9ab4-a315ecf8893f','00000000-0000-0000-0000-000000000900','3c4136ad-f2cb-4d89-be37-d5aa9a3041fa','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','policy-589760f6-c202-41b1-9ab4-a315ecf8893f','d9264d95b72387fedae18ef4f9882a77f916e8d433269737e70f2bd8d1aed74e','SENT','PENDING','00000000-0000-0000-0000-000000000029');SELECT rpc_fiscal_sefaz_transmit_record_v1('589760f6-c202-41b1-9ab4-a315ecf8893f','SUCCEEDED','{\"cStat\": \"155\", \"nProt\": \"LOCAL-POLICY-155\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"tpAmb\": \"2\", \"xMotivo\": \"LOCAL POLICY RESULT\"}'::jsonb);SELECT jsonb_build_object('invoice',(select normalized_status from fiscal_invoices where id='00000000-0000-0000-0000-000000000900'),'title',(select status from accounts_receivable where id='dfdb7f34-57a3-447f-b69d-14afba787dd4'));ROLLBACK;",
+    "actor": "00000000-0000-0000-0000-000000000029",
+    "exit": 0,
+    "out": "{\"nRec\": null, \"cStat\": \"155\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-155\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"protocolCStat\": \"155\", \"transmissionId\": \"589760f6-c202-41b1-9ab4-a315ecf8893f\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"CANCELED\", \"invoice\": \"CANCELED\"}\n",
+    "err": ""
+  }
+]
