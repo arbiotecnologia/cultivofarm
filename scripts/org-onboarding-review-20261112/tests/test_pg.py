@@ -5,7 +5,7 @@ import json, os, pathlib, shutil, subprocess, sys, tempfile, uuid
 H = pathlib.Path(__file__).resolve().parent.parent
 cap = json.load(open(H/'live-capture/capture.json'))
 D = tempfile.mkdtemp(prefix='orgrev-'); PORT = '55491'
-env = dict(os.environ, PGHOST=D, PGPORT=PORT, PGUSER='postgres', PGDATABASE='postgres')
+env = dict(os.environ, PGHOST=D, PGPORT=PORT, PGUSER='postgres', PGDATABASE='postgres', PGOPTIONS='-c check_function_bodies=off')
 SP = ['setpriv','--reuid=65534','--regid=65534','--clear-groups'] if os.geteuid()==0 else []
 os.chmod(D, 0o777)
 subprocess.run(SP+['initdb','-D',D+'/data','-U','postgres','-A','trust'],check=True,capture_output=True)
