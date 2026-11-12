@@ -31,6 +31,7 @@ export type CompanyFiscalRow = CompanyFiscalBaseRow & {
   crt?: string | null;
   uf_accreditations?: Json;
   pis_cofins_regime?: string | null;
+  pis_cofins_regime_effective_from?: string | null;
   primary_cnae?: string | null;
   municipal_registration?: string | null;
   state_registration?: string | null;
