@@ -1,0 +1,19 @@
+{
+  "inactive": true,
+  "scope": "ONE_FUNCTION_STATE_NORMALIZATION_ONLY",
+  "signature": "public.rpc_b2b_cancel_residual_capability_v1(uuid)",
+  "pre_pin": {
+    "acl": [
+      "authenticated=X/postgres",
+      "postgres=X/postgres"
+    ],
+    "md5": "af146396b98c5b6d9933ba192b783d19",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ]
+  },
+  "source_sha256": "a172b0be9c5e6c2c32f66ae61eb4842841db872ba3823abc8073f3bd48229427",
+  "historical_candidate_unchanged": true,
+  "hosted": false
+}

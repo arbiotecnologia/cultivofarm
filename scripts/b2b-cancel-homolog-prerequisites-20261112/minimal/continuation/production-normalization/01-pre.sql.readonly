@@ -1,0 +1,4 @@
+-- INACTIVE production-candidate overlay; requires exact installed candidate baseline, not homolog.
+BEGIN;SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='30s';
+DO $pin$ BEGIN IF (SELECT jsonb_build_object('md5',md5(pg_get_functiondef(oid)),'owner',pg_get_userbyid(proowner),'acl',(SELECT coalesce(jsonb_agg(a::text ORDER BY a::text),'[]'::jsonb) FROM unnest(proacl) a),'config',to_jsonb(proconfig)) FROM pg_proc WHERE oid=to_regprocedure('public.rpc_b2b_cancel_residual_capability_v1(uuid)')) IS DISTINCT FROM '{"acl": ["authenticated=X/postgres", "postgres=X/postgres"], "md5": "af146396b98c5b6d9933ba192b783d19", "owner": "postgres", "config": ["search_path=\"\""]}'::jsonb THEN RAISE EXCEPTION 'PRODUCTION_NORMALIZATION_PIN_DRIFT'; END IF;END $pin$;
+ROLLBACK;
