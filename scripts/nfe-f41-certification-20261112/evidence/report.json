@@ -1,6 +1,6 @@
 {
   "harness": "F4.1 NF-e 55 offline",
-  "generated_at": "2026-11-12T17:31:09.992199+00:00",
+  "generated_at": "2026-11-12T17:34:23.619171+00:00",
   "tools": {
     "xmllint": "xmllint: using libxml version 21504",
     "openssl": "OpenSSL 3.6.5 29 Sep 2026 (Library: OpenSSL 3.6.5 29 Sep 2026)",
@@ -11,8 +11,8 @@
     14,
     6
   ],
-  "total": 23,
-  "failed": 1,
+  "total": 52,
+  "failed": 2,
   "network_sefaz": false,
   "database": false,
   "secrets": false,
@@ -25,18 +25,32 @@
       "detail": "Schemas XML NF-e - Pacote de Liberação nº 010g v.1.03 - NT 2026.006 v.1.00 e NT 2026.008 v.1.00"
     },
     {
-      "case": "prov.PL_010e_motor.sha256",
+      "case": "prov.motor_manifesto.sha256",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "Schemas XML NF-e - Pacote de Liberação nº 010g v.1.03 - NT 2026.006 v.1.00 e NT 2026.008 v.1.00"
+    },
+    {
+      "case": "prov.PL_010e_arquivo_compat.sha256",
       "expected": "PASS",
       "observed": "PASS",
       "result": "OK",
       "detail": "Schemas XML NF-e - 010e_v.1.02 - NT 2025.002 v.1.40, NT 2026.002 v.1.0 e NT 2026.003 v.1.0"
     },
     {
+      "case": "prov.motor_manifesto_pacote_vigente",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "PL_010g_v1.03.zip"
+    },
+    {
       "case": "prov.motor_alinhado_ao_vigente",
       "expected": "PASS",
-      "observed": "REJECT",
-      "result": "FAIL",
-      "detail": "difere: ['DFeTiposBasicos_v1.00.xsd', 'leiauteNFe_v4.00.xsd']"
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "5/5 idênticos"
     },
     {
       "case": "neg.prov.xsd_adulterado",
@@ -46,123 +60,312 @@
       "detail": "['leiauteNFe_v4.00.xsd']"
     },
     {
-      "case": "pos.motor.verifyNfeSignature",
+      "case": "icms20_mt.pos.motor.verifyNfeSignature",
       "expected": "PASS",
       "observed": "PASS",
       "result": "OK",
-      "detail": "{'valid': True, 'digestMatches': True, 'signatureMatches': True, 'referenceUri': '#NFe51261111222333000181550010000000011123456780', 'code': None}"
+      "detail": "{'valid': True, 'digestMatches': True, 'signatureMatches': True, 'referenceUri': '#NFe51261111222333000181550010000000011123456788', 'code': None}"
     },
     {
-      "case": "pos.tpAmb_homologacao",
+      "case": "icms20_mt.pos.chave_dv_coerente",
       "expected": "PASS",
       "observed": "PASS",
       "result": "OK",
-      "detail": "tpAmb=2"
+      "detail": "DV=8"
     },
     {
-      "case": "pos.xsd.PL_010g_vigente",
+      "case": "icms20_mt.pos.xsd.motor_PL_010g",
       "expected": "PASS",
       "observed": "PASS",
       "result": "OK",
-      "detail": "/tmp/f41-nzsmbm6z/signed.xml validates"
+      "detail": "/tmp/f41-cz5_448e/icms20_mt.xml validates"
     },
     {
-      "case": "pos.xsd.PL_010e_motor",
+      "case": "icms20_mt.pos.xsd.oficial_PL_010g",
       "expected": "PASS",
       "observed": "PASS",
       "result": "OK",
-      "detail": "/tmp/f41-nzsmbm6z/signed.xml validates"
+      "detail": "/tmp/f41-cz5_448e/icms20_mt.xml validates"
     },
     {
-      "case": "pos.sig.independente_libxml2_openssl",
+      "case": "icms20_mt.pos.xsd.compat_PL_010e",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "/tmp/f41-cz5_448e/icms20_mt.xml validates"
+    },
+    {
+      "case": "icms20_mt.pos.sig.independente_libxml2_openssl",
       "expected": "PASS",
       "observed": "PASS",
       "result": "OK",
       "detail": "RSA_SHA1_OK"
     },
     {
-      "case": "neg.sig.valor_alterado_infNFe",
+      "case": "icms20_mt.neg.sig.valor_alterado_infNFe",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
       "detail": "DIGEST_MISMATCH"
     },
     {
-      "case": "neg.sig.valor_alterado_infNFe.motor",
+      "case": "icms20_mt.neg.sig.valor_alterado_infNFe.motor",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
       "detail": "SIGNATURE_DIGEST_MISMATCH"
     },
     {
-      "case": "neg.sig.signaturevalue_adulterado",
+      "case": "icms20_mt.neg.sig.signaturevalue_adulterado",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
       "detail": "SIGNATURE_VALUE_MISMATCH"
     },
     {
-      "case": "neg.sig.signaturevalue_adulterado.motor",
+      "case": "icms20_mt.neg.sig.signaturevalue_adulterado.motor",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
       "detail": "SIGNATURE_VALUE_MISMATCH"
     },
     {
-      "case": "neg.sig.uri_referencia_trocada",
+      "case": "icms20_mt.neg.sig.uri_referencia_trocada",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
       "detail": "REFERENCE_URI_MISMATCH"
     },
     {
-      "case": "neg.sig.uri_referencia_trocada.motor",
+      "case": "icms20_mt.neg.sig.uri_referencia_trocada.motor",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
       "detail": "SIGNATURE_VALUE_MISMATCH"
     },
     {
-      "case": "neg.sig.certificado_substituido",
+      "case": "icms20_mt.neg.sig.certificado_substituido",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
       "detail": "SIGNATURE_VALUE_MISMATCH"
     },
     {
-      "case": "neg.sig.certificado_nao_esperado",
+      "case": "icms20_mt.neg.sig.certificado_nao_esperado",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
       "detail": "CERT_NOT_EXPECTED"
     },
     {
-      "case": "neg.xsd.sem_signature",
+      "case": "icms20_mt.neg.xsd.sem_signature",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
-      "detail": "/tmp/f41-nzsmbm6z/nosig.xml fails to validate"
+      "detail": "/tmp/f41-cz5_448e/v4.xml fails to validate"
     },
     {
-      "case": "neg.sig.ausente",
+      "case": "icms20_mt.neg.sig.ausente",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
       "detail": "SIGNATURE_COUNT_0"
     },
     {
-      "case": "neg.xsd.cfop_invalido",
+      "case": "icms20_mt.neg.xsd.cfop_invalido",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
-      "detail": "/tmp/f41-nzsmbm6z/badcfop.xml fails to validate"
+      "detail": "/tmp/f41-cz5_448e/v5.xml fails to validate"
     },
     {
-      "case": "neg.xsd.tpAmb_invalido",
+      "case": "icms20_mt.neg.xsd.tpAmb_invalido",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
-      "detail": "/tmp/f41-nzsmbm6z/badamb.xml fails to validate"
+      "detail": "/tmp/f41-cz5_448e/v6.xml fails to validate"
+    },
+    {
+      "case": "icms20_mt.neg.xsd.ncm_9_digitos",
+      "expected": "REJECT",
+      "observed": "PASS",
+      "result": "FAIL",
+      "detail": "/tmp/f41-cz5_448e/v7.xml validates"
+    },
+    {
+      "case": "icms20_mt.neg.chave_dv_incorreto",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "KEY_DV_INVALID"
+    },
+    {
+      "case": "icms20_mt.neg.chave_cDV_divergente",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "KEY_IDE_MISMATCH"
+    },
+    {
+      "case": "mg_icms00.pos.motor.verifyNfeSignature",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "{'valid': True, 'digestMatches': True, 'signatureMatches': True, 'referenceUri': '#NFe31261111222333000181550010000000021876543216', 'code': None}"
+    },
+    {
+      "case": "mg_icms00.pos.chave_dv_coerente",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "DV=6"
+    },
+    {
+      "case": "mg_icms00.pos.campos_fixture",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "campos conferidos"
+    },
+    {
+      "case": "mg_icms00.pos.xsd.motor_PL_010g",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "/tmp/f41-cz5_448e/mg_icms00.xml validates"
+    },
+    {
+      "case": "mg_icms00.pos.xsd.oficial_PL_010g",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "/tmp/f41-cz5_448e/mg_icms00.xml validates"
+    },
+    {
+      "case": "mg_icms00.pos.xsd.compat_PL_010e",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "/tmp/f41-cz5_448e/mg_icms00.xml validates"
+    },
+    {
+      "case": "mg_icms00.pos.sig.independente_libxml2_openssl",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "RSA_SHA1_OK"
+    },
+    {
+      "case": "mg_icms00.neg.sig.valor_alterado_infNFe",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "DIGEST_MISMATCH"
+    },
+    {
+      "case": "mg_icms00.neg.sig.valor_alterado_infNFe.motor",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "SIGNATURE_DIGEST_MISMATCH"
+    },
+    {
+      "case": "mg_icms00.neg.sig.signaturevalue_adulterado",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "SIGNATURE_VALUE_MISMATCH"
+    },
+    {
+      "case": "mg_icms00.neg.sig.signaturevalue_adulterado.motor",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "SIGNATURE_VALUE_MISMATCH"
+    },
+    {
+      "case": "mg_icms00.neg.sig.uri_referencia_trocada",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "REFERENCE_URI_MISMATCH"
+    },
+    {
+      "case": "mg_icms00.neg.sig.uri_referencia_trocada.motor",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "SIGNATURE_VALUE_MISMATCH"
+    },
+    {
+      "case": "mg_icms00.neg.sig.certificado_substituido",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "SIGNATURE_VALUE_MISMATCH"
+    },
+    {
+      "case": "mg_icms00.neg.sig.certificado_nao_esperado",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "CERT_NOT_EXPECTED"
+    },
+    {
+      "case": "mg_icms00.neg.xsd.sem_signature",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "/tmp/f41-cz5_448e/v11.xml fails to validate"
+    },
+    {
+      "case": "mg_icms00.neg.sig.ausente",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "SIGNATURE_COUNT_0"
+    },
+    {
+      "case": "mg_icms00.neg.xsd.cfop_invalido",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "/tmp/f41-cz5_448e/v12.xml fails to validate"
+    },
+    {
+      "case": "mg_icms00.neg.xsd.tpAmb_invalido",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "/tmp/f41-cz5_448e/v13.xml fails to validate"
+    },
+    {
+      "case": "mg_icms00.neg.xsd.ncm_9_digitos",
+      "expected": "REJECT",
+      "observed": "PASS",
+      "result": "FAIL",
+      "detail": "/tmp/f41-cz5_448e/v14.xml validates"
+    },
+    {
+      "case": "mg_icms00.neg.chave_dv_incorreto",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "KEY_DV_INVALID"
+    },
+    {
+      "case": "mg_icms00.neg.chave_cDV_divergente",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "KEY_IDE_MISMATCH"
+    },
+    {
+      "case": "mg_icms00.neg.campos_indFinal_divergente",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "{'indFinal': '0'}"
     },
     {
       "case": "neg.sign.certificado_expirado",
