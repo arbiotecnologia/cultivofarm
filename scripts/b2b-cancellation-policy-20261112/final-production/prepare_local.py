@@ -15,11 +15,18 @@ socket = Path('/tmp/felig')
 socket.mkdir(exist_ok=True)
 subprocess.run(['chown', '1000:1000', str(socket)], check=True)
 if not (socket / 'data/PG_VERSION').exists():
-    subprocess.run(priv + [str(PG / 'initdb'), '-D', str(socket / 'data'), '-A', 'trust', '--no-locale'], check=True, stdout=subprocess.DEVNULL)
+    subprocess.run(priv + [str(PG / 'initdb'), '-D', str(socket / 'data'), '-U', 'postgres', '-A', 'trust', '--no-locale'], check=True, stdout=subprocess.DEVNULL)
 if not (socket / '.s.PGSQL.55901').exists():
     subprocess.run(priv + [str(PG / 'pg_ctl'), '-D', str(socket / 'data'), '-l', str(socket / 'postgres.log'), '-o', '-k /tmp/felig -h "" -p 55901', '-w', 'start'], check=True)
 # Synthetic restoration only; historical original dump is not distributed.
 globals_sql = Path('/tmp/r12/globals.sql').read_text()
+# Existing disposable clusters initialized by uid 1000 may name their bootstrap
+# superuser differently; establish postgres locally without weakening any app guard.
+if db.DB('postgres').raw('SELECT 1').returncode:
+    bootstrap = [arg if arg != 'postgres' else 'oai' for arg in db.PSQL]
+    result = subprocess.run(bootstrap + ['postgres'], input='CREATE ROLE postgres SUPERUSER LOGIN;', text=True, capture_output=True)
+    if result.returncode:
+        raise RuntimeError('LOCAL_BOOTSTRAP_ROLE:' + result.stderr)
 result = db.DB('postgres').raw(globals_sql)
 (OUT / 'globals-restore.txt').write_text(result.stderr)
 restore = ROOT / 'scripts/c2-pilot-economic-approval-20261111/billing-delivery-20261111/fiscal-final-20261111/prep_restore.sh'
