@@ -100,7 +100,7 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
     if (open && micro) log({ entidade_tipo: "microrganismo", entidade_id: micro.id, origem });
   }, [open, micro, log, origem]);
 
-  // Late refresh never overwrites a dirty manual draft.
+  // CAT-09: Late refresh never overwrites a dirty manual draft.
   useEffect(() => {
     const key = JSON.stringify([open, micro?.id, editor.scope]);
     if (key !== observed.current) { observed.current = key; dirty.current = false; }

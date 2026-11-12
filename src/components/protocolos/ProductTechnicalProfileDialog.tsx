@@ -103,7 +103,7 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
     if (open && produto) log({ entidade_tipo: "produto", entidade_id: produto.id, origem });
   }, [open, produto, log, origem]);
 
-  // Hydrate once per identity/item; refetch must not overwrite a dirty draft.
+  // CAT-09: Hydrate once per identity/item; refetch must not overwrite a dirty draft.
   useEffect(() => {
     const key = JSON.stringify([open, produto?.id, editor.scope]);
     if (key !== observedProduct.current) { observedProduct.current = key; dirty.current = false; }
