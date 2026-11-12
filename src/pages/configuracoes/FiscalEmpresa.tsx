@@ -632,7 +632,7 @@ export default function FiscalEmpresa() {
                   {errors.pis_cofins_regime_effective_from ? <p className="text-xs text-destructive" role="alert">{errors.pis_cofins_regime_effective_from}</p> : null}
                 </FieldRow>
                 <PisCofinsHistory companySettingsId={settingsQuery.data.id} currentUserId={user?.id} />
-                <CompanyAccreditationsFields key={`${user?.id}:${profile?.organization_id}:${authzEpoch}`} records={values.uf_accreditations ?? []} savedRecords={baseline.uf_accreditations ?? []} disabled={readonly || update.isPending} onChange={(records) => set("uf_accreditations", records)} />
+                <CompanyAccreditationsFields key={`${user?.id}:${profile?.organization_id}:${authzEpoch}:${hydratedId.current ?? "none"}`} records={values.uf_accreditations ?? []} savedRecords={baseline.uf_accreditations ?? []} disabled={readonly || update.isPending} onChange={(records) => set("uf_accreditations", records)} />
                 {errors.uf_accreditations ? <p className="text-xs text-destructive" role="alert">{errors.uf_accreditations}</p> : null}
                 <CompanyCnaeFields
                   primary={values.primary_cnae ?? null}
