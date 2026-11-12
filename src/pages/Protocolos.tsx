@@ -1,3 +1,5 @@
+import { TenantProblemPanel } from "@/components/protocolos/TenantProblemPanel";
+import { CompactCatalogSelect } from "@/components/catalogo/CompactCatalogSelect";
 import { assertGlobalCatalogWriteBlocked, TENANT_CAN_EDIT_GLOBAL_CATALOG } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useMemo, useState } from "react";
 import { TenantHiddenBadge, TenantVisibilityBar, TenantVisibilityToggle, useCanManageTenantVisibility, useManagedVisibility } from "@/components/protocolos/TenantVisibilityControls";
@@ -172,7 +174,8 @@ const CATEGORIA_LABELS: Record<string, string> = {
   outro: "Outros",
 };
 
-export function ProblemasTab() {
+export function ProblemasTab() { return <TenantProblemPanel />; }
+function LegacyProblemasTab() {
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
@@ -488,6 +491,7 @@ const TAB_ALIASES = {
 } as const satisfies Record<string, (typeof MAIN_TABS)[number]>;
 
 export default function Protocolos() {
+  const mobile = useIsMobile();
   const { roles = [] } = useAuth();
   const location = useLocation();
   const allowedTabs = MAIN_TABS.filter(value => roles.some(role => canAccess(role, `/base-tecnica?tab=${value}`)));
@@ -508,24 +512,24 @@ export default function Protocolos() {
         <h1 className="text-2xl font-bold">Catálogo</h1>
         <p className="text-muted-foreground">{allowedTabs.length === 1 ? "Produtos da empresa." : "Produtos, microrganismos, culturas, alvos e recomendações técnicas."}</p>
       </div>
-      <Card>
-        <CardContent className="pt-6">
+      <section className="min-w-0">
+        <div className="min-w-0">
           <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className="flex h-auto w-full justify-start overflow-x-auto [&>button]:min-h-10 [&>button]:shrink-0">
+            {mobile ? <CompactCatalogSelect label="Seção da Base Técnica" value={tab} onChange={setTab} options={allowedTabs.map(value => ({ value, label: ({produtos:"Produtos",microrganismos:"Microrganismos","catalogo-tecnico":"Catálogo Técnico",culturas:"Culturas",problemas:"Problemas"})[value] }))} /> : <TabsList className="flex h-auto w-full justify-start overflow-x-auto [&>button]:min-h-10 [&>button]:shrink-0">
               {allowedTabs.includes("produtos") && <TabsTrigger value="produtos">Produtos</TabsTrigger>}
               {allowedTabs.includes("microrganismos") && <TabsTrigger value="microrganismos">Microrganismos</TabsTrigger>}
               {allowedTabs.includes("catalogo-tecnico") && <TabsTrigger value="catalogo-tecnico">Catálogo Técnico</TabsTrigger>}
               {allowedTabs.includes("culturas") && <TabsTrigger value="culturas">Culturas</TabsTrigger>}
               {allowedTabs.includes("problemas") && <TabsTrigger value="problemas">Problemas</TabsTrigger>}
-            </TabsList>
+            </TabsList>}
             {allowedTabs.includes("produtos") && <TabsContent value="produtos"><ProdutosTab /></TabsContent>}
             {allowedTabs.includes("microrganismos") && <TabsContent value="microrganismos"><MicrorganismosTab /></TabsContent>}
             {allowedTabs.includes("catalogo-tecnico") && <TabsContent value="catalogo-tecnico"><CatalogoTecnicoTab /></TabsContent>}
             {allowedTabs.includes("culturas") && <TabsContent value="culturas"><CulturasTab /></TabsContent>}
             {allowedTabs.includes("problemas") && <TabsContent value="problemas"><ProblemasTab /></TabsContent>}
           </Tabs>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     </div>
   );
 }

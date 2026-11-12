@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DocumentaryAI } from "./catalog/DocumentaryAI";
+import { DraftExitConfirmation } from "@/components/catalogo/DraftExitConfirmation";
 import { useAuth } from "@/hooks/useAuth";
 import { useManagedVisibility, TenantVisibilityBar, TenantVisibilityToggle, useCanManageTenantVisibility } from "./TenantVisibilityControls";
 
@@ -29,6 +30,7 @@ export function TenantReferenceDialog({ root, item, onClose, onSaved }: {
   const [values, setValues] = useState({ nome: item?.nome ?? "", descricao: item?.descricao ?? "", nome_cientifico: item?.nome_cientifico ?? "", tipo: item?.tipo ?? "bacteria" });
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
+  const [exit, setExit] = useState(false);
   const lock = useRef(false);
   const attempt = useRef<{ signature: string; key: string }>();
   const save = async () => {
@@ -49,7 +51,7 @@ export function TenantReferenceDialog({ root, item, onClose, onSaved }: {
     } catch (e) { if (current()) setError(e instanceof Error ? e.message : "Não foi possível salvar; rascunho preservado."); }
     finally { lock.current = false; if (current()) setBusy(false); }
   };
-  return <Dialog open onOpenChange={v => { if (!v && !busy) onClose(); }}><DialogContent className="max-h-[90dvh] overflow-y-auto" aria-describedby={undefined}>
+  return <><DraftExitConfirmation open={exit} onOpenChange={setExit} onLeave={onClose} /><Dialog open onOpenChange={v => { if (!v && !busy) setExit(true); }}><DialogContent className="max-h-[90dvh] overflow-y-auto [&_input]:min-h-11 [&_button]:min-h-11" aria-describedby={undefined}>
     <DialogHeader><DialogTitle>{item ? "Editar" : "Adicionar"} {names[root]}</DialogTitle></DialogHeader>
     <fieldset disabled={busy} className="space-y-3">
       {root === "microrganismos" && <DocumentaryAI identity={{ name: values.nome, manufacturer: "", registration: "", entity: "microrganismo", id: item?.id }} values={values} allowed={["descricao"]} onApply={fields => setValues(v => ({ ...v, ...fields }))} />}
@@ -59,8 +61,8 @@ export function TenantReferenceDialog({ root, item, onClose, onSaved }: {
       <div><Label htmlFor="reference-description">Descrição</Label><Textarea id="reference-description" value={values.descricao} onChange={e => setValues(v => ({ ...v, descricao: e.target.value }))} /></div>
     </fieldset>
     {error && <p role="alert" className="text-destructive">{error}</p>}
-    <div className="flex justify-end gap-2"><Button variant="outline" disabled={busy} onClick={onClose}>Cancelar</Button><Button disabled={busy || !editor.canEdit} onClick={() => void save()}>Salvar</Button></div>
-  </DialogContent></Dialog>;
+    <div className="flex justify-end gap-2"><Button variant="outline" disabled={busy} onClick={() => setExit(true)}>Cancelar</Button><Button disabled={busy || !editor.canEdit} onClick={() => void save()}>Salvar</Button></div>
+  </DialogContent></Dialog></>;
 }
 
 export function TenantReferencePanel({ root }: { root: ReferenceRoot }) {

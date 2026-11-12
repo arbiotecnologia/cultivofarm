@@ -1,0 +1,4 @@
+import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
+export function DraftExitConfirmation({ open, onOpenChange, onLeave }: { open: boolean; onOpenChange(open: boolean): void; onLeave(): void }) {
+  return <AlertDialog open={open} onOpenChange={onOpenChange}><AlertDialogContent><AlertDialogTitle>Sair sem salvar?</AlertDialogTitle><AlertDialogDescription>O rascunho desta edição será descartado.</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel className="min-h-11">Continuar editando</AlertDialogCancel><AlertDialogAction className="min-h-11" onClick={onLeave}>Descartar e sair</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>;
+}

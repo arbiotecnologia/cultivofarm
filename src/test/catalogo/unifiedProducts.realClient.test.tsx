@@ -551,7 +551,7 @@ it("unidade canônica: A→B, fechar/reabrir com cache, escolha do usuário sobr
     fireEvent.click(row.querySelector('button[aria-label="Editar"], button[title="Editar"]') ?? screen.getAllByRole("button", { name: "Editar" })[nome === "Produto A" ? 0 : 1]);
     await waitFor(() => expect((screen.getByLabelText("Nome Comercial *") as HTMLInputElement).value).toBe(nome));
   };
-  const close = async () => { fireEvent.click(screen.getByRole("button", { name: "Close" })); await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull()); };
+  const close = async () => { fireEvent.click(screen.getByRole("button", { name: "Close" })); fireEvent.click(await screen.findByRole("button", { name: "Descartar e sair" })); await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull()); };
   await edit("Produto A"); await unitLoaded("kg"); await close();
   await edit("Produto A"); await unitLoaded("kg"); await close(); // mesmo produto, mesma chave em cache
   await edit("Produto B"); await unitLoaded("g"); await close();

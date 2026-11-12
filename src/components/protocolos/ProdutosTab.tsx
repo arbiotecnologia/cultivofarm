@@ -1,3 +1,7 @@
+import { CompactCatalogSelect } from "@/components/catalogo/CompactCatalogSelect";
+import { DraftExitConfirmation } from "@/components/catalogo/DraftExitConfirmation";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useActiveCatalogFamilies } from "@/hooks/useActiveCatalogFamilies";
 import { TenantHiddenBadge, TenantVisibilityBar, TenantVisibilityToggle, useCanManageTenantVisibility, useManagedVisibility } from "@/components/protocolos/TenantVisibilityControls";
 import { TENANT_CAN_EDIT_GLOBAL_CATALOG, GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -213,7 +217,10 @@ export async function carregarCatalogoProdutos(client: any): Promise<
   return { produtos, microrganismos: microrganismosData, profileStatusMap };
 }
 
-export function ProdutosTab() {
+export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFamily?: ProductFamilyTab; onCreated?: () => void } = {}) {
+  const mobile = useIsMobile();
+  const activeFamilies = useActiveCatalogFamilies();
+  const [exitOpen, setExitOpen] = useState(false);
   const { name: tenantName } = useActiveTenantName();
   
   const [volumesEdit, setVolumesEdit] = useState<Produto | null>(null);
@@ -223,7 +230,7 @@ export function ProdutosTab() {
   const savingRef = useRef(false);
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState("todos");
-  const [familyTab, setFamilyTab] = useState<ProductFamilyTab>("todos");
+  const [familyTab, setFamilyTab] = useState<ProductFamilyTab>(initialFamily);
   const [showArchived, setShowArchived] = useState(false);
   const productList = useTenantProducts(showArchived);
   const details = useTenantProductDetails();
@@ -301,7 +308,7 @@ export function ProdutosTab() {
     setPartialMessage(null);
     setPartialAck(null); setPartialKind(null); setPartialExport(null); setReconciling(false);
     setOpen(false); resetForm();
-    setVolumesEdit(null); setFichaProduto(null); setSearch(""); setFilterTipo("todos"); setFamilyTab("todos");
+    setVolumesEdit(null); setFichaProduto(null); setSearch(""); setFilterTipo("todos"); setFamilyTab(initialFamily);
     return () => { localGeneration.current += 1; };
   }, [activeScopeKey]);
   const items = useMemo(() => {
@@ -396,7 +403,7 @@ export function ProdutosTab() {
       }
       clearPartial();
       toast.success(form.id ? "Produto atualizado!" : "Produto cadastrado!");
-      setOpen(false);
+      setOpen(false); onCreated?.();
       resetForm();
       fetch();
     } catch (err: any) {
@@ -681,12 +688,12 @@ export function ProdutosTab() {
   };
 
   return (
-    <div className="space-y-4">
-      <Tabs value={familyTab} onValueChange={v => setFamilyTab(v as ProductFamilyTab)}>
+    <div className="space-y-4 min-w-0 [&_button]:min-h-11 [&_input]:min-h-11 [&_button[role=combobox]]:min-h-11">
+      {mobile ? <CompactCatalogSelect label="Família de produtos" value={familyTab} options={activeFamilies.options} onChange={v => setFamilyTab(v as ProductFamilyTab)} /> : <Tabs value={familyTab} onValueChange={v => setFamilyTab(v as ProductFamilyTab)}>
         <TabsList aria-label="Famílias de produtos" className="flex h-auto w-full justify-start overflow-x-auto">
-          {PRODUCT_FAMILY_TABS.map(t => <TabsTrigger key={t.value} value={t.value} className="min-h-10 shrink-0">{t.label}</TabsTrigger>)}
+          {activeFamilies.options.map(t => <TabsTrigger key={t.value} value={t.value} className="min-h-11 shrink-0">{t.value === "todos" ? "Todos" : t.label}</TabsTrigger>)}
         </TabsList>
-      </Tabs>
+      </Tabs>}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -733,7 +740,7 @@ export function ProdutosTab() {
             <span>Composição pendente do produto {partialAck.product_id}. Novas edições ficam bloqueadas até reconciliar.</span>
             <Button type="button" size="sm" variant="outline" onClick={resumePending}>Retomar reconciliação</Button>
           </div>}
-          <Dialog open={open} onOpenChange={(v) => { if (!v && retainedSave.current) return; setOpen(v); if(!v) { resetForm(); setPartialExport(null); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
+          <Dialog open={open} onOpenChange={(v) => { if (!v && retainedSave.current) return; if (!v && (form.nome.trim() || form.id)) { setExitOpen(true); return; } setOpen(v); if(!v) { resetForm(); setPartialExport(null); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
             <DialogContent aria-describedby={undefined} className="max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col">
               <DialogHeader>
                 <DialogTitle>{form.id ? "Editar" : "Novo"} produto</DialogTitle>
@@ -755,7 +762,7 @@ export function ProdutosTab() {
                 </details>}
                 <fieldset disabled={saving || !!partialMessage} className="min-w-0">
                 <Tabs defaultValue="geral">
-                  <TabsList className="grid w-full grid-cols-3 mb-4">
+                  <TabsList className="flex w-full h-auto flex-wrap mb-4 [&_button]:flex-1 [&_button]:whitespace-normal [&_button]:min-w-20">
                     <TabsTrigger value="geral">Identificação</TabsTrigger>
                     <TabsTrigger value="aplicacao">Aplicação & Custo</TabsTrigger>
                     <TabsTrigger value="composicao">Composição</TabsTrigger>
@@ -1133,7 +1140,13 @@ export function ProdutosTab() {
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showArchived} onChange={e => setShowArchived(e.target.checked)} />Mostrar arquivados</label>
       {(productList.isLoading || details.isLoading) && <p role="status">Carregando produtos…</p>}
       {(productList.isError || details.isError) && <p role="alert" className="text-destructive">Não foi possível carregar o catálogo. <Button variant="outline" onClick={fetch}>Recarregar</Button></p>}
-      <div className="rounded-md border">
+      {mobile && <div className="space-y-3">{tenantVis.displayed.map(p => <article key={p.id} className="border rounded-md p-3 space-y-2">
+        <Button variant="ghost" className="min-h-11 h-auto w-full justify-start whitespace-normal text-left" onClick={() => setFichaProduto(p)}>{p.nome}</Button>
+        <p className="text-sm text-muted-foreground break-words">{p.descricao || p.funcao_completa}</p>
+        <div className="flex flex-wrap gap-2"><Button className="min-h-11" variant="outline" onClick={() => setFichaProduto(p)}>{profileStatusMap[p.id] ? "Editar ficha" : "Criar ficha"}</Button>{editor.canEdit && <Button className="min-h-11" variant="outline" onClick={() => handleEdit(p)}>Editar produto</Button>}</div>
+      </article>)}{!tenantVis.displayed.length && <div className="space-y-2 py-6"><p>Nenhum produto encontrado</p><Button className="min-h-11" variant="outline" onClick={() => { setFamilyTab("todos"); setFilterTipo("todos"); }}>Buscar em todas as famílias</Button></div>}</div>}
+      <DraftExitConfirmation open={exitOpen} onOpenChange={setExitOpen} onLeave={() => { setOpen(false); resetForm(); }} />
+      <div className="rounded-md border hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>

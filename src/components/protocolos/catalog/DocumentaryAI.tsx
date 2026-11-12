@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { documentarySchema, selectedDocumentaryValues, type DocumentaryIdentity, type DocumentaryResult } from "@/lib/catalogo/documentarySuggestions";
+import { DOCUMENTARY_FIELDS, documentarySchema, selectedDocumentaryValues, type DocumentaryIdentity, type DocumentaryResult } from "@/lib/catalogo/documentarySuggestions";
 
 export function DocumentaryAI({ identity, values, allowed, onApply }: { identity: DocumentaryIdentity; values: Record<string, unknown>; allowed: readonly string[]; onApply(fields: Record<string, string>): void }) {
   const editor = useTenantCatalogEditor();
@@ -31,7 +31,9 @@ export function DocumentaryAI({ identity, values, allowed, onApply }: { identity
     const c = new AbortController(); controller.current = c;
     const current = editor.capture();
     try {
-      const { data, error: failure } = await supabase.functions.invoke("catalog-documentary-suggestions", { body: { identity: { ...identity, manufacturer, registration }, fields: allowed }, signal: c.signal });
+      const fields = allowed.filter(field => DOCUMENTARY_FIELDS.some(permitted => permitted === field));
+      if (!fields.length) throw new Error("Nenhum campo documental disponível para pesquisa.");
+      const { data, error: failure } = await supabase.functions.invoke("catalog-documentary-suggestions", { body: { identity: { ...identity, manufacturer, registration }, fields }, signal: c.signal });
       if (!current() || c.signal.aborted) return;
       if (failure) throw new Error("Pesquisa documental indisponível neste ambiente. O formulário foi preservado; o serviço requer implantação revisada.");
       const parsed = documentarySchema.safeParse(data);

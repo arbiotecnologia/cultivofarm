@@ -1,3 +1,5 @@
+import { TenantProfileLinks } from "./catalog/TenantProfileLinks";
+import { DraftExitConfirmation } from "@/components/catalogo/DraftExitConfirmation";
 import { TENANT_CAN_EDIT_GLOBAL_CATALOG } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useRef, useState } from "react";
 import { DocumentaryAI } from "./catalog/DocumentaryAI";
@@ -74,7 +76,7 @@ const SOURCE_VIEW_ROLES = ["administrador", "gestor", "consultor_tecnico", "tecn
 export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, origem = "protocolos" }: Props) {
   const { role, profile } = useAuth();
   const editor = useTenantCatalogEditor();
-  const tenantContent = editor.canEdit && produto?.owner_organization_id === profile?.organization_id && !!produto?.owner_organization_id && origem === "protocolos";
+  const tenantContent = editor.canEdit && produto?.owner_organization_id === profile?.organization_id && !!produto?.owner_organization_id;
   // Contrato: catálogo global é somente consulta para perfis de empresa.
   const canEditFull: boolean = TENANT_CAN_EDIT_GLOBAL_CATALOG;
   const canSeeHistory = role ? TECH_ROLES.includes(role) : false;
@@ -98,6 +100,7 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
   const [auditLog, setAuditLog] = useState<any[]>([]);
   const [confirmNoSourceOpen, setConfirmNoSourceOpen] = useState(false);
   const [approvalOpen, setApprovalOpen] = useState(false);
+  const [exitOpen, setExitOpen] = useState(false);
 
   useEffect(() => {
     if (open && produto) log({ entidade_tipo: "produto", entidade_id: produto.id, origem });
@@ -192,8 +195,10 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
   const ehReadOnly = (_field: "b2b" | "full") => !(canEditFull || tenantContent);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl w-[95vw] max-h-[92vh] overflow-y-auto overflow-x-hidden">
+    <>
+    <DraftExitConfirmation open={exitOpen} onOpenChange={setExitOpen} onLeave={() => { dirty.current = false; onOpenChange(false); }} />
+    <Dialog open={open} onOpenChange={v => { if (!v && dirty.current) { setExitOpen(true); return; } onOpenChange(v); }}>
+      <DialogContent className="max-w-3xl w-[95vw] max-h-[92vh] overflow-y-auto overflow-x-hidden [&_button]:min-h-11 [&_input]:min-h-11">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 flex-wrap break-words">
             Ficha técnica — {produto.nome}
@@ -218,6 +223,7 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
             hasExplicacaoB2B={!!form.explicacao_b2b.trim()}
             showInternalApprovalMarkers={isAdminOrGestor}
           />
+          {tenantContent && <TenantProfileLinks key={editor.scope + produto.id} entity="produto" parent={produto.id} onDirty={() => { dirty.current = true; }} />}
           <Tabs defaultValue="resumo" className="mt-2 min-w-0">
             <TabsList className="flex flex-wrap h-auto w-full justify-start gap-1 p-1">
               <TabsTrigger value="resumo" className="whitespace-nowrap px-2.5 py-1 text-xs">Resumo</TabsTrigger>
@@ -440,5 +446,6 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
         }}
       />
     </Dialog>
+    </>
   );
 }

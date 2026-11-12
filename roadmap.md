@@ -1,3 +1,10 @@
+## 12/11 03:56 — Continuação mobile e contratos locais
+- [x] Entradas reais: seleção compacta/famílias, cards, editor canônico/rascunhos, toques 44px; navegador sintético 360/390 sem overflow/pageerror.
+- [x] Contratos executáveis locais problemas/vínculos/famílias, gate OFF e rollback; 17 checks PG componente.
+- [x] Serviço documental montado fora deploy, Deno check e busca pública real com fontes; 78 testes PASS e build automático OK. Relatório/SHA em scripts/catalog-documentary-20261112/mobile-contracts.
+- [ ] Ativação: revisão/pins LIVE/instalação e serviço servidor autorizados; sem aplicação/publicação. Sessão real indisponível.
+- [ ] Homologação integral de navegação/rolagem/saída entre seções, edição de vínculos e concorrência/revogação completa: não comprovadas; limites no REPORT.
+
 ## 12/11 03:21 — Credenciamento declarado e PIS/COFINS
 - [x] Campos opcionais integrados na aba Empresa; MG declarado com JSON canônico, PIS/COFINS null preservado, sem inferência/prova SEFAZ.
 - [x] 169 testes PASS, incluindo 33 checks PG locais; frontend apenas, sem publicação ou dados hospedados. Sessão real/SEFAZ não verificadas.
