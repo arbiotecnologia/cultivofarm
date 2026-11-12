@@ -130,6 +130,32 @@ ALTER TABLE public.company_fiscal_settings ENABLE ROW LEVEL SECURITY;
         pg(f"UPDATE profiles SET organization_id='{B}' WHERE user_id='{U}';")
         check('foreign tenant cannot overwrite declarations', ID not in pg(session+f"UPDATE company_fiscal_settings SET uf_accreditations='[]' WHERE id='{ID}' RETURNING id;COMMIT;").stdout)
         OUT = OUT / 'accreditations'
+    if os.environ.get('TEST_PIS_EFFECTIVE') == '1':
+        mig = HERE / 'pis-cofins-effective' / '20261112150000_pis_cofins_effective_from_history.sql'
+        pg(f"UPDATE profiles SET organization_id='{A}' WHERE user_id='{U}'; UPDATE user_roles SET role='administrador' WHERE user_id='{U}'; UPDATE company_fiscal_settings SET pis_cofins_regime=NULL WHERE id='{ID}';")
+        pg(mig.read_text()); pg(mig.read_text())  # idempotente
+        check('legacy row keeps NULL date, no backfill/history', pg(f"SELECT coalesce(pis_cofins_regime_effective_from::text,'NULL')||':'||(SELECT count(*) FROM company_fiscal_pis_cofins_history) FROM company_fiscal_settings WHERE id='{ID}'").stdout.strip() == 'NULL:0')
+        v = int(pg(f"SELECT configuration_version FROM company_fiscal_settings WHERE id='{ID}'").stdout.strip())
+        upd = lambda ver, reg, d: pg(session+f"UPDATE company_fiscal_settings SET pis_cofins_regime={reg},pis_cofins_regime_effective_from={d},configuration_version={ver+1} WHERE id='{ID}' AND organization_id='{A}' AND configuration_version={ver} RETURNING id;COMMIT;").stdout
+        check('CAS save with regime+date commits', ID in upd(v, "'CUMULATIVO'", "'2026-01-01'"))
+        check('stale CAS writes nothing', ID not in upd(v, "'MISTO'", "'2026-02-01'"))
+        check('equal save does not duplicate history', ID in upd(v+1, "'CUMULATIVO'", "'2026-01-01'"))
+        h = pg(session+"SELECT count(*)||'|'||string_agg(coalesce(old_regime,'-')||'>'||new_regime||'|'||coalesce(old_effective_from::text,'-')||'>'||new_effective_from||'|'||(changed_by::text)||'|'||configuration_version,',') FROM company_fiscal_pis_cofins_history;COMMIT;").stdout
+        check('one history row with old/new/author/version', f"1|->CUMULATIVO|->2026-01-01|{U}|{v+1}" in h)
+        check('date-only change recorded', ID in upd(v+2, "'CUMULATIVO'", "'2026-03-01'") and '2' in pg("SELECT count(*) FROM company_fiscal_pis_cofins_history").stdout)
+        rb = pg(session+"SELECT 1; ROLLBACK;")
+        pg(session+f"UPDATE company_fiscal_settings SET pis_cofins_regime='MISTO',configuration_version={v+4} WHERE id='{ID}'; ROLLBACK;")
+        check('rollback of save leaves no history (transactional)', pg("SELECT count(*) FROM company_fiscal_pis_cofins_history").stdout.strip() == '2')
+        bad = pg(session+f"UPDATE company_fiscal_settings SET pis_cofins_regime_effective_from='1900-01-01' WHERE id='{ID}';COMMIT;", False)
+        check('date range constraint rejects', 'cfs_pis_cofins_effective_from_range' in bad.stderr)
+        for stmt in ["INSERT INTO company_fiscal_pis_cofins_history(company_settings_id,organization_id) VALUES('%s','%s')" % (ID, A), "UPDATE company_fiscal_pis_cofins_history SET new_regime='X'", "DELETE FROM company_fiscal_pis_cofins_history"]:
+            check('client direct write denied: '+stmt.split()[0], pg(session+stmt+';COMMIT;', False).returncode != 0)
+        check('owner UPDATE/DELETE blocked by immutability trigger', 'PIS_COFINS_HISTORY_IMMUTABLE' in pg("DELETE FROM company_fiscal_pis_cofins_history", False).stderr and 'PIS_COFINS_HISTORY_IMMUTABLE' in pg("TRUNCATE company_fiscal_pis_cofins_history", False).stderr)
+        pg(f"UPDATE user_roles SET role='financeiro' WHERE user_id='{U}';")
+        check('Financeiro reads own-tenant history', pg(session+"SELECT count(*) FROM company_fiscal_pis_cofins_history;COMMIT;").stdout.splitlines()[-2] == '2')
+        pg(f"UPDATE profiles SET organization_id='{B}' WHERE user_id='{U}';")
+        check('foreign tenant reads zero history', pg(session+"SELECT count(*) FROM company_fiscal_pis_cofins_history;COMMIT;").stdout.splitlines()[-2] == '0')
+        OUT = HERE / 'pis-cofins-effective' / 'evidence'; OUT.mkdir(exist_ok=True)
     (OUT / 'pg.json').write_text(json.dumps({'scope':'disposable canonical component mirror, not full r12/JWT/PostgREST','checks':checks,'constraint':before,'sources':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [foundation,central,h15,f3]}}, ensure_ascii=False, indent=2)+'\n')
     print(f'{len(checks)} PostgreSQL checks PASS (component mirror)')
 finally:
