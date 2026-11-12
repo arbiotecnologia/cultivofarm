@@ -1,3 +1,8 @@
+## 12/11 04:13 — Auditoria E2E adicional após catálogo
+- [ ] Auditar três origens separadas: parceiro B2B, comercial e vendedor, com papéis individuais e dados somente isolados.
+- [ ] Executar composição backend capturada, UI com persistência quando viável e primeira falha reproduzível; não fabricar estados finais.
+- [ ] Matriz por etapa/perfil, commit/IDs/totais/aprovações/handoff/recebível/fiscal; distinguir SQL/RPC/browser sintético/sessão real, sem publicar.
+
 ## 12/11 03:56 — Continuação mobile e contratos locais
 - [x] Entradas reais: seleção compacta/famílias, cards, editor canônico/rascunhos, toques 44px; navegador sintético 360/390 sem overflow/pageerror.
 - [x] Contratos executáveis locais problemas/vínculos/famílias, gate OFF e rollback; 17 checks PG componente.
