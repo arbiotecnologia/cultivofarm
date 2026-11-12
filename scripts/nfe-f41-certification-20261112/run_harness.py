@@ -44,8 +44,16 @@ def xsd_validate(xml_path, xsd_dir):
                        capture_output=True, text=True)
     return r.returncode == 0, (r.stderr.strip().splitlines() or [""])[-1]
 
-def c14n(el):  # Canonical XML 1.0 inclusivo, sem comentários (libxml2)
-    return etree.tostring(el, method="c14n", exclusive=False, with_comments=False)
+def c14n(el):
+    """Canonical XML 1.0 inclusivo, sem comentários (libxml2).
+
+    O subconjunto do nó é isolado por deepcopy (que leva o nsmap herdado) para
+    um documento próprio: `tostring(method='c14n')` aplicado a um nó interno
+    no lxml emite `xmlns=""` espúrio nos filhos. Inclusive C14N renderiza no
+    ápice os namespaces herdados — equivalente ao deepcopy aqui, pois apenas
+    NFe/Signature declaram namespace default."""
+    import copy
+    return etree.tostring(etree.ElementTree(copy.deepcopy(el)), method="c14n", exclusive=False, with_comments=False)
 
 def independent_verify(xml_bytes, tmp, expected_cert_der=None):
     """Verificação XMLDSig enveloped sem reutilizar código do motor."""
@@ -162,7 +170,7 @@ def main():
         try:
             deno("sign", HERE / "fixtures/synthetic-payload.json", cA, kB, tmp / "mm.xml"); check("neg.sign.chave_nao_corresponde", True, "assinou")
         except RuntimeError as e:
-            check("neg.sign.chave_nao_corresponde", False, "CERTIFICATE_KEY_MISMATCH" if "KEY_MISMATCH" in str(e) else str(e)[-120:], expect=False)
+            check("neg.sign.chave_nao_corresponde", False, "CERTIFICATE_KEY_MISMATCH" if "KEY_MISMATCH" in str(e) or "não corresponde" in str(e) else str(e)[-160:], expect=False)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

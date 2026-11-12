@@ -1,6 +1,6 @@
-# F4.1 — execução 2026-11-12T17:30:28.168294+00:00
+# F4.1 — execução 2026-11-12T17:30:50.614735+00:00
 
-Total 23, falhas 2.
+Total 23, falhas 1.
 
 | Caso | Esperado | Observado | Resultado | Detalhe |
 |---|---|---|---|---|
@@ -10,20 +10,21 @@ Total 23, falhas 2.
 | neg.prov.xsd_adulterado | REJECT | REJECT | OK | ['leiauteNFe_v4.00.xsd'] |
 | pos.motor.verifyNfeSignature | PASS | PASS | OK | {'valid': True, 'digestMatches': True, 'signatureMatches': True, 'referenceUri': '#NFe5126 |
 | pos.tpAmb_homologacao | PASS | PASS | OK | tpAmb=2 |
-| pos.xsd.PL_010g_vigente | PASS | PASS | OK | /tmp/f41-mazv4au5/signed.xml validates |
-| pos.xsd.PL_010e_motor | PASS | PASS | OK | /tmp/f41-mazv4au5/signed.xml validates |
-| pos.sig.independente_libxml2_openssl | PASS | REJECT | FAIL | DIGEST_MISMATCH |
+| pos.xsd.PL_010g_vigente | PASS | PASS | OK | /tmp/f41-5qo0jwzv/signed.xml validates |
+| pos.xsd.PL_010e_motor | PASS | PASS | OK | /tmp/f41-5qo0jwzv/signed.xml validates |
+| pos.sig.independente_libxml2_openssl | PASS | PASS | OK | RSA_SHA1_OK |
 | neg.sig.valor_alterado_infNFe | REJECT | REJECT | OK | DIGEST_MISMATCH |
 | neg.sig.valor_alterado_infNFe.motor | REJECT | REJECT | OK | SIGNATURE_DIGEST_MISMATCH |
-| neg.sig.signaturevalue_adulterado | REJECT | REJECT | OK | DIGEST_MISMATCH |
+| neg.sig.signaturevalue_adulterado | REJECT | REJECT | OK | SIGNATURE_VALUE_MISMATCH |
 | neg.sig.signaturevalue_adulterado.motor | REJECT | REJECT | OK | SIGNATURE_VALUE_MISMATCH |
 | neg.sig.uri_referencia_trocada | REJECT | REJECT | OK | REFERENCE_URI_MISMATCH |
 | neg.sig.uri_referencia_trocada.motor | REJECT | REJECT | OK | SIGNATURE_VALUE_MISMATCH |
-| neg.sig.certificado_substituido | REJECT | REJECT | OK | DIGEST_MISMATCH |
-| neg.sig.certificado_nao_esperado | REJECT | REJECT | OK | DIGEST_MISMATCH |
-| neg.xsd.sem_signature | REJECT | REJECT | OK | /tmp/f41-mazv4au5/nosig.xml fails to validate |
+| neg.sig.certificado_substituido | REJECT | REJECT | OK | SIGNATURE_VALUE_MISMATCH |
+| neg.sig.certificado_nao_esperado | REJECT | REJECT | OK | CERT_NOT_EXPECTED |
+| neg.xsd.sem_signature | REJECT | REJECT | OK | /tmp/f41-5qo0jwzv/nosig.xml fails to validate |
 | neg.sig.ausente | REJECT | REJECT | OK | SIGNATURE_COUNT_0 |
-| neg.xsd.cfop_invalido | REJECT | REJECT | OK | /tmp/f41-mazv4au5/badcfop.xml fails to validate |
-| neg.xsd.tpAmb_invalido | REJECT | REJECT | OK | /tmp/f41-mazv4au5/badamb.xml fails to validate |
+| neg.xsd.cfop_invalido | REJECT | REJECT | OK | /tmp/f41-5qo0jwzv/badcfop.xml fails to validate |
+| neg.xsd.tpAmb_invalido | REJECT | REJECT | OK | /tmp/f41-5qo0jwzv/badamb.xml fails to validate |
 | neg.sign.certificado_expirado | REJECT | REJECT | OK | CERTIFICATE_EXPIRED |
-| neg.sign.chave_nao_corresponde | REJECT | REJECT | OK | e:///dev-server/scripts/nfe-f41-certification-20261112/[0m[0m[36msign_fixture.ts[0m:[ |
+| neg.sign.chave_nao_corresponde | REJECT | REJECT | OK | 33m25[0m)
+    at [0m[2m[38;5;245mfile:///dev-server/scripts/nfe-f41-certification-2026 |
