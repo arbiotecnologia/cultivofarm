@@ -26,6 +26,29 @@ try:
   r=callback(stat);s=value(r);ok(stat+' não cancela nota/título',r.returncode==0 and s==dict(invoice='AUTHORIZED',title='OPEN') and state()==b,dict(out=r.stdout,err=r.stderr))
  for stat in ['135','155']:
   r=callback(stat);s=value(r);ok(stat+' final vinculado cancela nota e título aberto na transação',r.returncode==0 and s==dict(invoice='CANCELED',title='CANCELED'),dict(out=r.stdout,err=r.stderr));ok(stat+' rollback conserva previsão/estoque/entrega/título',state()==b)
+ # Committed outcomes in independent databases, never UPDATE to fabricate results.
+ base=d
+ for race in ['open-replay','payment-cancel','authorization-cancel']:
+  name='policy_'+uuid.uuid4().hex[:10];db.DB('postgres').sql(f'CREATE DATABASE {name} TEMPLATE c2');d=db.DB(name)
+  tid=str(uuid.uuid4());body=json.dumps(dict(cStat='135',nProt='LOCAL-RACE',chNFe=event['accessKey'],tpAmb='2',xMotivo='LOCAL FINAL'))
+  created=run(f"INSERT INTO fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('{tid}','{invoice}','{eid}','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','race-{tid}','{sha}','SENT','PENDING','{u(29)}');")
+  ok(race+' transmissão de entrada válida',created.returncode==0,created.stderr)
+  cb=f"SELECT rpc_fiscal_sefaz_transmit_record_v1('{tid}','SUCCEEDED','{body}'::jsonb);"
+  inst=d.last(f"SELECT id FROM accounts_receivable_installments WHERE receivable_id='{title}' LIMIT 1")
+  pay=json.dumps(dict(amount_received=1,payment_method_id=u(92),payment_date='2027-02-03',has_receipt=True,idempotency_key='race-paid-'+uuid.uuid4().hex))
+  other=cb
+  role='service_role'
+  if race=='payment-cancel':other=f"SELECT rpc_register_receivable_payment('{inst}','{pay}'::jsonb);";role='authenticated'
+  if race=='authorization-cancel':
+   auth_tx=d.last(f"SELECT id FROM fiscal_sefaz_transmissions WHERE fiscal_invoice_id='{invoice}' AND outcome='AUTHORIZED' LIMIT 1")
+   other=f"SELECT rpc_fiscal_sefaz_transmit_record_v1('{auth_tx}','SUCCEEDED','{{}}'::jsonb);"
+  with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+   first=pool.submit(run,cb);second=pool.submit(run,other,u(29),role);a,c=first.result(),second.result()
+  got=state();ok(race+' marca nota CANCELED e não reabre previsão/estoque/entrega',got['invoice']=='CANCELED' and got['forecast']==b['forecast'] and got['stock']==b['stock'] and got['delivery']==b['delivery'],dict(a=a.stdout,ae=a.stderr,c=c.stdout,ce=c.stderr,state=got))
+  if race=='payment-cancel':ok('corrida pagamento conserva dinheiro ou nega pagamento após cancelamento',got['title']=='PARTIAL' and got['payments']==1 or got['title']=='CANCELED' and got['payments']==0,got)
+  else:ok(race+' único cancelamento financeiro',got['title']=='CANCELED' and d.last(f"SELECT count(*) FROM financial_audit_log WHERE entity_id='{title}' AND action='AR_CANCELED'")=='1',got)
+  replay=run(cb);ok(race+' replay mantém mesmo título sem nova auditoria',replay.returncode==0 and state()==got,replay.stderr)
+  d=base
  inst=d.last(f"SELECT id FROM accounts_receivable_installments WHERE receivable_id='{title}' LIMIT 1")
  payload=json.dumps(dict(amount_received=1,payment_method_id=u(92),payment_date='2027-02-03',has_receipt=True,idempotency_key='policy-paid-'+uuid.uuid4().hex))
  payment=run(f"SELECT rpc_register_receivable_payment('{inst}','{payload}'::jsonb);",role='authenticated');ok('pagamento R$1 persistido por RPC real',payment.returncode==0,payment.stderr)
@@ -37,6 +60,7 @@ try:
   seam=f"BEGIN;GRANT EXECUTE ON FUNCTION rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) TO authenticated;INSERT INTO platform_private.b2b_forecast_lifecycle_allowlist_v1(operation,actor_id,organization_id,partner_id,order_id,synthetic,valid_until,created_by) VALUES('forecast_cancel','{uid}','{u(1)}','{partner}','{order}',true,now()+interval '1 hour','{u(24)}');"
   claims=json.dumps(dict(sub=uid,role='authenticated',iat=1,exp=4102444800))
   r=d.raw('\\set VERBOSITY verbose\n'+seam+f"SET ROLE authenticated;SET request.jwt.claim.sub='{uid}';SET request.jwt.claims='{claims}';SELECT rpc_b2b_forecast_cancel_residual_v1('{order}',{version},'LOCAL APPROVED RESIDUAL ONLY');ROLLBACK;")
-  calls.append(dict(actor=uid,sql=seam,exit=r.returncode,out=r.stdout,err=r.stderr));ok('residual RBAC '+uid[-2:],r.returncode==0 if want else r.returncode!=0,dict(out=r.stdout,err=r.stderr))
+  calls.append(dict(actor=uid,sql=seam,exit=r.returncode,out=r.stdout,err=r.stderr));ok('residual RBAC '+uid[-2:],r.returncode==0 if want else r.returncode!=0 and '42501' in r.stderr,dict(out=r.stdout,err=r.stderr))
+  ok('residual RBAC rollback sem efeitos '+uid[-2:],state()==paid)
 except Exception as e:ok('harness',False,repr(e))
 (out/'checks.json').write_text(json.dumps(rows,indent=2,ensure_ascii=False)+'\n');(out/'calls.json').write_text(json.dumps(calls,indent=2,ensure_ascii=False)+'\n');code=int(any(r['status']=='FAIL' for r in rows));(out/'exitcode').write_text(str(code)+'\n');sys.exit(code)
