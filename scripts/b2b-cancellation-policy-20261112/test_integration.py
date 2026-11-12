@@ -62,5 +62,15 @@ try:
   r=d.raw('\\set VERBOSITY verbose\n'+seam+f"SET ROLE authenticated;SET request.jwt.claim.sub='{uid}';SET request.jwt.claims='{claims}';SELECT rpc_b2b_forecast_cancel_residual_v1('{order}',{version},'LOCAL APPROVED RESIDUAL ONLY');ROLLBACK;")
   calls.append(dict(actor=uid,sql=seam,exit=r.returncode,out=r.stdout,err=r.stderr));ok('residual RBAC '+uid[-2:],r.returncode==0 if want else r.returncode!=0 and '42501' in r.stderr,dict(out=r.stdout,err=r.stderr))
   ok('residual RBAC rollback sem efeitos '+uid[-2:],state()==paid)
+ # Persist residual cancellation in an isolated clone; replay and revocation keep exact history.
+ base=d;name='residual_'+uuid.uuid4().hex[:10];db.DB('postgres').sql(f'CREATE DATABASE {name} TEMPLATE c2');d=db.DB(name)
+ d.sql(f"GRANT EXECUTE ON FUNCTION rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) TO authenticated;INSERT INTO platform_private.b2b_forecast_lifecycle_allowlist_v1(operation,actor_id,organization_id,partner_id,order_id,synthetic,valid_until,created_by) VALUES('forecast_cancel','{u(30)}','{u(1)}','{partner}','{order}',true,now()+interval '1 hour','{u(24)}')")
+ before=state();query=f"SELECT rpc_b2b_forecast_cancel_residual_v1('{order}',{version},'LOCAL RESIDUAL COMMIT');"
+ with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:results=list(pool.map(lambda _:run(query,u(30),'authenticated'),range(2)))
+ after=state();ok('residual concorrente um cancelamento e replay válido',all(r.returncode==0 for r in results) and after['forecast']['residual_amount']==0 and after['forecast']['state']=='cancelado_residual' and d.last(f"SELECT count(*) FROM platform_private.b2b_financial_forecast_events WHERE forecast_id='{after['forecast']['id']}' AND event_type='FORECAST_CANCELED'")=='1',dict(results=[r.stdout for r in results],state=after))
+ ok('cancelar residual preserva documentos títulos estoque expedição pagamentos',all(before[k]==after[k] for k in ['invoice','title','stock','delivery','payments']))
+ d.sql(f"UPDATE platform_private.b2b_forecast_lifecycle_allowlist_v1 SET revoked_at=clock_timestamp() WHERE actor_id='{u(30)}' AND order_id='{order}'")
+ revoked=run(query,u(30),'authenticated');ok('replay após revogação nega sem payload/efeito',revoked.returncode!=0 and '42501' in revoked.stderr and state()==after,revoked.stderr)
+ d=base
 except Exception as e:ok('harness',False,repr(e))
 (out/'checks.json').write_text(json.dumps(rows,indent=2,ensure_ascii=False)+'\n');(out/'calls.json').write_text(json.dumps(calls,indent=2,ensure_ascii=False)+'\n');code=int(any(r['status']=='FAIL' for r in rows));(out/'exitcode').write_text(str(code)+'\n');sys.exit(code)
