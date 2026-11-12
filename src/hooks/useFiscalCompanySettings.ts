@@ -145,14 +145,14 @@ export function useUpdateFiscalCompanySettings() {
   return useMutation<
     CompanyFiscalRow,
     Error,
-    { id: string; expectedVersion: number; values: CompanyFiscalFormValues }
+    { id: string; expectedVersion: number; values: CompanyFiscalFormValues; baseline?: CompanyFiscalFormValues }
   >({
     retry: false,
-    mutationFn: async ({ id, expectedVersion, values }) => {
+    mutationFn: async ({ id, expectedVersion, values, baseline }) => {
       const valid = scope.capture();
       if (!valid() || !organizationId) throw new Error("permission_denied");
       if (!Number.isSafeInteger(expectedVersion) || expectedVersion <= 0) throw new Error("conflict");
-      const payload = buildUpdatePayload(values);
+      const payload = buildUpdatePayload(values, baseline);
       payload.configuration_version = expectedVersion + 1;
       const { data, error } = await supabase
         .from("company_fiscal_settings")
