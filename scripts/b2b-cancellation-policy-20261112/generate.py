@@ -16,6 +16,28 @@ residual=replace(residual,"  IF EXISTS(SELECT 1 FROM platform_private.b2b_financ
 payment=read('payment')
 anchor='  SELECT * INTO v_inst FROM public.accounts_receivable_installments\n   WHERE id = p_installment_id AND organization_id=v_org FOR UPDATE;'
 payment=replace(payment,anchor,"  -- Lock title before installment, shared with fiscal cancellation.\n  SELECT * INTO v_origin FROM public.accounts_receivable WHERE organization_id=v_org AND id=(SELECT receivable_id FROM public.accounts_receivable_installments WHERE id=p_installment_id AND organization_id=v_org) FOR UPDATE;\n  IF NOT FOUND THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n"+anchor)
+bridge=read('bridge')
+bridge=replace(bridge,' IF existing.id IS NULL THEN',""" -- Closed replay proves immutable fiscal evidence AND exact persisted allocation/title/event.
+ -- No allocator dispatch with the event-sign actor: it is not a buyer/commercial actor.
+ IF existing.id IS NOT NULL AND EXISTS(
+  SELECT 1 FROM platform_private.b2b_document_allocations a
+  JOIN public.accounts_receivable r ON r.id=a.receivable_id
+  JOIN platform_private.b2b_financial_forecasts f ON f.order_id=po.id AND f.organization_id=org AND f.partner_id=po.partner_id
+  JOIN platform_private.b2b_financial_forecast_events fe ON fe.forecast_id=f.id AND fe.event_type='FISCAL_CONFIRMED' AND fe.event_reference=inv.id::text
+  WHERE a.document_id=inv.id AND a.organization_id=org AND a.order_id=po.id AND a.source_digest=digest AND a.items=items
+   AND r.id=inv.receivable_id AND r.organization_id=org AND r.origin_id=po.id AND r.origin_type='B2B_ORDER' AND r.partner_id=po.partner_id AND r.b2b_document_id=inv.id
+   AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals z WHERE z.document_id=inv.id)
+ ) THEN RETURN jsonb_build_object('success',true,'invoice_id',inv.id,'receivable_id',inv.receivable_id,'replayed',true,'closed_evidence_verified',true); END IF;
+ IF existing.id IS NULL THEN""")
+apply=read('apply')
+apply=replace(apply,"  -- Idempotente: documento ja autorizado", """  -- A valid historical authorization cannot resurrect a finally cancelled invoice.
+  IF v_inv.normalized_status='CANCELED' THEN
+    SELECT * INTO v_saved FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id=v_inv.id;
+    IF v_saved.invoice_id IS NULL OR v_saved.transmission_id IS DISTINCT FROM v_tx.id OR v_saved.protocol IS DISTINCT FROM _protocol OR v_saved.snapshot->>'access_key' IS DISTINCT FROM _access_key OR v_saved.snapshot->>'transmission_c_stat' IS DISTINCT FROM _c_stat THEN RAISE EXCEPTION 'FISCAL_REPLAY_DIVERGENCE' USING ERRCODE='PT409'; END IF;
+    IF NOT EXISTS(SELECT 1 FROM public.fiscal_events e JOIN public.fiscal_sefaz_transmissions ct ON ct.id=e.sefaz_transmission_id WHERE e.fiscal_invoice_id=v_inv.id AND e.event_type='SEFAZ_EVENT_REGISTERED' AND e.sefaz_event_code='110111' AND e.sefaz_c_stat IN ('135','155') AND ct.fiscal_invoice_id=v_inv.id AND ct.outcome='EVENT_REGISTERED' AND ct.state='SUCCEEDED' AND ct.ch_nfe=v_inv.access_key AND ct.n_prot=e.sefaz_n_prot) THEN RAISE EXCEPTION 'FISCAL_CANCEL_UNPROVEN' USING ERRCODE='PT409'; END IF;
+    RETURN jsonb_build_object('invoiceId',v_inv.id,'applied',false,'normalizedStatus','CANCELED','receivableId',v_inv.receivable_id,'historicalAuthorizationVerified',true);
+  END IF;
+  -- Idempotente: documento ja autorizado""")
 helper="""CREATE OR REPLACE FUNCTION platform_private.b2b_cancel_confirmed_fiscal_v1(p_tx uuid) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $fn$
 DECLARE t public.fiscal_sefaz_transmissions;e public.fiscal_events;i public.fiscal_invoices;r public.accounts_receivable;paid boolean;actor_org uuid;
@@ -80,7 +102,7 @@ INSERT INTO platform_private.b2b_cancel_policy_gate_v1(singleton,enabled) VALUES
 CREATE TABLE platform_private.b2b_cancel_policy_allowlist_v1(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),actor_id uuid NOT NULL,organization_id uuid NOT NULL,invoice_id uuid NOT NULL,order_id uuid NOT NULL,synthetic boolean NOT NULL DEFAULT true,valid_from timestamptz NOT NULL DEFAULT clock_timestamp(),valid_until timestamptz NOT NULL,revoked_at timestamptz);
 REVOKE ALL ON platform_private.b2b_cancel_policy_allowlist_v1 FROM PUBLIC,anon,authenticated,service_role;
 """
-(H/'candidate.sql').write_text(gate+residual+';\n'+payment+';\n'+helper+record+';\n')
+(H/'candidate.sql').write_text(gate+residual+';\n'+payment+';\n'+bridge+';\n'+apply+';\n'+helper+record+';\n')
 (H/'01-pre.sql.readonly').write_text('BEGIN READ ONLY;\n'+pre+'ROLLBACK;\n')
 (H/'02-install.sql.review').write_text('BEGIN;\n'+pre+"IF_NOT_USED".replace('IF_NOT_USED','')+(H/'candidate.sql').read_text()+'COMMIT;\n')
 post=H/'capture/post-pins.json'
