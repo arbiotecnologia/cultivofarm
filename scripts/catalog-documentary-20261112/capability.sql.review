@@ -1,0 +1,27 @@
+-- INACTIVE REVIEW CANDIDATE. No client EXECUTE granted by this package.
+BEGIN;
+DO $pre$ BEGIN
+  IF current_setting('app.settings.project_ref', true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN
+    RAISE EXCEPTION 'CANONICAL_REF_UNPROVEN';
+  END IF;
+  IF to_regprocedure('platform_private.catalog_tenant_actor(text)') IS NULL THEN RAISE EXCEPTION 'CANONICAL_CATALOG_AUTHORITY_MISSING'; END IF;
+  IF to_regprocedure('public.tenant_catalog_documentary_capability_v1(text,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'CANDIDATE_ALREADY_EXISTS_RECAPTURE_REQUIRED'; END IF;
+END $pre$;
+CREATE FUNCTION public.tenant_catalog_documentary_capability_v1(p_entity text, p_id uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $f$
+DECLARE v_org uuid; v_owner uuid;
+BEGIN
+  v_org := platform_private.catalog_tenant_actor('mutate');
+  IF auth.uid() IS NULL OR v_org IS NULL THEN RAISE EXCEPTION 'catalog_denied' USING ERRCODE='42501'; END IF;
+  IF p_entity NOT IN ('produto','microrganismo') OR p_entity IS NULL THEN RAISE EXCEPTION 'entity_invalid' USING ERRCODE='22023'; END IF;
+  IF p_id IS NOT NULL THEN
+    IF p_entity = 'produto' THEN SELECT owner_organization_id INTO v_owner FROM public.produtos WHERE id = p_id;
+    ELSE SELECT owner_organization_id INTO v_owner FROM public.microrganismos WHERE id = p_id; END IF;
+    IF v_owner IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'catalog_denied' USING ERRCODE='42501'; END IF;
+  END IF;
+  RETURN jsonb_build_object('allowed',true,'actor_id',auth.uid(),'organization_id',v_org);
+END $f$;
+REVOKE ALL ON FUNCTION public.tenant_catalog_documentary_capability_v1(text,uuid) FROM PUBLIC, anon, authenticated, service_role;
+COMMIT;
+-- POST: verify owner, fixed search_path and no client EXECUTE, then independent review of activation.
+-- Deny-only rollback: REVOKE ALL ON FUNCTION public.tenant_catalog_documentary_capability_v1(text,uuid) FROM PUBLIC, anon, authenticated, service_role;
