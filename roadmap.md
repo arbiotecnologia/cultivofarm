@@ -1,3 +1,8 @@
+## 12/11 01:22 — Pré-requisitos específicos de cancelamento em homologação
+- [ ] Preparar inventário transitivo segmentado e comparar os onze hashes reportados com o candidato 8cf02e2b; sem consultas remotas.
+- [ ] Entregar fontes revisadas de fixture e ponto Financeiro/UI isolada, sem ativar o original.
+- [ ] Roundtrip dos pré-requisitos condicionado à estrutura/ACL/guards exatos do alvo e à disponibilidade do espelho; registrar dependências concretas e hashes.
+
 ## 11/11 23:28 — Implementação candidata da política humana de cancelamento
 - [x] Pacote separado inativo preparado: residual Comercial/Admin com motivo/CAS; helper fiscal final vinculado e título aberto; pagamentos exigem Financeiro, sem estorno automático.
 - [x] Gates/escopo estreitos, PRE/INSTALL/POST/rollback/POST-rollback gerados; UI candidata isolada 17/17, runtime/Edges intactos.
