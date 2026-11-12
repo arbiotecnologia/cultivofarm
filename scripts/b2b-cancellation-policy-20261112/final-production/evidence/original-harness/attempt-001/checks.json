@@ -4,7 +4,7 @@
     "status": "PASS",
     "detail": {
       "reason": "LOCAL POLICY CANCEL REASON",
-      "eventId": "da957649-4f98-42c1-b7c9-fa5a6462e3b9",
+      "eventId": "823c4398-a02d-47e3-b168-ee9d6ec9b9a1",
       "protocol": "LOCAL-INTEGRATED-PROTOCOL",
       "accessKey": "35261111111111111111111111111111111111111111",
       "eventCode": "110111",
@@ -22,7 +22,7 @@
     "test": "573 não cancela nota/título",
     "status": "PASS",
     "detail": {
-      "out": "{\"nRec\": null, \"cStat\": \"573\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-573\", \"state\": \"SUCCEEDED\", \"outcome\": \"REJECTED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_NOT_FINAL\", \"final\": false}, \"protocolCStat\": \"573\", \"transmissionId\": \"edc4e7e8-9de6-4a10-8451-b151408e3a9d\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"OPEN\", \"invoice\": \"AUTHORIZED\"}\n",
+      "out": "{\"nRec\": null, \"cStat\": \"573\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-573\", \"state\": \"SUCCEEDED\", \"outcome\": \"REJECTED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_NOT_FINAL\", \"final\": false}, \"protocolCStat\": \"573\", \"transmissionId\": \"29ef40ac-2a77-46c5-87b0-3288a3ca9b88\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"OPEN\", \"invoice\": \"AUTHORIZED\"}\n",
       "err": ""
     }
   },
@@ -30,7 +30,7 @@
     "test": "103 não cancela nota/título",
     "status": "PASS",
     "detail": {
-      "out": "{\"nRec\": null, \"cStat\": \"103\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-103\", \"state\": \"SUCCEEDED\", \"outcome\": \"PROCESSING\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_NOT_FINAL\", \"final\": false}, \"protocolCStat\": \"103\", \"transmissionId\": \"b058d9d3-6fcb-488d-9435-ecae602c830b\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"OPEN\", \"invoice\": \"AUTHORIZED\"}\n",
+      "out": "{\"nRec\": null, \"cStat\": \"103\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-103\", \"state\": \"SUCCEEDED\", \"outcome\": \"PROCESSING\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_NOT_FINAL\", \"final\": false}, \"protocolCStat\": \"103\", \"transmissionId\": \"564e5f94-1070-4c6a-a81d-ed4cf595b60c\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"OPEN\", \"invoice\": \"AUTHORIZED\"}\n",
       "err": ""
     }
   },
@@ -38,7 +38,7 @@
     "test": "136 não cancela nota/título",
     "status": "PASS",
     "detail": {
-      "out": "{\"nRec\": null, \"cStat\": \"136\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-136\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_NOT_FINAL\", \"final\": false}, \"protocolCStat\": \"136\", \"transmissionId\": \"c38094d8-7477-40e6-9217-49d5c6dc5f3e\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"OPEN\", \"invoice\": \"AUTHORIZED\"}\n",
+      "out": "{\"nRec\": null, \"cStat\": \"136\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-136\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_NOT_FINAL\", \"final\": false}, \"protocolCStat\": \"136\", \"transmissionId\": \"9e98540b-01a1-4559-869d-452e84942bfb\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"OPEN\", \"invoice\": \"AUTHORIZED\"}\n",
       "err": ""
     }
   },
@@ -46,7 +46,7 @@
     "test": "135 final vinculado cancela nota e título aberto na transação",
     "status": "PASS",
     "detail": {
-      "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-135\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"final\": true, \"idempotentReplay\": false, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"1695a98b-afaa-48ad-ab39-fcc5299a47b6\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"CANCELED\", \"invoice\": \"CANCELED\"}\n",
+      "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-135\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"final\": true, \"idempotentReplay\": false, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"27584663-d104-45ce-8ca8-ba456279b4e2\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"CANCELED\", \"invoice\": \"CANCELED\"}\n",
       "err": ""
     }
   },
@@ -59,7 +59,7 @@
     "test": "155 final vinculado cancela nota e título aberto na transação",
     "status": "PASS",
     "detail": {
-      "out": "{\"nRec\": null, \"cStat\": \"155\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-155\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"final\": true, \"idempotentReplay\": false, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"155\", \"transmissionId\": \"b05a8eef-94f9-4d85-a08f-b63917f00cf4\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"CANCELED\", \"invoice\": \"CANCELED\"}\n",
+      "out": "{\"nRec\": null, \"cStat\": \"155\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-155\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"final\": true, \"idempotentReplay\": false, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"155\", \"transmissionId\": \"e406680c-9449-44c4-9a18-a49578d5adc8\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"CANCELED\", \"invoice\": \"CANCELED\"}\n",
       "err": ""
     }
   },
@@ -77,9 +77,9 @@
     "test": "open-replay marca nota CANCELED e não reabre previsão/estoque/entrega",
     "status": "PASS",
     "detail": {
-      "a": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-RACE\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"final\": true, \"idempotentReplay\": false, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"1835a311-3b1b-4e73-89e5-194e4f3987c3\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+      "a": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-RACE\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"final\": true, \"idempotentReplay\": false, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"33bb2479-3606-4210-bd70-71c0df45bf7e\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
       "ae": "",
-      "c": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-RACE\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"final\": true, \"idempotentReplay\": true, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"1835a311-3b1b-4e73-89e5-194e4f3987c3\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+      "c": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-RACE\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"final\": true, \"idempotentReplay\": true, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"33bb2479-3606-4210-bd70-71c0df45bf7e\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
       "ce": "",
       "state": {
         "stock": "5ec32cf4d5f160d08da83cc6e0b211e1",
@@ -497,9 +497,9 @@
     "test": "payment-cancel marca nota CANCELED e não reabre previsão/estoque/entrega",
     "status": "PASS",
     "detail": {
-      "a": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-RACE\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_PAYMENT_REVIEW\", \"final\": true, \"financialReconciliationRequired\": true}, \"protocolCStat\": \"135\", \"transmissionId\": \"10a6aa4b-1ab3-4abc-8881-f8552db5b4b0\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+      "a": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-RACE\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_PAYMENT_REVIEW\", \"final\": true, \"financialReconciliationRequired\": true}, \"protocolCStat\": \"135\", \"transmissionId\": \"1a40b237-d98c-4eb8-8a77-71aeb58637b6\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
       "ae": "",
-      "c": "58480976-fcb3-4e09-879e-a9057aa25c79\n",
+      "c": "5bece072-de35-4af6-b337-5dd6744acfd5\n",
       "ce": "",
       "state": {
         "stock": "5ec32cf4d5f160d08da83cc6e0b211e1",
@@ -917,7 +917,7 @@
     "test": "authorization-cancel marca nota CANCELED e não reabre previsão/estoque/entrega",
     "status": "PASS",
     "detail": {
-      "a": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-RACE\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"final\": true, \"idempotentReplay\": false, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"9ce14c90-41a0-44e7-88c0-4a14a64d56d2\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+      "a": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-RACE\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"final\": true, \"idempotentReplay\": false, \"financialReconciliationRequired\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"2b14dcd1-be00-410f-b3ee-1ded39144f7f\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
       "ae": "",
       "c": "{\"nRec\": null, \"cStat\": \"104\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-INTEGRATED-PROTOCOL\", \"state\": \"SUCCEEDED\", \"outcome\": \"AUTHORIZED\", \"xMotivo\": \"LOTE PROCESSADO; PROTOCOLO AUTORIZADO\", \"cancellation\": null, \"protocolCStat\": \"100\", \"transmissionId\": \"00000000-0000-0000-0000-000000000901\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
       "ce": "",
@@ -1337,7 +1337,7 @@
     "test": "primeiro final da própria NF paga marca nota sem cancelar título",
     "status": "PASS",
     "detail": {
-      "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-135\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_PAYMENT_REVIEW\", \"final\": true, \"financialReconciliationRequired\": true}, \"protocolCStat\": \"135\", \"transmissionId\": \"bbd19d63-1255-400e-b67c-97b67870e072\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"PARTIAL\", \"invoice\": \"CANCELED\"}\n",
+      "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-POLICY-135\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL POLICY RESULT\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_PAYMENT_REVIEW\", \"final\": true, \"financialReconciliationRequired\": true}, \"protocolCStat\": \"135\", \"transmissionId\": \"671b8870-6497-46aa-a90c-931c112e89b9\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n{\"title\": \"PARTIAL\", \"invoice\": \"CANCELED\"}\n",
       "err": ""
     }
   },
@@ -1431,7 +1431,7 @@
           "order_id": "1aa80e33-28b1-4e12-8c7c-5ae214f38244",
           "created_at": "2026-11-12T02:30:06.560716+00:00",
           "partner_id": "00000000-0000-0000-0000-000000000011",
-          "updated_at": "2026-11-12T02:36:46.358752+00:00",
+          "updated_at": "2026-11-12T02:39:02.518727+00:00",
           "total_amount": 20.0,
           "items_snapshot": [
             {
