@@ -51406,3 +51406,129 @@ stderr | src/test/fiscal/CertificadoValidadeBanner.test.tsx > CertificadoValidad
  ✓ src/test/saas/drift-email-handler.test.ts (10 tests) 60ms
  ✓ src/test/fiscal/fiscal_labels_pt_br.test.ts (45 tests) 64ms
  ✓ src/test/fiscal/xmlEngineXsdSelftest.test.ts (14 tests) 11ms
+stderr | src/test/fiscal/sinief49/ui.test.tsx > SinefOperationsPanel · visibilidade por papel > administrador vê o painel
+Warning: validateDOMNesting(...): <div> cannot appear as a descendant of <p>.
+    at div
+    at /dev-server/src/components/ui/badge.tsx:22:65
+    at p
+    at ItemProfileStatusLine (/dev-server/src/components/fiscal/documentos/sinief49/SinefOperationsPanel.tsx:2275:34)
+    at div
+    at div
+    at div
+    at div
+    at /dev-server/src/components/ui/card.tsx:47:71
+    at div
+    at /dev-server/src/components/ui/card.tsx:7:64
+    at fieldset
+    at div
+    at SinefOperationsPanel (/dev-server/src/components/fiscal/documentos/sinief49/SinefOperationsPanel.tsx:76:33)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+
+stderr | src/test/multiportal.gestao.test.tsx > gestor+técnico escolhe Gestão sem card B2B inventado
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/multiportal.gestao.test.tsx > duplo clique bloqueado e lock liberado após erro
+[SelecionarPortal] context_selection_unavailable
+
+ ✓ src/test/multiportal.gestao.test.tsx (9 tests) 431ms
+ ✓ src/test/fiscal/sinief49/ui.test.tsx (11 tests) 447ms
+ ✓ src/test/ordens-servico/programming.test.tsx (27 tests) 1532ms
+stderr | src/test/comercial/validityDatePersistence.test.tsx > Vigência final da atribuição > envia 2026-11-15 digitado via onChange e salvo sem blur
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | src/test/comercial/validityDatePersistence.test.tsx > Vigência final da atribuição > envia data preenchida só no DOM (autofill sem evento React)
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | src/test/comercial/validityDatePersistence.test.tsx > Vigência final da atribuição > recusa vigência final anterior à inicial sem chamar o servidor
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/fiscal/sinief49/sinief20.test.ts (13 tests) 15ms
+stderr | src/test/config/residualScopeStability.integration.test.tsx > pair → gestor residual stability (3 s/probe) > fast → slow (3 s/call = 3 s single-RTT probe) stays valid for 10 min of cycles; lease 15 s untouched
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":50,"leaseRemainingMs":10323,"requestRemainingMs":14950}
+
+stdout | src/test/config/residualScopeStability.integration.test.tsx > pair → gestor residual stability (3 s/probe) > fast → slow (3 s/call = 3 s single-RTT probe) stays valid for 10 min of cycles; lease 15 s untouched
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stderr | src/test/config/residualScopeStability.integration.test.tsx > pair → gestor residual stability (3 s/probe) > fast → slow (3 s/call = 3 s single-RTT probe) stays valid for 10 min of cycles; lease 15 s untouched
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":50,"leaseRemainingMs":null,"requestRemainingMs":14950}
+
+ ✓ src/test/comercial/validityDatePersistence.test.tsx (7 tests) 1416ms
+   ✓ Vigência final da atribuição > envia 2026-11-15 digitado via onChange e salvo sem blur  477ms
+stderr | src/test/config/residualScopeStability.integration.test.tsx > pair → gestor residual stability (3 s/probe) > slow from the start of the residual scope stays valid
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":1500,"leaseRemainingMs":8591,"requestRemainingMs":13500}
+
+stdout | src/test/config/residualScopeStability.integration.test.tsx > pair → gestor residual stability (3 s/probe) > slow from the start of the residual scope stays valid
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stderr | src/test/config/residualScopeStability.integration.test.tsx > pair → gestor residual stability (3 s/probe) > slow from the start of the residual scope stays valid
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":1500,"leaseRemainingMs":null,"requestRemainingMs":13500}
+
+stderr | src/test/config/residualScopeStability.integration.test.tsx > pair → gestor residual stability (3 s/probe) > negative: 8 s/call (8 s single-RTT probe) still pauses; late answers do not revive
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":50,"leaseRemainingMs":9988,"requestRemainingMs":14950}
+
+stdout | src/test/config/residualScopeStability.integration.test.tsx > pair → gestor residual stability (3 s/probe) > negative: 8 s/call (8 s single-RTT probe) still pauses; late answers do not revive
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stderr | src/test/config/residualScopeStability.integration.test.tsx > pair → gestor residual stability (3 s/probe) > negative: 8 s/call (8 s single-RTT probe) still pauses; late answers do not revive
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":50,"leaseRemainingMs":null,"requestRemainingMs":14950}
+
+stderr | src/test/config/residualScopeStability.integration.test.tsx > pair → gestor residual stability (3 s/probe) > negative: 8 s/call (8 s single-RTT probe) still pauses; late answers do not revive
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"timeout","visible":true,"online":true,"rttMs":6000,"leaseRemainingMs":0,"requestRemainingMs":9000}
+
+stderr | src/test/config/residualScopeStability.integration.test.tsx > pair → consultor_tecnico residual stability (3 s/probe) > fast → slow (3 s/call = 3 s single-RTT probe) stays valid for 10 min of cycles; lease 15 s untouched
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":50,"leaseRemainingMs":10152,"requestRemainingMs":14950}
+
+stdout | src/test/config/residualScopeStability.integration.test.tsx > pair → consultor_tecnico residual stability (3 s/probe) > fast → slow (3 s/call = 3 s single-RTT probe) stays valid for 10 min of cycles; lease 15 s untouched
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stderr | src/test/config/residualScopeStability.integration.test.tsx > pair → consultor_tecnico residual stability (3 s/probe) > fast → slow (3 s/call = 3 s single-RTT probe) stays valid for 10 min of cycles; lease 15 s untouched
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":50,"leaseRemainingMs":null,"requestRemainingMs":14950}
+
+stderr | src/test/config/residualScopeStability.integration.test.tsx > pair → consultor_tecnico residual stability (3 s/probe) > slow from the start of the residual scope stays valid
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":1500,"leaseRemainingMs":8555,"requestRemainingMs":13500}
+
+stdout | src/test/config/residualScopeStability.integration.test.tsx > pair → consultor_tecnico residual stability (3 s/probe) > slow from the start of the residual scope stays valid
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stderr | src/test/config/residualScopeStability.integration.test.tsx > pair → consultor_tecnico residual stability (3 s/probe) > slow from the start of the residual scope stays valid
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":1500,"leaseRemainingMs":null,"requestRemainingMs":13500}
+
+stderr | src/test/config/residualScopeStability.integration.test.tsx > pair → consultor_tecnico residual stability (3 s/probe) > negative: 8 s/call (8 s single-RTT probe) still pauses; late answers do not revive
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":50,"leaseRemainingMs":10229,"requestRemainingMs":14950}
+
+stdout | src/test/config/residualScopeStability.integration.test.tsx > pair → consultor_tecnico residual stability (3 s/probe) > negative: 8 s/call (8 s single-RTT probe) still pauses; late answers do not revive
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stderr | src/test/config/residualScopeStability.integration.test.tsx > pair → consultor_tecnico residual stability (3 s/probe) > negative: 8 s/call (8 s single-RTT probe) still pauses; late answers do not revive
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":50,"leaseRemainingMs":null,"requestRemainingMs":14950}
+
+stderr | src/test/config/residualScopeStability.integration.test.tsx > pair → consultor_tecnico residual stability (3 s/probe) > negative: 8 s/call (8 s single-RTT probe) still pauses; late answers do not revive
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"timeout","visible":true,"online":true,"rttMs":6000,"leaseRemainingMs":0,"requestRemainingMs":9000}
+
+ ✓ src/test/config/residualScopeStability.integration.test.tsx (8 tests) 589ms
+ ✓ src/test/security/admin-password-handler.test.ts (29 tests) 54ms
+ ✓ src/test/config/commercialRegistration.form.test.tsx (11 tests) 1996ms
+   ✓ preserva string obrigatória vazia na validação, mantendo opcionais nulos  372ms
+ ✓ src/test/config/pwa-binding-hardening.test.ts (15 tests) 20ms
+ ✓ src/test/security/d51-5-p1-systemic.test.ts (7 tests) 12ms
+stderr | src/test/financeiro/contasPagarBloco6.test.tsx > regressão — validação do journal > registro inconsistente bloqueia o envio sem nenhuma RPC
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | src/test/financeiro/contasPagarBloco6.test.tsx > regressão — conferência só libera com remoção comprovada > falha na remoção mantém tentativa, chave e bloqueio com mensagem segura
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | src/test/financeiro/contasPagarBloco6.test.tsx > regressão — conferência só libera com remoção comprovada > remoção comprovada libera o formulário
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/financeiro/contasPagarBloco6.test.tsx (7 tests) 668ms
+   ✓ regressão — validação do journal > registro inconsistente bloqueia o envio sem nenhuma RPC  323ms
+ ✓ src/test/fiscal/fase3_1.static.test.ts (35 tests) 26ms
+stderr | src/test/pedidos/ownerOrderTracking.test.tsx > commercialOwner em /pedidos vê acompanhamento somente leitura do pedido próprio, sem fallback nem ações legadas
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/pedidos/ownerOrderTracking.test.tsx (2 tests) 212ms
+ ✓ src/test/catalogo/productUnitPackaging.contract.test.tsx (11 tests) 59ms
