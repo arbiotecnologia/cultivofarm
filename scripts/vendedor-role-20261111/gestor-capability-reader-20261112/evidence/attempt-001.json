@@ -1,7 +1,7 @@
 {
   "attempt": 1,
-  "pass_": 58,
-  "fail": 2,
+  "pass_": 60,
+  "fail": 0,
   "checks": [
     {
       "test": "restore sem erros além das FKs auth",
@@ -244,9 +244,9 @@
       "detail": null
     },
     {
-      "test": "comprador_canonico: previsão única aguardando NF, autores distintos (gestor/financeiro)",
-      "status": "FAIL",
-      "detail": "{'status': 'aprovado', 'created_by': '00000000-0000-0000-0000-000000000021', 'approved_by': '00000000-0000-0000-0000-000000000030', 'approved_at': True, 'financial_approval_status': 'pending', 'numero': 'PB-001024', 'table': 10.0, 'discount': 1.0, 'total': 9.0, 'final': 9.0, 'credit_approved_by': None, 'requires_fin': True, 'origin_actor': None, 'terms': [{'id': '690ff4c9-d2fc-4ff3-a84a-0bf99349fdf9', 'status': 'approved', 'approved_by': '00000000-0000-0000-0000-000000000029'}], 'schedule': [{'n': 1, 'due': '2026-12-12', 'amount': 9.0}], 'forecasts': [{'id': '0ac0d654-c39b-40ee-a324-08334c91a9c8', 'state': 'aguardando_fiscal', 'amount': 9.0, 'residual': 9.0, 'commercial_by': '00000000-0000-0000-0000-000000000030', 'credit_by': None}]}"
+      "test": "comprador_canonico: previsão única aguardando NF: comercial=gestor, termos=financeiro; crédito automático (credit_approved_by nulo, sem aprovação explícita)",
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "comprador_canonico: repetição não duplica previsão",
@@ -270,8 +270,8 @@
     },
     {
       "test": "ordem inversa (termos→comercial) também gera previsão única com autores distintos",
-      "status": "FAIL",
-      "detail": "(({'status': 'approved', 'success': True}, None), (True, None), {'status': 'aprovado', 'created_by': '00000000-0000-0000-0000-000000000021', 'approved_by': '00000000-0000-0000-0000-000000000030', 'approved_at': True, 'financial_approval_status': 'pending', 'numero': 'PB-001025', 'table': 10.0, 'discount': 1.0, 'total': 9.0, 'final': 9.0, 'credit_approved_by': None, 'requires_fin': True, 'origin_actor': None, 'terms': [{'id': 'accbb53b-b5d9-415c-8886-f92da4dd769a', 'status': 'approved', 'approved_by': '00000000-0000-0000-0000-000000000029'}], 'schedule': [{'n': 1, 'due': '2026-12-12', 'amount': 9.0}], 'forecasts': [{'id': '7d362db4-aba2-44e0-9118-973e3efc42dd', 'state': 'aguardando_fiscal', 'amount': 9.0, 'residual': 9.0, 'commercial_by': '00000000-0000-0000-0000-000000000030', 'credit_by': None}]})"
+      "status": "PASS",
+      "detail": null
     },
     {
       "test": "gate de previsão desligado ao fim (alinhado à produção)",
@@ -305,9 +305,9 @@
     }
   ],
   "ids": {
-    "assignment": "75e9e7df-972a-491a-9431-58525f77fc7d",
+    "assignment": "8bdfc2b8-e809-4293-81b7-2ce47d8ee6a3",
     "vendedor": {
-      "order_id": "721d91ee-80b0-4692-94d3-6e4f720fe8f6",
+      "order_id": "970363f5-e3ca-4ccc-a412-4b20dbd11b66",
       "created": {
         "status": "em_analise_comercial",
         "created_by": "00000000-0000-0000-0000-000000000901",
@@ -324,7 +324,7 @@
         "origin_actor": "00000000-0000-0000-0000-000000000901",
         "terms": [
           {
-            "id": "ab5fa154-8cb1-40a2-8743-a04230ca2090",
+            "id": "e78368d5-b756-4805-985b-b2af41253cff",
             "status": "pending",
             "approved_by": null
           }
@@ -354,7 +354,7 @@
         "origin_actor": "00000000-0000-0000-0000-000000000901",
         "terms": [
           {
-            "id": "ab5fa154-8cb1-40a2-8743-a04230ca2090",
+            "id": "e78368d5-b756-4805-985b-b2af41253cff",
             "status": "approved",
             "approved_by": "00000000-0000-0000-0000-000000000029"
           }
@@ -385,7 +385,7 @@
         "origin_actor": "00000000-0000-0000-0000-000000000901",
         "terms": [
           {
-            "id": "ab5fa154-8cb1-40a2-8743-a04230ca2090",
+            "id": "e78368d5-b756-4805-985b-b2af41253cff",
             "status": "approved",
             "approved_by": "00000000-0000-0000-0000-000000000029"
           }
@@ -401,7 +401,7 @@
       }
     },
     "gestor": {
-      "order_id": "2e8432d7-24c0-4226-aa3c-f6b10d251ac2",
+      "order_id": "801646ca-d356-474f-a87a-e1a29e15177a",
       "created": {
         "status": "em_analise_comercial",
         "created_by": "00000000-0000-0000-0000-000000000030",
@@ -418,7 +418,7 @@
         "origin_actor": "00000000-0000-0000-0000-000000000030",
         "terms": [
           {
-            "id": "66c88ffa-364a-45a4-9f2c-b51c91e7e885",
+            "id": "06aaa8b5-ffb5-47f6-947e-cd1d734d686b",
             "status": "pending",
             "approved_by": null
           }
@@ -448,7 +448,7 @@
         "origin_actor": "00000000-0000-0000-0000-000000000030",
         "terms": [
           {
-            "id": "66c88ffa-364a-45a4-9f2c-b51c91e7e885",
+            "id": "06aaa8b5-ffb5-47f6-947e-cd1d734d686b",
             "status": "approved",
             "approved_by": "00000000-0000-0000-0000-000000000029"
           }
@@ -479,7 +479,7 @@
         "origin_actor": "00000000-0000-0000-0000-000000000030",
         "terms": [
           {
-            "id": "66c88ffa-364a-45a4-9f2c-b51c91e7e885",
+            "id": "06aaa8b5-ffb5-47f6-947e-cd1d734d686b",
             "status": "approved",
             "approved_by": "00000000-0000-0000-0000-000000000029"
           }
@@ -495,21 +495,21 @@
       }
     },
     "gestor_terms_probe": {
-      "order_id": "e5565925-30fb-4b63-98d5-e649a3815b6f",
+      "order_id": "88ec5b15-6cf5-4dba-9765-c28313c966d7",
       "result": {
         "status": "approved",
         "success": true
       },
       "terms": [
         {
-          "id": "226341b9-42d8-4151-bfc0-1a9879174c5f",
+          "id": "69a91b5e-9778-4190-98b2-70b98706c757",
           "status": "approved",
           "approved_by": "00000000-0000-0000-0000-000000000030"
         }
       ]
     },
     "comprador_ordem_inversa": {
-      "order_id": "df4a6050-1131-4bcf-90be-3da3af8ab62e",
+      "order_id": "02c4a301-424c-4e2b-a004-0457b2a34011",
       "created": {
         "status": "em_analise_comercial",
         "created_by": "00000000-0000-0000-0000-000000000021",
@@ -526,7 +526,7 @@
         "origin_actor": null,
         "terms": [
           {
-            "id": "d57084aa-c7b8-495c-9953-3becf21b9d12",
+            "id": "7a0cb390-8957-4f39-8fab-58ad227529c1",
             "status": "pending",
             "approved_by": null
           }
@@ -556,7 +556,7 @@
         "origin_actor": null,
         "terms": [
           {
-            "id": "d57084aa-c7b8-495c-9953-3becf21b9d12",
+            "id": "7a0cb390-8957-4f39-8fab-58ad227529c1",
             "status": "approved",
             "approved_by": "00000000-0000-0000-0000-000000000029"
           }
@@ -587,7 +587,7 @@
         "origin_actor": null,
         "terms": [
           {
-            "id": "d57084aa-c7b8-495c-9953-3becf21b9d12",
+            "id": "7a0cb390-8957-4f39-8fab-58ad227529c1",
             "status": "approved",
             "approved_by": "00000000-0000-0000-0000-000000000029"
           }
@@ -604,7 +604,7 @@
       "finding_reverse_order_no_forecast": true
     },
     "comprador_canonico": {
-      "order_id": "b0661864-645f-4910-bf03-bc71b8ed5207",
+      "order_id": "4b8ce125-c23b-470d-aee3-22fb6fa9898d",
       "created": {
         "status": "em_analise_comercial",
         "created_by": "00000000-0000-0000-0000-000000000021",
@@ -621,7 +621,7 @@
         "origin_actor": null,
         "terms": [
           {
-            "id": "690ff4c9-d2fc-4ff3-a84a-0bf99349fdf9",
+            "id": "3fcb8014-0a12-48aa-89d1-a8dadf56718c",
             "status": "pending",
             "approved_by": null
           }
@@ -655,7 +655,7 @@
         "origin_actor": null,
         "terms": [
           {
-            "id": "690ff4c9-d2fc-4ff3-a84a-0bf99349fdf9",
+            "id": "3fcb8014-0a12-48aa-89d1-a8dadf56718c",
             "status": "approved",
             "approved_by": "00000000-0000-0000-0000-000000000029"
           }
@@ -669,7 +669,7 @@
         ],
         "forecasts": [
           {
-            "id": "0ac0d654-c39b-40ee-a324-08334c91a9c8",
+            "id": "e6b8519a-cda5-4111-b7b9-2ea173593401",
             "state": "aguardando_fiscal",
             "amount": 9.0,
             "residual": 9.0,
@@ -681,23 +681,23 @@
       "forecast_read": {
         "state": "aguardando_fiscal",
         "version": 1,
-        "order_id": "b0661864-645f-4910-bf03-bc71b8ed5207",
+        "order_id": "4b8ce125-c23b-470d-aee3-22fb6fa9898d",
         "schedule": [
           {
-            "id": "7b015d5f-4c8a-40bb-8ad2-96547ab3bd5c",
+            "id": "f92f08cb-8623-4cb2-ad2e-29d13b560156",
             "amount": 9.0,
             "due_date": "2026-12-12",
             "interest_amount": 0.0,
-            "partner_order_id": "b0661864-645f-4910-bf03-bc71b8ed5207",
-            "payment_terms_id": "690ff4c9-d2fc-4ff3-a84a-0bf99349fdf9",
+            "partner_order_id": "4b8ce125-c23b-470d-aee3-22fb6fa9898d",
+            "payment_terms_id": "3fcb8014-0a12-48aa-89d1-a8dadf56718c",
             "principal_amount": 9.0,
             "installment_number": 1
           }
         ],
-        "created_at": "2026-11-12T13:07:36.868135+00:00",
+        "created_at": "2026-11-12T13:08:05.86155+00:00",
         "partner_id": "00000000-0000-0000-0000-000000000011",
-        "updated_at": "2026-11-12T13:07:36.868135+00:00",
-        "forecast_id": "0ac0d654-c39b-40ee-a324-08334c91a9c8",
+        "updated_at": "2026-11-12T13:08:05.86155+00:00",
+        "forecast_id": "e6b8519a-cda5-4111-b7b9-2ea173593401",
         "total_amount": 9.0,
         "last_error_code": null,
         "organization_id": "007bb519-cba0-4704-be2c-cb93ad010048",
@@ -707,7 +707,7 @@
       }
     },
     "inversa_com_concessao": {
-      "order_id": "39512ad5-87c1-421b-bd64-8abc59af2670",
+      "order_id": "df4c9874-e17a-49b5-9bae-8a1f3e868b39",
       "final": {
         "status": "aprovado",
         "created_by": "00000000-0000-0000-0000-000000000021",
@@ -724,7 +724,7 @@
         "origin_actor": null,
         "terms": [
           {
-            "id": "accbb53b-b5d9-415c-8886-f92da4dd769a",
+            "id": "88a16b84-fa8e-486e-82c4-458b276e9d3b",
             "status": "approved",
             "approved_by": "00000000-0000-0000-0000-000000000029"
           }
@@ -738,7 +738,7 @@
         ],
         "forecasts": [
           {
-            "id": "7d362db4-aba2-44e0-9118-973e3efc42dd",
+            "id": "99ba6a09-0ad2-4c85-8721-79c129299247",
             "state": "aguardando_fiscal",
             "amount": 9.0,
             "residual": 9.0,

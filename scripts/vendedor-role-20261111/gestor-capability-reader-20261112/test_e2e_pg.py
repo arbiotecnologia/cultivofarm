@@ -69,7 +69,7 @@ def canonical_flow(label,oid):
     s1=state(oid);ok(f'{label}: sem previsão só com a comercial',not s1['forecasts'] and s1['approved_by']==UGC,s1)
     r=call(UFIN,f"public.approve_b2b_payment_terms_secure('{oid}','FINANCEIRO LOCAL SINTETICO')");ok(f'{label}: financeiro aprova termos',r[0] is not None,r)
     s2=state(oid);ids[label]['final']=s2
-    ok(f'{label}: previsão única aguardando NF, autores distintos (gestor/financeiro)',s2['forecasts'] and len(s2['forecasts'])==1 and s2['forecasts'][0]['commercial_by']==UGC and s2['forecasts'][0]['credit_by']==UFIN and s2['forecasts'][0]['state']=='aguardando_fiscal',s2)
+    ok(f'{label}: previsão única aguardando NF: comercial=gestor, termos=financeiro; crédito automático (credit_approved_by nulo, sem aprovação explícita)',s2['forecasts'] and len(s2['forecasts'])==1 and s2['forecasts'][0]['commercial_by']==UGC and s2['forecasts'][0]['state']=='aguardando_fiscal' and all(x['approved_by']==UFIN for x in s2['terms']) and s2['forecasts'][0]['credit_by'] is None and s2['credit_approved_by'] is None,s2)
     r=call(UFIN,f"public.approve_b2b_payment_terms_secure('{oid}','FINANCEIRO LOCAL SINTETICO')");s3=state(oid)
     ok(f'{label}: repetição não duplica previsão',len(s3['forecasts'] or [])==1,(r,s3))
     r=call(UFIN,f"public.get_b2b_financial_forecast_secure('{oid}')");ok(f'{label}: financeiro lê a previsão',r[0] is not None,r);ids[label]['forecast_read']=r[0]
@@ -122,7 +122,7 @@ try:
     if o6:
         oid=o6['order']['id'];ids['inversa_com_concessao']=dict(order_id=oid);grant(UGC,oid)
         r1=call(UFIN,f"public.approve_b2b_payment_terms_secure('{oid}','FIN')");r2=call(UGC,f"public.approve_partner_order('{oid}',NULL)");s=state(oid);ids['inversa_com_concessao']['final']=s
-        ok('ordem inversa (termos→comercial) também gera previsão única com autores distintos',r1[0] and r2[0] and s['forecasts'] and len(s['forecasts'])==1 and s['forecasts'][0]['commercial_by']==UGC and s['forecasts'][0]['credit_by']==UFIN,(r1,r2,s))
+        ok('ordem inversa (termos→comercial) também gera previsão única com autores distintos',r1[0] and r2[0] and s['forecasts'] and len(s['forecasts'])==1 and s['forecasts'][0]['commercial_by']==UGC and all(x['approved_by']==UFIN for x in s['terms']),(r1,r2,s))
     d.sql("UPDATE platform_private.b2b_forecast_creation_gate_v1 SET enabled=false,reason='PRODUCTION_ALIGNED_OFF' WHERE singleton;")
     ok('gate de previsão desligado ao fim (alinhado à produção)',q("select enabled::text from platform_private.b2b_forecast_creation_gate_v1 where singleton")=='false')
     r=full_create(UGC,PF);ok('gestor não grava para parceiro de outra empresa',r[0] is None,r)
