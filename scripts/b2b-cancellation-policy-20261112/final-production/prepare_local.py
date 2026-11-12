@@ -1,6 +1,7 @@
 """Restore original synthetic r12, pin security, execute exact closed bytes."""
 import json
 import pwd
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -30,7 +31,12 @@ if db.DB('postgres').raw('SELECT 1').returncode:
     if result.returncode:
         raise RuntimeError('LOCAL_BOOTSTRAP_ROLE:' + result.stderr)
 result = db.DB('postgres').raw(globals_sql)
+existing_roles = set(db.DB('postgres').sql('SELECT rolname FROM pg_roles').splitlines())
+globals_sql = re.sub(r'^CREATE ROLE (\w+);$', lambda m: '' if m.group(1) in existing_roles else m.group(0), globals_sql, flags=re.M)
+result = db.DB('postgres').raw(globals_sql)
 (OUT / 'globals-restore.txt').write_text(result.stderr)
+if result.returncode:
+    raise RuntimeError(result.stderr)
 restore = ROOT / 'scripts/c2-pilot-economic-approval-20261111/billing-delivery-20261111/fiscal-final-20261111/prep_restore.sh'
 with (OUT / 'restore-output.txt').open('w') as log:
     subprocess.run(['bash', str(restore), str(OUT)], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=True)
