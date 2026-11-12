@@ -2,7 +2,9 @@
 // - JWT do próprio usuário validado com getClaims.
 // - Autorização: RPC org_onboarding_state executada COM o JWT do usuário
 //   (organização derivada no servidor; nenhum organization_id do cliente).
-// - Sem service_role. Nada é persistido; logs só com código de resultado.
+// - Consulta ok no modo empresa: grava evidência server-side (svc_onboarding_record_cnpj_evidence,
+//   EXECUTE só service_role) vinculada à organização derivada no servidor e ao ator do JWT.
+//   A chave service_role fica só nesta função; o cliente nunca a recebe. Logs só com código.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { consultar, criarLimitador, STATUS_HTTP } from "./core.ts";
 
@@ -36,6 +38,7 @@ Deno.serve(async (req) => {
     const uid = claims?.claims?.sub;
     if (ce || !uid) return json({ codigo: "bad_jwt" }, 401);
 
+    let orgId: string | null = null;
     let body: unknown;
     try { body = await req.json(); } catch { return json({ codigo: "invalid_cnpj" }, 400); }
     const modo = (body as { modo?: unknown })?.modo;
@@ -53,12 +56,32 @@ Deno.serve(async (req) => {
       if (!s.required || !s.is_admin || !s.organization_id || !["aguardando_ativacao", "onboarding", "rascunho"].includes(s.status ?? "")) {
         return json({ codigo: "forbidden" }, 403);
       }
+      if (s.status === "rascunho") return json({ codigo: "forbidden" }, 403);
       if (!limiteUsuario(uid) || !limiteOrg(s.organization_id)) return json({ codigo: "rate_limited_local" }, 429);
+      orgId = s.organization_id;
     }
 
     const r = await consultar((body as { cnpj?: unknown })?.cnpj);
-    console.log(JSON.stringify({ fn: "onboarding-cnpj-lookup", codigo: r.codigo }));
-    return json({ ...r, fonte: "Receita Federal via BrasilAPI", consultado_em: new Date().toISOString() }, STATUS_HTTP[r.codigo]);
+    const fonte = "Receita Federal via BrasilAPI";
+    let evidencia_registrada = false;
+    if (r.codigo === "ok" && orgId) {
+      // Falha ao registrar não bloqueia a consulta: sem evidência, a conclusão vai para revisão (fail-closed).
+      try {
+        const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        if (service) {
+          const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
+          const bytes = new TextEncoder().encode(JSON.stringify(r.dados));
+          const sha = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)))
+            .map((b) => b.toString(16).padStart(2, "0")).join("");
+          const { error: ee } = await admin.rpc("svc_onboarding_record_cnpj_evidence", {
+            _org: orgId, _actor: uid, _dados: r.dados, _fonte: fonte, _payload_sha256: sha,
+          });
+          evidencia_registrada = !ee;
+        }
+      } catch { evidencia_registrada = false; }
+    }
+    console.log(JSON.stringify({ fn: "onboarding-cnpj-lookup", codigo: r.codigo, evidencia: evidencia_registrada }));
+    return json({ ...r, fonte, consultado_em: new Date().toISOString(), evidencia_registrada }, STATUS_HTTP[r.codigo]);
   } catch {
     console.error(JSON.stringify({ fn: "onboarding-cnpj-lookup", codigo: "inesperado" }));
     return json({ codigo: "inesperado" }, 500);
