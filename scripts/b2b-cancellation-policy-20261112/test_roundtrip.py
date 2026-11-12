@@ -14,7 +14,7 @@ try:
  check('reinstalação não reabre gate',d.last('select enabled from platform_private.b2b_cancel_policy_gate_v1')=='f')
  check('helpers privados continuam sem EXECUTE cliente',d.last("select NOT has_function_privilege('authenticated','platform_private.b2b_cancel_confirmed_fiscal_v1(uuid)','EXECUTE') AND NOT has_function_privilege('service_role','platform_private.b2b_cancel_confirmed_fiscal_v1(uuid)','EXECUTE')")=='t')
  order=d.last("select partner_order_id from fiscal_invoices where id='00000000-0000-0000-0000-000000000900'")
- check('fixture física existente é entrega 1+1 real',d.last(f"select count(*)=2 AND sum(quantidade_entregue)=2 AND bool_and(status::text='entregue' AND quantidade_entregue=1) from entregas where partner_order_id='{order}'")=='t')
+ check('fixture física efetiva é entrega 1+1 real; histórico cancelado preservado',d.last(f"select count(*)=2 AND sum(quantidade_entregue)=2 AND bool_and(quantidade_entregue=1) from entregas where partner_order_id='{order}' AND status::text='entregue'")=='t' and d.last(f"select count(*) from entregas where partner_order_id='{order}' AND status::text='cancelada'")=='1')
  r=d.raw(f"SET ROLE authenticated;SET request.jwt.claim.sub='00000000-0000-0000-0000-000000000030';SET request.jwt.claims='{{\"sub\":\"00000000-0000-0000-0000-000000000030\",\"role\":\"authenticated\",\"iat\":1}}';SELECT rpc_b2b_cancel_residual_capability_v1('{order}');")
  check('capacidade após reinstalação fechada opaca',r.returncode==0 and json.loads(r.stdout.strip().splitlines()[-1])=={'available':False})
 except Exception as e:check('harness',False,repr(e))
