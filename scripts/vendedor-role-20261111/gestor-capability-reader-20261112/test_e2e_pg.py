@@ -55,9 +55,19 @@ def approve_flow(label,oid,internal):
         ok(f'{label}: aprovação comercial de pedido de origem interna segue contida (B2B_INTERNAL_DOWNSTREAM_UNVERIFIED), sem previsão',r[0] is None and 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' in (r[1] or '') and not s2['forecasts'] and s2['approved_by'] is None,(r,s2))
     else:
         ok(f'{label}: gestor comercial aprova comercialmente',r[0] is not None and s2['approved_by']==UGC,(r,s2))
-        ok(f'{label}: previsão única após as duas aprovações, com autores distintos',s2['forecasts'] and len(s2['forecasts'])==1 and s2['forecasts'][0]['commercial_by']==UGC and s2['forecasts'][0]['credit_by']==UFIN,s2)
-        r=call(UGC,f"public.approve_partner_order('{oid}',NULL)");s3=state(oid)
-        ok(f'{label}: repetição não duplica previsão',len(s3['forecasts'] or [])==1,(r,s3))
+        ids[label]['finding_reverse_order_no_forecast']=not s2['forecasts']
+        print('OBSERVADO termos antes da comercial -> previsão:',s2['forecasts'])
+def canonical_flow(label,oid):
+    ids[label]=dict(order_id=oid,created=state(oid))
+    r=call(UGC,f"public.approve_partner_order('{oid}',NULL)");ok(f'{label}: gestor comercial aprova comercialmente',r[0] is not None,r)
+    s1=state(oid);ok(f'{label}: sem previsão só com a comercial',not s1['forecasts'] and s1['approved_by']==UGC,s1)
+    r=call(UFIN,f"public.approve_b2b_payment_terms_secure('{oid}','FINANCEIRO LOCAL SINTETICO')");ok(f'{label}: financeiro aprova termos',r[0] is not None,r)
+    s2=state(oid);ids[label]['final']=s2
+    ok(f'{label}: previsão única aguardando NF, autores distintos (gestor/financeiro)',s2['forecasts'] and len(s2['forecasts'])==1 and s2['forecasts'][0]['commercial_by']==UGC and s2['forecasts'][0]['credit_by']==UFIN and s2['forecasts'][0]['state']=='aguardando_fiscal',s2)
+    r=call(UFIN,f"public.approve_b2b_payment_terms_secure('{oid}','FINANCEIRO LOCAL SINTETICO')");s3=state(oid)
+    ok(f'{label}: repetição não duplica previsão',len(s3['forecasts'] or [])==1,(r,s3))
+    r=call(UFIN,f"public.get_b2b_financial_forecast_secure('{oid}')");ok(f'{label}: financeiro lê a previsão',r[0] is not None,r);ids[label]['forecast_read']=r[0]
+    r=call(V1,f"public.get_b2b_financial_forecast_secure('{oid}')");ok(f'{label}: vendedor não lê a previsão',r[0] is None,r)
 def probe_gestor_terms(oid):
     r=call(UGC,f"public.approve_b2b_payment_terms_secure('{oid}','gestor tenta termos')");ids['gestor_terms_probe']=dict(order_id=oid,result=r[1] or r[0],terms=state(oid)['terms'])
     print('OBSERVADO gestor_comercial em approve_b2b_payment_terms_secure:',r)
@@ -98,7 +108,9 @@ try:
     o4,e=full_create(UGC,P);ok('gestor grava segundo pedido (sonda de alçada de termos)',o4 is not None,e)
     if o4: probe_gestor_terms(o4['order']['id'])
     o3,e=full_create(UB,P);ok('comprador externo grava pedido para P (controle financeiro positivo)',o3 is not None,e)
-    if o3: approve_flow('comprador',o3['order']['id'],False)
+    if o3: approve_flow('comprador_ordem_inversa',o3['order']['id'],False)
+    o5,e=full_create(UB,P);ok('comprador grava segundo pedido (sequência canônica)',o5 is not None,e)
+    if o5: canonical_flow('comprador_canonico',o5['order']['id'])
     r=full_create(UGC,PF);ok('gestor não grava para parceiro de outra empresa',r[0] is None,r)
     ok('nenhum título/NF/evento fiscal/envio/reserva/entrega criado (recebível só após NF)'+'' if True else '',cnt()==base,(base,cnt()))
     #/NF/evento fiscal/envio/reserva/entrega criado',cnt()==base,(base,cnt()))
