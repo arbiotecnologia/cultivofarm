@@ -35,6 +35,7 @@ BEGIN
 END $f$;
 CREATE FUNCTION public.tenant_catalog_extensions_read_v1(p_kind text,p_entity text,p_parent uuid) RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $f$ SELECT platform_private.catalog_extensions_read_core_v1(p_kind,p_entity,p_parent) $f$;
 CREATE FUNCTION platform_private.catalog_extensions_save_core_v1(p_kind text,p_entity text,p_parent uuid,p_id uuid,p_expected timestamptz,p_payload jsonb,p_key uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
+#variable_conflict use_variable
 DECLARE org uuid; intent jsonb; receipt record; prev jsonb; result jsonb; rid uuid; ver timestamptz; field text; culture uuid; problem uuid; owner uuid;
 BEGIN
  org:=platform_private.catalog_extensions_scope_v1(true);
