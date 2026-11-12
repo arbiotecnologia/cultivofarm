@@ -16,7 +16,7 @@ def generate():
  head="-- INACTIVE production-candidate overlay; requires exact installed candidate baseline, not homolog.\nBEGIN;SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='30s';\n"
  (out/'01-pre.sql.readonly').write_text(head+guard+'ROLLBACK;\n')
  # Self-verifiable source pin plus exact pg_get_functiondef pin gets measured in test.
- expected_src=body.split('AS $fn$\n',1)[1].split('$fn$',1)[0] if 'AS $fn$\n' in body else body.split('AS $fn$',1)[1].split('$fn$',1)[0]
+ expected_src=body.split('AS $fn$',1)[1].split('$fn$',1)[0]
  post="DO $post$ BEGIN IF md5((SELECT prosrc FROM pg_proc WHERE oid='"+SIG+"'::regprocedure)) IS DISTINCT FROM '"+hashlib.md5(expected_src.encode()).hexdigest()+"' THEN RAISE EXCEPTION 'NORMALIZATION_SOURCE_DRIFT'; END IF;END $post$;\n"
  (out/'02-install.sql.review').write_text(head+guard+body+post+'COMMIT;\n')
  (out/'03-post.sql.readonly').write_text(head+post+'ROLLBACK;\n')
