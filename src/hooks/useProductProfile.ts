@@ -143,6 +143,7 @@ export function useUpsertProductProfile() {
       }
       if (id) delete fields.produto_id;
       const sig = JSON.stringify([editor.scope, id, fields, updated_at]);
+      if (attempt.current && attempt.current.sig !== sig) throw new Error("Tentativa inconclusiva; rascunho preservado, não altere a intenção pendente.");
       if (attempt.current?.sig !== sig) attempt.current = { sig, key: crypto.randomUUID() };
       const ack = await saveTenantCatalogRoot(supabase as any, "product_technical_profiles", id ?? null, fields, id ? (updated_at ?? null) : null, attempt.current.key);
       if (!current()) throw new Error("catalog_context_changed");

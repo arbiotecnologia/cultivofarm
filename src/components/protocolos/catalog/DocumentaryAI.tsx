@@ -20,6 +20,7 @@ export function DocumentaryAI({ identity, values, allowed, onApply }: { identity
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
   const controller = useRef<AbortController>();
+  const resultFence = useRef<() => boolean>(() => false);
   const fingerprint = JSON.stringify([editor.scope, identity.name, identity.id, identity.entity, manufacturer, registration]);
   useEffect(() => { controller.current?.abort(); setResult(undefined); setCandidate(""); setSelected([]); setError(undefined); setBusy(false); }, [fingerprint]);
   useEffect(() => () => controller.current?.abort(), []);
@@ -35,6 +36,7 @@ export function DocumentaryAI({ identity, values, allowed, onApply }: { identity
       if (failure) throw new Error("Pesquisa documental indisponível neste ambiente. O formulário foi preservado; o serviço requer implantação revisada.");
       const parsed = documentarySchema.safeParse(data);
       if (!parsed.success) throw new Error("A resposta não possui fontes verificáveis. Nenhum campo foi alterado.");
+      resultFence.current = current;
       setResult(parsed.data); setCandidate(parsed.data.candidates.length === 1 ? parsed.data.candidates[0].key : "");
     } catch (e) { if (current() && !c.signal.aborted) setError(e instanceof Error ? e.message : "Pesquisa indisponível. Formulário preservado."); }
     finally { lock.current = false; if (current() && !c.signal.aborted) setBusy(false); }
@@ -51,7 +53,7 @@ export function DocumentaryAI({ identity, values, allowed, onApply }: { identity
         <div className="grid gap-2 sm:grid-cols-2"><div><p className="text-xs text-muted-foreground">Atual</p><p className="whitespace-pre-wrap break-words text-sm">{String(values[s.field] ?? "") || "Não informado"}</p></div><div><p className="text-xs text-muted-foreground">Sugestão</p><p className="whitespace-pre-wrap break-words text-sm">{s.value}</p></div></div>
         {s.sources.map(source => <div key={source.url} className="break-words text-xs"><a className="text-primary underline" href={source.url} target="_blank" rel="noopener noreferrer">{source.title}</a><p>{source.excerpt}</p></div>)}
       </div>)}
-      <Button type="button" disabled={!candidate || selected.length === 0} onClick={() => { if (editor.capture()()) { onApply(selectedDocumentaryValues(result, candidate, selected, allowed)); setSelected([]); } }}>Aplicar campos selecionados ao rascunho</Button>
+      <Button type="button" disabled={!candidate || selected.length === 0} onClick={() => { if (resultFence.current() && editor.capture()()) { onApply(selectedDocumentaryValues(result, candidate, selected, allowed)); setSelected([]); } }}>Aplicar campos selecionados ao rascunho</Button>
     </>}
   </section>;
 }

@@ -1,6 +1,5 @@
 import { saveTenantCatalogRoot } from "@/lib/catalogo/tenantCatalogRoots";
-import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useScopedPortalQuery } from "./useScopedPortalQuery";
 import { useTenantCatalogEditor } from "./useTenantCatalogEditor";
@@ -103,6 +102,7 @@ export function useUpsertMicroProfile() {
       }
       if (id) delete fields.microrganismo_id;
       const signature = JSON.stringify([editor.scope, id, fields, updated_at]);
+      if (attempt.current && attempt.current.signature !== signature) throw new Error("Tentativa inconclusiva; rascunho preservado, não altere a intenção pendente.");
       if (attempt.current?.signature !== signature) attempt.current = { signature, key: crypto.randomUUID() };
       const ack = await saveTenantCatalogRoot(supabase, "microorganism_technical_profiles", id ?? null, fields, id ? (updated_at ?? null) : null, attempt.current.key);
       if (!current()) throw new Error("catalog_context_changed");
