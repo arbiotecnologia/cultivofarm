@@ -19,7 +19,7 @@ def snapshot(d):
 def prepared(d):
  e=val(call(d,f"SELECT rpc_fiscal_event_sefaz_prepare_v1('{invoice}','CANCELLATION','LOCAL DETERMINISTIC CANCEL','det-{uuid.uuid4()}','{u(29)}');"));assert e
  sha=hashlib.sha256(b'local deterministic signed input').hexdigest();r=call(d,f"SELECT rpc_fiscal_event_sefaz_mark_signed_v1('{e['eventId']}','eventos/local/det.xml','{sha}','{u(29)}');");assert r.returncode==0,r.stderr
- tid=str(uuid.uuid4());d.sql(f"INSERT INTO fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('{tid}','{invoice}','{e['eventId']}','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','{tid}','{sha}','SENT','PENDING','{u(29)}')")
+ tid=str(uuid.uuid4());r=call(d,f"INSERT INTO fiscal_sefaz_transmissions(id,fiscal_invoice_id,fiscal_event_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,created_by) VALUES('{tid}','{invoice}','{e['eventId']}','NFeRecepcaoEvento4','2','hnfe.fazenda.mg.gov.br','https://hnfe.fazenda.mg.gov.br/LOCAL-NO-NETWORK','{tid}','{sha}','SENT','PENDING','{u(29)}');");assert r.returncode==0,r.stderr
  body=json.dumps(dict(cStat='135',nProt='LOCAL-DETERMINISTIC',chNFe=e['accessKey'],tpAmb='2',xMotivo='LOCAL FINAL'))
  return tid,f"SELECT rpc_fiscal_sefaz_transmit_record_v1('{tid}','SUCCEEDED','{body}'::jsonb);"
 def authq(d):

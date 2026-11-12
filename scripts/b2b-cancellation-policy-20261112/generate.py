@@ -19,7 +19,6 @@ payment=replace(payment,anchor,"  -- Lock title before installment, shared with 
 bridge=read('bridge')
 bridge=replace(bridge,' IF existing.id IS NULL THEN',""" -- Closed replay proves immutable fiscal evidence AND exact persisted allocation/title/event.
  -- No allocator dispatch with the event-sign actor: it is not a buyer/commercial actor.
- PERFORM platform_private.b2b_integration_dependencies();
  IF existing.id IS NOT NULL AND EXISTS(
   SELECT 1 FROM platform_private.b2b_document_allocations a
   JOIN public.accounts_receivable r ON r.id=a.receivable_id
@@ -28,7 +27,11 @@ bridge=replace(bridge,' IF existing.id IS NULL THEN',""" -- Closed replay proves
   WHERE a.document_id=inv.id AND a.organization_id=org AND a.order_id=po.id AND a.source_digest=digest AND a.items=existing.items
    AND r.id=inv.receivable_id AND r.organization_id=org AND r.origin_id=po.id AND r.origin_type='B2B_ORDER' AND r.partner_id=po.partner_id AND r.b2b_document_id=inv.id
    AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals z WHERE z.document_id=inv.id)
- ) THEN RETURN jsonb_build_object('success',true,'invoice_id',inv.id,'receivable_id',inv.receivable_id,'replayed',true,'closed_evidence_verified',true); END IF;
+ ) THEN
+  INSERT INTO platform_private.b2b_fiscal_service_permits(transaction_id,invoice_id,document_id,organization_id,order_id,partner_id) VALUES(txid_current(),inv.id,inv.id,org,po.id,po.partner_id);
+  PERFORM platform_private.b2b_integration_dependencies();
+  DELETE FROM platform_private.b2b_fiscal_service_permits WHERE transaction_id=txid_current() AND invoice_id=inv.id;
+  RETURN jsonb_build_object('success',true,'invoice_id',inv.id,'receivable_id',inv.receivable_id,'replayed',true,'closed_evidence_verified',true); END IF;
  IF existing.id IS NULL THEN""")
 apply=read('apply')
 apply=replace(apply,"  -- Idempotente: documento ja autorizado", """  -- A valid historical authorization cannot resurrect a finally cancelled invoice.
