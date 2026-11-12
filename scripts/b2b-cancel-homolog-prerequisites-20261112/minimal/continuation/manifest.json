@@ -13,7 +13,7 @@
         "platform_private.b2b_cancellation_attestations"
       ],
       "functions": [],
-      "status": "INSTALLABLE_CLOSED_ADDITIVE_ONLY"
+      "status": "REVIEW_CLOSED_ADDITIVE_FULL_CATALOG_ROUNDTRIP_NOT_PROVEN"
     },
     {
       "stage": "C",
@@ -23,7 +23,7 @@
         "platform_private.b2b_fiscal_invoice_snapshots"
       ],
       "functions": [],
-      "status": "INSTALLABLE_CLOSED_ADDITIVE_ONLY"
+      "status": "REVIEW_CLOSED_ADDITIVE_FULL_CATALOG_ROUNDTRIP_NOT_PROVEN"
     },
     {
       "stage": "D",
@@ -36,7 +36,7 @@
         "platform_private.cancel_homolog_residual_command_v1(uuid,integer,text)",
         "platform_private.b2b_cancel_confirmed_fiscal_v1(uuid)"
       ],
-      "status": "INSTALLABLE_CLOSED_ADDITIVE_ONLY"
+      "status": "REVIEW_CLOSED_ADDITIVE_FULL_CATALOG_ROUNDTRIP_NOT_PROVEN"
     }
   ],
   "E": "BLOCKED_EXACT_STATEMENT_GUARD_BODY",
