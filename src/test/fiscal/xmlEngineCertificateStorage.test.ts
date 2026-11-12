@@ -44,8 +44,8 @@ describe("fiscal-xml-engine — via legada de certificado de teste removida", ()
   });
 
   it("usa somente a chave mestra canônica", () => {
-    expect(ENGINE).toContain('Deno.env.get("FISCAL_CERTIFICATE_MASTER_KEY")');
-    expect(ENGINE).toContain("const masterKey = decodeMasterKey();");
+    expect(ENGINE).toContain('Deno.env.get("FISCAL_CERTIFICATE_MASTER_KEY")'); // via comentário + módulo compartilhado
+    expect(ENGINE).toContain("const masterKey = await decodeMasterKey();");
   });
 });
 
