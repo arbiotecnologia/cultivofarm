@@ -1,4 +1,5 @@
 ## 12/11 01:22 — Pré-requisitos específicos de cancelamento em homologação
+- [ ] Continuação 01:41: decodificar captura técnica, preservar A instalada, gerar segmentos B–E fechados, testar conflitos e identificar somente dependências focais indispensáveis; sem remoto/publicação.
 - [x] Continuação 01:33: seis corpos homolog recuperados por MD5 calculado, etapa A privada fechada gerada e roundtrip 18/18; caminho mínimo B–E documentado em minimal/REPORT.md sem copiar produção.
 - [ ] Integração residual/fiscal depende só de três definições exatas begin/prepare/respond e trechos estruturais/ACL/guards da captura já existente; nenhuma nova rodada de inventário geral nem decisão comercial necessária.
 - [x] Inventário específico em scripts/b2b-cancel-homolog-prerequisites-20261112: 149 nomes de função/64 relações, cinco segmentos somente leitura; onze hashes = 5 ausências/4 divergências/2 coincidências de corpo.
