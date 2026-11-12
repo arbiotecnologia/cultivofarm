@@ -13,4 +13,5 @@ IF (SELECT jsonb_build_object('md5',md5(pg_get_functiondef(oid)),'owner',pg_get_
 END $g$;
 UPDATE platform_private.b2b_cancel_policy_gate_v1 SET enabled=false;
 REVOKE EXECUTE ON FUNCTION public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) FROM PUBLIC,anon,authenticated,service_role;
+REVOKE EXECUTE ON FUNCTION public.rpc_b2b_cancel_residual_capability_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
 COMMIT;
