@@ -11,12 +11,13 @@
  * A tela mostra apenas indicadores sanitizados — nunca PFX, senha, PEM,
  * assinatura, fingerprint/serial, path, IV ou resposta bruta.
  */
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useFiscalCompanySettings } from "@/hooks/useFiscalCompanySettings";
 import { useFiscalCertificates } from "@/hooks/useFiscalCertificates";
 import {
   useFiscalCertificateSelfTest,
+  useHomologationNfeDrafts,
   useSefazStatusSmoke,
 } from "@/hooks/useFiscalHomologationSmokes";
 import {
@@ -87,6 +88,13 @@ export default function SmokesHomologacaoSecao({ companySettingsId }: Props) {
 
   const selfTest = useFiscalCertificateSelfTest();
   const sefazStatus = useSefazStatusSmoke();
+  const draftsQuery = useHomologationNfeDrafts(isAdmin ? companySettingsId : null);
+  const drafts = draftsQuery.data ?? [];
+  const [draftId, setDraftId] = useState<string>("");
+  useEffect(() => {
+    // Seleção sempre explícita; descarta escolha que não pertence mais à lista.
+    if (draftId && !drafts.some((d) => d.id === draftId)) setDraftId("");
+  }, [drafts, draftId]);
 
   if (!isAdmin) return null;
 
@@ -176,11 +184,37 @@ export default function SmokesHomologacaoSecao({ companySettingsId }: Props) {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
+          <div className="space-y-1">
+            <label htmlFor="fiscal-smoke-status-draft" className="text-sm font-medium">
+              Rascunho NF-e de homologação do emitente
+            </label>
+            <select
+              id="fiscal-smoke-status-draft"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-11"
+              value={draftId}
+              onChange={(e) => setDraftId(e.target.value)}
+              disabled={!envGate.enabled || draftsQuery.isLoading || sefazStatus.isPending}
+              data-testid="fiscal-smoke-status-draft"
+            >
+              <option value="">Selecione um rascunho</option>
+              {drafts.map((d) => (
+                <option key={d.id} value={d.id}>{d.label}</option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Usado só para identificar o emitente e seu certificado. O rascunho não é enviado.
+            </p>
+            {draftsQuery.isSuccess && drafts.length === 0 && (
+              <p className="text-xs text-muted-foreground" data-testid="fiscal-smoke-status-no-draft">
+                Nenhum rascunho NF-e de homologação nesta empresa.
+              </p>
+            )}
+          </div>
           <Button
             size="sm"
             variant="outline"
-            onClick={() => sefazStatus.mutate()}
-            disabled={!envGate.enabled || sefazStatus.isPending}
+            onClick={() => draftId && sefazStatus.mutate({ invoiceId: draftId })}
+            disabled={!envGate.enabled || sefazStatus.isPending || !draftId}
             data-testid="fiscal-smoke-status-btn"
           >
             {sefazStatus.isPending ? (

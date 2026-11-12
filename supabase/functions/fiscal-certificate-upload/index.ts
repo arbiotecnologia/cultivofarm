@@ -40,6 +40,7 @@ import {
   SIGNING_BUNDLE_ALGORITHM,
   SIGNING_BUNDLE_FORMAT,
 } from "../_shared/fiscal/certificateVault.ts";
+import { decodeMasterKey } from "../_shared/fiscal/masterKey.ts";
 
 
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -67,24 +68,6 @@ function json(body: unknown, status: number, headers: Record<string, string>): R
  * gerados como texto aleatorio de alta entropia (>= 32 chars), deriva 32 bytes
  * deterministicamente via SHA-256. Nunca loga nem retorna o segredo.
  */
-async function decodeMasterKey(): Promise<Uint8Array | null> {
-  const raw = Deno.env.get("FISCAL_CERTIFICATE_MASTER_KEY");
-  if (!raw) return null;
-  try {
-    const bin = atob(raw);
-    if (bin.length === 32) {
-      const out = new Uint8Array(32);
-      for (let i = 0; i < 32; i++) out[i] = bin.charCodeAt(i);
-      return out;
-    }
-  } catch {
-    // segue para a derivacao SHA-256
-  }
-  if (raw.length < 32) return null;
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
-  return new Uint8Array(digest);
-}
-
 async function aesGcmEncrypt(key: Uint8Array, data: Uint8Array): Promise<{ iv: Uint8Array; cipher: Uint8Array }> {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const cryptoKey = await crypto.subtle.importKey("raw", key, "AES-GCM", false, ["encrypt"]);

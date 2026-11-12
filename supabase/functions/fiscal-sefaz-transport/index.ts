@@ -50,6 +50,7 @@ import {
   summarizeResponse,
 } from "../_shared/fiscal/nfe/sefazSoap.ts";
 import { isSupportedVaultFormat, parseSigningBundle } from "../_shared/fiscal/certificateVault.ts";
+import { decodeMasterKey } from "../_shared/fiscal/masterKey.ts";
 import {
   buildNfeProc,
   nfeProcStoragePath,
@@ -79,20 +80,6 @@ function json(body: unknown, status: number, headers: Record<string, string>): R
 async function sha256Hex(text: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-function decodeMasterKey(): Uint8Array | null {
-  const raw = Deno.env.get("FISCAL_CERTIFICATE_MASTER_KEY");
-  if (!raw) return null;
-  try {
-    const bin = atob(raw.trim());
-    if (bin.length !== 32) return null;
-    const out = new Uint8Array(32);
-    for (let i = 0; i < 32; i++) out[i] = bin.charCodeAt(i);
-    return out;
-  } catch {
-    return null;
-  }
 }
 
 function fromBinaryColumn(value: string): Uint8Array {
@@ -142,7 +129,7 @@ async function loadMtlsMaterial(
     | undefined;
   if (!certificateId) throw new SefazSoapError("CERTIFICATE_REQUIRED");
 
-  const masterKey = decodeMasterKey();
+  const masterKey = await decodeMasterKey();
   if (!masterKey) throw new SefazSoapError("CERTIFICATE_REQUIRED");
 
   const material = await admin
@@ -164,7 +151,9 @@ async function loadMtlsMaterial(
       new Uint8Array(await dl.data.arrayBuffer()),
     );
     const bundle = parseSigningBundle(new TextDecoder().decode(plain));
-    return { certPem: bundle.certPem, keyPem: bundle.keyPem, certificateId };
+    // MG exige a cadeia ICP-Brasil do cliente: folha seguida das intermediárias.
+    const certChainPem = [bundle.certPem, ...bundle.chainPem].join("\n");
+    return { certPem: certChainPem, keyPem: bundle.keyPem, certificateId };
   } catch {
     throw new SefazSoapError("CERTIFICATE_DECRYPT_FAILED");
   } finally {
@@ -299,6 +288,47 @@ async function closeAuthorizedDocument(
   }
 }
 
+type StatusDraftResolution =
+  | { ok: true; invoiceId: string }
+  | { ok: false; status: number; error: string; code: string };
+
+/**
+ * Resolve, com o cliente AUTENTICADO (RLS), o único rascunho NF-e tpAmb=2 da
+ * empresa fiscal ativa da organização atual do ator. Não usa service_role.
+ */
+async function resolveStatusDraftInvoice(authed: SupabaseClient): Promise<StatusDraftResolution> {
+  const deny = (status: number, error: string, code: string): StatusDraftResolution =>
+    ({ ok: false, status, error, code });
+  const org = await authed.rpc("h15_actor_organization");
+  const organizationId = String(org.data ?? "");
+  if (org.error || !UUID_RE.test(organizationId)) {
+    return deny(403, "tenant_context_required", "FISCAL_TENANT_CONTEXT_REQUIRED");
+  }
+  const company = await authed.from("company_fiscal_settings")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("is_active", true)
+    .limit(2);
+  if (company.error || (company.data ?? []).length !== 1) {
+    return deny(409, "invoice_id_required", "FISCAL_COMPANY_UNRESOLVED");
+  }
+  const drafts = await authed.from("fiscal_invoices")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("company_settings_id", company.data![0].id)
+    .eq("document_model", "NFE")
+    .eq("environment", "HOMOLOGATION")
+    .eq("normalized_status", "DRAFT")
+    .limit(2);
+  if (drafts.error) return deny(409, "invoice_id_required", "FISCAL_STATUS_DRAFT_UNRESOLVED");
+  const rows = drafts.data ?? [];
+  if (rows.length === 0) return deny(409, "invoice_id_required", "FISCAL_STATUS_DRAFT_REQUIRED");
+  if (rows.length > 1) return deny(409, "invoice_id_required", "FISCAL_STATUS_DRAFT_AMBIGUOUS");
+  const id = String(rows[0].id ?? "");
+  if (!UUID_RE.test(id)) return deny(409, "invoice_id_required", "FISCAL_STATUS_DRAFT_UNRESOLVED");
+  return { ok: true, invoiceId: id };
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
   const { headers, allowed } = corsHeaders(origin);
@@ -355,7 +385,7 @@ Deno.serve(async (req) => {
     return json({ error: "idempotency_key_invalid" }, 400, headers);
   }
 
-  const invoiceId = body.invoice_id ? String(body.invoice_id) : null;
+  let invoiceId = body.invoice_id ? String(body.invoice_id) : null;
   const xmlRunId = body.run_id ? String(body.run_id) : null;
   if (invoiceId && !UUID_RE.test(invoiceId)) return json({ error: "invoice_id_invalid" }, 400, headers);
   if (xmlRunId && !UUID_RE.test(xmlRunId)) return json({ error: "run_id_invalid" }, 400, headers);
@@ -363,6 +393,16 @@ Deno.serve(async (req) => {
   // Status, recibo e consulta também usam o certificado do emitente. Exigem uma
   // invoice do tenant para impedir consulta externa ou uso de certificado sem
   // um recurso fiscal previamente autorizado para o ator.
+  // Compatibilidade APENAS para `status` da tela antiga sem invoice_id: resolve
+  // pela sessão do usuário (RLS), na empresa atual, exatamente um rascunho NF-e
+  // de homologação. Ambiguidade ou ausência => negado. Nunca para
+  // authorize/receipt/consult/event.
+  if (action === "status" && !invoiceId) {
+    const resolved = await resolveStatusDraftInvoice(authed);
+    if (!resolved.ok) return json({ error: resolved.error, code: resolved.code }, resolved.status, headers);
+    invoiceId = resolved.invoiceId;
+  }
+
   if (["status", "receipt", "consult"].includes(action)) {
     if (!invoiceId) return json({ error: "invoice_id_required" }, 400, headers);
     const invoiceAllowed = await admin.rpc("h15_service_actor_invoice_access", {
