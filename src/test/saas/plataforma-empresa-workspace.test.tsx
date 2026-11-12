@@ -33,6 +33,9 @@ vi.mock("@/hooks/usePlataformaSaaS", () => ({
   useAuditoriaEmpresa: () => ({ data: [{ id: "e1", tipo: "situacao", created_at: "2026-02-01T00:00:00Z", motivo: "Ativação", resumo: "Situação: onboarding → ativa" }], refetch }),
   useEditarEmpresa: () => ({ mutateAsync: editar, isPending: false }),
   useResumoFiscalEmpresa: () => ({ data: fiscalRef.current, isLoading: false, isError: false }),
+  useRevisoesCadastro: () => ({ data: [], isLoading: false, isError: false }),
+  useAprovarRevisaoCadastro: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useRemeterEmpresaRevisao: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 import PlataformaEmpresas from "@/pages/plataforma/PlataformaEmpresas";
