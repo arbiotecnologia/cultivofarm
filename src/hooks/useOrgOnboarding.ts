@@ -131,7 +131,9 @@ export function useOnboardingState(enabled: boolean, scope?: OnboardingScope) {
     statusAnterior.current = statusAtual;
   }, [statusAtual]);
 
-  return { ...query, revalidando };
+  const bloqueado = query.data ? onboardingStateBloqueia(query.data) : null;
+  useOnboardingTransitionFences(enabled ? bloqueado : null);
+  return { ...query, revalidando, bloqueado };
 }
 
 export function useSalvarOnboarding() {

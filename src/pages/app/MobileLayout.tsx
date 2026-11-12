@@ -19,7 +19,7 @@ import { useEntitlements } from "@/hooks/useEntitlements";
 import { isPathEntitled } from "@/lib/saas/featureRouteMap";
 import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
 import { PortalContextUnavailable } from "@/components/guards/PortalContextUnavailable";
-import { onboardingStateBloqueia, useOnboardingState, useOnboardingTransitionFences } from "@/hooks/useOrgOnboarding";
+import { useOnboardingState } from "@/hooks/useOrgOnboarding";
 import { OnboardingEmpresa } from "@/components/onboarding/OnboardingEmpresa";
 import { OnboardingRevalidando } from "@/components/onboarding/OnboardingRevalidando";
 
@@ -51,8 +51,8 @@ export default function MobileLayout() {
     !!user && !!profile?.organization_id && profile?.senha_provisoria !== true,
     { userId: user?.id, organizationId: profile?.organization_id },
   );
-  const onboardingBloqueado = onboarding.data ? onboardingStateBloqueia(onboarding.data) : null;
-  useOnboardingTransitionFences(onboardingBloqueado);
+  // Mocks/legado sem `bloqueado` caem no `required` do servidor.
+  const onboardingBloqueado = onboarding.bloqueado ?? !!onboarding.data?.required;
 
   // C2 (INACTIVE candidate): mode/menus derive ONLY from the canonical fresh projection
   // (C2_MULTIPROFILE_V1 adds "producer"). Raw roles never grant producer mode; an error or
@@ -93,7 +93,7 @@ export default function MobileLayout() {
 
   if (!user) return <Navigate to="/app/login" replace />;
 
-  if (onboarding.revalidando) return <OnboardingRevalidando />;
+  if (onboarding.revalidando === true) return <OnboardingRevalidando />;
   if (onboarding.data && onboardingBloqueado) return <OnboardingEmpresa state={onboarding.data} />;
 
   if (isError || !contexts) return <PortalContextUnavailable refetch={refetch} />;
