@@ -74,7 +74,7 @@ it.each([
 it("pendência contábil legítima: lê itens, informa bloqueios e permite reprovar termos pendentes", async () => {
   s.rpc.mockImplementation(() => ok(review({ accounting_pending: true })));
   mount();
-  expect(await screen.findByTestId("accounting-pending-note")).toHaveTextContent(/nota fiscal, recebíveis e entregas continuam bloqueados/);
+  expect(await screen.findByTestId("accounting-pending-notice")).toHaveTextContent(/Liberação operacional, cobrança, nota fiscal/);
   expect(screen.getByText("Itens (1)")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Reprovar termos" })).toBeInTheDocument();
 });
