@@ -1,6 +1,6 @@
 {
   "harness": "F4.1 NF-e 55 offline",
-  "generated_at": "2026-11-12T17:34:23.619171+00:00",
+  "generated_at": "2026-11-12T17:35:57.374732+00:00",
   "tools": {
     "xmllint": "xmllint: using libxml version 21504",
     "openssl": "OpenSSL 3.6.5 29 Sep 2026 (Library: OpenSSL 3.6.5 29 Sep 2026)",
@@ -11,8 +11,9 @@
     14,
     6
   ],
-  "total": 52,
-  "failed": 2,
+  "total": 66,
+  "failed": 0,
+  "known_tool_defects": 2,
   "network_sefaz": false,
   "database": false,
   "secrets": false,
@@ -74,25 +75,32 @@
       "detail": "DV=8"
     },
     {
-      "case": "icms20_mt.pos.xsd.motor_PL_010g",
+      "case": "icms20_mt.pos.xsd.xerces_motor_PL_010g",
       "expected": "PASS",
       "observed": "PASS",
       "result": "OK",
-      "detail": "/tmp/f41-cz5_448e/icms20_mt.xml validates"
+      "detail": "PL_010g_v1.03 xerces-wasm@2.0.1 []"
+    },
+    {
+      "case": "icms20_mt.pos.xsd.libxml2_motor_PL_010g",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "/tmp/f41-e2lpy4bq/icms20_mt.xml validates"
     },
     {
       "case": "icms20_mt.pos.xsd.oficial_PL_010g",
       "expected": "PASS",
       "observed": "PASS",
       "result": "OK",
-      "detail": "/tmp/f41-cz5_448e/icms20_mt.xml validates"
+      "detail": "/tmp/f41-e2lpy4bq/icms20_mt.xml validates"
     },
     {
       "case": "icms20_mt.pos.xsd.compat_PL_010e",
       "expected": "PASS",
       "observed": "PASS",
       "result": "OK",
-      "detail": "/tmp/f41-cz5_448e/icms20_mt.xml validates"
+      "detail": "/tmp/f41-e2lpy4bq/icms20_mt.xml validates"
     },
     {
       "case": "icms20_mt.pos.sig.independente_libxml2_openssl",
@@ -158,11 +166,18 @@
       "detail": "CERT_NOT_EXPECTED"
     },
     {
-      "case": "icms20_mt.neg.xsd.sem_signature",
+      "case": "icms20_mt.neg.xsd.sem_signature.xerces_motor",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
-      "detail": "/tmp/f41-cz5_448e/v4.xml fails to validate"
+      "detail": "PL_010g_v1.03 xerces-wasm@2.0.1 ['XSD_INVALID']"
+    },
+    {
+      "case": "icms20_mt.neg.xsd.sem_signature.libxml2",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "/tmp/f41-e2lpy4bq/v4.xml fails to validate"
     },
     {
       "case": "icms20_mt.neg.sig.ausente",
@@ -172,25 +187,60 @@
       "detail": "SIGNATURE_COUNT_0"
     },
     {
-      "case": "icms20_mt.neg.xsd.cfop_invalido",
+      "case": "icms20_mt.neg.xsd.cfop_invalido.xerces_motor",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
-      "detail": "/tmp/f41-cz5_448e/v5.xml fails to validate"
+      "detail": "PL_010g_v1.03 xerces-wasm@2.0.1 ['XSD_INVALID']"
     },
     {
-      "case": "icms20_mt.neg.xsd.tpAmb_invalido",
+      "case": "icms20_mt.neg.xsd.cfop_invalido.libxml2",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
-      "detail": "/tmp/f41-cz5_448e/v6.xml fails to validate"
+      "detail": "/tmp/f41-e2lpy4bq/v5.xml fails to validate"
     },
     {
-      "case": "icms20_mt.neg.xsd.ncm_9_digitos",
+      "case": "icms20_mt.neg.xsd.tpAmb_invalido.xerces_motor",
       "expected": "REJECT",
-      "observed": "PASS",
-      "result": "FAIL",
-      "detail": "/tmp/f41-cz5_448e/v7.xml validates"
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "PL_010g_v1.03 xerces-wasm@2.0.1 ['XSD_INVALID']"
+    },
+    {
+      "case": "icms20_mt.neg.xsd.tpAmb_invalido.libxml2",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "/tmp/f41-e2lpy4bq/v6.xml fails to validate"
+    },
+    {
+      "case": "icms20_mt.neg.xsd.ncm_9_digitos.xerces_motor",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "PL_010g_v1.03 xerces-wasm@2.0.1 ['XSD_INVALID']"
+    },
+    {
+      "case": "icms20_mt.neg.xsd.ncm_9_digitos.libxml2",
+      "expected": "-",
+      "observed": "-",
+      "result": "KNOWN_TOOL_DEFECT",
+      "detail": "libxml2 aceitou o que o Xerces normativo rejeitou: /tmp/f41-e2lpy4bq/v7.xml validates"
+    },
+    {
+      "case": "icms20_mt.neg.xsd.ncm_letra.xerces_motor",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "PL_010g_v1.03 xerces-wasm@2.0.1 ['XSD_INVALID']"
+    },
+    {
+      "case": "icms20_mt.neg.xsd.ncm_letra.libxml2",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "/tmp/f41-e2lpy4bq/v8.xml fails to validate"
     },
     {
       "case": "icms20_mt.neg.chave_dv_incorreto",
@@ -228,25 +278,32 @@
       "detail": "campos conferidos"
     },
     {
-      "case": "mg_icms00.pos.xsd.motor_PL_010g",
+      "case": "mg_icms00.pos.xsd.xerces_motor_PL_010g",
       "expected": "PASS",
       "observed": "PASS",
       "result": "OK",
-      "detail": "/tmp/f41-cz5_448e/mg_icms00.xml validates"
+      "detail": "PL_010g_v1.03 xerces-wasm@2.0.1 []"
+    },
+    {
+      "case": "mg_icms00.pos.xsd.libxml2_motor_PL_010g",
+      "expected": "PASS",
+      "observed": "PASS",
+      "result": "OK",
+      "detail": "/tmp/f41-e2lpy4bq/mg_icms00.xml validates"
     },
     {
       "case": "mg_icms00.pos.xsd.oficial_PL_010g",
       "expected": "PASS",
       "observed": "PASS",
       "result": "OK",
-      "detail": "/tmp/f41-cz5_448e/mg_icms00.xml validates"
+      "detail": "/tmp/f41-e2lpy4bq/mg_icms00.xml validates"
     },
     {
       "case": "mg_icms00.pos.xsd.compat_PL_010e",
       "expected": "PASS",
       "observed": "PASS",
       "result": "OK",
-      "detail": "/tmp/f41-cz5_448e/mg_icms00.xml validates"
+      "detail": "/tmp/f41-e2lpy4bq/mg_icms00.xml validates"
     },
     {
       "case": "mg_icms00.pos.sig.independente_libxml2_openssl",
@@ -312,11 +369,18 @@
       "detail": "CERT_NOT_EXPECTED"
     },
     {
-      "case": "mg_icms00.neg.xsd.sem_signature",
+      "case": "mg_icms00.neg.xsd.sem_signature.xerces_motor",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
-      "detail": "/tmp/f41-cz5_448e/v11.xml fails to validate"
+      "detail": "PL_010g_v1.03 xerces-wasm@2.0.1 ['XSD_INVALID']"
+    },
+    {
+      "case": "mg_icms00.neg.xsd.sem_signature.libxml2",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "/tmp/f41-e2lpy4bq/v12.xml fails to validate"
     },
     {
       "case": "mg_icms00.neg.sig.ausente",
@@ -326,25 +390,60 @@
       "detail": "SIGNATURE_COUNT_0"
     },
     {
-      "case": "mg_icms00.neg.xsd.cfop_invalido",
+      "case": "mg_icms00.neg.xsd.cfop_invalido.xerces_motor",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
-      "detail": "/tmp/f41-cz5_448e/v12.xml fails to validate"
+      "detail": "PL_010g_v1.03 xerces-wasm@2.0.1 ['XSD_INVALID']"
     },
     {
-      "case": "mg_icms00.neg.xsd.tpAmb_invalido",
+      "case": "mg_icms00.neg.xsd.cfop_invalido.libxml2",
       "expected": "REJECT",
       "observed": "REJECT",
       "result": "OK",
-      "detail": "/tmp/f41-cz5_448e/v13.xml fails to validate"
+      "detail": "/tmp/f41-e2lpy4bq/v13.xml fails to validate"
     },
     {
-      "case": "mg_icms00.neg.xsd.ncm_9_digitos",
+      "case": "mg_icms00.neg.xsd.tpAmb_invalido.xerces_motor",
       "expected": "REJECT",
-      "observed": "PASS",
-      "result": "FAIL",
-      "detail": "/tmp/f41-cz5_448e/v14.xml validates"
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "PL_010g_v1.03 xerces-wasm@2.0.1 ['XSD_INVALID']"
+    },
+    {
+      "case": "mg_icms00.neg.xsd.tpAmb_invalido.libxml2",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "/tmp/f41-e2lpy4bq/v14.xml fails to validate"
+    },
+    {
+      "case": "mg_icms00.neg.xsd.ncm_9_digitos.xerces_motor",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "PL_010g_v1.03 xerces-wasm@2.0.1 ['XSD_INVALID']"
+    },
+    {
+      "case": "mg_icms00.neg.xsd.ncm_9_digitos.libxml2",
+      "expected": "-",
+      "observed": "-",
+      "result": "KNOWN_TOOL_DEFECT",
+      "detail": "libxml2 aceitou o que o Xerces normativo rejeitou: /tmp/f41-e2lpy4bq/v15.xml validates"
+    },
+    {
+      "case": "mg_icms00.neg.xsd.ncm_letra.xerces_motor",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "PL_010g_v1.03 xerces-wasm@2.0.1 ['XSD_INVALID']"
+    },
+    {
+      "case": "mg_icms00.neg.xsd.ncm_letra.libxml2",
+      "expected": "REJECT",
+      "observed": "REJECT",
+      "result": "OK",
+      "detail": "/tmp/f41-e2lpy4bq/v16.xml fails to validate"
     },
     {
       "case": "mg_icms00.neg.chave_dv_incorreto",

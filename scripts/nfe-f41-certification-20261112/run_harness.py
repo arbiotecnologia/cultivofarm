@@ -46,6 +46,24 @@ def xsd_validate(xml_path, xsd_dir):
                        capture_output=True, text=True)
     return r.returncode == 0, (r.stderr.strip().splitlines() or [""])[-1]
 
+def xsd_engine(xml_path):
+    """Validador normativo do motor: Xerces-C++ WASM + bundle com integridade verificada."""
+    r = deno("xsd", xml_path)[str(xml_path)]
+    return bool(r["valid"]), "%s %s %s" % (r["package"], r["validator"].split(" ")[0], [i["code"] for i in r["issues"]])
+
+def note(name, detail):
+    """Divergência de ferramenta registrada como tal — nunca conta como OK."""
+    results.append({"case": name, "expected": "-", "observed": "-", "result": "KNOWN_TOOL_DEFECT", "detail": str(detail)[:400]})
+    print("NOTE", name, "-", str(detail)[:160])
+
+def xsd_negative(P, name, path):
+    ok, d = xsd_engine(path); check(P + name + ".xerces_motor", ok, d, expect=False)
+    lok, ld = xsd_validate(path, ENGINE_XSD)
+    if lok and not ok:
+        note(P + name + ".libxml2", "libxml2 aceitou o que o Xerces normativo rejeitou: " + ld)
+    else:
+        check(P + name + ".libxml2", lok, ld, expect=False)
+
 def c14n(el):
     """Canonical XML 1.0 inclusivo, sem comentários (libxml2).
 
@@ -172,7 +190,8 @@ def main():
             ok, d = key_consistency(xml); check(P + "pos.chave_dv_coerente", ok, d)
             if spec["expect"]:
                 ok, d = fixture_fields(xml, spec["expect"]); check(P + "pos.campos_fixture", ok, d)
-            ok, d = xsd_validate(signed, ENGINE_XSD); check(P + "pos.xsd.motor_PL_010g", ok, d)
+            ok, d = xsd_engine(signed); check(P + "pos.xsd.xerces_motor_PL_010g", ok, d)
+            ok, d = xsd_validate(signed, ENGINE_XSD); check(P + "pos.xsd.libxml2_motor_PL_010g", ok, d)
             ok, d = xsd_validate(signed, CURRENT_XSD); check(P + "pos.xsd.oficial_PL_010g", ok, d)
             ok, d = xsd_validate(signed, LEGACY_XSD); check(P + "pos.xsd.compat_PL_010e", ok, d)
             ok, d = independent_verify(xml, tmp, derA); check(P + "pos.sig.independente_libxml2_openssl", ok, d)
@@ -194,15 +213,13 @@ def main():
             ok, d = independent_verify(swapped, tmp); check(P + "neg.sig.certificado_substituido", ok, d, expect=False)
             ok, d = independent_verify(swapped, tmp, derA); check(P + "neg.sig.certificado_nao_esperado", ok, d, expect=False)
             nosig = s[: s.index("<Signature ")] + "</NFe>"
-            ok, d = xsd_validate(variant(nosig.encode()), ENGINE_XSD); check(P + "neg.xsd.sem_signature", ok, d, expect=False)
+            xsd_negative(P, "neg.xsd.sem_signature", variant(nosig.encode()))
             ok, d = independent_verify(nosig.encode(), tmp); check(P + "neg.sig.ausente", ok, d, expect=False)
             cfop = re.search(r"<CFOP>(\d{4})</CFOP>", s).group(1)
-            ok, d = xsd_validate(variant(s.replace(f"<CFOP>{cfop}</CFOP>", "<CFOP>51A1</CFOP>").encode()), ENGINE_XSD)
-            check(P + "neg.xsd.cfop_invalido", ok, d, expect=False)
-            ok, d = xsd_validate(variant(s.replace("<tpAmb>2</tpAmb>", "<tpAmb>3</tpAmb>").encode()), ENGINE_XSD)
-            check(P + "neg.xsd.tpAmb_invalido", ok, d, expect=False)
-            ok, d = xsd_validate(variant(s.replace("<NCM>", "<NCM>1", 1).encode()), ENGINE_XSD)
-            check(P + "neg.xsd.ncm_9_digitos", ok, d, expect=False)
+            xsd_negative(P, "neg.xsd.cfop_invalido", variant(s.replace(f"<CFOP>{cfop}</CFOP>", "<CFOP>51A1</CFOP>").encode()))
+            xsd_negative(P, "neg.xsd.tpAmb_invalido", variant(s.replace("<tpAmb>2</tpAmb>", "<tpAmb>3</tpAmb>").encode()))
+            xsd_negative(P, "neg.xsd.ncm_9_digitos", variant(s.replace("<NCM>", "<NCM>1", 1).encode()))
+            xsd_negative(P, "neg.xsd.ncm_letra", variant(re.sub(r"<NCM>(\d{7})\d</NCM>", r"<NCM>\1A</NCM>", s, count=1).encode()))
             ok, d = key_consistency(s.replace(f'Id="NFe{k}"', f'Id="NFe{wrong_dv}"').encode())
             check(P + "neg.chave_dv_incorreto", ok, d, expect=False)
             ok, d = key_consistency(s.replace(f"<cDV>{k[43]}</cDV>", f"<cDV>{wrong_dv[43]}</cDV>").encode())
@@ -224,16 +241,17 @@ def main():
     tools = {k: subprocess.run(c, capture_output=True, text=True).stdout.strip().splitlines()[0] if subprocess.run(c, capture_output=True, text=True).stdout else
              subprocess.run(c, capture_output=True, text=True).stderr.strip().splitlines()[0]
              for k, c in {"xmllint": ["xmllint", "--version"], "openssl": ["openssl", "version"], "deno": ["deno", "--version"]}.items()}
-    fails = [r for r in results if r["result"] != "OK"]
+    fails = [r for r in results if r["result"] == "FAIL"]
+    notes = [r for r in results if r["result"] == "KNOWN_TOOL_DEFECT"]
     report = {"harness": "F4.1 NF-e 55 offline", "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-              "tools": tools, "lxml_libxml": list(etree.LIBXML_VERSION), "total": len(results), "failed": len(fails),
+              "tools": tools, "lxml_libxml": list(etree.LIBXML_VERSION), "total": len(results), "failed": len(fails), "known_tool_defects": len(notes),
               "network_sefaz": False, "database": False, "secrets": False, "results": results}
     (EVID / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2))
-    lines = [f"# F4.1 — execução {report['generated_at']}", "", f"Total {len(results)}, falhas {len(fails)}.", "",
+    lines = [f"# F4.1 — execução {report['generated_at']}", "", f"Total {len(results)}, falhas {len(fails)}, divergências de ferramenta registradas {len(notes)}.", "",
              "| Caso | Esperado | Observado | Resultado | Detalhe |", "|---|---|---|---|---|"]
     lines += [f"| {r['case']} | {r['expected']} | {r['observed']} | {r['result']} | {r['detail'][:90].replace('|','/')} |" for r in results]
     (EVID / "REPORT-run.md").write_text("\n".join(lines) + "\n")
-    print(f"\nTOTAL {len(results)} FALHAS {len(fails)}")
+    print(f"\nTOTAL {len(results)} FALHAS {len(fails)} NOTAS {len(notes)}")
     return 1 if fails else 0
 
 if __name__ == "__main__":
