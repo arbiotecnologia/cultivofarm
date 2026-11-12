@@ -1,5 +1,6 @@
 import { TENANT_CAN_EDIT_GLOBAL_CATALOG } from "@/lib/catalogo/globalCatalogWriteContainment";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { DocumentaryAI } from "./catalog/DocumentaryAI";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -89,6 +90,9 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
   const { hasSources } = useEffectiveCatalogSources("produto", produto?.id, data?.profile?.id);
 
   const [form, setForm] = useState<ProductFormState>(() => buildProductFormDefaults(produto));
+  const dirty = useRef(false);
+  const observedProduct = useRef("");
+  const editForm = (value: ProductFormState | ((previous: ProductFormState) => ProductFormState)) => { dirty.current = true; setForm(value); };
 
   const [previaLoading, setPreviaLoading] = useState(false);
   const [auditLog, setAuditLog] = useState<any[]>([]);
@@ -96,6 +100,9 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
   const [approvalOpen, setApprovalOpen] = useState(false);
 
   useEffect(() => {
+    const key = JSON.stringify([open, produto?.id, editor.scope]);
+    if (key !== observedProduct.current) { observedProduct.current = key; dirty.current = false; }
+    if (dirty.current) return;
     if (open && produto) log({ entidade_tipo: "produto", entidade_id: produto.id, origem });
   }, [open, produto, log, origem]);
 
@@ -111,7 +118,7 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
       return;
     }
     setForm(buildProductFormDefaults(produto));
-  }, [produto?.id, produto, data?.profile, isError, isSuccess]);
+  }, [open, produto?.id, produto, data?.profile, isError, isSuccess, editor.scope]);
 
 
   useEffect(() => {
@@ -203,6 +210,7 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
           <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
         ) : (
           <div className="space-y-3 min-w-0">
+          {tenantContent && <DocumentaryAI identity={{ name: produto.nome, manufacturer: "", registration: "", entity: "produto", id: produto.id }} values={{ ...form }} allowed={Object.keys(form).filter(k => k !== "status_validacao")} onApply={fields => editForm(f => ({ ...f, ...fields }))} />}
           <ProfileStatusBanner
             status={data?.profile?.status_validacao ?? null}
             b2bEnabled={produto.b2b_enabled}
