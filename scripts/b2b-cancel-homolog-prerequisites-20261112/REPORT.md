@@ -34,6 +34,12 @@ Conferir manualmente URL/ref no painel do homolog antes de qualquer execução; 
 
 ## Verificação e limites
 
+- Fontes/limites de fixture: **8/8** testes locais aprovados, `evidence/source-tests.txt`.
+- Financeiro isolado + regressão cancelamento: **16/16**, dois arquivos, `evidence/vitest-focused.txt`.
+- Cinco consultas executadas sem erro num PostgreSQL descartável com catálogo mínimo sintético e objetos ausentes: `evidence/catalog-query-syntax.json`. Prova sintaxe/ausência explícita, **não** compatibilidade de homolog nem roundtrip de instalação.
+- Seleção inicial de Vitest incluiu indevidamente a suíte global por concatenação de includes; interrompida e configuração corrigida. Não certificamos essa rodada; resultado válido é o focado acima.
+- Compilação automática mais recente observada: **build OK**; sem typecheck separado ou sessão real.
+
 Comandos locais:
 
 ```text
