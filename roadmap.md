@@ -1,3 +1,9 @@
+## 12/11 03:56 — Continuação mobile e contratos locais
+- [ ] Entradas reais /app/catalogo e Base Técnica: seleção compacta, cards, contexto/rascunhos e toques 44px.
+- [ ] Contratos executáveis locais para problemas, vínculos/inline e famílias, sem produção.
+- [ ] Serviço documental executável, fonte por campo, teste de busca e limites de ativação.
+- [ ] Testes editor/leitor nas duas entradas, PG isolado, conflitos/isolamento/rollback e relatório/SHA.
+
 ## 12/11 03:21 — Credenciamento declarado e PIS/COFINS
 - [x] Campos opcionais integrados na aba Empresa; MG declarado com JSON canônico, PIS/COFINS null preservado, sem inferência/prova SEFAZ.
 - [x] 169 testes PASS, incluindo 33 checks PG locais; frontend apenas, sem publicação ou dados hospedados. Sessão real/SEFAZ não verificadas.
