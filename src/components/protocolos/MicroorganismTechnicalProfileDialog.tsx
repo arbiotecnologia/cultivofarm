@@ -1,5 +1,5 @@
 import { TENANT_CAN_EDIT_GLOBAL_CATALOG } from "@/lib/catalogo/globalCatalogWriteContainment";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
+import { DocumentaryAI } from "./catalog/DocumentaryAI";
+
 interface Microrganismo {
+  owner_organization_id?: string | null;
   id: string;
   nome: string;
   nome_cientifico: string | null;
@@ -65,7 +69,9 @@ const TECH_ROLES = ["administrador", "gestor", "consultor_tecnico", "tecnico_agr
 const SOURCE_VIEW_ROLES = ["administrador", "gestor", "consultor_tecnico", "tecnico_agronomo", "gestor_comercial"];
 
 export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro, origem = "protocolos" }: Props) {
-  const { role } = useAuth();
+  const { role, profile } = useAuth();
+  const editor = useTenantCatalogEditor();
+  const tenantContent = editor.canEdit && micro?.owner_organization_id === profile?.organization_id && !!micro?.owner_organization_id && origem === "protocolos";
   // Contrato: catálogo global é somente consulta para perfis de empresa.
   // Caminho B2B-only (update_microorganism_b2b_description) removido: EXECUTE revogado.
   const canEditFull: boolean = TENANT_CAN_EDIT_GLOBAL_CATALOG;
@@ -82,6 +88,9 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
   const { hasSources } = useEffectiveCatalogSources("micro", micro?.id, data?.profile?.id);
 
   const [form, setForm] = useState<MicroFormState>(() => buildMicroFormDefaults(micro));
+  const dirty = useRef(false);
+  const observed = useRef("");
+  const editForm = (v: MicroFormState) => { dirty.current = true; setForm(v); };
 
   const [auditLog, setAuditLog] = useState<any[]>([]);
   const [confirmNoSourceOpen, setConfirmNoSourceOpen] = useState(false);
@@ -91,8 +100,11 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
     if (open && micro) log({ entidade_tipo: "microrganismo", entidade_id: micro.id, origem });
   }, [open, micro, log, origem]);
 
-  // CAT-09: o estado é sempre substituído por completo — nunca herda a ficha anterior.
+  // Late refresh never overwrites a dirty manual draft.
   useEffect(() => {
+    const key = JSON.stringify([open, micro?.id, editor.scope]);
+    if (key !== observed.current) { observed.current = key; dirty.current = false; }
+    if (dirty.current) return;
     if (isError) return;
     if (!micro) {
       setForm(emptyMicroForm());
@@ -103,7 +115,7 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
       return;
     }
     setForm(buildMicroFormDefaults(micro));
-  }, [micro?.id, micro, data?.profile, isError, isSuccess]);
+  }, [open, micro?.id, micro, data?.profile, isError, isSuccess, editor.scope]);
 
 
   useEffect(() => {
@@ -218,6 +230,7 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
           <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
         ) : (
           <div className="space-y-3 min-w-0">
+          {tenantContent && <DocumentaryAI identity={{ name: micro.nome, manufacturer: "", registration: "", entity: "microrganismo", id: micro.id }} values={{ ...form }} allowed={Object.keys(form).filter(k => k !== "status_validacao")} onApply={fields => editForm({ ...form, ...fields })} />}
           <ProfileStatusBanner
             status={data?.profile?.status_validacao ?? null}
             b2bEnabled={(micro as any).b2b_enabled}
@@ -241,17 +254,17 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
             </TabsList>
 
             <TabsContent value="resumo" className="space-y-3 pt-3">
-              <ProfileFieldAI readOnly={!canEditFull} label="Resumo curto (consultivo)" rows={4} value={form.resumo_curto} onChange={(v: string) => setForm({ ...form, resumo_curto: v })}
+              <ProfileFieldAI readOnly={!(canEditFull || tenantContent)} label="Resumo curto (consultivo)" rows={4} value={form.resumo_curto} onChange={(v: string) => editForm({ ...form, resumo_curto: v })}
                 entidadeTipo="microrganismo" entidadeId={micro.id} campo="resumo_curto" canGenerateAI={canEditFull} />
             </TabsContent>
             <TabsContent value="atua" className="space-y-3 pt-3">
-              <ProfileFieldAI readOnly={!canEditFull} label="Mecanismo de ação" rows={5} value={form.mecanismo_acao} onChange={(v: string) => setForm({ ...form, mecanismo_acao: v })}
+              <ProfileFieldAI readOnly={!(canEditFull || tenantContent)} label="Mecanismo de ação" rows={5} value={form.mecanismo_acao} onChange={(v: string) => editForm({ ...form, mecanismo_acao: v })}
                 entidadeTipo="microrganismo" entidadeId={micro.id} campo="mecanismo_acao" canGenerateAI={canEditFull} />
-              <ProfileFieldAI readOnly={!canEditFull} label="Explicação técnica" rows={5} value={form.explicacao_tecnica} onChange={(v: string) => setForm({ ...form, explicacao_tecnica: v })}
+              <ProfileFieldAI readOnly={!(canEditFull || tenantContent)} label="Explicação técnica" rows={5} value={form.explicacao_tecnica} onChange={(v: string) => editForm({ ...form, explicacao_tecnica: v })}
                 entidadeTipo="microrganismo" entidadeId={micro.id} campo="explicacao_tecnica" canGenerateAI={canEditFull} />
             </TabsContent>
             <TabsContent value="beneficios" className="space-y-3 pt-3">
-              <ProfileFieldAI readOnly={!canEditFull} label="Benefícios agronômicos" rows={6} value={form.beneficios_agronomicos} onChange={(v: string) => setForm({ ...form, beneficios_agronomicos: v })}
+              <ProfileFieldAI readOnly={!(canEditFull || tenantContent)} label="Benefícios agronômicos" rows={6} value={form.beneficios_agronomicos} onChange={(v: string) => editForm({ ...form, beneficios_agronomicos: v })}
                 entidadeTipo="microrganismo" entidadeId={micro.id} campo="beneficios_agronomicos" canGenerateAI={canEditFull} />
             </TabsContent>
             <TabsContent value="alvos" className="space-y-2 pt-3">
@@ -262,21 +275,21 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
             </TabsContent>
 
             <TabsContent value="aplicacao" className="space-y-3 pt-3">
-              <ProfileFieldAI readOnly={!canEditFull} label="Indicações de uso" rows={4} value={form.indicacoes_uso} onChange={(v: string) => setForm({ ...form, indicacoes_uso: v })}
+              <ProfileFieldAI readOnly={!(canEditFull || tenantContent)} label="Indicações de uso" rows={4} value={form.indicacoes_uso} onChange={(v: string) => editForm({ ...form, indicacoes_uso: v })}
                 entidadeTipo="microrganismo" entidadeId={micro.id} campo="indicacoes_uso" canGenerateAI={canEditFull} />
-              <ProfileFieldAI readOnly={!canEditFull} label="Compatibilidade" rows={3} value={form.compatibilidade} onChange={(v: string) => setForm({ ...form, compatibilidade: v })}
+              <ProfileFieldAI readOnly={!(canEditFull || tenantContent)} label="Compatibilidade" rows={3} value={form.compatibilidade} onChange={(v: string) => editForm({ ...form, compatibilidade: v })}
                 entidadeTipo="microrganismo" entidadeId={micro.id} campo="compatibilidade" canGenerateAI={canEditFull} />
-              <ProfileFieldAI readOnly={!canEditFull} label="Armazenamento" rows={3} value={form.armazenamento} onChange={(v: string) => setForm({ ...form, armazenamento: v })}
+              <ProfileFieldAI readOnly={!(canEditFull || tenantContent)} label="Armazenamento" rows={3} value={form.armazenamento} onChange={(v: string) => editForm({ ...form, armazenamento: v })}
                 entidadeTipo="microrganismo" entidadeId={micro.id} campo="armazenamento" canGenerateAI={canEditFull} />
             </TabsContent>
             <TabsContent value="cuidados" className="space-y-3 pt-3">
-              <ProfileFieldAI readOnly={!canEditFull} label="Cuidados na aplicação" rows={5} value={form.cuidados_aplicacao} onChange={(v: string) => setForm({ ...form, cuidados_aplicacao: v })}
+              <ProfileFieldAI readOnly={!(canEditFull || tenantContent)} label="Cuidados na aplicação" rows={5} value={form.cuidados_aplicacao} onChange={(v: string) => editForm({ ...form, cuidados_aplicacao: v })}
                 entidadeTipo="microrganismo" entidadeId={micro.id} campo="cuidados_aplicacao" canGenerateAI={canEditFull} />
-              <ProfileFieldAI readOnly={!canEditFull} label="Observações regulatórias" rows={4} value={form.observacoes_regulatorias} onChange={(v: string) => setForm({ ...form, observacoes_regulatorias: v })}
+              <ProfileFieldAI readOnly={!(canEditFull || tenantContent)} label="Observações regulatórias" rows={4} value={form.observacoes_regulatorias} onChange={(v: string) => editForm({ ...form, observacoes_regulatorias: v })}
                 entidadeTipo="microrganismo" entidadeId={micro.id} campo="observacoes_regulatorias" canGenerateAI={canEditFull} />
             </TabsContent>
             <TabsContent value="produtor" className="space-y-3 pt-3">
-              <ProfileFieldAI readOnly={!canEditFull} label="Linguagem para o produtor" rows={6} value={form.explicacao_produtor} onChange={(v: string) => setForm({ ...form, explicacao_produtor: v })}
+              <ProfileFieldAI readOnly={!(canEditFull || tenantContent)} label="Linguagem para o produtor" rows={6} value={form.explicacao_produtor} onChange={(v: string) => editForm({ ...form, explicacao_produtor: v })}
                 entidadeTipo="microrganismo" entidadeId={micro.id} campo="explicacao_produtor" canGenerateAI={canEditFull} />
             </TabsContent>
             <TabsContent value="b2b" className="space-y-3 pt-3">
@@ -284,8 +297,8 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
                 label="Linguagem para parceiro B2B"
                 rows={6}
                 value={form.explicacao_b2b}
-                readOnly={!canEditFull}
-                onChange={(v: string) => setForm({ ...form, explicacao_b2b: v })}
+                readOnly={!(canEditFull || tenantContent)}
+                onChange={(v: string) => editForm({ ...form, explicacao_b2b: v })}
                 entidadeTipo="microrganismo"
                 entidadeId={micro.id}
                 campo="explicacao_b2b"
@@ -328,6 +341,11 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
 
         <div className="flex flex-col gap-3 border-t pt-3 mt-2">
           <div className="flex flex-wrap gap-2 justify-end">
+            {!isError && isSuccess && tenantContent && <Button size="sm" disabled={upsert.isPending} onClick={async () => {
+              const current = editor.capture();
+              try { await upsert.mutateAsync({ microrganismo_id: micro.id, ...form }); if (current()) { dirty.current = false; toast.success("Conteúdo da ficha salvo"); } }
+              catch (e) { if (current()) toast.error(e instanceof Error ? e.message : "Rascunho preservado"); }
+            }}>Salvar conteúdo</Button>}
             <Button variant="outline" size="sm" onClick={copyResumo}>Copiar resumo</Button>
             {!isError && canEditFull && data?.profile?.id && (
               <ReturnToReviewButton kind="micro" profileId={data.profile.id} onDone={refetch} />

@@ -72,9 +72,9 @@ const TECH_ROLES = ["administrador", "gestor", "consultor_tecnico", "tecnico_agr
 const SOURCE_VIEW_ROLES = ["administrador", "gestor", "consultor_tecnico", "tecnico_agronomo", "gestor_comercial"];
 
 export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, origem = "protocolos" }: Props) {
-  const { role } = useAuth();
+  const { role, profile } = useAuth();
   const editor = useTenantCatalogEditor();
-  const tenantContent = editor.canEdit && !!produto?.owner_organization_id && origem === "protocolos";
+  const tenantContent = editor.canEdit && produto?.owner_organization_id === profile?.organization_id && !!produto?.owner_organization_id && origem === "protocolos";
   // Contrato: catálogo global é somente consulta para perfis de empresa.
   const canEditFull: boolean = TENANT_CAN_EDIT_GLOBAL_CATALOG;
   const canSeeHistory = role ? TECH_ROLES.includes(role) : false;
