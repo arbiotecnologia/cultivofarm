@@ -6,8 +6,10 @@ H = pathlib.Path(__file__).resolve().parent.parent
 cap = json.load(open(H/'live-capture/capture.json'))
 D = tempfile.mkdtemp(prefix='orgrev-'); PORT = '55491'
 env = dict(os.environ, PGHOST=D, PGPORT=PORT, PGUSER='postgres', PGDATABASE='postgres')
-subprocess.run(['initdb','-D',D+'/data','-U','postgres','-A','trust'],check=True,capture_output=True)
-subprocess.run(['pg_ctl','-D',D+'/data','-o',f'-k {D} -p {PORT} -c listen_addresses=',"-w",'start','-l',D+'/log'],check=True,capture_output=True)
+SP = ['setpriv','--reuid=65534','--regid=65534','--clear-groups'] if os.geteuid()==0 else []
+os.chmod(D, 0o777)
+subprocess.run(SP+['initdb','-D',D+'/data','-U','postgres','-A','trust'],check=True,capture_output=True)
+subprocess.run(SP+['pg_ctl','-D',D+'/data','-o',f'-k {D} -p {PORT} -c listen_addresses=',"-w",'start','-l',D+'/log'],check=True,capture_output=True)
 RES=[]
 def psql(sql, ok=True):
     r = subprocess.run(['psql','-X','-q','-At','-v','ON_ERROR_STOP=1','-c',sql] if '\n' not in sql and len(sql)<2000 else ['psql','-X','-q','-At','-v','ON_ERROR_STOP=1','-f','-'],
@@ -173,7 +175,7 @@ try:
     st = psql(f"SELECT status FROM public.organizations WHERE id='{O['S']}'").stdout.strip()
     check('rollback deny-only: approvals closed, org stays in review', r.returncode==0 and not ok and st=='aguardando_revisao', r.stderr+err)
 finally:
-    subprocess.run(['pg_ctl','-D',D+'/data','-m','immediate','stop'],capture_output=True); shutil.rmtree(D, ignore_errors=True)
+    subprocess.run(SP+['pg_ctl','-D',D+'/data','-m','immediate','stop'],capture_output=True); shutil.rmtree(D, ignore_errors=True)
 ev = H/'evidence'; ev.mkdir(exist_ok=True)
 json.dump({'postgres': subprocess.run(['postgres','--version'],capture_output=True,text=True).stdout.strip(),
            'level': 'PostgreSQL descartável; corpos LIVE capturados; claims SQL sintéticas; não é prova JWT/PostgREST/Edge hospedados',
