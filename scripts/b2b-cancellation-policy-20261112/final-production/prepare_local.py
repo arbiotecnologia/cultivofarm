@@ -1,5 +1,6 @@
 """Restore original synthetic r12, pin security, execute exact closed bytes."""
 import json
+import pwd
 import subprocess
 import sys
 from pathlib import Path
@@ -23,7 +24,7 @@ globals_sql = Path('/tmp/r12/globals.sql').read_text()
 # Existing disposable clusters initialized by uid 1000 may name their bootstrap
 # superuser differently; establish postgres locally without weakening any app guard.
 if db.DB('postgres').raw('SELECT 1').returncode:
-    bootstrap = [arg if arg != 'postgres' else 'oai' for arg in db.PSQL]
+    bootstrap = [arg if arg != 'postgres' else pwd.getpwuid(1000).pw_name for arg in db.PSQL]
     result = subprocess.run(bootstrap + ['postgres'], input='CREATE ROLE postgres SUPERUSER LOGIN;', text=True, capture_output=True)
     if result.returncode:
         raise RuntimeError('LOCAL_BOOTSTRAP_ROLE:' + result.stderr)
