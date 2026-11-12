@@ -65,7 +65,7 @@ try:
 
     # ---- instala pacote exato ----
     r = psql((H/'install.sql.review').read_text(), ok=False)
-    check('install.sql.review (preflight+core+fiscal+postflight) commits', r.returncode==0, r.stderr)
+    check("install.sql.review (preflight+core+fiscal+postflight) commits", r.returncode==0, "\n".join(l for l in r.stderr.splitlines() if "NOTICE" not in l))
     r = psql((H/'install.sql.review').read_text(), ok=False)
     check('rerun blocked by preflight', r.returncode!=0 and 'já instalado' in r.stderr, r.stderr)
     check('existing active orgs untouched (no backfill)', psql("SELECT string_agg(status,',' ORDER BY nome) FROM public.organizations WHERE id IN ('%s','%s','%s')"%(O['hom'],O['ativa'],O['pre'])).stdout.strip()=='ativa,ativa,ativa')
