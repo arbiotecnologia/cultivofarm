@@ -17,6 +17,8 @@ def main():
   setup="CREATE SCHEMA platform_private;CREATE SCHEMA auth;CREATE SCHEMA extensions;CREATE SCHEMA cron;CREATE TABLE cron.job(active boolean);CREATE ROLE anon;CREATE ROLE authenticated;CREATE ROLE service_role;CREATE TYPE public.app_role AS ENUM('administrador','gestor_comercial','financeiro');CREATE TABLE public.fiscal_environment_marker(project_ref text,production_emission_allowed boolean);INSERT INTO public.fiscal_environment_marker VALUES('vrlcdwmlytukrjezrrnf',false);"
   assert sql(setup).returncode==0
   d=json.loads((H/'capture/catalog.json').read_text())
+  labels=[t['enumlabel'] for t in d['types'] if t['typname']=='partner_order_status' and t['enumlabel'] is not None]
+  z=sql('CREATE TYPE public.partner_order_status AS ENUM('+','.join(G.quote(s) for s in labels)+');');assert z.returncode==0,z.stderr
   # Column types/NOT NULL captured exactly; constraints/defaults/guards not claimed reconstructed.
   for r in d['schema']:
    cols=','.join('"'+c['name']+'" '+c['type']+(' NOT NULL' if c['not_null'] else '') for c in r['columns'])
@@ -46,7 +48,6 @@ def main():
   check('fiscal helper gate OFF denies finality',sql("SELECT platform_private.b2b_cancel_confirmed_fiscal_v1(gen_random_uuid());").stdout.strip()=='{"code": "CANCEL_POLICY_DISABLED", "final": false}')
   # Concrete state contract on installed helper/DDL, no invented aprobado_previsto.
   uid="'00000000-0000-0000-0000-000000000003'"
-  sql('ALTER TABLE public.partner_orders DROP CONSTRAINT partner_orders_pkey;') if False else None
   # Parent fixture has only identity: synthetic shape, no fake canonical order-create assertion.
   sql('ALTER TABLE platform_private.b2b_financial_forecasts DROP CONSTRAINT b2b_financial_forecasts_order_id_fkey;')
   fixture="INSERT INTO platform_private.b2b_financial_forecasts(id,order_id,organization_id,partner_id,total_amount,residual_amount,state,economic_snapshot,schedule_snapshot,items_snapshot,credit_decision_snapshot,commercial_approved_by,commercial_approved_at) VALUES("+uid+",gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),20,20,'aguardando_fiscal','{}','[]','[]','{}',gen_random_uuid(),now());"
