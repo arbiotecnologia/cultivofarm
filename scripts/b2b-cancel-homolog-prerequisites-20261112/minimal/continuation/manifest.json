@@ -1,0 +1,50 @@
+{
+  "target_ref": "vrlcdwmlytukrjezrrnf",
+  "stage_A": "INSTALLED_POST_PASS_OWNER_REPORTED_NOT_RERUN_HOSTED",
+  "capture_sha256": "0b960b4d884b70065820198cc9be762c8484df577af420846e3622a56dfb5923",
+  "stages": [
+    {
+      "stage": "B",
+      "tables": [
+        "platform_private.b2b_authorized_documents",
+        "platform_private.b2b_document_allocations",
+        "platform_private.b2b_allocation_reversals",
+        "platform_private.b2b_title_permits",
+        "platform_private.b2b_cancellation_attestations"
+      ],
+      "functions": [],
+      "status": "INSTALLABLE_CLOSED_ADDITIVE_ONLY"
+    },
+    {
+      "stage": "C",
+      "tables": [
+        "platform_private.b2b_fiscal_service_permits",
+        "platform_private.fiscal_close_pending",
+        "platform_private.b2b_fiscal_invoice_snapshots"
+      ],
+      "functions": [],
+      "status": "INSTALLABLE_CLOSED_ADDITIVE_ONLY"
+    },
+    {
+      "stage": "D",
+      "tables": [
+        "platform_private.b2b_cancel_policy_gate_v1",
+        "platform_private.b2b_cancel_policy_allowlist_v1"
+      ],
+      "functions": [
+        "platform_private.cancel_homolog_residual_capability_v1(uuid)",
+        "platform_private.cancel_homolog_residual_command_v1(uuid,integer,text)",
+        "platform_private.b2b_cancel_confirmed_fiscal_v1(uuid)"
+      ],
+      "status": "INSTALLABLE_CLOSED_ADDITIVE_ONLY"
+    }
+  ],
+  "E": "BLOCKED_EXACT_STATEMENT_GUARD_BODY",
+  "operational_installable": false,
+  "hosted_executed": false,
+  "source_sha256": {
+    "scripts/b2b-downstream-audit-20261107/b4/review-d6cd95c0/b4-candidate.sql.review": "7dde7f07bca49f6d89ca995f1b6eacfdbb84b0694565e2a4121b1a7bec4dc59f",
+    "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/stages/04-bridge-install.sql.review": "5db2c160fd3a99bb847fe20a1d9764cbfed82d5cd80915be0eceb94eadfb9964",
+    "scripts/b2b-cancellation-policy-20261112/candidate.sql": "babcf71d36fecb0d5d51919e541a52722f1f9fd794cc2d716e1d2b43774081ba"
+  }
+}
