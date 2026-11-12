@@ -698,7 +698,7 @@ export function ProdutosTab() {
           />
         </div>
         
-        <div className="flex gap-2 w-full md:w-auto">
+        <div className="flex flex-wrap gap-2 w-full md:w-auto min-w-0">
           <Select value={filterTipo} onValueChange={setFilterTipo}>
             <SelectTrigger className="w-[140px]">
               <Filter className="h-4 w-4 mr-2" />
