@@ -132,7 +132,7 @@ ALTER TABLE public.company_fiscal_settings ENABLE ROW LEVEL SECURITY;
         OUT = OUT / 'accreditations'
     if os.environ.get('TEST_PIS_EFFECTIVE') == '1':
         mig = HERE / 'pis-cofins-effective' / '20261112150000_pis_cofins_effective_from_history.sql'
-        pg(f"UPDATE profiles SET organization_id='{A}' WHERE user_id='{U}'; UPDATE user_roles SET role='administrador' WHERE user_id='{U}'; UPDATE company_fiscal_settings SET pis_cofins_regime=NULL WHERE id='{ID}';")
+        pg(f"UPDATE profiles SET organization_id='{A}' WHERE user_id='{U}'; UPDATE user_roles SET role='administrador' WHERE user_id='{U}';")
         pg(mig.read_text()); pg(mig.read_text())  # idempotente
         check('legacy row keeps NULL date, no backfill/history', pg(f"SELECT coalesce(pis_cofins_regime_effective_from::text,'NULL')||':'||(SELECT count(*) FROM company_fiscal_pis_cofins_history) FROM company_fiscal_settings WHERE id='{ID}'").stdout.strip() == 'NULL:0')
         v = int(pg(f"SELECT configuration_version FROM company_fiscal_settings WHERE id='{ID}'").stdout.strip())
