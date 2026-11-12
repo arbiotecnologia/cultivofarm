@@ -13,8 +13,8 @@
     },
     {
       "uf": "MG",
-      "accredited": true,
-      "evidence_ref": "original"
+      "evidence_ref": "original",
+      "accredited": true
     }
   ],
   "state_registration": "ISENTO",
