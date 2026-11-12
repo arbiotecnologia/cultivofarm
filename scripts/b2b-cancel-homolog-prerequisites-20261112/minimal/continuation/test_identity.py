@@ -55,6 +55,16 @@ def main():
   check('compact checker executes columns constraints indexes policies row triggers',z.returncode==0,z.stderr)
   z=sql('ALTER TABLE public.row_parent ALTER COLUMN id SET DEFAULT gen_random_uuid();SELECT platform_private.cancel_homolog_catalog_check_v1();')
   check('compact column-default drift denied',z.returncode!=0 and 'COLUMN_DRIFT' in z.stderr,z.stderr)
+  # Exact small bootstrap installers + pins, with declared synthetic marker/A.
+  z=sql("CREATE SCHEMA cron;CREATE TABLE cron.job(active boolean);CREATE TABLE public.fiscal_environment_marker(project_ref text,production_emission_allowed boolean);INSERT INTO public.fiscal_environment_marker VALUES('vrlcdwmlytukrjezrrnf',false);CREATE TABLE platform_private.b2b_financial_forecasts(id uuid);CREATE TABLE platform_private.b2b_forecast_creation_gate_v1(enabled boolean);CREATE TABLE platform_private.b2b_forecast_lifecycle_gate_v1(enabled boolean);DROP FUNCTION platform_private.cancel_homolog_catalog_check_v1();DROP FUNCTION platform_private.cancel_homolog_catalog_part_00_v1();DROP FUNCTION platform_private.cancel_homolog_resolve_function_v1(text,text);")
+  assert z.returncode==0,z.stderr
+  for path in sorted((H/'checks').glob('*-install-checker.sql.review')):
+   z=sql(path.read_text());check('exact bootstrap '+path.name,z.returncode==0,z.stderr)
+   if z.returncode:raise RuntimeError(z.stderr)
+  verification=(H/'checks/99-verify-checker.sql.readonly').read_text()
+  pin=verification[verification.index('DO $checker_pin$'):verification.index('SELECT platform_private.cancel_homolog_catalog_check_v1();')]
+  z=sql(pin);check('all bootstrap source/owner/ACL/config pins match',z.returncode==0,z.stderr)
+  z=sql((H/'checks/00-install-checker.sql.review').read_text());check('bootstrap repeat refuses overwrite',z.returncode!=0 and 'CHECKER_ALREADY_PRESENT' in z.stderr,z.stderr)
  finally:cmd(['pg_ctl','-D',data,'stop','-m','fast','-w'])
  out=H/'evidence'/('identity-'+Path(tmp).name+'.json');out.write_text(json.dumps(dict(hosted=False,synthetic_event_body=True,checks=rows),indent=2)+'\n')
  assert all(r['status']=='PASS' for r in rows),str(out)
