@@ -1,3 +1,7 @@
+## 12/11 03:13 — Salvamento fiscal original
+- [ ] Corrigir READY_FOR_HOMOLOGATION na origem; preservar revisão contábil e rascunhos em erro.
+- [ ] Exercitar formulário/transporte original com AR Bio sintética, reabertura, estados, erros e isolamento; documentar limites do espelho e implantação.
+
 ## 12/11 02:48 — Painel original de aprovações e diagnóstico
 - [x] Painel econômico montado na carteira real; economicDiagnosis escopado, mensagem correta, eligible/reasons preservados.
 - [x] 92 testes focados PASS: AR Bio sintética, papéis/tenant, previsão única, reconciliação/parcial R$1 e bloqueios; harness visual sintético desktop/mobile; build automático OK.
