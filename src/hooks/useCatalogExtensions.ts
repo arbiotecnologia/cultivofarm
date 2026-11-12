@@ -7,7 +7,7 @@ import { z } from "zod";
 
 const extensionRow = z.object({ id: z.string(), updated_at: z.string(), nome: z.string().optional(), categoria: z.string().optional(), nome_cientifico: z.string().nullable().optional(), culture_id: z.string().nullable().optional(), problem_id: z.string().nullable().optional(), observacao: z.string().nullable().optional(), ativo: z.boolean().optional() }).passthrough();
 export type CatalogExtensionRow = z.infer<typeof extensionRow>;
-type Rpc = (name: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
+type Rpc = (name: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message: string; code?: string } | null }>;
 export function useCatalogExtensions(kind: "problems" | "links", entity = "produto", parent?: string) {
   const editor = useTenantCatalogEditor();
   const qc = useQueryClient();
@@ -24,11 +24,12 @@ export function useCatalogExtensions(kind: "problems" | "links", entity = "produ
       attempt.current ??= { sig, key: crypto.randomUUID() };
       const { data, error } = await (supabase.rpc.bind(supabase) as unknown as Rpc)("tenant_catalog_extensions_save_v1", { p_kind: kind, p_entity: entity, p_parent: parent ?? null, p_id: id, p_expected: version, p_payload: payload, p_key: attempt.current.key });
       if (!current()) throw new Error("Contexto alterado; rascunho não adotado.");
-      if (error) { attempt.current = undefined; throw new Error(error.message); }
-      const ack = z.object({ ok: z.literal(true), id: z.string(), updated_at: z.string() }).passthrough().parse(data);
+      if (error) { if (["42501", "22023", "PT409", "23505"].includes(error.code ?? "")) attempt.current = undefined; throw new Error(error.message); }
+      const ack = z.object({ ok: z.literal(true), id: z.string().uuid(), updated_at: z.string().datetime({ offset: true }) }).passthrough().parse(data);
       if (id && ack.id !== id) throw new Error("Resposta de outro registro.");
       attempt.current = undefined;
       await qc.invalidateQueries({ queryKey: ["catalog-extensions"] });
+      if (!current()) throw new Error("Contexto alterado; resposta não adotada.");
       return ack;
     } finally { lock.current = false; }
   };

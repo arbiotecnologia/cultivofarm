@@ -1,9 +1,7 @@
 -- INACTIVE REVIEW CANDIDATE. No client EXECUTE granted by this package.
 BEGIN;
 DO $pre$ BEGIN
-  IF current_setting('app.settings.project_ref', true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN
-    RAISE EXCEPTION 'CANONICAL_REF_UNPROVEN';
-  END IF;
+  -- Destination must be verified by the authorized deployment tool, never by a forgeable GUC.
   IF to_regprocedure('platform_private.catalog_tenant_actor(text)') IS NULL THEN RAISE EXCEPTION 'CANONICAL_CATALOG_AUTHORITY_MISSING'; END IF;
   IF (SELECT md5(pg_get_functiondef(to_regprocedure('platform_private.catalog_tenant_actor(text)')))) IS DISTINCT FROM '5e0ce9cc9122f1c21d76e29a13de8b59' THEN RAISE EXCEPTION 'CATALOG_AUTHORITY_DRIFT'; END IF;
   IF to_regprocedure('public.tenant_catalog_documentary_capability_v1(text,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'CANDIDATE_ALREADY_EXISTS_RECAPTURE_REQUIRED'; END IF;
@@ -12,7 +10,7 @@ CREATE FUNCTION public.tenant_catalog_documentary_capability_v1(p_entity text, p
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $f$
 DECLARE v_org uuid; v_owner uuid;
 BEGIN
-  v_org := platform_private.catalog_tenant_actor('mutate');
+  v_org := platform_private.catalog_extensions_scope_v1(true);
   IF auth.uid() IS NULL OR v_org IS NULL THEN RAISE EXCEPTION 'catalog_denied' USING ERRCODE='42501'; END IF;
   IF p_entity NOT IN ('produto','microrganismo') OR p_entity IS NULL THEN RAISE EXCEPTION 'entity_invalid' USING ERRCODE='22023'; END IF;
   IF p_id IS NOT NULL THEN
