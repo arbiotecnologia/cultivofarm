@@ -43,6 +43,7 @@ import { gerarProximoCodigoMicro, ehCodigoAutomatico, PREFIXOS_MICRO } from "@/l
 import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 import { TenantReferenceDialog } from "./TenantReferencePanel";
 import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
+import { useAuth } from "@/hooks/useAuth";
 
 /** CAT-08 · carga consistente: só aplica dados se ambas as consultas passarem. */
 export async function carregarMicrorganismosCatalogo(client: any): Promise<
@@ -108,6 +109,7 @@ interface Microrganismo {
 
 export function MicrorganismosTab() {
   const editor = useTenantCatalogEditor();
+  const { profile } = useAuth();
   const [reference, setReference] = useState<{ item: Microrganismo | null }>();
   const { name: tenantName } = useActiveTenantName();
   const [items, setItems] = useState<Microrganismo[]>([]);
@@ -156,9 +158,11 @@ export function MicrorganismosTab() {
   });
 
   const fetch = async () => {
+    const current = editor.capture();
+    if (!current()) return;
     const generation = localGeneration.current;
     const result = await carregarMicrorganismosCatalogo(supabase as any);
-    if (generation !== localGeneration.current) return;
+    if (generation !== localGeneration.current || !current()) return;
     if (!result.ok) {
       toast.error("Erro ao carregar microrganismos");
       return;
@@ -169,7 +173,7 @@ export function MicrorganismosTab() {
   };
 
   const localGeneration = useRef(0);
-  const activeScopeKey = ownedCapability.scope ? `${ownedCapability.scope.organizationId}|${ownedCapability.scope.userId}` : "";
+  const activeScopeKey = editor.scope;
   useEffect(() => {
     localGeneration.current += 1;
     setItems([]); setFilteredItems([]); setOwnedDialog({ open: false, item: null }); setOwnedConfirm(null); setVolumesEdit(null); setReference(undefined);
@@ -688,7 +692,7 @@ export function MicrorganismosTab() {
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1 justify-end flex-wrap">
                     <TechnicalProfileStatusBadge status={profileStatusMap[m.id] ?? null} />
-                    {editor.canEdit && m.owner_organization_id && <Button variant="outline" size="sm" onClick={() => setReference({ item: m })}>Editar</Button>}
+                    {editor.canEdit && m.owner_organization_id === profile?.organization_id && !!m.owner_organization_id && <Button variant="outline" size="sm" onClick={() => setReference({ item: m })}>Editar</Button>}
                     <TenantHiddenBadge state={tenantVis.map?.get(m.id)} />
                     {canManageVis && !m.owner_organization_id && (
                       <TenantVisibilityToggle entity="microrganismo" item={{ id: m.id, nome: m.nome, ativo: m.ativo }}

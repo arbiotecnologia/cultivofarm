@@ -5,6 +5,7 @@ DO $pre$ BEGIN
     RAISE EXCEPTION 'CANONICAL_REF_UNPROVEN';
   END IF;
   IF to_regprocedure('platform_private.catalog_tenant_actor(text)') IS NULL THEN RAISE EXCEPTION 'CANONICAL_CATALOG_AUTHORITY_MISSING'; END IF;
+  IF (SELECT md5(pg_get_functiondef(to_regprocedure('platform_private.catalog_tenant_actor(text)')))) IS DISTINCT FROM '5e0ce9cc9122f1c21d76e29a13de8b59' THEN RAISE EXCEPTION 'CATALOG_AUTHORITY_DRIFT'; END IF;
   IF to_regprocedure('public.tenant_catalog_documentary_capability_v1(text,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'CANDIDATE_ALREADY_EXISTS_RECAPTURE_REQUIRED'; END IF;
 END $pre$;
 CREATE FUNCTION public.tenant_catalog_documentary_capability_v1(p_entity text, p_id uuid)
@@ -21,6 +22,7 @@ BEGIN
   END IF;
   RETURN jsonb_build_object('allowed',true,'actor_id',auth.uid(),'organization_id',v_org);
 END $f$;
+ALTER FUNCTION public.tenant_catalog_documentary_capability_v1(text,uuid) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.tenant_catalog_documentary_capability_v1(text,uuid) FROM PUBLIC, anon, authenticated, service_role;
 COMMIT;
 -- POST: verify owner, fixed search_path and no client EXECUTE, then independent review of activation.
