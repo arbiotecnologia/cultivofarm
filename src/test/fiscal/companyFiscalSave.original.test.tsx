@@ -54,6 +54,43 @@ const open = () => renderWithProviders(<FiscalEmpresa />, { route: "/configuraco
 const form = async () => { await screen.findByTestId("fiscal-empresa-page"); await waitFor(() => expect(screen.getByLabelText("Razão social")).toHaveValue(row.legal_name)); };
 
 describe("Contrato canônico de salvamento sem validação contábil", () => {
+  it("AR Bio salva declaração MG, mantém SP/metadados e null; reabre sem atestado fictício", async () => {
+    Object.assign(row, { tax_regime: "LUCRO_PRESUMIDO", crt: "3", configuration_status: "PENDING_ACCOUNTING", pis_cofins_regime: null, uf_accreditations: [{ uf: "SP", accredited: true, note: "preservar" }, { uf: "MG", accredited: false, evidence_ref: "original" }] });
+    const mounted = open(); await form();
+    expect(screen.getByLabelText("Regime de PIS/COFINS")).toHaveValue("");
+    fireEvent.change(screen.getByLabelText("UF do credenciamento"), { target: { value: "MG" } });
+    fireEvent.change(screen.getByLabelText("Aptidão declarada"), { target: { value: "yes" } });
+    fireEvent.click(screen.getByRole("button", { name: "Registrar declaração" }));
+    fireEvent.click(screen.getByTestId("fiscal-empresa-save"));
+    await waitFor(() => expect(row.configuration_version).toBe(8));
+    expect(writes[0]?.body.uf_accreditations).toEqual([{ uf: "SP", accredited: true, note: "preservar" }, { uf: "MG", accredited: true, evidence_ref: "original" }]);
+    expect(row.pis_cofins_regime).toBeNull(); expect(row.configuration_status).toBe("PENDING_ACCOUNTING");
+    expect(row.accounting_validated_at).toBeNull();
+    mkdirSync("scripts/fiscal-company-save-20261112/evidence/accreditations", { recursive: true });
+    writeFileSync("scripts/fiscal-company-save-20261112/evidence/accreditations/payload.json", JSON.stringify(writes[0]?.body, null, 2) + "\n");
+    mounted.unmount(); open(); await form();
+    expect(screen.getByLabelText("Regime de PIS/COFINS")).toHaveValue("");
+    expect(row.uf_accreditations).toEqual(writes[0]?.body.uf_accreditations);
+  });
+  it("conflito mantém declaração e regime explicitamente escolhido sem rebase ou retry", async () => {
+    Object.assign(row, { pis_cofins_regime: null, uf_accreditations: [{ uf: "SP", accredited: true }] });
+    const mounted = open(); await form(); failure = "PT409";
+    fireEvent.change(screen.getByLabelText("Regime de PIS/COFINS"), { target: { value: "MISTO" } });
+    fireEvent.change(screen.getByLabelText("UF do credenciamento"), { target: { value: "MG" } });
+    fireEvent.change(screen.getByLabelText("Aptidão declarada"), { target: { value: "yes" } });
+    fireEvent.click(screen.getByRole("button", { name: "Registrar declaração" }));
+    fireEvent.click(screen.getByTestId("fiscal-empresa-save"));
+    await waitFor(() => expect(writes).toHaveLength(1));
+    row = { ...row, configuration_version: 9, pis_cofins_regime: "CUMULATIVO", uf_accreditations: [{ uf: "RJ", accredited: true }] };
+    await mounted.client.invalidateQueries({ queryKey: ["fiscal", "company", "settings"] });
+    expect(screen.getByLabelText("Regime de PIS/COFINS")).toHaveValue("MISTO");
+    expect(writes).toHaveLength(1);
+    failure = null; fireEvent.click(screen.getByTestId("fiscal-empresa-save"));
+    await waitFor(() => expect(writes).toHaveLength(2));
+    expect(writes[1]?.url.searchParams.get("configuration_version")).toBe("eq.7");
+    expect(writes[1]?.body.uf_accreditations).toEqual([{ uf: "SP", accredited: true }, { uf: "MG", accredited: true }]);
+    expect(row.uf_accreditations).toEqual([{ uf: "RJ", accredited: true }]);
+  });
   it("aceita exatamente os quatro estados informados e rejeita o valor causador", () => {
     expect(ALLOWED_STATUSES).toEqual(["DRAFT", "PENDING_ACCOUNTING", "VALIDATED", "BLOCKED"]);
     expect(companyFiscalFormSchema.safeParse({ configuration_status: "READY_FOR_HOMOLOGATION" }).success).toBe(false);
