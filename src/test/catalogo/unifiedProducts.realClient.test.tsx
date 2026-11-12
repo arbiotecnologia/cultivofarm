@@ -135,7 +135,8 @@ it("Financeiro conserva consulta via redirect e link fiscal, sem CRUD ou abas ir
     <Route path="/base-tecnica" element={<Protocolos />} />
   </Routes></MemoryRouter></QueryClientProvider>);
   await screen.findByText("Produto financeiro");
-  expect(screen.getAllByRole("tab")).toHaveLength(1);
+  // A única aba principal continua Produtos; subabas são apenas filtros da mesma consulta autorizada.
+  expect(screen.getAllByRole("tab").filter(tab => ["Produtos", "Microrganismos", "Catálogo Técnico", "Culturas", "Problemas"].includes(tab.textContent ?? ""))).toHaveLength(1);
   expect(screen.getByRole("tab", { name: "Produtos" }).getAttribute("aria-selected")).toBe("true");
   for (const name of ["Novo produto", "Editar", "Arquivar", "Reativar"]) expect(screen.queryByRole("button", { name })).toBeNull();
   expect(screen.getByRole("link", { name: "Perfis fiscais" }).getAttribute("href")).toBe("/configuracoes/fiscal/produtos");
