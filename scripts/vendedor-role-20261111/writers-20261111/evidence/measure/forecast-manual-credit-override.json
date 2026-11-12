@@ -1,5 +1,5 @@
 {
-  "order_id": "dcadd776-182d-41f9-b95c-165b53e0fb62",
+  "order_id": "37251c42-c2a4-4940-bfd6-d46c788e1d78",
   "seller_scope_stdout": "f\n",
   "seller_scope_stderr": "",
   "foreign_denied": "ERROR:  42501: b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function approve_b2b_credit(uuid,text) line 9 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
@@ -12,7 +12,7 @@
     "total": 18.0,
     "status": "aprovado",
     "residual": 18.0,
-    "credit_approved_at": "2026-11-11T16:05:52.600024+00:00",
+    "credit_approved_at": "2026-11-12T12:52:58.17278+00:00",
     "credit_approved_by": "00000000-0000-0000-0000-000000000029"
   },
   "receivables": 0,

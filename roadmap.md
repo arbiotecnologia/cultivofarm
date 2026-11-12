@@ -1779,3 +1779,9 @@
 - [ ] Revisão independente, JWT/RLS/Storage hospedado e piloto (sem abrir gate logístico global): fora deste ambiente.
 - [x] Revisão 209/584d530: piloto antes das revalidações fiscais no início, pins completos do leitor financeiro com rollback deny-only sem quebrar pagamento; tentativa 212 exit 0, 56/56, 38 gatilhos, 747→738; manifesto `final-manifest-20261110.json`. Pendente (externo): revisão independente, captura READONLY dos pins locais, prova hospedada JWT/RLS/Storage, gate fiscal e decisão de gate próprio do lifecycle sem abrir logística global.
 - [x] Revisão 212/09537e49: gate próprio lifecycle, pins ACL com opção de concessão, manifesto executável, roteiro A/B; tentativa 214 exit 0 56/56. Pendente externo: revisão independente, diagnóstico READONLY pelo operador, prova hospedada A/B, gate fiscal.
+
+## 12/11 — Vendedor + capacidade do gestor
+- [x] Baterias vendedor 162/162, admin 79/79, E2E 60/60, Vitest 75/75 (scripts/vendedor-role-20261111/gestor-capability-reader-20261112/REPORT.md)
+- [ ] Instalar 02e no original — aguarda auditor
+- [ ] Aprovação comercial de pedidos internos (B2B_INTERNAL_DOWNSTREAM_UNVERIFIED) — aguarda decisão do proprietário
+- [ ] Segregação gestor x termos financeiros — aguarda decisão do proprietário

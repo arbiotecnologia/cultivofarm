@@ -1,0 +1,15 @@
+{
+  "sig": "public.c2_internal_order_entry_capability_v1()",
+  "live": "e2619c71becfebf38c8d03562ff11ce2",
+  "candidate": "7ec80e2596cac468063dc167f2f90165",
+  "acl": "postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f,postgres>service_role:EXECUTE:f|postgres",
+  "reader": "public.get_partner_catalog_secure(uuid)",
+  "reader_pinned_old": "b5684d350603d1db77ab9f1db0f4b253",
+  "reader_pinned_new": "66899286c74a3a2c662abf5a0b275d5a",
+  "files": {
+    "01e-pre.sql.readonly": "e6aa88a6465a7bf9d46a6e0661a39434e2aa2b1485776655fc470ec9315a8c42",
+    "02e-install.sql.review": "e570b3d17694f52b8db195af1c61f6425b1942b09dc53348d60f2642beb840a4",
+    "03e-post.sql.readonly": "388b726ecd00e6c132a41d40cc9fa12bfd9d57bd6e59dc1b96cedc987e1636f9",
+    "04e-rollback.sql.review": "6b6ade500f6f09f3705fcd309aaaada8e251bed1fa3e63be00840fd5ea95ff92"
+  }
+}

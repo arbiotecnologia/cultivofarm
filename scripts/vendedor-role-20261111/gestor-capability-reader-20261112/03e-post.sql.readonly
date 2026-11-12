@@ -1,0 +1,7 @@
+-- READ ONLY.
+DO $p$ BEGIN
+ IF md5(pg_get_functiondef('public.c2_internal_order_entry_capability_v1()'::regprocedure)) IS DISTINCT FROM '7ec80e2596cac468063dc167f2f90165' THEN RAISE EXCEPTION 'GCAP_POST_DRIFT:public.c2_internal_order_entry_capability_v1()'; END IF;
+ IF md5(pg_get_functiondef('public.get_partner_catalog_secure(uuid)'::regprocedure)) IS DISTINCT FROM '66899286c74a3a2c662abf5a0b275d5a' THEN RAISE EXCEPTION 'GCAP_POST_READER:public.get_partner_catalog_secure(uuid)'; END IF;
+ IF (SELECT coalesce((SELECT string_agg(x,',' ORDER BY x) FROM (SELECT format('%s>%s:%s:%s',pg_get_userbyid(a.grantor),CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,a.privilege_type,a.is_grantable) x FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a) q),'')||'|'||pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='public.c2_internal_order_entry_capability_v1()'::regprocedure) IS DISTINCT FROM 'postgres>authenticated:EXECUTE:f,postgres>postgres:EXECUTE:f,postgres>service_role:EXECUTE:f|postgres' THEN RAISE EXCEPTION 'GCAP_POST_ACL:public.c2_internal_order_entry_capability_v1()'; END IF;
+END $p$;
+SELECT 'GCAP_POST_PASS';

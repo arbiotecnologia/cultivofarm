@@ -1,0 +1,63 @@
+PASS restore sem erros além das FKs auth 
+PASS base: leitor oficial = carteira 66899286 e capacidade gestor = LIVE e2619c71 
+PASS ANTES do delta: gestor fechado por catalog_reader_pending (falha reproduzida) 
+PASS admin atribui P a V1 
+PASS gestor não atribui carteira 
+PASS P não pode ir a segundo vendedor (exclusivo) 
+PASS V1: carteira só com P, order_create 
+PASS V2: sem parceiros 
+PASS V1 grava pedido para P pela entrada canônica 
+PASS pedido do vendedor com origem server-side = V1 
+PASS V2 não vê o pedido 
+PASS vendedor de outra empresa não vê 
+PASS V1 não grava para parceiro fora da carteira 
+PASS vendedor de outra empresa não grava para P 
+PASS vendedor: vendedor não aprova comercialmente 
+PASS vendedor: financeiro não aprova comercialmente 
+PASS vendedor: vendedor não aprova termos 
+PASS vendedor: financeiro aprova termos (crédito) 
+PASS vendedor: termos aprovados pelo financeiro; sem previsão antes da comercial 
+PASS vendedor: aprovação comercial de pedido de origem interna segue contida (B2B_INTERNAL_DOWNSTREAM_UNVERIFIED), sem previsão 
+PASS PRE ref divergente falha fechada 
+PASS PRE_PASS 
+PASS INSTALL 02e 
+PASS POST_PASS 
+PASS reinstalação recusada por drift 
+PASS DEPOIS: gestor abre com parceiros da própria empresa 
+PASS DEPOIS: vendedor continua fora da capacidade do gestor 
+PASS DEPOIS: financeiro fora da capacidade do gestor 
+PASS DEPOIS: comprador externo fora 
+PASS gestor grava pedido para P 
+PASS gestor: vendedor não aprova comercialmente 
+PASS gestor: financeiro não aprova comercialmente 
+PASS gestor: vendedor não aprova termos 
+PASS gestor: financeiro aprova termos (crédito) 
+PASS gestor: termos aprovados pelo financeiro; sem previsão antes da comercial 
+PASS gestor: aprovação comercial de pedido de origem interna segue contida (B2B_INTERNAL_DOWNSTREAM_UNVERIFIED), sem previsão 
+PASS gestor grava segundo pedido (sonda de alçada de termos) 
+OBSERVADO gestor_comercial em approve_b2b_payment_terms_secure: ({'status': 'approved', 'success': True}, None)
+PASS comprador externo grava pedido para P (controle financeiro positivo) 
+PASS comprador_ordem_inversa: vendedor não aprova comercialmente 
+PASS comprador_ordem_inversa: financeiro não aprova comercialmente 
+PASS comprador_ordem_inversa: vendedor não aprova termos 
+PASS comprador_ordem_inversa: financeiro aprova termos (crédito) 
+PASS comprador_ordem_inversa: termos aprovados pelo financeiro; sem previsão antes da comercial 
+PASS comprador_ordem_inversa: gestor comercial aprova comercialmente 
+OBSERVADO termos antes da comercial -> previsão: None
+PASS comprador grava segundo pedido (sequência canônica) 
+PASS comprador_canonico: gestor comercial aprova comercialmente 
+PASS comprador_canonico: sem previsão só com a comercial 
+PASS comprador_canonico: financeiro aprova termos 
+PASS comprador_canonico: previsão única aguardando NF: comercial=gestor, termos=financeiro; crédito automático (credit_approved_by nulo, sem aprovação explícita) 
+PASS comprador_canonico: repetição não duplica previsão 
+PASS comprador_canonico: financeiro lê a previsão 
+PASS comprador_canonico: vendedor não lê a previsão 
+PASS comprador grava terceiro pedido (ordem inversa com concessão) 
+PASS ordem inversa (termos→comercial) também gera previsão única com autores distintos 
+PASS gate de previsão desligado ao fim (alinhado à produção) 
+PASS gestor não grava para parceiro de outra empresa 
+PASS nenhum título/NF/evento fiscal/envio/reserva/entrega criado (recebível só após NF) 
+PASS ROLLBACK restaura LIVE 
+PASS rollback repetido recusa drift 
+PASS pedidos preservados após rollback 
+RESULT 60 PASS 0 FAIL attempt-001
