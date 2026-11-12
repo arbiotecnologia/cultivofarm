@@ -1,0 +1,67 @@
+[
+  {
+    "test": "03-post.sql.readonly bytes exatos",
+    "status": "PASS",
+    "detail": {
+      "sha256": "de5d1cd51b72b2ea468a481ad34f77d374599b79e8a9eafc5c235797b2eeff30",
+      "stderr": ""
+    }
+  },
+  {
+    "test": "04-rollback-deny.sql.review bytes exatos",
+    "status": "PASS",
+    "detail": {
+      "sha256": "6f16b821200d2a9d490a35f45c66db0185cc0f471508df92430e01a5efcf4367",
+      "stderr": ""
+    }
+  },
+  {
+    "test": "05-post-rollback.sql.readonly bytes exatos",
+    "status": "PASS",
+    "detail": {
+      "sha256": "fad7a2febdb1ea84ade9aa6bd38352366c80a767f739ae0a7d23dd7a75ff9e5f",
+      "stderr": ""
+    }
+  },
+  {
+    "test": "06-reinstall-closed.sql.review bytes exatos",
+    "status": "PASS",
+    "detail": {
+      "sha256": "c22301df7d203188f1f6bacd84f795076d56379fcd98312de9eeb14829337e53",
+      "stderr": ""
+    }
+  },
+  {
+    "test": "03-post.sql.readonly bytes exatos",
+    "status": "PASS",
+    "detail": {
+      "sha256": "de5d1cd51b72b2ea468a481ad34f77d374599b79e8a9eafc5c235797b2eeff30",
+      "stderr": ""
+    }
+  },
+  {
+    "test": "rollback/reinstala\u00e7\u00e3o preservam todo hist\u00f3rico financeiro e f\u00edsico",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "reinstala\u00e7\u00e3o n\u00e3o reabre gate",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "helpers privados continuam sem EXECUTE cliente",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "fixture f\u00edsica existente \u00e9 entrega 1+1 real",
+    "status": "FAIL",
+    "detail": null
+  },
+  {
+    "test": "capacidade ap\u00f3s reinstala\u00e7\u00e3o fechada opaca",
+    "status": "PASS",
+    "detail": null
+  }
+]

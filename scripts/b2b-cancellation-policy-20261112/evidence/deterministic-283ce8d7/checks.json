@@ -1,0 +1,280 @@
+[
+  {
+    "test": "reprodução causa forbidden_partner gera CLOSE_PENDING",
+    "status": "PASS",
+    "detail": "{\"nRec\": null, \"cStat\": \"104\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-INTEGRATED-PROTOCOL\", \"state\": \"SUCCEEDED\", \"outcome\": \"AUTHORIZED\", \"xMotivo\": \"LOTE PROCESSADO; PROTOCOLO AUTORIZADO\", \"cancellation\": null, \"protocolCStat\": \"100\", \"transmissionId\": \"00000000-0000-0000-0000-000000000901\", \"reconciliationCode\": \"FISCAL_AUTHORIZATION_CLOSE_PENDING\", \"reconciliationPending\": true}\n"
+  },
+  {
+    "test": "recuperação canônica remove pendência sem recriar título/parcela",
+    "status": "PASS",
+    "detail": "{\"nRec\": null, \"cStat\": \"104\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-INTEGRATED-PROTOCOL\", \"state\": \"SUCCEEDED\", \"outcome\": \"AUTHORIZED\", \"xMotivo\": \"LOTE PROCESSADO; PROTOCOLO AUTORIZADO\", \"cancellation\": null, \"protocolCStat\": \"100\", \"transmissionId\": \"00000000-0000-0000-0000-000000000901\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n"
+  },
+  {
+    "test": "após recuperação cancela uma vez",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "test": "replay autorização terminal não ressuscita NF ou título",
+    "status": "PASS",
+    "detail": "{\"nRec\": null, \"cStat\": \"104\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-INTEGRATED-PROTOCOL\", \"state\": \"SUCCEEDED\", \"outcome\": \"AUTHORIZED\", \"xMotivo\": \"LOTE PROCESSADO; PROTOCOLO AUTORIZADO\", \"cancellation\": null, \"protocolCStat\": \"100\", \"transmissionId\": \"00000000-0000-0000-0000-000000000901\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n"
+  },
+  {
+    "test": "contabilidade inválida mantém pendência real",
+    "status": "PASS",
+    "detail": "{\"nRec\": null, \"cStat\": \"104\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-INTEGRATED-PROTOCOL\", \"state\": \"SUCCEEDED\", \"outcome\": \"AUTHORIZED\", \"xMotivo\": \"LOTE PROCESSADO; PROTOCOLO AUTORIZADO\", \"cancellation\": null, \"protocolCStat\": \"100\", \"transmissionId\": \"00000000-0000-0000-0000-000000000901\", \"reconciliationCode\": \"FISCAL_AUTHORIZATION_CLOSE_PENDING\", \"reconciliationPending\": true}\n"
+  },
+  {
+    "test": "pendência verdadeira bloqueia cancelamento financeiro",
+    "status": "PASS",
+    "detail": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-DETERMINISTIC\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"code\": \"FISCAL_AUTHORIZATION_RECONCILIATION_PENDING\", \"final\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"eab520d3-6a18-4163-9d72-a333c3280f62\", \"reconciliationCode\": \"FISCAL_EVENT_RECONCILIATION_PENDING\", \"reconciliationPending\": true}\n"
+  },
+  {
+    "test": "reconciliação após validação contábil real remove pendência",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "recuperação após pendência verdadeira cancela sem duplicar",
+    "status": "FAIL",
+    "detail": ""
+  },
+  {
+    "test": "holder + waiter não concedido wait_dce64156bc5343d5acc31faed47efcd8",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "espera callback authorization",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "test": "ordem authorization final e auditoria única",
+    "status": "FAIL",
+    "detail": ""
+  },
+  {
+    "test": "holder + waiter não concedido wait_ce671395a2f64a288a9df2ef8ad645da",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "espera callback cancellation",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "test": "ordem cancellation final e auditoria única",
+    "status": "FAIL",
+    "detail": ""
+  },
+  {
+    "test": "holder + waiter não concedido wait_185b61c44958456e992f26213fbe9ef4",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "ator revogado durante espera nega sem efeitos",
+    "status": "PASS",
+    "detail": {
+      "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-DETERMINISTIC\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": null, \"protocolCStat\": \"135\", \"transmissionId\": \"6bdab10c-dbd8-49cc-b3c1-7c46ac90e3a6\", \"reconciliationCode\": \"FISCAL_EVENT_RECONCILIATION_PENDING\", \"reconciliationPending\": true}\n",
+      "err": ""
+    }
+  },
+  {
+    "test": "ator controle reautorizado recupera",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "test": "holder + waiter não concedido wait_e25c6216e79643758525703e193dbd36",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "empresa revogado durante espera nega sem efeitos",
+    "status": "PASS",
+    "detail": {
+      "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-DETERMINISTIC\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": null, \"protocolCStat\": \"135\", \"transmissionId\": \"41ae8d7e-10ce-4322-b034-6021b8d9df61\", \"reconciliationCode\": \"FISCAL_EVENT_RECONCILIATION_PENDING\", \"reconciliationPending\": true}\n",
+      "err": ""
+    }
+  },
+  {
+    "test": "empresa controle reautorizado recupera",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "test": "holder + waiter não concedido wait_d76f3d5651cb46dcac529b840a2d7507",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "gate revogado durante espera nega sem efeitos",
+    "status": "PASS",
+    "detail": {
+      "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-DETERMINISTIC\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"code\": \"CANCEL_POLICY_DISABLED\", \"final\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"963cba2f-4d66-48db-862e-e550da0d14f9\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+      "err": ""
+    }
+  },
+  {
+    "test": "gate controle reautorizado recupera",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "test": "holder + waiter não concedido wait_51af76dbf02a4823a9127d80f6f4e84a",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "concessão revogado durante espera nega sem efeitos",
+    "status": "PASS",
+    "detail": {
+      "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-DETERMINISTIC\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"code\": \"CANCEL_POLICY_SCOPE_DENIED\", \"final\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"aec08273-a467-4513-9dbf-f6e061fe8bc8\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+      "err": ""
+    }
+  },
+  {
+    "test": "concessão controle reautorizado recupera",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "test": "entrada sem evento negada pela guarda real",
+    "status": "PASS",
+    "detail": "ERROR:  P0001: SEFAZ_EVENT_REQUIRED\nCONTEXT:  PL/pgSQL function fn_fiscal_sefaz_tx_link_guard() line 37 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "test": "chave não cancela documento/título/estoque/OS/entrega",
+    "status": "PASS",
+    "detail": {
+      "out": "{\"nRec\": null, \"cStat\": \"135\", \"chNFe\": \"99999999999999999999999999999999999999999999\", \"nProt\": \"LOCAL-DETERMINISTIC\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_NOT_FINAL\", \"final\": false}, \"protocolCStat\": \"135\", \"transmissionId\": \"2c25c458-4ec4-4f85-a4b2-86d75500bc2d\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+      "err": ""
+    }
+  },
+  {
+    "test": "evento estrangeiro barrado por integridade real",
+    "status": "FAIL",
+    "detail": "ERROR:  42501: permission denied for schema platform_private\nLINE 1:  SELECT platform_private.h15_actor_organization(); \n                ^\nQUERY:   SELECT platform_private.h15_actor_organization(); \nCONTEXT:  SQL function \"h15_actor_organization\" during startup\nPL/pgSQL function public.guard_tenant_organization_id() line 7 at assignment\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+  },
+  {
+    "test": "ator-empresa não cancela documento/título/estoque/OS/entrega",
+    "status": "PASS",
+    "detail": {
+      "out": "",
+      "err": "ERROR:  42501: FISCAL_FORBIDDEN\nCONTEXT:  PL/pgSQL function rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb) line 18 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  },
+  {
+    "test": "registro-nao-cancelamento não cancela documento/título/estoque/OS/entrega",
+    "status": "PASS",
+    "detail": {
+      "out": "{\"nRec\": null, \"cStat\": \"136\", \"chNFe\": \"35261111111111111111111111111111111111111111\", \"nProt\": \"LOCAL-DETERMINISTIC\", \"state\": \"SUCCEEDED\", \"outcome\": \"EVENT_REGISTERED\", \"xMotivo\": \"LOCAL FINAL\", \"cancellation\": {\"code\": \"FISCAL_CANCEL_NOT_FINAL\", \"final\": false}, \"protocolCStat\": \"136\", \"transmissionId\": \"e90628de-4294-4d5d-969e-9a1a3e0ff363\", \"reconciliationCode\": null, \"reconciliationPending\": false}\n",
+      "err": ""
+    }
+  },
+  {
+    "test": "pendente entrada real C2 pendente sem previsão",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "pendente capacidade opaca indisponível",
+    "status": "PASS",
+    "detail": {
+      "out": "{\"available\": false}\n",
+      "err": ""
+    }
+  },
+  {
+    "test": "pendente writer nega sem efeitos",
+    "status": "PASS",
+    "detail": "ERROR:  PT409: B2B_FORECAST_CAS_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 24 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "test": "sem-previsao entrada real C2 pendente sem previsão",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "sem-previsao capacidade opaca indisponível",
+    "status": "PASS",
+    "detail": {
+      "out": "{\"available\": false}\n",
+      "err": ""
+    }
+  },
+  {
+    "test": "sem-previsao writer nega sem efeitos",
+    "status": "PASS",
+    "detail": "ERROR:  PT409: B2B_FORECAST_CAS_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 24 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "test": "sem-concessao capacidade opaca indisponível",
+    "status": "PASS",
+    "detail": {
+      "out": "{\"available\": false}\n",
+      "err": ""
+    }
+  },
+  {
+    "test": "sem-concessao writer nega sem efeitos",
+    "status": "PASS",
+    "detail": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "test": "estrangeiro capacidade opaca indisponível",
+    "status": "PASS",
+    "detail": {
+      "out": "{\"available\": false}\n",
+      "err": ""
+    }
+  },
+  {
+    "test": "estrangeiro writer nega sem efeitos",
+    "status": "PASS",
+    "detail": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 21 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "test": "holder + waiter não concedido wait_9b2b392fc29146a59adf7725b5105cbc",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "residual ator revogado após espera nega e preserva 1+1",
+    "status": "PASS",
+    "detail": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 27 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "test": "holder + waiter não concedido wait_dacf5d0dc52649bbbf8411c758bb00b2",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "residual empresa revogado após espera nega e preserva 1+1",
+    "status": "PASS",
+    "detail": "ERROR:  42501: B2B_FORECAST_CANCEL_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 27 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "test": "holder + waiter não concedido wait_29f4ee3d9ca441edafa313563ff359c6",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "residual gate revogado após espera nega e preserva 1+1",
+    "status": "PASS",
+    "detail": "ERROR:  42501: CANCEL_POLICY_DISABLED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 38 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+    "test": "holder + waiter não concedido wait_8c9abef7f803459c861fd8cc098a215f",
+    "status": "PASS",
+    "detail": null
+  },
+  {
+    "test": "residual concessão revogado após espera nega e preserva 1+1",
+    "status": "PASS",
+    "detail": "ERROR:  42501: B2B_FORECAST_PILOT_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_forecast_cancel_residual_v1(uuid,integer,text) line 30 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  }
+]

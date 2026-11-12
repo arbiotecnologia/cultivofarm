@@ -1,7 +1,7 @@
 ## 11/11 23:28 — Implementação candidata da política humana de cancelamento
 - [x] Pacote separado inativo preparado: residual Comercial/Admin com motivo/CAS; helper fiscal final vinculado e título aberto; pagamentos exigem Financeiro, sem estorno automático.
 - [x] Gates/escopo estreitos, PRE/INSTALL/POST/rollback/POST-rollback gerados; UI candidata isolada 17/17, runtime/Edges intactos.
-- [ ] NÃO PRONTO: attempt-006 35 PASS/2 FAIL na corrida autorização replay × cancelamento (close-pending); corrigir reconciliação/recuperação e completar revogação/negativas/UI integrada. Ver scripts/b2b-cancellation-policy-20261112/REPORT.md.
+- [x] Itens 1–4 concluídos localmente em 12/11 01:06: causa forbidden_partner demonstrada, recuperação canônica, pendência real negada, revogações sob espera, C2 sem previsão, físico 1+1 e UI no detalhe isolado. Duas suítes limpas: 37+49+10 SQL e 21 UI, zero falhas; rollback/reinstalação fechados. Ver REPORT.md e suite-20261112T010509Z.
 - [ ] Bloqueio externo: auditor confirmar pins novos e revisar pacote; não instalar/publicar nem certificar JWT/RLS/Storage real.
 
 ## 11/11 23:20 — Continuação local independente de política comercial

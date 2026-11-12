@@ -1,0 +1,9 @@
+{
+  "url": "http://localhost:8097/scripts/b2b-cancellation-policy-20261112/ui/isolated.html?order=3e582f33-7107-4f03-a5a2-1493560fe5fc",
+  "confirmed": true,
+  "actionAbsentAfterReadback": true,
+  "errors": [],
+  "externalRequestsBlocked": [
+    "https://fonts.googleapis.com/css2"
+  ]
+}
