@@ -1,0 +1,11 @@
+-- APENAS vrlcdwmlytukrjezrrnf; três definições indispensáveis não encontradas
+-- nas fontes locais com o hash informado. Não executa nenhuma função de negócio.
+-- Revisar no editor do alvo antes de compartilhar: não exportar credenciais/literais sensíveis.
+WITH expected(signature,expected_md5) AS (VALUES
+ ('public.rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid)','96f6f30724c829cd4a78ce232bd5c84a'),
+ ('public.rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid)','a518f355f035d485f720419e05e89906'),
+ ('public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)','b8fbd43d7a019fbf2f12d572bd79ba60')
+) SELECT e.signature,e.expected_md5,md5(pg_get_functiondef(p.oid)) AS current_md5,
+ pg_get_userbyid(p.proowner) AS owner,p.proacl::text AS acl,p.proconfig,
+ CASE WHEN md5(pg_get_functiondef(p.oid))=e.expected_md5 THEN pg_get_functiondef(p.oid) END AS exact_definition
+FROM expected e LEFT JOIN pg_proc p ON p.oid=to_regprocedure(e.signature) ORDER BY e.signature;

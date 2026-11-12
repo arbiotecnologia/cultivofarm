@@ -54,7 +54,7 @@ END $pre$;
  (H/'01a-pre-foundation.sql.review').write_text(header+'BEGIN;SET LOCAL lock_timeout=\'3s\';\n'+pre+'ROLLBACK;\n')
  (H/'01b-install-foundation-closed.sql.review').write_text(header+'BEGIN;SET LOCAL lock_timeout=\'3s\';\n'+pre+invariance+bodies+post+invariance_post+'COMMIT;\n')
  (H/'01c-post-foundation.sql.readonly').write_text('BEGIN READ ONLY;\n'+post+'ROLLBACK;\n')
- rollback="BEGIN;SET LOCAL lock_timeout='3s';\nUPDATE platform_private.b2b_forecast_creation_gate_v1 SET enabled=false;UPDATE platform_private.b2b_forecast_lifecycle_gate_v1 SET enabled=false;\n"
+ rollback="BEGIN;SET LOCAL lock_timeout='3s';\nDO $target$ BEGIN IF NOT EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref='vrlcdwmlytukrjezrrnf' AND production_emission_allowed IS FALSE) OR EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref IS DISTINCT FROM 'vrlcdwmlytukrjezrrnf' OR production_emission_allowed IS DISTINCT FROM FALSE) THEN RAISE EXCEPTION 'HOMOLOG_MARKER_REQUIRED'; END IF; END $target$;\nUPDATE platform_private.b2b_forecast_creation_gate_v1 SET enabled=false;UPDATE platform_private.b2b_forecast_lifecycle_gate_v1 SET enabled=false;\n"
  for n in new_functions:rollback+=f'REVOKE ALL ON FUNCTION platform_private.{n} FROM PUBLIC,anon,authenticated,service_role;\n'
  (H/'01d-rollback-foundation-deny.sql.review').write_text(rollback+'COMMIT;\n')
  (H/'event-trigger-pin.sql.readonly').write_text(event_expr.replace('(SELECT','SELECT',1)[:-1]+';\n')
