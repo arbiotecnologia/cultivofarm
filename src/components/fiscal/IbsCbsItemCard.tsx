@@ -36,7 +36,7 @@ export interface IbsCbsItemCardProps {
    * existe somente por source_reference (service_id nulo). "service"
    * permanece por retrocompatibilidade dos consumidores atuais.
    */
-  kind: "product" | "service" | "service_profile";
+  kind: "product" | "service" | "service_profile" | "microorganism";
   itemId: string | null;
   canEdit: boolean;
 }
@@ -64,7 +64,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
   const isService = kind === "service" || kind === "service_profile";
   const title = isService
     ? "IBS/CBS do serviço — NFS-e Nacional"
-    : "IBS/CBS do produto";
+    : kind === "microorganism" ? "IBS/CBS do microrganismo comercializável" : "IBS/CBS do produto";
 
   async function onSave() {
     if (disabled) return;

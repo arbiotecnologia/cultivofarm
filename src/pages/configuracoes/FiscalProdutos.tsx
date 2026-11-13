@@ -1139,6 +1139,11 @@ export function MicroorganismEditDrawer({
       onSubmit={onSubmit}
       onClose={onClose}
       testId="fiscal-drawer-microrganismo"
+      footer={profileQuery.data ? (
+        <div className="mt-6" data-testid="fiscal-microrganismo-ibs-cbs">
+          <IbsCbsItemCard kind="microorganism" itemId={microorganismId} canEdit={canEdit && profileQuery.data.is_active === true} />
+        </div>
+      ) : undefined}
     />
   );
 }
