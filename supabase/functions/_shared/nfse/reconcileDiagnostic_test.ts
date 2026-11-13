@@ -1,25 +1,49 @@
-import { assertEquals } from "jsr:@std/assert@1";
-import { classifyHttpError, classifyStatus, finalizeDiagnostic, stageFromUrl } from "./reconcileDiagnostic.ts";
+import { assert, assertEquals } from "jsr:@std/assert@1";
+import { classifyHttpError, classifyStatus, contentKind, diagnosticLogLine, errorCauses, finalizeDiagnostic, NFSE_CAUSES, officialErrorCodes, stageFromUrl } from "./reconcileDiagnostic.ts";
+import { DPS_NOT_FOUND_OFFICIAL_CODES, parseDpsLookup, sefinUrl } from "./sefinContract.ts";
 const R = { createHttpClient: true, denoVersion: "2" };
+const B = "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional";
+Deno.test("base de homologação = tabela oficial gov.br (/API/SefinNacional)", () => {
+  assertEquals(sefinUrl("HOMOLOGATION", { kind: "emit" }), `${B}/nfse`);
+  assertEquals(sefinUrl("PRODUCTION", { kind: "emit" }), "https://sefin.nfse.gov.br/SefinNacional/nfse");
+});
 Deno.test("etapa vem do caminho sem guardar id", () => {
-  assertEquals(stageFromUrl("https://sefin.producaorestrita.nfse.gov.br/SefinNacional/dps/ABC123"), "dps_lookup");
-  assertEquals(stageFromUrl("https://sefin.producaorestrita.nfse.gov.br/SefinNacional/nfse/CHAVE"), "nfse_download");
-  assertEquals(stageFromUrl("https://sefin.producaorestrita.nfse.gov.br/SefinNacional/nfse"), "emit");
+  assertEquals(stageFromUrl(`${B}/dps/ABC123`), "dps_lookup"); assertEquals(stageFromUrl(`${B}/nfse/CHAVE`), "nfse_download");
+  assertEquals(stageFromUrl(`${B}/nfse`), "emit"); assertEquals(stageFromUrl(`${B}/docs/index`), "route_probe");
 });
-Deno.test("status HTTP classificados", () => {
-  assertEquals(classifyStatus(200), "ok"); assertEquals(classifyStatus(302), "redirect_blocked");
-  assertEquals(classifyStatus(403), "authorization_denied"); assertEquals(classifyStatus(404), "not_found");
-  assertEquals(classifyStatus(503), "server_error"); assertEquals(classifyStatus(418), "unexpected_status");
+const err = (msg: string, cause?: unknown) => Object.assign(new TypeError(msg), cause ? { cause } : {});
+Deno.test("cadeia de causas → enums allowlisted (DNS, TCP, TLS, ALPN, timeout, recurso)", () => {
+  const cases: Array<[unknown, string, string]> = [
+    [err("error sending request", err("client error (Connect)", err("dns error: failed to lookup address information"))), "dns_lookup_failed", "dns_error"],
+    [err("error sending request", err("Connection refused (os error 111)")), "tcp_connection_refused", "tcp_error"],
+    [err("error sending request", err("connection reset by peer")), "tcp_connection_reset", "tcp_error"],
+    [err("invalid peer certificate: UnknownIssuer"), "tls_unknown_issuer", "tls_error"],
+    [err("invalid peer certificate: NotValidForName"), "tls_name_mismatch", "tls_error"],
+    [err("received fatal alert: HandshakeFailure"), "tls_handshake_failure", "tls_error"],
+    [err("received fatal alert: CertificateRequired"), "tls_alert_certificate_required", "tls_error"],
+    [err("received fatal alert: ProtocolVersion"), "tls_protocol_version", "tls_error"],
+    [err("peer is incompatible: NoCipherSuitesInCommon"), "tls_cipher_mismatch", "tls_error"],
+    [err("http2 error: stream error received: HTTP_1_1_REQUIRED"), "alpn_http11_required", "http2_error"],
+    [err("operation timed out"), "timed_out", "timeout"],
+    [Object.assign(new Error("x"), { name: "AbortError" }), "aborted", "timeout"],
+    [err("option not supported"), "unsupported_option", "unsupported_feature"],
+  ];
+  for (const [e, cause, cls] of cases) { assert(errorCauses(e).includes(cause as never), cause); assertEquals(classifyHttpError(e), cls, cause); }
+  assertEquals(errorCauses(new Error("??")), ["unclassified"]);
+  for (const c of errorCauses(cases[0][0])) assert((NFSE_CAUSES as readonly string[]).includes(c));
 });
-Deno.test("exceções viram categorias sem mensagem bruta", () => {
-  assertEquals(classifyHttpError({ code: "NFSE_MTLS_UNAVAILABLE" }), "mtls_unavailable");
-  assertEquals(classifyHttpError({ code: "NFSE_REDIRECT_BLOCKED" }), "redirect_blocked");
-  assertEquals(classifyHttpError({ name: "AbortError" }), "timeout");
-  assertEquals(classifyHttpError(new Error("invalid peer certificate: UnknownIssuer")), "tls_error");
-  assertEquals(classifyHttpError(new Error("connection reset")), "network_error");
+Deno.test("404 de rota/HTML não é 'DPS não localizada'; 403 IIS sem certificado separado", () => {
+  assertEquals(classifyStatus(404, contentKind("text/html", "<html><title>404 - File or directory not found.</title>")), "route_not_found");
+  assertEquals(classifyStatus(404, "empty"), "route_not_found");
+  assertEquals(classifyStatus(403, contentKind("text/html", "<html>403 - Forbidden: Access is denied.</html>")), "client_certificate_not_presented");
+  assertEquals(classifyStatus(200), "ok"); assertEquals(classifyStatus(302), "redirect_blocked"); assertEquals(classifyStatus(503), "server_error");
+  assertEquals(DPS_NOT_FOUND_OFFICIAL_CODES.size, 0);
+  for (const b of ["", "<html>404</html>", JSON.stringify({ erros: [{ Codigo: "E0001" }] })]) assertEquals(parseDpsLookup(404, b).notFoundConfirmed, false);
+  assertEquals(officialErrorCodes(JSON.stringify({ erros: [{ Codigo: "E0001", Descricao: "CPF 123" }, { Codigo: "<script>" }] })), ["E0001"]);
 });
-Deno.test("2xx que não resolve vira formato inesperado; diagnóstico não tem campos sensíveis", () => {
+Deno.test("log e diagnóstico só com enums; sem URL, corpo ou mensagem", () => {
   const d = finalizeDiagnostic({ stage: "dps_lookup", result: "ok", httpStatus: 200, runtime: R }, "reconciliation_unavailable")!;
   assertEquals(d.result, "unexpected_format");
-  assertEquals(Object.keys(d).sort(), ["httpStatus", "result", "runtime", "stage"]);
+  const line = diagnosticLogLine({ ...d, causes: errorCauses(err("dns error: failed to lookup address sefin.x DPS3106")), routeProbe: { documentedBase: "client_certificate_not_presented", legacyBase: "route_not_found" } });
+  assert(!/http|sefin|DPS\d|lookup address/i.test(line.replace(/"httpStatus"/, "")), line);
 });
