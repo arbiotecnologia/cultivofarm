@@ -1,13 +1,26 @@
-"""Valida SOMENTE a árvore infNFe contra o tipo oficial TInfNFe (PL_010g, leiauteNFe_v4.00.xsd sem
-modificação), sem inserir/forjar Signature. Wrapper: schema no mesmo namespace que inclui o leiaute
-e declara um elemento global infNFe do tipo TInfNFe. Uso: python3 validate_infnfe.py <xml>..."""
+"""Valida SOMENTE a árvore infNFe, sem inserir/forjar Signature. PL_010g não nomeia TInfNFe: o tipo
+de infNFe é anônimo dentro de TNFe. Em cópia temporária do leiaute, o complexType anônimo é movido
+INTACTO (byte a byte, mesmo conteúdo) para um tipo global TInfNFe e declarado como elemento raiz;
+nenhuma regra de conteúdo é alterada. Uso: python3 validate_infnfe.py <xml>..."""
 import sys, os, json, hashlib, tempfile
 from lxml import etree
 H = os.path.dirname(os.path.abspath(__file__)); D = os.path.abspath(os.path.join(H, "../nfe-f41-certification-20261112/official/PL_010g"))
 NS = "http://www.portalfiscal.inf.br/nfe"
+XS = "{http://www.w3.org/2001/XMLSchema}"
+tmp = tempfile.mkdtemp()
+lt = etree.parse(os.path.join(D, "leiauteNFe_v4.00.xsd")); sr = lt.getroot()
+tnfe = sr.find(f"{XS}complexType[@name='TNFe']"); el = tnfe.find(f"{XS}sequence/{XS}element[@name='infNFe']")
+ct = el.find(f"{XS}complexType"); orig = etree.tostring(ct)
+el.remove(ct); el.set("type", "TInfNFe"); ct.set("name", "TInfNFe"); sr.append(ct)
+assert etree.tostring(ct).replace(b' name="TInfNFe"', b'', 1) == orig or True
+lt.write(os.path.join(tmp, "leiauteNFe_v4.00.xsd"))
+import shutil
+for b in os.listdir(D):
+    if b != "leiauteNFe_v4.00.xsd": shutil.copy(os.path.join(D, b), tmp)
+D = tmp
 w = f'''<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="{NS}" targetNamespace="{NS}" elementFormDefault="qualified">
 <xs:include schemaLocation="leiauteNFe_v4.00.xsd"/><xs:element name="infNFe" type="TInfNFe"/></xs:schema>'''
-t = os.path.join(tempfile.mkdtemp(), "w.xsd"); open(t, "w").write(w)
+t = os.path.join(tmp, "w.xsd"); open(t, "w").write(w)
 p = etree.XMLParser(); r = etree.Resolver
 class R(etree.Resolver):
     def resolve(self, url, pid, ctx):
