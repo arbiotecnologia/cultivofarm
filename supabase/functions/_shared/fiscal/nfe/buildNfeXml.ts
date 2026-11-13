@@ -56,6 +56,29 @@ export function sanitizeText(value: unknown, maxLen: number): string {
   return clean.slice(0, maxLen);
 }
 
+/**
+ * TString (PL_010g) aceita apenas U+0020..U+00FF (Latin-1). Tipografia comum fora dessa faixa é
+ * trocada por equivalente ASCII; acentos Latin-1 são preservados. Caractere sem equivalente
+ * (ex.: emoji, CJK) bloqueia a geração — nunca é removido em silêncio. O cadastro não é alterado.
+ */
+const TSTRING_TYPOGRAPHY: Record<string, string> = {
+  "\u2010": "-", "\u2011": "-", "\u2012": "-", "\u2013": "-", "\u2014": "-", "\u2015": "-", "\u2212": "-",
+  "\u2018": "'", "\u2019": "'", "\u201a": "'", "\u201b": "'", "\u2032": "'",
+  "\u201c": '"', "\u201d": '"', "\u201e": '"', "\u201f": '"', "\u2033": '"',
+  "\u2026": "...", "\u2022": "-", "\u00a0": " ", "\u2002": " ", "\u2003": " ", "\u2009": " ", "\u202f": " ",
+  "\u200b": "", "\u2122": "TM",
+};
+export function normalizeTStringText(value: unknown, maxLen: number, field: string): string {
+  const raw = value === null || value === undefined ? "" : String(value);
+  const mapped = raw.normalize("NFC").replace(/[\u00a0\u2002-\u2026\u202f\u2032\u2033\u2122\u2212\u200b]/g, (c) => TSTRING_TYPOGRAPHY[c] ?? c);
+  const clean = sanitizeText(mapped, Number.MAX_SAFE_INTEGER);
+  // deno-lint-ignore no-control-regex
+  if (/[^\u0020-\u00ff]/u.test(clean)) {
+    throw new NfeBuildError("NFE_TEXT_NOT_REPRESENTABLE", `${field} contém caractere não representável no leiaute NF-e`);
+  }
+  return clean.slice(0, maxLen).trim();
+}
+
 export function dec(value: unknown, places: number): string {
   const n = typeof value === "number" ? value : Number(value ?? 0);
   if (!Number.isFinite(n)) {
@@ -467,7 +490,7 @@ function buildDet(p: NfePayload): string {
         "<prod>",
         tag("cProd", sanitizeText(required(item, "cProd", `det[${nItem}]`), 60)),
         tag("cEAN", "SEM GTIN"),
-        tag("xProd", sanitizeText(required(item, "xProd", `det[${nItem}]`), 120)),
+        tag("xProd", normalizeTStringText(required(item, "xProd", `det[${nItem}]`), 120, `det[${nItem}].xProd`)),
         tag("NCM", ncm),
         cest ? tag("CEST", cest.padStart(7, "0")) : "",
         tag("CFOP", cfop),

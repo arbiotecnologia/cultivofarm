@@ -1,0 +1,20 @@
+{
+ "preview-interna.xml": {
+  "TInfNFe_PL_010g": true,
+  "erros": [],
+  "signature_presente": false,
+  "sha256": "17ad783551f789836d08cee2017baa7ac96b0daf1154a76696484129f70d4d8d"
+ },
+ "preview-interestadual.xml": {
+  "TInfNFe_PL_010g": true,
+  "erros": [],
+  "signature_presente": false,
+  "sha256": "74cbc07919e7dcb73a0ed33e2246b6d63cbf484150c2ee96f7098059aa6dca7b"
+ },
+ "preview-qa-travessao.xml": {
+  "TInfNFe_PL_010g": true,
+  "erros": [],
+  "signature_presente": false,
+  "sha256": "cafed0e4e79977e1e1d71a729cef697e43912b48b7951d5089fffba3c6ac778e"
+ }
+}

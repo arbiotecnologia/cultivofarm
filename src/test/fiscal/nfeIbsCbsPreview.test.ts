@@ -38,3 +38,36 @@ describe("pré-visualização NF-e IBS/CBS (gerador do backend, sem transmissão
     expect(r.ok).toBe(false);
   });
 });
+
+describe("xProd TString (PL_010g)", () => {
+  it("travessão U+2014 vira hífen e acentos Latin-1 são preservados, sem renomear o cadastro", async () => {
+    const { normalizeTStringText } = await import("../../../supabase/functions/_shared/fiscal/nfe/buildNfeXml");
+    const name = "QA Fiscal 20261113 — sem uso comercial";
+    expect(normalizeTStringText(name, 120, "xProd")).toBe("QA Fiscal 20261113 - sem uso comercial");
+    expect(normalizeTStringText("Adubação “orgânica” … ção", 120, "xProd")).toBe('Adubação "orgânica" ... ção');
+    expect(name).toContain("—");
+  });
+  it("caractere sem equivalente bloqueia (não remove em silêncio)", async () => {
+    const { normalizeTStringText } = await import("../../../supabase/functions/_shared/fiscal/nfe/buildNfeXml");
+    expect(() => normalizeTStringText("Produto 🌱 bio", 120, "xProd")).toThrow(/não representável/);
+    expect(() => normalizeTStringText("Produto 微生物", 120, "xProd")).toThrow(/não representável/);
+  });
+  it("mantém limite de 120 após normalização", async () => {
+    const { normalizeTStringText } = await import("../../../supabase/functions/_shared/fiscal/nfe/buildNfeXml");
+    expect(normalizeTStringText("a".repeat(118) + "…", 120, "xProd")).toHaveLength(120);
+  });
+});
+
+describe("prévia com o nome do produto QA", () => {
+  it("gera xProd ASCII-equivalente, marca sem assinatura e infNFe conferido", () => {
+    const r = buildNfeIbsCbsPreview({ ...item, name: "QA Fiscal 20261113 — sem uso comercial" }, "interna", { issueDate: "2026-11-13" });
+    expect(r.ok).toBe(true); if (!r.ok) return;
+    expect(r.xml).toContain("<xProd>QA Fiscal 20261113 - sem uso comercial</xProd>");
+    expect(r.xml).not.toContain("Signature"); expect(r.signed).toBe(false);
+    writeFileSync(`${OUT}/preview-qa-travessao.xml`, r.xml);
+  });
+  it("nome não representável vira pendência, sem XML", () => {
+    const r = buildNfeIbsCbsPreview({ ...item, name: "Produto 🌱" }, "interna", { issueDate: "2026-11-13" });
+    expect(r.ok).toBe(false);
+  });
+});
