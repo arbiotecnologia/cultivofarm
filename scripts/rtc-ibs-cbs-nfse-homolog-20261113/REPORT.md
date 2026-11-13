@@ -10,3 +10,10 @@
 - NF-e interna CST 000, interestadual CST 000 (UF destino) e interna CST 410: PL_010g original — válidos (assinatura placeholder estrutural).
 - DPS homologação com IBSCBS: pacote produção restrita 20/10/2026 original — válida.
 - DPS produção: original rejeita (defeito conhecido da âncora de série); cópia com âncora corrigida — válida.
+
+## 2026-11-13 20:50 — Consulta de envio pendente e sincronização do validador
+- Nota ed5180f3…: ledger com UMA transmissão 07810b10-a70c-4e7f-90c9-a3489e15b1ed, HOMOLOGATION, SENT/PENDING, sem chave (leitura somente leitura).
+- Tela Serviços: se houver transmissão indeterminada da própria nota (SENT/SENDING, PENDING ou RECONCILIATION_REQUIRED, sem chave), mostra só "Consultar envio pendente" (Edge `action:"reconcile"` + `transmission_id` do ledger → apenas GET mTLS DPS/NFS-e). "Enviar NFS-e" e "Reaplicar perfil" ficam ocultos; servidor (`rpc_nfse_transmit_begin_v1`) continua recusando nova transmissão com PENDING/SENT/RECONCILIATION_REQUIRED.
+- Edge `nfse-nacional-emit` não foi alterada nem reimplantada; nada aplicado no banco por esta etapa.
+- `live-capture/rpc_fiscal_draft_save.live.sql`: captura textual do corpo live ajustado pelo operador (md5 live `1b667dee72793e7bb37f76734cc477ad`); NFS-e aceita `ibs_cbs` só se idêntico a `service_fiscal_profiles.ibs_cbs_configuration` ativo da organização do ator (`service_ibs_cbs_profile_mismatch`). Não é migração a reaplicar.
+- Testes: vitest services+IBS/CBS 57/57 (inclui `src/test/services/nfsePendingReconcile.test.ts` 5/5); offline Deno 19/19 sem rede; XMLs regenerados por `bun gen_xml.ts`; XSD: NF-e interna/interestadual CST000 e interna CST410 válidas no PL_010g original; DPS homologação válida no XSD original 20/10/2026; DPS produção só com âncora corrigida.
