@@ -26386,6 +26386,10 @@ export type Database = {
         Returns: undefined
       }
       rpc_microorganism_regulatory_overview: { Args: never; Returns: Json }
+      rpc_nfse_homolog_send_allowed_v1: {
+        Args: { _actor: string; _invoice_id: string }
+        Returns: Json
+      }
       rpc_nfse_transmit_begin_v1: {
         Args: {
           _actor: string
