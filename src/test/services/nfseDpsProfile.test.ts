@@ -100,3 +100,29 @@ describe("complemento do perfil", () => {
     expect(compactNfseDpsProfile({ nbs_code: "012345678", pis_cofins: { cst: "" } as never })).toEqual({ v: 1, nbs_code: "012345678" });
   });
 });
+
+import { buildUpdatePayload, buildInsertPayload, rowToFormValues } from "@/lib/fiscal/serviceFiscalValidation";
+import { dpsFormFromRow, dpsFormToProfile } from "@/lib/fiscal/serviceNfseDpsForm";
+
+describe("editor: complemento persiste em federal_withholding_defaults.nfse_dps", () => {
+  const row = { id: "p", service_id: "00000000-0000-4000-8000-0000000005a1", source_reference: null, iss_withheld_default: false, iss_rate: null,
+    federal_withholding_defaults: { outra_chave: { x: 1 } } };
+  it("reabrir/salvar sem mudança não gera escrita", () => {
+    const form = dpsFormFromRow(row.federal_withholding_defaults);
+    const { profile } = dpsFormToProfile(form);
+    expect(buildUpdatePayload({ ...rowToFormValues(row), nfse_dps: profile }, row)).toEqual({});
+  });
+  it("mescla preservando outras chaves e mantém cTribNac/NBS como string", () => {
+    const form = { ...dpsFormFromRow(null), nbs_code: "012345678", service_location_ibge_code: "9999902", tot_mode: "IND" as const };
+    const { profile, errors } = dpsFormToProfile(form);
+    expect(errors).toEqual([]);
+    const p = buildUpdatePayload({ ...rowToFormValues(row), nfse_dps: profile }, row);
+    expect(p.federal_withholding_defaults).toEqual({ outra_chave: { x: 1 }, nfse_dps: { v: 1, nbs_code: "012345678", service_location_ibge_code: "9999902", tot_trib: { mode: "IND" } } });
+    // reabertura devolve os mesmos campos
+    expect(dpsFormFromRow(p.federal_withholding_defaults).nbs_code).toBe("012345678");
+  });
+  it("alíquota sem CST é recusada; perfil novo sem complemento não grava a coluna", () => {
+    expect(dpsFormToProfile({ ...dpsFormFromRow(null), p_aliq_pis: "1" }).errors).toEqual(["pis_cofins"]);
+    expect(buildInsertPayload({ service_id: row.service_id, source_reference: null }, { ...rowToFormValues(null), nfse_dps: null })).not.toHaveProperty("federal_withholding_defaults");
+  });
+});

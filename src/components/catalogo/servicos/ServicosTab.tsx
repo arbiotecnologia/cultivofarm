@@ -16,7 +16,7 @@ import { Loader2, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import {
-  ServiceConflictError, requestNfseEmission, useBillServices, useCatalogServices, useNfseReadiness, useSaveCatalogService,
+  ReapplyUnavailableError, ServiceConflictError, requestNfseEmission, useBillServices, useReapplyServiceProfile, useCatalogServices, useNfseReadiness, useSaveCatalogService,
   useSaveEngagement, useServiceCustomers, useServiceEngagements, useServiceFiscalProfilesByService, useServiceInvoices,
   type CatalogService, type ServiceEngagement, type ServiceInput,
 } from "@/hooks/useCatalogServices";
