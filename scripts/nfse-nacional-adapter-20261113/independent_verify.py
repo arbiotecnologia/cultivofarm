@@ -7,9 +7,21 @@ path, xsd_dir = sys.argv[1], sys.argv[2]
 NS = {"n": "http://www.sped.fazenda.gov.br/nfse", "ds": "http://www.w3.org/2000/09/xmldsig#"}
 out = {}
 doc = etree.parse(path)
-schema = etree.XMLSchema(etree.parse(os.path.join(xsd_dir, "DPS_v1.01.xsd")))
-out["xsd_valid"] = schema.validate(doc)
-out["xsd_errors"] = [str(e)[:200] for e in schema.error_log][:5]
+import shutil
+def validate(d):
+    sc = etree.XMLSchema(etree.parse(os.path.join(d, "DPS_v1.01.xsd")))
+    return sc.validate(doc), [str(e).split(":ERROR:", 1)[-1][:200] for e in sc.error_log][:5]
+# 1) XSD oficial intocado.
+out["xsd_official_valid"], out["xsd_official_errors"] = validate(xsd_dir)
+# 2) Cópia derivada em /tmp: única alteração = TSSerieDPS "^0{0,4}\d{1,5}$" -> "0{0,4}\d{1,5}".
+#    Em XSD, ^ e $ são literais (padrões já são ancorados); o validador .NET do
+#    Sistema Nacional os trata como âncoras. Registrado como SCHEMA_ANCHOR_DEFECT.
+with tempfile.TemporaryDirectory() as td:
+    for f in os.listdir(xsd_dir): shutil.copy(os.path.join(xsd_dir, f), td)
+    ts = os.path.join(td, "tiposSimples_v1.01.xsd"); body = open(ts, encoding="utf-8").read()
+    assert body.count('value="^0{0,4}\\d{1,5}$"') == 1
+    open(ts, "w", encoding="utf-8").write(body.replace('value="^0{0,4}\\d{1,5}$"', 'value="0{0,4}\\d{1,5}"'))
+    out["xsd_valid"], out["xsd_errors"] = validate(td)
 sig = doc.find(".//ds:Signature", NS)
 inf = doc.find(".//n:infDPS", NS)
 ref = sig.find(".//ds:Reference", NS).get("URI")
