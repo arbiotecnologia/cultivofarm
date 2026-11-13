@@ -1,0 +1,1 @@
+- Fiscal guides in cadastros are read-only, deep-link (?produto=/?cliente=) to the existing editors and use preEmissionPendencies.ts — prevents profile creation on view and parallel editors.
