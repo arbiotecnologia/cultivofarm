@@ -22,6 +22,11 @@ describe("pendências pré-emissão", () => {
   it("Simples exige CSOSN", () => {
     expect(productPendencies(okProduct, "interna", 1).map(p => p.field)).toEqual(["icms_csosn"]);
   });
+  it("CRT 2 segue a regra do motor: exige CST, não CSOSN; CRT 4 exige CSOSN", () => {
+    expect(productPendencies(okProduct, "interna", 2)).toEqual([]);
+    expect(productPendencies({ ...okProduct, icms_cst: null, icms_csosn: "102" }, "interna", 2).map(p => p.field)).toEqual(["icms_cst"]);
+    expect(productPendencies(okProduct, "interna", 4).map(p => p.field)).toEqual(["icms_csosn"]);
+  });
   it("NCM com 9 dígitos é pendência", () => {
     expect(productPendencies({ ...okProduct, ncm: "480210000" }, "interna", 3).map(p => p.field)).toEqual(["ncm"]);
   });
@@ -41,5 +46,38 @@ describe("pendências pré-emissão", () => {
   it("link aponta ao mesmo editor das rotas existentes", () => {
     expect(fiscalEditorLink("produto", "abc")).toBe("/configuracoes/fiscal/produtos?produto=abc");
     expect(fiscalEditorLink("cliente", "x")).toBe("/configuracoes/fiscal/clientes?cliente=x");
+  });
+});
+
+import { resolveCustomerForPendencies, presentationPendencies, conversionFactor, draftItemCfopPendency } from "@/lib/fiscal/preEmissionPendencies";
+
+describe("endereço principal, apresentações e itens", () => {
+  const prof = { taxpayer_indicator: "9", fiscal_municipality_ibge_code: "3147006", use_main_address: true, fiscal_state: null };
+  const cli = { cpf_cnpj: "12345678000190", endereco_logradouro: "Rua B", endereco_numero: "10", endereco_cep: "38600-000", endereco_estado: "MG" };
+  it("usa o endereço principal quando o perfil indica", () => {
+    expect(customerPendencies(resolveCustomerForPendencies(prof, cli), "interna", "MG")).toEqual([]);
+  });
+  it("sem endereço principal, os campos do perfil continuam exigidos", () => {
+    const r = customerPendencies(resolveCustomerForPendencies({ ...prof, use_main_address: false }, cli), "interna", "MG");
+    expect(r.map(p => p.field)).toEqual(["fiscal_state", "fiscal_street", "fiscal_number", "fiscal_postal_code"]);
+  });
+  it("apresentação sem volume bloqueia conversão para L", () => {
+    const r = presentationPendencies({ commercial_unit: "UN", taxable_unit: "L" }, [
+      { id: "a1", rotulo: "1 L", volume_ml: 1000 }, { id: "b2", rotulo: "Galão", volume_ml: null }, { id: "c3", volume_ml: null, ativo: false },
+    ]);
+    expect(r.map(p => p.field)).toEqual(["apresentacao:b2"]);
+  });
+  it("mesma unidade não exige conversão", () => {
+    expect(presentationPendencies({ commercial_unit: "L", taxable_unit: "L" }, [{ id: "x", volume_ml: null }])).toEqual([]);
+  });
+  it("fator de conversão", () => {
+    expect(conversionFactor("L", 5000)).toBe(5);
+    expect(conversionFactor("ML", 250)).toBe(250);
+    expect(conversionFactor("KG", 1000)).toBeNull();
+    expect(conversionFactor("L", 0)).toBeNull();
+  });
+  it("CFOP do item do rascunho versus cenário", () => {
+    expect(draftItemCfopPendency("5101", "interna", "Item 1")).toBeNull();
+    expect(draftItemCfopPendency("5101", "interestadual", "Item 1")?.field).toBe("item_cfop");
   });
 });

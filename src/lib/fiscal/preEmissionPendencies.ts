@@ -5,6 +5,7 @@
  * não altera documentos históricos e não autoriza emissão. Serve para apontar
  * o campo faltante e o editor onde corrigi-lo.
  */
+import { icmsCodeKindForCrt } from "../../../supabase/functions/_shared/fiscal/nfe/icmsRegime";
 export type FiscalScenario = "interna" | "interestadual";
 export type PendencyEntity = "produto" | "cliente" | "empresa";
 
@@ -44,7 +45,7 @@ export interface Pendency {
 const blank = (v: unknown) => v === null || v === undefined || String(v).trim() === "";
 const digits = (v: unknown) => String(v ?? "").replace(/\D/g, "");
 
-/** CRT 1/2 (Simples) usa CSOSN; CRT 3 usa CST. CRT ausente → exige um dos dois. */
+/** Grupo ICMS pela regra única do motor (icmsRegime.ts). CRT ausente → exige CST ou CSOSN. */
 export function productPendencies(
   p: ProductProfileInput | null | undefined,
   scenario: FiscalScenario,
@@ -68,10 +69,10 @@ export function productPendencies(
       `CFOP ${cfop} não corresponde a operação ${scenario} de saída (deve iniciar por ${expected}).`);
   }
   if (blank(p.origin_code)) add("origin_code", "Origem", "Origem da mercadoria ausente.");
-  const crtStr = crt == null ? "" : String(crt);
-  if (crtStr === "1" || crtStr === "2" || crtStr === "4") {
+  const kind = icmsCodeKindForCrt(crt);
+  if (kind === "CSOSN") {
     if (blank(p.icms_csosn)) add("icms_csosn", "ICMS CSOSN", "CSOSN obrigatório para o regime do emitente.");
-  } else if (crtStr === "3") {
+  } else if (kind === "CST") {
     if (blank(p.icms_cst)) add("icms_cst", "ICMS CST", "CST de ICMS obrigatório para o regime do emitente.");
   } else if (blank(p.icms_cst) && blank(p.icms_csosn)) {
     add("icms_cst", "ICMS CST/CSOSN", "Informe CST ou CSOSN de ICMS.");
@@ -130,4 +131,117 @@ export function fiscalEditorLink(entity: "produto" | "cliente" | "servico", id: 
     : entity === "cliente" ? "/configuracoes/fiscal/clientes" : "/configuracoes/fiscal/servicos";
   const key = entity === "produto" ? "produto" : entity === "cliente" ? "cliente" : "servico";
   return `${base}?${key}=${encodeURIComponent(id)}`;
+}
+
+// ── Endereço principal do cliente ───────────────────────────────────────────
+export interface ClienteMasterAddress {
+  cpf_cnpj?: string | null;
+  endereco_logradouro?: string | null;
+  endereco_numero?: string | null;
+  endereco_cep?: string | null;
+  endereco_estado?: string | null;
+}
+
+/**
+ * Quando o perfil usa o endereço principal (`use_main_address`), logradouro,
+ * número, CEP e UF vêm do cadastro do cliente; o código IBGE continua no perfil
+ * (o cadastro principal não o possui). Nada é copiado nem gravado.
+ */
+export function resolveCustomerForPendencies(
+  profile: (CustomerProfileInput & { use_main_address?: boolean | null }) | null | undefined,
+  cliente: ClienteMasterAddress | null | undefined,
+): CustomerProfileInput | null {
+  if (!profile) return null;
+  const doc = profile.cpf_cnpj ?? cliente?.cpf_cnpj ?? null;
+  if (!profile.use_main_address || !cliente) return { ...profile, cpf_cnpj: doc };
+  return {
+    ...profile,
+    cpf_cnpj: doc,
+    fiscal_street: cliente.endereco_logradouro ?? null,
+    fiscal_number: cliente.endereco_numero ?? null,
+    fiscal_postal_code: cliente.endereco_cep ?? null,
+    fiscal_state: cliente.endereco_estado ?? null,
+  };
+}
+
+// ── Apresentações (catalogo_volumes) e conversão de unidade ─────────────────
+export interface PresentationInput {
+  id: string;
+  rotulo?: string | null;
+  medida?: string | null;
+  volume_ml?: number | null;
+  ativo?: boolean | null;
+}
+
+const VOLUME_UNITS = new Set(["L", "LT", "LITRO", "ML"]);
+
+/**
+ * Quantidade comercial = apresentação; quantidade tributável na unidade do
+ * perfil. Quando a unidade tributável é de volume e difere da comercial, cada
+ * apresentação ativa precisa de volume em mL para a conversão. Sem volume, a
+ * conversão não é inventada: vira pendência.
+ */
+export function presentationPendencies(
+  profile: Pick<ProductProfileInput, "commercial_unit" | "taxable_unit"> | null | undefined,
+  presentations: PresentationInput[],
+): Pendency[] {
+  if (!profile) return [];
+  const com = String(profile.commercial_unit ?? "").trim().toUpperCase();
+  const trib = String(profile.taxable_unit ?? "").trim().toUpperCase();
+  if (!trib || trib === com || !VOLUME_UNITS.has(trib)) return [];
+  return presentations
+    .filter((p) => p.ativo !== false && !(Number(p.volume_ml) > 0))
+    .map((p) => ({
+      entity: "produto" as const,
+      field: `apresentacao:${p.id}`,
+      label: `Apresentação ${p.rotulo || p.medida || p.id.slice(0, 8)}`,
+      message: `Sem volume em mL para converter ${com || "unidade comercial"} em ${trib}.`,
+    }));
+}
+
+/** Fator de conversão comercial→tributável de uma apresentação (null = indeterminado). */
+export function conversionFactor(taxableUnit: string | null | undefined, volumeMl: number | null | undefined): number | null {
+  const u = String(taxableUnit ?? "").trim().toUpperCase();
+  const v = Number(volumeMl);
+  if (!(v > 0)) return null;
+  if (u === "ML") return v;
+  if (u === "L" || u === "LT" || u === "LITRO") return v / 1000;
+  return null;
+}
+
+// ── Item de rascunho ────────────────────────────────────────────────────────
+/** CFOP já gravado no item do rascunho versus cenário (sem alterar o rascunho). */
+export function draftItemCfopPendency(itemCfop: string | null | undefined, scenario: FiscalScenario, label: string): Pendency | null {
+  const c = digits(itemCfop);
+  const expected = scenario === "interna" ? "5" : "6";
+  if (c.length === 4 && c[0] === expected) return null;
+  return {
+    entity: "produto",
+    field: "item_cfop",
+    label,
+    message: c.length === 4
+      ? `CFOP ${c} no item não corresponde à operação ${scenario}; reaplique o produto após corrigir o perfil.`
+      : "Item sem CFOP.",
+  };
+}
+
+// ── Serviço (NFS-e) ─────────────────────────────────────────────────────────
+export interface ServiceProfileInput {
+  lc116_item?: string | null;
+  cnae?: string | null;
+  municipal_taxation_code?: string | null;
+  fiscal_description_template?: string | null;
+  profile_status?: string | null;
+}
+
+export function servicePendencies(s: ServiceProfileInput | null | undefined): Pendency[] {
+  const out: Pendency[] = [];
+  const add = (field: string, label: string, message: string) => out.push({ entity: "produto", field, label, message });
+  if (!s) return [{ entity: "produto", field: "perfil", label: "Perfil fiscal", message: "Serviço sem perfil fiscal." }];
+  if (blank(s.lc116_item)) add("lc116_item", "Item LC 116", "Classificação do serviço (item da LC 116) ausente.");
+  if (blank(s.municipal_taxation_code)) add("municipal_taxation_code", "Código de tributação municipal", "Código municipal ausente.");
+  if (blank(s.cnae)) add("cnae", "CNAE", "CNAE do serviço ausente.");
+  if (blank(s.fiscal_description_template)) add("fiscal_description_template", "Descrição fiscal", "Descrição do serviço ausente.");
+  if (s.profile_status === "BLOCKED") add("profile_status", "Status", "Perfil bloqueado para uso fiscal.");
+  return out;
 }

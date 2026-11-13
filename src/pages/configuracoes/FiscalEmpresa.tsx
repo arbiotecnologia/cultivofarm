@@ -1,3 +1,4 @@
+import FiscalProdutos from "@/pages/configuracoes/FiscalProdutos";
 /**
  * Fase Fiscal 3.15 — Central de Configuração Fiscal.
  *
@@ -177,11 +178,12 @@ export default function FiscalEmpresa() {
   const [baseline, setBaseline] = useState<CompanyFiscalFormValues>(() => rowToFormValues(null));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const canViewHomologation = Array.isArray(roles) && roles.some((r) => r === "administrador" || r === "gestor" || r === "financeiro");
-  type FiscalEmpresaTab = "empresa" | "nfe" | "nfse" | "certificado" | "integracao" | "rtc" | "homologacao" | "revisao";
+  type FiscalEmpresaTab = "empresa" | "nfe" | "nfse" | "certificado" | "integracao" | "rtc" | "homologacao" | "revisao" | "catalogo";
   const FISCAL_EMPRESA_TABS: readonly FiscalEmpresaTab[] = [
-    "empresa","nfe","nfse","certificado","integracao","rtc","homologacao","revisao",
+    "empresa","nfe","nfse","certificado","integracao","rtc","homologacao","revisao","catalogo",
   ] as const;
 
+  const canViewCatalog = FEATURE_FLAGS.fiscalProductProfilesUi === true && getAccessLevel(role, "/configuracoes/fiscal/produtos") !== "none";
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab: FiscalEmpresaTab = (() => {
     const raw = searchParams.get("aba");
@@ -504,6 +506,7 @@ export default function FiscalEmpresa() {
             <TabsTrigger value="homologacao" data-testid="fiscal-empresa-tab-homologacao">Homologação fiscal</TabsTrigger>
           ) : null}
           <TabsTrigger value="revisao">Revisão</TabsTrigger>
+          {canViewCatalog ? <TabsTrigger value="catalogo" data-testid="fiscal-empresa-tab-catalogo">Catálogo de produtos</TabsTrigger> : null}
         </TabsList>
 
         <fieldset disabled={readonly || update.isPending} className="mt-4">
@@ -962,6 +965,12 @@ export default function FiscalEmpresa() {
             </div>
           </TabsContent>
         </fieldset>
+        {canViewCatalog ? (
+          <TabsContent value="catalogo" className="mt-4 space-y-4">
+            {/* Mesma tela/editores de /configuracoes/fiscal/produtos — fora do fieldset da empresa. */}
+            <FiscalProdutos />
+          </TabsContent>
+        ) : null}
       </Tabs>
 
       {canEdit && (SAVE_TABS as readonly string[]).includes(tab) ? (

@@ -1,0 +1,33 @@
+ FAIL  src/test/catalogo/c1bCatalog.test.tsx > C1B inactive candidate canonical readers > actual grid consumes RPC projection, filters families and never mounts internal reader
+ FAIL  src/test/catalogo/c1bCatalog.test.tsx > C1B inactive candidate canonical readers > open grid sheet is discarded when actor scope changes
+ FAIL  src/test/catalogo/c1bFichas.test.tsx > changed actor while first refetch is pending never publishes PDF
+ FAIL  src/test/catalogo/c1bFichas.test.tsx > first refetch failure with retained stale data never calls either PDF generator
+ FAIL  src/test/catalogo/c1bFichas.test.tsx > same ID with divergent first type denies generation
+ FAIL  src/test/catalogo/c1bFichas.test.tsx > same ID with divergent second type revokes generated blob and denies preview
+ FAIL  src/test/catalogo/c1bFichas.test.tsx > type captured before await survives tab change without switching PDF generators
+ FAIL  src/test/catalogo/globalCatalogContainment.test.ts > contenção de escrita do catálogo global > src/hooks/useMicroorganismProfile.ts bloqueia antes de gravar
+ FAIL  src/test/catalogo/ownerCatalogFilters.session.test.tsx > ancestor guard clears A preferences when tenant changes during pause, including A→B→A
+ FAIL  src/test/catalogo/ownerCatalogFilters.session.test.tsx > clears role changes during ready=true/pending even when old context returns
+ FAIL  src/test/catalogo/ownerCatalogFilters.session.test.tsx > clears tenant changes during ready=true/pending even when old context returns
+ FAIL  src/test/catalogo/ownerCatalogFilters.session.test.tsx > error/capability denial never shows protected rows and filters cannot grant access
+ FAIL  src/test/catalogo/ownerCatalogFilters.session.test.tsx > existing B2B guard retains ONLY filters across ancestor boundary pause and epoch remount
+ FAIL  src/test/catalogo/ownerCatalogFilters.session.test.tsx > isolates and clears preferences across actor including return
+ FAIL  src/test/catalogo/ownerCatalogFilters.session.test.tsx > isolates and clears preferences across missing-link including return
+ FAIL  src/test/catalogo/ownerCatalogFilters.session.test.tsx > isolates and clears preferences across partner including return
+ FAIL  src/test/catalogo/ownerCatalogFilters.session.test.tsx > isolates and clears preferences across role including return
+ FAIL  src/test/catalogo/ownerCatalogFilters.session.test.tsx > isolates and clears preferences across tenant including return
+ FAIL  src/test/catalogo/ownerCatalogFilters.session.test.tsx > leaving portal route clears preferences rather than resurrecting old context
+ FAIL  src/test/catalogo/ownerCatalogFilters.session.test.tsx > ready=true with pending query retains only filters, guarded=false
+ FAIL  src/test/catalogo/ownerCatalogFilters.session.test.tsx > ready=true with pending query retains only filters, guarded=true
+ FAIL  src/test/catalogo/ownerCatalogFilters.session.test.tsx > real Layout/Owner/Grid preserves filter during monitor pause/resume without protected rows or drawers
+ FAIL  src/test/catalogo/ownerCatalogFilters.session.test.tsx > real Routes/guard/boundary discards the protected tree during loader and repeated renewal
+ FAIL  src/test/catalogo/ownerCatalogFilters.session.test.tsx > same identity renewal remounts request scope but keeps filters; reset remains functional
+ FAIL  src/test/catalogo/tenant-catalog-owned-flow.test.tsx > culturas próprias na aba existente > criar, ver, reabrir/editar, arquivar, ver arquivado e restaurar sem recarregar
+ FAIL  src/test/catalogo/tenant-catalog-owned-flow.test.tsx > culturas próprias na aba existente > duplicata global localiza o item global e não cria registro
+ FAIL  src/test/catalogo/tenant-catalog-owned-flow.test.tsx > culturas próprias na aba existente > empresa AR não recebe cultura própria da FSF
+ FAIL  src/test/catalogo/tenant-catalog-owned-flow.test.tsx > culturas próprias na aba existente > global só oferece ocultar/exibir; não abre edição nem arquivo
+ FAIL  src/test/catalogo/tenant-catalog-owned-flow.test.tsx > culturas próprias na aba existente > leitura antiga não reaparece após troca de empresa e caches não se misturam
+ FAIL  src/test/catalogo/tenant-catalog-owned-flow.test.tsx > culturas próprias na aba existente > perfil sem gestão vê próprio sem controles de mutação
+ FAIL  src/test/catalogo/tenant-catalog-owned-flow.test.tsx > salvamento único de identificação/composição > duplo clique não duplica e resposta antiga não aplica callbacks após AR→FSF→AR
+ FAIL  src/test/catalogo/tenant-catalog-owned-flow.test.tsx > salvamento único de identificação/composição > resposta incerta após commit reutiliza recibo sem criar outra raiz
+ FAIL  src/test/catalogo/unifiedProducts.realClient.test.tsx > parcial montado mantém diálogo e input congelados; retry exato não cria outra raiz

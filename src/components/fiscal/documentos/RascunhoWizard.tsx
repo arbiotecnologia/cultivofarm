@@ -37,6 +37,7 @@ import {
   type RascunhoItem,
 } from "@/lib/fiscal/rascunhoWizardValidation";
 import { useSaveFiscalRascunho, useValidateHomologation } from "@/hooks/useFiscalRascunho";
+import { PreEmissaoPendenciasSecao } from "@/components/fiscal/documentos/PreEmissaoPendenciasSecao";
 import { useFiscalClientesLite } from "@/hooks/useFiscalClientesLite";
 import { useFiscalProdutosLite, type FiscalProdutoLite } from "@/hooks/useFiscalProdutosLite";
 import { useFiscalServicosLite, type FiscalServicoLite } from "@/hooks/useFiscalServicosLite";
@@ -642,6 +643,9 @@ export default function RascunhoWizard({
                 </div>
               </CardContent>
             </Card>
+            <div className="pt-4">
+              <PreEmissaoPendenciasSecao customerId={values.customer_id || null} items={values.items} />
+            </div>
             {values.invoice_type === "NFE" ? (
               <>
                 <div className="pt-4">

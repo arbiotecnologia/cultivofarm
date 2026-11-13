@@ -36,6 +36,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CatalogoFiscalCobertura } from "@/components/fiscal/CatalogoFiscalCobertura";
 import { ProntidaoNfeSecao } from "@/components/fiscal/ProntidaoNfeSecao";
 import { TransporteSefazSecao } from "@/components/fiscal/TransporteSefazSecao";
 import {
@@ -496,6 +497,8 @@ export default function FiscalProntidao() {
           {documents.data && <DocumentsDetails data={documents.data} />}
         </BlockShell>
       </div>
+
+      <CatalogoFiscalCobertura />
 
       <Card data-testid="fiscal-readiness-blockers">
         <CardHeader className="pb-2">

@@ -217,6 +217,8 @@ export function useSaveMicroorganismFiscalProfile() {
         };
         if (error) {
           if (isPermissionError(error)) throw new Error("permission_denied");
+          // Índice único de perfil ativo por microrganismo: inserção concorrente vira conflito, nunca duplicata.
+          if ((error as { code?: string }).code === "23505") throw new Error("duplicate_profile");
           throw new Error(
             (error as { message?: string }).message ?? "unknown",
           );

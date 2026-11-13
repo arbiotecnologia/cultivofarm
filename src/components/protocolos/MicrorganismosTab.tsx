@@ -1,3 +1,4 @@
+import { MicroorganismFiscalGuide } from "@/components/fiscal/FiscalGuidePanel";
 import { TenantHiddenBadge, TenantVisibilityBar, TenantVisibilityToggle, useCanManageTenantVisibility, useManagedVisibility } from "@/components/protocolos/TenantVisibilityControls";
 import { TENANT_CAN_EDIT_GLOBAL_CATALOG, GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useRef, useState } from "react";
@@ -601,6 +602,12 @@ export function MicrorganismosTab() {
                   <Button type="submit" size="sm" disabled={saving}>{saving ? "Salvando…" : "Salvar Alterações"}</Button>
                 </div>
               </form>
+              {form.id && (
+                <section className="border-t pt-4 mt-4 space-y-2" aria-labelledby="micro-fiscal-guide">
+                  <h3 id="micro-fiscal-guide" className="text-sm font-semibold">Fiscal</h3>
+                  <MicroorganismFiscalGuide microorganismId={form.id} displayName={form.nome} displayCodigo={form.codigo || null} />
+                </section>
+              )}
             </DialogContent>
           </Dialog>
         </div>
