@@ -361,6 +361,10 @@ export function isMobileProfile(role: string | null): boolean {
   return ["consultor_tecnico", "tecnico_agronomo", "aplicador"].includes(role);
 }
 
+const SERVICE_TAB_ACCESS: Partial<Record<AppRole, AccessLevel>> = {
+  administrador: "rw", gestor: "rw", financeiro: "rw", gestor_comercial: "r", administrativo: "r",
+};
+
 function resolveRoute(path: string): string {
   if (ACCESS_MAP[path]) return path;
   const segments = path.split("/").filter(Boolean);
@@ -374,6 +378,11 @@ function resolveRoute(path: string): string {
 export function getAccessLevel(role: string | null, path: string): AccessLevel {
   if (!role) return "none";
   const [pathname, search = ""] = path.split("#")[0].split("?");
+  // Catálogo > Serviços: cadastro comercial por empresa (RLS espelha esta matriz).
+  if (pathname === "/base-tecnica") {
+    const tabs = new URLSearchParams(search).getAll("tab");
+    if (tabs.length === 1 && tabs[0] === "servicos") return SERVICE_TAB_ACCESS[role as AppRole] ?? "none";
+  }
   // Financeiro inherits only the product consultation, not the sibling catalogue tabs.
   if (role === "financeiro" && pathname === "/base-tecnica") {
     const tabs = new URLSearchParams(search).getAll("tab");

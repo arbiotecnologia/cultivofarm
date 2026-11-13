@@ -125,6 +125,7 @@ export const navigation: NavItem[] = [
 
     children: [
       { id: "protocolos-produtos", label: "Produtos", icon: Package, route: "/base-tecnica?tab=produtos", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], paramDefault: true, searchKeywords: ["produtos", "base técnica"] },
+      { id: "protocolos-servicos", label: "Serviços", icon: Briefcase, route: "/base-tecnica?tab=servicos", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], searchKeywords: ["serviços", "servicos", "consultoria", "nfs-e", "nfse", "serviço prestado"] },
       { id: "protocolos-microrganismos", label: "Microrganismos", icon: FlaskConical, route: "/base-tecnica?tab=microrganismos", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], searchKeywords: ["microrganismos", "base técnica"] },
       { id: "protocolos-catalogo-tecnico", label: "Catálogo Técnico", icon: BookOpen, route: "/base-tecnica?tab=catalogo-tecnico", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], searchKeywords: ["catálogo técnico", "catalogo tecnico", "base técnica"] },
       { id: "protocolos-culturas", label: "Culturas", icon: Sprout, route: "/base-tecnica?tab=culturas", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], searchKeywords: ["culturas", "base técnica"] },
