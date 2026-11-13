@@ -19179,6 +19179,7 @@ export type Database = {
           lc116_item: string | null
           municipal_taxation_code: string | null
           national_taxation_code: string | null
+          organization_id: string
           profile_status: string
           requirement_status: string | null
           service_id: string | null
@@ -19205,6 +19206,7 @@ export type Database = {
           lc116_item?: string | null
           municipal_taxation_code?: string | null
           national_taxation_code?: string | null
+          organization_id?: string
           profile_status?: string
           requirement_status?: string | null
           service_id?: string | null
@@ -19231,6 +19233,7 @@ export type Database = {
           lc116_item?: string | null
           municipal_taxation_code?: string | null
           national_taxation_code?: string | null
+          organization_id?: string
           profile_status?: string
           requirement_status?: string | null
           service_id?: string | null
@@ -19239,7 +19242,15 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "service_fiscal_profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sla_configuracoes: {
         Row: {
