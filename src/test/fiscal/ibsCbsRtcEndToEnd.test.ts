@@ -58,7 +58,9 @@ describe("NF-e 55 — valores e totais", () => {
 
   it("base 2026 desconta PIS/COFINS/ICMS do item", () => {
     expect(nfeIbsCbsBase({ vProd: 1000, vPIS: 0.02, vCOFINS: 0.08, vICMS: 0.18 })).toBe(999.72);
-    expect(nfeIbsCbsValues(resolveIbsCbs(FAKE, NFE_CTX).ok ? (resolveIbsCbs(FAKE, NFE_CTX) as { snapshot: never }).snapshot : (null as never), 999.72))
+    const snap = resolveIbsCbs(FAKE, NFE_CTX).snapshot;
+    if (!snap) throw new Error("snapshot");
+    expect(nfeIbsCbsValues(snap, 999.72))
       .toEqual({ vBC: 999.72, vIBSUF: 1, vIBSMun: 0, vIBS: 1, vCBS: 9 });
   });
   it("interna: grupo do item e IBSCBSTot com os mesmos valores", () => {
@@ -92,15 +94,15 @@ describe("DPS — somente campos declarados; devolvidos separados", () => {
 
   it("rascunho sem ibs_cbs no item fica pendente", () => {
     const m = mapInvoiceToDps(inv([item(undefined)]), comp, cust, now);
-    expect(m.ok ? [] : m.missing).toContain("ibs_cbs_ausente");
+    expect(m.ok === false ? m.missing : []).toContain("ibs_cbs_ausente");
   });
   it("itens com IBS/CBS divergentes bloqueiam", () => {
     const m = mapInvoiceToDps(inv([item(svc), item({ ...svc, c_ind_op: "100302" })]), comp, cust, now);
-    expect(m.ok ? [] : m.missing).toContain("ibs_cbs_itens_divergentes");
+    expect(m.ok === false ? m.missing : []).toContain("ibs_cbs_itens_divergentes");
   });
   it("homologação: IBSCBS após valores com CST/cClassTrib diretos, sem alíquota/valor", () => {
     const m = mapInvoiceToDps(inv([item(svc)]), comp, cust, now);
-    if (!m.ok) throw new Error(m.missing.join());
+    if (m.ok === false) throw new Error(m.missing.join());
     const xml = buildDpsXml({ ...m.input, series: "1", number: 1 });
     expect(xml).toContain("</valores><IBSCBS><cIndOp>100301</cIndOp><indDest>0</indDest><valores><trib><CST>000</CST><cClassTrib>000001</cClassTrib></trib></valores></IBSCBS></infDPS>");
     expect(xml.slice(xml.indexOf("<IBSCBS>"))).not.toMatch(/pCBS|pIBSUF|vBC/);
