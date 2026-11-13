@@ -137,7 +137,7 @@ begin
   where id = t.id returning * into t;
 
   if _outcome = 'AUTHORIZED' then
-    if t.access_key is null or substr(t.access_key, 1, 0) is null then raise exception 'NFSE_ACCESS_KEY_REQUIRED' using errcode = '22023'; end if;
+    if t.access_key is null then raise exception 'NFSE_ACCESS_KEY_REQUIRED' using errcode = '22023'; end if;
     update public.fiscal_invoices set status = 'ISSUED', access_key = t.access_key, provider = 'NFSE_NACIONAL', provider_reference = t.access_key,
            invoice_number = coalesce(t.nfse_number, invoice_number), series = t.dps_series, authorized_at = now(),
            provider_status_raw = 'SEFIN_NACIONAL_NFSE_GERADA'
