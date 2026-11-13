@@ -1,1 +1,2 @@
-- Fiscal guides in cadastros are read-only, deep-link (?produto=/?cliente=) to the existing editors and use preEmissionPendencies.ts — prevents profile creation on view and parallel editors.
+- Fiscal guides in cadastros and pre-emission reuse the exported page editors (ProductEditDrawer, MicroorganismEditDrawer, CustomerFiscalEditDrawer, ServiceFiscalEditDrawer) with each page's own permission rule; viewing never creates a profile and pendencies come only from src/lib/fiscal/preEmissionPendencies.ts — prevents parallel editors and divergent classifiers.
+- CST vs CSOSN by CRT is decided only by supabase/functions/_shared/fiscal/nfe/icmsRegime.ts (CRT 1/4 CSOSN, 2/3 CST), shared by the XML engine and the app — prevents engine/UI drift.
