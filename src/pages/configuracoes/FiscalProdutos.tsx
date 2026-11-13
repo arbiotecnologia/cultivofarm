@@ -30,6 +30,7 @@ import {
   useSaveProductFiscalProfile,
   OptimisticConflictError,
   type ProductListItem,
+  useOwnedProductIds,
 } from "@/hooks/useProductFiscalProfiles";
 import {
   useMicroorganismList,
@@ -566,7 +567,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
                       r,
                       readinessByProduct,
                       microReadinessByMicro,
-                      r.kind === "produto" && canEditProduct(r.product_id),
+                      r.kind === "produto" && canEditProduct(r.productId),
                       canEditMicro,
                       readinessUnknown,
                       microProfilesUnknown,
