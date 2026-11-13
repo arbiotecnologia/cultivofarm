@@ -32,7 +32,7 @@ export interface IbsCbsItemSnapshot {
   rates: IbsCbsRates | null;
   destinationUf: string | null;
 }
-export type IbsCbsResolution = { ok: true; snapshot: IbsCbsItemSnapshot } | { ok: false; missing: string[] };
+export type IbsCbsResolution = { ok: true; snapshot: IbsCbsItemSnapshot; missing?: undefined } | { ok: false; missing: string[]; snapshot?: undefined };
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
 const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
