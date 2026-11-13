@@ -354,7 +354,7 @@ export default function FiscalServicos() {
   );
 }
 
-function EditDrawer({
+export function EditDrawer({
   item, canEdit, onClose,
 }: {
   item: ServiceListItem | "new";
@@ -620,3 +620,5 @@ function EditDrawer({
     </Sheet>
   );
 }
+
+export { EditDrawer as ServiceFiscalEditDrawer };

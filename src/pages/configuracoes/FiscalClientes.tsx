@@ -438,7 +438,7 @@ export default function FiscalClientes() {
   );
 }
 
-function EditDrawer({
+export function EditDrawer({
   item, canEdit, knownProfiledCustomerIds, presetCustomerId = null, onClose,
 }: {
   item: CustomerListItem | "new";
@@ -851,3 +851,5 @@ function CustomerPicker({
     </div>
   );
 }
+
+export { EditDrawer as CustomerFiscalEditDrawer };

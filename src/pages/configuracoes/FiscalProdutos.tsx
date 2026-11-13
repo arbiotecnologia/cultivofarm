@@ -921,7 +921,7 @@ function AssociateDialog({
 }
 
 // —————————————————————————— Drawer: produto ——————————————————————————
-function ProductEditDrawer({
+export function ProductEditDrawer({
   productId, displayName, displayCodigo, canEdit, onClose,
 }: {
   productId: string;
@@ -1058,7 +1058,7 @@ function ProductEditDrawer({
 }
 
 // ————————————————————— Drawer: microrganismo (perfil próprio) —————————————————————
-function MicroorganismEditDrawer({
+export function MicroorganismEditDrawer({
   microorganismId, displayName, displayCodigo, canEdit, onClose,
 }: {
   microorganismId: string;
