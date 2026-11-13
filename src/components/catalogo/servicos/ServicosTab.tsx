@@ -16,13 +16,13 @@ import { Loader2, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import {
-  ReapplyUnavailableError, ServiceConflictError, requestNfseEmission, useBillServices, useReapplyServiceProfile, useCatalogServices, useNfseReadiness, useSaveCatalogService,
+  ReapplyUnavailableError, ServiceConflictError, requestNfseEmission, requestNfseReconcile, useNfseTransmissions, useBillServices, useReapplyServiceProfile, useCatalogServices, useNfseReadiness, useSaveCatalogService,
   useSaveEngagement, useServiceCustomers, useServiceEngagements, useServiceFiscalProfilesByService, useServiceInvoices,
   type CatalogService, type ServiceEngagement, type ServiceInput,
 } from "@/hooks/useCatalogServices";
 import {
   BillingKeyStore, ENGAGEMENT_STATUS_LABEL, NFSE_STATE_LABEL, READINESS_MISSING_LABEL, canBillServices, canEditServiceFiscalProfile,
-  canRecordEngagement, canWriteServiceCatalog, nfseDisplayState, validateBillingSelection,
+  canRecordEngagement, canWriteServiceCatalog, nfseDisplayState, pendingTransmissionFor, validateBillingSelection,
 } from "@/lib/services/serviceBilling";
 import { ServiceFiscalEditDrawer } from "@/pages/configuracoes/FiscalServicos";
 
@@ -133,6 +133,8 @@ function EngagementsSection({ services, scope }: { services: CatalogService[]; s
   const invoiceIds = useMemo(() => [...new Set(rows.map(r => r.fiscal_invoice_id).filter((x): x is string => !!x))], [rows]);
   const invoices = useServiceInvoices(invoiceIds);
   const invById = new Map((invoices.data ?? []).map(i => [i.id, i]));
+  const transmissions = useNfseTransmissions(invoiceIds);
+  const [reconciling, setReconciling] = useState<string | null>(null);
   const svcName = new Map(services.map(s => [s.id, s.name]));
   const custName = new Map((customers.data ?? []).map(c => [c.id, c.nome]));
   const selRows = rows.filter(r => selected.includes(r.id));
@@ -181,6 +183,18 @@ function EngagementsSection({ services, scope }: { services: CatalogService[]; s
       toast({ title: "Perfil não reaplicado", description: desc, variant: "destructive" });
     }
   }
+  async function reconcile(invoiceId: string, transmissionId: string) {
+    if (reconciling) return;
+    setReconciling(transmissionId);
+    try {
+      const r = await requestNfseReconcile(invoiceId, transmissionId);
+      if (r.code === "authorized" || r.code === "already_authorized") toast({ title: "NFS-e autorizada", description: "Autorização conferida no XML devolvido pelo Sistema Nacional." });
+      else if (r.code === "not_processed") toast({ title: "DPS não localizada no Sistema Nacional", description: "O provedor informou que a DPS não foi processada." });
+      else if (r.code === "reconciliation_unavailable") toast({ title: "Envio ainda indeterminado", description: "Sem resposta conclusiva do provedor. O reenvio continua bloqueado; consulte novamente mais tarde." });
+      else toast({ title: NFSE_RESULT_LABEL[r.code] ?? "Consulta não concluída", description: r.message ?? r.code, variant: "destructive" });
+    } catch { toast({ title: "Falha ao consultar envio", description: "O reenvio continua bloqueado.", variant: "destructive" }); }
+    finally { setReconciling(null); await Promise.all([transmissions.refetch(), invoices.refetch()]); }
+  }
   async function emit(invoiceId: string) {
     try {
       const r = await requestNfseEmission(invoiceId);
@@ -221,8 +235,13 @@ function EngagementsSection({ services, scope }: { services: CatalogService[]; s
                   {r.status === "DRAFT" && <Button size="sm" variant="ghost" onClick={() => setStatus(r, "READY")}>Pronto</Button>}
                   {r.status === "READY" && <Button size="sm" variant="ghost" onClick={() => setStatus(r, "DRAFT")}>Voltar</Button>}
                   {(r.status === "DRAFT" || r.status === "READY") && <Button size="sm" variant="ghost" onClick={() => setStatus(r, "CANCELED")}>Cancelar</Button>}
-                  {r.fiscal_invoice_id && canBill && nfseDisplayState(inv) === "RASCUNHO" && inv?.environment === "HOMOLOGATION" && typeof inv.draft_version === "number" && <Button size="sm" variant="ghost" disabled={reapply.isPending} onClick={() => doReapply(r.fiscal_invoice_id!, inv.draft_version!)}>Reaplicar perfil</Button>}
-                  {r.fiscal_invoice_id && canBill && nfseDisplayState(inv) === "RASCUNHO" && <Button size="sm" variant="ghost" onClick={() => emit(r.fiscal_invoice_id!)}>Enviar NFS-e</Button>}
+                  {r.fiscal_invoice_id && canBill && transmissions.isSuccess && !pendingTransmissionFor(transmissions.data, r.fiscal_invoice_id) && nfseDisplayState(inv) === "RASCUNHO" && inv?.environment === "HOMOLOGATION" && typeof inv.draft_version === "number" && <Button size="sm" variant="ghost" disabled={reapply.isPending} onClick={() => doReapply(r.fiscal_invoice_id!, inv.draft_version!)}>Reaplicar perfil</Button>}
+                  {r.fiscal_invoice_id && canBill && (() => {
+                    if (transmissions.isLoading || transmissions.isError) return <span className="text-xs text-muted-foreground">{transmissions.isError ? "Envios indisponíveis" : "…"}</span>;
+                    const pending = pendingTransmissionFor(transmissions.data, r.fiscal_invoice_id!);
+                    if (pending) return <Button size="sm" variant="outline" disabled={!!reconciling} onClick={() => reconcile(r.fiscal_invoice_id!, pending.id)}>{reconciling === pending.id && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}Consultar envio pendente</Button>;
+                    return nfseDisplayState(inv) === "RASCUNHO" ? <Button size="sm" variant="ghost" onClick={() => emit(r.fiscal_invoice_id!)}>Enviar NFS-e</Button> : null;
+                  })()}
                 </TableCell>
               </TableRow>);
             })}</TableBody></Table>}
