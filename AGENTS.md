@@ -126,3 +126,4 @@
 - B2B payment condition/method (B3): single contract in scripts/b2b-payment-condition-v1-rebase-20261106/AGENTS.md; method rev.2 package is history only.
 
 - Tenant product CRUD uses only Catálogo → Produtos and scoped RPCs; legacy query/hash survive. Query-aware RBAC mounts only authorized tabs; fiscal links retain existing gates — prevents duplicate editors and redirected privilege expansion.
+- Service catalog/engagements/billing live in catalog_services, service_engagements and service_billing_requests (org-restrictive RLS, composite (id, organization_id) FKs); only rpc_service_billing_create_draft_v1 marks BILLED and reuses rpc_fiscal_draft_save; NFS-e emission Edge stays fail-closed (integration_not_configured / transport_not_certified) and never writes authorization — prevents double billing and simulated authorization.

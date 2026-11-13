@@ -58,7 +58,7 @@ describe("DPS NFS-e Nacional (sintética, sem transmissão)", () => {
   };
   it("monta XML de homologação com Id e valores", () => {
     const xml = buildDpsXml(base);
-    expect(dpsId(base)).toBe("DPS3147006200000000000191000010000000000000 07".replace(" ", "").slice(0, 45));
+    expect(dpsId(base)).toBe("DPS3147006200000000000191" + "00001" + "000000000000007");
     expect(xml).toContain("<tpAmb>2</tpAmb>");
     expect(xml).toContain("<CPF>11144477735</CPF>");
     expect(xml).toContain("<vServ>1500.00</vServ>");
