@@ -26832,6 +26832,10 @@ export type Database = {
         Args: { p_engagement_ids: string[]; p_idempotency_key: string }
         Returns: Json
       }
+      rpc_service_billing_reapply_profile_v1: {
+        Args: { p_expected_version: number; p_invoice_id: string }
+        Returns: Json
+      }
       rpc_service_check_rate_limit: {
         Args: {
           p_action: string
