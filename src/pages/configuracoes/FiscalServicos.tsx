@@ -379,11 +379,13 @@ export default function FiscalServicos() {
 }
 
 export function EditDrawer({
-  item, canEdit, onClose,
+  item, canEdit, onClose, linkedService,
 }: {
   item: ServiceListItem | "new";
   canEdit: boolean;
   onClose: () => void;
+  /** Catálogo > Serviços: novo perfil já vinculado ao serviço da empresa. */
+  linkedService?: { id: string; name: string };
 }) {
   const isNew = item === "new";
   const profileId = isNew ? null : item.id;
@@ -399,8 +401,8 @@ export function EditDrawer({
 
   useEffect(() => {
     if (isNew) {
-      setValues(rowToFormValues(null));
-      setServiceIdInput("");
+      setValues(linkedService ? { ...rowToFormValues(null), service_name: linkedService.name } : rowToFormValues(null));
+      setServiceIdInput(linkedService?.id ?? "");
       setSourceReferenceInput("");
       return;
     }
@@ -409,7 +411,7 @@ export function EditDrawer({
       setServiceIdInput(profileQuery.data?.service_id ?? "");
       setSourceReferenceInput(profileQuery.data?.source_reference ?? "");
     }
-  }, [isNew, profileQuery.data]);
+  }, [isNew, profileQuery.data, linkedService]);
 
   function setField<K extends keyof ServiceFiscalFormValues>(
     k: K,
@@ -547,6 +549,7 @@ export function EditDrawer({
                   id="f-service_id"
                   value={serviceIdInput}
                   onChange={(e) => setServiceIdInput(e.target.value)}
+                  readOnly={!!linkedService || (!isNew && !!profileQuery.data?.service_id && !!linkedService)}
                   aria-invalid={!!errors.service_id}
                   placeholder="Ex.: 00000000-0000-0000-0000-000000000000"
                 />

@@ -206,9 +206,9 @@ describe("N-06 item com filhos", () => {
     );
   });
 
-  it("os 5 filhos de Base Técnica permanecem", () => {
+  it("os 6 filhos de Base Técnica permanecem", () => {
     expect((baseTecnica.children ?? []).map((c) => c.label)).toEqual([
-      "Produtos", "Microrganismos", "Catálogo Técnico", "Culturas", "Problemas",
+      "Produtos", "Serviços", "Microrganismos", "Catálogo Técnico", "Culturas", "Problemas",
     ]);
   });
 });
@@ -217,7 +217,7 @@ describe("N-06 item com filhos", () => {
 describe("N-07 deep-link por query", () => {
   const baseTecnica = navigation.find((i) => i.id === "protocolos")!;
   it("marca a aba correta e o paramDefault", () => {
-    const [produtos, , , culturas] = baseTecnica.children!;
+    const [produtos, , , , culturas] = baseTecnica.children!;
     expect(isNavItemActiveSelfWithSearch(culturas, "/base-tecnica", "?tab=culturas")).toBe(true);
     expect(isNavItemActiveSelfWithSearch(produtos, "/base-tecnica", "")).toBe(true);
   });

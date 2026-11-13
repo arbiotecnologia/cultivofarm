@@ -478,9 +478,10 @@ function LegacyProblemasTab() {
 
 // --- Microrganismos ---
 import { MicrorganismosTab } from "@/components/protocolos/MicrorganismosTab";
+import { ServicosTab } from "@/components/catalogo/servicos/ServicosTab";
 
 // --- Main Page ---
-const MAIN_TABS = ["produtos", "microrganismos", "catalogo-tecnico", "culturas", "problemas"] as const;
+const MAIN_TABS = ["produtos", "servicos", "microrganismos", "catalogo-tecnico", "culturas", "problemas"] as const;
 
 /** Aliases de leitura aceitos na URL (Fase 26C). A gravação usa o canônico. */
 const TAB_ALIASES = {
@@ -515,14 +516,16 @@ export default function Protocolos() {
       <section className="min-w-0">
         <div className="min-w-0">
           <Tabs value={tab} onValueChange={setTab}>
-            {mobile ? <CompactCatalogSelect label="Seção da Base Técnica" value={tab} onChange={setTab} options={allowedTabs.map(value => ({ value, label: ({produtos:"Produtos",microrganismos:"Microrganismos","catalogo-tecnico":"Catálogo Técnico",culturas:"Culturas",problemas:"Problemas"})[value] }))} /> : <TabsList className="flex h-auto w-full justify-start overflow-x-auto [&>button]:min-h-10 [&>button]:shrink-0">
+            {mobile ? <CompactCatalogSelect label="Seção da Base Técnica" value={tab} onChange={setTab} options={allowedTabs.map(value => ({ value, label: ({produtos:"Produtos",servicos:"Serviços",microrganismos:"Microrganismos","catalogo-tecnico":"Catálogo Técnico",culturas:"Culturas",problemas:"Problemas"})[value] }))} /> : <TabsList className="flex h-auto w-full justify-start overflow-x-auto [&>button]:min-h-10 [&>button]:shrink-0">
               {allowedTabs.includes("produtos") && <TabsTrigger value="produtos">Produtos</TabsTrigger>}
+              {allowedTabs.includes("servicos") && <TabsTrigger value="servicos">Serviços</TabsTrigger>}
               {allowedTabs.includes("microrganismos") && <TabsTrigger value="microrganismos">Microrganismos</TabsTrigger>}
               {allowedTabs.includes("catalogo-tecnico") && <TabsTrigger value="catalogo-tecnico">Catálogo Técnico</TabsTrigger>}
               {allowedTabs.includes("culturas") && <TabsTrigger value="culturas">Culturas</TabsTrigger>}
               {allowedTabs.includes("problemas") && <TabsTrigger value="problemas">Problemas</TabsTrigger>}
             </TabsList>}
             {allowedTabs.includes("produtos") && <TabsContent value="produtos"><ProdutosTab /></TabsContent>}
+            {allowedTabs.includes("servicos") && <TabsContent value="servicos"><ServicosTab /></TabsContent>}
             {allowedTabs.includes("microrganismos") && <TabsContent value="microrganismos"><MicrorganismosTab /></TabsContent>}
             {allowedTabs.includes("catalogo-tecnico") && <TabsContent value="catalogo-tecnico"><CatalogoTecnicoTab /></TabsContent>}
             {allowedTabs.includes("culturas") && <TabsContent value="culturas"><CulturasTab /></TabsContent>}
