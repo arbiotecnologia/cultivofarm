@@ -4,7 +4,9 @@
  * Identidade = customer_id (FK real e unique para `clientes.id`).
  * CPF/CNPJ do cliente é apenas lido para exibição e SEMPRE mascarado.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { getAccessLevel } from "@/lib/permissions";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
