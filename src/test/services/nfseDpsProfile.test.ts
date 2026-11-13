@@ -79,7 +79,9 @@ describe("DPS — pendências por regime e leiaute, sem presumir", () => {
 
 describe("rascunho → DPS usa o snapshot do faturamento", () => {
   const c = { cnpj: "00000000000191", municipality_ibge_code: "9999901", municipal_registration: null, crt: "3", fiscal_environment: "HOMOLOGATION", phone: null, fiscal_email: null };
-  const items = [{ description: "S", net_value: "100.00", fiscal_profile_snapshot: { national_tax_code: "010101", municipality_ibge_code: "9999901" }, tax_snapshot: { iss_rate: 2 } }];
+  // IBS/CBS fictício (alíquotas não reais) — agora exigido por item no snapshot.
+  const ibs = { schema_version: 1, cst_ibs_cbs: "410", c_class_trib: "410001", c_ind_op: "100301", effective_from: "2026-01-01", additional_fields: { indDest: "0" } };
+  const items = [{ description: "S", net_value: "100.00", fiscal_profile_snapshot: { national_tax_code: "010101", municipality_ibge_code: "9999901", ibs_cbs: ibs }, tax_snapshot: { iss_rate: 2 } }];
   it("snapshot antigo sem complemento aponta pendências", () => {
     const m = mapInvoiceToDps({ id: "i", environment: "HOMOLOGATION", issue_date: "2026-11-13", draft_version: 1, total_amount: 100, items }, c, { cpf_cnpj: "11144477735", name: "T", email: null }, new Date());
     expect(m.ok).toBe(false); if (m.ok === false) expect(m.missing).toEqual(["local_prestacao", "total_tributos"]);
