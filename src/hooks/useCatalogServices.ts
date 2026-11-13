@@ -71,7 +71,7 @@ export function useServiceEngagements(enabled: boolean) {
 export function useServiceInvoices(ids: string[]) {
   return useScopedPortalQuery<InvoiceStatusRow[]>({
     queryKey: SERVICE_KEYS.invoices(ids), enabled: ids.length > 0,
-    queryFn: async (signal) => check(await db.from("fiscal_invoices").select("id, status, normalized_status, provider_reference, invoice_number, provider_status_raw").in("id", ids).abortSignal(signal)) ?? [],
+    queryFn: async (signal) => check(await db.from("fiscal_invoices").select("id, status, normalized_status, provider_reference, invoice_number, provider_status_raw, environment, draft_version").in("id", ids).abortSignal(signal)) ?? [],
   });
 }
 
@@ -151,4 +151,23 @@ export async function requestNfseEmission(invoiceId: string) {
     try { return (await ctx.json()) as { code: string; missing?: string[]; message?: string }; } catch { throw error; }
   }
   return data as { code: string; missing?: string[]; message?: string };
+}
+
+export class ReapplyUnavailableError extends Error { constructor() { super("reapply_not_installed"); } }
+
+/** Reaplica o perfil fiscal atual do serviço ao MESMO rascunho NFS-e de homologação
+ * (CAS por draft_version). O servidor bloqueia nota transmitida/fechada e outra empresa. */
+export function useReapplyServiceProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ invoiceId, draftVersion }: { invoiceId: string; draftVersion: number }) => {
+      const res = await db.rpc("rpc_service_billing_reapply_profile_v1", { p_invoice_id: invoiceId, p_expected_version: draftVersion });
+      if (res.error) {
+        if (res.error.code === "PGRST202" || res.error.code === "42883") throw new ReapplyUnavailableError();
+        const e = new Error(res.error.message) as Error & { code?: string }; e.code = res.error.code; throw e;
+      }
+      return res.data as { invoice_id: string; changed: boolean; draft_version: number };
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: SERVICE_KEYS.root }),
+  });
 }
