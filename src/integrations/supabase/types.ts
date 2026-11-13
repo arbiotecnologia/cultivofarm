@@ -2174,6 +2174,59 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_services: {
+        Row: {
+          code: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          unit: string
+          unit_price: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id?: string
+          unit?: string
+          unit_price?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          unit?: string
+          unit_price?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_services_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       catalog_technical_audit_logs: {
         Row: {
           acao: string
@@ -19160,6 +19213,154 @@ export type Database = {
         }
         Relationships: []
       }
+      service_billing_requests: {
+        Row: {
+          created_at: string
+          created_by: string
+          engagement_ids: string[]
+          fiscal_invoice_id: string
+          id: string
+          idempotency_key: string
+          organization_id: string
+          request_hash: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          engagement_ids: string[]
+          fiscal_invoice_id: string
+          id?: string
+          idempotency_key: string
+          organization_id: string
+          request_hash: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          engagement_ids?: string[]
+          fiscal_invoice_id?: string
+          id?: string
+          idempotency_key?: string
+          organization_id?: string
+          request_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_billing_requests_fiscal_invoice_id_fkey"
+            columns: ["fiscal_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_billing_requests_fiscal_invoice_id_fkey"
+            columns: ["fiscal_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_fiscal_document_reconciliation_pending"
+            referencedColumns: ["fiscal_invoice_id"]
+          },
+          {
+            foreignKeyName: "service_billing_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_engagements: {
+        Row: {
+          billed_at: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          description: string | null
+          fiscal_invoice_id: string | null
+          id: string
+          organization_id: string
+          performed_on: string
+          quantity: number
+          service_id: string
+          status: string
+          total_amount: number | null
+          unit_price: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          billed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          description?: string | null
+          fiscal_invoice_id?: string | null
+          id?: string
+          organization_id?: string
+          performed_on: string
+          quantity: number
+          service_id: string
+          status?: string
+          total_amount?: number | null
+          unit_price: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          billed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          description?: string | null
+          fiscal_invoice_id?: string | null
+          id?: string
+          organization_id?: string
+          performed_on?: string
+          quantity?: number
+          service_id?: string
+          status?: string
+          total_amount?: number | null
+          unit_price?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_engagements_customer_org_fk"
+            columns: ["customer_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "service_engagements_fiscal_invoice_id_fkey"
+            columns: ["fiscal_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_engagements_fiscal_invoice_id_fkey"
+            columns: ["fiscal_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_fiscal_document_reconciliation_pending"
+            referencedColumns: ["fiscal_invoice_id"]
+          },
+          {
+            foreignKeyName: "service_engagements_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_engagements_service_org_fk"
+            columns: ["service_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_services"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
       service_fiscal_profiles: {
         Row: {
           accounting_notes: string | null
@@ -19249,6 +19450,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_fiscal_profiles_service_org_fk"
+            columns: ["service_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_services"
+            referencedColumns: ["id", "organization_id"]
           },
         ]
       }
@@ -26470,6 +26678,10 @@ export type Database = {
         Args: { p_actor: string; p_payload: Json }
         Returns: Json
       }
+      rpc_service_billing_create_draft_v1: {
+        Args: { p_engagement_ids: string[]; p_idempotency_key: string }
+        Returns: Json
+      }
       rpc_service_check_rate_limit: {
         Args: {
           p_action: string
@@ -26484,6 +26696,7 @@ export type Database = {
         Returns: undefined
       }
       rpc_service_load_provider_runtime_config: { Args: never; Returns: Json }
+      rpc_service_nfse_readiness_v1: { Args: never; Returns: Json }
       rpc_service_record_smtp_diagnostic: {
         Args: {
           p_action: string
