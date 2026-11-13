@@ -62,7 +62,7 @@ function toMessage(raw: string, fallback: string, code?: string): string {
     return "Configure a empresa fiscal antes de editar o RTC.";
   if (/FISCAL_CONFLICT/.test(raw) || code === "PT409")
     return "Os dados foram alterados por outra pessoa. Recarregue antes de salvar.";
-  if (/FISCAL_FORBIDDEN|permission_denied|42501/.test(raw))
+  if (/FISCAL_FORBIDDEN|permission_denied|permission denied|42501/.test(raw) || code === "42501")
     return "Você não tem permissão para essa operação.";
   if (/FISCAL_UNAUTHENTICATED|unauthenticated/.test(raw))
     return "Sessão expirada. Entre novamente.";
@@ -248,7 +248,8 @@ export function useFiscalRtcItem(
   const args = useMemo(() => ({ [idKey]: itemId }), [idKey, itemId]);
   return useRtcOperations<IbsCbsItemConfiguration>({
     scope: fence.scope, enabled: (options.enabled ?? true) && !!itemId && fence.ready,
-    canWrite: fence.canWrite, capture: fence.capture,
+    // Produto próprio: admin/gestor do tenant (mesmo acesso do editor); o servidor revalida dono/papel/CAS.
+    canWrite: fence.canWrite || (kind === "product" && fence.canWriteOwnedProduct === true), capture: fence.capture,
     getFn, saveFn,
     args, parser: parseItem, label: "IBS/CBS",
   });
