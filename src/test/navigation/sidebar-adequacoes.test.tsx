@@ -55,7 +55,7 @@ describe("Sidebar — Base Técnica com abas no menu", () => {
   });
 
   it("marca a aba ativa pela query e o padrão quando não há parâmetro", () => {
-    const [produtos, , , culturas] = baseTecnica.children!;
+    const [produtos, , , , culturas] = baseTecnica.children!;
     expect(isNavItemActiveSelfWithSearch(culturas, "/base-tecnica", "?tab=culturas")).toBe(true);
     expect(isNavItemActiveSelfWithSearch(produtos, "/base-tecnica", "?tab=culturas")).toBe(false);
     expect(isNavItemActiveSelfWithSearch(produtos, "/base-tecnica", "")).toBe(true);
