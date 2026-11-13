@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
-import type { EngagementStatus } from "@/lib/services/serviceBilling";
+import type { EngagementStatus, NfseTransmissionRow } from "@/lib/services/serviceBilling";
 
 // Tabelas novas ainda fora dos tipos gerados: cliente canônico sem tipagem.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
