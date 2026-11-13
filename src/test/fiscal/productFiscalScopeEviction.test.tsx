@@ -35,6 +35,7 @@ describe("tela Perfis Fiscais > Produtos: lista fiscal + propriedade (hooks reai
       const owned = useOwnedProductIds(list.data?.items.map((i: { id: string }) => i.id) ?? []);
       return { list, owned };
     }, { wrapper });
+    await new Promise(r=>setTimeout(r,300)); console.log("DBG", JSON.stringify(calls), h.result.current.list.status, h.result.current.list.error?.message, qc.getQueryCache().getAll().map(q=>[q.queryKey.slice(0,3), q.state.status, q.state.error?.message]));
     await waitFor(() => { expect(h.result.current.list.data?.items).toHaveLength(1); expect(h.result.current.owned.confirmed).toBe(true); });
     const settled = { ...calls };
     for (let i = 0; i < 6; i++) { h.rerender(); await act(async () => { await new Promise(r => setTimeout(r, 15)); }); }
