@@ -26,9 +26,10 @@ const maxResponse = 7 * 1024 * 1024
 var pathRe = regexp.MustCompile(`^/(API/)?SefinNacional/(dps/DPS[0-9]{42}|nfse/[0-9]{50}|docs/index)$`)
 
 type jsConn struct {
-	io   js.Value
-	rbuf []byte
-	eof  bool
+	io    js.Value
+	rbuf  []byte
+	eof   bool
+	sniff helloSniffer
 }
 
 func await(p js.Value) (js.Value, error) {
@@ -61,6 +62,7 @@ func (c *jsConn) Read(b []byte) (int, error) {
 		}
 		buf := make([]byte, v.Get("length").Int())
 		js.CopyBytesToGo(buf, v)
+		c.sniff.feed(buf)
 		c.rbuf = buf
 	}
 	n := copy(b, c.rbuf)
@@ -150,7 +152,7 @@ func request(cfgOverride func(*tls.Config, js.Value) bool) js.Func {
 			resolve := pr[0]
 			go func() {
 				out := map[string]any{"ok": false}
-				info := map[string]any{"certRequested": false, "clientCertSent": false, "handshakeCount": 0}
+				info := map[string]any{"certRequested": false, "clientCertSent": false, "renegotiated": false, "secureRenegotiation": false}
 				defer func() { out["tls"] = info; resolve.Invoke(js.ValueOf(out)) }()
 				path := opts.Get("path").String()
 				if !pathRe.MatchString(path) {
@@ -166,7 +168,7 @@ func request(cfgOverride func(*tls.Config, js.Value) bool) js.Func {
 					}
 					certs = []tls.Certificate{c}
 				}
-				hs := 0
+				initialDone := false
 				cfg := &tls.Config{
 					ServerName:    host,
 					MinVersion:    tls.VersionTLS12,
@@ -175,25 +177,35 @@ func request(cfgOverride func(*tls.Config, js.Value) bool) js.Func {
 					NextProtos:    []string{"http/1.1"},
 					GetClientCertificate: func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
 						info["certRequested"] = true
+						if initialDone {
+							info["renegotiated"] = true
+						}
 						if len(certs) == 0 {
 							return &tls.Certificate{}, nil
 						}
 						info["clientCertSent"] = true
 						return &certs[0], nil
 					},
-					VerifyConnection: func(tls.ConnectionState) error { hs++; info["handshakeCount"] = hs; return nil },
 				}
 				if cfgOverride != nil && !cfgOverride(cfg, opts) {
 					out["code"] = "config_blocked"
 					return
 				}
-				conn := tls.Client(&jsConn{io: jsio}, cfg)
+				raw := &jsConn{io: jsio}
+				conn := tls.Client(raw, cfg)
 				defer conn.Close()
 				if err := conn.Handshake(); err != nil {
 					out["code"] = classify(err)
 					out["stage"] = "handshake"
 					return
 				}
+				initialDone = true
+				if !raw.sniff.done || !raw.sniff.ok {
+					out["code"] = "tls_insecure_renegotiation_refused"
+					out["stage"] = "handshake"
+					return
+				}
+				info["secureRenegotiation"] = true
 				st := conn.ConnectionState()
 				info["version"] = versions[st.Version]
 				info["cipher"] = tls.CipherSuiteName(st.CipherSuite)
