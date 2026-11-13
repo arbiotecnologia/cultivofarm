@@ -4,7 +4,10 @@
  * Não existe catálogo canônico de serviços — a fonte é a própria tabela
  * `service_fiscal_profiles`. `source_reference` é a referência transitória.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { servicePendencies } from "@/lib/fiscal/preEmissionPendencies";
 import { useAuth } from "@/hooks/useAuth";
 import { useProductFiscalAccess } from "@/hooks/useProductFiscalAccess";
 import { getAccessLevel } from "@/lib/permissions";
@@ -87,6 +90,20 @@ export default function FiscalServicos() {
   const [status, setStatus] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [editing, setEditing] = useState<ServiceListItem | "new" | null>(null);
+  // Guia Fiscal do serviço (?servico=<id do perfil>): abre o MESMO editor; só leitura até salvar.
+  const [searchParams] = useSearchParams();
+  const deepServiceId = searchParams.get("servico");
+  const deepHandled = useRef<string | null>(null);
+  useEffect(() => {
+    if (!deepServiceId || deepHandled.current === deepServiceId || access === "none" || !uiEnabled) return;
+    deepHandled.current = deepServiceId;
+    let alive = true;
+    (supabase as any).from("service_fiscal_profiles")
+      .select("id, service_id, source_reference, service_name, fiscal_description_template, lc116_item, cnae, municipal_taxation_code, national_taxation_code, profile_status, is_active, updated_at")
+      .eq("id", deepServiceId).maybeSingle()
+      .then(({ data }: { data: ServiceListItem | null }) => { if (alive && data) setEditing(data); });
+    return () => { alive = false; };
+  }, [deepServiceId, access, uiEnabled]);
 
   const listQuery = useServiceFiscalList(
     { search, status, page, pageSize: PAGE_SIZE },
@@ -301,6 +318,14 @@ export default function FiscalServicos() {
                             ) : (
                               <Badge>OK</Badge>
                             )}
+                            {(() => {
+                              const missing = servicePendencies(it);
+                              return missing.length > 0 ? (
+                                <div className="text-xs text-muted-foreground mt-1" data-testid="service-guide-pendencies">
+                                  Falta: {missing.map((m) => m.label).join(", ")}
+                                </div>
+                              ) : null;
+                            })()}
                           </td>
                           <td className="p-2 text-right">
                             <Button
