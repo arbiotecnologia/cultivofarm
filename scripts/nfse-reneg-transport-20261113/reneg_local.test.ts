@@ -44,6 +44,7 @@ Deno.test("renegociação pós-requisição: A1 enviado só quando o servidor pe
   assert(r.ok, JSON.stringify(r)); if (!r.ok) return;
   assertEquals(r.status, 200); assertEquals(r.body, '{"x":"ok-01"}');
   assertEquals(r.tls.version, "TLS1.2"); assert(r.tls.chainVerified); assert(r.tls.certRequested); assert(r.tls.clientCertSent);
+  console.log(JSON.stringify(r.tls), log.split("\n").filter((l) => /Handshake|Certificate|ERROR|reneg/i.test(l)).join("\n"));
   assertEquals(r.tls.handshakeCount, 2, "handshake inicial + renegociação");
   assertEquals((log.match(/ClientHello/g) ?? []).length, 2);
   assert(/<<< TLS 1\.2, Handshake \[length [0-9a-f]+\], Certificate/.test(log), "servidor recebeu o certificado do cliente");
