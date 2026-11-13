@@ -361,6 +361,13 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
     ownProfile: microProfileByMicro.get(m.id) ?? null,
   }));
 
+  // Escrita fiscal de produto próprio: papel (admin/gestor do tenant) + propriedade confirmada por item.
+  const ownedProducts = useOwnedProductIds([
+    ...productItems.map((p) => p.product_id),
+    ...(editing?.entity === "produto" ? [editing.productId] : []),
+  ]);
+  const canEditProduct = (productId: string) =>
+    canEditProductRole && ownedProducts.confirmed && ownedProducts.owned.has(productId);
   const rows: UnifiedRow[] =
     kind === KIND_PRODUCT ? rowsProduto
     : kind === KIND_MICRO ? rowsMicro
