@@ -3,8 +3,11 @@ import { classifyHttpError, classifyStatus, contentKind, diagnosticLogLine, erro
 import { DPS_NOT_FOUND_OFFICIAL_CODES, parseDpsLookup, sefinUrl } from "./sefinContract.ts";
 const R = { createHttpClient: true, denoVersion: "2" };
 const B = "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional";
-Deno.test("base de homologação = tabela oficial gov.br (/API/SefinNacional)", () => {
-  assertEquals(sefinUrl("HOMOLOGATION", { kind: "emit" }), `${B}/nfse`);
+Deno.test("POST homologação na base anterior; candidata /API só no GET de reconciliação", () => {
+  assertEquals(sefinUrl("HOMOLOGATION", { kind: "emit" }), "https://sefin.producaorestrita.nfse.gov.br/SefinNacional/nfse");
+  assertEquals(sefinUrl("HOMOLOGATION", { kind: "dps", id: "DPS" + "1".repeat(42) }), `${B}/dps/DPS${"1".repeat(42)}`);
+  assertEquals(sefinUrl("HOMOLOGATION", { kind: "nfse", chave: "2".repeat(50) }), `${B}/nfse/${"2".repeat(50)}`);
+  assertEquals(sefinUrl("PRODUCTION", { kind: "dps", id: "DPS" + "1".repeat(42) }), `https://sefin.nfse.gov.br/SefinNacional/dps/DPS${"1".repeat(42)}`);
   assertEquals(sefinUrl("PRODUCTION", { kind: "emit" }), "https://sefin.nfse.gov.br/SefinNacional/nfse");
 });
 Deno.test("etapa vem do caminho sem guardar id", () => {
