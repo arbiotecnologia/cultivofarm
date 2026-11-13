@@ -191,11 +191,13 @@ Deno.test("reconciliação: DPS não processada (404) → NOT_FOUND, sem POST", 
   const rec = await reconcileNfse(d, { transmissionId: first.transmissionId! });
   assertEquals([rec.code, rec.outcome], ["not_processed", "NOT_FOUND"]); assertEquals(d.posts, 1);
 });
+// IBS/CBS FICTÍCIO (sem alíquota real) exigido por item no snapshot.
+const IBS = { schema_version: 1, cst_ibs_cbs: "410", c_class_trib: "410001", c_ind_op: "100301", effective_from: "2026-01-01", additional_fields: { indDest: "0" } };
 Deno.test("rascunho canônico → DPS: pendências sem inventar dados", () => {
   const inv = { id: "i", environment: "HOMOLOGATION", issue_date: "2026-11-13", draft_version: 1, total_amount: "450.00",
     fiscal_profile_snapshot: { nfse_dps: { v: 1, service_location_ibge_code: "3147006", tot_trib: { mode: "IND" } } },
-    items: [{ description: "QA Consultoria", net_value: "300.00", fiscal_profile_snapshot: { national_tax_code: "170101", municipality_ibge_code: "3147006" }, tax_snapshot: { iss_rate: 2.5 } },
-            { description: "QA Consultoria", net_value: "150.00", fiscal_profile_snapshot: { national_tax_code: "170101", municipality_ibge_code: "3147006" }, tax_snapshot: { iss_rate: 2.5 } }] };
+    items: [{ description: "QA Consultoria", net_value: "300.00", fiscal_profile_snapshot: { national_tax_code: "170101", municipality_ibge_code: "3147006", ibs_cbs: IBS }, tax_snapshot: { iss_rate: 2.5 } },
+            { description: "QA Consultoria", net_value: "150.00", fiscal_profile_snapshot: { national_tax_code: "170101", municipality_ibge_code: "3147006", ibs_cbs: IBS }, tax_snapshot: { iss_rate: 2.5 } }] };
   const company = { cnpj: CNPJ, municipality_ibge_code: "3147006", municipal_registration: null, crt: "3", fiscal_environment: "HOMOLOGATION" };
   const ok = mapInvoiceToDps(inv, company, { cpf_cnpj: "11144477735", name: "Tomador", email: null }, NOW);
   assert(ok.ok); if (ok.ok) { assertEquals(ok.input.values.serviceAmount, 450); assertEquals(ok.input.emitter.regime?.opSimpNac, "1"); }
