@@ -126,10 +126,10 @@ func classify(err error) string {
 	}
 	m := err.Error()
 	switch {
+	case strings.Contains(m, "secure renegotiation"), strings.Contains(m, "renegotiation_info"), strings.Contains(m, "renegotiation extension"):
+		return "tls_insecure_renegotiation_refused"
 	case strings.Contains(m, "renegotiation"):
 		return "tls_renegotiation_refused"
-	case strings.Contains(m, "secure renegotiation"), strings.Contains(m, "renegotiation_info"):
-		return "tls_insecure_renegotiation_refused"
 	case strings.Contains(m, "no cipher suite"), strings.Contains(m, "cipher"):
 		return "tls_cipher_mismatch"
 	case strings.Contains(m, "protocol version"):
