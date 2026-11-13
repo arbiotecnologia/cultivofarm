@@ -22,6 +22,7 @@ import { emitNfse, reconcileNfse, type EmitDeps, type LedgerRow } from "../_shar
 import { mapInvoiceToDps } from "../_shared/nfse/dpsFromInvoice.ts";
 import { assertSefinUrl, type NfseEnvironment } from "../_shared/nfse/sefinContract.ts";
 import { assertAllowlistUrl, decideTransmissionGate, rejectRedirect } from "../_shared/nfse/homologAllowlist.ts";
+import { classifyHttpError, classifyStatus, finalizeDiagnostic, runtimeCapabilities, stageFromUrl, type NfseHttpDiagnostic } from "../_shared/nfse/reconcileDiagnostic.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const KEY = /^[A-Za-z0-9_.:-]{16,128}$/;
@@ -117,6 +118,8 @@ Deno.serve(async (req) => {
   const transmissionEnabled = true;
 
   let a1: { certPem: string; chainPem: string; keyPem: string } | null = null;
+  // Diagnóstico seguro da última chamada HTTP (sem URL com id, corpo, XML ou mensagens brutas).
+  let lastDiag: NfseHttpDiagnostic | null = null;
   const deps: EmitDeps = {
     flags: { transmissionEnabled, productionEnabled: gate.productionEnabled },
     sha256Hex,
@@ -172,17 +175,28 @@ Deno.serve(async (req) => {
       const env: NfseEnvironment = new URL(r.url).host === "sefin.nfse.gov.br" ? "PRODUCTION" : "HOMOLOGATION";
       assertSefinUrl(r.url, env);
       if (gate.homologOnlyHost) assertAllowlistUrl(r.url);
+      const stage = stageFromUrl(r.url);
+      const runtime = runtimeCapabilities();
+      lastDiag = { stage, result: "certificate_unavailable", httpStatus: null, runtime };
       a1 ??= await loadA1(admin, invoiceId);
+      lastDiag = { stage, result: "network_error", httpStatus: null, runtime };
+      // API Deno estável (>=1.41/2.x): mTLS por `cert`/`key` PEM; a verificação do servidor nunca é desligada.
       const create = (Deno as unknown as { createHttpClient?: (o: { cert: string; key: string }) => { close?: () => void } }).createHttpClient;
-      if (typeof create !== "function") throw Object.assign(new Error("mtls"), { code: "NFSE_MTLS_UNAVAILABLE" });
-      const client = create({ cert: a1.chainPem, key: a1.keyPem });
+      if (typeof create !== "function") { lastDiag = { ...lastDiag, result: "mtls_unavailable" }; throw Object.assign(new Error("mtls"), { code: "NFSE_MTLS_UNAVAILABLE" }); }
+      let client: { close?: () => void };
+      try { client = create({ cert: a1.chainPem, key: a1.keyPem }); }
+      catch { lastDiag = { ...lastDiag, result: "mtls_client_rejected" }; throw Object.assign(new Error("mtls"), { code: "NFSE_MTLS_CLIENT_REJECTED" }); }
       const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
       try {
         const res = await fetch(r.url, { method: r.method, signal: ctrl.signal, body: r.body, redirect: "manual",
           // @ts-expect-error opção do runtime Deno
           client, headers: { Accept: "application/json", ...(r.body ? { "Content-Type": "application/json; charset=utf-8" } : {}) } });
+        lastDiag = { ...lastDiag, result: classifyStatus(res.status), httpStatus: res.status };
         rejectRedirect(res.status);
         return { status: res.status, body: (await res.text()).slice(0, 6 * 1024 * 1024) };
+      } catch (e) {
+        if (lastDiag.httpStatus === null) lastDiag = { ...lastDiag, result: ctrl.signal.aborted ? "timeout" : classifyHttpError(e) };
+        throw e;
       } finally { clearTimeout(timer); try { client.close?.(); } catch { /* noop */ } }
     },
   };
@@ -192,10 +206,12 @@ Deno.serve(async (req) => {
       ? await emitNfse(deps, { invoiceId, idempotencyKey: body.idempotency_key as string })
       : await reconcileNfse(deps, { transmissionId: body.transmission_id as string });
     const { httpStatus, ...rest } = result;
+    if (action === "reconcile") return reply(httpStatus, { ...rest, diagnostic: finalizeDiagnostic(lastDiag, rest.code) ?? { stage: "before_http", result: null, httpStatus: null, runtime: runtimeCapabilities() } });
     return reply(httpStatus, rest);
   } catch (e) {
     const err = e as { code?: string; status?: number; missing?: string[] };
-    return reply(err.status ?? 500, { code: err.code ?? "nfse_internal_error", missing: err.missing, authorized: false, retrySafe: false });
+    return reply(err.status ?? 500, { code: err.code ?? "nfse_internal_error", missing: err.missing, authorized: false, retrySafe: false,
+      ...(action === "reconcile" ? { diagnostic: lastDiag ?? { stage: "before_http", result: null, httpStatus: null, runtime: runtimeCapabilities() } } : {}) });
   } finally {
     const held = a1 as { keyPem: string } | null;
     if (held) held.keyPem = "";

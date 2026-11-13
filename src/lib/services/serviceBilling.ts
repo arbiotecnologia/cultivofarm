@@ -90,3 +90,22 @@ export function pendingTransmissionFor(rows: NfseTransmissionRow[] | undefined, 
   own.sort((a, b) => b.created_at.localeCompare(a.created_at));
   return own[0] ?? null;
 }
+
+/** Diagnóstico seguro devolvido pela consulta (sem URL, corpo, XML ou credenciais). */
+export interface NfseReconcileDiagnostic { stage?: string | null; result?: string | null; httpStatus?: number | null; runtime?: { createHttpClient?: boolean; denoVersion?: string | null } | null }
+const STAGE_LABEL: Record<string, string> = { dps_lookup: "consulta da DPS", nfse_download: "download da NFS-e", emit: "envio", before_http: "antes da chamada ao provedor", unknown: "etapa não identificada" };
+const RESULT_LABEL: Record<string, string> = {
+  certificate_unavailable: "certificado A1 indisponível no servidor", mtls_unavailable: "recurso de certificado (mTLS) indisponível no ambiente do servidor",
+  mtls_client_rejected: "certificado/chave recusados ao montar a conexão", timeout: "tempo esgotado", tls_error: "falha TLS/certificado",
+  network_error: "falha de rede", redirect_blocked: "redirecionamento bloqueado", authorization_denied: "acesso negado pelo provedor",
+  not_found: "não encontrado no provedor", server_error: "provedor indisponível", unexpected_status: "status inesperado",
+  unexpected_format: "retorno em formato inesperado", ok: "resposta recebida",
+};
+export function describeReconcileDiagnostic(d: NfseReconcileDiagnostic | null | undefined): string {
+  if (!d) return "Sem diagnóstico.";
+  const parts = [`Etapa: ${STAGE_LABEL[d.stage ?? "unknown"] ?? "etapa não identificada"}`];
+  parts.push(`Resultado: ${d.result ? (RESULT_LABEL[d.result] ?? "não classificado") : "sem chamada ao provedor"}`);
+  parts.push(`HTTP: ${typeof d.httpStatus === "number" ? d.httpStatus : "sem resposta"}`);
+  if (d.runtime && d.runtime.createHttpClient === false) parts.push("mTLS indisponível no ambiente");
+  return parts.join(" · ");
+}
