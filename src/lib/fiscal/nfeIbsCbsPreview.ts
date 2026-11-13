@@ -5,11 +5,11 @@
  * não grava nota, não chama SEFAZ.
  */
 import { buildNfeXml, type NfePayload } from "../../../supabase/functions/_shared/fiscal/nfe/buildNfeXml";
-import { validateNfeXml } from "../../../supabase/functions/_shared/fiscal/nfe/validateNfeXml";
+import { validateNfeXml, validateNfeDocument } from "../../../supabase/functions/_shared/fiscal/nfe/validateNfeXml";
 
 export type NfePreviewScenario = "interna" | "interestadual";
 export interface NfePreviewItem { name: string; code: string | null; ncm: string | null; cfopInState: string | null; cfopInterstate: string | null; ibsCbsConfig: unknown }
-export type NfePreviewResult = { ok: true; xml: string; scenario: NfePreviewScenario; emitUf: string; destUf: string; idDest: "1" | "2"; signed: false; infNFeCheck: { valid: boolean; issues: string[] } } | { ok: false; scenario: NfePreviewScenario; missing: string[] };
+export type NfePreviewResult = { ok: true; xml: string; scenario: NfePreviewScenario; emitUf: string; destUf: string; idDest: "1" | "2"; signed: false; infNFeCheck: { valid: boolean; issues: string[] }; documentCheck: { valid: boolean; issues: string[] } } | { ok: false; scenario: NfePreviewScenario; missing: string[] };
 
 const FICT = "FICTICIO - PRE-VISUALIZACAO SEM VALOR FISCAL";
 const UF_CODE: Record<string, { cUF: string; cMun: string; xMun: string; CEP: string }> = {
@@ -58,8 +58,10 @@ export function buildNfeIbsCbsPreview(item: NfePreviewItem, scenario: NfePreview
     // Prévia NUNCA é assinada: Signature ausente é esperada. A conferência abaixo é a gramática
     // interna (subconjunto) sobre infNFe; não substitui o XSD oficial nem prova assinatura.
     const rep = validateNfeXml(xml);
+    const doc = validateNfeDocument(xml);
     return { ok: true, xml, scenario, emitUf, destUf, idDest, signed: false,
-      infNFeCheck: { valid: rep.valid, issues: rep.issues.map((i) => `${i.path}: ${i.message}`).slice(0, 5) } };
+      infNFeCheck: { valid: rep.valid, issues: rep.issues.map((i) => `${i.path}: ${i.message}`).slice(0, 5) },
+      documentCheck: { valid: doc.valid, issues: doc.issues.map((i) => `${i.path}: ${i.message}`).slice(0, 5) } };
   }
   catch (err) { return { ok: false, scenario, missing: [String((err as { code?: string }).code ?? (err as Error).message ?? "erro_gerador").slice(0, 120)] }; }
 }
