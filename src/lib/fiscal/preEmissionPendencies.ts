@@ -224,3 +224,24 @@ export function draftItemCfopPendency(itemCfop: string | null | undefined, scena
       : "Item sem CFOP.",
   };
 }
+
+// ── Serviço (NFS-e) ─────────────────────────────────────────────────────────
+export interface ServiceProfileInput {
+  lc116_item?: string | null;
+  cnae?: string | null;
+  municipal_taxation_code?: string | null;
+  fiscal_description_template?: string | null;
+  profile_status?: string | null;
+}
+
+export function servicePendencies(s: ServiceProfileInput | null | undefined): Pendency[] {
+  const out: Pendency[] = [];
+  const add = (field: string, label: string, message: string) => out.push({ entity: "produto", field, label, message });
+  if (!s) return [{ entity: "produto", field: "perfil", label: "Perfil fiscal", message: "Serviço sem perfil fiscal." }];
+  if (blank(s.lc116_item)) add("lc116_item", "Item LC 116", "Classificação do serviço (item da LC 116) ausente.");
+  if (blank(s.municipal_taxation_code)) add("municipal_taxation_code", "Código de tributação municipal", "Código municipal ausente.");
+  if (blank(s.cnae)) add("cnae", "CNAE", "CNAE do serviço ausente.");
+  if (blank(s.fiscal_description_template)) add("fiscal_description_template", "Descrição fiscal", "Descrição do serviço ausente.");
+  if (s.profile_status === "BLOCKED") add("profile_status", "Status", "Perfil bloqueado para uso fiscal.");
+  return out;
+}

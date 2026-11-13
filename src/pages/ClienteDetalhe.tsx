@@ -161,7 +161,7 @@ export default function ClienteDetalhe() {
       {canFiscal && (
         <Card>
           <CardHeader className="py-3"><CardTitle className="text-sm">Guia Fiscal</CardTitle></CardHeader>
-          <CardContent className="pt-0"><CustomerFiscalGuide customerId={cliente.id} cpfCnpj={cliente.cpf_cnpj ?? null} canOpen /></CardContent>
+          <CardContent className="pt-0"><CustomerFiscalGuide customerId={cliente.id} /></CardContent>
         </Card>
       )}
 

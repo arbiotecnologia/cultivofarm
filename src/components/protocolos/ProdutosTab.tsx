@@ -1124,7 +1124,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
                       </div>
                     </div>
                   </TabsContent>
-                  {canConsultFiscal && form.id && <TabsContent value="fiscal" className="space-y-4"><ProductFiscalGuide productId={form.id} canOpen /></TabsContent>}
+                  {canConsultFiscal && form.id && <TabsContent value="fiscal" className="space-y-4"><ProductFiscalGuide productId={form.id} displayName={form.nome} displayCodigo={form.codigo || null} /></TabsContent>}
                 </Tabs>
                 </fieldset>
 
