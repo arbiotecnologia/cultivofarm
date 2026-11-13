@@ -1,7 +1,10 @@
 /**
  * Emissão NFS-e pelo Emissor Público Nacional (SefinNacional) para a própria
  * empresa do ator. Fail-closed em cada etapa:
- *  - `NFSE_TRANSMISSION_ENABLED` ≠ "true" → nenhum ledger/POST (transmission_disabled);
+ *  - `NFSE_TRANSMISSION_ENABLED` ≠ "true" → nenhum ledger/POST (transmission_disabled),
+ *    EXCETO (organização, emitente) na allowlist privada de homologação verificada
+ *    server-side por rpc_nfse_homolog_send_allowed_v1: aí só HOMOLOGATION, produção
+ *    forçada desligada, host exato sefin.producaorestrita.nfse.gov.br e sem redirects;
  *  - produção exige `NFSE_PRODUCTION_ENABLED` = "true" E liberação server-side;
  *  - sem configuração/credencial → integration_not_configured;
  *  - sem ledger instalado (RPC ausente) → ledger_not_installed, sem POST.
@@ -18,6 +21,7 @@ import { signDpsXml, verifyDpsSignature } from "../_shared/nfse/signDps.ts";
 import { emitNfse, reconcileNfse, type EmitDeps, type LedgerRow } from "../_shared/nfse/emitFlow.ts";
 import { mapInvoiceToDps } from "../_shared/nfse/dpsFromInvoice.ts";
 import { assertSefinUrl, type NfseEnvironment } from "../_shared/nfse/sefinContract.ts";
+import { assertAllowlistUrl, decideTransmissionGate, rejectRedirect } from "../_shared/nfse/homologAllowlist.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const KEY = /^[A-Za-z0-9_.:-]{16,128}$/;
@@ -95,18 +99,26 @@ Deno.serve(async (req) => {
   if (!readiness?.ready) return reply(409, { code: "integration_not_configured", missing: readiness?.missing ?? [] });
   if (readiness.provider !== "NFSE_NACIONAL") return reply(409, { code: "provider_not_supported" });
 
-  const transmissionEnabled = Deno.env.get("NFSE_TRANSMISSION_ENABLED") === "true";
-  if (!transmissionEnabled) return reply(409, { code: "transmission_disabled", message: "Envio NFS-e desligado neste ambiente; a nota permanece em rascunho." });
-
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!serviceKey) return reply(500, { code: "server_misconfigured" });
   const admin = createClient(url!, serviceKey, { auth: { persistSession: false } });
   const access = await admin.rpc("h15_service_actor_invoice_access", { p_actor: actor, p_invoice: invoiceId });
   if (access.error || access.data !== true) return reply(403, { code: "forbidden" });
 
+  const globalEnabled = Deno.env.get("NFSE_TRANSMISSION_ENABLED") === "true";
+  let allow: { allowed: boolean; reason?: string | null } | null = null;
+  if (!globalEnabled) {
+    const a = await admin.rpc("rpc_nfse_homolog_send_allowed_v1", { _actor: actor, _invoice_id: invoiceId });
+    allow = a.error ? { allowed: false, reason: a.error.code === "PGRST202" || a.error.code === "42883" ? "allowlist_not_installed" : "transmission_disabled" }
+      : { allowed: (a.data as { allowed?: unknown } | null)?.allowed === true, reason: ((a.data as { reason?: unknown } | null)?.reason as string) ?? null };
+  }
+  const gate = decideTransmissionGate({ globalEnabled, productionFlag: Deno.env.get("NFSE_PRODUCTION_ENABLED") === "true", allowlist: allow });
+  if (!gate.enabled) return reply(409, { code: "transmission_disabled", reason: gate.reason, message: "Envio NFS-e desligado neste ambiente; a nota permanece em rascunho." });
+  const transmissionEnabled = true;
+
   let a1: { certPem: string; chainPem: string; keyPem: string } | null = null;
   const deps: EmitDeps = {
-    flags: { transmissionEnabled, productionEnabled: Deno.env.get("NFSE_PRODUCTION_ENABLED") === "true" },
+    flags: { transmissionEnabled, productionEnabled: gate.productionEnabled },
     sha256Hex,
     ledger: {
       async begin(a) {
@@ -148,6 +160,7 @@ Deno.serve(async (req) => {
         municipal_registration: cfp.data?.municipal_registration ?? null, phone: cfp.data?.fiscal_phone ?? null,
       }, new Date());
       if (!m.ok) throw Object.assign(new Error("dps"), { code: "dps_incomplete", status: 422, missing: m.missing });
+      if (gate.homologOnlyHost && m.input.environment !== "HOMOLOGATION") throw Object.assign(new Error("env"), { code: "production_blocked", status: 403 });
       return { input: m.input, fingerprint: await sha256Hex(m.fingerprintSource) };
     },
     async sign(xml, dpsId, cnpj) {
@@ -158,15 +171,17 @@ Deno.serve(async (req) => {
     async http(r) {
       const env: NfseEnvironment = new URL(r.url).host === "sefin.nfse.gov.br" ? "PRODUCTION" : "HOMOLOGATION";
       assertSefinUrl(r.url, env);
+      if (gate.homologOnlyHost) assertAllowlistUrl(r.url);
       a1 ??= await loadA1(admin, invoiceId);
       const create = (Deno as unknown as { createHttpClient?: (o: { cert: string; key: string }) => { close?: () => void } }).createHttpClient;
       if (typeof create !== "function") throw Object.assign(new Error("mtls"), { code: "NFSE_MTLS_UNAVAILABLE" });
       const client = create({ cert: a1.chainPem, key: a1.keyPem });
       const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
       try {
-        const res = await fetch(r.url, { method: r.method, signal: ctrl.signal, body: r.body,
+        const res = await fetch(r.url, { method: r.method, signal: ctrl.signal, body: r.body, redirect: "manual",
           // @ts-expect-error opção do runtime Deno
           client, headers: { Accept: "application/json", ...(r.body ? { "Content-Type": "application/json; charset=utf-8" } : {}) } });
+        rejectRedirect(res.status);
         return { status: res.status, body: (await res.text()).slice(0, 6 * 1024 * 1024) };
       } finally { clearTimeout(timer); try { client.close?.(); } catch { /* noop */ } }
     },
