@@ -58,5 +58,5 @@ export const ibsCbsIssueLabel = (c: string) => LABELS[c] ?? c;
 export function ibsCbsProfileIssues(c: IbsCbsItemConfiguration, isService: boolean): string[] {
   const issueDate = (c.effective_from ?? "").slice(0, 10) || "2026-01-01";
   const r = resolveIbsCbs(c, { documentKind: isService ? "NFSE" : "NFE", issueDate });
-  return r.ok ? [] : r.missing.filter((m) => m !== "ibs_cbs_fora_vigencia" && m !== "ibs_cbs_data_emissao");
+  return r.ok === true ? [] : r.missing.filter((m) => m !== "ibs_cbs_fora_vigencia" && m !== "ibs_cbs_data_emissao");
 }

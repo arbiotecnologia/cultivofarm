@@ -56,7 +56,7 @@ export function mapInvoiceToDps(inv: InvoiceForDps, c: CompanyForDps, t: Custome
   const ibsDecl: DpsIbsCbsDeclared[] = [];
   for (const it of inv.items) {
     const r = resolveIbsCbs(it.fiscal_profile_snapshot?.ibs_cbs, { documentKind: "NFSE", issueDate: inv.issue_date ?? "" });
-    if (!r.ok) { missing.push(...r.missing); continue; }
+    if (r.ok === false) { missing.push(...r.missing); continue; }
     const d = dpsDeclaredFromSnapshot(r.snapshot);
     if (d) ibsDecl.push(d);
   }

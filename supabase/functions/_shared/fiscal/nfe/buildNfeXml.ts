@@ -435,7 +435,7 @@ function ibsCbsForItem(p: NfePayload, item: Record<string, unknown>): { xml: str
   const emitUf = String(((p.emit ?? {}).enderEmit as Record<string, unknown> | undefined)?.UF ?? "");
   const destUf = String(((p.dest ?? {}).enderDest as Record<string, unknown> | undefined)?.UF ?? "");
   const r = resolveIbsCbs(item.ibsCbsConfig, { documentKind: "NFE", issueDate: String((p.ide ?? {}).dhEmi ?? "").slice(0, 10), emitterUf: emitUf, destinationUf: destUf });
-  if (!r.ok) throw new NfeBuildError("NFE_IBSCBS_PENDING", `item ${nItem}: ${r.missing.join(",")}`);
+  if (r.ok === false) throw new NfeBuildError("NFE_IBSCBS_PENDING", `item ${nItem}: ${r.missing.join(",")}`);
   const t = (k: string) => num(taxOf(item, k).value);
   const base = nfeIbsCbsBase({ vProd: num(item.vProd), vFrete: num(item.vFrete), vSeg: num(item.vSeg), vOutro: num(item.vOutro), vDesc: num(item.vDesc),
     vPIS: t("PIS"), vCOFINS: t("COFINS"), vICMS: t("ICMS"), vFCP: num(taxOf(item, "ICMS").fcpValue) });
