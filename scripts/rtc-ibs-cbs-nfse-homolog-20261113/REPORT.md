@@ -17,3 +17,11 @@
 - Edge `nfse-nacional-emit` não foi alterada nem reimplantada; nada aplicado no banco por esta etapa.
 - `live-capture/rpc_fiscal_draft_save.live.sql`: captura textual do corpo live ajustado pelo operador (md5 live `1b667dee72793e7bb37f76734cc477ad`); NFS-e aceita `ibs_cbs` só se idêntico a `service_fiscal_profiles.ibs_cbs_configuration` ativo da organização do ator (`service_ibs_cbs_profile_mismatch`). Não é migração a reaplicar.
 - Testes: vitest services+IBS/CBS 57/57 (inclui `src/test/services/nfsePendingReconcile.test.ts` 5/5); offline Deno 19/19 sem rede; XMLs regenerados por `bun gen_xml.ts`; XSD: NF-e interna/interestadual CST000 e interna CST410 válidas no PL_010g original; DPS homologação válida no XSD original 20/10/2026; DPS produção só com âncora corrigida.
+
+## 2026-11-13 20:58 — Três lacunas concluídas (migração 03 APLICADA)
+- `migration/03_micro_billing_xml_prepare.sql` aplicada no projeto canônico, com PRE pins md5 (create_draft `adaa8f2e…`, xml_prepare `90424a27…`) e ACL preservada. POST: create_draft `d14e40e6…`, xml_prepare `b9920ec1…`.
+- Microrganismo: coluna `microorganism_fiscal_profiles.ibs_cbs_configuration` (default `{}`), RPCs `rpc_fiscal_microorganism_ibs_cbs_get/save` (global → superadmin; próprio → admin/financeiro da dona; CAS). Cartão IBS/CBS no editor de microrganismo (`FiscalProdutos.tsx`, kind `microorganism`).
+- Faturamento novo: `rpc_service_billing_create_draft_v1` copia `ibs_cbs` do perfil ativo do serviço ao snapshot do item (validador do rascunho exige identidade).
+- NF-e real: `rpc_fiscal_xml_prepare_v1` (continua só homologação) inclui `det[].ibsCbsConfig` resolvido no servidor por `platform_private.fiscal_nfe_item_ibs_cbs_config_v1` (produto ou microrganismo ligado; divergência bloqueia; outra empresa ignorada) e `ide.rtcIbsCbs=true` só quando algum item tem perfil. Sem perfil, payload idêntico ao anterior. O snapshot fica congelado em `fiscal_xml_runs.payload`. Nenhuma transmissão.
+- Rascunho/transmissão da consultoria (ed5180f3…, 07810b10… SENT/PENDING) não tocados.
+- Testes: PG descartável `run_pg.sh` 7/7 (stubs; não prova RLS/JWT); `src/test/fiscal/nfePrepareIbsCbsContract.test.ts` 5/5; bateria fiscal+serviços 2.249 aprovados, 4 ignorados; typecheck OK.
