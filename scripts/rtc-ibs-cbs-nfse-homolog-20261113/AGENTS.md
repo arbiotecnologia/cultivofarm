@@ -1,0 +1,4 @@
+- IBS/CBS rules live only in supabase/functions/_shared/fiscal/rtc/ibsCbs.ts (shared by NF-e, DPS and the fiscal guide); unsupported CSTs/groups stay pending and rates are never presumed — prevents engine/UI drift and invented taxes.
+- DPS declares only CST/cClassTrib/cIndOp/indFinal/indDest; IBS/CBS base/rates/values are read back from the authorizer's NFS-e XML (parseReturnedIbsCbs) and never persisted as authorized from our side.
+- NFS-e send exception = platform_private.nfse_homolog_send_allowlist (no client grants) checked by service-only rpc_nfse_homolog_send_allowed_v1; allowlist mode forces production off, exact host sefin.producaorestrita.nfse.gov.br and redirect:"manual" — never flip NFSE_TRANSMISSION_ENABLED or add tenants without owner authorization.
+- Revoke by setting revoked_at (keep history); never delete rows.
