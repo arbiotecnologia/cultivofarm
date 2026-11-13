@@ -71,7 +71,7 @@ export default function NfeIbsCbsPreviewSecao() {
               {r.ok === true ? <span className="text-sm text-muted-foreground">idDest {r.idDest} · {r.emitUf} → {r.destUf}</span> : <span className="text-sm text-destructive">Pendências: {(r as { missing: string[] }).missing.join(", ")}</span>}
               {r.ok && <Button size="sm" variant="ghost" onClick={() => download(r)}>Baixar XML</Button>}</div>
             {r.ok && <Alert data-testid={`nfe-preview-signature-${k}`}><AlertTitle>XML sem assinatura</AlertTitle>
-              <AlertDescription>Esta prévia não é assinada (não contém Signature) e não pode ser enviada. Conteúdo infNFe pela conferência interna do gerador: {r.infNFeCheck.valid ? "sem erros" : `com erros — ${r.infNFeCheck.issues.join("; ")}`}. A conferência interna não substitui o XSD oficial.</AlertDescription></Alert>}
+              <AlertDescription>Esta prévia não é assinada (não contém Signature) e não pode ser enviada. Conteúdo infNFe pela conferência interna do gerador: {r.infNFeCheck.valid ? "sem erros" : `com erros — ${r.infNFeCheck.issues.join("; ")}`}. Documento completo: {r.documentCheck.valid ? "válido" : `inválido — ${r.documentCheck.issues.join("; ")}`}. A conferência interna não substitui o XSD oficial.</AlertDescription></Alert>}
             {r.ok && <pre className="max-h-80 overflow-auto rounded-md border bg-muted p-3 text-xs" data-testid={`nfe-preview-xml-${k}`}>{r.xml}</pre>}
           </div>); })}
       </CardContent>
