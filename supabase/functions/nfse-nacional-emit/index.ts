@@ -229,8 +229,6 @@ Deno.serve(async (req) => {
         } catch (e) { return { status: null as number | null, text: "", kind: null, error: e, aborted: ctrl.signal.aborted }; }
         finally { clearTimeout(timer); }
       };
-      const probeClass = (p: Awaited<ReturnType<typeof one>>): NfseHttpFailure =>
-        p.status === null ? (p.aborted ? "timeout" : classifyHttpError(p.error)) : classifyStatus(p.status, p.kind ?? "other");
       try {
         // GET em homologação já retornou pelo transporte de renegociação; aqui só POST e produção.
         const routeProbe: NfseHttpDiagnostic["routeProbe"] | undefined = undefined;

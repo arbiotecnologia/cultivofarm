@@ -50,3 +50,20 @@ Deno.test("log e diagnóstico só com enums; sem URL, corpo ou mensagem", () => 
   const line = diagnosticLogLine({ ...d, causes: errorCauses(err("dns error: failed to lookup address sefin.x DPS3106")), routeProbe: { documentedBase: "client_certificate_not_presented", legacyBase: "route_not_found" } });
   assert(!/https?:\/\/|sefin|DPS\d|lookup address/i.test(line), line);
 });
+
+Deno.test("consulta com idDps divergente não é aceita (permanece pendente)", () => {
+  const id = "DPS" + "1".repeat(42); const c = "3".repeat(50);
+  assertEquals(parseDpsLookup(200, JSON.stringify({ idDps: id, chaveAcesso: c }), id).found, true);
+  const r = parseDpsLookup(200, JSON.stringify({ idDps: "DPS" + "9".repeat(42), chaveAcesso: c }), id);
+  assertEquals(r.found, false); assertEquals(r.notFoundConfirmed, false);
+});
+Deno.test("diagnóstico TLS só aceita tokens fixos e booleanos", async () => {
+  const { sanitizeTls, renegFailureClass } = await import("./reconcileDiagnostic.ts");
+  const t = sanitizeTls({ version: "TLS1.2", cipher: "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384", alpn: "http/1.1", chainVerified: true, certRequested: true, clientCertSent: true, certRequestedOnRenegotiation: true, secureRenegotiation: true, extra: "x" });
+  assertEquals(t?.cipher, "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"); assert(!("extra" in (t ?? {})));
+  assertEquals(sanitizeTls({ version: "<script>a b</script>" })?.version, null);
+  assertEquals(renegFailureClass("tls_insecure_renegotiation_refused"), "tls_error"); assertEquals(renegFailureClass("tcp_read_failed"), "tcp_error");
+  assertEquals(renegFailureClass("url_blocked"), "redirect_blocked");
+  const line = diagnosticLogLine({ stage: "dps_lookup", result: "ok", httpStatus: 200, runtime: R, transport: "go_wasm_reneg", tls: t, renegCode: null });
+  assert(line.includes('"transport":"go_wasm_reneg"')); assert(!/DPS\d|BEGIN|PRIVATE/.test(line));
+});
