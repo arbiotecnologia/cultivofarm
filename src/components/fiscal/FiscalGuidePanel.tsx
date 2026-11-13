@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { FEATURE_FLAGS } from "@/config/featureFlags";
 import { getAccessLevel } from "@/lib/permissions";
 import { useProductFiscalAccess } from "@/hooks/useProductFiscalAccess";
 import { OWNED_PRODUCT_FISCAL_ENABLED } from "@/lib/fiscal/ownedProductFiscal";
@@ -121,7 +122,7 @@ export function MicroorganismFiscalGuide({ microorganismId, displayName, display
   const [open, setOpen] = useState(false);
   const q = useMicroorganismFiscalProfile(microorganismId);
   const pres = usePresentations("microrganismo_id", microorganismId);
-  if (level === "none") return null;
+  if (level === "none" || FEATURE_FLAGS.fiscalProductProfilesUi !== true) return null;
   if (q.isError) return readError;
   if (q.data === undefined) return loading;
   const p = q.data as unknown as Record<string, string | null> | null;
