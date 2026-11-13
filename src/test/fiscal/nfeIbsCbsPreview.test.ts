@@ -57,3 +57,17 @@ describe("xProd TString (PL_010g)", () => {
     expect(normalizeTStringText("a".repeat(118) + "…", 120, "xProd")).toHaveLength(120);
   });
 });
+
+describe("prévia com o nome do produto QA", () => {
+  it("gera xProd ASCII-equivalente, marca sem assinatura e infNFe conferido", () => {
+    const r = buildNfeIbsCbsPreview({ ...item, name: "QA Fiscal 20261113 — sem uso comercial" }, "interna", { issueDate: "2026-11-13" });
+    expect(r.ok).toBe(true); if (!r.ok) return;
+    expect(r.xml).toContain("<xProd>QA Fiscal 20261113 - sem uso comercial</xProd>");
+    expect(r.xml).not.toContain("Signature"); expect(r.signed).toBe(false);
+    writeFileSync(`${OUT}/preview-qa-travessao.xml`, r.xml);
+  });
+  it("nome não representável vira pendência, sem XML", () => {
+    const r = buildNfeIbsCbsPreview({ ...item, name: "Produto 🌱" }, "interna", { issueDate: "2026-11-13" });
+    expect(r.ok).toBe(false);
+  });
+});
