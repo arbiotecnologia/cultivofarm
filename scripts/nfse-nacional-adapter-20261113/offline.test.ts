@@ -84,7 +84,7 @@ Deno.test("gzip+base64 ida e volta e corpo JSON oficial", async () => {
   await assertRejects(() => gunzipBase64(btoa("nao-gzip")));
 });
 Deno.test("endpoints: só hosts oficiais por ambiente", () => {
-  assertEquals(sefinUrl("HOMOLOGATION", { kind: "emit" }), "https://sefin.producaorestrita.nfse.gov.br/SefinNacional/nfse");
+  assertEquals(sefinUrl("HOMOLOGATION", { kind: "emit" }), "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional/nfse");
   assertEquals(sefinUrl("PRODUCTION", { kind: "emit" }), "https://sefin.nfse.gov.br/SefinNacional/nfse");
   assertThrows(() => assertSefinUrl("https://sefin.nfse.gov.br/SefinNacional/nfse", "HOMOLOGATION"));
   assertThrows(() => assertSefinUrl("http://sefin.producaorestrita.nfse.gov.br/x", "HOMOLOGATION"));
@@ -184,13 +184,15 @@ Deno.test("reconciliação: GET /dps → GET /nfse → AUTHORIZED verificado", a
   const rec = await reconcileNfse(d, { transmissionId: first.transmissionId! });
   assertEquals([rec.code, rec.authorized, rec.accessKey], ["authorized", true, KEY50]); assertEquals(d.posts, 1);
 });
-Deno.test("reconciliação: DPS não processada (404) → NOT_FOUND, sem POST", async () => {
-  const l = new FakeLedger();
-  const d = makeDeps(l, async (r) => { if (r.method === "POST") throw new Error("timeout"); return { status: 404, body: "" }; });
-  const first = await emitNfse(d, REQ);
-  const rec = await reconcileNfse(d, { transmissionId: first.transmissionId! });
-  assertEquals([rec.code, rec.outcome], ["not_processed", "NOT_FOUND"]); assertEquals(d.posts, 1);
-});
+for (const [label, body] of [["vazio", ""], ["HTML de rota", "<!DOCTYPE html><html><title>404 - File or directory not found.</title></html>"], ["JSON sem código oficial", JSON.stringify({ erros: [{ Codigo: "E9999", Descricao: "x" }] })]] as const) {
+  Deno.test(`reconciliação: 404 ${label} NÃO vira NOT_FOUND; permanece pendente, sem POST`, async () => {
+    const l = new FakeLedger();
+    const d = makeDeps(l, async (r) => { if (r.method === "POST") throw new Error("timeout"); return { status: 404, body }; });
+    const first = await emitNfse(d, REQ);
+    const rec = await reconcileNfse(d, { transmissionId: first.transmissionId! });
+    assertEquals([rec.code, rec.outcome ?? null, rec.reconciliationRequired], ["reconciliation_unavailable", null, true]); assertEquals(d.posts, 1);
+  });
+}
 // IBS/CBS FICTÍCIO (sem alíquota real) exigido por item no snapshot.
 const IBS = { schema_version: 1, cst_ibs_cbs: "410", c_class_trib: "410001", c_ind_op: "100301", effective_from: "2026-01-01", additional_fields: { indDest: "0" } };
 Deno.test("rascunho canônico → DPS: pendências sem inventar dados", () => {

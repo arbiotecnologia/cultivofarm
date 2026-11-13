@@ -22,7 +22,8 @@ import { emitNfse, reconcileNfse, type EmitDeps, type LedgerRow } from "../_shar
 import { mapInvoiceToDps } from "../_shared/nfse/dpsFromInvoice.ts";
 import { assertSefinUrl, type NfseEnvironment } from "../_shared/nfse/sefinContract.ts";
 import { assertAllowlistUrl, decideTransmissionGate, rejectRedirect } from "../_shared/nfse/homologAllowlist.ts";
-import { classifyHttpError, classifyStatus, finalizeDiagnostic, runtimeCapabilities, stageFromUrl, type NfseHttpDiagnostic } from "../_shared/nfse/reconcileDiagnostic.ts";
+import { classifyHttpError, classifyStatus, contentKind, diagnosticLogLine, errorCauses, finalizeDiagnostic, officialErrorCodes, runtimeCapabilities, stageFromUrl, type NfseHttpDiagnostic, type NfseHttpFailure } from "../_shared/nfse/reconcileDiagnostic.ts";
+import { SEFIN_NACIONAL_BASE, SEFIN_NACIONAL_LEGACY_HOMOLOG_BASE } from "../_shared/nfse/dps.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const KEY = /^[A-Za-z0-9_.:-]{16,128}$/;
@@ -180,24 +181,51 @@ Deno.serve(async (req) => {
       lastDiag = { stage, result: "certificate_unavailable", httpStatus: null, runtime };
       a1 ??= await loadA1(admin, invoiceId);
       lastDiag = { stage, result: "network_error", httpStatus: null, runtime };
-      // API Deno estável (>=1.41/2.x): mTLS por `cert`/`key` PEM; a verificação do servidor nunca é desligada.
-      const create = (Deno as unknown as { createHttpClient?: (o: { cert: string; key: string }) => { close?: () => void } }).createHttpClient;
-      if (typeof create !== "function") { lastDiag = { ...lastDiag, result: "mtls_unavailable" }; throw Object.assign(new Error("mtls"), { code: "NFSE_MTLS_UNAVAILABLE" }); }
+      // API Deno estável (>=1.41/2.x): mTLS por `cert`/`key` PEM em memória; verificação do servidor nunca desligada.
+      // HTTP/1.1 forçado (http2:false): o IIS da Sefin responde HTTP_1_1_REQUIRED a pedidos h2 com certificado.
+      const create = (Deno as unknown as { createHttpClient?: (o: { cert: string; key: string; http1?: boolean; http2?: boolean }) => { close?: () => void } }).createHttpClient;
+      if (typeof create !== "function") { lastDiag = { ...lastDiag, result: "mtls_unavailable", causes: ["unsupported_option"] }; throw Object.assign(new Error("mtls"), { code: "NFSE_MTLS_UNAVAILABLE" }); }
       let client: { close?: () => void };
-      try { client = create({ cert: a1.chainPem, key: a1.keyPem }); }
-      catch { lastDiag = { ...lastDiag, result: "mtls_client_rejected" }; throw Object.assign(new Error("mtls"), { code: "NFSE_MTLS_CLIENT_REJECTED" }); }
-      const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+      try { client = create({ cert: a1.chainPem, key: a1.keyPem, http1: true, http2: false }); runtime.http1Forced = true; }
+      catch (e) {
+        try { client = create({ cert: a1.chainPem, key: a1.keyPem }); runtime.http1Forced = false; }
+        catch (e2) { lastDiag = { ...lastDiag, result: "mtls_client_rejected", causes: [...new Set([...errorCauses(e), ...errorCauses(e2)])] }; throw Object.assign(new Error("mtls"), { code: "NFSE_MTLS_CLIENT_REJECTED" }); }
+      }
+      const one = async (url: string, method: "GET" | "POST", payload?: string) => {
+        const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+        try {
+          const res = await fetch(url, { method, signal: ctrl.signal, body: payload, redirect: "manual",
+            // @ts-expect-error opção do runtime Deno
+            client, headers: { Accept: "application/json", ...(payload ? { "Content-Type": "application/json; charset=utf-8" } : {}) } });
+          const text = (await res.text()).slice(0, 6 * 1024 * 1024);
+          const kind = contentKind(res.headers.get("content-type"), text);
+          return { status: res.status, text, kind, error: null as unknown, aborted: false };
+        } catch (e) { return { status: null as number | null, text: "", kind: null, error: e, aborted: ctrl.signal.aborted }; }
+        finally { clearTimeout(timer); }
+      };
+      const probeClass = (p: Awaited<ReturnType<typeof one>>): NfseHttpFailure =>
+        p.status === null ? (p.aborted ? "timeout" : classifyHttpError(p.error)) : classifyStatus(p.status, p.kind ?? "other");
       try {
-        const res = await fetch(r.url, { method: r.method, signal: ctrl.signal, body: r.body, redirect: "manual",
-          // @ts-expect-error opção do runtime Deno
-          client, headers: { Accept: "application/json", ...(r.body ? { "Content-Type": "application/json; charset=utf-8" } : {}) } });
-        lastDiag = { ...lastDiag, result: classifyStatus(res.status), httpStatus: res.status };
+        // Sonda de rota (somente GET da documentação, sem identificador de DPS) nas duas bases, em consultas.
+        let routeProbe: NfseHttpDiagnostic["routeProbe"] | undefined;
+        if (r.method === "GET" && stage === "dps_lookup" && env === "HOMOLOGATION") {
+          const doc = await one(`${SEFIN_NACIONAL_BASE.HOMOLOGATION}/docs/index`, "GET");
+          const leg = await one(`${SEFIN_NACIONAL_LEGACY_HOMOLOG_BASE}/docs/index`, "GET");
+          routeProbe = { documentedBase: probeClass(doc), legacyBase: probeClass(leg) };
+        }
+        const res = await one(r.url, r.method, r.body);
+        if (res.status === null) {
+          lastDiag = { ...lastDiag, result: res.aborted ? "timeout" : classifyHttpError(res.error), causes: res.aborted ? ["aborted"] : errorCauses(res.error), routeProbe };
+          console.log(diagnosticLogLine(lastDiag));
+          throw res.error ?? new Error("transport");
+        }
+        lastDiag = { ...lastDiag, result: classifyStatus(res.status, res.kind ?? "other"), httpStatus: res.status, contentKind: res.kind,
+          officialErrorCodes: res.kind === "json" ? officialErrorCodes(res.text) : [], routeProbe,
+          causes: res.status === 403 && res.kind === "html_access_denied" ? ["client_cert_renegotiation_suspected"] : [] };
+        console.log(diagnosticLogLine(lastDiag));
         rejectRedirect(res.status);
-        return { status: res.status, body: (await res.text()).slice(0, 6 * 1024 * 1024) };
-      } catch (e) {
-        if (lastDiag.httpStatus === null) lastDiag = { ...lastDiag, result: ctrl.signal.aborted ? "timeout" : classifyHttpError(e) };
-        throw e;
-      } finally { clearTimeout(timer); try { client.close?.(); } catch { /* noop */ } }
+        return { status: res.status, body: res.text };
+      } finally { try { client.close?.(); } catch { /* noop */ } }
     },
   };
 

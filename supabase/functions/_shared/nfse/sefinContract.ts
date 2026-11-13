@@ -96,11 +96,22 @@ export function parseEmitResponse(httpStatus: number, bodyText: string): EmitPar
   return { kind: "UNKNOWN", httpStatus, reason: httpStatus >= 500 ? "server_error" : "unexpected_shape" };
 }
 
-export function parseDpsLookup(httpStatus: number, bodyText: string): { found: boolean; chaveAcesso: string | null } {
-  if (httpStatus === 404) return { found: false, chaveAcesso: null };
-  try { const b = JSON.parse(bodyText) as Record<string, unknown>; const c = String(b.chaveAcesso ?? "");
-    return /^\d{50}$/.test(c) && httpStatus === 200 ? { found: true, chaveAcesso: c } : { found: false, chaveAcesso: null };
-  } catch { return { found: false, chaveAcesso: null }; }
+/**
+ * Códigos OFICIAIS que identificam "DPS não localizada". Vazio de propósito: o Swagger da produção
+ * restrita exige certificado e não foi lido; sem código oficial confirmado nenhum 404 vira NOT_FOUND.
+ */
+export const DPS_NOT_FOUND_OFFICIAL_CODES: ReadonlySet<string> = new Set<string>();
+
+export function parseDpsLookup(httpStatus: number, bodyText: string): { found: boolean; chaveAcesso: string | null; notFoundConfirmed: boolean } {
+  let b: Record<string, unknown> | null = null;
+  try { const j = JSON.parse(bodyText); b = j && typeof j === "object" && !Array.isArray(j) ? j as Record<string, unknown> : null; } catch { b = null; }
+  if (httpStatus === 200 && b) { const c = String(b.chaveAcesso ?? ""); if (/^\d{50}$/.test(c)) return { found: true, chaveAcesso: c, notFoundConfirmed: false }; }
+  if (httpStatus === 404 && b) {
+    const list = (b.erros ?? b.Erros ?? b.erro) as unknown; const arr = Array.isArray(list) ? list : list ? [list] : [];
+    const codes = arr.map((x) => String((x as Record<string, unknown>)?.Codigo ?? (x as Record<string, unknown>)?.codigo ?? ""));
+    if (codes.some((c) => DPS_NOT_FOUND_OFFICIAL_CODES.has(c))) return { found: false, chaveAcesso: null, notFoundConfirmed: true };
+  }
+  return { found: false, chaveAcesso: null, notFoundConfirmed: false };
 }
 
 export interface AuthorizationCheck {

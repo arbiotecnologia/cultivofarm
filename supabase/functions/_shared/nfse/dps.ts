@@ -180,9 +180,15 @@ export function buildDpsXml(i: DpsInput): string {
     `</infDPS></DPS>`;
 }
 
-/** Endpoints oficiais da SefinNacional (API REST, mTLS). */
+/**
+ * Endpoints da SefinNacional (API REST, mTLS). Fonte: tabela oficial gov.br "APIs - Prod. Restrita e
+ * Produção" (docs prod. restrita em /API/SefinNacional/docs/index; produção em /SefinNacional/docs/index).
+ * O Swagger exige certificado do cliente e não foi lido; a reconciliação sonda as duas bases (docs) e
+ * reporta apenas enums. O caminho legado fica só para essa sonda comparativa.
+ */
+export const SEFIN_NACIONAL_LEGACY_HOMOLOG_BASE = "https://sefin.producaorestrita.nfse.gov.br/SefinNacional" as const;
 export const SEFIN_NACIONAL_BASE = {
-  HOMOLOGATION: "https://sefin.producaorestrita.nfse.gov.br/SefinNacional",
+  HOMOLOGATION: "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional",
   PRODUCTION: "https://sefin.nfse.gov.br/SefinNacional",
 } as const;
 /** Compatibilidade com consumidores anteriores. */
