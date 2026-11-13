@@ -12,7 +12,7 @@ lt = etree.parse(os.path.join(D, "leiauteNFe_v4.00.xsd")); sr = lt.getroot()
 tnfe = sr.find(f"{XS}complexType[@name='TNFe']"); el = tnfe.find(f"{XS}sequence/{XS}element[@name='infNFe']")
 ct = el.find(f"{XS}complexType"); orig = etree.tostring(ct)
 el.remove(ct); el.set("type", "TInfNFe"); ct.set("name", "TInfNFe"); sr.append(ct)
-assert etree.tostring(ct).replace(b' name="TInfNFe"', b'', 1) == orig or True
+assert len(ct) == len(etree.fromstring(orig)) and ct[0].tag == etree.fromstring(orig)[0].tag
 lt.write(os.path.join(tmp, "leiauteNFe_v4.00.xsd"))
 import shutil
 for b in os.listdir(D):
