@@ -52,6 +52,16 @@ export function useCatalogoFiscalCobertura(enabled = true) {
         const label = f === null ? "Produtos sem classificação" : FAMILY_ROWS.find((r) => r.value === f)!.label;
         return { key: `fam:${f ?? "none"}`, label, total, withProfile, link: "/configuracoes/fiscal/produtos" };
       }));
+      // Famílias futuras ainda sem rótulo canônico aparecem agregadas, nunca omitidas.
+      const [allTotal, allWith] = await Promise.all([
+        count(anyFrom("produtos").select("id", { count: "exact", head: true }).eq("ativo", true)),
+        count(anyFrom("produtos").select("id, product_fiscal_profiles!inner(id)", { count: "exact", head: true }).eq("ativo", true).eq("product_fiscal_profiles.is_active", true)),
+      ]);
+      const knownTotal = prodRows.reduce((a, r) => a + r.total, 0);
+      const knownWith = prodRows.reduce((a, r) => a + r.withProfile, 0);
+      if (allTotal > knownTotal) {
+        prodRows.push({ key: "fam:other", label: "Outras famílias", total: allTotal - knownTotal, withProfile: Math.max(allWith - knownWith, 0), link: "/configuracoes/fiscal/produtos" });
+      }
       const [microTotal, microWith, cliTotal, cliWith, svc] = await Promise.all([
         count(anyFrom("microrganismos").select("id", { count: "exact", head: true })),
         count(anyFrom("microorganism_fiscal_profiles").select("id", { count: "exact", head: true }).eq("is_active", true)),
