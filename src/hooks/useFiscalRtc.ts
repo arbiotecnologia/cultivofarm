@@ -230,7 +230,7 @@ export function useFiscalRtcCompany(options: { enabled?: boolean } = {}) {
  *                          é nulo e o perfil identifica-se por
  *                          source_reference — Bloco 5).
  */
-export type FiscalRtcItemKind = "product" | "service" | "service_profile";
+export type FiscalRtcItemKind = "product" | "service" | "service_profile" | "microorganism";
 
 export function useFiscalRtcItem(
   kind: FiscalRtcItemKind,
@@ -239,10 +239,12 @@ export function useFiscalRtcItem(
 ) {
   const fence = useProductFiscalAccess(`product-rtc:${kind}:${itemId}`);
   const getFn = kind === "product" ? "rpc_fiscal_product_ibs_cbs_get"
+    : kind === "microorganism" ? "rpc_fiscal_microorganism_ibs_cbs_get"
     : kind === "service" ? "rpc_fiscal_service_ibs_cbs_get" : "rpc_fiscal_service_profile_ibs_cbs_get";
   const saveFn = kind === "product" ? "rpc_fiscal_product_ibs_cbs_save"
+    : kind === "microorganism" ? "rpc_fiscal_microorganism_ibs_cbs_save"
     : kind === "service" ? "rpc_fiscal_service_ibs_cbs_save" : "rpc_fiscal_service_profile_ibs_cbs_save";
-  const idKey: "p_product_id" | "p_service_id" | "p_profile_id" = kind === "product" ? "p_product_id" : kind === "service" ? "p_service_id" : "p_profile_id";
+  const idKey: "p_product_id" | "p_service_id" | "p_profile_id" | "p_microorganism_id" = kind === "product" ? "p_product_id" : kind === "microorganism" ? "p_microorganism_id" : kind === "service" ? "p_service_id" : "p_profile_id";
   const args = useMemo(() => ({ [idKey]: itemId }), [idKey, itemId]);
   return useRtcOperations<IbsCbsItemConfiguration>({
     scope: fence.scope, enabled: (options.enabled ?? true) && !!itemId && fence.ready,

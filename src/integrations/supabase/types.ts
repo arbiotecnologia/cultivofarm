@@ -10946,6 +10946,7 @@ export type Database = {
           created_by: string | null
           fiscal_description: string | null
           gtin: string | null
+          ibs_cbs_configuration: Json
           icms_csosn: string | null
           icms_cst: string | null
           id: string
@@ -10975,6 +10976,7 @@ export type Database = {
           created_by?: string | null
           fiscal_description?: string | null
           gtin?: string | null
+          ibs_cbs_configuration?: Json
           icms_csosn?: string | null
           icms_cst?: string | null
           id?: string
@@ -11004,6 +11006,7 @@ export type Database = {
           created_by?: string | null
           fiscal_description?: string | null
           gtin?: string | null
+          ibs_cbs_configuration?: Json
           icms_csosn?: string | null
           icms_cst?: string | null
           id?: string
@@ -26188,6 +26191,18 @@ export type Database = {
       }
       rpc_fiscal_item_readiness: {
         Args: { p_item_id: string; p_scope: string }
+        Returns: Json
+      }
+      rpc_fiscal_microorganism_ibs_cbs_get: {
+        Args: { p_microorganism_id: string }
+        Returns: Json
+      }
+      rpc_fiscal_microorganism_ibs_cbs_save: {
+        Args: {
+          expected_revision?: string
+          p_microorganism_id: string
+          payload: Json
+        }
         Returns: Json
       }
       rpc_fiscal_nfe_readiness_v1: { Args: never; Returns: Json }
