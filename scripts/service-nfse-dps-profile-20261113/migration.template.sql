@@ -97,7 +97,7 @@ revoke all on function platform_private.service_nfse_dps_snapshot_v1(uuid, uuid[
 
 -- 3) Faturamento: mesmo corpo capturado + snapshot nfse_dps no cabeçalho.
 create or replace function public.rpc_service_billing_create_draft_v1(p_engagement_ids uuid[], p_idempotency_key text)
-returns jsonb language plpgsql security definer set search_path = pg_catalog, public, pg_temp as ${{BILLING_BODY}}$;
+returns jsonb language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $${{BILLING_BODY}}$$;
 revoke all on function public.rpc_service_billing_create_draft_v1(uuid[], text) from public, anon;
 grant execute on function public.rpc_service_billing_create_draft_v1(uuid[], text) to authenticated;
 
