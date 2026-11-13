@@ -232,13 +232,8 @@ Deno.serve(async (req) => {
       const probeClass = (p: Awaited<ReturnType<typeof one>>): NfseHttpFailure =>
         p.status === null ? (p.aborted ? "timeout" : classifyHttpError(p.error)) : classifyStatus(p.status, p.kind ?? "other");
       try {
-        // Sonda de rota (somente GET da documentação, sem identificador de DPS) nas duas bases, em consultas.
-        let routeProbe: NfseHttpDiagnostic["routeProbe"] | undefined;
-        if (false as boolean) { // sonda movida para o transporte de renegociação (GET homologação)
-          const doc = await one(`${SEFIN_NACIONAL_HOMOLOG_RECONCILE_CANDIDATE_BASE}/docs/index`, "GET");
-          const leg = await one(`${SEFIN_NACIONAL_LEGACY_HOMOLOG_BASE}/docs/index`, "GET");
-          routeProbe = { documentedBase: probeClass(doc), legacyBase: probeClass(leg) };
-        }
+        // GET em homologação já retornou pelo transporte de renegociação; aqui só POST e produção.
+        const routeProbe: NfseHttpDiagnostic["routeProbe"] | undefined = undefined;
         const res = await one(r.url, r.method, r.body);
         if (res.status === null) {
           lastDiag = { ...lastDiag, transport: "deno_fetch", result: res.aborted ? "timeout" : classifyHttpError(res.error), causes: res.aborted ? ["aborted"] : errorCauses(res.error), routeProbe };
