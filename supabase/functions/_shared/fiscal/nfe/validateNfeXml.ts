@@ -24,7 +24,10 @@ export interface FieldRule {
   min: number;
   max: number;
   /** N = numérico inteiro, D2/D4 = decimal com casas fixas, C = caractere. */
-  type: "N" | "D2" | "D4" | "C";
+  /** R2/R4 = TDec1302RTC / TDec_0302_04RTC (RTC, casas variáveis conforme padrão oficial). */
+  type: "N" | "D2" | "D4" | "C" | "R2" | "R4";
+  /** Grupo oficial reconhecido na posição correta, mas sem regras internas: presença gera erro explícito. */
+  unsupported?: boolean;
   minLen?: number;
   maxLen?: number;
   enum?: string[];
@@ -46,6 +49,52 @@ const ENDERECO = (name: string): FieldRule => ({
     { name: "xPais", min: 0, max: 1, type: "C", minLen: 2, maxLen: 60 },
   ],
 });
+
+// ——— IBS/CBS (RTC) — PL_010g: TTribNFe (det/imposto/IBSCBS) e TIBSCBSMonoTot (total/IBSCBSTot) ———
+const R2 = (name: string, min = 1): FieldRule => ({ name, min, max: 1, type: "R2" });
+const R4 = (name: string, min = 1): FieldRule => ({ name, min, max: 1, type: "R4" });
+const UNSUP = (name: string): FieldRule => ({ name, min: 0, max: 1, type: "C", unsupported: true });
+const G_DIF: FieldRule = { name: "gDif", min: 0, max: 1, type: "C", children: [R4("pDif"), R2("vDif")] };
+const G_DEV: FieldRule = { name: "gDevTrib", min: 0, max: 1, type: "C", children: [R4("pDevTrib", 0), R2("vDevTrib")] };
+const G_RED: FieldRule = { name: "gRed", min: 0, max: 1, type: "C", children: [R4("pRedAliq"), R4("pAliqEfet")] };
+const IBSCBS_RULE: FieldRule = {
+  name: "IBSCBS", min: 0, max: 1, type: "C",
+  children: [
+    { name: "CST", min: 1, max: 1, type: "N", minLen: 3, maxLen: 3 },
+    { name: "cClassTrib", min: 1, max: 1, type: "N", minLen: 6, maxLen: 6 },
+    { name: "indDoacao", min: 0, max: 1, type: "N", enum: ["1"] },
+    // xs:choice (0..1): gIBSCBS | gIBSCBSMono | gTransfCred | gAjusteCompet — checado em validateNfeXml.
+    {
+      name: "gIBSCBS", min: 0, max: 1, type: "C",
+      children: [
+        R2("vBC"),
+        { name: "gIBSUF", min: 1, max: 1, type: "C", children: [R4("pIBSUF"), G_DIF, G_DEV, G_RED, R2("vIBSUF")] },
+        { name: "gIBSMun", min: 1, max: 1, type: "C", children: [R4("pIBSMun"), G_DIF, G_DEV, G_RED, R2("vIBSMun")] },
+        R2("vIBS"),
+        { name: "gCBS", min: 1, max: 1, type: "C", children: [R4("pCBS"), G_DIF, G_DEV, G_RED, UNSUP("gALCZFMCBS"), R2("vCBS")] },
+        UNSUP("gTribRegular"), UNSUP("gTribCompraGov"),
+      ],
+    },
+    UNSUP("gIBSCBSMono"), UNSUP("gTransfCred"), UNSUP("gAjusteCompet"),
+    UNSUP("gEstornoCred"), UNSUP("gCredPresOper"), UNSUP("gCredPresIBSZFM"),
+  ],
+};
+const IBSCBS_TOT_RULE: FieldRule = {
+  name: "IBSCBSTot", min: 0, max: 1, type: "C",
+  children: [
+    R2("vBCIBSCBS"),
+    {
+      name: "gIBS", min: 0, max: 1, type: "C",
+      children: [
+        { name: "gIBSUF", min: 1, max: 1, type: "C", children: [R2("vDif"), R2("vDevTrib"), R2("vIBSUF")] },
+        { name: "gIBSMun", min: 1, max: 1, type: "C", children: [R2("vDif"), R2("vDevTrib"), R2("vIBSMun")] },
+        R2("vIBS"), R2("vCredPres"), R2("vCredPresCondSus"),
+      ],
+    },
+    { name: "gCBS", min: 0, max: 1, type: "C", children: [R2("vDif"), R2("vDevTrib"), R2("vCBS"), R2("vCredPres"), R2("vCredPresCondSus")] },
+    UNSUP("gMono"), UNSUP("gEstornoCred"),
+  ],
+};
 
 export const NFE_GRAMMAR: FieldRule = {
   name: "infNFe", min: 1, max: 1, type: "C",
@@ -242,6 +291,9 @@ export const NFE_GRAMMAR: FieldRule = {
                 },
               ],
             },
+            // Ordem oficial após COFINS: COFINSST?, ICMSUFDest?, IS?, IBSCBS?
+            UNSUP("COFINSST"), UNSUP("ICMSUFDest"), UNSUP("IS"),
+            IBSCBS_RULE,
           ],
         },
       ],
@@ -257,6 +309,9 @@ export const NFE_GRAMMAR: FieldRule = {
             "vCOFINS", "vOutro", "vNF",
           ].map((n): FieldRule => ({ name: n, min: 1, max: 1, type: "D2" })),
         },
+        // Ordem oficial: ICMSTot, ISSQNtot?, retTrib?, ISTot?, IBSCBSTot?
+        UNSUP("ISSQNtot"), UNSUP("retTrib"), UNSUP("ISTot"),
+        IBSCBS_TOT_RULE,
       ],
     },
     {
@@ -311,6 +366,13 @@ function validateValue(rule: FieldRule, node: XmlNode, path: string, issues: Val
   if (rule.type === "N") {
     if (!/^\d+$/.test(value)) {
       issues.push({ path, code: "XSD_TYPE_N", message: "esperado inteiro numérico" });
+      return;
+    }
+  } else if (rule.type === "R2" || rule.type === "R4") {
+    // Padrões oficiais TDec1302RTC / TDec_0302_04RTC (PL_010g).
+    const re = rule.type === "R2" ? /^(0|0\.[0-9]{2}|[1-9][0-9]{0,12}(\.[0-9]{2})?)$/ : /^(0|0\.[0-9]{2,4}|[1-9][0-9]{0,2}(\.[0-9]{2,4})?)$/;
+    if (!re.test(value)) {
+      issues.push({ path, code: `XSD_TYPE_${rule.type}`, message: "decimal fora do padrão RTC oficial" });
       return;
     }
   } else if (rule.type === "D2" || rule.type === "D4") {
@@ -378,6 +440,10 @@ function validateNode(rules: FieldRule[], node: XmlNode, path: string, issues: V
     }
     found.forEach((child, i) => {
       const childPath = rule.max > 1 ? `${path}/${rule.name}[${i + 1}]` : `${path}/${rule.name}`;
+      if (rule.unsupported) {
+        issues.push({ path: childPath, code: "XSD_GROUP_NOT_COVERED", message: "grupo oficial não coberto pelo validador interno; validar no XSD oficial" });
+        return;
+      }
       if (rule.children && rule.children.length > 0) {
         count += validateNode(rule.children, child, childPath, issues);
       } else {
@@ -456,6 +522,15 @@ export function validateNfeXml(xml: string, schemaVersion = NFE_VERSION): Valida
       });
     }
   }
+  for (const det of infNFe.children.filter((c) => c.name === "det")) {
+    const ibs = det.children.find((c) => c.name === "imposto")?.children.find((c) => c.name === "IBSCBS");
+    if (!ibs) continue;
+    const choice = ibs.children.filter((c) => ["gIBSCBS", "gIBSCBSMono", "gTransfCred", "gAjusteCompet"].includes(c.name)).length;
+    const cred = ibs.children.filter((c) => ["gCredPresOper", "gCredPresIBSZFM"].includes(c.name)).length;
+    if (choice > 1 || cred > 1) {
+      issues.push({ path: `/NFe/infNFe/det[${det.attrs.nItem}]/imposto/IBSCBS`, code: "XSD_CHOICE", message: "no máximo um grupo de cada escolha IBS/CBS" });
+    }
+  }
   const dest = infNFe.children.find((c) => c.name === "dest");
   if (dest) {
     const docs = dest.children.filter((c) => c.name === "CNPJ" || c.name === "CPF").length;
@@ -465,4 +540,16 @@ export function validateNfeXml(xml: string, schemaVersion = NFE_VERSION): Valida
   }
 
   return report(issues.length === 0);
+}
+
+/**
+ * Documento COMPLETO: além do infNFe, o leiaute exige ds:Signature (TNFe). Sem assinatura o
+ * documento é inválido — a prévia não assinada nunca passa aqui.
+ */
+export function validateNfeDocument(xml: string, schemaVersion = NFE_VERSION): ValidationReport {
+  const rep = validateNfeXml(xml, schemaVersion);
+  let signed = false;
+  try { signed = parseXml(xml).children.filter((c) => c.name === "Signature").length === 1; } catch { /* erro já reportado */ }
+  if (!signed) rep.issues.push({ path: "/NFe/Signature", code: "XSD_SIGNATURE_MISSING", message: "assinatura digital (Signature) obrigatória no documento completo" });
+  return { ...rep, valid: rep.issues.length === 0 };
 }
