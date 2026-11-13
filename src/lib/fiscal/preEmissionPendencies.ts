@@ -132,3 +132,95 @@ export function fiscalEditorLink(entity: "produto" | "cliente" | "servico", id: 
   const key = entity === "produto" ? "produto" : entity === "cliente" ? "cliente" : "servico";
   return `${base}?${key}=${encodeURIComponent(id)}`;
 }
+
+// ── Endereço principal do cliente ───────────────────────────────────────────
+export interface ClienteMasterAddress {
+  cpf_cnpj?: string | null;
+  endereco_logradouro?: string | null;
+  endereco_numero?: string | null;
+  endereco_cep?: string | null;
+  endereco_estado?: string | null;
+}
+
+/**
+ * Quando o perfil usa o endereço principal (`use_main_address`), logradouro,
+ * número, CEP e UF vêm do cadastro do cliente; o código IBGE continua no perfil
+ * (o cadastro principal não o possui). Nada é copiado nem gravado.
+ */
+export function resolveCustomerForPendencies(
+  profile: (CustomerProfileInput & { use_main_address?: boolean | null }) | null | undefined,
+  cliente: ClienteMasterAddress | null | undefined,
+): CustomerProfileInput | null {
+  if (!profile) return null;
+  const doc = profile.cpf_cnpj ?? cliente?.cpf_cnpj ?? null;
+  if (!profile.use_main_address || !cliente) return { ...profile, cpf_cnpj: doc };
+  return {
+    ...profile,
+    cpf_cnpj: doc,
+    fiscal_street: cliente.endereco_logradouro ?? null,
+    fiscal_number: cliente.endereco_numero ?? null,
+    fiscal_postal_code: cliente.endereco_cep ?? null,
+    fiscal_state: cliente.endereco_estado ?? null,
+  };
+}
+
+// ── Apresentações (catalogo_volumes) e conversão de unidade ─────────────────
+export interface PresentationInput {
+  id: string;
+  rotulo?: string | null;
+  medida?: string | null;
+  volume_ml?: number | null;
+  ativo?: boolean | null;
+}
+
+const VOLUME_UNITS = new Set(["L", "LT", "LITRO", "ML"]);
+
+/**
+ * Quantidade comercial = apresentação; quantidade tributável na unidade do
+ * perfil. Quando a unidade tributável é de volume e difere da comercial, cada
+ * apresentação ativa precisa de volume em mL para a conversão. Sem volume, a
+ * conversão não é inventada: vira pendência.
+ */
+export function presentationPendencies(
+  profile: Pick<ProductProfileInput, "commercial_unit" | "taxable_unit"> | null | undefined,
+  presentations: PresentationInput[],
+): Pendency[] {
+  if (!profile) return [];
+  const com = String(profile.commercial_unit ?? "").trim().toUpperCase();
+  const trib = String(profile.taxable_unit ?? "").trim().toUpperCase();
+  if (!trib || trib === com || !VOLUME_UNITS.has(trib)) return [];
+  return presentations
+    .filter((p) => p.ativo !== false && !(Number(p.volume_ml) > 0))
+    .map((p) => ({
+      entity: "produto" as const,
+      field: `apresentacao:${p.id}`,
+      label: `Apresentação ${p.rotulo || p.medida || p.id.slice(0, 8)}`,
+      message: `Sem volume em mL para converter ${com || "unidade comercial"} em ${trib}.`,
+    }));
+}
+
+/** Fator de conversão comercial→tributável de uma apresentação (null = indeterminado). */
+export function conversionFactor(taxableUnit: string | null | undefined, volumeMl: number | null | undefined): number | null {
+  const u = String(taxableUnit ?? "").trim().toUpperCase();
+  const v = Number(volumeMl);
+  if (!(v > 0)) return null;
+  if (u === "ML") return v;
+  if (u === "L" || u === "LT" || u === "LITRO") return v / 1000;
+  return null;
+}
+
+// ── Item de rascunho ────────────────────────────────────────────────────────
+/** CFOP já gravado no item do rascunho versus cenário (sem alterar o rascunho). */
+export function draftItemCfopPendency(itemCfop: string | null | undefined, scenario: FiscalScenario, label: string): Pendency | null {
+  const c = digits(itemCfop);
+  const expected = scenario === "interna" ? "5" : "6";
+  if (c.length === 4 && c[0] === expected) return null;
+  return {
+    entity: "produto",
+    field: "item_cfop",
+    label,
+    message: c.length === 4
+      ? `CFOP ${c} no item não corresponde à operação ${scenario}; reaplique o produto após corrigir o perfil.`
+      : "Item sem CFOP.",
+  };
+}
