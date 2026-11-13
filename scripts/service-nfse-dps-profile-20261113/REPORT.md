@@ -14,7 +14,10 @@ Base: leiaute DPS 1.01 (pacote oficial em `../nfse-nacional-adapter-20261113/off
 - Vitest `src/test/services/nfseDpsProfile.test.ts` + `serviceBilling.test.ts`: 27/27.
 - Deno `../nfse-nacional-adapter-20261113/offline.test.ts`: 19/19, zero rede; `deno check` da Edge OK.
 - PostgreSQL local descartável (`run_pg.sh`, andaime com autorização e `rpc_fiscal_draft_save` **simulados**): 18/18 — gatilho, faturamento com/sem complemento, replay, reaplicação no mesmo rascunho preservando edição, idempotência, CAS, gestor/outra empresa negados, transmitido/fechado/não-homologação bloqueados.
-- XSD (`validate_xsd.py`, `evidence/xsd-result.json`): 4 DPS sintéticas válidas com a cópia que só corrige a âncora `TSSerieDPS`; o XSD intocado rejeita qualquer série pelo defeito conhecido.
+- XSD por ambiente (`validate_xsd.py`, `evidence/xsd-result.json`, série "1"):
+  - HOMOLOGATION: 4/4 DPS sintéticas válidas no pacote oficial de produção restrita 20/10/2026 **sem modificação** (`official/prod-restrita-20261020`, SHA-256 `25fdcecc…ea267`; `TSSerieDPS` = `[0-9]{1,4}|[0-8][0-9]{4}`). Leiaute: `finNFSe=0` entre `tpEmit` e `cLocEmi`; `TCCServ` = cTribNac, cTribMun?, cNBS?, cIntContrib?, xDescServ.
+  - PRODUCTION: leiaute inalterado (1.01 de 09/02/2026, sem finNFSe, cNBS após xDescServ); 4/4 válidas só na cópia que corrige a âncora `TSSerieDPS` — o XSD de produção intocado continua rejeitando a série (defeito conhecido). Compatibilidade de produção apenas acompanhada; nada transmitido.
+- Harness Deno assinado (`../nfse-nacional-adapter-20261113/offline.test.ts`): DPS de homologação validadas no pacote de homologação original; 19/19.
 - Bateria services/fiscal/config: 3.350 passaram, 4 ignorados, 1 falha preexistente (`cultivofarm-runtime.static`).
 
 ## Limites
