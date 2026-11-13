@@ -72,3 +72,21 @@ export const READINESS_MISSING_LABEL: Record<string, string> = {
   nfse_credential: "Credencial do provedor",
   municipality_ibge_code: "Código IBGE do município do emitente",
 };
+
+/** Linha do ledger NFS-e visível ao operador (RLS da própria empresa). */
+export interface NfseTransmissionRow { id: string; fiscal_invoice_id: string; state: string; outcome: string | null; access_key: string | null; created_at: string }
+
+/** Envio indeterminado: enviado sem retorno conclusivo ou marcado para reconciliação,
+ * sem chave de acesso. Enquanto existir, a nota NÃO pode ser reenviada — só consultada. */
+export function isIndeterminateTransmission(t: Pick<NfseTransmissionRow, "state" | "outcome" | "access_key">): boolean {
+  if (t.access_key) return false;
+  if (t.outcome === "AUTHORIZED" || t.outcome === "REJECTED" || t.outcome === "NOT_FOUND") return false;
+  return t.state === "SENT" || t.state === "SENDING" || t.outcome === "PENDING" || t.outcome === "RECONCILIATION_REQUIRED";
+}
+
+/** Transmissão pendente mais recente da própria nota (nunca de outra nota). */
+export function pendingTransmissionFor(rows: NfseTransmissionRow[] | undefined, invoiceId: string): NfseTransmissionRow | null {
+  const own = (rows ?? []).filter(r => r.fiscal_invoice_id === invoiceId && isIndeterminateTransmission(r));
+  own.sort((a, b) => b.created_at.localeCompare(a.created_at));
+  return own[0] ?? null;
+}

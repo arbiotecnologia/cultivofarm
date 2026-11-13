@@ -20,6 +20,7 @@ export const SERVICE_KEYS = {
   profiles: () => ["catalog-services", "fiscal-profiles"] as const,
   customers: () => ["catalog-services", "customers"] as const,
   readiness: () => ["catalog-services", "nfse-readiness"] as const,
+  transmissions: (ids: string[]) => ["catalog-services", "nfse-transmissions", [...ids].sort()] as const,
 };
 
 export class ServiceConflictError extends Error { constructor(public kind: "duplicate" | "stale") { super(kind); } }
@@ -73,6 +74,26 @@ export function useServiceInvoices(ids: string[]) {
     queryKey: SERVICE_KEYS.invoices(ids), enabled: ids.length > 0,
     queryFn: async (signal) => check(await db.from("fiscal_invoices").select("id, status, normalized_status, provider_reference, invoice_number, provider_status_raw, environment, draft_version").in("id", ids).abortSignal(signal)) ?? [],
   });
+}
+
+/** Ledger de envios das notas listadas (somente leitura, RLS da própria empresa). */
+export function useNfseTransmissions(ids: string[]) {
+  return useScopedPortalQuery<NfseTransmissionRow[]>({
+    queryKey: SERVICE_KEYS.transmissions(ids), enabled: ids.length > 0,
+    queryFn: async (signal) => check(await db.from("nfse_transmissions").select("id, fiscal_invoice_id, state, outcome, access_key, created_at").in("fiscal_invoice_id", ids).order("created_at", { ascending: false }).abortSignal(signal)) ?? [],
+  });
+}
+
+/** Consulta o envio pendente (action "reconcile"): o servidor só faz GET mTLS ao provedor
+ * pela DPS já registrada; nunca cria novo POST de emissão. */
+export async function requestNfseReconcile(invoiceId: string, transmissionId: string) {
+  const { data, error } = await supabase.functions.invoke("nfse-nacional-emit", { body: { invoice_id: invoiceId, action: "reconcile", transmission_id: transmissionId } });
+  if (error) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ctx = (error as any).context;
+    try { return (await ctx.json()) as { code: string; message?: string; outcome?: string }; } catch { throw error; }
+  }
+  return data as { code: string; message?: string; outcome?: string; authorized?: boolean };
 }
 
 export function useNfseReadiness(enabled: boolean) {
