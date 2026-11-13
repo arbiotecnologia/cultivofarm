@@ -19,6 +19,7 @@ grant execute on function pg_temp.expect_error(text,text,text) to authenticated,
 set local role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-0000000000a1',true);
 create temp table qa_inv as select (public.rpc_service_billing_create_draft_v1(array['00000000-0000-4000-8000-0000000e0a01']::uuid[],'qa-billing-key-0101')->>'invoice_id')::uuid id;
+grant select on qa_inv to service_role, postgres;
 select pg_temp.expect_error('authenticated_sem_execute', $q$select public.rpc_nfse_transmit_begin_v1('00000000-0000-4000-8000-0000000000a1',(select id from qa_inv),'qa-nfse-key-000001',repeat('a',64),'HOMOLOGATION','sefin.producaorestrita.nfse.gov.br')$q$, '42501');
 reset role;
 
@@ -58,6 +59,7 @@ reset role;
 -- rejeição mantém rascunho e permite nova tentativa com próximo número
 set local role authenticated;
 create temp table qa_inv2 as select (public.rpc_service_billing_create_draft_v1(array['00000000-0000-4000-8000-0000000e0a02']::uuid[],'qa-billing-key-0102')->>'invoice_id')::uuid id;
+grant select on qa_inv2 to service_role, postgres;
 reset role; set local role service_role;
 create temp table qa_b2 as select public.rpc_nfse_transmit_begin_v1('00000000-0000-4000-8000-0000000000a1',(select id from qa_inv2),'qa-nfse-key-000004',repeat('e',64),'HOMOLOGATION','sefin.producaorestrita.nfse.gov.br') r;
 select public.rpc_nfse_transmit_record_v1((select (r->>'id')::uuid from qa_b2),'SENT','PENDING',jsonb_build_object('dpsId','DPS3147006211222333000181'||'00001'||'000000000000002','dpsXmlSha256',repeat('c',64)));
