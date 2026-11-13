@@ -19,6 +19,7 @@ import {
   buildUpdatePayload,
   type CompanyFiscalFormValues,
 } from "@/lib/fiscal/companyFiscalValidation";
+import { canEnableNfseHomologationSend } from "@/lib/fiscal/nfseHomologationSend";
 
 type CompanyFiscalBaseRow =
   Database["public"]["Tables"]["company_fiscal_settings"]["Row"];
@@ -172,6 +173,58 @@ export function useUpdateFiscalCompanySettings() {
       if (!data) throw new Error("conflict");
       const saved = data as CompanyFiscalRow;
       if (saved.id !== id || saved.organization_id !== organizationId || saved.configuration_version !== expectedVersion + 1) throw new Error("update_failed");
+      return saved;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...FISCAL_COMPANY_KEYS.settings, scope.scope] }),
+  });
+}
+
+/**
+ * Controle explícito "Habilitar envio de NFS-e em homologação".
+ * Usa a sessão normal do operador (RLS/grants existentes) e CAS por
+ * `configuration_version`. Ao ligar, as condições são repetidas como
+ * predicados do UPDATE sobre a linha salva: o banco só grava se a linha
+ * persistida for NFSE_NACIONAL, HOMOLOGATION (fiscal e NFS-e), produção
+ * desligada e referência cadastrada. Não altera credenciais nem outras colunas.
+ */
+export function useSetNfseHomologationSend() {
+  const qc = useQueryClient();
+  const scope = useStorageAccessScope("fiscal-company-settings");
+  const { profile } = useAuth();
+  const organizationId = profile?.organization_id;
+  return useMutation<CompanyFiscalRow, Error, { id: string; expectedVersion: number; enabled: boolean; savedRow: CompanyFiscalRow }>({
+    retry: false,
+    mutationFn: async ({ id, expectedVersion, enabled, savedRow }) => {
+      const valid = scope.capture();
+      if (!valid() || !organizationId) throw new Error("permission_denied");
+      if (!Number.isSafeInteger(expectedVersion) || expectedVersion <= 0) throw new Error("conflict");
+      if (savedRow.id !== id || savedRow.configuration_version !== expectedVersion) throw new Error("conflict");
+      if (enabled && !canEnableNfseHomologationSend(savedRow)) throw new Error("not_eligible");
+      let q = supabase
+        .from("company_fiscal_settings")
+        .update({ nfse_enabled: enabled, configuration_version: expectedVersion + 1 } as Database["public"]["Tables"]["company_fiscal_settings"]["Update"])
+        .eq("id", id)
+        .filter("organization_id", "eq", organizationId)
+        .eq("configuration_version", expectedVersion);
+      if (enabled) {
+        q = q
+          .eq("nfse_provider", "NFSE_NACIONAL")
+          .eq("fiscal_environment", "HOMOLOGATION")
+          .eq("nfse_configuration->>environment", "HOMOLOGATION")
+          .eq("production_enabled", false)
+          .not("nfse_credential_ref", "is", null)
+          .neq("nfse_credential_ref", "");
+      }
+      const { data, error } = await q.select("*").maybeSingle();
+      if (!valid()) throw new Error("permission_denied");
+      if (error) {
+        if (isPermissionError(error)) throw new Error("permission_denied");
+        throw new Error(errorMessage(error, "update_failed"));
+      }
+      if (!data) throw new Error("conflict");
+      const saved = data as CompanyFiscalRow;
+      if (saved.id !== id || saved.organization_id !== organizationId || saved.configuration_version !== expectedVersion + 1 || saved.nfse_enabled !== enabled) throw new Error("update_failed");
+      if (enabled && !canEnableNfseHomologationSend(saved)) throw new Error("update_failed");
       return saved;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [...FISCAL_COMPANY_KEYS.settings, scope.scope] }),
