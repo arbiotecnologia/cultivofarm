@@ -21,10 +21,10 @@ export type NfseDisplayState = "RASCUNHO" | "ENVIO_PENDENTE" | "REJEITADA" | "AU
  * Autorizada só com status AUTHORIZED E protocolo/número real do provedor.
  * Sem prova do provedor, nunca apresenta autorização.
  */
-export function nfseDisplayState(inv: { normalized_status?: string | null; status?: string | null; protocol_number?: string | null; invoice_number?: string | null } | null | undefined): NfseDisplayState {
+export function nfseDisplayState(inv: { normalized_status?: string | null; status?: string | null; provider_reference?: string | null; invoice_number?: string | null } | null | undefined): NfseDisplayState {
   if (!inv) return "DESCONHECIDO";
   const s = (inv.normalized_status ?? inv.status ?? "").toUpperCase();
-  if (s === "AUTHORIZED") return (inv.protocol_number || inv.invoice_number) ? "AUTORIZADA" : "DESCONHECIDO";
+  if (s === "AUTHORIZED") return (inv.provider_reference || inv.invoice_number) ? "AUTORIZADA" : "DESCONHECIDO";
   if (s === "DRAFT" || s === "VALIDATING" || s === "READY") return "RASCUNHO";
   if (s === "QUEUED" || s === "PROCESSING") return "ENVIO_PENDENTE";
   if (s === "REJECTED" || s === "ERROR") return "REJEITADA";

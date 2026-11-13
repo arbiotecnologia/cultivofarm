@@ -10,7 +10,7 @@ const db = supabase as any;
 
 export interface CatalogService { id: string; code: string | null; name: string; description: string | null; unit: string; unit_price: number; is_active: boolean; updated_at: string }
 export interface ServiceEngagement { id: string; service_id: string; customer_id: string; performed_on: string; quantity: number; unit_price: number; total_amount: number; description: string | null; status: EngagementStatus; fiscal_invoice_id: string | null; updated_at: string }
-export interface InvoiceStatusRow { id: string; status: string | null; normalized_status: string | null; protocol_number: string | null; invoice_number: string | null; rejection_reason?: string | null }
+export interface InvoiceStatusRow { id: string; status: string | null; normalized_status: string | null; provider_reference: string | null; invoice_number: string | null; provider_status_raw?: string | null }
 
 export const SERVICE_KEYS = {
   root: ["catalog-services"] as const,
@@ -71,7 +71,7 @@ export function useServiceEngagements(enabled: boolean) {
 export function useServiceInvoices(ids: string[]) {
   return useScopedPortalQuery<InvoiceStatusRow[]>({
     queryKey: SERVICE_KEYS.invoices(ids), enabled: ids.length > 0,
-    queryFn: async (signal) => check(await db.from("fiscal_invoices").select("id, status, normalized_status, protocol_number, invoice_number").in("id", ids).abortSignal(signal)) ?? [],
+    queryFn: async (signal) => check(await db.from("fiscal_invoices").select("id, status, normalized_status, provider_reference, invoice_number, provider_status_raw").in("id", ids).abortSignal(signal)) ?? [],
   });
 }
 
