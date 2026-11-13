@@ -133,8 +133,18 @@ export function useBillServices() {
   });
 }
 
+/** Chave de envio estável por versão do rascunho: repetir o clique reaproveita a
+ * mesma transmissão; só uma correção (nova versão) abre nova tentativa. */
+export function nfseEmissionKey(invoiceId: string, draftVersion: number): string {
+  if (!/^[0-9a-f-]{36}$/i.test(invoiceId) || !Number.isInteger(draftVersion) || draftVersion < 1) throw new Error("nfse_key_input_invalid");
+  return `nfse:${invoiceId.toLowerCase()}:v${draftVersion}`;
+}
+
 export async function requestNfseEmission(invoiceId: string) {
-  const { data, error } = await supabase.functions.invoke("nfse-nacional-emit", { body: { invoice_id: invoiceId } });
+  const inv = await db.from("fiscal_invoices").select("draft_version").eq("id", invoiceId).maybeSingle();
+  const version = Number(inv.data?.draft_version);
+  if (inv.error || !Number.isInteger(version) || version < 1) return { code: "invoice_not_found" } as { code: string; missing?: string[]; message?: string };
+  const { data, error } = await supabase.functions.invoke("nfse-nacional-emit", { body: { invoice_id: invoiceId, idempotency_key: nfseEmissionKey(invoiceId, version) } });
   if (error) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const ctx = (error as any).context;
