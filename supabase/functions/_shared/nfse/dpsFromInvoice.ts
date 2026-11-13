@@ -9,6 +9,7 @@
  */
 import { type DpsInput, regimeFromCrt } from "./dps.ts";
 import { validateNfseDpsProfile, type NfseDpsProfile } from "./dpsProfile.ts";
+import { dpsDeclaredFromSnapshot, resolveIbsCbs, type DpsIbsCbsDeclared } from "../fiscal/rtc/ibsCbs.ts";
 
 export interface InvoiceForDps {
   id: string; environment: string | null; issue_date: string | null; draft_version: number | null; total_amount: number | string;
@@ -50,7 +51,17 @@ export function mapInvoiceToDps(inv: InvoiceForDps, c: CompanyForDps, t: Custome
   const dp = (dpsIssues.length ? {} : (rawDps ?? {})) as Partial<NfseDpsProfile>;
   if (!dp.service_location_ibge_code) missing.push("local_prestacao");
   if (!dp.tot_trib) missing.push("total_tributos");
-  if (missing.length) return { ok: false, missing };
+  // IBS/CBS: snapshot por item (fiscal_profile_snapshot.ibs_cbs). Ausência, vigência ou
+  // divergência entre itens viram pendência; nada é presumido.
+  const ibsDecl: DpsIbsCbsDeclared[] = [];
+  for (const it of inv.items) {
+    const r = resolveIbsCbs(it.fiscal_profile_snapshot?.ibs_cbs, { documentKind: "NFSE", issueDate: inv.issue_date ?? "" });
+    if (r.ok === false) { missing.push(...r.missing); continue; }
+    const d = dpsDeclaredFromSnapshot(r.snapshot);
+    if (d) ibsDecl.push(d);
+  }
+  if (ibsDecl.length === inv.items.length && new Set(ibsDecl.map((d) => JSON.stringify(d))).size > 1) missing.push("ibs_cbs_itens_divergentes");
+  if (missing.length) return { ok: false, missing: [...new Set(missing)] };
   const rateStr = [...rate][0];
   const pad = (n: number) => String(n).padStart(2, "0");
   const local = new Date(now.getTime() - 3 * 3600_000);
@@ -75,8 +86,9 @@ export function mapInvoiceToDps(inv: InvoiceForDps, c: CompanyForDps, t: Custome
       federalRetentions: fr ? { cpRate: fr.cp_rate ?? null, irrfRate: fr.irrf_rate ?? null, csllRate: fr.csll_rate ?? null } : null,
       totTrib: { mode: tt.mode, fed: tt.fed ?? null, est: tt.est ?? null, mun: tt.mun ?? null, sn: tt.sn ?? null },
     },
+    ibsCbs: ibsDecl[0],
   };
   // Impressão digital estável do conteúdo fiscal (sem data/hora de emissão).
-  const fingerprintSource = JSON.stringify({ id: inv.id, v: inv.draft_version, e, emitter: input.emitter, taker: input.taker, service: input.service, values: input.values, competence: input.competence });
+  const fingerprintSource = JSON.stringify({ id: inv.id, v: inv.draft_version, e, emitter: input.emitter, taker: input.taker, service: input.service, values: input.values, ibsCbs: input.ibsCbs, competence: input.competence });
   return { ok: true, input, fingerprintSource };
 }

@@ -1,0 +1,28 @@
+{
+ "homolog-dps-ibscbs.xml": {
+  "xsd_dps_homologacao_original": true,
+  "erros": [],
+  "sha256": "a2481cb2f56674b1b4a764c7fd1f128a296cf55556d64a472458f90d29fe9e9e"
+ },
+ "nfe-interestadual-cst000.xml": {
+  "xsd_nfe_PL_010g_original": true,
+  "erros": [],
+  "sha256": "1c0baa28d16ab4c378b6df89dc78fd12f859ab2fc3131ba05eb59b4f38d3068e"
+ },
+ "nfe-interna-cst000.xml": {
+  "xsd_nfe_PL_010g_original": true,
+  "erros": [],
+  "sha256": "8eee61532d620270c3e89c9f72026d8b6723f58e78c4ae4d1b4059c505693787"
+ },
+ "nfe-interna-cst410.xml": {
+  "xsd_nfe_PL_010g_original": true,
+  "erros": [],
+  "sha256": "e84260579202e7b99b8fa44e5f4dfa48b7161ac02273ae8dd25725b174ce54c6"
+ },
+ "producao-dps-ibscbs.xml": {
+  "xsd_dps_producao_original": false,
+  "xsd_dps_producao_ancora_corrigida": true,
+  "erros": [],
+  "sha256": "6afa110f1ecc3cf47d8d354e40ac056f7a0d6bcfdf718aab6c22e9d232473102"
+ }
+}

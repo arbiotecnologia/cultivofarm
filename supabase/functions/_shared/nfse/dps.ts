@@ -5,6 +5,7 @@
  * Módulo puro: sem rede, sem assinatura, sem segredos. Não presume autorização.
  * A ordem dos elementos segue TCInfDPS/TCInfoPrestador/TCTribMunicipal do XSD.
  */
+import { dpsIbsCbsXml, type DpsIbsCbsDeclared } from "../fiscal/rtc/ibsCbs.ts";
 export const DPS_LAYOUT_VERSION = "1.01" as const;
 export const NFSE_NAMESPACE = "http://www.sped.fazenda.gov.br/nfse" as const;
 
@@ -40,9 +41,11 @@ export interface DpsInput {
     /** Obrigatório (TCTribTotal): escolha explícita do perfil, nunca presumida. */
     totTrib?: { mode: "IND" | "PERCENT" | "SN"; fed?: number | null; est?: number | null; mun?: number | null; sn?: number | null } | null;
   };
+  /** IBS/CBS declarado (CST/cClassTrib/cIndOp/indDest). Valores vêm do autorizador, não da DPS. */
+  ibsCbs?: DpsIbsCbsDeclared | null;
 }
 
-export type DpsIssue = "cnpj_emitente" | "cnpj_emitente_alfanumerico" | "municipio_emitente" | "documento_tomador" | "documento_tomador_alfanumerico" | "nome_tomador" | "codigo_tributacao_nacional" | "nbs" | "descricao" | "local_prestacao" | "municipio_incidencia" | "valor" | "aliquota_iss" | "serie" | "numero" | "competencia" | "data_emissao" | "regime_tributario" | "fone_emitente" | "email_emitente" | "im_tomador" | "fone_tomador" | "email_tomador" | "pis_cofins" | "retencoes_federais" | "total_tributos" | "total_tributos_regime";
+export type DpsIssue = "cnpj_emitente" | "cnpj_emitente_alfanumerico" | "municipio_emitente" | "documento_tomador" | "documento_tomador_alfanumerico" | "nome_tomador" | "codigo_tributacao_nacional" | "nbs" | "descricao" | "local_prestacao" | "municipio_incidencia" | "valor" | "aliquota_iss" | "serie" | "numero" | "competencia" | "data_emissao" | "regime_tributario" | "fone_emitente" | "email_emitente" | "im_tomador" | "fone_tomador" | "email_tomador" | "pis_cofins" | "retencoes_federais" | "total_tributos" | "total_tributos_regime" | "ibs_cbs";
 
 const digits = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "");
 /** Documento sem pontuação, preservando letras (CNPJ alfanumérico, IN RFB 2.229/2024). */
@@ -107,6 +110,8 @@ export function validateDps(i: DpsInput): DpsIssue[] {
   else if (tt.mode === "PERCENT" && !(tt.fed != null && tt.est != null && tt.mun != null && okPct(tt.fed, 999.99) && okPct(tt.est, 999.99) && okPct(tt.mun, 999.99))) out.push("total_tributos");
   else if (tt.mode === "SN") { if (tt.sn == null || !okPct(tt.sn, 99.99)) out.push("total_tributos"); else if (r && r.opSimpNac !== "3") out.push("total_tributos_regime"); }
   else if (!["IND", "PERCENT", "SN"].includes(tt.mode)) out.push("total_tributos");
+  const ib = i.ibsCbs;
+  if (ib && (!/^\d{3}$/.test(ib.cst) || !/^\d{6}$/.test(ib.cClassTrib) || ib.cClassTrib.slice(0, 3) !== ib.cst || !/^\d{6}$/.test(ib.cIndOp) || ib.indDest !== "0" || (ib.indFinal != null && ib.indFinal !== "0" && ib.indFinal !== "1"))) out.push("ibs_cbs");
   return out;
 }
 
@@ -171,6 +176,7 @@ export function buildDpsXml(i: DpsInput): string {
     `<valores><vServPrest><vServ>${money(v.serviceAmount)}</vServ></vServPrest>` +
     `<trib><tribMun><tribISSQN>1</tribISSQN><tpRetISSQN>${v.issWithheld ? "2" : "1"}</tpRetISSQN>${aliq}</tribMun>` +
     `${fed ? `<tribFed>${fed}</tribFed>` : ""}<totTrib>${tot}</totTrib></trib></valores>` +
+    (i.ibsCbs ? dpsIbsCbsXml(i.ibsCbs, i.environment) : "") +
     `</infDPS></DPS>`;
 }
 

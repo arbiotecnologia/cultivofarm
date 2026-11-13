@@ -13,6 +13,7 @@
  */
 
 import { icmsCodeKindForCrt } from "./icmsRegime.ts";
+import { nfeIbsCbsBase, nfeIbsCbsItemXml, nfeIbsCbsTotals, nfeIbsCbsTotXml, nfeIbsCbsValues, resolveIbsCbs, type NfeIbsCbsItemValues } from "../rtc/ibsCbs.ts";
 
 export const NFE_NAMESPACE = "http://www.portalfiscal.inf.br/nfe";
 export const NFE_VERSION = "4.00";
@@ -419,6 +420,29 @@ function pisCofinsBlock(item: Record<string, unknown>): string {
   ].join("");
 }
 
+/**
+ * IBS/CBS por item a partir do snapshot congelado (`item.ibsCbsConfig`, cópia do
+ * perfil RTC do item). Com `ide.rtcIbsCbs === true` todo item precisa do grupo;
+ * sem a marca, nada é emitido (comportamento anterior preservado).
+ */
+function ibsCbsForItem(p: NfePayload, item: Record<string, unknown>): { xml: string; values: NfeIbsCbsItemValues | null } | null {
+  const nItem = String(item.nItem ?? "?");
+  const required = (p.ide ?? {}).rtcIbsCbs === true;
+  if (item.ibsCbsConfig === undefined || item.ibsCbsConfig === null) {
+    if (required) throw new NfeBuildError("NFE_IBSCBS_MISSING", `item ${nItem}: snapshot IBS/CBS ausente`);
+    return null;
+  }
+  const emitUf = String(((p.emit ?? {}).enderEmit as Record<string, unknown> | undefined)?.UF ?? "");
+  const destUf = String(((p.dest ?? {}).enderDest as Record<string, unknown> | undefined)?.UF ?? "");
+  const r = resolveIbsCbs(item.ibsCbsConfig, { documentKind: "NFE", issueDate: String((p.ide ?? {}).dhEmi ?? "").slice(0, 10), emitterUf: emitUf, destinationUf: destUf });
+  if (r.ok === false) throw new NfeBuildError("NFE_IBSCBS_PENDING", `item ${nItem}: ${r.missing.join(",")}`);
+  const t = (k: string) => num(taxOf(item, k).value);
+  const base = nfeIbsCbsBase({ vProd: num(item.vProd), vFrete: num(item.vFrete), vSeg: num(item.vSeg), vOutro: num(item.vOutro), vDesc: num(item.vDesc),
+    vPIS: t("PIS"), vCOFINS: t("COFINS"), vICMS: t("ICMS"), vFCP: num(taxOf(item, "ICMS").fcpValue) });
+  const values = nfeIbsCbsValues(r.snapshot, base);
+  return { xml: nfeIbsCbsItemXml(r.snapshot, values), values };
+}
+
 function buildDet(p: NfePayload): string {
   const crt = String((p.emit ?? {}).CRT ?? "3");
   if (!Array.isArray(p.det) || p.det.length === 0) {
@@ -469,6 +493,7 @@ function buildDet(p: NfePayload): string {
         icmsBlock(item, crt),
         ipiBlock(item),
         pisCofinsBlock(item),
+        ibsCbsForItem(p, item)?.xml ?? "",
         "</imposto>",
         "</det>",
       ].join("");
@@ -502,8 +527,16 @@ function buildTotal(p: NfePayload): string {
     tag("vCOFINS", dec(t.vCOFINS, 2)),
     tag("vOutro", dec(t.vOutro, 2)),
     tag("vNF", dec(t.vNF, 2)),
-    "</ICMSTot></total>",
+    "</ICMSTot>",
+    ibsCbsTotal(p),
+    "</total>",
   ].join("");
+}
+
+function ibsCbsTotal(p: NfePayload): string {
+  const per = (p.det ?? []).map((it) => ibsCbsForItem(p, it));
+  if (per.every((x) => x === null)) return "";
+  return nfeIbsCbsTotXml(nfeIbsCbsTotals(per.map((x) => x?.values ?? null)));
 }
 
 function buildTransp(): string {
