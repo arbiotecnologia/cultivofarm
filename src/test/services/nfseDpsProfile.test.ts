@@ -67,7 +67,7 @@ describe("DPS — pendências por regime e leiaute, sem presumir", () => {
       items: [{ description: "x", net_value: 10, fiscal_profile_snapshot: { national_tax_code: 10101 as unknown as string }, tax_snapshot: {} }] };
     const c = { cnpj: "00000000000191", municipality_ibge_code: "9999901", municipal_registration: null, crt: "3", fiscal_environment: "HOMOLOGATION" };
     const m = mapInvoiceToDps(inv, c, { cpf_cnpj: "11144477735", name: "T", email: null }, new Date());
-    expect(m.ok).toBe(false); if (!m.ok) expect(m.missing).toContain("codigo_tributacao_nacional_numerico");
+    expect(m.ok).toBe(false); if (m.ok === false) expect(m.missing).toContain("codigo_tributacao_nacional_numerico");
   });
 });
 
@@ -76,7 +76,7 @@ describe("rascunho → DPS usa o snapshot do faturamento", () => {
   const items = [{ description: "S", net_value: "100.00", fiscal_profile_snapshot: { national_tax_code: "010101", municipality_ibge_code: "9999901" }, tax_snapshot: { iss_rate: 2 } }];
   it("snapshot antigo sem complemento aponta pendências", () => {
     const m = mapInvoiceToDps({ id: "i", environment: "HOMOLOGATION", issue_date: "2026-11-13", draft_version: 1, total_amount: 100, items }, c, { cpf_cnpj: "11144477735", name: "T", email: null }, new Date());
-    expect(m.ok).toBe(false); if (!m.ok) expect(m.missing).toEqual(["local_prestacao", "total_tributos"]);
+    expect(m.ok).toBe(false); if (m.ok === false) expect(m.missing).toEqual(["local_prestacao", "total_tributos"]);
   });
   it("snapshot com complemento produz DPS com NBS, local e PIS/COFINS", () => {
     const m = mapInvoiceToDps({ id: "i", environment: "HOMOLOGATION", issue_date: "2026-11-13", draft_version: 2, total_amount: 100, items,
