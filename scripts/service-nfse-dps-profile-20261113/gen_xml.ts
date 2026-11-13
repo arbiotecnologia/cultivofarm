@@ -14,5 +14,8 @@ const cases: Record<string, DpsInput> = {
   "simples-nacional-ptottribsn": { ...base, number: 23, emitter: { ...base.emitter, regime: { opSimpNac: "3", regApTribSN: "1", regEspTrib: "0" } }, values: { serviceAmount: 500, issRate: 2, issWithheld: false, totTrib: { mode: "SN", sn: 6 } } },
   "mei-piscofins-sem-aliquota": { ...base, number: 24, emitter: { ...base.emitter, regime: { opSimpNac: "2", regEspTrib: "0" } }, values: { serviceAmount: 80, issWithheld: false, pisCofins: { cst: "07" }, totTrib: { mode: "IND" } } },
 };
-for (const [k, v] of Object.entries(cases)) writeFileSync(`${import.meta.dir}/evidence/dps-${k}.xml`, buildDpsXml(v));
+for (const [k, v] of Object.entries(cases)) {
+  writeFileSync(`${import.meta.dir}/evidence/homolog-dps-${k}.xml`, buildDpsXml(v));
+  writeFileSync(`${import.meta.dir}/evidence/producao-dps-${k}.xml`, buildDpsXml({ ...v, environment: "PRODUCTION" }));
+}
 console.log(Object.keys(cases).join(","));

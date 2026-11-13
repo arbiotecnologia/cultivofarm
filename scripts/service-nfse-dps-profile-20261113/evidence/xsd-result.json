@@ -1,35 +1,46 @@
 {
- "serie_pattern_original": "^0{0,4}\\d{1,5}$",
- "dps-lucro-presumido-pj-completa.xml": {
-  "xsd_oficial": false,
-  "xsd_oficial_erros": [
-   "Element '{http://www.sped.fazenda.gov.br/nfse}serie': [facet 'pattern'] The value '1' is not accepted by the pattern '^0{0,4}\\d{1,5}$'."
-  ],
-  "xsd_ancora_corrigida": true,
-  "erros": []
+ "homolog-dps-lucro-presumido-pj-completa.xml": {
+  "xsd_homologacao_original": true,
+  "erros": [],
+  "sha256": "5f1a1d86f8c93fb93c98a4158db3371b9f6841c4affbba4b4bd9c3ea35af1d10"
  },
- "dps-mei-piscofins-sem-aliquota.xml": {
-  "xsd_oficial": false,
-  "xsd_oficial_erros": [
-   "Element '{http://www.sped.fazenda.gov.br/nfse}serie': [facet 'pattern'] The value '1' is not accepted by the pattern '^0{0,4}\\d{1,5}$'."
-  ],
-  "xsd_ancora_corrigida": true,
-  "erros": []
+ "homolog-dps-mei-piscofins-sem-aliquota.xml": {
+  "xsd_homologacao_original": true,
+  "erros": [],
+  "sha256": "35266364a37a36929db5a43b208aa8b191e1c7adc28a939e6b87040eb84fa432"
  },
- "dps-nao-optante-cpf-minima.xml": {
-  "xsd_oficial": false,
-  "xsd_oficial_erros": [
-   "Element '{http://www.sped.fazenda.gov.br/nfse}serie': [facet 'pattern'] The value '1' is not accepted by the pattern '^0{0,4}\\d{1,5}$'."
-  ],
-  "xsd_ancora_corrigida": true,
-  "erros": []
+ "homolog-dps-nao-optante-cpf-minima.xml": {
+  "xsd_homologacao_original": true,
+  "erros": [],
+  "sha256": "1d5dd98a9d46c3aae05240a83d78b502f21d68fb8e62eae88160f69da2861a7e"
  },
- "dps-simples-nacional-ptottribsn.xml": {
-  "xsd_oficial": false,
-  "xsd_oficial_erros": [
-   "Element '{http://www.sped.fazenda.gov.br/nfse}serie': [facet 'pattern'] The value '1' is not accepted by the pattern '^0{0,4}\\d{1,5}$'."
-  ],
-  "xsd_ancora_corrigida": true,
-  "erros": []
+ "homolog-dps-simples-nacional-ptottribsn.xml": {
+  "xsd_homologacao_original": true,
+  "erros": [],
+  "sha256": "362493930682df00c8af0bceb01d353412617d616d056121eabfe826301acffd"
+ },
+ "producao-dps-lucro-presumido-pj-completa.xml": {
+  "xsd_producao_original": false,
+  "xsd_producao_ancora_corrigida": true,
+  "erros": [],
+  "sha256": "00fba83fd9ee6f5be6849e0d6de396c6b63ef45826e196cdc1fc50b71d2460ff"
+ },
+ "producao-dps-mei-piscofins-sem-aliquota.xml": {
+  "xsd_producao_original": false,
+  "xsd_producao_ancora_corrigida": true,
+  "erros": [],
+  "sha256": "f9b9f75aa0ce7c5b4e3f3610641c0430a48b56b427e2bc20f6cd1d85aaaebb36"
+ },
+ "producao-dps-nao-optante-cpf-minima.xml": {
+  "xsd_producao_original": false,
+  "xsd_producao_ancora_corrigida": true,
+  "erros": [],
+  "sha256": "b84c099d8fa9c0b207564ac491fa91e7f467ecf9ad183cacb5a79556ebda63db"
+ },
+ "producao-dps-simples-nacional-ptottribsn.xml": {
+  "xsd_producao_original": false,
+  "xsd_producao_ancora_corrigida": true,
+  "erros": [],
+  "sha256": "df37b199df575d09efb2c84eba0b34dd29b49f1aca0361ca60da86963b7ed259"
  }
 }
