@@ -61,7 +61,7 @@ export interface DpsSignResult {
 }
 
 export function signDpsXml(args: { xml: string; dpsId: string; emitterCnpj: string; material: DpsSigningMaterial; now?: Date }): DpsSignResult {
-  let cert: Cert; let key: forge.pki.rsa.PrivateKey;
+  let cert: Cert; let key: Cert;
   try { cert = forge.pki.certificateFromPem(args.material.certPem); } catch { throw new DpsSignError("CERTIFICATE_MISSING_X509"); }
   try { key = forge.pki.privateKeyFromPem(args.material.keyPem); } catch { throw new DpsSignError("CERTIFICATE_MISSING_KEY"); }
   const pub = cert.publicKey;
