@@ -3,7 +3,7 @@
 \set ON_ERROR_STOP on
 begin;
 \ir fixtures.sql
-insert into public.fiscal_environment_marker(id, project_ref, environment_label, production_emission_allowed) values (true, 'swzpzcwiasxmjutrmvkm', 'homolog', false) on conflict (id) do update set production_emission_allowed = false;
+insert into public.fiscal_environment_marker(id, project_ref, environment_label, production_emission_allowed) values (true, 'swzpzcwiasxmjutrmvkm', 'PRODUCTION', false) on conflict (id) do update set production_emission_allowed = false;
 set local session_replication_role = origin;
 \ir migration/20261113170000_nfse_nacional_transmission_ledger.sql
 create temp table qa_result(caso text primary key, ok boolean, detalhe text);
