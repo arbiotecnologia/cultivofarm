@@ -3,6 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Building2, ExternalLink, Loader2, Plus, User as UserIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { canAccess } from "@/lib/permissions";
+import { FEATURE_FLAGS } from "@/config/featureFlags";
+import { CustomerFiscalGuide } from "@/components/fiscal/FiscalGuidePanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -30,6 +34,8 @@ const OS_SELECT =
 export default function ClienteDetalhe() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { roles = [] } = useAuth();
+  const canFiscal = FEATURE_FLAGS.fiscalCustomerProfilesUi === true && roles.some((r) => canAccess(r, "/configuracoes/fiscal/clientes"));
 
   const { data: cliente, isLoading } = useQuery({
     queryKey: ["cliente-detalhe", id],
@@ -151,6 +157,13 @@ export default function ClienteDetalhe() {
           )}
         </CardContent>
       </Card>
+
+      {canFiscal && (
+        <Card>
+          <CardHeader className="py-3"><CardTitle className="text-sm">Guia Fiscal</CardTitle></CardHeader>
+          <CardContent className="pt-0"><CustomerFiscalGuide customerId={cliente.id} cpfCnpj={cliente.cpf_cnpj ?? null} canOpen /></CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="py-3 flex flex-row items-center justify-between">
