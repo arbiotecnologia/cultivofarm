@@ -1787,3 +1787,5 @@
 - [ ] Segregação gestor x termos financeiros — aguarda decisão do proprietário
 
 - [x] F4.1 harness NF-e: bundle do motor alinhado ao PL_010g v1.03; harness 66 checks em scripts/nfe-f41-certification-20261112/
+- [x] Corrigir escrita fiscal de produto próprio (guia + lista) com canWriteOwnedProduct
+- [ ] Plano Serviços/NFS-e aguardando aprovação

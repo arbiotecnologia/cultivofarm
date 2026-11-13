@@ -49,7 +49,7 @@ describe("fiscal product canonical hook fences (tenant-owned writer)",()=>{
   expect(args.p_expected_updated_at).toBeNull();expect(args.p_values).toEqual({ncm:"12345678"});
  });
  it("writer disabled by gate: no RPC dispatch",async()=>{
-  const h=renderHook(()=>useSaveProductFiscalProfile(),{wrapper});
+  const h=renderHook(()=>useSaveProductFiscalProfile(false),{wrapper});
   await act(async()=>{await expect(h.result.current.mutateAsync(input())).rejects.toThrow("fiscal_writer_disabled")});
   expect(state.rpc).not.toHaveBeenCalled();
  });

@@ -30,6 +30,7 @@ import {
   useSaveProductFiscalProfile,
   OptimisticConflictError,
   type ProductListItem,
+  useOwnedProductIds,
 } from "@/hooks/useProductFiscalProfiles";
 import {
   useMicroorganismList,
@@ -195,7 +196,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
   // Produto PRÓPRIO da empresa (catálogo exclusivo): administrador/gestor do tenant, somente pelo writer canônico
   // e só quando liberado (OWNED_PRODUCT_FISCAL_ENABLED); sem escrita global de Superadmin. Microrganismo: permissão
   // canônica existente da rota tenant (admin/financeiro rw, gestor r), nunca na plataforma.
-  const canEditProduct = !platformGlobal && OWNED_PRODUCT_FISCAL_ENABLED && fiscalAccess.ready && fiscalAccess.canWriteOwnedProduct === true;
+  const canEditProductRole = !platformGlobal && OWNED_PRODUCT_FISCAL_ENABLED && fiscalAccess.ready && fiscalAccess.canWriteOwnedProduct === true;
   const canEditMicro = !platformGlobal && routeAccess === "rw";
   // Plataforma: microrganismos globais exibidos SOMENTE em consulta; a escrita
   // continua na rota canônica da empresa até existir autoridade server-side própria.
@@ -361,6 +362,13 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
     ownProfile: microProfileByMicro.get(m.id) ?? null,
   }));
 
+  // Escrita fiscal de produto próprio: papel (admin/gestor do tenant) + propriedade confirmada por item.
+  const ownedProducts = useOwnedProductIds([
+    ...productItems.map((p) => p.product_id),
+    ...(editing?.entity === "produto" ? [editing.productId] : []),
+  ]);
+  const canEditProduct = (productId: string) =>
+    canEditProductRole && ownedProducts.confirmed && ownedProducts.owned.has(productId);
   const rows: UnifiedRow[] =
     kind === KIND_PRODUCT ? rowsProduto
     : kind === KIND_MICRO ? rowsMicro
@@ -559,7 +567,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
                       r,
                       readinessByProduct,
                       microReadinessByMicro,
-                      canEditProduct,
+                      r.kind === "produto" && canEditProduct(r.productId),
                       canEditMicro,
                       readinessUnknown,
                       microProfilesUnknown,
@@ -620,7 +628,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
           productId={editing.productId}
           displayName={editing.displayName}
           displayCodigo={editing.displayCodigo}
-          canEdit={canEditProduct}
+          canEdit={canEditProduct(editing.productId)}
           onClose={() => setEditing(null)}
         />
       ) : null}
