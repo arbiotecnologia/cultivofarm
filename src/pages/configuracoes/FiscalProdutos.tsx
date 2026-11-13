@@ -1057,7 +1057,7 @@ export function ProductEditDrawer({
             <AlertDescription>Salvar um rascunho não torna o item pronto para NF-e. Regime, operação, regras do emitente e IBS/CBS precisam de validação própria; emissão permanece desativada.</AlertDescription>
           </Alert>
           {fence.ready && !profileQuery.isFetching && !profileQuery.isError && profileQuery.data !== undefined && (
-            <IbsCbsItemCard kind="product" itemId={productId} canEdit={canEdit && fence.canWrite && profileQuery.data?.is_active === true} />
+            <IbsCbsItemCard kind="product" itemId={productId} canEdit={canEdit && (fence.canWrite || fence.canWriteOwnedProduct === true) && profileQuery.data?.is_active === true} />
           )}
         </div>
       }
