@@ -44,8 +44,7 @@ Deno.test("renegociação pós-requisição: A1 enviado só quando o servidor pe
   assert(r.ok, JSON.stringify(r)); if (!r.ok) return;
   assertEquals(r.status, 200); assertEquals(r.body, '{"x":"ok-01"}');
   assertEquals(r.tls.version, "TLS1.2"); assert(r.tls.chainVerified); assert(r.tls.certRequested); assert(r.tls.clientCertSent);
-  console.log(JSON.stringify(r.tls), log.split("\n").filter((l) => /Handshake|Certificate|ERROR|reneg/i.test(l)).join("\n"));
-  assertEquals(r.tls.handshakeCount, 2, "handshake inicial + renegociação");
+  assert(r.tls.secureRenegotiation, "RFC 5746 ecoado no inicial"); assert(r.tls.certRequestedOnRenegotiation, "pedido de certificado veio na renegociação");
   assertEquals((log.match(/ClientHello/g) ?? []).length, 2);
   assert(/<<< TLS 1\.2, Handshake \[length [0-9a-f]+\], Certificate/.test(log), "servidor recebeu o certificado do cliente");
 });
@@ -64,11 +63,11 @@ Deno.test("CA desconhecida é rejeitada (build de produção, raízes Mozilla)",
   const r = await renegGet(DPS, A1(), 10_000, { dial: s.dial, wasm: Deno.readFileSync("/tmp/reneg.wasm"), testCaPem: rd("ca.pem") }); await s.done();
   assertEquals(r.ok, false); if (!r.ok) assertEquals(r.code, "tls_unknown_issuer");
 });
-Deno.test("servidor sem RFC 5746: Go recusa renegociação insegura", async () => {
-  // -legacy_renegotiation não remove a extensão; -no_legacy_server_connect idem. Usamos -serverpref -no_renegotiation para provar a recusa explícita.
+Deno.test("servidor com renegociação desabilitada não produz renegociação", async () => {
+  // OpenSSL 3 sempre ecoa RFC 5746; a recusa por ausência da extensão é coberta pelos testes Go do sniffer (sniff_test.go).
   const s = await server({ extra: ["-no_renegotiation"], response: JSON200 });
   const r = await renegGet(DPS, A1(), 10_000, t(s.dial)); await s.done();
-  if (r.ok) assertEquals(r.tls.handshakeCount, 1, "servidor sem renegociação não deve produzir 2º handshake");
+  assert(!r.ok || !r.tls.certRequestedOnRenegotiation, "servidor sem renegociação não pode ter pedido na renegociação");
 });
 Deno.test("URL fora do host/caminho oficial e POST-like são bloqueados antes de qualquer socket", async () => {
   let dialed = false; const dial = () => { dialed = true; return Deno.connect({ hostname: "127.0.0.1", port: 1 }); };

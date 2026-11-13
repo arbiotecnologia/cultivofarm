@@ -20,7 +20,7 @@ export const RENEG_CODES = new Set([
   "http_malformed", "http_incomplete", "timeout", "tcp_connect_failed", "wasm_unavailable", "url_blocked",
 ]);
 export type RenegCode = string;
-export interface RenegTlsInfo { version?: string; cipher?: string; alpn?: string; chainVerified?: boolean; certRequested: boolean; clientCertSent: boolean; handshakeCount: number }
+export interface RenegTlsInfo { version?: string; cipher?: string; alpn?: string; chainVerified?: boolean; certRequested: boolean; clientCertSent: boolean; certRequestedOnRenegotiation: boolean; secureRenegotiation: boolean }
 export type RenegResult =
   | { ok: true; status: number; contentType: string | null; body: string; tls: RenegTlsInfo }
   | { ok: false; code: RenegCode; stage?: string; tls?: RenegTlsInfo };

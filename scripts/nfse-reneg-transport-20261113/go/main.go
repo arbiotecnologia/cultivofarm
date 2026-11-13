@@ -152,7 +152,7 @@ func request(cfgOverride func(*tls.Config, js.Value) bool) js.Func {
 			resolve := pr[0]
 			go func() {
 				out := map[string]any{"ok": false}
-				info := map[string]any{"certRequested": false, "clientCertSent": false, "renegotiated": false, "secureRenegotiation": false}
+				info := map[string]any{"certRequested": false, "clientCertSent": false, "certRequestedOnRenegotiation": false, "secureRenegotiation": false}
 				defer func() { out["tls"] = info; resolve.Invoke(js.ValueOf(out)) }()
 				path := opts.Get("path").String()
 				if !pathRe.MatchString(path) {
@@ -178,7 +178,7 @@ func request(cfgOverride func(*tls.Config, js.Value) bool) js.Func {
 					GetClientCertificate: func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
 						info["certRequested"] = true
 						if initialDone {
-							info["renegotiated"] = true
+							info["certRequestedOnRenegotiation"] = true
 						}
 						if len(certs) == 0 {
 							return &tls.Certificate{}, nil
