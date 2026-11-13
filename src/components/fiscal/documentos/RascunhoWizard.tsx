@@ -37,7 +37,10 @@ import {
   type RascunhoItem,
 } from "@/lib/fiscal/rascunhoWizardValidation";
 import { useSaveFiscalRascunho, useValidateHomologation } from "@/hooks/useFiscalRascunho";
-import { PreEmissaoPendenciasSecao } from "@/components/fiscal/documentos/PreEmissaoPendenciasSecao";
+import { PreEmissaoPendenciasSecao, useDraftCustomerFiscal } from "@/components/fiscal/documentos/PreEmissaoPendenciasSecao";
+import { useFiscalCompanySettings } from "@/hooks/useFiscalCompanySettings";
+import { resolveCustomerForPendencies } from "@/lib/fiscal/preEmissionPendencies";
+import { selectDraftCfop, isAutoCfop, DRAFT_CFOP_REASON_LABEL, type DraftCfopReason } from "@/lib/fiscal/draftCfopSelection";
 import { useFiscalClientesLite } from "@/hooks/useFiscalClientesLite";
 import { useFiscalProdutosLite, type FiscalProdutoLite } from "@/hooks/useFiscalProdutosLite";
 import { useFiscalServicosLite, type FiscalServicoLite } from "@/hooks/useFiscalServicosLite";
@@ -158,8 +161,42 @@ export default function RascunhoWizard({
     }));
   }
 
+  // CFOP por cenário: UFs conhecidas + operação/finalidade/data; sem presumir.
+  const companyQ = useFiscalCompanySettings();
+  const destQ = useDraftCustomerFiscal(values.customer_id || null);
+  const emitterUf = (companyQ.data as { state?: string | null } | null | undefined)?.state ?? null;
+  const destUf = destQ.data ? resolveCustomerForPendencies(destQ.data.profile, destQ.data.cliente)?.fiscal_state ?? null : null;
+  const cfopCtx = { emitterUf, destUf, issueDate: values.issue_date, naturezaOperacao: values.natureza_operacao, finalidade: values.finalidade };
+  // Só reavalia após ação do usuário neste wizard (nunca ao abrir nota existente).
+  const autoCfopArmed = useRef(false);
+  const [cfopNotice, setCfopNotice] = useState<DraftCfopReason | null>(null);
+  useEffect(() => {
+    if (!autoCfopArmed.current || readonly) return;
+    let lastReason: DraftCfopReason | null = null;
+    setValues((v) => {
+      let changed = false;
+      const items = v.items.map((it) => {
+        if (it.item_kind !== "PRODUCT") return it;
+        const snap = it.fiscal_profile_snapshot as { cfop_in_state?: string | null; cfop_interstate?: string | null } | undefined;
+        if (!snap || !("cfop_in_state" in snap || "cfop_interstate" in snap)) return it;
+        if (!isAutoCfop(it.cfop, snap)) return it;
+        const r = selectDraftCfop({ cfopInState: snap.cfop_in_state, cfopInterstate: snap.cfop_interstate, ...cfopCtx });
+        lastReason = r.reason === "ok" ? lastReason : r.reason;
+        if ((it.cfop ?? "") === r.cfop) return it;
+        changed = true;
+        return { ...it, cfop: r.cfop };
+      });
+      return changed ? { ...v, items } : v;
+    });
+    setCfopNotice(lastReason);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emitterUf, destUf, values.issue_date, values.natureza_operacao, values.finalidade, values.items.length]);
+
   function applyProduto(idx: number, p: FiscalProdutoLite) {
+    autoCfopArmed.current = true;
     const profile = p.fiscal_profile;
+    const pick = selectDraftCfop({ cfopInState: profile?.cfop_in_state, cfopInterstate: profile?.cfop_interstate, ...cfopCtx });
+    setCfopNotice(pick.reason === "ok" ? null : pick.reason);
     const snap = profile
       ? {
           kind: "PRODUCT" as const,
@@ -188,7 +225,7 @@ export default function RascunhoWizard({
       commercial_unit: profile?.commercial_unit ?? "UN",
       ncm: profile?.ncm ?? "",
       cest: profile?.cest ?? "",
-      cfop: profile?.cfop_in_state ?? "",
+      cfop: selectDraftCfop({ cfopInState: profile?.cfop_in_state, cfopInterstate: profile?.cfop_interstate, ...cfopCtx }).cfop,
       origin_code: profile?.origin_code ?? "",
       icms_cst: profile?.icms_cst ?? "",
       icms_csosn: profile?.icms_csosn ?? "",
@@ -393,6 +430,7 @@ export default function RascunhoWizard({
                   currentId={values.customer_id}
                   currentDoc={values.customer_document}
                   onPick={(c) => {
+                    autoCfopArmed.current = true;
                     set("customer_id", c.id);
                     set("customer_document", (c.cpf_cnpj ?? "").replace(/\D/g, ""));
                     set("customer_snapshot", { nome: c.nome, cpf_cnpj: c.cpf_cnpj });
