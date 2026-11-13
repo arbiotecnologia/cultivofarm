@@ -10,7 +10,7 @@ const db = supabase as any;
 
 export interface CatalogService { id: string; code: string | null; name: string; description: string | null; unit: string; unit_price: number; is_active: boolean; updated_at: string }
 export interface ServiceEngagement { id: string; service_id: string; customer_id: string; performed_on: string; quantity: number; unit_price: number; total_amount: number; description: string | null; status: EngagementStatus; fiscal_invoice_id: string | null; updated_at: string }
-export interface InvoiceStatusRow { id: string; status: string | null; normalized_status: string | null; provider_reference: string | null; invoice_number: string | null; provider_status_raw?: string | null }
+export interface InvoiceStatusRow { id: string; status: string | null; normalized_status: string | null; provider_reference: string | null; invoice_number: string | null; provider_status_raw?: string | null; environment?: string | null; draft_version?: number | null }
 
 export const SERVICE_KEYS = {
   root: ["catalog-services"] as const,
