@@ -22,9 +22,9 @@ insert into public.catalog_services(id,organization_id,name,unit,is_active) valu
   ('00000000-0000-4000-8000-0000000005a1','00000000-0000-4000-8000-00000000000a','QA Consultoria','H',true),
   ('00000000-0000-4000-8000-0000000005a2','00000000-0000-4000-8000-00000000000a','QA Sem perfil','UN',true),
   ('00000000-0000-4000-8000-0000000005b1','00000000-0000-4000-8000-00000000000b','QA Serv B','UN',true);
-insert into public.service_fiscal_profiles(organization_id,service_id,service_ref,is_active,lc116_item,national_taxation_code,incidence_municipality_ibge_code,iss_rate,iss_withheld_default)
-  values ('00000000-0000-4000-8000-00000000000a','00000000-0000-4000-8000-0000000005a1','qa-consultoria',true,'17.01','170101','3147006',2.5,false),
-         ('00000000-0000-4000-8000-00000000000b','00000000-0000-4000-8000-0000000005b1','qa-serv-b',true,'17.01','170101','3550308',3,false);
+insert into public.service_fiscal_profiles(organization_id,service_id,source_reference,service_name,is_active,lc116_item,national_taxation_code,incidence_municipality_ibge_code,iss_rate,iss_withheld_default)
+  values ('00000000-0000-4000-8000-00000000000a','00000000-0000-4000-8000-0000000005a1','qa-consultoria','QA Consultoria',true,'17.01','170101','3147006',2.5,false),
+         ('00000000-0000-4000-8000-00000000000b','00000000-0000-4000-8000-0000000005b1','qa-serv-b','QA Serv B',true,'17.01','170101','3550308',3,false);
 insert into public.service_engagements(id,organization_id,service_id,customer_id,performed_on,quantity,unit_price,status) values
   ('00000000-0000-4000-8000-0000000e0a01','00000000-0000-4000-8000-00000000000a','00000000-0000-4000-8000-0000000005a1','00000000-0000-4000-8000-00000000c1a1','2026-11-10',2,150,'READY'),
   ('00000000-0000-4000-8000-0000000e0a02','00000000-0000-4000-8000-00000000000a','00000000-0000-4000-8000-0000000005a1','00000000-0000-4000-8000-00000000c1a1','2026-11-11',1.5,100,'READY'),
@@ -51,8 +51,8 @@ insert into qa_result select 'cria_rascunho', (r->>'invoice_id') is not null and
 reset role;
 insert into qa_result select 'nota_nfse_draft', count(*)=1, string_agg(invoice_type||'/'||document_model||'/'||normalized_status||'/'||environment||'/'||total_amount,';')
   from public.fiscal_invoices where id = (select (r->>'invoice_id')::uuid from qa_first) and invoice_type='NFSE' and document_model='NFSE' and normalized_status='DRAFT' and environment='HOMOLOGATION' and total_amount=450.00 and organization_id='00000000-0000-4000-8000-00000000000a' and company_settings_id='00000000-0000-4000-8000-0000000c0a01' and customer_id='00000000-0000-4000-8000-00000000c1a1';
-insert into qa_result select 'itens_snapshot', count(*)=2 and bool_and(item_kind='SERVICE' and source_item_type='SERVICE' and source_item_id='00000000-0000-4000-8000-0000000005a1' and fiscal_profile_snapshot->>'national_tax_code'='170101' and (tax_snapshot->>'iss_rate')::numeric=2.5), string_agg(seq||':'||net_value||':'||coalesce(commercial_unit,'-'),',')
-  from public.fiscal_invoice_items where invoice_id = (select (r->>'invoice_id')::uuid from qa_first);
+insert into qa_result select 'itens_snapshot', count(*)=2 and bool_and(item_kind='SERVICE' and source_item_type='SERVICE' and source_item_id='00000000-0000-4000-8000-0000000005a1' and fiscal_profile_snapshot->>'national_tax_code'='170101' and (tax_snapshot->>'iss_rate')::numeric=2.5), string_agg(item_sequence||':'||net_value||':'||coalesce(commercial_unit,'-'),',')
+  from public.fiscal_invoice_items where fiscal_invoice_id = (select (r->>'invoice_id')::uuid from qa_first);
 insert into qa_result select 'prestacoes_faturadas', count(*)=2 and bool_and(status='BILLED' and fiscal_invoice_id=(select (r->>'invoice_id')::uuid from qa_first)), string_agg(status,',')
   from public.service_engagements where id in ('00000000-0000-4000-8000-0000000e0a01','00000000-0000-4000-8000-0000000e0a02');
 insert into qa_result select 'sem_recebivel', count(*)=0, count(*)::text from public.accounts_receivable where organization_id='00000000-0000-4000-8000-00000000000a';
