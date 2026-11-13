@@ -21,6 +21,7 @@
  * - Nenhuma emissão. Nenhum campo fora do contrato.
  */
 import { z } from "zod";
+import { mergeFederalDefaults } from "./serviceNfseDpsForm";
 import type { Database } from "@/integrations/supabase/cultivofarm.types";
 
 export type ServiceFiscalRow = any;
@@ -95,7 +96,10 @@ export const serviceFiscalFormSchema = z.object({
   accounting_notes: z.string().trim().max(2000).optional().default(""),
 });
 
-export type ServiceFiscalFormValues = z.infer<typeof serviceFiscalFormSchema>;
+export type ServiceFiscalFormValues = z.infer<typeof serviceFiscalFormSchema> & {
+  /** Complemento DPS NFS-e Nacional; `undefined` = não alterar, `null` = remover. */
+  nfse_dps?: import("../../../supabase/functions/_shared/nfse/dpsProfile").NfseDpsProfile | null;
+};
 
 // ————————————————————— Row → Form defaults —————————————————————
 export function rowToFormValues(
@@ -216,6 +220,9 @@ export function buildInsertPayload(
   if (values.iss_withheld_default === true) {
     payload.iss_withheld_default = true;
   }
+  if (values.nfse_dps) {
+    payload.federal_withholding_defaults = mergeFederalDefaults(null, values.nfse_dps);
+  }
   return payload;
 }
 
@@ -242,6 +249,12 @@ export function buildUpdatePayload(
   if (nextIss !== prevIss) payload.iss_rate = nextIss;
   if (values.iss_withheld_default !== current.iss_withheld_default) {
     payload.iss_withheld_default = values.iss_withheld_default;
+  }
+  if (values.nfse_dps !== undefined) {
+    const next = mergeFederalDefaults(current.federal_withholding_defaults, values.nfse_dps);
+    if (JSON.stringify(next) !== JSON.stringify(current.federal_withholding_defaults ?? null)) {
+      payload.federal_withholding_defaults = next;
+    }
   }
   if (identity) {
     if (identity.service_id !== (current.service_id ?? null)) {
