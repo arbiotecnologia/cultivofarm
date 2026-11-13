@@ -10,7 +10,11 @@
  * certificado deve ser o CNPJ do prestador. A chave privada existe só em
  * memória durante a chamada; nunca é logada, retornada nem persistida.
  */
-import forge from "npm:node-forge@1";
+import forgeModule from "npm:node-forge@1";
+// deno-lint-ignore no-explicit-any
+const forge = forgeModule as any;
+// deno-lint-ignore no-explicit-any
+type Cert = any;
 import { NFSE_NAMESPACE } from "./dps.ts";
 
 export class DpsSignError extends Error {
@@ -40,7 +44,7 @@ function signedInfo(id: string, digest: string): string {
 }
 
 /** CNPJ ICP-Brasil do titular: OtherName 2.16.76.1.3.3 no subjectAltName. */
-export function certificateCnpj(cert: forge.pki.Certificate): string | null {
+export function certificateCnpj(cert: Cert): string | null {
   const ext = cert.getExtension("subjectAltName") as { value?: string } | null;
   const raw = ext?.value;
   if (!raw) return null;
@@ -57,10 +61,10 @@ export interface DpsSignResult {
 }
 
 export function signDpsXml(args: { xml: string; dpsId: string; emitterCnpj: string; material: DpsSigningMaterial; now?: Date }): DpsSignResult {
-  let cert: forge.pki.Certificate; let key: forge.pki.rsa.PrivateKey;
+  let cert: Cert; let key: forge.pki.rsa.PrivateKey;
   try { cert = forge.pki.certificateFromPem(args.material.certPem); } catch { throw new DpsSignError("CERTIFICATE_MISSING_X509"); }
-  try { key = forge.pki.privateKeyFromPem(args.material.keyPem) as forge.pki.rsa.PrivateKey; } catch { throw new DpsSignError("CERTIFICATE_MISSING_KEY"); }
-  const pub = cert.publicKey as forge.pki.rsa.PublicKey;
+  try { key = forge.pki.privateKeyFromPem(args.material.keyPem); } catch { throw new DpsSignError("CERTIFICATE_MISSING_KEY"); }
+  const pub = cert.publicKey;
   if (!pub.n || pub.n.compareTo(key.n) !== 0) throw new DpsSignError("CERTIFICATE_KEY_MISMATCH");
   const now = args.now ?? new Date();
   if (cert.validity.notBefore > now) throw new DpsSignError("CERTIFICATE_NOT_YET_VALID");
@@ -103,7 +107,7 @@ export function verifyDpsSignature(signedXml: string): { valid: boolean; code: s
   try {
     const cert = forge.pki.certificateFromAsn1(forge.asn1.fromDer(forge.util.decode64(cb)));
     const smd = forge.md.sha256.create(); smd.update(si.replace("<SignedInfo>", `<SignedInfo xmlns="${DSIG}">`), "utf8");
-    const ok = (cert.publicKey as forge.pki.rsa.PublicKey).verify(smd.digest().bytes(), forge.util.decode64(sv));
+    const ok = cert.publicKey.verify(smd.digest().bytes(), forge.util.decode64(sv));
     return ok ? { valid: true, code: null } : { valid: false, code: "SIGNATURE_VALUE_MISMATCH" };
   } catch { return { valid: false, code: "SIGNATURE_VALUE_MISMATCH" }; }
 }

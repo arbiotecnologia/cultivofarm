@@ -51,8 +51,8 @@ async function loadA1(admin: SupabaseClient, invoiceId: string): Promise<{ certP
   try {
     const dl = await admin.storage.from("fiscal-certificates").download(m.data.object_path as string);
     if (dl.error || !dl.data) throw new Error("download");
-    const key = await crypto.subtle.importKey("raw", master, "AES-GCM", false, ["decrypt"]);
-    plain = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromBinaryColumn(m.data.material_iv as string) }, key, await dl.data.arrayBuffer()));
+    const key = await crypto.subtle.importKey("raw", master as BufferSource, "AES-GCM", false, ["decrypt"]);
+    plain = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromBinaryColumn(m.data.material_iv as string) as BufferSource }, key, await dl.data.arrayBuffer()));
     const b = parseSigningBundle(new TextDecoder().decode(plain));
     return { certPem: b.certPem, chainPem: [b.certPem, ...b.chainPem].join("\n"), keyPem: b.keyPem };
   } catch { throw Object.assign(new Error("cert"), { code: "CERTIFICATE_DECRYPT_FAILED" }); } finally { plain?.fill(0); }
@@ -181,6 +181,8 @@ Deno.serve(async (req) => {
     const err = e as { code?: string; status?: number; missing?: string[] };
     return reply(err.status ?? 500, { code: err.code ?? "nfse_internal_error", missing: err.missing, authorized: false, retrySafe: false });
   } finally {
-    if (a1) { a1.keyPem = ""; a1 = null; }
+    const held = a1 as { keyPem: string } | null;
+    if (held) held.keyPem = "";
+    a1 = null;
   }
 });

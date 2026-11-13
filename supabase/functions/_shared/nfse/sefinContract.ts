@@ -47,7 +47,7 @@ const unb64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 
 export async function gzipBase64(text: string): Promise<string> {
   const bytes = new TextEncoder().encode(text);
-  return b64(await pump(new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"))));
+  return b64(await pump(new Blob([bytes as BlobPart]).stream().pipeThrough(new CompressionStream("gzip"))));
 }
 /** Limite de 5 MiB descompactado: resposta maior é tratada como inválida. */
 export async function gunzipBase64(data: string, maxBytes = 5 * 1024 * 1024): Promise<string> {
@@ -55,7 +55,7 @@ export async function gunzipBase64(data: string, maxBytes = 5 * 1024 * 1024): Pr
   try { raw = unb64(data.replace(/\s+/g, "")); } catch { throw new SefinContractError("NFSE_RESPONSE_GZIP_INVALID"); }
   if (raw.length < 2 || raw[0] !== 0x1f || raw[1] !== 0x8b) throw new SefinContractError("NFSE_RESPONSE_GZIP_INVALID");
   let out: Uint8Array;
-  try { out = await pump(new Blob([raw]).stream().pipeThrough(new DecompressionStream("gzip"))); } catch { throw new SefinContractError("NFSE_RESPONSE_GZIP_INVALID"); }
+  try { out = await pump(new Blob([raw as BlobPart]).stream().pipeThrough(new DecompressionStream("gzip"))); } catch { throw new SefinContractError("NFSE_RESPONSE_GZIP_INVALID"); }
   if (out.length > maxBytes) throw new SefinContractError("NFSE_RESPONSE_TOO_LARGE");
   return new TextDecoder("utf-8", { fatal: true }).decode(out);
 }
