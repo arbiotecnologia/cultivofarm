@@ -6,7 +6,8 @@
  */
 import { isCivilDate } from "@/lib/comercial/civilDate";
 
-export const OWNED_PRODUCT_FISCAL_ENABLED = false as const;
+// Writer canônico instalado em produção (SECURITY DEFINER, EXECUTE só authenticated, dono/papel validados no servidor).
+export const OWNED_PRODUCT_FISCAL_ENABLED = true as boolean;
 
 export const OWNED_FISCAL_FIELDS = [
   "ncm", "cest", "cfop_in_state", "cfop_interstate", "origin_code", "icms_cst", "icms_csosn",

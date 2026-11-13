@@ -11,6 +11,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { useProductFiscalAccess } from "@/hooks/useProductFiscalAccess";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/cultivofarm.types";
 import {

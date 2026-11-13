@@ -195,7 +195,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
   // Produto PRÓPRIO da empresa (catálogo exclusivo): administrador/gestor do tenant, somente pelo writer canônico
   // e só quando liberado (OWNED_PRODUCT_FISCAL_ENABLED); sem escrita global de Superadmin. Microrganismo: permissão
   // canônica existente da rota tenant (admin/financeiro rw, gestor r), nunca na plataforma.
-  const canEditProduct = !platformGlobal && OWNED_PRODUCT_FISCAL_ENABLED && fiscalAccess.ready && fiscalAccess.canWriteOwnedProduct === true;
+  const canEditProductRole = !platformGlobal && OWNED_PRODUCT_FISCAL_ENABLED && fiscalAccess.ready && fiscalAccess.canWriteOwnedProduct === true;
   const canEditMicro = !platformGlobal && routeAccess === "rw";
   // Plataforma: microrganismos globais exibidos SOMENTE em consulta; a escrita
   // continua na rota canônica da empresa até existir autoridade server-side própria.
@@ -559,7 +559,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
                       r,
                       readinessByProduct,
                       microReadinessByMicro,
-                      canEditProduct,
+                      r.kind === "produto" && canEditProduct(r.product_id),
                       canEditMicro,
                       readinessUnknown,
                       microProfilesUnknown,
@@ -620,7 +620,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
           productId={editing.productId}
           displayName={editing.displayName}
           displayCodigo={editing.displayCodigo}
-          canEdit={canEditProduct}
+          canEdit={canEditProduct(editing.productId)}
           onClose={() => setEditing(null)}
         />
       ) : null}

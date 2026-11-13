@@ -11,7 +11,7 @@ import { FEATURE_FLAGS } from "@/config/featureFlags";
 import { getAccessLevel } from "@/lib/permissions";
 import { useProductFiscalAccess } from "@/hooks/useProductFiscalAccess";
 import { OWNED_PRODUCT_FISCAL_ENABLED } from "@/lib/fiscal/ownedProductFiscal";
-import { useProductFiscalProfile } from "@/hooks/useProductFiscalProfiles";
+import { useProductFiscalProfile, useOwnedProductIds } from "@/hooks/useProductFiscalProfiles";
 import { useMicroorganismFiscalProfile } from "@/hooks/useMicroorganismFiscalProfiles";
 import {
   productPendencies, customerPendencies, presentationPendencies, resolveCustomerForPendencies,
@@ -98,7 +98,9 @@ export function ProductFiscalGuide({ productId, displayName, displayCodigo = nul
   const access = useProductFiscalAccess("product-fiscal-guide");
   const { role } = useAuth();
   const canRead = getAccessLevel(role, "/configuracoes/fiscal/produtos") !== "none";
-  const canEdit = OWNED_PRODUCT_FISCAL_ENABLED && access.ready && access.canWriteOwnedProduct === true;
+  const ownership = useOwnedProductIds([productId]);
+  const canEdit = OWNED_PRODUCT_FISCAL_ENABLED && access.ready && access.canWriteOwnedProduct === true
+    && ownership.confirmed && ownership.owned.has(productId);
   const [open, setOpen] = useState(false);
   const q = useProductFiscalProfile(productId);
   const pres = usePresentations("produto_id", productId);
