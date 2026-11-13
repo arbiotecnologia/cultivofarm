@@ -10,11 +10,13 @@ import FiscalProdutos from "@/pages/configuracoes/FiscalProdutos";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { nfseHomologationSendBlockers, NFSE_SEND_BLOCKER_LABELS } from "@/lib/fiscal/nfseHomologationSend";
 import { getAccessLevel } from "@/lib/permissions";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
 import {
   useFiscalCompanySettings,
   useUpdateFiscalCompanySettings,
+  useSetNfseHomologationSend,
   useInitFiscalCompanySettings,
   computeReadiness,
 } from "@/hooks/useFiscalCompanySettings";
@@ -167,6 +169,7 @@ export default function FiscalEmpresa() {
 
   const settingsQuery = useFiscalCompanySettings({ enabled: uiEnabled && access !== "none" });
   const update = useUpdateFiscalCompanySettings();
+  const nfseSend = useSetNfseHomologationSend();
   const saveInFlight = useRef(false);
   const draftDirty = useRef(false);
   const editRevision = useRef(0);
@@ -451,6 +454,27 @@ export default function FiscalEmpresa() {
       } else {
         toast({ title: "Não foi possível salvar", variant: "destructive" });
       }
+    } finally {
+      saveInFlight.current = false;
+    }
+  }
+
+  async function onToggleNfseSend(next: boolean) {
+    const saved = settingsQuery.data;
+    if (!canEdit || !saved || saveInFlight.current || draftDirty.current) return;
+    saveInFlight.current = true;
+    try {
+      const row = await nfseSend.mutateAsync({ id: saved.id, expectedVersion: saved.configuration_version ?? 0, enabled: next, savedRow: saved });
+      setBaseline(rowToFormValues(row));
+      setValues(rowToFormValues(row));
+      toast({ title: next ? "Envio de NFS-e em homologação habilitado." : "Envio de NFS-e em homologação desabilitado." });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "unknown";
+      toast({
+        title: msg === "permission_denied" ? "Sem permissão para alterar" : msg === "not_eligible" ? "Condições não atendidas" : msg === "conflict" ? "Configuração salva mudou ou não atende às condições" : "Não foi possível alterar",
+        description: msg === "conflict" ? "Recarregue e confira os dados salvos." : undefined,
+        variant: "destructive",
+      });
     } finally {
       saveInFlight.current = false;
     }
@@ -802,6 +826,34 @@ export default function FiscalEmpresa() {
                     <div className="text-xs text-muted-foreground">Não autoriza emissão.</div>
                   </div>
                   <Switch aria-label="NFS-e habilitada para preparação" checked={nfse.enabled_for_preparation === true} onCheckedChange={(v) => setNfse("enabled_for_preparation", v)} />
+                </div>
+                <div className="rounded-md border p-3 md:col-span-2 space-y-2" data-testid="nfse-homologation-send">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-medium">Habilitar envio de NFS-e em homologação</div>
+                      <div className="text-xs text-muted-foreground">Grava imediatamente nos dados salvos. Produção permanece desabilitada.</div>
+                    </div>
+                    {(() => {
+                      const saved = settingsQuery.data;
+                      const blockers = nfseHomologationSendBlockers(saved);
+                      const on = saved?.nfse_enabled === true;
+                      const dirty = draftDirty.current;
+                      return (
+                        <Switch
+                          aria-label="Habilitar envio de NFS-e em homologação"
+                          checked={on}
+                          disabled={readonly || !saved || nfseSend.isPending || dirty || (!on && blockers.length > 0)}
+                          onCheckedChange={(v) => void onToggleNfseSend(v)}
+                        />
+                      );
+                    })()}
+                  </div>
+                  {draftDirty.current ? <p className="text-xs text-muted-foreground">Salve ou descarte as alterações do formulário antes.</p> : null}
+                  {settingsQuery.data?.nfse_enabled !== true && nfseHomologationSendBlockers(settingsQuery.data).length > 0 ? (
+                    <ul className="text-xs text-muted-foreground list-disc pl-4">
+                      {nfseHomologationSendBlockers(settingsQuery.data).map((b) => <li key={b}>{NFSE_SEND_BLOCKER_LABELS[b]}</li>)}
+                    </ul>
+                  ) : null}
                 </div>
                 <FieldRow id="nfse_environment" label="Ambiente NFS-e">
                   <SelectNative id="nfse_environment" value={nfse.environment as string | undefined} options={FISCAL_ENVIRONMENT.toOptions(ALLOWED_ENVIRONMENTS)} onChange={(v) => setNfse("environment", v === "" ? undefined : v)} />
