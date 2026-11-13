@@ -1,0 +1,3 @@
+- NFS-e HML reconciliation GETs use the Go crypto/tls WASM transport (host fixed, Mozilla roots, chain+hostname verified, RFC 5746 echo required, renegotiate once as client); POST emission and production never use it — Deno rustls cannot answer IIS post-request renegotiation.
+- Rebuild only via go/build.sh (production build without the `nfsetest` tag); the embedded SHA-256 is checked at load. The `nfsetest` build differs only by adding a synthetic CA and is never deployed.
+- Local tests use ephemeral synthetic certs in /tmp/rn; live probes from the sandbox are certificate-less /docs/index GETs only — the real A1 never leaves the Edge process.
