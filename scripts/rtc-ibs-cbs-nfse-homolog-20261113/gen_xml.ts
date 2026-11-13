@@ -26,7 +26,7 @@ nfe("interna-cst410", withIbs(base, { schema_version: 1, cst_ibs_cbs: "410", c_c
 // DPS pelo caminho real rascunho→mapeamento→builder.
 const svcIbs = { schema_version: 1, cst_ibs_cbs: "000", c_class_trib: "000001", c_ind_op: "100301", effective_from: "2026-01-01", aliquota_cbs: 0.9, aliquota_ibs_uf: 0.1, aliquota_ibs_municipio: 0, additional_fields: { indDest: "0", indFinal: "0" } };
 const inv = { id: "00000000-0000-4000-8000-000000000001", environment: "HOMOLOGATION", issue_date: "2026-11-13", draft_version: 3, total_amount: 1000,
-  fiscal_profile_snapshot: { nfse_dps: { schema_version: 1, service_location_ibge_code: "9999902", nbs_code: "012345678", tot_trib: { mode: "IND" } } },
+  fiscal_profile_snapshot: { nfse_dps: { v: 1, service_location_ibge_code: "9999902", nbs_code: "012345678", tot_trib: { mode: "IND" } } },
   items: [{ description: "Serviço sintético", net_value: 1000, fiscal_profile_snapshot: { national_tax_code: "010101", municipality_ibge_code: "9999901", ibs_cbs: svcIbs }, tax_snapshot: { iss_rate: 2, iss_withheld: false } }] };
 const comp = { cnpj: "00000000000191", municipality_ibge_code: "9999901", municipal_registration: null, crt: "3", fiscal_environment: "HOMOLOGATION" };
 const cust = { cpf_cnpj: "11222333000181", name: "Tomador Sintético", email: null };
