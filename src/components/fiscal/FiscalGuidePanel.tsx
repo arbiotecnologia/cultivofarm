@@ -40,7 +40,7 @@ function Shell({ status, hasProfile, scenarios, link, canOpen }: {
     <div className="space-y-4" data-testid="fiscal-guide">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-medium">Perfil fiscal:</span>
-        {hasProfile ? <Badge variant="secondary">{getFiscalStatusLabel(status ?? "")}</Badge>
+        {hasProfile ? <Badge variant="secondary">{getFiscalStatusLabel("product", status)}</Badge>
           : <Badge variant="outline">Sem perfil</Badge>}
       </div>
       {scenarios.map((s) => (
