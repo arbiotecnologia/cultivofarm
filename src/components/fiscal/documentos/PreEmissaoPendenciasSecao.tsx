@@ -99,12 +99,9 @@ function ServiceItem({ item, idx }: { item: RascunhoItem; idx: number }) {
   );
 }
 
-export function PreEmissaoPendenciasSecao({ customerId, items }: { customerId: string | null | undefined; items: RascunhoItem[] }) {
-  const { role } = useAuth();
-  const canEditCustomer = getAccessLevel(role, "/configuracoes/fiscal/clientes") === "rw";
-  const [openCustomer, setOpenCustomer] = useState(false);
-  const company = useFiscalCompanySettings();
-  const cust = useQuery({
+/** Leitura compartilhada (mesma chave) do perfil + cadastro do destinatário. */
+export function useDraftCustomerFiscal(customerId: string | null | undefined) {
+  return useQuery({
     queryKey: ["fiscal", "pre-emissao", "customer", customerId],
     enabled: !!customerId,
     retry: false,
@@ -117,6 +114,14 @@ export function PreEmissaoPendenciasSecao({ customerId, items }: { customerId: s
       return { profile: prof.data ?? null, cliente: cli.data ?? null };
     },
   });
+}
+
+export function PreEmissaoPendenciasSecao({ customerId, items }: { customerId: string | null | undefined; items: RascunhoItem[] }) {
+  const { role } = useAuth();
+  const canEditCustomer = getAccessLevel(role, "/configuracoes/fiscal/clientes") === "rw";
+  const [openCustomer, setOpenCustomer] = useState(false);
+  const company = useFiscalCompanySettings();
+  const cust = useDraftCustomerFiscal(customerId);
   const emitter = company.data as { state?: string | null; crt?: string | null } | null | undefined;
   const emitterUf = emitter?.state ?? null;
   const crt = emitter?.crt ?? null;
