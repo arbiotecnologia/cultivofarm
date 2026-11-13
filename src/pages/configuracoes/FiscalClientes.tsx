@@ -119,6 +119,26 @@ export default function FiscalClientes() {
   const [taxpayer, setTaxpayer] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [editing, setEditing] = useState<CustomerListItem | "new" | null>(null);
+  // Atalho da Guia Fiscal (?cliente=<customer_id>): abre o perfil existente ou o editor novo com o cliente
+  // pré-selecionado; nada é gravado até o usuário salvar pelo fluxo canônico.
+  const [searchParams] = useSearchParams();
+  const deepCustomerId = searchParams.get("cliente");
+  const [presetCustomerId, setPresetCustomerId] = useState<string | null>(null);
+  const deepHandled = useRef<string | null>(null);
+  useEffect(() => {
+    if (!deepCustomerId || deepHandled.current === deepCustomerId || access === "none" || !uiEnabled) return;
+    deepHandled.current = deepCustomerId;
+    let alive = true;
+    (supabase as any).from("customer_fiscal_profiles")
+      .select("id, customer_id, taxpayer_indicator, state_registration_status, municipal_registration, fiscal_municipality_ibge_code, fiscal_city, fiscal_state, rural_producer_indicator, foreign_customer_indicator, profile_status, updated_at")
+      .eq("customer_id", deepCustomerId).maybeSingle()
+      .then(({ data, error }: { data: CustomerListItem | null; error: unknown }) => {
+        if (!alive || error) return;
+        if (data) setEditing({ ...data, cliente_nome: null, cliente_cpf_cnpj: null } as CustomerListItem);
+        else if (canEdit) { setPresetCustomerId(deepCustomerId); setEditing("new"); }
+      });
+    return () => { alive = false; };
+  }, [deepCustomerId, access, uiEnabled, canEdit]);
 
   const listQuery = useCustomerFiscalList(
     { search, status, taxpayerIndicator: taxpayer, page, pageSize: PAGE_SIZE },
@@ -408,7 +428,8 @@ export default function FiscalClientes() {
           item={editing}
           canEdit={canEdit}
           knownProfiledCustomerIds={customerIds}
-          onClose={() => setEditing(null)}
+          presetCustomerId={editing === "new" ? presetCustomerId : null}
+          onClose={() => { setEditing(null); setPresetCustomerId(null); }}
         />
       ) : null}
     </div>
@@ -416,9 +437,10 @@ export default function FiscalClientes() {
 }
 
 function EditDrawer({
-  item, canEdit, knownProfiledCustomerIds, onClose,
+  item, canEdit, knownProfiledCustomerIds, presetCustomerId = null, onClose,
 }: {
   item: CustomerListItem | "new";
+  presetCustomerId?: string | null;
   canEdit: boolean;
   knownProfiledCustomerIds?: readonly string[];
   onClose: () => void;
@@ -437,14 +459,14 @@ function EditDrawer({
   useEffect(() => {
     if (isNew) {
       setValues(rowToFormValues(null));
-      setCustomerIdInput("");
+      setCustomerIdInput(presetCustomerId ?? "");
       return;
     }
     if (profileQuery.data !== undefined) {
       setValues(rowToFormValues(profileQuery.data));
       setCustomerIdInput(profileQuery.data?.customer_id ?? item.customer_id);
     }
-  }, [isNew, profileQuery.data, item]);
+  }, [isNew, profileQuery.data, item, presetCustomerId]);
 
   function setField<K extends keyof CustomerFiscalFormValues>(
     k: K,

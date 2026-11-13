@@ -15,6 +15,8 @@ import { TENANT_CAN_EDIT_GLOBAL_CATALOG } from "@/lib/catalogo/globalCatalogWrit
  *  - Nenhuma nota é emitida por esta tela.
  */
 import { useMemo, useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useProductFiscalAccess } from "@/hooks/useProductFiscalAccess";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useAuth } from "@/hooks/useAuth";
@@ -206,6 +208,20 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
   const [familia, setFamilia] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [editing, setEditing] = useState<EditingTarget | null>(null);
+  // Atalho da Guia Fiscal (?produto=<id>): abre o MESMO editor; leitura apenas, nada é criado ao abrir.
+  const [searchParams] = useSearchParams();
+  const deepProductId = searchParams.get("produto");
+  const deepHandled = useRef<string | null>(null);
+  useEffect(() => {
+    if (!deepProductId || deepHandled.current === deepProductId || access === "none" || !uiEnabled) return;
+    deepHandled.current = deepProductId;
+    let alive = true;
+    (supabase as any).from("produtos").select("id, nome, codigo").eq("id", deepProductId).maybeSingle()
+      .then(({ data }: { data: { id: string; nome: string; codigo: string | null } | null }) => {
+        if (alive && data) setEditing({ entity: "produto", productId: data.id, displayName: data.nome, displayCodigo: data.codigo ?? null });
+      });
+    return () => { alive = false; };
+  }, [deepProductId, access, uiEnabled]);
   const [associating, setAssociating] = useState<
     { microorganismId: string; microorganismNome: string; currentProductId: string | null } | null
   >(null);
