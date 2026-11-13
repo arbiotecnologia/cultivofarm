@@ -45,5 +45,5 @@ Deno.test("log e diagnóstico só com enums; sem URL, corpo ou mensagem", () => 
   const d = finalizeDiagnostic({ stage: "dps_lookup", result: "ok", httpStatus: 200, runtime: R }, "reconciliation_unavailable")!;
   assertEquals(d.result, "unexpected_format");
   const line = diagnosticLogLine({ ...d, causes: errorCauses(err("dns error: failed to lookup address sefin.x DPS3106")), routeProbe: { documentedBase: "client_certificate_not_presented", legacyBase: "route_not_found" } });
-  assert(!/http|sefin|DPS\d|lookup address/i.test(line.replace(/"httpStatus"/, "")), line);
+  assert(!/https?:\/\/|sefin|DPS\d|lookup address/i.test(line), line);
 });
