@@ -3,10 +3,6 @@ import { useQuery, useQueryClient, type UseQueryOptions } from "@tanstack/react-
 import { useStorageAccessScope } from "./useStorageAccessScope";
 
 const PORTAL_META = "scopedPortalQuery";
-/** Identity part of a storage scope: everything except the resource name. */
-export function actorIdentity(scope: string): string {
-  try { const v = JSON.parse(scope) as unknown[]; return JSON.stringify([v[0], v[1], v[2], v[3], v[5]]); } catch { return scope; }
-}
 
 /** Cache isolation only; each existing RPC/RLS must independently authorize. */
 export function useScopedPortalQuery<T>(options: Omit<UseQueryOptions<T, Error>, "queryFn"> & { queryFn: (signal: AbortSignal) => Promise<T> }, access?: { request: ReturnType<typeof useStorageAccessScope>; actor: ReturnType<typeof useStorageAccessScope> }) {
@@ -18,7 +14,10 @@ export function useScopedPortalQuery<T>(options: Omit<UseQueryOptions<T, Error>,
   const actor = access?.actor ?? defaultActor;
   const client = useQueryClient();
   const prefix = options.queryKey[0];
-  const identity = actorIdentity(actor.scope);
+  // Eviction identity is ALWAYS the canonical storage actor (ready/user/tenant/roles/epoch),
+  // never parsed from resource-specific scopes (fiscal/platform scopes have other shapes).
+  // Resource-specific actor/request scopes still key and fence each query.
+  const identity = defaultActor.scope;
   useEffect(() => {
     // Evict only wrapper-owned caches of another identity/tenant/roles/epoch.
     // Different actor resources (same identity) and unrelated unscoped queries
