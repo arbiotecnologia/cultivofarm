@@ -171,7 +171,7 @@ export const ibsCbsItemSchema = z
     cst_ibs_cbs: codeString(6).optional(),
     c_class_trib: codeString(10).optional(),
     c_credito_presumido: codeString(10).optional(),
-    c_ind_op: codeString(4).optional(),
+    c_ind_op: codeString(6).optional(),
 
     aliquota_cbs: percent.optional(),
     aliquota_ibs_uf: percent.optional(),

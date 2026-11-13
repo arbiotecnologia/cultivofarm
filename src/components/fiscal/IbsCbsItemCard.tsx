@@ -25,6 +25,9 @@ import {
   setNfseField,
   type IbsCbsItemConfiguration,
 } from "@/lib/fiscal/rtcConfiguration";
+import {
+  getDestRates, getExtra, ibsCbsIssueLabel, ibsCbsProfileIssues, setDestRates, setExtra,
+} from "@/lib/fiscal/ibsCbsItemForm";
 
 export interface IbsCbsItemCardProps {
   /**
@@ -121,7 +124,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
             </div>
             <div className="grid min-w-0 content-start gap-1.5">
               <Label htmlFor="c_ind_op">Indicador de operação <span className="text-xs text-muted-foreground">(cIndOp)</span></Label>
-              <Input id="c_ind_op" maxLength={4} value={form.c_ind_op ?? ""}
+              <Input id="c_ind_op" maxLength={6} inputMode="numeric" value={form.c_ind_op ?? ""}
                 onChange={(e) => setForm((s) => ({ ...s, c_ind_op: e.target.value || undefined }))}
                 disabled={disabled} />
             </div>
@@ -156,6 +159,37 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
           <p className="text-xs text-muted-foreground">
             Alíquotas não são preenchidas automaticamente. Preencha somente após confirmação normativa.
           </p>
+          {isService ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid min-w-0 content-start gap-1.5">
+                <Label htmlFor="ibs_ind_dest">Destinatário do serviço <span className="text-xs text-muted-foreground">(indDest)</span></Label>
+                <Select value={getExtra(form, "indDest") || "__none"} disabled={disabled}
+                  onValueChange={(v) => setForm((s) => setExtra(s, "indDest", v === "__none" ? "" : v))}>
+                  <SelectTrigger id="ibs_ind_dest"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">Não informado</SelectItem>
+                    <SelectItem value="0">0 — o próprio tomador</SelectItem>
+                    <SelectItem value="1">1 — outra pessoa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid min-w-0 content-start gap-1.5">
+                <Label htmlFor="ibs_ind_final">Consumidor final <span className="text-xs text-muted-foreground">(indFinal)</span></Label>
+                <Select value={getExtra(form, "indFinal") || "__none"} disabled={disabled}
+                  onValueChange={(v) => setForm((s) => setExtra(s, "indFinal", v === "__none" ? "" : v))}>
+                  <SelectTrigger id="ibs_ind_final"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">Não informado</SelectItem>
+                    <SelectItem value="0">0 — não</SelectItem>
+                    <SelectItem value="1">1 — sim</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          ) : (
+            <DestRatesEditor value={getDestRates(form)} disabled={disabled}
+              onChange={(m) => setForm((s) => setDestRates(s, m))} />
+          )}
         </Section>
 
         {/* Fonte normativa */}
@@ -182,6 +216,13 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
               <Input id="effective_from" type="date"
                 value={(form.effective_from ?? "").slice(0, 10)}
                 onChange={(e) => setForm((s) => ({ ...s, effective_from: e.target.value || undefined }))}
+                disabled={disabled} />
+            </div>
+            <div className="grid min-w-0 content-start gap-1.5">
+              <Label htmlFor="effective_to">Vigência final (opcional)</Label>
+              <Input id="effective_to" type="date"
+                value={getExtra(form, "effective_to").slice(0, 10)}
+                onChange={(e) => setForm((s) => setExtra(s, "effective_to", e.target.value))}
                 disabled={disabled} />
             </div>
             <div className="grid min-w-0 content-start gap-1.5">
@@ -424,12 +465,51 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
           >
             Recarregar
           </Button>
+          {itemId && !rtc.loading ? <IssuesList issues={ibsCbsProfileIssues(form, isService)} /> : null}
           <Button type="button" disabled={disabled} onClick={onSave} data-testid="ibs-cbs-save">
             {rtc.saving ? "Salvando…" : "Salvar IBS/CBS"}
           </Button>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function IssuesList({ issues }: { issues: string[] }) {
+  if (!issues.length) return <p className="text-xs text-muted-foreground" data-testid="ibs-cbs-issues-none">Sem pendências de formato para emissão.</p>;
+  return (
+    <ul className="list-disc pl-5 text-xs text-destructive" data-testid="ibs-cbs-issues">
+      {issues.map((i) => <li key={i}>{ibsCbsIssueLabel(i)}</li>)}
+    </ul>
+  );
+}
+
+function DestRatesEditor({ value, disabled, onChange }: { value: Record<string, { uf?: number; mun?: number }>; disabled: boolean; onChange: (m: Record<string, { uf?: number; mun?: number }>) => void }) {
+  const [uf, setUf] = useState("");
+  const rows = Object.entries(value);
+  const num = (v: string) => (v === "" ? undefined : Number(v));
+  return (
+    <div className="space-y-2" data-testid="ibs-cbs-dest-rates">
+      <Label>Alíquotas IBS na UF de destino (operações interestaduais)</Label>
+      <p className="text-xs text-muted-foreground">Sem a UF de destino cadastrada, a NF-e interestadual fica pendente. Nada é presumido.</p>
+      {rows.map(([k, r]) => (
+        <div key={k} className="grid grid-cols-[3rem_1fr_1fr_auto] items-center gap-2">
+          <span className="text-sm font-medium">{k}</span>
+          <Input aria-label={`IBS UF ${k} (%)`} type="number" step="0.0001" min={0} max={100} value={r.uf ?? ""} disabled={disabled}
+            onChange={(e) => onChange({ ...value, [k]: { ...r, uf: num(e.target.value) } })} />
+          <Input aria-label={`IBS Município ${k} (%)`} type="number" step="0.0001" min={0} max={100} value={r.mun ?? ""} disabled={disabled}
+            onChange={(e) => onChange({ ...value, [k]: { ...r, mun: num(e.target.value) } })} />
+          <Button type="button" variant="ghost" size="sm" disabled={disabled}
+            onClick={() => { const n = { ...value }; delete n[k]; onChange(n); }}>Remover</Button>
+        </div>
+      ))}
+      <div className="flex gap-2">
+        <Input aria-label="UF de destino" maxLength={2} className="w-20" value={uf} disabled={disabled}
+          onChange={(e) => setUf(e.target.value.toUpperCase().replace(/[^A-Z]/g, ""))} />
+        <Button type="button" variant="outline" size="sm" disabled={disabled || uf.length !== 2 || uf in value}
+          onClick={() => { onChange({ ...value, [uf]: {} }); setUf(""); }}>Adicionar UF</Button>
+      </div>
+    </div>
   );
 }
 
