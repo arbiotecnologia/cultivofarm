@@ -22,7 +22,7 @@ import {
 } from "@/hooks/useCatalogServices";
 import {
   BillingKeyStore, ENGAGEMENT_STATUS_LABEL, NFSE_STATE_LABEL, READINESS_MISSING_LABEL, canBillServices, canEditServiceFiscalProfile,
-  canRecordEngagement, canWriteServiceCatalog, nfseDisplayState, pendingTransmissionFor, validateBillingSelection,
+  canRecordEngagement, canWriteServiceCatalog, describeReconcileDiagnostic, nfseDisplayState, pendingTransmissionFor, validateBillingSelection,
 } from "@/lib/services/serviceBilling";
 import { ServiceFiscalEditDrawer } from "@/pages/configuracoes/FiscalServicos";
 
@@ -190,8 +190,8 @@ function EngagementsSection({ services, scope }: { services: CatalogService[]; s
       const r = await requestNfseReconcile(invoiceId, transmissionId);
       if (r.code === "authorized" || r.code === "already_authorized") toast({ title: "NFS-e autorizada", description: "Autorização conferida no XML devolvido pelo Sistema Nacional." });
       else if (r.code === "not_processed") toast({ title: "DPS não localizada no Sistema Nacional", description: "O provedor informou que a DPS não foi processada." });
-      else if (r.code === "reconciliation_unavailable") toast({ title: "Envio ainda indeterminado", description: "Sem resposta conclusiva do provedor. O reenvio continua bloqueado; consulte novamente mais tarde." });
-      else toast({ title: NFSE_RESULT_LABEL[r.code] ?? "Consulta não concluída", description: r.message ?? r.code, variant: "destructive" });
+      else if (r.code === "reconciliation_unavailable") toast({ title: "Envio ainda indeterminado", description: `Sem resposta conclusiva. ${describeReconcileDiagnostic(r.diagnostic)}. O reenvio continua bloqueado.` });
+      else toast({ title: NFSE_RESULT_LABEL[r.code] ?? "Consulta não concluída", description: `${r.code}. ${describeReconcileDiagnostic(r.diagnostic)}. O reenvio continua bloqueado.`, variant: "destructive" });
     } catch { toast({ title: "Falha ao consultar envio", description: "O reenvio continua bloqueado.", variant: "destructive" }); }
     finally { setReconciling(null); await Promise.all([transmissions.refetch(), invoices.refetch()]); }
   }

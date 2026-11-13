@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
-import type { EngagementStatus, NfseTransmissionRow } from "@/lib/services/serviceBilling";
+import type { EngagementStatus, NfseReconcileDiagnostic, NfseTransmissionRow } from "@/lib/services/serviceBilling";
 
 // Tabelas novas ainda fora dos tipos gerados: cliente canônico sem tipagem.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -91,9 +91,9 @@ export async function requestNfseReconcile(invoiceId: string, transmissionId: st
   if (error) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const ctx = (error as any).context;
-    try { return (await ctx.json()) as { code: string; message?: string; outcome?: string }; } catch { throw error; }
+    try { return (await ctx.json()) as { code: string; message?: string; outcome?: string; diagnostic?: NfseReconcileDiagnostic }; } catch { throw error; }
   }
-  return data as { code: string; message?: string; outcome?: string; authorized?: boolean };
+  return data as { code: string; message?: string; outcome?: string; authorized?: boolean; diagnostic?: NfseReconcileDiagnostic };
 }
 
 export function useNfseReadiness(enabled: boolean) {
