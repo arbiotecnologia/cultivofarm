@@ -1,0 +1,35 @@
+{
+ "serie_pattern_original": "^0{0,4}\\d{1,5}$",
+ "dps-lucro-presumido-pj-completa.xml": {
+  "xsd_oficial": false,
+  "xsd_oficial_erros": [
+   "Element '{http://www.sped.fazenda.gov.br/nfse}serie': [facet 'pattern'] The value '1' is not accepted by the pattern '^0{0,4}\\d{1,5}$'."
+  ],
+  "xsd_ancora_corrigida": true,
+  "erros": []
+ },
+ "dps-mei-piscofins-sem-aliquota.xml": {
+  "xsd_oficial": false,
+  "xsd_oficial_erros": [
+   "Element '{http://www.sped.fazenda.gov.br/nfse}serie': [facet 'pattern'] The value '1' is not accepted by the pattern '^0{0,4}\\d{1,5}$'."
+  ],
+  "xsd_ancora_corrigida": true,
+  "erros": []
+ },
+ "dps-nao-optante-cpf-minima.xml": {
+  "xsd_oficial": false,
+  "xsd_oficial_erros": [
+   "Element '{http://www.sped.fazenda.gov.br/nfse}serie': [facet 'pattern'] The value '1' is not accepted by the pattern '^0{0,4}\\d{1,5}$'."
+  ],
+  "xsd_ancora_corrigida": true,
+  "erros": []
+ },
+ "dps-simples-nacional-ptottribsn.xml": {
+  "xsd_oficial": false,
+  "xsd_oficial_erros": [
+   "Element '{http://www.sped.fazenda.gov.br/nfse}serie': [facet 'pattern'] The value '1' is not accepted by the pattern '^0{0,4}\\d{1,5}$'."
+  ],
+  "xsd_ancora_corrigida": true,
+  "erros": []
+ }
+}
