@@ -18,6 +18,7 @@ const mockUseProductFiscalList = vi.fn();
 const mockUseProductFiscalListByIds = vi.fn();
 const mockUseProductFiscalReadiness = vi.fn();
 const mockUseProductFiscalProfile = vi.fn();
+let ownedIds = new Set<string>(["prod-A"]);
 const mockUseSaveProductFiscalProfile = vi.fn(() => ({
   mutateAsync: vi.fn(), isPending: false,
 }));
@@ -33,6 +34,7 @@ vi.mock("@/hooks/useProductFiscalProfiles", async () => {
     useProductFiscalReadiness: (...args: unknown[]) => mockUseProductFiscalReadiness(...args),
     useProductFiscalProfile: (...args: unknown[]) => mockUseProductFiscalProfile(...args),
     useSaveProductFiscalProfile: () => mockUseSaveProductFiscalProfile(),
+    useOwnedProductIds: () => ({ owned: ownedIds, confirmed: true }),
   };
 });
 
@@ -281,4 +283,14 @@ describe("FiscalProdutos — perfil fiscal próprio de microrganismos (Fase 3.21
     renderWithProviders(<FiscalProdutos />);
     expect(screen.getByTestId("fiscal-produtos-error")).toBeInTheDocument();
   });
+});
+
+test("produto de outra empresa (propriedade não confirmada) fica somente 'Ver' mesmo para admin", async () => {
+  ownedIds = new Set();
+  try {
+    ownedGate.on = true; fiscalFence.canWriteOwnedProduct = true;
+    renderWithProviders(<FiscalProdutos />);
+    expect(screen.queryByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Ver perfil fiscal de Bio-A Comercial" })).toBeTruthy();
+  } finally { ownedIds = new Set(["prod-A"]); }
 });

@@ -12,10 +12,10 @@ const ack = { success: true, product_id: P, profile_id: "f0000000-0000-0000-0000
 const input = { productId: P, expectedUpdatedAt: null, values: { ncm: "31010000" }, reason: "motivo de teste ok", idempotencyKey: K };
 
 describe("perfil fiscal do catálogo próprio (candidato)", () => {
-  test("gate desligado por padrão e nenhuma RPC é chamada", async () => {
-    expect(OWNED_PRODUCT_FISCAL_ENABLED).toBe(false);
+  test("writer liberado por padrão; com gate explícito desligado nenhuma RPC é chamada", async () => {
+    expect(OWNED_PRODUCT_FISCAL_ENABLED).toBe(true);
     const rpc = vi.fn();
-    await expect(saveOwnedProductFiscal({ rpc }, input)).rejects.toMatchObject({ kind: "disabled" });
+    await expect(saveOwnedProductFiscal({ rpc }, input, false)).rejects.toMatchObject({ kind: "disabled" });
     expect(rpc).not.toHaveBeenCalled();
   });
   test("cliente não envia empresa nem status; só campos fiscais", () => {
