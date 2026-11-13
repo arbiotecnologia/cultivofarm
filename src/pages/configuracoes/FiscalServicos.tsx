@@ -5,7 +5,6 @@
  * `service_fiscal_profiles`. `source_reference` é a referência transitória.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { servicePendencies } from "@/lib/fiscal/preEmissionPendencies";
 import { useAuth } from "@/hooks/useAuth";
@@ -91,8 +90,8 @@ export default function FiscalServicos() {
   const [page, setPage] = useState(0);
   const [editing, setEditing] = useState<ServiceListItem | "new" | null>(null);
   // Guia Fiscal do serviço (?servico=<id do perfil>): abre o MESMO editor; só leitura até salvar.
-  const [searchParams] = useSearchParams();
-  const deepServiceId = searchParams.get("servico");
+  // Leitura direta da URL: a página também é montada fora de um Router (testes/embutida).
+  const deepServiceId = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("servico");
   const deepHandled = useRef<string | null>(null);
   useEffect(() => {
     if (!deepServiceId || deepHandled.current === deepServiceId || access === "none" || !uiEnabled) return;
