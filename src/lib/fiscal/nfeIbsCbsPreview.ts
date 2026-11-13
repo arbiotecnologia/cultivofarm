@@ -36,7 +36,7 @@ export function buildNfeIbsCbsPreview(item: NfePreviewItem, scenario: NfePreview
   const idDest = destUf === emitUf ? "1" : "2";
   const nNF = scenario === "interna" ? "901" : "902";
   // Chave fictícia estrutural (tpAmb=2); não reservada.
-  const base43 = `${e.cUF}${opts.issueDate.slice(2, 4)}${opts.issueDate.slice(5, 7)}11222333000181550019${nNF.padStart(9, "0").slice(-9)}1${"8765432".padStart(8, "0")}`.slice(0, 43);
+  const base43 = `${e.cUF}${opts.issueDate.slice(2, 4)}${opts.issueDate.slice(5, 7)}1122233300018155001${nNF.padStart(9, "0")}187654321`;
   const dv = mod11(base43);
   const payload: NfePayload = {
     engineVersion: "PREVIEW", schemaVersion: "4.00", tpAmb: "2", accessKey: base43 + dv,
