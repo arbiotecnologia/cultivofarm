@@ -5,10 +5,11 @@
  * não grava nota, não chama SEFAZ.
  */
 import { buildNfeXml, type NfePayload } from "../../../supabase/functions/_shared/fiscal/nfe/buildNfeXml";
+import { validateNfeXml } from "../../../supabase/functions/_shared/fiscal/nfe/validateNfeXml";
 
 export type NfePreviewScenario = "interna" | "interestadual";
 export interface NfePreviewItem { name: string; code: string | null; ncm: string | null; cfopInState: string | null; cfopInterstate: string | null; ibsCbsConfig: unknown }
-export type NfePreviewResult = { ok: true; xml: string; scenario: NfePreviewScenario; emitUf: string; destUf: string; idDest: "1" | "2" } | { ok: false; scenario: NfePreviewScenario; missing: string[] };
+export type NfePreviewResult = { ok: true; xml: string; scenario: NfePreviewScenario; emitUf: string; destUf: string; idDest: "1" | "2"; signed: false; infNFeCheck: { valid: boolean; issues: string[] } } | { ok: false; scenario: NfePreviewScenario; missing: string[] };
 
 const FICT = "FICTICIO - PRE-VISUALIZACAO SEM VALOR FISCAL";
 const UF_CODE: Record<string, { cUF: string; cMun: string; xMun: string; CEP: string }> = {
@@ -46,13 +47,20 @@ export function buildNfeIbsCbsPreview(item: NfePreviewItem, scenario: NfePreview
       enderEmit: { xLgr: "RUA FICTICIA", nro: "100", xBairro: "CENTRO", cMun: e.cMun, xMun: e.xMun, UF: emitUf, CEP: e.CEP } },
     dest: { doc: "11222333000181", xNome: `DESTINATARIO ${FICT}`, indIEDest: "9",
       enderDest: { xLgr: "AV FICTICIA", nro: "200", xBairro: "CENTRO", cMun: d.cMun, xMun: d.xMun, UF: destUf, CEP: d.CEP } },
-    det: [{ nItem: 1, cProd: (item.code || "ITEM1").slice(0, 60), xProd: item.name.slice(0, 120), NCM: item.ncm, CFOP: cfop, uCom: "UN", qCom: 1, vUnCom: 100, vProd: 100,
+    det: [{ nItem: 1, cProd: (item.code || "ITEM1").slice(0, 60), xProd: item.name, NCM: item.ncm, CFOP: cfop, uCom: "UN", qCom: 1, vUnCom: 100, vProd: 100,
       orig: "0", CST: "00", ibsCbsConfig: item.ibsCbsConfig,
       taxSnapshot: { taxes: { ICMS: { cst: "00", rate: 0, base: 0, baseOriginal: 0, baseReductionPct: 0, value: 0 }, PIS: { cst: "01", rate: 0, base: 0, value: 0 }, COFINS: { cst: "01", rate: 0, base: 0, value: 0 } } } }],
     total: { vBC: 0, vICMS: 0, vProd: 100, vFrete: 0, vSeg: 0, vDesc: 0, vIPI: 0, vPIS: 0, vCOFINS: 0, vOutro: 0, vNF: 100, vFCP: 0, vST: 0, vFCPST: 0 },
     infAdic: { infCpl: `PRE-VISUALIZACAO ${scenario.toUpperCase()} - DADOS FICTICIOS - SEM VALOR FISCAL` },
   } as unknown as NfePayload;
-  try { return { ok: true, xml: buildNfeXml(payload).xml, scenario, emitUf, destUf, idDest }; }
+  try {
+    const xml = buildNfeXml(payload).xml;
+    // Prévia NUNCA é assinada: Signature ausente é esperada. A conferência abaixo é a gramática
+    // interna (subconjunto) sobre infNFe; não substitui o XSD oficial nem prova assinatura.
+    const rep = validateNfeXml(xml);
+    return { ok: true, xml, scenario, emitUf, destUf, idDest, signed: false,
+      infNFeCheck: { valid: rep.valid, issues: rep.issues.map((i) => `${i.path}: ${i.message}`).slice(0, 5) } };
+  }
   catch (err) { return { ok: false, scenario, missing: [String((err as { code?: string }).code ?? (err as Error).message ?? "erro_gerador").slice(0, 120)] }; }
 }
 
