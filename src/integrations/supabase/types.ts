@@ -11840,6 +11840,136 @@ export type Database = {
           },
         ]
       }
+      nfse_transmissions: {
+        Row: {
+          access_key: string | null
+          actor_id: string
+          company_settings_id: string
+          created_at: string
+          dps_id: string | null
+          dps_number: number
+          dps_series: string
+          dps_xml_sha256: string | null
+          endpoint_host: string
+          environment: string
+          error_code: string | null
+          errors: Json
+          fiscal_invoice_id: string
+          http_status: number | null
+          id: string
+          idempotency_key: string
+          nfse_number: string | null
+          nfse_xml_path: string | null
+          nfse_xml_sha256: string | null
+          organization_id: string
+          outcome: string
+          processed_at: string | null
+          request_fingerprint: string
+          state: string
+          updated_at: string
+          verification: Json
+        }
+        Insert: {
+          access_key?: string | null
+          actor_id: string
+          company_settings_id: string
+          created_at?: string
+          dps_id?: string | null
+          dps_number: number
+          dps_series: string
+          dps_xml_sha256?: string | null
+          endpoint_host: string
+          environment: string
+          error_code?: string | null
+          errors?: Json
+          fiscal_invoice_id: string
+          http_status?: number | null
+          id?: string
+          idempotency_key: string
+          nfse_number?: string | null
+          nfse_xml_path?: string | null
+          nfse_xml_sha256?: string | null
+          organization_id: string
+          outcome?: string
+          processed_at?: string | null
+          request_fingerprint: string
+          state?: string
+          updated_at?: string
+          verification?: Json
+        }
+        Update: {
+          access_key?: string | null
+          actor_id?: string
+          company_settings_id?: string
+          created_at?: string
+          dps_id?: string | null
+          dps_number?: number
+          dps_series?: string
+          dps_xml_sha256?: string | null
+          endpoint_host?: string
+          environment?: string
+          error_code?: string | null
+          errors?: Json
+          fiscal_invoice_id?: string
+          http_status?: number | null
+          id?: string
+          idempotency_key?: string
+          nfse_number?: string | null
+          nfse_xml_path?: string | null
+          nfse_xml_sha256?: string | null
+          organization_id?: string
+          outcome?: string
+          processed_at?: string | null
+          request_fingerprint?: string
+          state?: string
+          updated_at?: string
+          verification?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nfse_transmissions_company_settings_id_fkey"
+            columns: ["company_settings_id"]
+            isOneToOne: false
+            referencedRelation: "company_fiscal_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nfse_transmissions_company_settings_id_fkey"
+            columns: ["company_settings_id"]
+            isOneToOne: false
+            referencedRelation: "v_fiscal_company_readiness"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nfse_transmissions_company_settings_id_fkey"
+            columns: ["company_settings_id"]
+            isOneToOne: false
+            referencedRelation: "v_fiscal_nfe_emitter_readiness"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nfse_transmissions_fiscal_invoice_id_fkey"
+            columns: ["fiscal_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nfse_transmissions_fiscal_invoice_id_fkey"
+            columns: ["fiscal_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_fiscal_document_reconciliation_pending"
+            referencedColumns: ["fiscal_invoice_id"]
+          },
+          {
+            foreignKeyName: "nfse_transmissions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notificacoes_operacionais: {
         Row: {
           created_at: string
@@ -26256,6 +26386,26 @@ export type Database = {
         Returns: undefined
       }
       rpc_microorganism_regulatory_overview: { Args: never; Returns: Json }
+      rpc_nfse_transmit_begin_v1: {
+        Args: {
+          _actor: string
+          _endpoint_host: string
+          _environment: string
+          _fingerprint: string
+          _idempotency_key: string
+          _invoice_id: string
+        }
+        Returns: Json
+      }
+      rpc_nfse_transmit_record_v1: {
+        Args: {
+          _outcome: string
+          _patch: Json
+          _state: string
+          _transmission_id: string
+        }
+        Returns: Json
+      }
       rpc_notificar_gestor: {
         Args: { p_link?: string; p_mensagem: string; p_titulo: string }
         Returns: undefined

@@ -33,8 +33,8 @@ const base: DpsInput = {
   environment: "HOMOLOGATION", issueDateTime: "2026-11-13T10:00:00-03:00", competence: "2026-11-13", series: "1", number: 7,
   emitter: { cnpj: CNPJ, municipalityIbge: "3147006", municipalRegistration: "12345", regime: regimeFromCrt("3") },
   taker: { cnpjCpf: "11144477735", name: "Tomador Sintético & Cia", email: "qa@example.invalid" },
-  service: { nationalTaxCode: "170101", municipalTaxCode: null, description: "Consultoria agronômica (sintética)", incidenceMunicipalityIbge: "3147006" },
-  values: { serviceAmount: 1500, issRate: 2.5, issWithheld: false },
+  service: { nationalTaxCode: "170101", municipalTaxCode: null, description: "Consultoria agronômica (sintética)", locationIbge: "3147006", incidenceMunicipalityIbge: "3147006" },
+  values: { serviceAmount: 1500, issRate: 2.5, issWithheld: false, totTrib: { mode: "IND" } },
 };
 const NOW = new Date();
 
@@ -194,6 +194,7 @@ Deno.test("reconciliação: DPS não processada (404) → NOT_FOUND, sem POST", 
 });
 Deno.test("rascunho canônico → DPS: pendências sem inventar dados", () => {
   const inv = { id: "i", environment: "HOMOLOGATION", issue_date: "2026-11-13", draft_version: 1, total_amount: "450.00",
+    fiscal_profile_snapshot: { nfse_dps: { v: 1, service_location_ibge_code: "3147006", tot_trib: { mode: "IND" } } },
     items: [{ description: "QA Consultoria", net_value: "300.00", fiscal_profile_snapshot: { national_tax_code: "170101", municipality_ibge_code: "3147006" }, tax_snapshot: { iss_rate: 2.5 } },
             { description: "QA Consultoria", net_value: "150.00", fiscal_profile_snapshot: { national_tax_code: "170101", municipality_ibge_code: "3147006" }, tax_snapshot: { iss_rate: 2.5 } }] };
   const company = { cnpj: CNPJ, municipality_ibge_code: "3147006", municipal_registration: null, crt: "3", fiscal_environment: "HOMOLOGATION" };

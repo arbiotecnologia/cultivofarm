@@ -51,10 +51,10 @@ describe("faturamento", () => {
 describe("DPS NFS-e Nacional (sintética, sem transmissão)", () => {
   const base: DpsInput = {
     environment: "HOMOLOGATION", issueDateTime: "2026-11-13T10:00:00-03:00", competence: "2026-11-13", series: "1", number: 7,
-    emitter: { cnpj: "00.000.000/0001-91", municipalityIbge: "3147006" },
+    emitter: { cnpj: "00.000.000/0001-91", municipalityIbge: "3147006", regime: { opSimpNac: "1", regEspTrib: "0" } },
     taker: { cnpjCpf: "111.444.777-35", name: "Cliente Sintético & Cia" },
-    service: { nationalTaxCode: "070101", description: "Consultoria agronômica", incidenceMunicipalityIbge: "3147006" },
-    values: { serviceAmount: 1500, issRate: 3, issWithheld: false },
+    service: { nationalTaxCode: "070101", description: "Consultoria agronômica", locationIbge: "3147006", incidenceMunicipalityIbge: "3147006" },
+    values: { serviceAmount: 1500, issRate: 3, issWithheld: false, totTrib: { mode: "IND" } },
   };
   it("monta XML de homologação com Id e valores", () => {
     const xml = buildDpsXml(base);

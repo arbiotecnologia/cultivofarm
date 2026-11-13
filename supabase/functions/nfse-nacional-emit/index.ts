@@ -133,18 +133,19 @@ Deno.serve(async (req) => {
     },
     async loadDps() {
       const [i, items] = await Promise.all([
-        admin.from("fiscal_invoices").select("id, environment, issue_date, draft_version, total_amount, company_settings_id, customer_id, organization_id").eq("id", invoiceId).single(),
+        admin.from("fiscal_invoices").select("id, environment, issue_date, draft_version, total_amount, company_settings_id, customer_id, organization_id, fiscal_profile_snapshot").eq("id", invoiceId).single(),
         admin.from("fiscal_invoice_items").select("description, net_value, fiscal_profile_snapshot, tax_snapshot, item_sequence").eq("fiscal_invoice_id", invoiceId).order("item_sequence"),
       ]);
       if (i.error || items.error || i.data.organization_id !== inv.organization_id) throw Object.assign(new Error("load"), { code: "invoice_not_found", status: 404 });
       const [c, cli, cfp] = await Promise.all([
-        admin.from("company_fiscal_settings").select("cnpj, municipality_ibge_code, municipal_registration, crt, fiscal_environment, organization_id").eq("id", i.data.company_settings_id).single(),
+        admin.from("company_fiscal_settings").select("cnpj, municipality_ibge_code, municipal_registration, crt, fiscal_environment, phone, fiscal_email, organization_id").eq("id", i.data.company_settings_id).single(),
         admin.from("clientes").select("cpf_cnpj, nome, razao_social, email, organization_id").eq("id", i.data.customer_id).single(),
-        admin.from("customer_fiscal_profiles").select("cpf_cnpj, legal_name, fiscal_email").eq("customer_id", i.data.customer_id).maybeSingle(),
+        admin.from("customer_fiscal_profiles").select("cpf_cnpj, legal_name, fiscal_email, fiscal_phone, municipal_registration").eq("customer_id", i.data.customer_id).maybeSingle(),
       ]);
       if (c.error || cli.error || c.data.organization_id !== inv.organization_id || cli.data.organization_id !== inv.organization_id) throw Object.assign(new Error("load"), { code: "tenant_mismatch", status: 403 });
       const m = mapInvoiceToDps({ ...i.data, items: items.data ?? [] }, c.data, {
         cpf_cnpj: cfp.data?.cpf_cnpj ?? cli.data.cpf_cnpj, name: cfp.data?.legal_name ?? cli.data.razao_social ?? cli.data.nome, email: cfp.data?.fiscal_email ?? cli.data.email,
+        municipal_registration: cfp.data?.municipal_registration ?? null, phone: cfp.data?.fiscal_phone ?? null,
       }, new Date());
       if (!m.ok) throw Object.assign(new Error("dps"), { code: "dps_incomplete", status: 422, missing: m.missing });
       return { input: m.input, fingerprint: await sha256Hex(m.fingerprintSource) };

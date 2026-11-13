@@ -38,6 +38,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { NfseDpsSection } from "@/components/fiscal/NfseDpsSection";
+import { dpsFormFromRow, dpsFormToProfile, DPS_FORM_ERROR_LABEL, type NfseDpsForm } from "@/lib/fiscal/serviceNfseDpsForm";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,
 } from "@/components/ui/sheet";
@@ -398,6 +400,14 @@ export function EditDrawer({
   const [serviceIdInput, setServiceIdInput] = useState<string>("");
   const [sourceReferenceInput, setSourceReferenceInput] = useState<string>("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [dpsForm, setDpsForm] = useState<NfseDpsForm>(() => dpsFormFromRow(null));
+  const [dpsErrors, setDpsErrors] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (isNew) setDpsForm(dpsFormFromRow(null));
+    else if (profileQuery.data !== undefined) setDpsForm(dpsFormFromRow(profileQuery.data?.federal_withholding_defaults));
+    setDpsErrors([]);
+  }, [isNew, profileQuery.data]);
 
   useEffect(() => {
     if (isNew) {
@@ -435,6 +445,12 @@ export function EditDrawer({
       toast({ title: "Verifique os campos", variant: "destructive" });
       return;
     }
+    const dps = dpsFormToProfile(dpsForm);
+    setDpsErrors(dps.errors);
+    if (dps.errors.length) {
+      toast({ title: "Verifique o complemento NFS-e", description: dps.errors.map((e) => DPS_FORM_ERROR_LABEL[e] ?? e).join(" "), variant: "destructive" });
+      return;
+    }
 
     const identity = buildIdentity({
       service_id: serviceIdInput,
@@ -467,7 +483,7 @@ export function EditDrawer({
       await save.mutateAsync({
         current: isNew ? null : profileQuery.data ?? null,
         identity,
-        values: parsed.data,
+        values: { ...parsed.data, nfse_dps: dps.profile },
       });
       toast({ title: "Perfil fiscal salvo." });
       onClose();
@@ -636,6 +652,7 @@ export function EditDrawer({
                   ISS retido por padrão
                 </Label>
               </div>
+              <NfseDpsSection value={dpsForm} onChange={setDpsForm} errors={dpsErrors} />
             </fieldset>
             <SheetFooter className="mt-4">
               <Button type="button" variant="outline" onClick={onClose}>

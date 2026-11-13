@@ -16,7 +16,7 @@ import { Loader2, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import {
-  ServiceConflictError, requestNfseEmission, useBillServices, useCatalogServices, useNfseReadiness, useSaveCatalogService,
+  ReapplyUnavailableError, ServiceConflictError, requestNfseEmission, useBillServices, useReapplyServiceProfile, useCatalogServices, useNfseReadiness, useSaveCatalogService,
   useSaveEngagement, useServiceCustomers, useServiceEngagements, useServiceFiscalProfilesByService, useServiceInvoices,
   type CatalogService, type ServiceEngagement, type ServiceInput,
 } from "@/hooks/useCatalogServices";
@@ -164,6 +164,23 @@ function EngagementsSection({ services, scope }: { services: CatalogService[]; s
     dps_incomplete: "Dados fiscais incompletos para a DPS", signing_failed: "Falha na assinatura com o certificado da empresa",
     replayed: "Envio já registrado", invoice_not_draft: "A nota não está em rascunho",
   };
+  const reapply = useReapplyServiceProfile();
+  async function doReapply(invoiceId: string, draftVersion: number) {
+    if (reapply.isPending) return;
+    try {
+      const r = await reapply.mutateAsync({ invoiceId, draftVersion });
+      toast({ title: r.changed ? "Perfil fiscal reaplicado ao rascunho" : "Rascunho já está com o perfil atual", description: "Descrição, quantidade e valores do rascunho foram mantidos." });
+    } catch (e) {
+      const code = (e as { code?: string }).code; const msg = (e as Error).message;
+      const desc = e instanceof ReapplyUnavailableError ? "A reaplicação ainda não foi instalada no servidor."
+        : msg.includes("invoice_already_transmitted") ? "A nota já foi enviada; não pode mais ser alterada."
+        : msg.includes("invoice_not_reappliable") ? "Só rascunhos de homologação ainda não enviados podem ser atualizados."
+        : msg.includes("conflict") ? "O rascunho foi alterado por outra pessoa. Recarregue e tente de novo."
+        : msg.includes("service_dps_profile_divergent") ? "Os serviços deste rascunho têm complementos NFS-e diferentes."
+        : code === "42501" ? "Sem permissão." : "Não foi possível reaplicar.";
+      toast({ title: "Perfil não reaplicado", description: desc, variant: "destructive" });
+    }
+  }
   async function emit(invoiceId: string) {
     try {
       const r = await requestNfseEmission(invoiceId);
@@ -204,6 +221,7 @@ function EngagementsSection({ services, scope }: { services: CatalogService[]; s
                   {r.status === "DRAFT" && <Button size="sm" variant="ghost" onClick={() => setStatus(r, "READY")}>Pronto</Button>}
                   {r.status === "READY" && <Button size="sm" variant="ghost" onClick={() => setStatus(r, "DRAFT")}>Voltar</Button>}
                   {(r.status === "DRAFT" || r.status === "READY") && <Button size="sm" variant="ghost" onClick={() => setStatus(r, "CANCELED")}>Cancelar</Button>}
+                  {r.fiscal_invoice_id && canBill && nfseDisplayState(inv) === "RASCUNHO" && inv?.environment === "HOMOLOGATION" && typeof inv.draft_version === "number" && <Button size="sm" variant="ghost" disabled={reapply.isPending} onClick={() => doReapply(r.fiscal_invoice_id!, inv.draft_version!)}>Reaplicar perfil</Button>}
                   {r.fiscal_invoice_id && canBill && nfseDisplayState(inv) === "RASCUNHO" && <Button size="sm" variant="ghost" onClick={() => emit(r.fiscal_invoice_id!)}>Enviar NFS-e</Button>}
                 </TableCell>
               </TableRow>);
