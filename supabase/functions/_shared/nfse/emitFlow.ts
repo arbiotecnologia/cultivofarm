@@ -11,6 +11,7 @@
  *  - AUTHORIZED só após verifyAuthorizedNfse sobre o XML devolvido.
  */
 import { buildDpsXml, dpsId as computeDpsId, type DpsInput, validateDps } from "./dps.ts";
+import { parseReturnedIbsCbs, type ReturnedIbsCbs } from "../fiscal/rtc/ibsCbs.ts";
 import { buildEmitBody, gunzipBase64, parseDpsLookup, parseEmitResponse, sefinUrl, verifyAuthorizedNfse, type NfseEnvironment, type SefinMessage } from "./sefinContract.ts";
 
 export type LedgerState = "PENDING" | "SENT" | "SUCCEEDED" | "FAILED" | "BLOCKED";
@@ -39,6 +40,8 @@ export interface EmitDeps {
 export interface EmitResult {
   httpStatus: number; code: string; transmissionId?: string; outcome?: LedgerOutcome; authorized: boolean;
   accessKey?: string | null; nfseNumber?: string | null; errors?: SefinMessage[]; missing?: string[]; reconciliationRequired?: boolean; retrySafe: boolean;
+  /** IBS/CBS calculado e DEVOLVIDO pelo autorizador (separado do declarado na DPS). */
+  ibsCbsReturned?: ReturnedIbsCbs | null;
 }
 
 const fail = (httpStatus: number, code: string, extra: Partial<EmitResult> = {}): EmitResult => ({ httpStatus, code, authorized: false, retrySafe: false, ...extra });
@@ -60,7 +63,7 @@ async function finishWithNfse(deps: EmitDeps, row: LedgerRow, dps: DpsInput, id:
   const stored = await deps.ledger.storeNfseXml(row.transmissionId, xml, sha);
   const rec = await deps.ledger.record(row.transmissionId, "SUCCEEDED", "AUTHORIZED", { httpStatus, accessKey: chave, nfseNumber: check.nfseNumber, processedAt: check.dhProc, nfseXmlSha256: sha, errorCode: stored ? null : "NFSE_XML_STORE_PENDING" });
   if (rec.outcome !== "AUTHORIZED") return fail(503, "reconciliation_required", { transmissionId: row.transmissionId, reconciliationRequired: true, accessKey: chave });
-  return { httpStatus: 200, code: "authorized", transmissionId: row.transmissionId, outcome: "AUTHORIZED", authorized: true, accessKey: chave, nfseNumber: check.nfseNumber, retrySafe: false, reconciliationRequired: !stored };
+  return { httpStatus: 200, code: "authorized", transmissionId: row.transmissionId, outcome: "AUTHORIZED", authorized: true, accessKey: chave, nfseNumber: check.nfseNumber, retrySafe: false, reconciliationRequired: !stored, ibsCbsReturned: parseReturnedIbsCbs(xml) };
 }
 
 async function prepare(deps: EmitDeps) {
