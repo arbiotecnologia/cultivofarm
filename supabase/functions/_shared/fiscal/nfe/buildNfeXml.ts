@@ -12,6 +12,8 @@
  * Módulo puro (sem APIs Deno).
  */
 
+import { icmsCodeKindForCrt } from "./icmsRegime.ts";
+
 export const NFE_NAMESPACE = "http://www.portalfiscal.inf.br/nfe";
 export const NFE_VERSION = "4.00";
 
@@ -214,7 +216,7 @@ function icmsBlock(item: Record<string, unknown>, crt: string): string {
   const redPct = num(icms.baseReductionPct);
   const nItem = String(item.nItem ?? "?");
 
-  if (crt === "1" || crt === "2") {
+  if (icmsCodeKindForCrt(crt) === "CSOSN") {
     const csosn = String(item.CSOSN ?? icms.csosn ?? "").trim() || "102";
     if (redPct > 0) {
       throw new NfeBuildError(

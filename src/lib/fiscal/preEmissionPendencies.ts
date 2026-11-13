@@ -5,6 +5,7 @@
  * não altera documentos históricos e não autoriza emissão. Serve para apontar
  * o campo faltante e o editor onde corrigi-lo.
  */
+import { icmsCodeKindForCrt } from "../../../supabase/functions/_shared/fiscal/nfe/icmsRegime";
 export type FiscalScenario = "interna" | "interestadual";
 export type PendencyEntity = "produto" | "cliente" | "empresa";
 
@@ -44,7 +45,7 @@ export interface Pendency {
 const blank = (v: unknown) => v === null || v === undefined || String(v).trim() === "";
 const digits = (v: unknown) => String(v ?? "").replace(/\D/g, "");
 
-/** CRT 1/2 (Simples) usa CSOSN; CRT 3 usa CST. CRT ausente → exige um dos dois. */
+/** Grupo ICMS pela regra única do motor (icmsRegime.ts). CRT ausente → exige CST ou CSOSN. */
 export function productPendencies(
   p: ProductProfileInput | null | undefined,
   scenario: FiscalScenario,
@@ -68,10 +69,10 @@ export function productPendencies(
       `CFOP ${cfop} não corresponde a operação ${scenario} de saída (deve iniciar por ${expected}).`);
   }
   if (blank(p.origin_code)) add("origin_code", "Origem", "Origem da mercadoria ausente.");
-  const crtStr = crt == null ? "" : String(crt);
-  if (crtStr === "1" || crtStr === "2" || crtStr === "4") {
+  const kind = icmsCodeKindForCrt(crt);
+  if (kind === "CSOSN") {
     if (blank(p.icms_csosn)) add("icms_csosn", "ICMS CSOSN", "CSOSN obrigatório para o regime do emitente.");
-  } else if (crtStr === "3") {
+  } else if (kind === "CST") {
     if (blank(p.icms_cst)) add("icms_cst", "ICMS CST", "CST de ICMS obrigatório para o regime do emitente.");
   } else if (blank(p.icms_cst) && blank(p.icms_csosn)) {
     add("icms_cst", "ICMS CST/CSOSN", "Informe CST ou CSOSN de ICMS.");
