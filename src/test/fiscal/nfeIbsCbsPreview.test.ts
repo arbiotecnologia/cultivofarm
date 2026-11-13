@@ -30,7 +30,7 @@ describe("pré-visualização NF-e IBS/CBS (gerador do backend, sem transmissão
   });
   it("ausências viram pendência, sem presumir", () => {
     const r = buildNfeIbsCbsPreview({ ...item, ibsCbsConfig: {}, cfopInterstate: null }, "interestadual", { issueDate: "2026-11-13" });
-    expect(r.ok).toBe(false); if (r.ok) return;
+    expect(r.ok).toBe(false); if (r.ok !== false) return;
     expect(r.missing).toEqual(expect.arrayContaining(["ibs_cbs", "cfop_interestadual"]));
   });
   it("UF de destino sem alíquota no perfil bloqueia no gerador", () => {

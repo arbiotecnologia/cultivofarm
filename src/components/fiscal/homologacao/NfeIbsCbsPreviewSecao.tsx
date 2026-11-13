@@ -68,7 +68,7 @@ export default function NfeIbsCbsPreviewSecao() {
         {(["interna", "interestadual"] as const).map((k) => { const r = results[k]; if (!r) return null; return (
           <div key={k} className="space-y-2" data-testid={`nfe-preview-${k}`}>
             <div className="flex items-center gap-2"><Badge variant="outline">{k === "interna" ? "Operação interna" : "Operação interestadual"}</Badge>
-              {r.ok ? <span className="text-sm text-muted-foreground">idDest {r.idDest} · {r.emitUf} → {r.destUf}</span> : <span className="text-sm text-destructive">Pendências: {r.missing.join(", ")}</span>}
+              {r.ok === true ? <span className="text-sm text-muted-foreground">idDest {r.idDest} · {r.emitUf} → {r.destUf}</span> : <span className="text-sm text-destructive">Pendências: {(r as { missing: string[] }).missing.join(", ")}</span>}
               {r.ok && <Button size="sm" variant="ghost" onClick={() => download(r)}>Baixar XML</Button>}</div>
             {r.ok && <pre className="max-h-80 overflow-auto rounded-md border bg-muted p-3 text-xs" data-testid={`nfe-preview-xml-${k}`}>{r.xml}</pre>}
           </div>); })}
