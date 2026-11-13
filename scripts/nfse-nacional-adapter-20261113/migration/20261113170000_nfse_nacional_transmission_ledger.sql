@@ -118,7 +118,10 @@ begin
   if not ok then raise exception 'NFSE_TRANSITION_INVALID:% % -> % %', t.state, t.outcome, _state, _outcome using errcode = 'PT409'; end if;
   if _state = 'SENT' and t.state = 'PENDING' and (coalesce(p->>'dpsId','') !~ '^DPS\d{42}$' or coalesce(p->>'dpsXmlSha256','') !~ '^[0-9a-f]{64}$') then
     raise exception 'NFSE_SENT_REQUIRES_DPS' using errcode = '22023'; end if;
-  if _state = 'SENT' and t.state = 'PENDING' and substr(p->>'dpsId', 34) <> lpad(t.dps_series, 5, '0') || lpad(t.dps_number::text, 15, '0') then
+  if _state = 'SENT' and t.state = 'PENDING' and (
+       substr(p->>'dpsId', 26) <> lpad(t.dps_series, 5, '0') || lpad(t.dps_number::text, 15, '0')
+       or substr(p->>'dpsId', 4, 22) <> (select coalesce(c.municipality_ibge_code,'') || '2' || lpad(regexp_replace(coalesce(c.cnpj,''),'\D','','g'), 14, '0')
+                                          from public.company_fiscal_settings c where c.id = t.company_settings_id)) then
     raise exception 'NFSE_DPS_NUMBER_MISMATCH' using errcode = '22023'; end if;
 
   update public.nfse_transmissions set
