@@ -103,9 +103,11 @@ export function parseEmitResponse(httpStatus: number, bodyText: string): EmitPar
  */
 export const DPS_NOT_FOUND_OFFICIAL_CODES: ReadonlySet<string> = new Set<string>();
 
-export function parseDpsLookup(httpStatus: number, bodyText: string): { found: boolean; chaveAcesso: string | null; notFoundConfirmed: boolean } {
+/** `expectedDpsId`: se a resposta trouxer idDps divergente, não é a DPS consultada (fica pendente). */
+export function parseDpsLookup(httpStatus: number, bodyText: string, expectedDpsId?: string): { found: boolean; chaveAcesso: string | null; notFoundConfirmed: boolean } {
   let b: Record<string, unknown> | null = null;
   try { const j = JSON.parse(bodyText); b = j && typeof j === "object" && !Array.isArray(j) ? j as Record<string, unknown> : null; } catch { b = null; }
+  if (httpStatus === 200 && b && expectedDpsId && b.idDps !== undefined && b.idDps !== null && String(b.idDps) !== expectedDpsId) return { found: false, chaveAcesso: null, notFoundConfirmed: false };
   if (httpStatus === 200 && b) { const c = String(b.chaveAcesso ?? ""); if (/^\d{50}$/.test(c)) return { found: true, chaveAcesso: c, notFoundConfirmed: false }; }
   if (httpStatus === 404 && b) {
     const list = (b.erros ?? b.Erros ?? b.erro) as unknown; const arr = Array.isArray(list) ? list : list ? [list] : [];

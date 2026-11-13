@@ -136,7 +136,7 @@ export async function reconcileNfse(deps: EmitDeps, req: { transmissionId: strin
 
   let look: { status: number; body: string };
   try { look = await deps.http({ method: "GET", url: sefinUrl(row.environment, { kind: "dps", id: row.dpsId }) }); } catch { return fail(503, "reconciliation_unavailable", { transmissionId: row.transmissionId, reconciliationRequired: true }); }
-  const found = parseDpsLookup(look.status, look.body);
+  const found = parseDpsLookup(look.status, look.body, row.dpsId);
   if (!found.found || !found.chaveAcesso) {
     // Só resposta semântica oficial confirma ausência; 404 de rota/HTML/JSON genérico mantém pendente.
     if (found.notFoundConfirmed) {
