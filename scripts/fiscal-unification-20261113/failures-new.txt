@@ -30,9 +30,4 @@
  FAIL  src/test/catalogo/tenant-catalog-owned-flow.test.tsx > culturas próprias na aba existente > perfil sem gestão vê próprio sem controles de mutação
  FAIL  src/test/catalogo/tenant-catalog-owned-flow.test.tsx > salvamento único de identificação/composição > duplo clique não duplica e resposta antiga não aplica callbacks após AR→FSF→AR
  FAIL  src/test/catalogo/tenant-catalog-owned-flow.test.tsx > salvamento único de identificação/composição > resposta incerta após commit reutiliza recibo sem criar outra raiz
- FAIL  src/test/fiscal/fiscalServicos.globalAuthorization.test.tsx > serviço global — página real com leitores simulados > Superadmin sem fence válido não abre escrita
- FAIL  src/test/fiscal/fiscalServicos.globalAuthorization.test.tsx > serviço global — página real com leitores simulados > administrador apenas consulta e não recebe editor IBS/CBS
- FAIL  src/test/fiscal/fiscalServicos.globalAuthorization.test.tsx > serviço global — página real com leitores simulados > capacidade isolada não concede edição a admin; troca para plataforma preserva bloqueio da rota
- FAIL  src/test/fiscal/fiscalServicos.globalAuthorization.test.tsx > serviço global — página real com leitores simulados > financeiro apenas consulta e não recebe editor IBS/CBS
- FAIL  src/test/fiscal/fiscalServicos.globalAuthorization.test.tsx > serviço global — página real com leitores simulados > gestor apenas consulta e não recebe editor IBS/CBS
  FAIL  src/test/fiscal/h7i.ingestaoCertificado.static.test.ts > H7i — ingestão segura do certificado A1 > nenhum arquivo de certificado está presente na árvore do projeto

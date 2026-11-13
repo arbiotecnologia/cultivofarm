@@ -22,3 +22,10 @@ Base: 41c740652. Somente código local; nada publicado, emitido ou gravado em da
 - Contagens da Visão Geral dependem da RLS do usuário; não comparadas à auditoria de produção (9 produtos, 7 microrganismos, 6 clientes).
 - A seleção de produto no rascunho ainda preenche o CFOP interno; a pré-emissão aponta o erro em operação interestadual, sem trocar automaticamente.
 - Classificação fiscal (NCM/CST etc.) não é inferida; pendências só indicam ausência.
+
+## Aceite de navegação (2ª rodada)
+- Menu: Administração > Fiscal = Visão Geral Fiscal (/fiscal/prontidao), Configuração Fiscal (/configuracoes/fiscal/empresa, aba ?aba=catalogo), Perfis Produtos/Serviços/Clientes, Rascunhos. Aliases /fiscal/perfis/* mantidos; permissões inalteradas.
+- Serviço: não existe cadastro-mestre de serviço; o cadastro É o perfil em /configuracoes/fiscal/servicos. O editor agora traz "Guia Fiscal" com pendências.
+- CFOP do rascunho: draftCfopSelection.ts; testes 10/10.
+- Bateria fiscal+catálogo+menu: 33 falhas, idênticas à baseline exceto h7i (timeout de 5 s ao varrer a árvore sob carga; passa isolado) e unifiedProducts.realClient (falha intermitente na baseline, passou agora).
+- Chromium sem sessão (projeto Supabase externo, sem sessão injetável): 9 rotas/aliases redirecionam a /auth sem erros de página. Menu autenticado não verificado no navegador.
