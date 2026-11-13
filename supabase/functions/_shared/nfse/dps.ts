@@ -117,6 +117,16 @@ export function dpsId(i: DpsInput): string {
 
 const pctOf = (base: number, rate: number) => Math.round(base * rate) / 100;
 
+/**
+ * Leiaute por ambiente (sem alterar produção):
+ * - HOMOLOGATION: pacote oficial de produção restrita 20/10/2026 (SHA-256 25fdcecc…ea267):
+ *   finNFSe (obrigatório, "0" = regular) entre tpEmit e cLocEmi; TCCServ = cTribNac, cTribMun?, cNBS?, cIntContrib?, xDescServ.
+ * - PRODUCTION: pacote 1.01 de 09/02/2026 (sem finNFSe; cNBS após xDescServ), inalterado.
+ */
+export function dpsLayout(env: DpsInput["environment"]) {
+  return env === "HOMOLOGATION" ? { finNFSe: true, nbsBeforeDesc: true } : { finNFSe: false, nbsBeforeDesc: false };
+}
+
 export function buildDpsXml(i: DpsInput): string {
   const issues = validateDps(i);
   if (issues.length) throw new Error(`dps_invalid:${issues.join(",")}`);
@@ -139,12 +149,15 @@ export function buildDpsXml(i: DpsInput): string {
   if (fr?.irrfRate != null) fed += `<vRetIRRF>${money(pctOf(v.serviceAmount, fr.irrfRate))}</vRetIRRF>`;
   if (fr?.csllRate != null) fed += `<vRetCSLL>${money(pctOf(v.serviceAmount, fr.csllRate))}</vRetCSLL>`;
   const tt = v.totTrib!;
+  const lay = dpsLayout(i.environment);
+  const nbs = has(i.service.nbsCode) ? `<cNBS>${i.service.nbsCode}</cNBS>` : "";
+  const desc = `<xDescServ>${esc(i.service.description.trim())}</xDescServ>`;
   const tot = tt.mode === "PERCENT" ? `<pTotTrib><pTotTribFed>${dec2(tt.fed!)}</pTotTribFed><pTotTribEst>${dec2(tt.est!)}</pTotTribEst><pTotTribMun>${dec2(tt.mun!)}</pTotTribMun></pTotTrib>`
     : tt.mode === "SN" ? `<pTotTribSN>${dec2(tt.sn!)}</pTotTribSN>` : `<indTotTrib>0</indTotTrib>`;
   return `<?xml version="1.0" encoding="UTF-8"?>` +
     `<DPS xmlns="${NFSE_NAMESPACE}" versao="${DPS_LAYOUT_VERSION}"><infDPS Id="${dpsId(i)}">` +
     `<tpAmb>${tpAmb}</tpAmb><dhEmi>${esc(i.issueDateTime)}</dhEmi><verAplic>CultivoFarm-1.0</verAplic>` +
-    `<serie>${i.series}</serie><nDPS>${i.number}</nDPS><dCompet>${i.competence}</dCompet><tpEmit>1</tpEmit>` +
+    `<serie>${i.series}</serie><nDPS>${i.number}</nDPS><dCompet>${i.competence}</dCompet><tpEmit>1</tpEmit>${lay.finNFSe ? "<finNFSe>0</finNFSe>" : ""}` +
     `<cLocEmi>${i.emitter.municipalityIbge}</cLocEmi>` +
     // TCInfoPrestador: CNPJ, IM?, [xNome/end não informados quando o emitente é o prestador], fone?, email?, regTrib
     `<prest><CNPJ>${docKey(i.emitter.cnpj)}</CNPJ>${opt("IM", i.emitter.municipalRegistration)}` +
@@ -154,7 +167,7 @@ export function buildDpsXml(i: DpsInput): string {
     `<toma>${taker.length === 14 ? `<CNPJ>${taker}</CNPJ>` : `<CPF>${taker}</CPF>`}${opt("IM", i.taker.municipalRegistration)}<xNome>${esc(i.taker.name.trim())}</xNome>` +
     `${has(i.taker.phone) ? `<fone>${digits(i.taker.phone)}</fone>` : ""}${opt("email", i.taker.email)}</toma>` +
     `<serv><locPrest><cLocPrestacao>${i.service.locationIbge}</cLocPrestacao></locPrest>` +
-    `<cServ><cTribNac>${i.service.nationalTaxCode}</cTribNac>${opt("cTribMun", i.service.municipalTaxCode)}<xDescServ>${esc(i.service.description.trim())}</xDescServ>${has(i.service.nbsCode) ? `<cNBS>${i.service.nbsCode}</cNBS>` : ""}</cServ></serv>` +
+    `<cServ><cTribNac>${i.service.nationalTaxCode}</cTribNac>${opt("cTribMun", i.service.municipalTaxCode)}${lay.nbsBeforeDesc ? nbs + desc : desc + nbs}</cServ></serv>` +
     `<valores><vServPrest><vServ>${money(v.serviceAmount)}</vServ></vServPrest>` +
     `<trib><tribMun><tribISSQN>1</tribISSQN><tpRetISSQN>${v.issWithheld ? "2" : "1"}</tpRetISSQN>${aliq}</tribMun>` +
     `${fed ? `<tribFed>${fed}</tribFed>` : ""}<totTrib>${tot}</totTrib></trib></valores>` +

@@ -17,8 +17,14 @@ export const SYNTH: DpsInput = {
 
 describe("DPS 1.01 — grupos e ordem", () => {
   const xml = buildDpsXml(SYNTH);
-  it("cTribNac preserva zero inicial e cNBS vem após xDescServ", () => {
-    expect(xml).toContain("<cTribNac>010101</cTribNac><xDescServ>Serviço sintético</xDescServ><cNBS>012345678</cNBS>");
+  it("homologação (pacote 20/10/2026): finNFSe=0 antes de cLocEmi e cNBS antes de xDescServ; cTribNac com zero inicial", () => {
+    expect(xml).toContain("<tpEmit>1</tpEmit><finNFSe>0</finNFSe><cLocEmi>");
+    expect(xml).toContain("<cTribNac>010101</cTribNac><cNBS>012345678</cNBS><xDescServ>Serviço sintético</xDescServ>");
+  });
+  it("produção mantém leiaute 1.01 de 09/02/2026 (sem finNFSe, cNBS após xDescServ)", () => {
+    const p = buildDpsXml({ ...SYNTH, environment: "PRODUCTION" });
+    expect(p).not.toContain("<finNFSe>");
+    expect(p).toContain("<xDescServ>Serviço sintético</xDescServ><cNBS>012345678</cNBS>");
   });
   it("cLocPrestacao é o local da prestação, distinto do município de incidência", () => {
     expect(xml).toContain("<cLocPrestacao>9999902</cLocPrestacao>");
