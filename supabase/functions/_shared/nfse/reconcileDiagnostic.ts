@@ -16,7 +16,7 @@ export const NFSE_CAUSES = [
   "dns_lookup_failed", "tcp_connection_refused", "tcp_connection_reset", "tcp_unreachable", "tcp_broken_pipe", "timed_out",
   "tls_unknown_issuer", "tls_cert_expired", "tls_name_mismatch", "tls_cert_invalid", "tls_protocol_version", "tls_cipher_mismatch",
   "tls_handshake_failure", "tls_alert_certificate_required", "tls_alert_bad_certificate", "tls_alert_unknown_ca", "tls_alert_access_denied",
-  "tls_renegotiation_unsupported", "tls_private_key_invalid", "tls_cert_pem_invalid",
+  "tls_renegotiation_unsupported", "client_cert_renegotiation_suspected", "tls_private_key_invalid", "tls_cert_pem_invalid",
   "alpn_http11_required", "http2_protocol_error", "connection_closed_early", "unsupported_option", "aborted", "unclassified",
 ] as const;
 export type NfseCause = typeof NFSE_CAUSES[number];

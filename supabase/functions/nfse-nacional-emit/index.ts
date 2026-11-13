@@ -22,7 +22,8 @@ import { emitNfse, reconcileNfse, type EmitDeps, type LedgerRow } from "../_shar
 import { mapInvoiceToDps } from "../_shared/nfse/dpsFromInvoice.ts";
 import { assertSefinUrl, type NfseEnvironment } from "../_shared/nfse/sefinContract.ts";
 import { assertAllowlistUrl, decideTransmissionGate, rejectRedirect } from "../_shared/nfse/homologAllowlist.ts";
-import { classifyHttpError, classifyStatus, finalizeDiagnostic, runtimeCapabilities, stageFromUrl, type NfseHttpDiagnostic } from "../_shared/nfse/reconcileDiagnostic.ts";
+import { classifyHttpError, classifyStatus, contentKind, diagnosticLogLine, errorCauses, finalizeDiagnostic, officialErrorCodes, runtimeCapabilities, stageFromUrl, type NfseHttpDiagnostic, type NfseHttpFailure } from "../_shared/nfse/reconcileDiagnostic.ts";
+import { SEFIN_NACIONAL_BASE, SEFIN_NACIONAL_LEGACY_HOMOLOG_BASE } from "../_shared/nfse/dps.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const KEY = /^[A-Za-z0-9_.:-]{16,128}$/;
@@ -207,7 +208,7 @@ Deno.serve(async (req) => {
       try {
         // Sonda de rota (somente GET da documentação, sem identificador de DPS) nas duas bases, em consultas.
         let routeProbe: NfseHttpDiagnostic["routeProbe"] | undefined;
-        if (r.method === "GET" && stage === "dps_lookup") {
+        if (r.method === "GET" && stage === "dps_lookup" && env === "HOMOLOGATION") {
           const doc = await one(`${SEFIN_NACIONAL_BASE.HOMOLOGATION}/docs/index`, "GET");
           const leg = await one(`${SEFIN_NACIONAL_LEGACY_HOMOLOG_BASE}/docs/index`, "GET");
           routeProbe = { documentedBase: probeClass(doc), legacyBase: probeClass(leg) };
@@ -220,7 +221,7 @@ Deno.serve(async (req) => {
         }
         lastDiag = { ...lastDiag, result: classifyStatus(res.status, res.kind ?? "other"), httpStatus: res.status, contentKind: res.kind,
           officialErrorCodes: res.kind === "json" ? officialErrorCodes(res.text) : [], routeProbe,
-          causes: res.status === 403 && res.kind === "html_access_denied" ? ["tls_renegotiation_unsupported"] : [] };
+          causes: res.status === 403 && res.kind === "html_access_denied" ? ["client_cert_renegotiation_suspected"] : [] };
         console.log(diagnosticLogLine(lastDiag));
         rejectRedirect(res.status);
         return { status: res.status, body: res.text };
