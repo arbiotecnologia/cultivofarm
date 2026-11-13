@@ -1,0 +1,20 @@
+{
+ "preview-interna.xml": {
+  "xsd_nfe_PL_010g_original": true,
+  "erros": [],
+  "sha256": "17ad783551f789836d08cee2017baa7ac96b0daf1154a76696484129f70d4d8d",
+  "idDest": "1",
+  "CFOP": "5102",
+  "UF_dest": "MG",
+  "tem_IBSCBS": true
+ },
+ "preview-interestadual.xml": {
+  "xsd_nfe_PL_010g_original": true,
+  "erros": [],
+  "sha256": "74cbc07919e7dcb73a0ed33e2246b6d63cbf484150c2ee96f7098059aa6dca7b",
+  "idDest": "2",
+  "CFOP": "6102",
+  "UF_dest": "SP",
+  "tem_IBSCBS": true
+ }
+}
