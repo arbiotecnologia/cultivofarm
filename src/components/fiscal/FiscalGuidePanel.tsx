@@ -31,8 +31,8 @@ function PendencyList({ items }: { items: Pendency[] }) {
   );
 }
 
-function Shell({ status, hasProfile, scenarios, link, canOpen }: {
-  status: string | null; hasProfile: boolean;
+function Shell({ kind, status, hasProfile, scenarios, link, canOpen }: {
+  kind: "product" | "customer"; status: string | null; hasProfile: boolean;
   scenarios: { key: FiscalScenario; label: string; items: Pendency[] }[];
   link: string; canOpen: boolean;
 }) {
@@ -40,7 +40,7 @@ function Shell({ status, hasProfile, scenarios, link, canOpen }: {
     <div className="space-y-4" data-testid="fiscal-guide">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-medium">Perfil fiscal:</span>
-        {hasProfile ? <Badge variant="secondary">{getFiscalStatusLabel("product", status)}</Badge>
+        {hasProfile ? <Badge variant="secondary">{getFiscalStatusLabel(kind, status)}</Badge>
           : <Badge variant="outline">Sem perfil</Badge>}
       </div>
       {scenarios.map((s) => (
@@ -66,7 +66,7 @@ export function ProductFiscalGuide({ productId, canOpen }: { productId: string; 
   if (q.isError) return <Alert variant="destructive"><AlertDescription>Não foi possível ler o perfil fiscal. Nada foi alterado.</AlertDescription></Alert>;
   if (q.data === undefined) return <Loader2 className="h-4 w-4 animate-spin" aria-label="Carregando perfil fiscal" />;
   const p = q.data as Record<string, string | null> | null;
-  return <Shell status={p?.profile_status ?? null} hasProfile={!!p} link={fiscalEditorLink("produto", productId)} canOpen={canOpen}
+  return <Shell kind="product" status={p?.profile_status ?? null} hasProfile={!!p} link={fiscalEditorLink("produto", productId)} canOpen={canOpen}
     scenarios={SCENARIOS.map((s) => ({ ...s, items: productPendencies(p, s.key) }))} />;
 }
 
@@ -88,6 +88,6 @@ export function CustomerFiscalGuide({ customerId, cpfCnpj, canOpen }: { customer
   if (q.isError) return <Alert variant="destructive"><AlertDescription>Não foi possível ler o perfil fiscal. Nada foi alterado.</AlertDescription></Alert>;
   if (q.isLoading) return <Loader2 className="h-4 w-4 animate-spin" aria-label="Carregando perfil fiscal" />;
   const c = q.data ?? null;
-  return <Shell status={c?.profile_status ?? null} hasProfile={!!c} link={fiscalEditorLink("cliente", customerId)} canOpen={canOpen}
+  return <Shell kind="customer" status={c?.profile_status ?? null} hasProfile={!!c} link={fiscalEditorLink("cliente", customerId)} canOpen={canOpen}
     scenarios={SCENARIOS.map((s) => ({ ...s, items: customerPendencies(c ? { ...c, cpf_cnpj: cpfCnpj } : null, s.key) }))} />;
 }
