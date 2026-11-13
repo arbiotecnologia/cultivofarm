@@ -361,3 +361,27 @@ export function useSaveProductFiscalProfile(enabled: boolean = OWNED_PRODUCT_FIS
     },
   });
 }
+
+/**
+ * Propriedade confirmada de produtos do catálogo próprio: lê `produtos.owner_organization_id` pela leitura
+ * escopada (RLS) e compara com a empresa do ator. Apenas habilita a UI; o writer canônico
+ * `tenant_owned_product_fiscal_save` reautoriza dono/papel no servidor. Erro/carregando = não confirmado.
+ */
+export function useOwnedProductIds(productIds: string[]) {
+  const actor = useProductFiscalAccess("portal-query-actor");
+  const { profile } = useAuth();
+  const org = profile?.organization_id ?? null;
+  const ids = Array.from(new Set(productIds.filter(Boolean))).sort();
+  const q = useScopedPortalQuery<string[]>({
+    queryKey: [...PRODUCT_FISCAL_KEYS.root, "owned", org, ids] as const,
+    enabled: !!org && ids.length > 0 && actor.canWriteOwnedProduct,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("produtos").select("id, owner_organization_id").in("id", ids);
+      if (error) throw error;
+      return ((data ?? []) as { id: string; owner_organization_id: string | null }[])
+        .filter((r) => !!org && r.owner_organization_id === org).map((r) => r.id);
+    },
+  } as any);
+  const owned = new Set<string>(q.isError ? [] : (q.data as string[] | undefined) ?? []);
+  return { owned, confirmed: q.isSuccess && !q.isError };
+}
