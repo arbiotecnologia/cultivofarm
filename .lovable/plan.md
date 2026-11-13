@@ -1,43 +1,34 @@
-# Catálogo > Serviços com faturamento e NFS-e
+# IBS/CBS ponta a ponta + exceção de envio NFS-e AR (homologação)
 
-## Situação real encontrada (produção swzpzcwiasxmjutrmvkm, somente leitura)
-- Migração `20261113150414 scope_service_fiscal_profiles_to_issuer` está no histórico remoto. Será versionada como cópia de referência em `scripts/service-catalog-nfse-20261113/`, sem reaplicar.
-- Não existe cadastro comercial de serviços: `service_fiscal_profiles` é hoje o único registro (fiscal), sem preço/unidade comercial.
-- Não existe registro de "serviço prestado ao cliente" nem faturamento de serviço.
-- NFS-e: nenhuma função de envio existe. Nas 4 empresas, `nfse_enabled = false` e nenhuma tem credencial; 2 apontam provedor NFSE_NACIONAL, 2 nenhum. Logo a emissão ficará sempre como **pendência de integração** até alguém configurar o provedor — nunca autorização simulada.
+## Situação encontrada
+- Perfis RTC existem (`useFiscalRtc`, `rtcConfiguration.ts`), mas nem o gerador NF-e 55 (`buildNfeXml.ts`) nem o DPS (`dps.ts`) emitem grupos IBS/CBS hoje.
+- `nfse-nacional-emit` bloqueia tudo por `NFSE_TRANSMISSION_ENABLED` (global, desligado). Host de homologação já é fixo e verificado.
 
-## O que será construído (por fases, cada uma com sua aprovação)
+## Etapa 1 — Guia Fiscal IBS/CBS (todos os itens)
+- Seção IBS/CBS nos editores canônicos já usados pela Guia: produtos (`ProductEditDrawer`), microrganismos comercializáveis (`MicroorganismEditDrawer`) e serviços (`ServiceFiscalEditDrawer`).
+- Campos: CST IBS/CBS, cClassTrib (compatível com o CST, validado contra catálogo RTC existente), vigência início/fim, indicador de destino. Alíquotas não são presumidas: ficam vazias até o operador ou o perfil RTC da empresa informar; ausência vira pendência de pré-emissão.
+- Persistência em colunas/JSON existentes dos perfis; reabrir sem mudança não grava.
 
-**Fase 1 — Catálogo > Serviços (cadastro comercial + guia Fiscal)**
-- Nova tabela `catalog_services` por empresa: descrição, unidade, preço, ativo; unicidade de nome por empresa.
-- Vínculo composto: perfil fiscal do serviço passa a referenciar (serviço, empresa) — perfil só pode apontar para serviço da mesma empresa.
-- Tela Catálogo > Serviços (consultoria e qualquer outro), com guia Fiscal abrindo o editor fiscal de serviço já existente. Rotas atuais preservadas.
-- Permissão: leitura para perfis internos da empresa; gravação por administrador/gestor/financeiro (a confirmar).
+## Etapa 2 — Snapshot por item e XML
+- Snapshot IBS/CBS por item ao criar/reaplicar rascunho (mesmo mecanismo CAS já usado).
+- NF-e 55: grupo `IBSCBS` por item (base, pIBSUF, pIBSMun, pCBS, valores) e `IBSCBSTot`, interna e interestadual (UF de destino).
+- DPS: grupo `IBSCBS` com `cLocalidadeIncid`/local e `cIndOp`; campos declarados separados dos devolvidos pelo autorizador (gravados só a partir da resposta, nunca calculados como "autorizados").
+- Divergência entre CST/cClassTrib/vigência/data de emissão bloqueia o XML com pendência.
 
-**Fase 2 — Serviço prestado ao cliente**
-- Tabela `service_engagements`: serviço, cliente, data, quantidade, valor unitário (cópia imutável do preço), total, status (rascunho / pronto para faturar / faturado / cancelado).
-- Coerência garantida no banco: serviço, cliente e registro da mesma empresa (chaves compostas), quantidade > 0, valor ≥ 0.
+## Etapa 3 — Exceção segura de envio (somente AR, homologação)
+- Nova tabela privada `nfse_homolog_send_allowlist` (organização + emitente, vazia por padrão, sem acesso de cliente; só leitura via função interna).
+- `nfse-nacional-emit`: se a trava global estiver desligada, envia apenas quando: organização e emitente da prestação `ed5180f3-…` constam na allowlist; rascunho e emitente em HOMOLOGATION; produção desligada; host exato `sefin.producaorestrita.nfse.gov.br`; `redirect: "manual"` (redirecionamento = falha/reconciliação). Autenticação, A1, readiness, acesso, idempotência e reconciliação permanecem inalterados.
+- Flag global não é ligada; nenhum outro tenant liberado.
 
-**Fase 3 — Faturamento idempotente**
-- Função no servidor que, com chave de idempotência, cria um único rascunho de NFS-e no fluxo fiscal existente (`fiscal_invoices` modelo NFS-e, `rpc_fiscal_draft_save`) a partir dos serviços prestados. Repetição devolve o mesmo rascunho.
-- Recebível NÃO é criado no faturamento: segue a regra vigente, só após autorização fiscal válida, pelo motor único já existente.
+## Testes
+- Vitest: editores (persistir/reabrir/idempotência), compatibilidade CST×cClassTrib, ausência/divergência.
+- Deno offline: XML NF-e interno/interestadual e DPS com IBS/CBS fictícios validados no XSD oficial (NF-e PL vigente com RTC; DPS produção restrita 20/10/2026); testes da allowlist (vazia bloqueia, outro tenant bloqueia, produção bloqueia, host divergente/redirect bloqueia).
 
-**Fase 4 — Emissão NFS-e pelo provedor da empresa**
-- Função de envio que lê o provedor e a credencial da própria empresa. Sem provedor/credencial/`nfse_enabled`: devolve "integração não configurada" e a nota fica em rascunho com pendência.
-- Estados exibidos: Rascunho, Envio pendente, Rejeitada (com motivo do provedor), Autorizada (somente com protocolo real do provedor).
-- Implementação de um provedor real (NFS-e Nacional) só com credencial de homologação fornecida por você; até lá a função fica fechada.
+## Implantação (autorizada, limitada)
+- Migração: tabela allowlist + função de checagem (nomes exatos informados no fim) + snapshot IBS/CBS se necessário.
+- Inserção pontual da linha AR (organização/emitente lidos da prestação, sem dados novos inventados).
+- Deploy apenas de `nfse-nacional-emit`. Frontend não publicado; nenhuma emissão pela minha sessão; sem leitura de segredos.
 
-## Testes e limites
-- Testes locais/isolados com massa sintética: segregação entre duas empresas em listas, buscas, cache, gravações, funções e faturamento; idempotência concorrente; permissões.
-- Grants e políticas conferidos por leitura antes e depois de cada migração.
-- Teste no navegador logado fica com você; não vou impersonar.
-- Nada publicado, nenhuma nota real emitida.
-
-## Decisões que preciso de você
-1. Quem pode cadastrar serviço e lançar serviço prestado (sugestão: administrador, gestor e financeiro; faturar: administrador/financeiro).
-2. Confirma que o recebível só nasce com a NFS-e autorizada (como na NF-e)?
-3. Tem credencial de homologação da NFS-e Nacional para a Fase 4, ou ela fica fechada como pendência?
-
-## Detalhes técnicos
-- Migrações novas: `catalog_services`, `service_engagements`, FK composta `(service_id, organization_id)` em `service_fiscal_profiles` (backfill só se houver linhas; hoje a tabela está vazia), RPC `rpc_service_billing_create_draft_v1(p_engagement_ids uuid[], p_idempotency_key text)` SECURITY DEFINER com `search_path` fixo, `h15_actor_organization()`, `fiscal_org_released`, EXECUTE revogado de PUBLIC/anon.
-- Todas as tabelas: GRANT explícito, RLS restritiva por organização igual à da migração do proprietário.
+## Pressupostos a confirmar
+- Se o XSD NF-e oficial com grupos RTC não estiver no repositório, baixo o pacote oficial e registro o SHA-256.
+- Alíquotas IBS/CBS nos testes são fictícias e marcadas como tal.
