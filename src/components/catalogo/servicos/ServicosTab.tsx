@@ -157,11 +157,19 @@ function EngagementsSection({ services, scope }: { services: CatalogService[]; s
       toast({ title: "Faturamento não concluído", description: err.definitive ? err.message : "Resposta incerta; tente de novo — a mesma chave impede duplicidade.", variant: "destructive" });
     } finally { busy.current = false; }
   }
+  const NFSE_RESULT_LABEL: Record<string, string> = {
+    transmission_disabled: "Envio NFS-e desligado neste ambiente", production_blocked: "Emissão em produção bloqueada",
+    rejected: "NFS-e rejeitada pelo Sistema Nacional", reconciliation_required: "Envio pendente de confirmação",
+    authorization_unverified: "Resposta não confirmada — em conferência", ledger_not_installed: "Registro de envios ainda não instalado",
+    dps_incomplete: "Dados fiscais incompletos para a DPS", signing_failed: "Falha na assinatura com o certificado da empresa",
+    replayed: "Envio já registrado", invoice_not_draft: "A nota não está em rascunho",
+  };
   async function emit(invoiceId: string) {
     try {
       const r = await requestNfseEmission(invoiceId);
       if (r.code === "integration_not_configured") toast({ title: "Integração NFS-e não configurada", description: (r.missing ?? []).map(m => READINESS_MISSING_LABEL[m] ?? m).join(", ") || "Configure o provedor da empresa." });
-      else toast({ title: "Envio não realizado", description: r.message ?? r.code });
+      else if (r.code === "authorized" || (r.code === "replayed" && (r as { authorized?: boolean }).authorized)) toast({ title: "NFS-e autorizada", description: "Autorização conferida no XML devolvido pelo Sistema Nacional." });
+      else toast({ title: NFSE_RESULT_LABEL[r.code] ?? "Envio não realizado", description: r.message ?? (r.missing?.length ? r.missing.join(", ") : r.code), variant: r.code === "rejected" ? "destructive" : undefined });
     } catch { toast({ title: "Falha ao solicitar envio", variant: "destructive" }); }
   }
 

@@ -70,3 +70,14 @@ describe("DPS NFS-e Nacional (sintética, sem transmissão)", () => {
     expect(() => buildDpsXml(bad)).toThrow(/dps_invalid/);
   });
 });
+
+describe("chave de envio NFS-e por versão do rascunho", () => {
+  it("é estável para a mesma versão e muda quando o rascunho é corrigido", async () => {
+    const { nfseEmissionKey } = await import("@/hooks/useCatalogServices");
+    const id = "00000000-0000-4000-8000-00000000abcd";
+    expect(nfseEmissionKey(id, 3)).toBe(nfseEmissionKey(id, 3));
+    expect(nfseEmissionKey(id, 4)).not.toBe(nfseEmissionKey(id, 3));
+    expect(nfseEmissionKey(id, 3)).toMatch(/^[A-Za-z0-9_.:-]{16,128}$/);
+    expect(() => nfseEmissionKey(id, 0)).toThrow();
+  });
+});

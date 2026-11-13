@@ -1,0 +1,4 @@
+- NFS-e Nacional adapter is offline-certified only: never POST to Sefin, enable nfse_enabled/flags, or apply the ledger migration without explicit owner authorization; synthetic A1 certs are ephemeral in /tmp.
+- DPS signature checks stay independent of the engine (lxml/libxml2 C14N on a deep-copied subtree + OpenSSL); the engine verifier is only a cross-check.
+- Official XSD bundle changes only via official ZIP re-download with SHA-256 match to official/manifest.json; the anchored TSSerieDPS pattern is recorded as SCHEMA_ANCHOR_DEFECT and patched only in a /tmp copy.
+- PG tests run on the disposable local replica rebuilt from read-only production metadata, inside one transaction with ROLLBACK; never against production.
