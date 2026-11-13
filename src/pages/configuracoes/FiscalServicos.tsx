@@ -522,6 +522,18 @@ export function EditDrawer({
           </SheetDescription>
         </SheetHeader>
 
+        {!isNew && profileQuery.data ? (
+          <section aria-label="Guia Fiscal do serviço" data-testid="service-fiscal-guide" className="mt-4 rounded-md border p-3 space-y-1">
+            <p className="text-sm font-medium">Guia Fiscal</p>
+            {(() => {
+              const pend = servicePendencies(profileQuery.data as never);
+              return pend.length === 0
+                ? <p className="text-xs text-muted-foreground">Sem pendências nos campos verificados.</p>
+                : <ul className="text-xs list-disc pl-5">{pend.map((x) => <li key={x.field}>{x.label}: {x.message}</li>)}</ul>;
+            })()}
+          </section>
+        ) : null}
+
         {loading ? (
           <div className="py-6 flex items-center gap-2 text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Carregando…
