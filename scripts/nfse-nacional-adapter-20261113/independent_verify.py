@@ -1,7 +1,7 @@
 """Verificação INDEPENDENTE do motor: XSD oficial DPS v1.01 (libxml2) e
 assinatura XMLDSig por C14N do lxml/libxml2 + OpenSSL. Uso:
 python3 independent_verify.py <signed.xml> <xsd_dir>  -> imprime JSON."""
-import base64, hashlib, json, subprocess, sys, tempfile, os
+import base64, copy, hashlib, json, subprocess, sys, tempfile, os
 from lxml import etree
 path, xsd_dir = sys.argv[1], sys.argv[2]
 NS = {"n": "http://www.sped.fazenda.gov.br/nfse", "ds": "http://www.w3.org/2000/09/xmldsig#"}
@@ -28,9 +28,12 @@ ref = sig.find(".//ds:Reference", NS).get("URI")
 out["reference_matches_id"] = ref == "#" + inf.get("Id")
 out["algorithms"] = [sig.find(".//ds:SignatureMethod", NS).get("Algorithm"), sig.find(".//ds:DigestMethod", NS).get("Algorithm")]
 # enveloped: infDPS não contém a assinatura; C14N inclusiva do subconjunto
-c14n = etree.tostring(inf, method="c14n", exclusive=False, with_comments=False)
-out["digest_ok"] = base64.b64encode(hashlib.sha256(c14n).digest()).decode() == sig.find(".//ds:DigestValue", NS).text
-si = etree.tostring(sig.find("ds:SignedInfo", NS), method="c14n", exclusive=False)
+# Subconjunto renderizado como documento próprio (deepcopy): tostring(c14n) em
+# nó interno do lxml emite xmlns="" espúrio (mesma técnica do harness NF-e F4.1).
+def c14n(el): return etree.tostring(etree.ElementTree(copy.deepcopy(el)), method="c14n", exclusive=False, with_comments=False)
+c14n_inf = c14n(inf)
+out["digest_ok"] = base64.b64encode(hashlib.sha256(c14n_inf).digest()).decode() == sig.find(".//ds:DigestValue", NS).text
+si = c14n(sig.find("ds:SignedInfo", NS))
 with tempfile.TemporaryDirectory() as t:
     cert = "-----BEGIN CERTIFICATE-----\n" + sig.find(".//ds:X509Certificate", NS).text + "\n-----END CERTIFICATE-----\n"
     open(f"{t}/c.pem", "w").write(cert)
