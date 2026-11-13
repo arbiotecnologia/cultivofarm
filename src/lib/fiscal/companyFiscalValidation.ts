@@ -1,3 +1,4 @@
+import { canEnableNfseHomologationSend } from "./nfseHomologationSend";
 /**
  * Fase Fiscal 3.15 — Validação da Central de Configuração Fiscal.
  *
@@ -390,7 +391,15 @@ export function buildUpdatePayload(values: CompanyFiscalFormValues, baseline?: C
     payload.nfe_series_number = parsed.nfe_series_number;
     payload.nfe_series = parsed.nfe_series_number === null ? null : String(parsed.nfe_series_number);
   }
-  payload.nfse_enabled = false;
+  // nfse_enabled só é alterado pelo controle explícito de homologação.
+  // O salvamento geral nunca liga; desliga se o resultado deixar de ser elegível.
+  if (!canEnableNfseHomologationSend({
+    nfse_provider: parsed.nfse_provider ?? values.nfse_provider ?? null,
+    fiscal_environment: parsed.fiscal_environment ?? values.fiscal_environment ?? null,
+    production_enabled: false,
+    nfse_credential_ref: parsed.nfse_credential_ref ?? values.nfse_credential_ref ?? null,
+    nfse_configuration: parsed.nfse_configuration ?? values.nfse_configuration,
+  })) payload.nfse_enabled = false;
   if (parsed.nfe_provider !== undefined) payload.nfe_provider = parsed.nfe_provider;
   if (parsed.nfse_provider !== undefined) payload.nfse_provider = parsed.nfse_provider;
   if (parsed.nfe_configuration !== undefined) {
