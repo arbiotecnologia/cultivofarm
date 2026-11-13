@@ -64,7 +64,7 @@ end $$;
 revoke all on function platform_private.service_nfse_dps_valid_v1(jsonb) from public, anon, authenticated;
 
 create or replace function platform_private.trg_service_fiscal_profile_dps_check()
-returns trigger language plpgsql set search_path = pg_catalog, public, pg_temp as $$
+returns trigger language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 begin
   if new.federal_withholding_defaults is not null and jsonb_typeof(new.federal_withholding_defaults) <> 'object' then
     raise exception 'federal_withholding_defaults_not_object' using errcode = '22023';
