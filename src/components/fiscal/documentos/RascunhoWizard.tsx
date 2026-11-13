@@ -463,6 +463,11 @@ export default function RascunhoWizard({
                     Adicione, edite ou remova. Totais são recalculados no servidor ao salvar.
                     Selecione um produto ou serviço cadastrado para preencher automaticamente o perfil fiscal.
                   </CardDescription>
+                  {cfopNotice ? (
+                    <p className="text-xs text-amber-700 dark:text-amber-400" role="status" data-testid="cfop-notice">
+                      CFOP não preenchido automaticamente: {DRAFT_CFOP_REASON_LABEL[cfopNotice]}.
+                    </p>
+                  ) : null}
                 </div>
                 <Button size="sm" variant="secondary" onClick={addItem} type="button">
                   <Plus className="h-4 w-4 mr-1" /> Adicionar
