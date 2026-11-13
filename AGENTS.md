@@ -126,4 +126,3 @@
 - B2B payment condition/method (B3): single contract in scripts/b2b-payment-condition-v1-rebase-20261106/AGENTS.md; method rev.2 package is history only.
 
 - Tenant product CRUD uses only Catálogo → Produtos and scoped RPCs; legacy query/hash survive. Query-aware RBAC mounts only authorized tabs; fiscal links retain existing gates — prevents duplicate editors and redirected privilege expansion.
-- NFS-e homologation reconciliation transport follows scripts/nfse-reneg-transport-20261113/AGENTS.md — keeps renegotiation TLS isolated from emission.
