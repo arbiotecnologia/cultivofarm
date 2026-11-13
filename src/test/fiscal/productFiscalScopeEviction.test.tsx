@@ -32,10 +32,9 @@ describe("tela Perfis Fiscais > Produtos: lista fiscal + propriedade (hooks reai
     let search = "";
     const h = renderHook(() => {
       const list = useProductFiscalList({ search, status: null, page: 0, pageSize: 20, familia: null } as any);
-      const owned = useOwnedProductIds(list.data?.items.map((i: { id: string }) => i.id) ?? []);
+      const owned = useOwnedProductIds(list.data?.items.map((i: { product_id: string }) => i.product_id) ?? []);
       return { list, owned };
     }, { wrapper });
-    await new Promise(r=>setTimeout(r,300)); console.log("DBG", h.result.current.list.data?.items?.length, qc.getQueryCache().getAll().map(q=>q.observers.map((o:any)=>o.options.enabled)), JSON.stringify(calls), h.result.current.list.status, h.result.current.list.error?.message, qc.getQueryCache().getAll().map(q=>[q.queryKey.slice(0,3), q.state.status, q.state.error?.message]));
     await waitFor(() => { expect(h.result.current.list.data?.items).toHaveLength(1); expect(h.result.current.owned.confirmed).toBe(true); });
     const settled = { ...calls };
     for (let i = 0; i < 6; i++) { h.rerender(); await act(async () => { await new Promise(r => setTimeout(r, 15)); }); }
