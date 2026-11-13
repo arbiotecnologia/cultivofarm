@@ -40,19 +40,18 @@ const NOW = new Date();
 
 async function independent(xml: string, name: string) {
   const p = `${TMP}/${name}.xml`; await Deno.writeTextFile(p, xml);
-  return JSON.parse(await sh("python3", [`${HERE}independent_verify.py`, p, `${HERE}official/xsd-1.01`]));
+  // HOMOLOGATION valida no pacote oficial de produção restrita 20/10/2026 (sem modificação).
+  return JSON.parse(await sh("python3", [`${HERE}independent_verify.py`, p, `${HERE}../service-nfse-dps-profile-20261113/official/prod-restrita-20261020`]));
 }
 
 for (const crt of ["1", "3", "4"]) {
-  Deno.test(`DPS assinada (CRT ${crt}) é válida no XSD oficial 1.01 e na verificação independente`, async () => {
+  Deno.test(`DPS assinada (CRT ${crt}) é válida no XSD oficial de homologação (20/10/2026) e na verificação independente`, async () => {
     const i = { ...base, emitter: { ...base.emitter, regime: regimeFromCrt(crt) } };
     const s = signDpsXml({ xml: buildDpsXml(i), dpsId: dpsId(i), emitterCnpj: CNPJ, material: good, now: NOW });
     assert(verifyDpsSignature(s.signedXml).valid);
     const r = await independent(s.signedXml, `crt${crt}`);
     assertEquals(r.xsd_errors, []); assert(r.xsd_valid);
-    // Defeito conhecido do XSD oficial: só o padrão ancorado de <serie> falha.
-    assertEquals(r.xsd_official_valid, false);
-    assertEquals(r.xsd_official_errors.length, 1); assert(r.xsd_official_errors[0].includes("serie")); assert(r.reference_matches_id); assert(r.digest_ok); assert(r.openssl_signature_ok);
+    assertEquals(r.xsd_official_errors, []); assert(r.xsd_official_valid); assert(r.reference_matches_id); assert(r.digest_ok); assert(r.openssl_signature_ok);
     assertEquals(r.algorithms, ["http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", "http://www.w3.org/2001/04/xmlenc#sha256"]);
     await Deno.writeTextFile(`${HERE}evidence/dps-sintetica-crt${crt}.xml`, s.signedXml);
   });

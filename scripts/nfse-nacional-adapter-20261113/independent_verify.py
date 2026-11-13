@@ -19,7 +19,8 @@ out["xsd_official_valid"], out["xsd_official_errors"] = validate(xsd_dir)
 with tempfile.TemporaryDirectory() as td:
     for f in os.listdir(xsd_dir): shutil.copy(os.path.join(xsd_dir, f), td)
     ts = os.path.join(td, "tiposSimples_v1.01.xsd"); body = open(ts, encoding="utf-8").read()
-    assert body.count('value="^0{0,4}\\d{1,5}$"') == 1
+    # Pacote de produção restrita 20/10/2026 já traz padrão sem âncora: cópia idêntica.
+    assert body.count('value="^0{0,4}\\d{1,5}$"') <= 1
     open(ts, "w", encoding="utf-8").write(body.replace('value="^0{0,4}\\d{1,5}$"', 'value="0{0,4}\\d{1,5}"'))
     out["xsd_valid"], out["xsd_errors"] = validate(td)
 sig = doc.find(".//ds:Signature", NS)
