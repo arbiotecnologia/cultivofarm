@@ -121,7 +121,7 @@ describe("buildNfeXml", () => {
     expect(() => buildNfeXml(bad2)).toThrowError(/CFOP inválido/);
   });
 
-  it("usa CSOSN para Simples Nacional (CRT 1/2)", () => {
+  it("usa CSOSN para Simples Nacional (CRT 1)", () => {
     const p = payload();
     (p.emit as Record<string, unknown>).CRT = "1";
     p.det[0].CSOSN = "102";
@@ -129,6 +129,23 @@ describe("buildNfeXml", () => {
     expect(xml).toContain("<ICMSSN102>");
     expect(xml).not.toContain("<ICMS00>");
     expect(validateNfeXml(xml).valid).toBe(true);
+  });
+
+  it("CRT 2 (excesso de sublimite) usa grupo normal CST, não CSOSN", () => {
+    const p = payload();
+    (p.emit as Record<string, unknown>).CRT = "2";
+    const { xml } = buildNfeXml(p);
+    expect(xml).toContain("<ICMS00>");
+    expect(xml).not.toContain("<ICMSSN");
+    expect(validateNfeXml(xml).valid).toBe(true);
+  });
+
+  it("CRT 4 (MEI) usa CSOSN", () => {
+    const p = payload();
+    (p.emit as Record<string, unknown>).CRT = "4";
+    p.det[0].CSOSN = "102";
+    const { xml } = buildNfeXml(p);
+    expect(xml).toContain("<ICMSSN102>");
   });
 
   it("emite CPF quando o destinatário é pessoa física", () => {

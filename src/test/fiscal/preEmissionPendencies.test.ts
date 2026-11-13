@@ -22,6 +22,11 @@ describe("pendências pré-emissão", () => {
   it("Simples exige CSOSN", () => {
     expect(productPendencies(okProduct, "interna", 1).map(p => p.field)).toEqual(["icms_csosn"]);
   });
+  it("CRT 2 segue a regra do motor: exige CST, não CSOSN; CRT 4 exige CSOSN", () => {
+    expect(productPendencies(okProduct, "interna", 2)).toEqual([]);
+    expect(productPendencies({ ...okProduct, icms_cst: null, icms_csosn: "102" }, "interna", 2).map(p => p.field)).toEqual(["icms_cst"]);
+    expect(productPendencies(okProduct, "interna", 4).map(p => p.field)).toEqual(["icms_csosn"]);
+  });
   it("NCM com 9 dígitos é pendência", () => {
     expect(productPendencies({ ...okProduct, ncm: "480210000" }, "interna", 3).map(p => p.field)).toEqual(["ncm"]);
   });
