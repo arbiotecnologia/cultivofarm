@@ -1,3 +1,4 @@
+import { ProductFiscalGuide } from "@/components/fiscal/FiscalGuidePanel";
 import { CompactCatalogSelect } from "@/components/catalogo/CompactCatalogSelect";
 import { DraftExitConfirmation } from "@/components/catalogo/DraftExitConfirmation";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -766,6 +767,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
                     <TabsTrigger value="geral">Identificação</TabsTrigger>
                     <TabsTrigger value="aplicacao">Aplicação & Custo</TabsTrigger>
                     <TabsTrigger value="composicao">Composição</TabsTrigger>
+                    {canConsultFiscal && form.id && <TabsTrigger value="fiscal">Fiscal</TabsTrigger>}
                   </TabsList>
 
                   <TabsContent value="geral" className="space-y-4">
@@ -1122,6 +1124,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
                       </div>
                     </div>
                   </TabsContent>
+                  {canConsultFiscal && form.id && <TabsContent value="fiscal" className="space-y-4"><ProductFiscalGuide productId={form.id} canOpen /></TabsContent>}
                 </Tabs>
                 </fieldset>
 
