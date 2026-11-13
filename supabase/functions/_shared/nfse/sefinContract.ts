@@ -5,7 +5,7 @@
  * sem segredos. Autorização só é aceita após verificação do XML da NFS-e
  * devolvido — nunca por status HTTP isolado.
  */
-import { NFSE_NAMESPACE, SEFIN_NACIONAL_BASE } from "./dps.ts";
+import { NFSE_NAMESPACE, SEFIN_NACIONAL_BASE, SEFIN_NACIONAL_HOMOLOG_RECONCILE_CANDIDATE_BASE } from "./dps.ts";
 
 export type NfseEnvironment = "HOMOLOGATION" | "PRODUCTION";
 const HOSTS: Record<NfseEnvironment, string> = {
@@ -19,7 +19,8 @@ export class SefinContractError extends Error {
 
 /** URL oficial para a operação; host divergente do ambiente é bloqueio duro. */
 export function sefinUrl(env: NfseEnvironment, op: { kind: "emit" } | { kind: "nfse"; chave: string } | { kind: "dps"; id: string }): string {
-  const base = SEFIN_NACIONAL_BASE[env];
+  // POST de emissão sempre na base configurada; só GET de reconciliação em homologação usa a candidata.
+  const base = env === "HOMOLOGATION" && op.kind !== "emit" ? SEFIN_NACIONAL_HOMOLOG_RECONCILE_CANDIDATE_BASE : SEFIN_NACIONAL_BASE[env];
   if (!base) throw new SefinContractError("NFSE_ENVIRONMENT_INVALID");
   let path = "/nfse";
   if (op.kind === "nfse") { if (!/^\d{50}$/.test(op.chave)) throw new SefinContractError("NFSE_ACCESS_KEY_INVALID"); path = `/nfse/${op.chave}`; }

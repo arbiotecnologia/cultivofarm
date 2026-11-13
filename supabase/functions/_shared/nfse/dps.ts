@@ -181,16 +181,20 @@ export function buildDpsXml(i: DpsInput): string {
 }
 
 /**
- * Endpoints da SefinNacional (API REST, mTLS). Fonte: tabela oficial gov.br "APIs - Prod. Restrita e
- * Produção" (docs prod. restrita em /API/SefinNacional/docs/index; produção em /SefinNacional/docs/index).
- * O Swagger exige certificado do cliente e não foi lido; a reconciliação sonda as duas bases (docs) e
- * reporta apenas enums. O caminho legado fica só para essa sonda comparativa.
+ * Endpoints da SefinNacional (API REST, mTLS). A base de EMISSÃO (POST /nfse) é a configuração anterior,
+ * comprovada no código: homologação em /SefinNacional; produção inalterada. A rota /API/SefinNacional
+ * consta apenas na página de documentação gov.br (Swagger exige certificado e não foi lido); por isso é
+ * só CANDIDATA e fica restrita ao GET de reconciliação em homologação. 404/HTML sem código oficial
+ * continua pendente (nunca NOT_FOUND).
  */
-export const SEFIN_NACIONAL_LEGACY_HOMOLOG_BASE = "https://sefin.producaorestrita.nfse.gov.br/SefinNacional" as const;
 export const SEFIN_NACIONAL_BASE = {
-  HOMOLOGATION: "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional",
+  HOMOLOGATION: "https://sefin.producaorestrita.nfse.gov.br/SefinNacional",
   PRODUCTION: "https://sefin.nfse.gov.br/SefinNacional",
 } as const;
+/** Candidata documental: somente GET de reconciliação (dps/nfse) em homologação; nunca POST. */
+export const SEFIN_NACIONAL_HOMOLOG_RECONCILE_CANDIDATE_BASE = "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional" as const;
+/** Mantido para a sonda comparativa de documentação (base de emissão). */
+export const SEFIN_NACIONAL_LEGACY_HOMOLOG_BASE = SEFIN_NACIONAL_BASE.HOMOLOGATION;
 /** Compatibilidade com consumidores anteriores. */
 export const SEFIN_NACIONAL_ENDPOINTS = {
   HOMOLOGATION: `${SEFIN_NACIONAL_BASE.HOMOLOGATION}/nfse`,

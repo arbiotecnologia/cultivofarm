@@ -84,7 +84,7 @@ Deno.test("gzip+base64 ida e volta e corpo JSON oficial", async () => {
   await assertRejects(() => gunzipBase64(btoa("nao-gzip")));
 });
 Deno.test("endpoints: só hosts oficiais por ambiente", () => {
-  assertEquals(sefinUrl("HOMOLOGATION", { kind: "emit" }), "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional/nfse");
+  assertEquals(sefinUrl("HOMOLOGATION", { kind: "emit" }), "https://sefin.producaorestrita.nfse.gov.br/SefinNacional/nfse");
   assertEquals(sefinUrl("PRODUCTION", { kind: "emit" }), "https://sefin.nfse.gov.br/SefinNacional/nfse");
   assertThrows(() => assertSefinUrl("https://sefin.nfse.gov.br/SefinNacional/nfse", "HOMOLOGATION"));
   assertThrows(() => assertSefinUrl("http://sefin.producaorestrita.nfse.gov.br/x", "HOMOLOGATION"));
