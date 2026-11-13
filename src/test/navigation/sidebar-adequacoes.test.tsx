@@ -19,10 +19,11 @@ const read = (p: string) => fs.readFileSync(path.resolve(process.cwd(), p), "utf
 const baseTecnica = navigation.find((i) => i.id === "protocolos")!;
 
 describe("Sidebar — Base Técnica com abas no menu", () => {
-  it("expõe os 5 filhos com deep link por aba", () => {
+  it("expõe os 6 filhos com deep link por aba", () => {
     const children = baseTecnica.children ?? [];
     expect(children.map((c) => c.label)).toEqual([
       "Produtos",
+      "Serviços",
       "Microrganismos",
       "Catálogo Técnico",
       "Culturas",
@@ -30,6 +31,7 @@ describe("Sidebar — Base Técnica com abas no menu", () => {
     ]);
     expect(children.map((c) => c.route)).toEqual([
       "/base-tecnica?tab=produtos",
+      "/base-tecnica?tab=servicos",
       "/base-tecnica?tab=microrganismos",
       "/base-tecnica?tab=catalogo-tecnico",
       "/base-tecnica?tab=culturas",
