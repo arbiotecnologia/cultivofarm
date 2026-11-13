@@ -1,0 +1,4 @@
+- Preparation only: never apply the migration hosted, enable nfse_enabled/credentials or POST to Sefin from this package; the owner applies after review.
+- Migration SQL is produced only by generate.py from the versioned billing migration whose body MD5 equals the live capture; PRE aborts on drift — what is tested is what ships.
+- DPS complement lives in service_fiscal_profiles.federal_withholding_defaults.nfse_dps and the invoice header snapshot; rpc_fiscal_draft_save allowlists stay untouched.
+- Reapply only refreshes fiscal snapshots of the SAME HOMOLOGATION service-billing draft via rpc_fiscal_draft_save CAS, keeping commercial item edits; any nfse_transmissions row or non-DRAFT state blocks.
