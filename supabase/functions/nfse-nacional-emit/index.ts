@@ -22,7 +22,8 @@ import { emitNfse, reconcileNfse, type EmitDeps, type LedgerRow } from "../_shar
 import { mapInvoiceToDps } from "../_shared/nfse/dpsFromInvoice.ts";
 import { assertSefinUrl, type NfseEnvironment } from "../_shared/nfse/sefinContract.ts";
 import { assertAllowlistUrl, decideTransmissionGate, rejectRedirect } from "../_shared/nfse/homologAllowlist.ts";
-import { classifyHttpError, classifyStatus, contentKind, diagnosticLogLine, errorCauses, finalizeDiagnostic, officialErrorCodes, runtimeCapabilities, stageFromUrl, type NfseHttpDiagnostic, type NfseHttpFailure } from "../_shared/nfse/reconcileDiagnostic.ts";
+import { classifyHttpError, classifyStatus, contentKind, diagnosticLogLine, errorCauses, finalizeDiagnostic, officialErrorCodes, renegFailureClass, runtimeCapabilities, sanitizeTls, stageFromUrl, type NfseHttpDiagnostic, type NfseHttpFailure } from "../_shared/nfse/reconcileDiagnostic.ts";
+import { RENEG_CODES, renegGet } from "../_shared/nfse/tlsreneg/renegTransport.ts";
 import { SEFIN_NACIONAL_HOMOLOG_RECONCILE_CANDIDATE_BASE, SEFIN_NACIONAL_LEGACY_HOMOLOG_BASE } from "../_shared/nfse/dps.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -181,6 +182,31 @@ Deno.serve(async (req) => {
       lastDiag = { stage, result: "certificate_unavailable", httpStatus: null, runtime };
       a1 ??= await loadA1(admin, invoiceId);
       lastDiag = { stage, result: "network_error", httpStatus: null, runtime };
+      // GET de reconciliação em homologação: o IIS da Sefin pede o certificado por renegociação TLS 1.2,
+      // que o rustls do runtime não suporta. Transporte dedicado (Go crypto/tls/WASM + Deno.connect),
+      // host fixo, cadeia+hostname verificados, RFC 5746 exigida, A1 só em memória. POST nunca usa este caminho.
+      if (r.method === "GET" && env === "HOMOLOGATION") {
+        const call = async (url: string) => {
+          const x = await renegGet(url, { certPem: a1!.chainPem, keyPem: a1!.keyPem }, TIMEOUT_MS);
+          if (x.ok) return { ok: true as const, status: x.status, text: x.body, kind: contentKind(x.contentType, x.body), tls: sanitizeTls(x.tls) };
+          const code = RENEG_CODES.has(x.code) ? x.code : "tls_error_other";
+          return { ok: false as const, code, tls: sanitizeTls(x.tls) };
+        };
+        const cls = (p: Awaited<ReturnType<typeof call>>): NfseHttpFailure => p.ok ? classifyStatus(p.status, p.kind) : renegFailureClass(p.code);
+        let routeProbe: NfseHttpDiagnostic["routeProbe"] | undefined;
+        if (stage === "dps_lookup") routeProbe = { documentedBase: cls(await call(`${SEFIN_NACIONAL_HOMOLOG_RECONCILE_CANDIDATE_BASE}/docs/index`)), legacyBase: cls(await call(`${SEFIN_NACIONAL_LEGACY_HOMOLOG_BASE}/docs/index`)) };
+        const x = await call(r.url);
+        if (!x.ok) {
+          lastDiag = { ...lastDiag, transport: "go_wasm_reneg", result: renegFailureClass(x.code), renegCode: x.code, tls: x.tls, routeProbe };
+          console.log(diagnosticLogLine(lastDiag));
+          throw Object.assign(new Error("transport"), { code: "NFSE_TRANSPORT_FAILED" });
+        }
+        lastDiag = { ...lastDiag, transport: "go_wasm_reneg", result: classifyStatus(x.status, x.kind), httpStatus: x.status, contentKind: x.kind,
+          officialErrorCodes: x.kind === "json" ? officialErrorCodes(x.text) : [], tls: x.tls, routeProbe, renegCode: null };
+        console.log(diagnosticLogLine(lastDiag));
+        rejectRedirect(x.status);
+        return { status: x.status, body: x.text };
+      }
       // API Deno estável (>=1.41/2.x): mTLS por `cert`/`key` PEM em memória; verificação do servidor nunca desligada.
       // HTTP/1.1 forçado (http2:false): o IIS da Sefin responde HTTP_1_1_REQUIRED a pedidos h2 com certificado.
       const create = (Deno as unknown as { createHttpClient?: (o: { cert: string; key: string; http1?: boolean; http2?: boolean }) => { close?: () => void } }).createHttpClient;
@@ -208,18 +234,18 @@ Deno.serve(async (req) => {
       try {
         // Sonda de rota (somente GET da documentação, sem identificador de DPS) nas duas bases, em consultas.
         let routeProbe: NfseHttpDiagnostic["routeProbe"] | undefined;
-        if (r.method === "GET" && stage === "dps_lookup" && env === "HOMOLOGATION") {
+        if (false as boolean) { // sonda movida para o transporte de renegociação (GET homologação)
           const doc = await one(`${SEFIN_NACIONAL_HOMOLOG_RECONCILE_CANDIDATE_BASE}/docs/index`, "GET");
           const leg = await one(`${SEFIN_NACIONAL_LEGACY_HOMOLOG_BASE}/docs/index`, "GET");
           routeProbe = { documentedBase: probeClass(doc), legacyBase: probeClass(leg) };
         }
         const res = await one(r.url, r.method, r.body);
         if (res.status === null) {
-          lastDiag = { ...lastDiag, result: res.aborted ? "timeout" : classifyHttpError(res.error), causes: res.aborted ? ["aborted"] : errorCauses(res.error), routeProbe };
+          lastDiag = { ...lastDiag, transport: "deno_fetch", result: res.aborted ? "timeout" : classifyHttpError(res.error), causes: res.aborted ? ["aborted"] : errorCauses(res.error), routeProbe };
           console.log(diagnosticLogLine(lastDiag));
           throw res.error ?? new Error("transport");
         }
-        lastDiag = { ...lastDiag, result: classifyStatus(res.status, res.kind ?? "other"), httpStatus: res.status, contentKind: res.kind,
+        lastDiag = { ...lastDiag, transport: "deno_fetch", result: classifyStatus(res.status, res.kind ?? "other"), httpStatus: res.status, contentKind: res.kind,
           officialErrorCodes: res.kind === "json" ? officialErrorCodes(res.text) : [], routeProbe,
           causes: res.status === 403 && res.kind === "html_access_denied" ? ["client_cert_renegotiation_suspected"] : [] };
         console.log(diagnosticLogLine(lastDiag));

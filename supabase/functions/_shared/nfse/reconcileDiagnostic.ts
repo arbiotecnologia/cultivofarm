@@ -31,6 +31,29 @@ export interface NfseHttpDiagnostic {
   officialErrorCodes?: string[];
   runtime: { createHttpClient: boolean; denoVersion: string | null; http1Forced?: boolean };
   routeProbe?: { documentedBase: NfseHttpFailure | null; legacyBase: NfseHttpFailure | null };
+  /** Transporte usado; `go_wasm_reneg` = TLS 1.2 com renegociação segura RFC 5746 (somente GET em homologação). */
+  transport?: "deno_fetch" | "go_wasm_reneg";
+  renegCode?: string | null;
+  tls?: NfseTlsDiag | null;
+}
+export interface NfseTlsDiag { version: string | null; cipher: string | null; alpn: string | null; chainVerified: boolean; certRequested: boolean;
+  clientCertSent: boolean; certRequestedOnRenegotiation: boolean; secureRenegotiation: boolean }
+const TOKEN = /^[A-Za-z0-9_.\/-]{1,64}$/;
+/** Somente tokens fixos do crypto/tls e booleanos. */
+export function sanitizeTls(t: unknown): NfseTlsDiag | null {
+  if (!t || typeof t !== "object") return null; const o = t as Record<string, unknown>;
+  const tok = (v: unknown) => typeof v === "string" && TOKEN.test(v) ? v : null; const b = (v: unknown) => v === true;
+  return { version: tok(o.version), cipher: tok(o.cipher), alpn: tok(o.alpn), chainVerified: b(o.chainVerified), certRequested: b(o.certRequested),
+    clientCertSent: b(o.clientCertSent), certRequestedOnRenegotiation: b(o.certRequestedOnRenegotiation), secureRenegotiation: b(o.secureRenegotiation) };
+}
+/** Código do transporte de renegociação → classe do diagnóstico. */
+export function renegFailureClass(code: string): NfseHttpFailure {
+  if (code === "timeout") return "timeout";
+  if (code.startsWith("tcp_")) return "tcp_error";
+  if (code === "tls_hostname_mismatch" || code.startsWith("tls_") || code === "client_cert_invalid") return code === "client_cert_invalid" ? "mtls_client_rejected" : "tls_error";
+  if (code === "wasm_unavailable" || code === "config_blocked") return "unsupported_feature";
+  if (code === "url_blocked" || code === "path_blocked") return "redirect_blocked";
+  return "unexpected_format";
 }
 
 export function stageFromUrl(url: string): NfseHttpStage {
@@ -154,5 +177,6 @@ export function runtimeCapabilities(): NfseHttpDiagnostic["runtime"] {
 export function diagnosticLogLine(d: NfseHttpDiagnostic): string {
   return JSON.stringify({ evt: "nfse_http_diag", stage: d.stage, result: d.result, causes: d.causes ?? [], httpStatus: d.httpStatus,
     contentKind: d.contentKind ?? null, officialErrorCodes: d.officialErrorCodes ?? [], routeProbe: d.routeProbe ?? null,
+    transport: d.transport ?? null, renegCode: d.renegCode ?? null, tls: d.tls ?? null,
     createHttpClient: d.runtime.createHttpClient, http1Forced: d.runtime.http1Forced ?? null, denoVersion: d.runtime.denoVersion });
 }
