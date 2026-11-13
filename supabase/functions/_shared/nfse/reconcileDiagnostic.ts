@@ -5,7 +5,7 @@
  */
 export type NfseHttpStage = "dps_lookup" | "nfse_download" | "emit" | "unknown";
 export type NfseHttpFailure =
-  | "mtls_unavailable" | "mtls_client_rejected" | "timeout" | "tls_error" | "network_error"
+  | "certificate_unavailable" | "mtls_unavailable" | "mtls_client_rejected" | "timeout" | "tls_error" | "network_error"
   | "redirect_blocked" | "authorization_denied" | "not_found" | "server_error" | "unexpected_status" | "unexpected_format" | "ok";
 
 export interface NfseHttpDiagnostic {

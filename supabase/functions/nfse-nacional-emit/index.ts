@@ -175,9 +175,10 @@ Deno.serve(async (req) => {
       const env: NfseEnvironment = new URL(r.url).host === "sefin.nfse.gov.br" ? "PRODUCTION" : "HOMOLOGATION";
       assertSefinUrl(r.url, env);
       if (gate.homologOnlyHost) assertAllowlistUrl(r.url);
-      a1 ??= await loadA1(admin, invoiceId);
       const stage = stageFromUrl(r.url);
       const runtime = runtimeCapabilities();
+      lastDiag = { stage, result: "certificate_unavailable", httpStatus: null, runtime };
+      a1 ??= await loadA1(admin, invoiceId);
       lastDiag = { stage, result: "network_error", httpStatus: null, runtime };
       // API Deno estável (>=1.41/2.x): mTLS por `cert`/`key` PEM; a verificação do servidor nunca é desligada.
       const create = (Deno as unknown as { createHttpClient?: (o: { cert: string; key: string }) => { close?: () => void } }).createHttpClient;
