@@ -29,6 +29,12 @@
       },
       {
         "local_cart_readback": true
+      },
+      {
+        "readback_quantity": 3,
+        "readback_presentation": "5 L",
+        "sku": "SKU-QA-3",
+        "visible_cart": true
       }
     ],
     "description_box": {
@@ -290,10 +296,20 @@
     "mode": "whole-packaging",
     "route": "/comercial/pedidos-b2b/novo",
     "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
-    "assertions": [],
-    "result": "GAP",
-    "error": "",
-    "text": "Registrar venda para parceiro da carteira\n\nSomente parceiros da carteira desta empresa. Não é compra para a própria empresa.\n\nVoltar para Pedidos B2B\nParceiro da carteira\nParceiro sintético da carteira com nome extenso e vínculo de empresa confirmado\nNovo Pedido\n\nSelecione produtos e/ou microrganismos. Condição comercial B2B aplicada.\n\nEscolha o volume comercial desejado, informe a área (ha) se aplicável e confirme a quantidade.\n\nNão foi possível verificar a continuidade do pedido. Nada foi liberado.\nVerificar novamente\nCatálogo\nFAMÍLIA DO CATÁLOGO\nTodas as famílias\nTodos os tipos\nNome (A→Z)\nPRODUTO\nSKU-QA-3\nB2B\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integral\nR$ 10,00/L\nCusto estimado R$ 10,00/ha (dose referencial)\nVer ficha\nFicha completa\nAdicionar ao pedido\n\nAs recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica conforme cultura, alvo, ambiente, histórico da área e manejo adotado.\n\n1 item(s)\nR$ 150,00\nContinuar para condição de pagamento\n1. Pedido\n2. Aprovação\n3. Financeiro\n4. Fiscal\n5. Entrega\n\nCada etapa depende das autorizações e validações próprias. Aprovação comercial não confirma cobrança, emissão fiscal ou entrega.\n\nProduto\n\nEscolha a embalagem. Vendemos somente embalagens inteiras.\n\nQUANTIDADE DE EMBALAGENS\nCancelar\nAdicionar\nFechar",
+    "assertions": [
+      {
+        "alternative_original_dialog": true,
+        "quantity": 3,
+        "sku": "SKU-QA-3"
+      },
+      {
+        "readback_quantity": 3,
+        "readback_presentation": "5 L",
+        "sku": "SKU-QA-3",
+        "visible_cart": true
+      }
+    ],
+    "result": "PASS_ALTERNATIVE_WHOLE_PACKAGING_UI",
     "reads": [
       {
         "name": "get_my_entitlement_context",
@@ -374,6 +390,12 @@
       },
       {
         "local_cart_readback": true
+      },
+      {
+        "readback_quantity": 3,
+        "readback_presentation": "5 L",
+        "sku": "SKU-QA-3",
+        "visible_cart": true
       }
     ],
     "description_box": {
@@ -635,10 +657,20 @@
     "mode": "whole-packaging",
     "route": "/comercial/pedidos-b2b/novo",
     "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
-    "assertions": [],
-    "result": "GAP",
-    "error": "",
-    "text": "Registrar venda para parceiro da carteira\n\nSomente parceiros da carteira desta empresa. Não é compra para a própria empresa.\n\nVoltar para Pedidos B2B\nParceiro da carteira\nParceiro sintético da carteira com nome extenso e vínculo de empresa confirmado\nNovo Pedido\n\nSelecione produtos e/ou microrganismos. Condição comercial B2B aplicada.\n\nEscolha o volume comercial desejado, informe a área (ha) se aplicável e confirme a quantidade.\n\nNão foi possível verificar a continuidade do pedido. Nada foi liberado.\nVerificar novamente\nCatálogo\nBiológicos\nQuímicos\nFertilizantes/Adubos\nSem classificação\nTodos os tipos\nNome (A→Z)\nPRODUTO\nSKU-QA-3\nB2B\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integral\nR$ 10,00/L\nCusto estimado R$ 10,00/ha (dose referencial)\nVer ficha\nFicha completa\nAdicionar ao pedido\n\nAs recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica conforme cultura, alvo, ambiente, histórico da área e manejo adotado.\n\nCarrinho (1)\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integral\nProduto\n× Embalagem 5 L SKU-QA-3 ·\nR$ 50,00/un\nR$ 150,00\nPeso para frete: 15 kg\nData desejada de entrega\n\nPrazo mínimo de 8 dias. A data efetiva é confirmada pelo comercial da Empresa vendedora sintética após análise do pedido.\n\nSubtotal do carrinho\nR$ 150,00\nContinuar para condição de pagamento\nSalvar como favorito\n1. Pedido\n2. Aprovação\n3. Financeiro\n4. Fiscal\n5. Entrega\n\nCada etapa depende das autorizações e validações próprias. Aprovação comercial não confirma cobrança, emissão fiscal ou entrega.\n\nProduto\n\nEscolha a embalagem. Vendemos somente embalagens inteiras.\n\nQuantidade de embalagens",
+    "assertions": [
+      {
+        "alternative_original_dialog": true,
+        "quantity": 3,
+        "sku": "SKU-QA-3"
+      },
+      {
+        "readback_quantity": 3,
+        "readback_presentation": "5 L",
+        "sku": "SKU-QA-3",
+        "visible_cart": true
+      }
+    ],
+    "result": "PASS_ALTERNATIVE_WHOLE_PACKAGING_UI",
     "reads": [
       {
         "name": "get_my_entitlement_context",
