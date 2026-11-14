@@ -65,9 +65,9 @@ export function PdfPreviewDialog({ data, getData, title = "Pré-visualização d
         setPdfUrl(null);
       }
     }}>
-      <DialogTrigger asChild>
+      <DialogTrigger asChild onClick={() => { void handlePreview(); }}>
         {trigger || (
-          <Button variant="outline" size="sm" onClick={handlePreview}>
+          <Button variant="outline" size="sm">
             <FileSearch className="h-4 w-4 mr-2" />
             Visualizar PDF
           </Button>
@@ -75,9 +75,9 @@ export function PdfPreviewDialog({ data, getData, title = "Pré-visualização d
       </DialogTrigger>
       <DialogContent className="max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden">
         <DialogHeader className="p-4 border-b">
-          <div className="flex items-center justify-between">
-            <DialogTitle>{title}</DialogTitle>
-            <div className="flex items-center gap-2 mr-6">
+          <div className="flex min-w-0 flex-col gap-2 pr-8 sm:flex-row sm:items-start sm:justify-between">
+            <DialogTitle className="min-w-0 break-words">{title}</DialogTitle>
+            <div className="flex flex-wrap items-center gap-2">
               {pdfUrl && (
                 <>
                   <Button
