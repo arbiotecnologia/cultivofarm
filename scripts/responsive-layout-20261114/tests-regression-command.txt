@@ -1,0 +1,1 @@
+bun run test -- src/test/etiquetas src/test/envase src/test/lotes/consulta.test.ts src/test/catalogo/unifiedProducts.realClient.test.tsx src/test/catalogo/tenantProducts.realClient.test.tsx --maxWorkers=2
