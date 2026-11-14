@@ -1,8 +1,8 @@
 ## 14/11 01:27 — Gestão supervisionada de dossiês por produto
-- [ ] Contrato canônico de identidade da plataforma, vínculos múltiplos e persistência revisados.
-- [ ] Gestão de rascunho, checklist, anexos privados recuperáveis e navegação implementados.
-- [ ] Migração canônica aplicada e verificações focadas executadas; sem conteúdo real cadastrado e sem publicação.
-- [ ] UI autenticada e Storage reais: verificar disponibilidade de sessão sem impersonation.
+- [x] Contrato canônico de identidade da plataforma, vínculos múltiplos e persistência revisados.
+- [x] Gestão de rascunho, checklist, anexos privados recuperáveis e navegação implementados.
+- [x] Três migrações canônicas aplicadas; 36 Vitest, 24 checks PG descartáveis e 4 Deno PASS; Edge implantada e build automático OK, sem conteúdo real cadastrado/publicação.
+- [ ] UI autenticada e Storage reais: BLOCKED por sessão externa indisponível; navegador sem sessão mostrou tela vazia, não é prova funcional. Ver management/REPORT.md.
 
 ## 14/11 — Dossiês por produto e perfil fiscal automático
 - [x] Schema canônico, owner e inserções verificados; seis vínculos sem divergência.
