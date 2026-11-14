@@ -20,10 +20,12 @@ async def main():
   for ix,id in enumerate(IDS):
    if ix%3!=batch:continue
    current=next(x for x in manifest if x['id']==id);old=M['items'][id-1];previous=[r for r in old['isolated'] if r['viewport'][0] in [390,1440] and r['status'].startswith('MOUNTED')];dest=O/f'previous-{id}.json';rows=json.loads(dest.read_text()) if dest.exists() else []
+   rules=json.loads((O/'profile-rules.json').read_text())[id-1]
+   previous=[{'profile':role,'viewport':[w,h]} for role in rules['profiles'] for w,h in [(390,844),(1440,900)]]
    for oldr in previous:
     role=oldr['profile'];w,h=oldr['viewport']
     if any(r['profile']==role and r['viewport']==[w,h] for r in rows):continue
-    rec={'id':id,'profile':role,'viewport':[w,h],'type':'REUSED_ORIGINAL_FIXTURE_NEW_ASSERTIONS','profile_basis':'prior persisted route candidates; action scope separately unresolved','assertions':[]};errors.clear()
+    rec={'id':id,'profile':role,'viewport':[w,h],'type':'REUSED_ORIGINAL_FIXTURE_NEW_ASSERTIONS','profile_basis':rules['basis'],'assertions':[]};errors.clear()
     try:
      await page.set_viewport_size({'width':w,'height':h});await page.goto('http://localhost:8080/__isolated?reviewRole='+role);await page.wait_for_timeout(180)
      target=page.locator(f'[data-review-occurrence="{id}"]:visible').first
