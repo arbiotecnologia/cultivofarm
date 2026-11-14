@@ -16,7 +16,7 @@ async def main():
    if path=='/src/integrations/supabase/client.ts':return await r.fulfill(content_type='application/javascript',body=(OUT/'read-fixtures.js').read_text())
    if r.request.resource_type=='document':return await r.fulfill(content_type='text/html',body=ns['HTML'].replace("import App from '/src/App.tsx';ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));",BOOT.replace('DRIVER',json.dumps(current))))
    f=TMP/'modules'/path.lstrip('/').replace('/','__')
-   if f.exists():return await r.fulfill(content_type='application/javascript',body=f.read_text())
+   if f.exists():return await r.fulfill(content_type='application/javascript',body=re.sub(r'(/node_modules/\.vite/deps/[^"']+)\?v=[a-z0-9]+',lambda m:m.group(0),f.read_text()))
    await r.continue_()
   await ctx.route('**/*',intercept)
   for index,d in enumerate(drivers):
