@@ -1,0 +1,2 @@
+CREATE POLICY product_dossier_uploads_direct_deny ON platform_private.product_dossier_uploads FOR ALL TO authenticated USING(false) WITH CHECK(false);
+CREATE POLICY product_dossier_permits_direct_deny ON platform_private.product_dossier_write_permits FOR ALL TO authenticated USING(false) WITH CHECK(false);
