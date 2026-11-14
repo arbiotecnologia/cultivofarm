@@ -19,6 +19,20 @@ describe("revisão SQL canônica",()=>{
   expect(snapshotText({id,tenant_id:id,segredo:'segredo',nome:'Bacillus'})).toBe('Nome: Bacillus');expect(snapshotText(['Aviso','Aviso',null,id])).toBe('Aviso');
  });
  it("deduplica a substituta já selecionada",()=>{expect(replaceLabelIds([id,next],id,next)).toEqual([next]);});
+ it.each(['validade_em','toxicidade','layout_versao'])('sem %s não despacha impressão nem PDF',async(field)=>{
+  const row=rpcLabelFixture(); if(row.snapshot) delete row.snapshot[field]; t.rows=[row];
+  render(view());await screen.findByText(/SYN-1 · Recipiente/);
+  fireEvent.change(screen.getByLabelText('Motivo da impressão ou reimpressão'),{target:{value:'Saída não autorizada'}});
+  expect(screen.getByRole('button',{name:'Imprimir selecionados'})).toBeDisabled();
+  expect(screen.getByRole('button',{name:'PDF multipágina'})).toBeDisabled();
+  expect(t.rpc).not.toHaveBeenCalled();
+ });
+ it('overflow do conteúdo aprovado bloqueia primeiro ACK',async()=>{
+  const row=rpcLabelFixture('etiqueta-op-80x50');if(row.snapshot) row.snapshot.toxicidade='Texto obrigatório '.repeat(300);t.rows=[row];
+  render(view());await screen.findByText(/SYN-1 · Recipiente/);
+  fireEvent.change(screen.getByLabelText('Motivo da impressão ou reimpressão'),{target:{value:'Não truncar'}});
+  expect(screen.getByRole('button',{name:'PDF multipágina'})).toBeDisabled();expect(t.rpc).not.toHaveBeenCalled();
+ });
  it("correção lê nova_etiqueta_id, seleciona substituta e reimprime só ela",async()=>{
   render(view(`?ids=${id},${id}`));await screen.findByText(/SYN-1 · Recipiente/);expect(t.queried[0]).toEqual([id]);
   fireEvent.click(screen.getByRole('button',{name:'Corrigir'}));fireEvent.change(screen.getByLabelText('Motivo da correção'),{target:{value:'Correção teste'}});
