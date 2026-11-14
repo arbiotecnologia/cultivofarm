@@ -1,3 +1,8 @@
+## 14/11 04:04 — Integração local de etiquetas
+- [ ] Integrar RPCs existentes, quatro formatos, seleção por recipiente, correção, impressão/PDF e QR autenticado com legado.
+- [ ] Testar componentes/regressões sintéticos, PDFs/QR e prévia desktop/mobile; registrar arquivos, revisão, rollback e lacunas.
+- [ ] Sem banco, binding, deploy, publicação ou etiquetas reais.
+
 ## 14/11 03:47 — Cadastro compacto de dossiê
 - [x] Cobertura única/editável sob demanda, anexos integrais por padrão e dados técnicos/MAPA agrupados.
 - [x] Pendências compactas e checklist formal individual sob demanda, preservando drafts, revisão e escopo.
