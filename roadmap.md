@@ -1,3 +1,6 @@
+## 14/11 14:41 — Fechamento das lacunas responsivas
+- [ ] Dirigir 13 OPEN_GAP, verificar BI e ampliar asserções/perfis dos demais IDs com checkpoints offline.
+
 ## 14/11 14:24 — Lacunas responsivas específicas
 - [x] Calcular 66 IDs sem montagem da matriz; retirar apresentação de public e preservar em scripts.
 - [x] Drivers específicos: 252 cenários, 250 asserções PASS/2 gaps; 44 IDs contextualizados novos, 9 N/A contextualizados. Títulos fazenda/ficha corrigidos e retestados.
