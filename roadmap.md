@@ -1,3 +1,8 @@
+## 14/11 03:47 — Cadastro compacto de dossiê
+- [ ] Cobertura única/editável sob demanda, anexos integrais por padrão e dados técnicos/MAPA agrupados.
+- [ ] Pendências compactas e checklist formal individual sob demanda, preservando drafts, revisão e escopo.
+- [ ] Testes focados e verificação desktop/mobile; sem SQL, dados reais ou publicação.
+
 ## 14/11 03:31 — Visualização privada e limpeza QA autorizada
 - [x] Visualizador imagem/PDF integrado, tipo/hash verificados e URLs revogadas; 39 testes PASS, Chrome desktop/mobile PNG/download/fechar PASS sintéticos; build automático OK.
 - [ ] Limpeza exata BLOCKED: API Storage administrativa sem credencial disponível ao exec, mesmo após rebind; DELETE checklist recusado 42501 REGULATORY_PRODUCT_WRITER_REQUIRED, sem bypass/permits fabricados. Permanecem 1 objeto, 2 documentos, 2 reservas, 12 checklist, 1 link, 1 rascunho, 1 vínculo temporário; exige canal administrativo servidor autorizado.
