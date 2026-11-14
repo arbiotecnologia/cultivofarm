@@ -1,3 +1,8 @@
+## 14/11 04:04 — Integração local de etiquetas
+- [x] RPCs existentes integradas nas entradas canônicas; quatro formatos, seleção, correção, impressão/PDF e QR autenticado/legado.
+- [x] 134 testes/11 arquivos PASS; PDFs com medidas exatas, QR 4/4 por formato e A4, Chrome sintético 1280/390 sem overflow/pageerror; build/typecheck automático OK.
+- [x] Sem banco, binding, deploy, publicação ou etiquetas reais. Relatório/arquivos/revisão/rollback/limites em scripts/labels-frontend-integration-20261114/REPORT.md; JWT e hardware reais não testados.
+
 ## 14/11 03:47 — Cadastro compacto de dossiê
 - [x] Cobertura única/editável sob demanda, anexos integrais por padrão e dados técnicos/MAPA agrupados.
 - [x] Pendências compactas e checklist formal individual sob demanda, preservando drafts, revisão e escopo.

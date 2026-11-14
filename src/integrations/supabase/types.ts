@@ -17077,6 +17077,8 @@ export type Database = {
           qr_code_payload: string | null
           quantidade_embalagens: number | null
           quantidade_impressoes: number
+          recipiente_seq: number | null
+          recipiente_total: number | null
           snapshot: Json | null
           status: string
           substitui_etiqueta_id: string | null
@@ -17131,6 +17133,8 @@ export type Database = {
           qr_code_payload?: string | null
           quantidade_embalagens?: number | null
           quantidade_impressoes?: number
+          recipiente_seq?: number | null
+          recipiente_total?: number | null
           snapshot?: Json | null
           status?: string
           substitui_etiqueta_id?: string | null
@@ -17185,6 +17189,8 @@ export type Database = {
           qr_code_payload?: string | null
           quantidade_embalagens?: number | null
           quantidade_impressoes?: number
+          recipiente_seq?: number | null
+          recipiente_total?: number | null
           snapshot?: Json | null
           status?: string
           substitui_etiqueta_id?: string | null
@@ -25588,8 +25594,21 @@ export type Database = {
         Args: { p_embalagem_id: string }
         Returns: Json
       }
+      rpc_consultar_etiqueta_qr_v1: {
+        Args: { p_trace_token: string }
+        Returns: Json
+      }
       rpc_converter_visita_em_os: {
         Args: { p_observacao?: string; p_registro_id: string }
+        Returns: Json
+      }
+      rpc_corrigir_etiqueta_produto_v1: {
+        Args: {
+          p_alteracoes: Json
+          p_etiqueta_id: string
+          p_idempotency_key: string
+          p_motivo: string
+        }
         Returns: Json
       }
       rpc_create_communication_template: {
@@ -26448,6 +26467,10 @@ export type Database = {
         Args: { p_payload: Json }
         Returns: Json
       }
+      rpc_gerar_etiquetas_recipientes_v1: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
       rpc_gerar_formulario_entrega: {
         Args: { p_entrega_id: string }
         Returns: Json
@@ -26467,6 +26490,10 @@ export type Database = {
       rpc_ignorar_alerta_operacional: {
         Args: { p_alerta_id: string; p_observacao?: string }
         Returns: Json
+      }
+      rpc_imprimir_etiquetas_recipientes_v1: {
+        Args: { p_ids: string[]; p_motivo?: string }
+        Returns: undefined
       }
       rpc_iniciar_atendimento_solicitacao_v1: {
         Args: { p_client_uuid?: string; p_solicitacao_id: string }

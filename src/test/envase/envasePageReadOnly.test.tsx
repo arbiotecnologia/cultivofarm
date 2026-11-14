@@ -18,11 +18,12 @@ beforeEach(() => { vi.clearAllMocks(); vi.spyOn(window, "open").mockImplementati
   { id: "envase-2", lote_id: "lot-2", tipo_embalagem: "frasco_1L", quantidade: 1, data_envase: "2026-10-31", lotes: { codigo_lote: "LOCAL-2" } },
 ]; });
 describe("EnvasePage contained independent contracts", () => {
-  it("never mounts complement, package creation or label mutation while preserving history", async () => {
+  it("mounts only the authorized label integration without complement or package creation", async () => {
     render(<MemoryRouter><EnvasePage /></MemoryRouter>);
     await screen.findByText("LOCAL-1");
     expect(screen.getByText("LOCAL-2")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /complementar|Criar embalagens|Gerar etiqueta|Cancelar/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /complementar|Criar embalagens|Cancelar/ })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Gerar etiquetas" })).toHaveLength(2);
     expect(document.querySelector("form")).toBeNull();
     expect(t.rpc).not.toHaveBeenCalled();
   });

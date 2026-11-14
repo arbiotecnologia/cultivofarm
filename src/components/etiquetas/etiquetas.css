@@ -1,0 +1,45 @@
+.product-label {
+  --label-paper: #fff;
+  --label-ink: #000;
+  box-sizing: border-box;
+  width: 100mm;
+  height: 150mm;
+  padding: 3mm;
+  background: var(--label-paper);
+  color: var(--label-ink);
+  border: 0.2mm solid var(--label-ink);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5mm;
+  font-size: 9pt;
+  line-height: 1.2;
+  flex-shrink: 0;
+  overflow: hidden;
+  break-inside: avoid;
+  letter-spacing: 0;
+}
+.product-label[data-template="etiqueta-op-100x100"] { height: 100mm; font-size: 8pt; }
+.product-label[data-template="etiqueta-op-80x50"] { width: 80mm; height: 50mm; padding: 2mm; font-size: 8pt; }
+.product-label[data-template="etiqueta-op-50x30"] { width: 50mm; height: 30mm; padding: 1mm; gap: .6mm; font-size: 6pt; }
+.label-header { display: flex; align-items: center; gap: 2mm; overflow-wrap: anywhere; }
+.label-logo { width: 12mm; height: 8mm; object-fit: contain; }
+.label-body { display: flex; gap: 2mm; flex: 1; min-height: 0; }
+.label-identification { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.label-product { font-weight: 700; margin-bottom: 1mm; }
+.label-qr { background: var(--label-paper, #fff); color: var(--label-ink, #000); flex-shrink: 0; }
+.label-qr svg { display: block; width: 25mm; height: 25mm; }
+.product-label[data-template="etiqueta-op-50x30"] .label-qr svg { width: 21mm; height: 21mm; }
+.label-details { font-size: 7pt; overflow-wrap: anywhere; }
+.label-details p { margin: 0 0 1mm; }
+.label-pages { display: flex; flex-wrap: wrap; gap: 5mm; }
+.label-preview-scroll { overflow: auto; max-width: 100%; }
+@media print {
+  body:has(#product-label-print) * { visibility: hidden; }
+  body:has(#product-label-print) #product-label-print,
+  body:has(#product-label-print) #product-label-print * { visibility: visible; }
+  #product-label-print { position: absolute; top: 0; left: 0; padding: 0; margin: 0; }
+  body:has(#product-label-print) .label-preview-scroll { overflow: visible; }
+  #product-label-print .label-pages { display: block; }
+  #product-label-print .product-label { break-after: page; margin: 0; }
+  #product-label-print .product-label:last-child { break-after: auto; }
+}

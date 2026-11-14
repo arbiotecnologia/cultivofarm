@@ -1,115 +1,38 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, AlertTriangle, ShieldCheck } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import Auth from "@/pages/Auth";
+import { labelDetails, isUuid, type LabelData, type Snapshot } from "@/lib/etiquetas";
 import { formatDateDisplay } from "@/lib/date-utils";
-
-interface ValidacaoResponse {
-  valido: boolean;
-  status?: string;
-  codigo_etiqueta?: string;
-  produto_nome?: string;
-  lote_codigo?: string;
-  fabricado_em?: string | null;
-  validade_em?: string | null;
-  volume?: number | null;
-  unidade?: string | null;
-  tipo_etiqueta?: string;
-  mensagem: string;
-}
-
+interface Trace { autorizado?: boolean; valido?: boolean; status?: string; mensagem?: string; etiqueta?: LabelData; snapshot?: Snapshot; produto_nome?: string; lote_codigo?: string; validade_em?: string; codigo_etiqueta?: string; }
 export default function RastrearProduto() {
-  const { token } = useParams<{ token: string }>();
-  const [data, setData] = useState<ValidacaoResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-
+  const { token } = useParams(); const auth = useAuth();
+  const scope = useStorageAccessScope(`trace:${token}`);
+  return <TraceView key={scope.scope} token={token} signedIn={Boolean(auth.user)} loadingAuth={auth.loading} scope={scope} />;
+}
+function TraceView({ token, signedIn, loadingAuth, scope }: { token?: string; signedIn: boolean; loadingAuth: boolean; scope: ReturnType<typeof useStorageAccessScope> }) {
+  const [data, setData] = useState<Trace | null>(null); const [loading, setLoading] = useState(true); const [error, setError] = useState("");
   useEffect(() => {
-    if (!token) return;
+    let active = true; const current = scope.capture();
+    if (loadingAuth) return;
+    if (!isUuid(token)) { setError("Código de rastreio inválido."); setLoading(false); return; }
+    if (signedIn && !scope.ready) { setError("Consulta indisponível nesta sessão."); setLoading(false); return; }
     (async () => {
-      const { data: res, error } = await supabase.rpc("rpc_validar_rastreio_produto", {
-        p_trace_token: token,
-      });
-      if (error || !res) {
-        setData({ valido: false, mensagem: "Não foi possível validar esta etiqueta." });
-      } else {
-        setData(res as any);
-      }
+      const { data, error } = await (supabase as any).rpc(signedIn ? "rpc_consultar_etiqueta_qr_v1" : "rpc_validar_rastreio_produto", { p_trace_token: token });
+      if (!active || (signedIn && !current())) return;
+      if (error) setError("Não foi possível consultar o rastreio."); else setData(data as Trace | null);
       setLoading(false);
     })();
-  }, [token]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="animate-pulse text-muted-foreground">Validando rastreio...</div>
-      </div>
-    );
-  }
-
-  const valid = data?.valido && data.status === "ativo";
-  const cancelada = data?.status === "cancelada";
-  const vencido = data?.status === "vencido";
-
-  return (
-    <div className="min-h-screen bg-background flex items-start justify-center p-4">
-      <Card className="w-full max-w-md mt-8">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-2">
-            {valid && <CheckCircle2 className="h-12 w-12 text-green-600" />}
-            {cancelada && <XCircle className="h-12 w-12 text-destructive" />}
-            {vencido && <AlertTriangle className="h-12 w-12 text-amber-500" />}
-            {!data?.valido && <XCircle className="h-12 w-12 text-destructive" />}
-          </div>
-          <CardTitle className="flex items-center justify-center gap-2">
-            <ShieldCheck className="h-5 w-5" />
-            Rastreio Cultivo Farm
-          </CardTitle>
-          {data?.status && (
-            <Badge
-              variant={valid ? "default" : cancelada ? "destructive" : "secondary"}
-              className="mx-auto"
-            >
-              {data.status.toUpperCase()}
-            </Badge>
-          )}
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <p className="text-center text-muted-foreground">{data?.mensagem}</p>
-
-          {data?.valido && (
-            <div className="space-y-2 border-t pt-3">
-              <Row label="Código" value={data.codigo_etiqueta} mono />
-              <Row label="Produto" value={data.produto_nome} />
-              <Row label="Lote" value={data.lote_codigo} mono />
-              {data.volume != null && (
-                <Row label="Volume" value={`${data.volume}${data.unidade ? ` ${data.unidade}` : ""}`} />
-              )}
-              {data.fabricado_em && (
-                <Row label="Fabricação" value={formatDateDisplay(data.fabricado_em)} />
-              )}
-              {data.validade_em && (
-                <Row label="Validade" value={formatDateDisplay(data.validade_em)} />
-              )}
-            </div>
-          )}
-
-          <p className="text-[10px] text-center text-muted-foreground border-t pt-2">
-            Este rastreio é informativo e não substitui documento fiscal ou recomendação técnica.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function Row({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
-  if (!value) return null;
-  return (
-    <div className="flex justify-between gap-2">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={mono ? "font-mono font-semibold" : "font-semibold"}>{value}</span>
-    </div>
-  );
+    return () => { active = false; };
+  }, [token, signedIn, loadingAuth, scope.scope]);
+  if (loading || loadingAuth) return <p role="status" className="p-6">Consultando rastreio…</p>;
+  // Legacy public validation stays on its existing server gate; new tokens require login.
+  if (!signedIn && !data?.valido) return <><p className="p-4 text-center">Entre para consultar os dados autorizados desta etiqueta.</p><Auth /></>;
+  if (error || (signedIn && data?.autorizado !== true)) return <p role="alert" className="p-6">{error || "Etiqueta não disponível para esta sessão."}</p>;
+  const label = data?.etiqueta ? { ...data.etiqueta, snapshot: data.snapshot ?? data.etiqueta.snapshot } : null;
+  return <main className="max-w-2xl mx-auto p-4 sm:p-6 space-y-4"><h1 className="text-xl font-bold">Rastreio Cultivo Farm</h1><p>{data?.status}</p>{data?.mensagem && <p>{data.mensagem}</p>}
+    <dl className="space-y-2">{[["Código", label?.codigo_etiqueta ?? data?.codigo_etiqueta], ["Produto", label?.produto_nome ?? data?.produto_nome], ["Lote", label?.lote_codigo ?? data?.lote_codigo], ["Validade", (label?.validade_em ?? data?.validade_em) ? formatDateDisplay(label?.validade_em ?? data?.validade_em ?? "") : ""], ...(label ? labelDetails(label) : [])].filter(([, v]) => v).map(([k, v]) => <div key={k} className="border-b py-2 break-words"><dt className="text-muted-foreground">{k}</dt><dd>{v}</dd></div>)}</dl>
+  </main>;
 }
