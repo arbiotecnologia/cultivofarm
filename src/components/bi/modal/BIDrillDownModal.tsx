@@ -96,13 +96,15 @@ export function BIDrillDownModal({ open, onClose, tipo, id, nome, dados, origem 
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader className="shrink-0">
-          <DialogTitle className="flex items-center gap-2 text-lg">
-            <div className="bg-primary/10 p-1.5 rounded-full">
+          <DialogTitle className="flex min-w-0 items-start gap-2 pr-8 text-lg">
+            <div className="shrink-0 bg-primary/10 p-1.5 rounded-full">
               <Icon className="h-4 w-4 text-primary" />
             </div>
-            {config.label}: <span className="font-bold">{nome}</span>
-            <span className="text-xs text-muted-foreground font-normal ml-2">
-              ({dados.length} registro{dados.length !== 1 ? "s" : ""})
+            <span className="min-w-0 flex-1 break-words whitespace-normal">
+              {config.label}: <span className="font-bold">{nome}</span>
+              <span className="block text-xs text-muted-foreground font-normal">
+                ({dados.length} registro{dados.length !== 1 ? "s" : ""})
+              </span>
             </span>
           </DialogTitle>
         </DialogHeader>
