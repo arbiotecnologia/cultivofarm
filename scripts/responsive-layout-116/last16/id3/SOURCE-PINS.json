@@ -1,0 +1,10 @@
+{
+  "revision_observed": "7fe09b1efe6fe11f2a66fc975392399b3843d948",
+  "sha256": {
+    "src/components/catalogo/AddToCartDialog.tsx": "432b9cd4c0d4b2afa62680c3b10d1440e5317f10c0f876ea7882bd3d2f5ff4a4",
+    "src/pages/portal-parceiro/NovoPedido.tsx": "af36ba6255bbe123e74953dcce56dc537cfb8f1ff8b61c480cb8ee3c5b172c5c",
+    "src/pages/comercial/ComercialNovoPedido.tsx": "ec89d9f1f05b810a6762163d93115936e16ed1d7e26235545ac094c9adf74084",
+    "src/pages/comercial/VendedorNovoPedido.tsx": "1653ff297aa87e76a4592f9495b40a425676af20c2ab229be1a07db1e4888556",
+    "src/pages/comercial/MinhaCarteiraVendedor.tsx": "7340757190fb8638fa5b3dd09a5c21ead72db0fabd608bd2509013355b43cda1"
+  }
+}

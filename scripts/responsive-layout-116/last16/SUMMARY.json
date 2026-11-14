@@ -1,14 +1,20 @@
 [
   {
     "id": 3,
-    "result": "LOCAL_PORTAL_COMPLETE_INTERNAL_ENTRY_CHAIN_GAP",
+    "result": "COMPLETE_LOCAL_CONTEXTUAL_COMPONENT_AND_CHAIN",
     "routes": [
       "novo",
       "catalogo",
       "simulador",
-      "/portal-parceiro/catalogo"
+      "/portal-parceiro/catalogo",
+      "/comercial/pedidos-b2b/novo",
+      "/comercial/minha-carteira",
+      "/comercial/minha-carteira/pedido"
     ],
     "profiles": [
+      "administrador",
+      "gestor_comercial",
+      "vendedor",
       "parceiro_b2b"
     ],
     "viewports": [
@@ -22,11 +28,14 @@
       ]
     ],
     "scenario_files": [
-      "last16/context-3.json"
+      "last16/context-3.json",
+      "last16/id3/administrador.json",
+      "last16/id3/gestor_comercial.json",
+      "last16/id3/vendedor.json"
     ],
-    "scenario_count": 2,
-    "reason": "Portal parceiro_b2b comprovado; entrada comercial administrador/gestor_comercial e vendedor exige capability/target próprio ainda sem ensaio de parent nesta rodada. Não equivale a indisponibilidade.",
-    "validation": "Original components, synthetic scoped reads; separate original guards; not hosted JWT/RLS/Storage or full E2E"
+    "scenario_count": 38,
+    "reason": null,
+    "validation": "Original route guard + original parent/child and UI readback, synthetic session/read fixtures; existing partner isolated evidence preserved"
   },
   {
     "id": 6,
