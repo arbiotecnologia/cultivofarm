@@ -843,7 +843,7 @@ export default function Configuracoes() {
                         <div className="space-y-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6 py-4 [overflow-wrap:anywhere]">
                           <div className="pt-2">
                             <Label id="tipo-cadastro-label">Tipo de cadastro</Label>
-                            <div role="radiogroup" aria-labelledby="tipo-cadastro-label" className="grid grid-cols-1 min-[480px]:grid-cols-3 gap-2 mt-1">
+                            <div role="radiogroup" aria-labelledby="tipo-cadastro-label" className="grid grid-cols-1 gap-2 mt-1">
                               {([
                                 { kind: "internal" as UserRegistrationKind, titulo: "Interno", descricao: "Equipe da empresa" },
                                 { kind: "b2b" as UserRegistrationKind, titulo: "Parceiro B2B", descricao: "Perfis externos do parceiro" },
@@ -857,7 +857,7 @@ export default function Configuracoes() {
                                   aria-checked={registrationKind === opcao.kind}
                                   disabled={createUser.isPending}
                                   onClick={() => changeKind(opcao.kind)}
-                                  className={`h-auto min-h-16 min-w-0 w-full flex-col items-start justify-start gap-1 whitespace-normal rounded-md border p-3 text-left transition-colors disabled:opacity-50 ${registrationKind === opcao.kind ? "border-primary bg-primary/10" : "border-border hover:bg-accent"}`}
+                                  className={`h-auto min-h-16 min-w-0 w-full shrink-0 flex-col items-start justify-start gap-1 whitespace-normal rounded-md border p-3 text-left transition-colors disabled:opacity-50 ${registrationKind === opcao.kind ? "border-primary bg-primary/10" : "border-border hover:bg-accent"}`}
                                 >
                                   <span className="block w-full break-words text-sm font-medium leading-5">{opcao.titulo}</span>
                                   <span className="block w-full break-words text-xs leading-4 text-muted-foreground">{opcao.descricao}</span>

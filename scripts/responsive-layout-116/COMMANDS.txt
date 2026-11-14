@@ -1,0 +1,17 @@
+Baseline: da80884ad25c78c0f9623df95f526888957fdb19
+Browser harness uses only localhost, synthetic session/transport, original React components. No production credentials/network/SQL.
+Copy harness files to /tmp/browser/responsive-116/; keep original component-manifest.json and route-candidates.json.
+node /tmp/browser/responsive-116/prepare.cjs
+for n in 0 1 2 3; do PW_TEST_SCREENSHOT_NO_FONTS_READY=1 python3 /tmp/browser/responsive-116/isolated.py "$n" > "/tmp/browser/responsive-116/batch-$n.log" 2>&1 & done
+Checkpoints isolated/NNN.json; partial checkpoints isolated/NNN.partial.json. Existing scenarios resume without duplicate execution.
+python3 /tmp/browser/responsive-116/focused.py before
+python3 /tmp/browser/responsive-116/focused.py final
+python3 /tmp/browser/responsive-116/delivery_check.py delivery-final
+python3 /tmp/browser/responsive-116/navigation.py
+python3 /tmp/browser/responsive-116/validate_focus.py
+python3 /tmp/browser/responsive-116/consolidate.py
+bun run test -- src/test/config/usuariosValidation.test.ts src/test/config/usuariosListQuery.test.ts src/test/config/externalUserDraft.test.ts src/test/config/externalUserEditCandidate.test.ts src/test/config/configuracoesTabs.test.ts src/test/saas/admin-acesso-dialog.ui.test.tsx src/test/navigation/financeServices.test.tsx --maxWorkers=2
+bun run test -- src/test/etiquetas src/test/envase src/test/lotes/consulta.test.ts src/test/catalogo/unifiedProducts.realClient.test.tsx src/test/catalogo/tenantProducts.realClient.test.tsx --maxWorkers=2
+bun run test -- src/test/visita/monitoringAutosave.interaction.test.tsx src/test/visita/parentFence.interaction.test.tsx src/test/visita/wizardAnexos.contract.test.tsx src/test/aplicacoes/evidencias.test.ts --maxWorkers=2
+bun run test -- src/test/entregas/painelEvidencias.test.tsx src/test/envase --maxWorkers=2
+Build/typecheck performed by platform harness; no manual build invocation.

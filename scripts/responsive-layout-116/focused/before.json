@@ -1,0 +1,37 @@
+{
+  "records": [
+    {
+      "kind": "queue",
+      "viewport": [
+        320,
+        568
+      ],
+      "artifact": "focused/before-queue-320.png"
+    },
+    {
+      "kind": "queue",
+      "viewport": [
+        390,
+        844
+      ],
+      "artifact": "focused/before-queue-390.png"
+    },
+    {
+      "kind": "queue",
+      "viewport": [
+        464,
+        522
+      ],
+      "artifact": "focused/before-queue-464.png"
+    },
+    {
+      "kind": "queue",
+      "viewport": [
+        1440,
+        900
+      ],
+      "artifact": "focused/before-queue-1440.png"
+    }
+  ],
+  "errors": []
+}

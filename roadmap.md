@@ -1,7 +1,7 @@
 ## 14/11 13:41 — Segunda revisão responsiva: 116 ocorrências
-- [ ] Preservar checklist/numeração; mapear rotas, triggers, perfis e gates reais.
-- [ ] Executar cenários locais por ocorrência/perfil/viewport, diálogos e abas primeiro, com navegação/componentes reais e transporte sintético sem rede externa.
-- [ ] Corrigir somente defeitos reproduzidos, repetir casos/regressões e registrar matriz, capturas, comandos, lacunas e revisão em scripts/responsive-layout-116/; sem produção/publicação.
+- [x] Preservar 116 IDs e evidências existentes; quatro lotes com componentes originais/props e checkpoint incremental, matriz por perfil/viewport distinguindo montagem/navegação/lacunas.
+- [x] Corrigir clipping reproduzido em BulkAlvos/Evidencias/novo usuário/entrega; 40+8 cenários focais, 97/238/89/95 testes PASS, build automático OK; sem produção/publicação.
+- [ ] Homologação visual integral de todos os perfis/116 controles: conjunto principal processou 116 checkpoints (1914 cenários, 50 IDs montados); lacunas de fixture/capacidade/vínculo/estado permanecem, não certificadas. REPORT/MATRIX em scripts/responsive-layout-116; 15 perfis/30 navegações reais sintéticas e evidências na prévia.
 
 ## 14/11 13:21 — Revisão responsiva de cadastro e controles compartilhados
 - [x] Sobreposição reproduzida; três tipos empilhados no corpo rolável, header/ação/fechamento acessíveis; vínculos/perfis/ações extensos ajustados sem funções/permissões.
