@@ -11279,6 +11279,7 @@ export type Database = {
           mapa_status: string | null
           mapa_valid_until: string | null
           microorganism_id: string
+          notes: string | null
           product_id: string | null
           published_at: string | null
           published_by: string | null
@@ -11330,6 +11331,7 @@ export type Database = {
           mapa_status?: string | null
           mapa_valid_until?: string | null
           microorganism_id: string
+          notes?: string | null
           product_id?: string | null
           published_at?: string | null
           published_by?: string | null
@@ -11381,6 +11383,7 @@ export type Database = {
           mapa_status?: string | null
           mapa_valid_until?: string | null
           microorganism_id?: string
+          notes?: string | null
           product_id?: string | null
           published_at?: string | null
           published_by?: string | null
@@ -27563,6 +27566,14 @@ export type Database = {
         }
         Returns: Json
       }
+      tenant_product_dossier_new_version: {
+        Args: {
+          p_dossier_id: string
+          p_expected_updated_at: string
+          p_product_id: string
+        }
+        Returns: Json
+      }
       tenant_product_dossier_set_coverage: {
         Args: {
           p_dossier_id: string
@@ -27609,6 +27620,10 @@ export type Database = {
           p_product_id: string
           p_upload_id: string
         }
+        Returns: Json
+      }
+      tenant_product_dossier_version_detail: {
+        Args: { p_dossier_id: string; p_product_id: string }
         Returns: Json
       }
       tenant_product_list: {
