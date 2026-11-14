@@ -1,3 +1,9 @@
+## 14/11 01:27 — Gestão supervisionada de dossiês por produto
+- [ ] Contrato canônico de identidade da plataforma, vínculos múltiplos e persistência revisados.
+- [ ] Gestão de rascunho, checklist, anexos privados recuperáveis e navegação implementados.
+- [ ] Migração canônica aplicada e verificações focadas executadas; sem conteúdo real cadastrado e sem publicação.
+- [ ] UI autenticada e Storage reais: verificar disponibilidade de sessão sem impersonation.
+
 ## 14/11 — Dossiês por produto e perfil fiscal automático
 - [x] Schema canônico, owner e inserções verificados; seis vínculos sem divergência.
 - [x] Navegação individual e documentos privados implementados; legado separado, sem progresso vazio.
