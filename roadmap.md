@@ -1,7 +1,8 @@
 ## 14/11 02:46 — Atesto service-only e recuperação de reserva
-- [ ] Corrigir pontes de atesto/cancelamento sem USAGE geral; auditar ACL real.
-- [ ] Reconsultar reservas em Atualizar/reload; testar retomada e descarte com confirmação.
-- [ ] Preservar QA integralmente, aplicar migração e relatar provas sem publicar.
+- [x] Corrigir quatro pontes de atesto/cancelamento sem USAGE geral; ACL hosted confirmada e 9 checks SET ROLE locais PASS.
+- [x] Reconsultar reservas em Atualizar/reload; 24 Vitest PASS, incluindo retomada e descarte sem falso ACK.
+- [x] QA integralmente intocado, migração 20261114024720 aplicada e relato atualizado; sem publicação.
+- [ ] Retomada e recálculo reais: aguardam validação do usuário na sessão externa; agente não manipula QA.
 
 ## 14/11 02:29 — Gestão de dossiês pelo tenant proprietário
 - [x] Substituir autoridade global por editor/leitor proprietário, mantendo leitores publicados compatíveis.
