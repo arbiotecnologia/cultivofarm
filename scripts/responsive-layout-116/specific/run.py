@@ -38,6 +38,8 @@ async def main():
       if d['kind']=='fiscal-combo':await page.get_by_test_id('fiscal-catalog-cfop').click();await page.get_by_role('option').last.scroll_into_view_if_needed()
       if d['kind']=='cart':
        await page.locator('input').first.fill('20')
+      if d['kind']=='partner-sheets':
+       await page.locator('iframe').wait_for(state='visible')
       if d['kind']=='pdf':await page.locator('iframe').wait_for(state='visible');rec['assertions'].append({'pdf_iframe':True})
       await page.get_by_text(d['expected'],exact=False).first.wait_for(state='visible');rec['assertions'].append({'contextual_content':True})
       for id in ([] if d['kind']=='cockpit-na' else d['ids']):
