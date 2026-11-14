@@ -298,9 +298,7 @@ function EnvaseConsulta() {
                         <TableCell>
                           <div className="flex flex-col gap-1">
                             <EtiquetaProdutoActions
-                              readOnly
                               envaseId={e.id}
-                              loteId={e.lote_id}
                               etiquetaId={(e.produto_etiquetas as any)?.id || e.etiqueta_id || null}
                               traceToken={(e.produto_etiquetas as any)?.trace_token || null}
                               status={(e.produto_etiquetas as any)?.status || null}
