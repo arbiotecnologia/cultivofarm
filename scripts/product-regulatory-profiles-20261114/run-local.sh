@@ -9,3 +9,4 @@ RUN=(setpriv --reuid="$(id -u lovable)" --regid="$(id -g lovable)" --init-groups
 "${RUN[@]}" pg_ctl -D "$D/data" -o "-k $D -p 55439 -c listen_addresses=''" -l "$D/log" start >/dev/null
 trap '"${RUN[@]}" pg_ctl -D "$D/data" stop -m fast >/dev/null; rm -rf "$D"' EXIT
 psql -h "$D" -p 55439 -U postgres -d postgres -v ON_ERROR_STOP=1 -f "$H/local-tests.sql"
+psql -h "$D" -p 55439 -U postgres -d postgres -v ON_ERROR_STOP=1 -f "$H/document-tests.sql"
