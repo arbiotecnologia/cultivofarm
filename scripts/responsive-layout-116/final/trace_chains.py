@@ -1,0 +1,73 @@
+import json
+from pathlib import Path
+R=Path('/dev-server/scripts/responsive-layout-116');m=json.load(open(R/'MATRIX.json'))
+# Source citations obtained by family audit; route candidacy never grants a mutation.
+chains={
+2:('src/pages/BIOperacional.tsx:438','src/App.tsx:583','No local role gate on modal; selected drilldown state.'),
+3:('src/pages/portal-parceiro/NovoPedido.tsx:1094','src/App.tsx:515-524','B2BRouteGuard; packaging state and podeConfirmar:507; internal entry routes 624/628 separately; full caller authority unresolved.'),
+4:('src/pages/clientes/ProdutoresTab.tsx:358-393','src/App.tsx:554','canManage:55; Clientes.tsx:17/49 excludes gestor_comercial; code input disabled/readOnly:279-284.'),
+5:('src/pages/clientes/ProdutoresTab.tsx:358-393','src/App.tsx:554','canManage:55; Clientes.tsx:17/49 excludes gestor_comercial; no extra role gate on unit selector.'),
+6:('src/pages/clientes/ProdutoresTab.tsx:629','src/App.tsx:554','History trigger scope NOT_FULLY_TRACED; no local role gate in dialog.'),
+7:('src/components/ordens-servico/OSDetalhesDialog.tsx:69-76,263; src/pages/CockpitLaboratorio.tsx:430-450,1002','src/App.tsx:566,595','OS manual/trace/state/reviewed flag+admin/gestor/producao; cockpit action contract separate.'),
+9:('src/pages/CockpitLaboratorio.tsx:472-490,1009','src/App.tsx:595','Existing lot+envase stage; podeOperar/current capability not fully resolved.'),
+11:('src/pages/comercial/CommercialPaymentPlansPage.tsx:259','src/App.tsx:635','No extra local role gate at original matrix selector; query/data state.'),
+13:('src/pages/comercial/PedidosB2B.tsx:624; src/pages/comercial/MinhaCarteiraVendedor.tsx:126','src/App.tsx:623,629','Quote trigger NOT_FULLY_TRACED; server respond_b2b_order_quote_secure remains authority; error copy is not permission.'),
+15:('src/pages/Entregas.tsx:1183','src/App.tsx:572','No local role gate; open+payload; object URL scoped; download callback authority unresolved.'),
+16:('src/pages/Entregas.tsx:859,888','src/App.tsx:572','No local role gate on entry; capability/contract gates restrict dispatch, not read shell.'),
+18:('src/pages/Estoque.tsx:409','src/App.tsx:570','No local role gate; canSubmit:399-407; stock mutation remains contained.'),
+19:('src/components/faturamento/BaseFaturamentoSection.tsx:33,99,161; src/pages/OrdensServico.tsx:744,835','src/App.tsx:566','Literal admin/gestor in consumer, NOT administrador. Only gestor matches canonical role; inactive billing writer unchanged.'),
+21:('src/pages/financeiro/ContasReceber.tsx:295,337; src/pages/financeiro/ContasPagar.tsx:235,277','src/App.tsx:597-598','No local role gate on settlement; installment/status/uncertainty lock; drawer document-delete gate is not settlement.'),
+22:('src/pages/financeiro/EntregasNaoFaturadas.tsx:177; src/pages/Entregas.tsx:1155','src/App.tsx:607,572','Read-only reconciliation; useDeliveryFinanceReconciliation.ts:15-59 scope/UUID/tenant refs; no creation.'),
+23:('src/pages/financeiro/ContasReceber.tsx:335; src/pages/financeiro/ContasPagar.tsx:275','src/App.tsx:597-598','No role gate in shell; travado/mutation journal gates separate.'),
+26:('src/pages/configuracoes/FiscalProdutos.tsx:1; src/components/protocolos/ProdutosTab.tsx:2','src/App.tsx:655; src/App.tsx:564','ProductDossierAction:21 excludes superadmin/external partners; server management context required; indirect consumers NOT_FULLY_TRACED.'),
+27:('src/pages/OrdensServico.tsx:850; src/pages/ClienteDetalhe.tsx:325','src/App.tsx:566,555','No role gate on detail shell; embedded operations have separate manual/state/capability gates.'),
+37:('src/components/protocolos/ProdutosTab.tsx:1358; src/components/protocolos/MicrorganismosTab.tsx:784','src/App.tsx:564,473','Owned/unit/non-solid editor; useTenantCatalogEditor.ts:5-9; original opener exact eligibility NOT_FULLY_TRACED.'),
+38:('src/components/protocolos/MicrorganismosTab.tsx:777; src/components/catalogo/CatalogoCardsGrid.tsx:451; src/pages/app/MobileCatalogoTecnico.tsx:213','src/App.tsx:564,473','Profile shell read distinct from editor/history/audit/source roles at :69-85; indirect callers unresolved.'),
+39:('src/pages/Protocolos.tsx:496-507,529','src/App.tsx:564','No gate on filter; allowedTabs/canAccess microrganismos tab is consumer gate.'),
+42:('src/components/protocolos/ProdutosTab.tsx:1351; src/components/catalogo/CatalogoCardsGrid.tsx:457; src/pages/app/MobileCatalogoTecnico.tsx:214','src/App.tsx:564,473','Profile shell vs editor/history/source gates :72-92; indirect callers unresolved.'),
+43:('src/pages/Protocolos.tsx:496-507,527; src/pages/app/MobileCatalogoTecnico.tsx:129','src/App.tsx:564,473','No gate on filter; canonical allowed products tab; mobile tenant editor.canEdit required.'),
+48:('src/components/protocolos/catalog/TargetsManager.tsx:68-69; src/components/protocolos/ProductTechnicalProfileDialog.tsx:281','src/App.tsx:564','canEditFull=false via globalCatalogWriteContainment.ts:28; original consumers CLOSED for every role. Isolated props not normal entry.'),
+49:('src/components/protocolos/catalog/SourcesManager.tsx:175-176; src/components/protocolos/ProductTechnicalProfileDialog.tsx:310','src/App.tsx:564','canEditSources=canEditFull=false; original consumers CLOSED, read source role does not open editor.'),
+51:('src/components/visita/EvidenciasTabs.tsx:511-512,536; src/pages/VisitaTecnica.tsx:1552-1564','src/App.tsx:543-549','disabled prop from readOnly; camera role-neutral, upload authority separate.'),
+53:('src/components/visita/EncerramentoCard.tsx:1237','src/App.tsx:543-549','PDF preview trigger not fully resolved; etapas.podeGerarPdf/export fence not an unconditional route action.'),
+54:('src/pages/VisitaTecnica.tsx:1822,1849,1906,1923','src/App.tsx:543-549','readOnly/workspace.can_edit + rascunho/em_andamento + save.ready; server capability not a fixed role list.'),
+55:('src/components/visita/EvidenciasTabs.tsx:446-454','src/App.tsx:543-549','No local role gate; failed items + onRetryFailed callback; queue dispatch fences remain separate.'),
+56:('src/components/visita/EvidenciasTabs.tsx:446-454','src/App.tsx:543-549','No local role gate; pending items + onCancelAll callback; queue cancellation not backend deletion.'),
+57:('src/pages/Aplicacoes.tsx:93,116,143-146','src/App.tsx:576','No local role gate; selected detail exists.'),
+58:('src/pages/BIAgronomico.tsx:22-33','src/App.tsx:581','No local role gate; selected tab.'),
+59:('src/pages/ClienteDetalhe.tsx:70-95,245-255','src/App.tsx:555','No local role gate; client loaded and statusFilter state. /parceiros/:id not consumer.'),
+60:('src/pages/ClienteDetalhe.tsx:70-95,257-268','src/App.tsx:555','No local role gate; client loaded and sortBy state.'),
+74:('src/pages/ControleQualidade.tsx:240,255-261','src/App.tsx:569','No local role gate; selected report read-only.'),
+76:('src/pages/EnvasePage.tsx:256-269','src/App.tsx:570','No local role gate; valid period/current history/error/loading branches.'),
+77:('src/pages/Estoque.tsx:306-319','src/App.tsx:571','No local role gate on dialog trigger; entry write containment unchanged.'),
+78:('src/pages/Estoque.tsx:331-344','src/App.tsx:571','No local role gate; sort state.'),
+79:('src/pages/Estoque.tsx:221-231,424-429','src/App.tsx:571','No local role gate; reservado item selection; actual cancellation dispatch contained.'),
+81:('src/pages/FluxoTecnico.tsx:274-289','src/App.tsx:579','No local role gate; os-onfarm tab/filterStatus.'),
+82:('src/pages/MonitoramentoAlertas.tsx:137-155,406-419','src/App.tsx:588','Rescheduling target + current fence scope; not mere open prop.'),
+87:('src/pages/app/MobileCatalogoTecnico.tsx:140-153','src/App.tsx:473','TechnicalFeatureGuard.tsx:16-57 fresh technical context or admin; route role enumeration insufficient.'),
+89:('src/pages/app/MobileVisitaWizard.tsx:1055; src/pages/app/wizard/WizardRecomendacaoStep.tsx:344,388,406','src/App.tsx:470-471','Fresh technical context; editor save requires unlocked current scope :195-207.'),
+90:('src/pages/app/MobileVisitaWizard.tsx:1076; src/pages/app/wizard/WizardRevisaoStep.tsx:237-250,333-361','src/App.tsx:470-471','Technical context; online/allowed action/not pending and trusted reads, not all roles unconditional.'),
+91:('src/pages/Auditoria.tsx:21,67-70','src/App.tsx:561','No local role gate; agenda tab/query.'),
+92:('src/pages/Auditoria.tsx:19,67-70','src/App.tsx:561','No local role gate; clientes tab/query.'),
+93:('src/pages/Auditoria.tsx:14,22,29-31,67-70','src/App.tsx:561','ADMIN_ONLY consumer tab gate; administrador only.'),
+94:('src/pages/Auditoria.tsx:18,67-70','src/App.tsx:561','No local role gate; senhas tab/search/query.'),
+95:('src/pages/Auditoria.tsx:20,67-70','src/App.tsx:561','No local role gate; visitas tab/query.'),
+96:('src/pages/Clientes.tsx:15-16,54-58','src/App.tsx:554','canSeeParceiros admin/gestor/gestor_comercial/financeiro; no extra filter gate.'),
+98:('src/pages/comercial/CampanhasComerciais.tsx:183,206,236-243','src/App.tsx:627','No local role gate; open/form state; save separately valid/not saving.'),
+99:('src/pages/comercial/CommercialPaymentPlansPage.tsx:119-151,299,378-417,463','src/App.tsx:635','No local role gate at dialog shell; metadata/version state. /comercial/planos not direct consumer.'),
+102:('src/pages/dashboard/DashboardUnificado.tsx:39-62','src/App.tsx:591-593','No local role gate; path-selected tabs navigate preserving query/hash.'),
+103:('src/pages/financeiro/EntregasNaoFaturadas.tsx:36-57,165,179','src/App.tsx:607','No local role gate; scoped rows/target; reason/pending gates on save.'),
+104:('src/pages/financeiro/FluxoCaixa.tsx:234,391-399','src/App.tsx:604','No local role gate; selected bucket/query.'),
+105:('src/pages/financeiro/RecibosList.tsx:332,349','src/App.tsx:619','Access.ready/current captured receipt scope; busy check. Role gate only route.'),
+106:('src/pages/financeiro/Recorrencias.tsx:175,288-289','src/App.tsx:603','No local role gate; open state; pending save separate.'),
+109:('src/pages/portal/PortalAcompanhamento.tsx:142,153-164','src/App.tsx:500','PortalGuard App.tsx:327-342; linked-client scope; no local gate on TYPE selector.'),
+111:('src/pages/portal/PortalFazendaDetalhe.tsx:49-51,295-302','src/App.tsx:492','PortalGuard+linked scoped farm loaded; no local role gate on tabs.'),
+114:('src/pages/portal/PortalTalhaoDetalhe.tsx:40-52,124-125,158-164','src/App.tsx:494','PortalGuard+linked plot loaded; no local gate on tabs.'),
+115:('src/pages/portal-parceiro/FichasTecnicas.tsx:53,57-73,148-179','src/App.tsx:515-532','B2BRouteGuard.tsx:21-39 exclusive external parceiro_b2b+own context; approved ficha/blob/fence. Internal isolated mounts are not normal navigation.')}
+records=[]
+for x in m['items']:
+ if x['id'] not in chains:continue
+ consumer,route,gate=chains[x['id']];records.append({'id':x['id'],'family':x['file'].split('/')[2],'control':f'{x["file"]}:{x["line"]}','consumer':consumer,'route_declaration':route,'guard':'src/App.tsx:226-250 RoleGuard+entitlements; portal/mobile special gates stated separately','permission':'src/lib/permissions.ts; canonical role access, never fixture-granted authority','gate':gate,'evidence_reuse':'MATRIX.json closure_scenarios','type':'STATIC_CONSUMER_CHAIN_QUALIFIES_EXISTING_BROWSER_EVIDENCE_NOT_NEW_BROWSER_TEST'})
+assert len(records)==61
+(R/'final/CHAINS.json').write_text(json.dumps(records,ensure_ascii=False,separators=(',',':')))
+print('61 chains recorded')
