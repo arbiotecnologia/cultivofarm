@@ -27,7 +27,7 @@ async def main():
     try:
      await page.set_viewport_size({'width':w,'height':h});await page.goto('http://localhost:8080/__isolated?reviewRole='+role);await page.wait_for_timeout(180)
      target=page.locator(f'[data-review-occurrence="{id}"]:visible').first
-     if id in [84,85]:await page.get_by_role('tab',name='Estoque',exact=False).first.click()
+     if id in [84,85]:await page.locator('[data-review-occurrence="'+str(id)+'"]').scroll_into_view_if_needed()
      if id==81:await page.get_by_role('tab',name='OS',exact=False).last.click()
      if id==109:await page.get_by_role('tab',name='Histórico',exact=True).click()
      if not await target.count():
