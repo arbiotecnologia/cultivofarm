@@ -35,14 +35,15 @@ Deno.serve(async req=>{
  }
  const id=url.searchParams.get('upload_id'); if(!id||!uuid.test(id)) return json(400,{error:'invalid_request'});
  const snap=()=>call('platform_product_dossier_upload_access',{p_upload_id:id});
- const before=await snap();
- if(before.state==='COMMITTED') return json(200,{product_id:before.product_id,document_id:id,state:'COMMITTED'});
  if(action==='cancel') {
  // No deletion of committed documents; uncertain cleanup stays tracked.
- await snap(); const removed=await service.storage.from('fiscal-regulatorio').remove([before.storage_path]); if(removed.error) return json(409,{error:'cleanup_pending'});
+ const cancel=await call('platform_product_dossier_upload_cancel_begin',{p_upload_id:id});
+ const removed=await service.storage.from('fiscal-regulatorio').remove([cancel.storage_path]); if(removed.error) return json(409,{error:'cleanup_pending'});
  const r=await service.rpc('platform_product_dossier_upload_cancel',{p_upload_id:id}); if(r.error)return json(409,{error:'cleanup_pending'});
  return json(200,{state:'CANCELLED'});
  }
+ const before=await snap();
+ if(before.state==='COMMITTED') return json(200,{product_id:before.product_id,document_id:id,state:'COMMITTED'});
  if(action!=='upload'&&action!=='resume') return json(400,{error:'invalid_request'});
  let bytes:Uint8Array;
  if(action==='upload') {

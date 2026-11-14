@@ -6,7 +6,7 @@ import {useScopedPortalQuery} from '@/hooks/useScopedPortalQuery';
 export const managementProductSchema=z.object({product_id:z.string().uuid(),nome:z.string(),codigo:z.string().nullable(),ativo:z.boolean(),organization_name:z.string(),owner_organization_id:z.string().uuid()});
 export type ManagementProduct=z.infer<typeof managementProductSchema>;
 const contextSchema=z.object({product_id:z.string().uuid(),microorganisms:z.array(z.object({id:z.string().uuid(),nome:z.string(),codigo:z.string().nullable()})),dossier_microorganism_id:z.string().uuid().nullable()});
-const uploadSchema=z.object({id:z.string().uuid(),product_id:z.string().uuid(),dossier_id:z.string().uuid(),storage_path:z.string(),state:z.enum(['RESERVED','VERIFIED','COMMITTED','CANCELLED'])});
+const uploadSchema=z.object({id:z.string().uuid(),product_id:z.string().uuid(),dossier_id:z.string().uuid(),storage_path:z.string(),state:z.enum(['RESERVED','VERIFIED','COMMITTED','CANCELLED','CANCELLING'])});
 type Name=`platform_product_dossier_${'management_list'|'management_context'|'management_create'|'management_save'|'management_checklist'|'management_submit'|'upload_prepare'|'upload_pending'}`;
 export async function dossierManagementRpc(name:Name,args:Record<string,unknown>) {
  const client=supabase as unknown as {rpc:(name:Name,args:Record<string,unknown>)=>PromiseLike<{data:unknown;error:{code?:string}|null}>};
