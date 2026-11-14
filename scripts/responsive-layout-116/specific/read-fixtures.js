@@ -20,6 +20,7 @@ function read(name,args,one){
  if(name==='get_financial_cashflow')return [{period_label:'14/11/2026',period_start:'2026-11-14',expected_inflows:1234.56,expected_outflows:0,realized_inflows:500,realized_outflows:0,projected_balance:1234.56,realized_balance:500,accumulated_projected_balance:1234.56,accumulated_realized_balance:500}];
  if(name==='accounts_receivable_installments')return [{...base,amount:1234.56,due_date:'2026-11-14',status:'OPEN',accounts_receivable:{id,description:'Título sintético com condição e vencimento',customers:{nome:client.nome}}}];
  if(name==='estoque_produto')return [{...base,status:'reservado',quantidade:4,volume_total:20000,lote_id:id,produto_id:id,lotes:{codigo_lote:'QA-116'},produtos:{nome:'Produto acabado sintético'},reservado_para_cliente_id:id,reservado_para_os_id:id,reservado_para_os_tipo:'TRADICIONAL'}];
+ if(name==='controle_qualidade')return [{...base,lote_id:id,status:'aprovado',resultado:'aprovado',data_analise:'2026-11-14',ph:7,concentracao:1000000000,responsavel:'Responsável sintético',lotes:{codigo_lote:'QA-116',status:'aprovado',produto_id:id,produtos:{nome:'Produto biológico sintético'}}}];
  if(name==='lotes')return [{...base,codigo_lote:'QA-116',status:'aprovado',produto_id:id,volume_total_ml:20000,validade:'2027-01-01',produtos:{nome:'Produto biológico sintético'}}];
  if(name==='has_technical_access'||name==='has_feature')return true;
  return one?null:[];
