@@ -1,0 +1,41 @@
+{
+  "financeiro": {
+    "tabs": [
+      "Produtos",
+      "Servi\u00e7os"
+    ],
+    "novoServico": 1,
+    "calls": [
+      {
+        "rpc": "rpc_service_nfse_readiness_v1",
+        "args": null
+      },
+      {
+        "table": "service_engagements",
+        "method": "READ"
+      },
+      {
+        "table": "clientes",
+        "method": "READ"
+      },
+      {
+        "table": "catalog_services",
+        "method": "READ"
+      },
+      {
+        "table": "service_fiscal_profiles",
+        "method": "READ"
+      }
+    ],
+    "productCrud": 0
+  },
+  "administrativo": {
+    "newService": 0,
+    "view": 1
+  },
+  "consultor": {
+    "blocked": true,
+    "calls": []
+  },
+  "errors": []
+}
