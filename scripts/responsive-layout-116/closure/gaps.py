@@ -30,7 +30,7 @@ async def main():
       await page.set_viewport_size({'width':w,'height':h});await page.goto('http://localhost:8080'+d['route']+'?reviewRole='+role);await page.wait_for_timeout(650)
       if d['kind']=='delivery-confirm':await page.get_by_role('button',name='Registrar entrega (',exact=False).click()
       if d['kind']=='consultor-image':
-       await page.get_by_text('Consultor sintético',exact=True).first.click();await page.get_by_text('Ver Vistorias',exact=False).first.click();await page.get_by_text('Fazenda sintética',exact=False).last.click();await page.get_by_alt_text('Evidência sintética').first.click()
+       await page.get_by_text('Consultor sintético',exact=True).first.click();await page.get_by_text('Ver histórico de vistorias',exact=False).first.click();await page.get_by_text('Fazenda sintética',exact=False).last.click();await page.get_by_alt_text('Evidência sintética').first.click()
       if d.get('tab'):await page.get_by_role('tab',name=d['tab'],exact=True).click();await page.wait_for_timeout(700)
       if d['kind']=='order' and w==390:await page.get_by_role('heading',name='QA-116',exact=False).first.click()
       elif d.get('open'):await page.get_by_role('button',name=d['open'],exact=False).first.click();await page.wait_for_timeout(350)
@@ -44,7 +44,7 @@ async def main():
         target=page.locator(f'[data-review-occurrence="{d["ids"][0]}"]:visible').first;await target.click();option=page.get_by_role('option').last;await option.scroll_into_view_if_needed();assert await option.is_visible();await page.keyboard.press('Escape');rec['assertions'].append('option-last-accessible')
        if d['kind']=='producer-picker':
         await page.locator('[data-review-occurrence="112"]:visible').click();await page.get_by_role('option').last.scroll_into_view_if_needed();rec['assertions'].append('second linked producer option visible')
-       container=page.get_by_role('dialog').last if await page.get_by_role('dialog').count() else page.locator('main').first
+       container=page.locator('[role=dialog],[role=alertdialog]').last if await page.locator('[role=dialog],[role=alertdialog]').count() else page.locator('main').first
        useful=container.locator('input,textarea,button,[role=option]').filter(visible=True).filter(has_not=page.locator('.sr-only'));last=useful.last if await useful.count() else container.get_by_role('button',name='Fechar',exact=True).last
        await last.scroll_into_view_if_needed();box=await last.evaluate(ns['MEASURE']);assert box['within'];rec['assertions'].append({'last_useful':box,'enabled':await last.is_enabled()});assert not errs;rec['status']='PASS_CONTEXTUAL_TRIGGER'
      except Exception as e:rec['status']='GAP';rec['error']=str(e)[:400]
