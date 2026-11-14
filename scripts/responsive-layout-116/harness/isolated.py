@@ -28,14 +28,15 @@ async def main():
    # One isolated original-component fixture per eligible profile, not authorization proof.
    path=m['routes'][0]['path'] if m['routes'] else ''
    profiles=['superadmin'] if '/plataforma' in path or m['file'].startswith('src/components/plataforma') else ['administrador']
-   await page.goto('http://localhost:8080/__isolated?reviewRole=administrador',wait_until='domcontentloaded');await page.wait_for_timeout(400)
+   await page.goto('http://localhost:8080/__isolated?reviewRole=administrador',wait_until='domcontentloaded');await page.wait_for_timeout(150)
    eligible=await page.evaluate('window.reviewEligible||[]');profiles=eligible or profiles
    if m['id'] in [48,52,55,56]:profiles=['administrador','gestor','consultor_tecnico','tecnico_agronomo']
    if m['id'] in [68,69,70,71,72]:profiles=['administrador']
+   checkpoint.with_suffix('.expected.json').write_text(json.dumps({'id':m['id'],'profiles':profiles,'viewports':[(390,844),(1440,900)]+([(320,568),(464,522)] if 'Dialog' in m['tag'] or m['tag']=='TabsList' else [])},separators=(',',':')))
    for role in profiles:
     for w,h in [(390,844),(1440,900)]+([(320,568),(464,522)] if 'Dialog' in m['tag'] or m['tag']=='TabsList' else []):
      if any(r['profile']==role and r['viewport']==[w,h] for r in records):continue
-     errors.clear();await page.set_viewport_size({'width':w,'height':h});await page.goto('http://localhost:8080/__isolated?reviewRole='+role,wait_until='domcontentloaded');await page.wait_for_timeout(120)
+     errors.clear();await page.set_viewport_size({'width':w,'height':h});await page.goto('http://localhost:8080/__isolated?reviewRole='+role,wait_until='domcontentloaded');await page.wait_for_timeout(100)
      rec={'profile':role,'viewport':[w,h],'mode':'ISOLATED_ORIGINAL_COMPONENT','states':[]}
      async def capture(label):
       loc=page.locator(f'[data-review-occurrence="{m["id"]}"]:visible');geom=[]
@@ -64,7 +65,7 @@ async def main():
       except:pass
      if rec['states']:rec['status']='MOUNTED_GEOMETRY_RECORDED_NOT_VISUAL_APPROVAL'
      else:
-      rec['status']='NOT_MOUNTED_FIXTURE_GAP';rec['body']=(await page.locator('body').inner_text())[:1200];shot=OUT/f'{m["id"]:03}-{role}-{w}-gap.png';await page.screenshot(path=str(shot),animations='disabled',timeout=5000);rec['artifact']=str(shot.relative_to(ROOT))
+      rec['status']='NOT_MOUNTED_FIXTURE_GAP';rec['body']=(await page.locator('body').inner_text())[:1200];shot=OUT/f'{m["id"]:03}-{role}-{w}-gap.png';rec['artifact']=str(shot.relative_to(ROOT));await page.screenshot(path=str(shot),animations='disabled',timeout=5000)
      rec['errors']=list(errors);rec['writes']=await page.evaluate('window.reviewWrites||[]');records.append(rec);checkpoint.with_suffix('.partial.json').write_text(json.dumps({'id':m['id'],'file':m['file'],'scenarios':records},ensure_ascii=False,separators=(',',':')))
    checkpoint.write_text(json.dumps({'id':m['id'],'file':m['file'],'scenarios':records},ensure_ascii=False,separators=(',',':')));print(m['id'],len(records),sum(bool(r['states']) for r in records),flush=True)
   await b.close()
