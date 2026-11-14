@@ -1,5 +1,6 @@
 ## 14/11 14:41 — Fechamento das lacunas responsivas
-- [ ] Dirigir 13 OPEN_GAP, verificar BI e ampliar asserções/perfis dos demais IDs com checkpoints offline.
+- [x] Retestar prioridades e corrigir título BI; regressões 238+19 PASS, build automático OK; MATRIX reconciliada 34 completas locais/71 parciais/9 N/A/2 gaps.
+- [ ] Pendências explícitas: IDs/perfis de ação não totalmente resolvidos e comparações listadas em scripts/responsive-layout-116/closure/REPORT.md; revisão não integralmente certificada.
 
 ## 14/11 14:24 — Lacunas responsivas específicas
 - [x] Calcular 66 IDs sem montagem da matriz; retirar apresentação de public e preservar em scripts.
