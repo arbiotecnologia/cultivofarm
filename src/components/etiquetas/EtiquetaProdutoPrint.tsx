@@ -1,4 +1,4 @@
-import { LabelScene } from '@/lib/etiquetasLayout';
+import { LabelScene, labelLayout } from '@/lib/etiquetasLayout';
 import { outputFormat } from '@/lib/etiquetasRecipientes';
 import { QRCodeRastreioProduto } from "./QRCodeRastreioProduto";
 import { formatDateDisplay } from "@/lib/date-utils";
@@ -10,6 +10,7 @@ export function EtiquetaProdutoPrint({ etiqueta }: { etiqueta: LabelData }) {
     try {
       const label = asRecipientLabel(etiqueta);
       const format = outputFormat(label, '100x150');
+      labelLayout(label, format);
       return <article className="product-label product-label-v2" data-template={`etiqueta-op-${format}`} data-label-id={etiqueta.id} aria-label={`Etiqueta ${etiqueta.codigo_etiqueta}`}><LabelScene label={label} format={format} origin="https://app.cultivofarm.com.br" /></article>;
     } catch (cause) { return <p role="alert" className="text-destructive">{cause instanceof Error ? cause.message : 'Etiqueta indisponível.'}</p>; }
   }
