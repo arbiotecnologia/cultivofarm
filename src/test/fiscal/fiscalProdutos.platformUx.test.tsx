@@ -2,7 +2,7 @@ import { describe, test, expect, vi, beforeEach } from "vitest";
 import { screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test/helpers/renderWithProviders";
 const m = vi.hoisted(() => ({ role: "administrador", write: false, regulatory: vi.fn(), microList: vi.fn(), microProfiles: vi.fn() }));
-vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ role: m.role }) }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ role: m.role, roles: [m.role], profile: { organization_id: "tenant-test" } }) }));
 vi.mock("@/hooks/useProductFiscalAccess", () => ({ useProductFiscalAccess: () => ({ ready: true, canWrite: m.write, scope: "A/T", capture: () => () => true }) }));
 vi.mock("@/hooks/useStorageAccessScope", () => ({ useStorageAccessScope: () => ({ ready: true, scope: "A/T", capture: () => () => true }) }));
 vi.mock("@/hooks/useScopedPortalQuery", () => ({ useScopedPortalQuery: () => ({ data: undefined, ready: false, isError: false }) }));

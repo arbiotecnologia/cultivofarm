@@ -40,7 +40,7 @@ beforeEach(() => {
   mocks.rpc.mockReset().mockImplementation(async (fn: string) =>
     fn === "rpc_microorganism_regulatory_overview" ? { data: [row], error: null }
       : fn === "rpc_regulatory_dossier_detail" ? { data: detail, error: null }
-        : { data: null, error: null });
+        : { data: [], error: null });
 });
 afterEach(cleanup);
 const wrapper = () => {
@@ -94,35 +94,20 @@ async function openSheet() {
   const W = wrapper();
   render(<W><RegulatorioMicrorganismosSecao /></W>);
   fireEvent.click(await screen.findByRole("button", { name: "Abrir dossiê regulatório de Micro teste" }));
-  fireEvent.click(await screen.findByRole("button", {name:'Dossiê legado do microrganismo'}));
-  return screen.findByTestId("regulatorio-dossie-sheet");
+  return screen.findByTestId("regulatorio-produtos-sheet");
 }
 
-describe("render do dossiê em modo consulta", () => {
-  it("dossiê vazio: aviso de consulta, sem controles de escrita e sem gravações", async () => {
-    detail = null;
-    const sheet = await openSheet();
-    expect(await within(sheet).findByText(/Nenhum dossiê registrado/)).toBeTruthy();
-    expect(within(sheet).getByText("Modo consulta")).toBeTruthy();
-    expect(within(sheet).queryAllByRole("button").filter((b) => WRITE_LABELS.test(b.textContent ?? ""))).toHaveLength(0);
-    expect(mocks.rpc.mock.calls.every(([fn]) => ['rpc_microorganism_regulatory_overview','rpc_regulatory_dossier_detail','rpc_regulatory_microorganism_products'].includes(String(fn)))).toBe(true);
-  });
-  it("dossiê preenchido: fatos em consulta, sem campos editáveis nem botões de escrita", async () => {
+describe("entrada fiscal por produto", () => {
+  it("não consulta o contrato legado mesmo com dossiê antigo", async () => {
     detail = filled;
-    const sheet = await openSheet();
-    expect(await within(sheet).findByText("Cepa teste")).toBeTruthy();
-    expect(within(sheet).queryAllByRole("textbox")).toHaveLength(0);
-    expect(within(sheet).queryAllByRole("button").filter((b) => WRITE_LABELS.test(b.textContent ?? ""))).toHaveLength(0);
-    expect(mocks.rpc.mock.calls.every(([fn]) => ['rpc_microorganism_regulatory_overview','rpc_regulatory_dossier_detail','rpc_regulatory_microorganism_products'].includes(String(fn)))).toBe(true);
+    await openSheet();
+    await waitFor(()=>expect(mocks.rpc).toHaveBeenCalledWith('rpc_regulatory_microorganism_products',{p_microorganism_id:MID}));
+    expect(mocks.rpc.mock.calls.some(([name])=>name==='rpc_regulatory_dossier_detail')).toBe(false);
   });
-  it("erro de permissão não aparece como ausência e oculta dados", async () => {
-    mocks.rpc.mockImplementation(async (fn: string) =>
-      fn === "rpc_microorganism_regulatory_overview" ? { data: [row], error: null }
-        : { data: null, error: { code: "42501", message: "forbidden" } });
-    const sheet = await openSheet();
-    expect(await within(sheet).findByTestId("regulatorio-dossie-erro")).toBeTruthy();
-    expect(within(sheet).getByText("Sem permissão")).toBeTruthy();
-    expect(within(sheet).queryByText(/Nenhum dossiê/)).toBeNull();
-    expect(within(sheet).queryByText("Cepa teste")).toBeNull();
+  it("falha de produtos não monta leitores de detalhe", async () => {
+    mocks.rpc.mockImplementation(async fn=>fn==='rpc_microorganism_regulatory_overview'?{data:[row],error:null}:{data:null,error:{code:'42501'}});
+    const sheet=await openSheet();
+    await within(sheet).findByRole('alert');
+    expect(mocks.rpc.mock.calls.some(([name])=>name==='tenant_product_dossier_management_context'||name==='rpc_regulatory_dossier_detail')).toBe(false);
   });
 });

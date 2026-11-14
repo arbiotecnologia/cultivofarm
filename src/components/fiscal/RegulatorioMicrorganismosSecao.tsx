@@ -13,42 +13,21 @@
 import { useMemo, useState } from "react";
 import {
   useMicroorganismRegulatoryOverview,
-  useRegulatoryDossierDetail,
-  CHECKLIST_LABELS,
-  type ChecklistKey,
   type RegulatoryOverviewRow,
-  type DossierStatus,
 } from "@/hooks/useMicroorganismRegulatory";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
-import { Loader2, ShieldOff, FileWarning } from "lucide-react";
+import { Loader2, ShieldOff } from "lucide-react";
 import { ProductRegulatoryNavigation } from "./ProductRegulatoryNavigation";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 
 const NOT_INFORMED = "não informado";
-
-const DOSSIER_STATUS_LABEL: Record<DossierStatus, string> = {
-  NONE: "Sem dossiê",
-  DRAFT: "Rascunho",
-  PENDING_REVIEW: "Em revisão",
-  VALIDATED: "Validado",
-  BLOCKED: "Bloqueado",
-};
-
-function statusVariant(status: DossierStatus): "default" | "secondary" | "outline" | "destructive" {
-  if (status === "VALIDATED") return "default";
-  if (status === "BLOCKED") return "destructive";
-  if (status === "PENDING_REVIEW") return "secondary";
-  return "outline";
-}
 
 function text(value: string | null | undefined): string {
   const v = (value ?? "").trim();
@@ -119,15 +98,6 @@ function RegulatorySection() {
   const [selected, setSelected] = useState<RegulatoryOverviewRow | null>(null);
 
   const rows = useMemo(() => overview.data ?? [], [overview.data]);
-  const resumo = useMemo(() => {
-    const total = rows.length;
-    const validados = rows.filter((r) => r.dossier_status === "VALIDATED").length;
-    const bloqueados = rows.filter((r) => r.dossier_status === "BLOCKED").length;
-    const pendentes = rows.filter(
-      (r) => r.dossier_status !== "VALIDATED" && r.dossier_status !== "BLOCKED",
-    ).length;
-    return { total, validados, bloqueados, pendentes };
-  }, [rows]);
 
   if (!overview.ready || overview.isLoading) {
     return (
@@ -170,24 +140,6 @@ function RegulatorySection() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-          <div>
-            <div className="text-muted-foreground">Microrganismos ativos</div>
-            <div className="font-medium" data-testid="reg-total">{resumo.total}</div>
-          </div>
-          <div>
-            <div className="text-muted-foreground">Dossiês validados</div>
-            <div className="font-medium" data-testid="reg-validados">{resumo.validados}</div>
-          </div>
-          <div>
-            <div className="text-muted-foreground">Em preparação/revisão</div>
-            <div className="font-medium" data-testid="reg-pendentes">{resumo.pendentes}</div>
-          </div>
-          <div>
-            <div className="text-muted-foreground">Bloqueados</div>
-            <div className="font-medium" data-testid="reg-bloqueados">{resumo.bloqueados}</div>
-          </div>
-        </div>
 
         <Alert data-testid="regulatorio-regras">
           <AlertTitle>Regras obrigatórias deste cadastro</AlertTitle>
@@ -233,26 +185,12 @@ function RegulatorySection() {
                   {row.codigo && (
                     <span className="text-xs text-muted-foreground">{row.codigo}</span>
                   )}
-                  <Badge variant={statusVariant(row.dossier_status)}>
-                    {DOSSIER_STATUS_LABEL[row.dossier_status]}
-                  </Badge>
                   {row.quarantined && (
                     <Badge variant="destructive">Quarentena</Badge>
                   )}
                   {row.fiscally_ready && <Badge variant="secondary">Apto fiscal</Badge>}
                 </div>
-                {row.dossier_status !== 'NONE' && row.checklist_total > 0 && <div className="mt-2 flex items-center gap-2">
-                  <Progress value={row.progress_pct} className="h-2 max-w-xs" />
-                  <span className="text-xs text-muted-foreground">
-                    {row.checklist_confirmed}/{row.checklist_total} itens · {row.progress_pct}%
-                  </span>
-                </div>}
-                {row.dossier_status !== 'NONE' && row.pendencies.length > 0 && (
-                  <div className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
-                    <FileWarning className="h-3 w-3" aria-hidden />
-                    {row.pendencies.length} pendência(s): {row.pendencies[0].message}
-                  </div>
-                )}
+
               </div>
               <Button
                 variant="outline"
@@ -284,340 +222,14 @@ interface DossierSheetProps {
 }
 
 function RegulatoryNavigationSheet({row,open,onOpenChange}:DossierSheetProps) {
-  const [legacy,setLegacy]=useState(false);
   const access=useStorageAccessScope('regulatory-navigation');
-  if(legacy) return <DossierSheet row={row} open={open && access.ready} onOpenChange={onOpenChange}/>;
   return <Sheet open={open && access.ready} onOpenChange={onOpenChange}>
     <SheetContent className="w-full sm:max-w-2xl overflow-y-auto" data-testid="regulatorio-produtos-sheet">
       <SheetHeader><SheetTitle>{row?.nome ?? 'Produtos vinculados'}</SheetTitle><SheetDescription>Produtos comerciais</SheetDescription></SheetHeader>
-      {row && <ProductRegulatoryNavigation key={`${row.microorganism_id}:${access.scope}`} microId={row.microorganism_id} onLegacy={()=>setLegacy(true)}/>}
+      {row && <ProductRegulatoryNavigation key={`${row.microorganism_id}:${access.scope}`} microId={row.microorganism_id}/>}
       <SheetFooter><Button variant="outline" onClick={()=>onOpenChange(false)}>Fechar</Button></SheetFooter>
     </SheetContent>
   </Sheet>;
-}
-
-function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
-  const microId = row?.microorganism_id ?? null;
-  const detail = useRegulatoryDossierDetail(microId, { enabled: open });
-
-
-  // Erro (inclusive permissão) nunca é tratado como ausência; dados em cache ficam ocultos durante erro.
-  const failed = detail.isError;
-  const denied = failed && detail.error instanceof Error && detail.error.message === "permission_denied";
-  const dossier = failed ? null : detail.data?.dossier ?? null;
-  const checklist = (failed ? undefined : detail.data?.checklist) ?? [];
-  const presentations = (failed ? undefined : detail.data?.presentations) ?? [];
-  const candidates = (failed ? undefined : detail.data?.ncm_candidates) ?? [];
-  const documents = (failed ? undefined : detail.data?.documents) ?? [];
-  const snapshots = (failed ? undefined : detail.data?.snapshots) ?? [];
-
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto" data-testid="regulatorio-dossie-sheet">
-        <SheetHeader>
-          <SheetTitle>{row?.nome ?? "Dossiê regulatório"}</SheetTitle>
-          <SheetDescription>
-            {detail.isLoading ? "Carregando dossiê…"
-              : failed ? (denied ? "Sem permissão para consultar este dossiê." : "Não foi possível consultar o dossiê.")
-              : dossier ? `Versão ${dossier.version} · ${DOSSIER_STATUS_LABEL[dossier.status]}`
-              : "Dossiê legado do microrganismo"}
-          </SheetDescription>
-        </SheetHeader>
-        <Alert className="mt-4">
-          <AlertTitle>Modo consulta</AlertTitle>
-          <AlertDescription>Dossiês regulatórios são catálogo global; alterações não estão disponíveis para empresas.</AlertDescription>
-        </Alert>
-
-        {detail.isLoading && (
-          <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Carregando dossiê…
-          </div>
-        )}
-
-        {failed && (
-          <Alert variant="destructive" className="mt-4" data-testid="regulatorio-dossie-erro">
-            <AlertTitle>{denied ? "Sem permissão" : "Erro ao consultar"}</AlertTitle>
-            <AlertDescription>{denied
-              ? "Seu perfil não tem acesso a este dossiê regulatório."
-              : "Não foi possível carregar o dossiê. Tente novamente mais tarde."}</AlertDescription>
-          </Alert>
-        )}
-
-        {!detail.isLoading && !failed && !dossier && (
-          <div className="py-6 space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Nenhum dossiê registrado para este microrganismo.
-            </p>
-          </div>
-        )}
-
-        {dossier && (
-          <Tabs defaultValue="fatos" className="mt-4">
-            <TabsList className="flex flex-wrap h-auto">
-              <TabsTrigger value="fatos">Fatos</TabsTrigger>
-              <TabsTrigger value="checklist">Checklist</TabsTrigger>
-              <TabsTrigger value="apresentacoes">Apresentações</TabsTrigger>
-              <TabsTrigger value="ncm">NCM</TabsTrigger>
-              <TabsTrigger value="documentos">Documentos</TabsTrigger>
-              <TabsTrigger value="revisao">Revisão</TabsTrigger>
-              <TabsTrigger value="pendencias">Pendências</TabsTrigger>
-            </TabsList>
-
-            {/* FATOS ---------------------------------------------------- */}
-            <TabsContent value="fatos" className="space-y-3 pt-4">
-              <dl className="grid gap-2 text-sm sm:grid-cols-2" data-testid="regulatorio-fatos-consulta">
-                {([
-                  ["Categoria regulatória", dossier.regulatory_category],
-                  ["Código da cepa", dossier.strain_code],
-                  ["Nome da cepa", dossier.strain_name],
-                  ["Formulação", dossier.formulation],
-                  ["Garantia de rótulo", dossier.label_guarantee],
-                  ["Situação MAPA", dossier.mapa_status],
-                  ["Registro MAPA", dossier.mapa_registration_number],
-                  ["Titular MAPA", dossier.mapa_holder],
-                  ["Validade MAPA", dossier.mapa_valid_until],
-                  ["Motivo de não aplicabilidade MAPA", dossier.mapa_not_applicable_reason],
-                ] as const).map(([k, v]) => (
-                  <div key={k} className="min-w-0 break-words">
-                    <dt className="text-xs text-muted-foreground">{k}</dt>
-                    <dd>{text(v as string | null | undefined)}</dd>
-                  </div>
-                ))}
-              </dl>
-            </TabsContent>
-
-            {/* CHECKLIST ------------------------------------------------ */}
-            <TabsContent value="checklist" className="space-y-3 pt-4">
-              {checklist.map((item) => (
-                <div key={item.id} className="border rounded-md p-3 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium">
-                      {CHECKLIST_LABELS[item.item_key] ?? item.item_key}
-                    </span>
-                    <Badge
-                      variant={
-                        item.state === "CONFIRMED" ? "default"
-                        : item.state === "NOT_APPLICABLE" ? "secondary"
-                        : "outline"
-                      }
-                    >
-                      {item.state === "CONFIRMED" ? "Confirmado"
-                        : item.state === "NOT_APPLICABLE" ? "Não aplicável"
-                        : "Pendente"}
-                    </Badge>
-                  </div>
-                  {item.justification && (
-                    <p className="text-xs text-muted-foreground">
-                      Justificativa: {item.justification}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </TabsContent>
-
-            {/* APRESENTAÇÕES -------------------------------------------- */}
-            <TabsContent value="apresentacoes" className="space-y-3 pt-4">
-              <p className="text-xs text-muted-foreground">
-                Volumes importados do catálogo entram sempre como <strong>não confirmados</strong>.
-                Unidade comercial, tributável, fator de conversão e GTIN exigem confirmação humana.
-              </p>
-              {presentations.length === 0 && (
-                <p className="text-sm text-muted-foreground">Nenhuma apresentação registrada.</p>
-              )}
-              {presentations.map((p) => (
-                <div key={p.id} className="border rounded-md p-3 text-sm space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{p.label}</span>
-                    <div className="flex gap-1">
-                      <Badge variant={p.units_confirmed ? "default" : "outline"}>
-                        {p.units_confirmed ? "Unidades confirmadas" : "Unidades não confirmadas"}
-                      </Badge>
-                      <Badge variant={p.gtin_confirmed ? "default" : "outline"}>
-                        {p.gtin_confirmed
-                          ? (p.gtin_absent ? "Sem GTIN (declarado)" : "GTIN confirmado")
-                          : "GTIN não confirmado"}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    uCom: {text(p.commercial_unit)} · uTrib: {text(p.taxable_unit)} · fator:{" "}
-                    {p.conversion_factor ?? NOT_INFORMED} · GTIN: {text(p.gtin)}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Origem: {p.origin_note}</div>
-                </div>
-              ))}
-            </TabsContent>
-
-            {/* NCM ------------------------------------------------------ */}
-            <TabsContent value="ncm" className="space-y-3 pt-4">
-              <p className="text-xs text-muted-foreground">
-                Todo candidato exige justificativa e fonte oficial consultada. A aprovação
-                é ato fiscal registrado.
-              </p>
-              {candidates.length === 0 && (
-                <p className="text-sm text-muted-foreground">Nenhum candidato registrado.</p>
-              )}
-              {candidates.map((c) => (
-                <div key={c.id} className="border rounded-md p-3 text-sm space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium">
-                      NCM {c.ncm}{c.cest ? ` · CEST ${c.cest}` : ""}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={confidenceBadgeVariant(c.confidence)}>
-                        {confidenceLabel(c.confidence)}
-                      </Badge>
-                      <Badge
-                        variant={
-                          c.status === "APPROVED" ? "default"
-                          : c.status === "REJECTED" ? "destructive"
-                          : "outline"
-                        }
-                      >
-                        {c.status === "APPROVED" ? "Aprovado"
-                          : c.status === "REJECTED" ? "Rejeitado" : "Proposto"}
-                      </Badge>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{c.justification}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Fonte: {text(c.source_url)} · consulta: {text(c.consulted_at)}
-                  </p>
-                  {c.confidence === "CONDITIONAL" && (
-                    <p className="text-xs text-amber-700 dark:text-amber-400">
-                      Enquadramento condicional à alegação de uso: não pode ser aprovado
-                      antes da definição da finalidade regulatória.
-                    </p>
-                  )}
-                </div>
-              ))}
-            </TabsContent>
-
-            {/* DOCUMENTOS ----------------------------------------------- */}
-            <TabsContent value="documentos" className="space-y-3 pt-4">
-              {documents.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  Nenhum documento registrado. Rótulo e laudo são obrigatórios para publicar.
-                </p>
-              )}
-              {documents.map((d) => (
-                <div key={d.id} className="border rounded-md p-3 text-sm">
-                  <div className="font-medium">{d.title}</div>
-                  <div className="text-xs text-muted-foreground">
-                    Tipo: {d.doc_type} · emissor: {text(d.issuer)} · validade: {text(d.valid_until)}
-                  </div>
-                  <div className="text-xs text-muted-foreground break-all">
-                    SHA-256: {d.content_sha256}
-                  </div>
-                </div>
-              ))}
-            </TabsContent>
-
-            {/* REVISÃO -------------------------------------------------- */}
-            <TabsContent value="revisao" className="space-y-3 pt-4">
-              <div className="grid grid-cols-3 gap-2 text-sm">
-                <ReviewBadge label="Técnica" value={dossier.technical_review_status} />
-                <ReviewBadge label="Regulatória" value={dossier.regulatory_review_status} />
-                <ReviewBadge label="Fiscal" value={dossier.fiscal_review_status} />
-              </div>
-
-              {snapshots.length > 0 && (
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <div className="font-medium text-foreground">Publicações imutáveis</div>
-                  {snapshots.map((s) => (
-                    <div key={`${s.version}-${s.published_at}`} className="break-all">
-                      v{s.version} · {s.published_at} · {s.snapshot_sha256}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            {/* PENDÊNCIAS ----------------------------------------------- */}
-            <TabsContent value="pendencias" className="space-y-2 pt-4">
-              {(row?.pendencies ?? []).length === 0 && (
-                <p className="text-sm text-muted-foreground">Nenhuma pendência aberta.</p>
-              )}
-              {(row?.pendencies ?? []).map((p) => (
-                <div key={`${p.code}-${p.field}`} className="border rounded-md p-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{p.layer === "TECHNICAL" ? "Técnica" : "Regulatória"}</Badge>
-                    <code className="text-xs">{p.code}</code>
-                  </div>
-                  <p className="mt-1">{p.message}</p>
-                  {p.items && p.items.length > 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">{p.items.join(", ")}</p>
-                  )}
-                </div>
-              ))}
-              {(row?.not_applicable ?? []).length > 0 && (
-                <div className="pt-2">
-                  <div className="text-sm font-medium">Itens marcados como não aplicáveis</div>
-                  {(row?.not_applicable ?? []).map((n) => (
-                    <p key={n.item_key} className="text-xs text-muted-foreground">
-                      {CHECKLIST_LABELS[n.item_key as ChecklistKey] ?? n.item_key}: {text(n.justification)}
-                    </p>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        )}
-
-        <SheetFooter className="pt-6">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-function ReviewBadge({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="border rounded-md p-2">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <Badge
-        variant={value === "APPROVED" ? "default" : value === "REJECTED" ? "destructive" : "outline"}
-      >
-        {value === "APPROVED" ? "Aprovada" : value === "REJECTED" ? "Rejeitada" : "Pendente"}
-      </Badge>
-    </div>
-  );
-}
-
-interface DraftFacts {
-  regulatory_category: string | null;
-  strain_code: string | null;
-  strain_name: string | null;
-  formulation: string | null;
-  label_guarantee: string | null;
-  mapa_status: string | null;
-  mapa_registration_number: string | null;
-  mapa_holder: string | null;
-  mapa_valid_until: string | null;
-  mapa_not_applicable_reason: string | null;
-}
-
-function confidenceLabel(value: string | null | undefined): string {
-  switch (value) {
-    case "HIGH": return "Confiança alta";
-    case "MEDIUM": return "Confiança média";
-    case "CONDITIONAL": return "Condicional";
-    case "LOW": return "Confiança baixa";
-    default: return "Confiança não informada";
-  }
-}
-
-function confidenceBadgeVariant(
-  value: string | null | undefined,
-): "default" | "secondary" | "outline" | "destructive" {
-  switch (value) {
-    case "HIGH": return "default";
-    case "MEDIUM": return "secondary";
-    case "CONDITIONAL": return "destructive";
-    default: return "outline";
-  }
 }
 
 export default RegulatorioMicrorganismosSecao;
