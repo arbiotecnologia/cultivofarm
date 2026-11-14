@@ -7,6 +7,7 @@ vi.mock('@/hooks/useAuth',()=>({useAuth:()=>({user:{id:'u'},session:{user:{id:'u
 vi.mock('@/integrations/supabase/client',()=>({supabase:{rpc:m.rpc,functions:{invoke:m.invoke}}}));
 import {ProductDossierManagement} from '@/components/fiscal/ProductDossierManagement';
 import {prepareDossierFile} from '@/hooks/useProductDossierManagement';
+import {REGULATORY_CHECKLIST_KEYS} from '@/hooks/useMicroorganismRegulatory';
 const pid='00000000-0000-4000-8000-000000000020',mid='00000000-0000-4000-8000-000000000030',did='00000000-0000-4000-8000-000000000040';
 const detail={product_id:pid,dossier:{id:did,microorganism_id:mid,version:1,status:'DRAFT',updated_at:'2026-11-14T00:00:00Z',regulatory_category:null,mapa_status:null,mapa_registration_number:null,blocked_reason:null,notes:null},documents:[],checklist:[],gate:{pendencies:[{code:'LABEL',field:'documents',layer:'REGULATORY',message:'Rótulo pendente do produto QA.'}]}};
 function mount(){return render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><ProductDossierManagement/></QueryClientProvider>);}
@@ -19,6 +20,33 @@ beforeEach(()=>{m.roles=['administrador'];m.org='org';m.epoch=0;m.created=false;
  return {data:null,error:null};
  });});
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
+describe('edição compacta do dossiê compartilhado',()=>{
+ async function open(){m.created=true;mount();fireEvent.click(await screen.findByRole('button',{name:'Gerenciar dossiê de Produto sintético'}));await screen.findByLabelText('Observações');}
+ it('recolher cobertura conserva seleção e bloqueia atualizar até salvar',async()=>{
+   await open();fireEvent.click(screen.getByRole('button',{name:'Editar cobertura'}));fireEvent.click(screen.getAllByRole('checkbox')[1]);fireEvent.click(screen.getByRole('button',{name:'Recolher cobertura'}));
+   expect((screen.getByRole('button',{name:'Atualizar'}) as HTMLButtonElement).disabled).toBe(true);
+   fireEvent.click(screen.getByRole('button',{name:'Editar cobertura'}));expect(screen.getAllByRole('checkbox')[1].getAttribute('aria-checked')).toBe('true');
+   fireEvent.click(screen.getByRole('button',{name:'Salvar cobertura'}));await waitFor(()=>expect(m.rpc).toHaveBeenCalledWith('tenant_product_dossier_set_coverage',expect.objectContaining({p_microorganism_ids:[mid,'00000000-0000-4000-8000-000000000031']})));
+ });
+ it('não confirma checklist ao cadastrar dados e mantém 12 revisões editáveis separadas',async()=>{
+   const original=m.rpc.getMockImplementation();m.rpc.mockImplementation(async(n,a)=>n==='rpc_regulatory_product_dossier_detail'?{data:{...detail,checklist:REGULATORY_CHECKLIST_KEYS.map(item_key=>({item_key,state:'PENDING',justification:null}))},error:null}:original?.(n,a));
+   await open();fireEvent.change(screen.getByLabelText('Observações'),{target:{value:'Cadastro não é aprovação'}});fireEvent.click(screen.getByRole('button',{name:'Salvar dados'}));
+   await waitFor(()=>expect(m.rpc.mock.calls.some(([n])=>n==='tenant_product_dossier_management_save')).toBe(true));
+   expect(m.rpc.mock.calls.some(([n])=>n==='tenant_product_dossier_management_checklist')).toBe(false);
+   expect(screen.getAllByRole('combobox',{hidden:true}).filter(el=>el.getAttribute('aria-label')?.startsWith('Situação '))).toHaveLength(13);
+   const select=screen.getByLabelText('Situação CEPA');fireEvent.click(select);fireEvent.click(await screen.findByRole('option',{name:'Não aplicável'}));
+   const reason=screen.getByLabelText('Justificativa CEPA');fireEvent.change(reason,{target:{value:'Razão sintética explícita'}});
+   const saves=screen.getAllByRole('button',{name:'Salvar item',hidden:true});const enabled=saves.find(b=>!(b as HTMLButtonElement).disabled);expect(enabled).toBeTruthy();if(enabled)fireEvent.click(enabled);
+   await waitFor(()=>expect(m.rpc).toHaveBeenCalledWith('tenant_product_dossier_management_checklist',expect.objectContaining({p_item_key:'CEPA',p_state:'NOT_APPLICABLE',p_justification:'Razão sintética explícita'})));
+ });
+ it('anexo integral usa array vazio e restrição exige seleção explícita',async()=>{
+   vi.stubGlobal('crypto',webcrypto);await open();
+   fireEvent.change(screen.getByLabelText('Título do documento'),{target:{value:'Arquivo sintético'}});fireEvent.click(screen.getByLabelText('Tipo do documento'));fireEvent.click(await screen.findByRole('option',{name:/Laudo/i}));
+   const bytes=new Uint8Array([137,80,78,71]);const file={name:'synthetic.png',type:'image/png',size:4,arrayBuffer:async()=>bytes.buffer} as File;fireEvent.change(screen.getByLabelText('Arquivo privado'),{target:{files:[file]}});
+   const restrict=screen.getByLabelText('Restringir abrangência do documento');fireEvent.click(restrict);expect((screen.getByRole('button',{name:'Anexar documento'}) as HTMLButtonElement).disabled).toBe(true);fireEvent.click(restrict);
+   m.invoke.mockResolvedValue({data:{state:'COMMITTED'},error:null});fireEvent.click(screen.getByRole('button',{name:'Anexar documento'}));await waitFor(()=>expect(m.rpc).toHaveBeenCalledWith('tenant_product_dossier_upload_prepare',expect.objectContaining({p_intent:expect.objectContaining({microorganism_ids:[]})})));
+ });
+});
 describe('gestão supervisionada',()=>{
  it('Atualizar relê reservas duráveis e reload preserva recuperação',async()=>{m.created=true;let reserved=false;const original=m.rpc.getMockImplementation();m.rpc.mockImplementation(async(n,a)=>n==='tenant_product_dossier_upload_pending'?{data:reserved?[{id:did,product_id:pid,dossier_id:did,storage_path:'dossiers/qa/rotulo.png',state:'RESERVED'}]:[],error:null}:original?.(n,a));const view=mount();fireEvent.click(await screen.findByRole('button',{name:'Gerenciar dossiê de Produto sintético'}));await screen.findByLabelText('Observações');reserved=true;fireEvent.click(screen.getByRole('button',{name:'Atualizar'}));expect(await screen.findByRole('button',{name:'Concluir anexo pendente'})).toBeTruthy();view.unmount();mount();fireEvent.click(await screen.findByRole('button',{name:'Gerenciar dossiê de Produto sintético'}));expect(await screen.findByRole('button',{name:'Descartar tentativa'})).toBeTruthy();});
  it('retomada usa a reserva existente e relê os dados após COMMITTED',async()=>{m.created=true;let reserved=true;const original=m.rpc.getMockImplementation();m.rpc.mockImplementation(async(n,a)=>n==='tenant_product_dossier_upload_pending'?{data:reserved?[{id:did,product_id:pid,dossier_id:did,storage_path:'dossiers/qa/rotulo.png',state:'RESERVED'}]:[],error:null}:original?.(n,a));m.invoke.mockImplementation(async()=>{reserved=false;return {data:{state:'COMMITTED',document_id:did,product_id:pid},error:null};});mount();fireEvent.click(await screen.findByRole('button',{name:'Gerenciar dossiê de Produto sintético'}));fireEvent.click(await screen.findByRole('button',{name:'Concluir anexo pendente'}));await waitFor(()=>expect(m.invoke).toHaveBeenCalledWith(`product-regulatory-document?action=resume&upload_id=${did}`,{body:{}}));await waitFor(()=>expect(screen.queryByRole('button',{name:'Concluir anexo pendente'})).toBeNull());expect(m.rpc.mock.calls.some(([n])=>n==='tenant_product_dossier_upload_prepare')).toBe(false);});
