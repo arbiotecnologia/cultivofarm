@@ -35,7 +35,8 @@
 .label-preview-scroll { overflow: auto; max-width: 100%; }
 @media print {
   body:has(#product-label-print) * { visibility: hidden; }
-  #product-label-print, #product-label-print * { visibility: visible; }
+  body:has(#product-label-print) #product-label-print,
+  body:has(#product-label-print) #product-label-print * { visibility: visible; }
   #product-label-print { position: absolute; top: 0; left: 0; padding: 0; margin: 0; }
   body:has(#product-label-print) .label-preview-scroll { overflow: visible; }
   #product-label-print .label-pages { display: block; }
