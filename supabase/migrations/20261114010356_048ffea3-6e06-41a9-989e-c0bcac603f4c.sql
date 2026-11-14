@@ -1,0 +1,13 @@
+BEGIN;
+ALTER FUNCTION public.rpc_regulatory_microorganism_products(uuid) SET SCHEMA platform_private;
+ALTER FUNCTION public.rpc_regulatory_product_dossier_detail(uuid,uuid) SET SCHEMA platform_private;
+ALTER FUNCTION public.rpc_regulatory_product_document_access(uuid,uuid,uuid) SET SCHEMA platform_private;
+ALTER FUNCTION public.product_regulatory_storage_read_allowed(text) SET SCHEMA platform_private;
+REVOKE ALL ON FUNCTION platform_private.rpc_regulatory_microorganism_products(uuid),platform_private.rpc_regulatory_product_dossier_detail(uuid,uuid),platform_private.rpc_regulatory_product_document_access(uuid,uuid,uuid),platform_private.product_regulatory_storage_read_allowed(text) FROM PUBLIC,anon,service_role;
+CREATE FUNCTION public.rpc_regulatory_microorganism_products(p_microorganism_id uuid) RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$SELECT platform_private.rpc_regulatory_microorganism_products(p_microorganism_id)$$;
+CREATE FUNCTION public.rpc_regulatory_product_dossier_detail(p_microorganism_id uuid,p_product_id uuid) RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$SELECT platform_private.rpc_regulatory_product_dossier_detail(p_microorganism_id,p_product_id)$$;
+CREATE FUNCTION public.rpc_regulatory_product_document_access(p_microorganism_id uuid,p_product_id uuid,p_document_id uuid) RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$SELECT platform_private.rpc_regulatory_product_document_access(p_microorganism_id,p_product_id,p_document_id)$$;
+CREATE FUNCTION public.product_regulatory_storage_read_allowed(p_path text) RETURNS boolean LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$SELECT platform_private.product_regulatory_storage_read_allowed(p_path)$$;
+REVOKE ALL ON FUNCTION public.rpc_regulatory_microorganism_products(uuid),public.rpc_regulatory_product_dossier_detail(uuid,uuid),public.rpc_regulatory_product_document_access(uuid,uuid,uuid),public.product_regulatory_storage_read_allowed(text) FROM PUBLIC,anon,service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_regulatory_microorganism_products(uuid),public.rpc_regulatory_product_dossier_detail(uuid,uuid),public.rpc_regulatory_product_document_access(uuid,uuid,uuid),public.product_regulatory_storage_read_allowed(text) TO authenticated;
+COMMIT;
