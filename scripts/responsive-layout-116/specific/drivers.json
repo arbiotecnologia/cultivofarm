@@ -612,5 +612,52 @@
     "kind": "platform-tabs",
     "expected": "Planos",
     "trigger": "Plataforma > primeira/última seção"
+  },
+  {
+    "ids": [
+      83
+    ],
+    "file": "src/pages/OrdensServico.tsx",
+    "export": "default",
+    "route": "/ordens-servico",
+    "profiles": [
+      "administrador",
+      "gestor"
+    ],
+    "kind": "os-create",
+    "open": "Nova OS",
+    "expected": "Nova Ordem de Serviço",
+    "trigger": "Ordens de Serviço > Nova OS"
+  },
+  {
+    "ids": [
+      87
+    ],
+    "file": "src/pages/app/MobileCatalogoTecnico.tsx",
+    "export": "default",
+    "route": "/app/catalogo",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "consultor_tecnico",
+      "tecnico_agronomo"
+    ],
+    "kind": "mobile-catalog",
+    "expected": "Catálogo técnico",
+    "trigger": "Campo > Catálogo técnico > primeira/última aba"
+  },
+  {
+    "ids": [
+      110
+    ],
+    "file": "src/pages/portal/PortalAcompanhamento.tsx",
+    "export": "default",
+    "route": "/portal/acompanhamento",
+    "profiles": [
+      "cliente_produtor"
+    ],
+    "kind": "producer-progress",
+    "expected": "Acompanhamento",
+    "trigger": "Portal produtor > Acompanhamento > filtro de fazenda"
   }
 ]
