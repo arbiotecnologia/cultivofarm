@@ -451,8 +451,8 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
             );
           })()}
 
-          <Tabs value={tab} onValueChange={(v) => { setTab(v as any); setLinhas([]); }} className="w-full">
-            <TabsList className="grid grid-cols-2 w-full">
+          <Tabs value={tab} onValueChange={(v) => { setTab(v as any); setLinhas([]); }} className="min-w-0 w-full">
+            <TabsList className="flex h-auto w-full gap-1 [&>button]:min-h-10">
               <TabsTrigger value="os" className="gap-1.5">
                 <ListChecks className="h-3.5 w-3.5" /> Por OS (todos os vasilhames)
               </TabsTrigger>
