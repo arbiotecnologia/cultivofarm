@@ -1,3 +1,8 @@
+## 14/11 14:24 — Lacunas responsivas específicas
+- [x] Calcular 66 IDs sem montagem da matriz; retirar apresentação de public e preservar em scripts.
+- [ ] Drivers específicos com leitura contextual, asserts de conteúdo/último controle e classificação por ID/perfil/viewport.
+- [ ] Reconciliar 116 IDs, preservar quatro fluxos anteriores, testes e build; sem publicação/produção.
+
 ## 14/11 13:41 — Segunda revisão responsiva: 116 ocorrências
 - [x] Preservar 116 IDs e evidências existentes; quatro lotes com componentes originais/props e checkpoint incremental, matriz por perfil/viewport distinguindo montagem/navegação/lacunas.
 - [x] Corrigir clipping reproduzido em BulkAlvos/Evidencias/novo usuário/entrega; 40+8 cenários focais, 97/238/89/95 testes PASS, build automático OK; sem produção/publicação.
