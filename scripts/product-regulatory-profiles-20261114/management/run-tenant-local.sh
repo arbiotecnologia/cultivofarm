@@ -36,4 +36,11 @@ SQL
 "${P[@]}" -f "$H"/tenant-fixture/live-facts.sql >>/tmp/dossier-tenant-pg.log
 "${P[@]}" -f "$H/tenant-tests.sql" >>/tmp/dossier-tenant-pg.log
 
+"${P[@]}" <<'SQL' >>/tmp/dossier-tenant-pg.log
+ALTER TABLE public.microrganismos ADD COLUMN ativo boolean DEFAULT true, ADD COLUMN tipo text, ADD COLUMN concentracao_label text;
+CREATE OR REPLACE FUNCTION public.rpc_regulatory_dossier_detail(p_microorganism_id uuid) RETURNS jsonb LANGUAGE plpgsql AS $$ DECLARE v_d public.microorganism_regulatory_dossiers; BEGIN SELECT * INTO v_d FROM public.microorganism_regulatory_dossiers WHERE product_id IS NULL AND microorganism_id=p_microorganism_id AND deleted_at IS NULL; IF v_d.id IS NULL THEN RETURN NULL; END IF; RETURN to_jsonb(v_d); END $$;
+SQL
+"${P[@]}" -f "$ROOT/supabase/migrations/20261114032614_e0db7d83-23ea-4e36-a673-4ef288c7dd72.sql" >>/tmp/dossier-tenant-pg.log
+"${P[@]}" -f "$H/fiscal-entry-tests.sql" >>/tmp/dossier-tenant-pg.log
+
 cat /tmp/dossier-tenant-pg.log | tail -5
