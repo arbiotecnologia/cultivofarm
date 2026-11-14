@@ -8,6 +8,7 @@ DO $$ DECLARE legacy uuid:='00000000-0000-4000-8000-000000000090'; own uuid; v j
  SELECT dossier_id INTO own FROM public.product_regulatory_dossier_links WHERE product_id='00000000-0000-4000-8000-000000000020';
  IF platform_private.product_dossier_row_read(legacy) THEN RAISE EXCEPTION 'legacy disclosed'; END IF; RAISE NOTICE 'PASS unlinked legacy row denied';
  IF public.rpc_regulatory_dossier_detail('00000000-0000-4000-8000-000000000030') IS NOT NULL THEN RAISE EXCEPTION 'legacy detail disclosed'; END IF; RAISE NOTICE 'PASS legacy detail null';
+ IF public.fn_microorganism_regulatory_facts('00000000-0000-4000-8000-000000000030') IS NOT NULL THEN RAISE EXCEPTION 'legacy facts disclosed'; END IF; RAISE NOTICE 'PASS legacy facts null';
  IF platform_private.product_regulatory_storage_read_allowed('dossiers/00000000-0000-4000-8000-000000000090/00000000-0000-4000-8000-000000000091/test.png') THEN RAISE EXCEPTION 'legacy file disclosed'; END IF; RAISE NOTICE 'PASS legacy private file denied';
  IF NOT platform_private.product_dossier_row_read(own) THEN RAISE EXCEPTION 'owner denied'; END IF; RAISE NOTICE 'PASS linked owner still reads';
  v:=public.rpc_microorganism_regulatory_overview();
