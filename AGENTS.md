@@ -24,7 +24,7 @@
 - Fixtures need Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
-- Operational labels reuse the canonical print/trace routes and recipient RPCs; print/PDF output follows successful atomic audit, snapshot-only content and actor/tenant fences, while legacy public tracing retains its server gate — avoids duplicate routes, fabricated branding and unaudited output.
+- Operational labels reuse canonical routes/RPCs, read frozen nested templates and version fallbacks, display only allowlisted snapshot fields, and follow correction replacement IDs; print CSS is deny-default with a scoped one-shot post-audit permit cleared afterprint/disposal — prevents format drift, internal ID disclosure and keyboard print bypass.
 - Private dossier documents render inside the shared detail through the scoped authenticated opener with byte-signature/hash verification and revoked object URLs on close/context disposal — avoids popup/download-only failures without bearer links.
 - Product dossiers share one owner-tenant detail at catalog/fiscal entries; explicit per-version coverage and document subsets follow scripts/product-regulatory-profiles-20261114/management/AGENTS.md, while fiscal profiles start atomic blank DRAFTs — prevents global authority and inherited evidence.
 - Shared dossier drafts keep their observed revision across refetches; compact checklist grouping is presentation-only and upload subsets remain explicit, with empty scope meaning integral coverage — prevents hidden approval and draft rebasing.
