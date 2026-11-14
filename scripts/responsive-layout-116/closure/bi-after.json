@@ -1,0 +1,274 @@
+[
+  {
+    "title": {
+      "x": 38.2914924621582,
+      "y": 100.83867645263672,
+      "width": 274.7235412597656,
+      "height": 232.16073608398438,
+      "top": 100.83867645263672,
+      "right": 313.0150337219238,
+      "bottom": 332.9994125366211,
+      "left": 38.2914924621582
+    },
+    "spans": [
+      {
+        "text": "Cliente: Cliente produtor com nome empresarial integral significativamente longo para conferir cada span e o fechamento independente(22 registros)",
+        "box": {
+          "x": 73.1156005859375,
+          "y": 100.83867645263672,
+          "width": 208.94467163085938,
+          "height": 232.16073608398438,
+          "top": 100.83867645263672,
+          "right": 282.0602722167969,
+          "bottom": 332.9994125366211,
+          "left": 73.1156005859375
+        },
+        "clipped": false
+      },
+      {
+        "text": "Cliente produtor com nome empresarial integral significativamente longo para conferir cada span e o fechamento independente",
+        "box": {
+          "x": 89.06153869628906,
+          "y": 102.77335357666016,
+          "width": 177.0528106689453,
+          "height": 212.81402587890625,
+          "top": 102.77335357666016,
+          "right": 266.1143493652344,
+          "bottom": 315.5873794555664,
+          "left": 89.06153869628906
+        },
+        "clipped": false
+      },
+      {
+        "text": "(22 registros)",
+        "box": {
+          "x": 73.1156005859375,
+          "y": 317.52203369140625,
+          "width": 208.94467163085938,
+          "height": 15.477386474609375,
+          "top": 317.52203369140625,
+          "right": 282.0602722167969,
+          "bottom": 332.9994201660156,
+          "left": 73.1156005859375
+        },
+        "clipped": false
+      }
+    ],
+    "close": {
+      "x": 318.331298828125,
+      "y": 85.78904724121094,
+      "width": 43.068084716796875,
+      "height": 43.06806945800781
+    },
+    "viewport": [
+      390,
+      844
+    ],
+    "defect": false,
+    "close_clicked": true
+  },
+  {
+    "title": {
+      "x": 254.5989532470703,
+      "y": 121.92691040039062,
+      "width": 892.5761108398438,
+      "height": 68.80671691894531,
+      "top": 121.92691040039062,
+      "right": 1147.175064086914,
+      "bottom": 190.73362731933594,
+      "left": 254.5989532470703
+    },
+    "spans": [
+      {
+        "text": "Cliente: Cliente produtor com nome empresarial integral significativamente longo para conferir cada span e o fechamento independente(22 registros)",
+        "box": {
+          "x": 289.0023193359375,
+          "y": 121.92691040039062,
+          "width": 827.592041015625,
+          "height": 68.80671691894531,
+          "top": 121.92691040039062,
+          "right": 1116.5943603515625,
+          "bottom": 190.73362731933594,
+          "left": 289.0023193359375
+        },
+        "clipped": false
+      },
+      {
+        "text": "Cliente produtor com nome empresarial integral significativamente longo para conferir cada span e o fechamento independente",
+        "box": {
+          "x": 289.0023193359375,
+          "y": 123.83820343017578,
+          "width": 817.901123046875,
+          "height": 49.693748474121094,
+          "top": 123.83820343017578,
+          "right": 1106.9034423828125,
+          "bottom": 173.53195190429688,
+          "left": 289.0023193359375
+        },
+        "clipped": false
+      },
+      {
+        "text": "(22 registros)",
+        "box": {
+          "x": 289.0023193359375,
+          "y": 175.44325256347656,
+          "width": 827.592041015625,
+          "height": 15.290374755859375,
+          "top": 175.44325256347656,
+          "right": 1116.5943603515625,
+          "bottom": 190.73362731933594,
+          "left": 289.0023193359375
+        },
+        "clipped": false
+      }
+    ],
+    "close": {
+      "x": 1158.642822265625,
+      "y": 106.63652801513672,
+      "width": 42.048583984375,
+      "height": 42.048545837402344
+    },
+    "viewport": [
+      1440,
+      900
+    ],
+    "defect": false,
+    "close_clicked": true
+  },
+  {
+    "title": {
+      "x": 37.149234771728516,
+      "y": 73.2423324584961,
+      "width": 207.0083770751953,
+      "height": 313.41455078125,
+      "top": 73.2423324584961,
+      "right": 244.15761184692383,
+      "bottom": 386.6568832397461,
+      "left": 37.149234771728516
+    },
+    "spans": [
+      {
+        "text": "Cliente: Cliente produtor com nome empresarial integral significativamente longo para conferir cada span e o fechamento independente(22 registros)",
+        "box": {
+          "x": 71.97307586669922,
+          "y": 73.2423324584961,
+          "width": 141.23001098632812,
+          "height": 313.41455078125,
+          "top": 73.2423324584961,
+          "right": 213.20308685302734,
+          "bottom": 386.6568832397461,
+          "left": 71.97307586669922
+        },
+        "clipped": false
+      },
+      {
+        "text": "Cliente produtor com nome empresarial integral significativamente longo para conferir cada span e o fechamento independente",
+        "box": {
+          "x": 75.91796112060547,
+          "y": 75.17699432373047,
+          "width": 133.32513427734375,
+          "height": 294.0679626464844,
+          "top": 75.17699432373047,
+          "right": 209.24309539794922,
+          "bottom": 369.24495697021484,
+          "left": 75.91796112060547
+        },
+        "clipped": false
+      },
+      {
+        "text": "(22 registros)",
+        "box": {
+          "x": 71.97307586669922,
+          "y": 371.17962646484375,
+          "width": 141.23001098632812,
+          "height": 15.477264404296875,
+          "top": 371.17962646484375,
+          "right": 213.20308685302734,
+          "bottom": 386.6568908691406,
+          "left": 71.97307586669922
+        },
+        "clipped": false
+      }
+    ],
+    "close": {
+      "x": 248.0269317626953,
+      "y": 65.50370788574219,
+      "width": 42.56245422363281,
+      "height": 42.562469482421875
+    },
+    "viewport": [
+      320,
+      568
+    ],
+    "defect": false,
+    "close_clicked": true
+  },
+  {
+    "title": {
+      "x": 41.828739166259766,
+      "y": 73.11801147460938,
+      "width": 342.1171569824219,
+      "height": 149.0789794921875,
+      "top": 73.11801147460938,
+      "right": 383.94589614868164,
+      "bottom": 222.19699096679688,
+      "left": 41.828739166259766
+    },
+    "spans": [
+      {
+        "text": "Cliente: Cliente produtor com nome empresarial integral significativamente longo para conferir cada span e o fechamento independente(22 registros)",
+        "box": {
+          "x": 76.23158264160156,
+          "y": 73.11801147460938,
+          "width": 277.13397216796875,
+          "height": 149.0789794921875,
+          "top": 73.11801147460938,
+          "right": 353.3655548095703,
+          "bottom": 222.19699096679688,
+          "left": 76.23158264160156
+        },
+        "clipped": false
+      },
+      {
+        "text": "Cliente produtor com nome empresarial integral significativamente longo para conferir cada span e o fechamento independente",
+        "box": {
+          "x": 86.25080871582031,
+          "y": 75.02928161621094,
+          "width": 257.08062744140625,
+          "height": 129.96629333496094,
+          "top": 75.02928161621094,
+          "right": 343.33143615722656,
+          "bottom": 204.99557495117188,
+          "left": 86.25080871582031
+        },
+        "clipped": false
+      },
+      {
+        "text": "(22 registros)",
+        "box": {
+          "x": 76.23158264160156,
+          "y": 206.90684509277344,
+          "width": 277.13397216796875,
+          "height": 15.290145874023438,
+          "top": 206.90684509277344,
+          "right": 353.3655548095703,
+          "bottom": 222.19699096679688,
+          "left": 76.23158264160156
+        },
+        "clipped": false
+      }
+    ],
+    "close": {
+      "x": 389.66259765625,
+      "y": 60.93716812133789,
+      "width": 42.559234619140625,
+      "height": 42.55923080444336
+    },
+    "viewport": [
+      464,
+      522
+    ],
+    "defect": false,
+    "close_clicked": true
+  }
+]
