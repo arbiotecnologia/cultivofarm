@@ -33,6 +33,16 @@ BEGIN
  RETURN NEW;
 END $$;
 REVOKE ALL ON FUNCTION platform_private.product_insert_fiscal_draft() FROM PUBLIC,anon,authenticated,service_role;
+CREATE OR REPLACE FUNCTION platform_private.product_fiscal_insert_lock()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+ IF TG_OP<>'INSERT' OR TG_LEVEL<>'STATEMENT' OR TG_WHEN<>'BEFORE' OR TG_RELID<>'public.produtos'::regclass THEN
+  RAISE EXCEPTION 'INVALID_PRODUCT_BOOTSTRAP_CONTEXT' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;
+ RETURN NULL;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.product_fiscal_insert_lock() FROM PUBLIC,anon,authenticated,service_role;
 -- Preserve the existing fiscal guard verbatim, adding only a blank INSERT branch.
 DO $delta$
 DECLARE v text;
@@ -54,6 +64,8 @@ $branch$);
 END $delta$;
 CREATE TRIGGER product_insert_fiscal_draft AFTER INSERT ON public.produtos
 FOR EACH ROW EXECUTE FUNCTION platform_private.product_insert_fiscal_draft();
+CREATE TRIGGER a00_product_fiscal_insert_lock BEFORE INSERT ON public.produtos
+FOR EACH STATEMENT EXECUTE FUNCTION platform_private.product_fiscal_insert_lock();
 -- Acquire the canonical guard before product locks, matching the fiscal writer.
 DO $$ DECLARE p uuid; BEGIN
  PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
