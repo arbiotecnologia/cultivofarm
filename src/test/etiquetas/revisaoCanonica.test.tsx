@@ -23,7 +23,7 @@ describe("revisão SQL canônica",()=>{
   render(view(`?ids=${id},${id}`));await screen.findByText(/SYN-1 · Recipiente/);expect(t.queried[0]).toEqual([id]);
   fireEvent.click(screen.getByRole('button',{name:'Corrigir'}));fireEvent.change(screen.getByLabelText('Motivo da correção'),{target:{value:'Correção teste'}});
   t.rpc.mockImplementation(async(name:string)=>{if(name==='rpc_corrigir_etiqueta_produto_v1'){t.rows=[{...rpcLabelFixture('etiqueta-op-80x50'),id:next,codigo_etiqueta:'SYN-2'}];return {data:{nova_etiqueta_id:next},error:null};}return {data:null,error:null};});
-  fireEvent.click(screen.getByRole('button',{name:'Salvar correção'}));await screen.findByText(/SYN-2 · Recipiente/);expect(screen.queryByText(/SYN-1 · Recipiente/)).toBeNull();expect(t.queried.at(-1)).toEqual([next]);
+  fireEvent.click(screen.getByRole('button',{name:'Salvar correção'}));await screen.findByText(/SYN-2 · Recipiente/);expect(screen.queryByText(/SYN-1 · Recipiente/)).toBeNull();expect(t.queried[t.queried.length - 1]).toEqual([next]);
   fireEvent.change(screen.getByLabelText('Motivo da impressão ou reimpressão'),{target:{value:'Reimpressão teste'}});fireEvent.click(screen.getByRole('button',{name:'Imprimir selecionados'}));await waitFor(()=>expect(t.rpc).toHaveBeenLastCalledWith('rpc_imprimir_etiquetas_recipientes_v1',{p_ids:[next],p_motivo:'Reimpressão teste'}));
  });
  it.each([{cq_liberado:false},{cq_liberado:null},{status:'cancelada'},{status:'substituida'},{status:'desconhecido'},{substituida_por_id:next}])("nega saída CQ/histórico %j",async(delta)=>{
