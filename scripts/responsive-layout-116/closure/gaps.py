@@ -9,6 +9,8 @@ async def main():
  async with async_playwright() as p:
   b=await p.chromium.launch();c=await b.new_context(viewport={'width':390,'height':844},reduced_motion='reduce');page=await c.new_page();page.set_default_timeout(5000);current=None;errs=[];page.on('pageerror',lambda e:errs.append(str(e)))
   async def intercept(r):
+   if r.request.url=='https://swzpzcwiasxmjutrmvkm.supabase.co/functions/v1/download-technical-attachment' and current['kind']=='consultor-image':
+    return await r.fulfill(status=200,headers={'Content-Type':'application/octet-stream','Cache-Control':'no-store'},body=Path('/tmp/browser/responsive-116/fixture.png').read_bytes())
    if not r.request.url.startswith('http://localhost:8080'):return await r.abort()
    path=r.request.url.split('http://localhost:8080')[-1].split('?')[0]
    if path=='/src/hooks/useAuth.tsx':return await r.fulfill(content_type='application/javascript',body=ns['ns']['AUTH'])
