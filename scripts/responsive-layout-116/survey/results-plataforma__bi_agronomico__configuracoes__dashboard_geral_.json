@@ -92,20 +92,612 @@
         "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nGestão de Usuários\n\nGerencie os perfis de acesso dos usuários do sistema\n\nAuditoria de Senhas\nNovo Usuário\nTodos os perfis\nTodos\nHomologação sintética com nome representativo muito extenso para revisão de conteúdo completo\nqa@example.invalid\nAtivo\nPERFIL\nConsultor Técnico\nTIPO DE ACESSO\nInterno\nVÍNCULO\nVínculo indisponível no momento\nIDENTIFICAÇÃO\n—\nTELEFONE\n—\nCARGO\n—\nEditar\n\nExibindo 1–1 de 1 usuários\n\nAnterior\nPágina 1 de 1\nPróxima"
       },
       {
-        "name": "tab-5",
-        "artifact": "survey/_configuracoes-administrador-390-tab-5.png",
+        "name": "opened-5",
+        "artifact": "survey/_configuracoes-administrador-390-opened-5.png",
+        "mounted": [
+          {
+            "id": "70",
+            "tag": "BUTTON",
+            "role": "combobox",
+            "text": "Todos os perfis",
+            "rect": {
+              "x": 25,
+              "y": 545,
+              "right": 365,
+              "bottom": 593,
+              "w": 340,
+              "h": 48
+            },
+            "scroll": {
+              "w": 338,
+              "h": 46,
+              "cw": 338,
+              "ch": 46
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "71",
+            "tag": "BUTTON",
+            "role": "combobox",
+            "text": "Todos",
+            "rect": {
+              "x": 25,
+              "y": 605,
+              "right": 365,
+              "bottom": 653,
+              "w": 340,
+              "h": 48
+            },
+            "scroll": {
+              "w": 338,
+              "h": 46,
+              "cw": 338,
+              "ch": 46
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "68",
+            "tag": "DIV",
+            "role": "dialog",
+            "text": "Cadastrar Novo UsuárioTipo de cadastroInternoEquipe da empresaParceiro B2BPerfis externos do parceiroCliente ProdutorVinculado a clientesNome *Email *Senha *A senha deve ter de 8 a 128 caracteres, com ao menos uma letra e um número.Perfis * (selecione um ou mais)Administrador da empresaGestorConsultor TécnicoTécnico AgrônomoAdministrativoOperador de ProduçãoProduçãoAplicadorFinanceiroGestor ComercialTelefoneCargoCPF/CNPJCriar UsuárioFechar",
+            "rect": {
+              "x": 16,
+              "y": 16,
+              "right": 374,
+              "bottom": 828,
+              "w": 358,
+              "h": 812
+            },
+            "scroll": {
+              "w": 356,
+              "h": 810,
+              "cw": 356,
+              "ch": 810
+            },
+            "clipped": [],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "text": "InternoEquipe da empresa",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "Parceiro B2BPerfis externos do parceiro",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "Cliente ProdutorVinculado a clientes",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "Criar Usuário",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "Fechar",
+                "disabled": false
+              }
+            ]
+          },
+          {
+            "id": "69",
+            "tag": "BUTTON",
+            "role": "radio",
+            "text": "InternoEquipe da empresa",
+            "rect": {
+              "x": 33,
+              "y": 117.75,
+              "right": 357,
+              "bottom": 183.75,
+              "w": 324,
+              "h": 66
+            },
+            "scroll": {
+              "w": 322,
+              "h": 64,
+              "cw": 322,
+              "ch": 64
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "69",
+            "tag": "BUTTON",
+            "role": "radio",
+            "text": "Parceiro B2BPerfis externos do parceiro",
+            "rect": {
+              "x": 33,
+              "y": 191.75,
+              "right": 357,
+              "bottom": 257.75,
+              "w": 324,
+              "h": 66
+            },
+            "scroll": {
+              "w": 322,
+              "h": 64,
+              "cw": 322,
+              "ch": 64
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "69",
+            "tag": "BUTTON",
+            "role": "radio",
+            "text": "Cliente ProdutorVinculado a clientes",
+            "rect": {
+              "x": 33,
+              "y": 265.75,
+              "right": 357,
+              "bottom": 331.75,
+              "w": 324,
+              "h": 66
+            },
+            "scroll": {
+              "w": 322,
+              "h": 64,
+              "cw": 322,
+              "ch": 64
+            },
+            "clipped": [],
+            "controls": []
+          }
+        ],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nGestão de Usuários\n\nGerencie os perfis de acesso dos usuários do sistema\n\nAuditoria de Senhas\nNovo Usuário\nTodos os perfis\nTodos\nHomologação sintética com nome representativo muito extenso para revisão de conteúdo completo\nqa@example.invalid\nAtivo\nPERFIL\nConsultor Técnico\nTIPO DE ACESSO\nInterno\nVÍNCULO\nVínculo indisponível no momento\nIDENTIFICAÇÃO\n—\nTELEFONE\n—\nCARGO\n—\nEditar\n\nExibindo 1–1 de 1 usuários\n\nAnterior\nPágina 1 de 1\nPróxima\nCadastrar Novo Usuário\nTIPO DE CADASTRO\nInterno\nEquipe da empresa\nParceiro B2B\nPerfis externos do parceiro\nCliente Produtor\nVinculado a clientes\nNOME *\nEMAIL *\nSENHA *\n\nA senha deve ter de 8 a 128 caracteres, com ao menos uma letra e um número.\n\nPERFIS * (SELECIONE UM OU MAIS)\nAdministrador da empresa\nGestor\nConsultor Técnico\nTécnico Agrônomo\nAdministrativo\nOperador de Produção\nProdução\nAplicador\nFinanceiro\nGestor Comercial\nTELEFONE\nCARGO\nCPF/CNPJ\nCriar Usuário\nFechar"
+      },
+      {
+        "name": "last-action-6",
+        "artifact": "survey/_configuracoes-administrador-390-last-action-6.png",
+        "mounted": [
+          {
+            "id": "70",
+            "tag": "BUTTON",
+            "role": "combobox",
+            "text": "Todos os perfis",
+            "rect": {
+              "x": 25,
+              "y": 545,
+              "right": 365,
+              "bottom": 593,
+              "w": 340,
+              "h": 48
+            },
+            "scroll": {
+              "w": 338,
+              "h": 46,
+              "cw": 338,
+              "ch": 46
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "71",
+            "tag": "BUTTON",
+            "role": "combobox",
+            "text": "Todos",
+            "rect": {
+              "x": 25,
+              "y": 605,
+              "right": 365,
+              "bottom": 653,
+              "w": 340,
+              "h": 48
+            },
+            "scroll": {
+              "w": 338,
+              "h": 46,
+              "cw": 338,
+              "ch": 46
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "68",
+            "tag": "DIV",
+            "role": "dialog",
+            "text": "Cadastrar Novo UsuárioTipo de cadastroInternoEquipe da empresaParceiro B2BPerfis externos do parceiroCliente ProdutorVinculado a clientesNome *Email *Senha *A senha deve ter de 8 a 128 caracteres, com ao menos uma letra e um número.Perfis * (selecione um ou mais)Administrador da empresaGestorConsultor TécnicoTécnico AgrônomoAdministrativoOperador de ProduçãoProduçãoAplicadorFinanceiroGestor ComercialTelefoneCargoCPF/CNPJCriar UsuárioFechar",
+            "rect": {
+              "x": 16,
+              "y": 16,
+              "right": 374,
+              "bottom": 828,
+              "w": 358,
+              "h": 812
+            },
+            "scroll": {
+              "w": 356,
+              "h": 810,
+              "cw": 356,
+              "ch": 810
+            },
+            "clipped": [],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "text": "InternoEquipe da empresa",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "Parceiro B2BPerfis externos do parceiro",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "Cliente ProdutorVinculado a clientes",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "Criar Usuário",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "Fechar",
+                "disabled": false
+              }
+            ]
+          },
+          {
+            "id": "69",
+            "tag": "BUTTON",
+            "role": "radio",
+            "text": "InternoEquipe da empresa",
+            "rect": {
+              "x": 33,
+              "y": 117.75,
+              "right": 357,
+              "bottom": 183.75,
+              "w": 324,
+              "h": 66
+            },
+            "scroll": {
+              "w": 322,
+              "h": 64,
+              "cw": 322,
+              "ch": 64
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "69",
+            "tag": "BUTTON",
+            "role": "radio",
+            "text": "Parceiro B2BPerfis externos do parceiro",
+            "rect": {
+              "x": 33,
+              "y": 191.75,
+              "right": 357,
+              "bottom": 257.75,
+              "w": 324,
+              "h": 66
+            },
+            "scroll": {
+              "w": 322,
+              "h": 64,
+              "cw": 322,
+              "ch": 64
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "69",
+            "tag": "BUTTON",
+            "role": "radio",
+            "text": "Cliente ProdutorVinculado a clientes",
+            "rect": {
+              "x": 33,
+              "y": 265.75,
+              "right": 357,
+              "bottom": 331.75,
+              "w": 324,
+              "h": 66
+            },
+            "scroll": {
+              "w": 322,
+              "h": 64,
+              "cw": 322,
+              "ch": 64
+            },
+            "clipped": [],
+            "controls": []
+          }
+        ],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nGestão de Usuários\n\nGerencie os perfis de acesso dos usuários do sistema\n\nAuditoria de Senhas\nNovo Usuário\nTodos os perfis\nTodos\nHomologação sintética com nome representativo muito extenso para revisão de conteúdo completo\nqa@example.invalid\nAtivo\nPERFIL\nConsultor Técnico\nTIPO DE ACESSO\nInterno\nVÍNCULO\nVínculo indisponível no momento\nIDENTIFICAÇÃO\n—\nTELEFONE\n—\nCARGO\n—\nEditar\n\nExibindo 1–1 de 1 usuários\n\nAnterior\nPágina 1 de 1\nPróxima\nCadastrar Novo Usuário\nTIPO DE CADASTRO\nInterno\nEquipe da empresa\nParceiro B2B\nPerfis externos do parceiro\nCliente Produtor\nVinculado a clientes\nNOME *\nEMAIL *\nSENHA *\n\nA senha deve ter de 8 a 128 caracteres, com ao menos uma letra e um número.\n\nPERFIS * (SELECIONE UM OU MAIS)\nAdministrador da empresa\nGestor\nConsultor Técnico\nTécnico Agrônomo\nAdministrativo\nOperador de Produção\nProdução\nAplicador\nFinanceiro\nGestor Comercial\nTELEFONE\nCARGO\nCPF/CNPJ\nCriar Usuário\nFechar"
+      },
+      {
+        "name": "opened-7",
+        "artifact": "survey/_configuracoes-administrador-390-opened-7.png",
+        "mounted": [
+          {
+            "id": "70",
+            "tag": "BUTTON",
+            "role": "combobox",
+            "text": "Todos os perfis",
+            "rect": {
+              "x": 25,
+              "y": 207,
+              "right": 365,
+              "bottom": 255,
+              "w": 340,
+              "h": 48
+            },
+            "scroll": {
+              "w": 338,
+              "h": 46,
+              "cw": 338,
+              "ch": 46
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "71",
+            "tag": "BUTTON",
+            "role": "combobox",
+            "text": "Todos",
+            "rect": {
+              "x": 25,
+              "y": 267,
+              "right": 365,
+              "bottom": 315,
+              "w": 340,
+              "h": 48
+            },
+            "scroll": {
+              "w": 338,
+              "h": 46,
+              "cw": 338,
+              "ch": 46
+            },
+            "clipped": [],
+            "controls": []
+          }
+        ],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nGestão de Usuários\n\nGerencie os perfis de acesso dos usuários do sistema\n\nAuditoria de Senhas\nNovo Usuário\nTodos os perfis\nTodos\nHomologação sintética com nome representativo muito extenso para revisão de conteúdo completo\nqa@example.invalid\nAtivo\nPERFIL\nConsultor Técnico\nTIPO DE ACESSO\nInterno\nVÍNCULO\nVínculo indisponível no momento\nIDENTIFICAÇÃO\n—\nTELEFONE\n—\nCARGO\n—\nEditar\n\nExibindo 1–1 de 1 usuários\n\nAnterior\nPágina 1 de 1\nPróxima\nEditar Usuário\nEMAIL\nTIPO DE ACESSO\n\nInterno\n\nVÍNCULO ATUAL\nVínculo indisponível no momento\nPERFIS DE ACESSO (SELECIONE UM OU MAIS)\nAdministrador da empresa\nGestor\nConsultor Técnico\nTécnico Agrônomo\nAdministrativo\nOperador de Produção\nProdução\nAplicador\nFinanceiro\nGestor Comercial\nNOME\nTELEFONE\nCARGO\nCPF/CNPJ\nCREA\nESPECIALIDADE\nSalvar Alterações\nAlterar Senha\n\nA alteração administrativa não confirma o email nem conclui o primeiro acesso. Se houver pendência, o titular deve concluir o fluxo seguro de primeiro acesso ou recuperação; alterar a senha não libera esse acesso. A senha deve ter de 8 a 128 caracteres, com ao menos uma letra e um número.\n\nNOVA SENHA\nCONFIRMAR SENHA\nAtualizar Senha\nFechar"
+      },
+      {
+        "name": "last-action-8",
+        "artifact": "survey/_configuracoes-administrador-390-last-action-8.png",
+        "mounted": [
+          {
+            "id": "70",
+            "tag": "BUTTON",
+            "role": "combobox",
+            "text": "Todos os perfis",
+            "rect": {
+              "x": 25,
+              "y": 207,
+              "right": 365,
+              "bottom": 255,
+              "w": 340,
+              "h": 48
+            },
+            "scroll": {
+              "w": 338,
+              "h": 46,
+              "cw": 338,
+              "ch": 46
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "71",
+            "tag": "BUTTON",
+            "role": "combobox",
+            "text": "Todos",
+            "rect": {
+              "x": 25,
+              "y": 267,
+              "right": 365,
+              "bottom": 315,
+              "w": 340,
+              "h": 48
+            },
+            "scroll": {
+              "w": 338,
+              "h": 46,
+              "cw": 338,
+              "ch": 46
+            },
+            "clipped": [],
+            "controls": []
+          }
+        ],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nGestão de Usuários\n\nGerencie os perfis de acesso dos usuários do sistema\n\nAuditoria de Senhas\nNovo Usuário\nTodos os perfis\nTodos\nHomologação sintética com nome representativo muito extenso para revisão de conteúdo completo\nqa@example.invalid\nAtivo\nPERFIL\nConsultor Técnico\nTIPO DE ACESSO\nInterno\nVÍNCULO\nVínculo indisponível no momento\nIDENTIFICAÇÃO\n—\nTELEFONE\n—\nCARGO\n—\nEditar\n\nExibindo 1–1 de 1 usuários\n\nAnterior\nPágina 1 de 1\nPróxima\nEditar Usuário\nEMAIL\nTIPO DE ACESSO\n\nInterno\n\nVÍNCULO ATUAL\nVínculo indisponível no momento\nPERFIS DE ACESSO (SELECIONE UM OU MAIS)\nAdministrador da empresa\nGestor\nConsultor Técnico\nTécnico Agrônomo\nAdministrativo\nOperador de Produção\nProdução\nAplicador\nFinanceiro\nGestor Comercial\nNOME\nTELEFONE\nCARGO\nCPF/CNPJ\nCREA\nESPECIALIDADE\nSalvar Alterações\nAlterar Senha\n\nA alteração administrativa não confirma o email nem conclui o primeiro acesso. Se houver pendência, o titular deve concluir o fluxo seguro de primeiro acesso ou recuperação; alterar a senha não libera esse acesso. A senha deve ter de 8 a 128 caracteres, com ao menos uma letra e um número.\n\nNOVA SENHA\nCONFIRMAR SENHA\nAtualizar Senha\nFechar"
+      },
+      {
+        "name": "tab-9",
+        "artifact": "survey/_configuracoes-administrador-390-tab-9.png",
         "mounted": [],
         "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nCatálogos\n\nGerencie listas e sugestões pré-definidas exibidas nos formulários do sistema.\n\nObjetivos de Visita Técnica\nSugestões exibidas no campo \"Objetivo da visita\" do formulário, por cultura ou genéricas.\nParâmetros de referência do CQ\nFaixas esperadas (pH, concentração, aparência, odor, contaminação) por microrganismo/produto — exibidas como comparativo informativo no registro do CQ."
       },
       {
-        "name": "tab-6",
-        "artifact": "survey/_configuracoes-administrador-390-tab-6.png",
+        "name": "tab-10",
+        "artifact": "survey/_configuracoes-administrador-390-tab-10.png",
         "mounted": [],
         "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nSLA de Pedidos B2B\n\nPrazos máximos por fase do pedido. Quando uma fase ultrapassa o limite, um alerta é gerado automaticamente na Central de Alertas (verificação a cada 30 minutos).\n\nFase\tPrazo (horas)\tAtivo\t"
       },
       {
-        "name": "tab-7",
-        "artifact": "survey/_configuracoes-administrador-390-tab-7.png",
+        "name": "tab-11",
+        "artifact": "survey/_configuracoes-administrador-390-tab-11.png",
         "mounted": [],
         "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nConfigurações financeiras\n\nAjustes gerais do módulo financeiro\n\nComprovantes\nEXIGIR COMPROVANTE EM RECEBIMENTOS\n\nBloqueia a baixa de contas a receber sem anexo.\n\nEXIGIR COMPROVANTE EM PAGAMENTOS\n\nBloqueia a baixa de contas a pagar sem anexo."
       }
@@ -263,7 +855,7 @@
       900
     ],
     "level": true,
-    "url": "http://localhost:8080/configuracoes?reviewRole=administrador&tab=financeiro",
+    "url": "http://localhost:8080/configuracoes?reviewRole=administrador",
     "expected": [
       68,
       69,
@@ -276,7 +868,7 @@
         "name": "entry",
         "artifact": "survey/_configuracoes-administrador-1440-entry.png",
         "mounted": [],
-        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nConfigurações financeiras\n\nAjustes gerais do módulo financeiro\n\nComprovantes\nExigir comprovante em recebimentos\n\nBloqueia a baixa de contas a receber sem anexo.\n\nExigir comprovante em pagamentos\n\nBloqueia a baixa de contas a pagar sem anexo."
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEmail\nNome\nTelefone\nCPF/CNPJ\nPerfil de Acesso\nAdministrador da empresa\nSalvar Alterações"
       },
       {
         "name": "tab-1",
@@ -381,20 +973,626 @@
         "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nGestão de Usuários\n\nGerencie os perfis de acesso dos usuários do sistema\n\nAuditoria de Senhas\nNovo Usuário\nTodos os perfis\nTodos\nNome\tEmail\tPerfil\tVínculo\tStatus\tAções\nHomologação sintética com nome representativo muito extenso para revisão de conteúdo completo\tqa@example.invalid\tConsultor Técnico\tVínculo indisponível no momento\t\nAtivo\n\t\n\nExibindo 1–1 de 1 usuários\n\nAnterior\nPágina 1 de 1\nPróxima"
       },
       {
-        "name": "tab-5",
-        "artifact": "survey/_configuracoes-administrador-1440-tab-5.png",
-        "mounted": [],
-        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nCatálogos\n\nGerencie listas e sugestões pré-definidas exibidas nos formulários do sistema.\n\nObjetivos de Visita Técnica\nSugestões exibidas no campo \"Objetivo da visita\" do formulário, por cultura ou genéricas.\nParâmetros de referência do CQ\nFaixas esperadas (pH, concentração, aparência, odor, contaminação) por microrganismo/produto — exibidas como comparativo informativo no registro do CQ."
+        "name": "opened-5",
+        "artifact": "survey/_configuracoes-administrador-1440-opened-5.png",
+        "mounted": [
+          {
+            "id": "70",
+            "tag": "BUTTON",
+            "role": "combobox",
+            "text": "Todos os perfis",
+            "rect": {
+              "x": 1059,
+              "y": 345,
+              "right": 1239,
+              "bottom": 385,
+              "w": 180,
+              "h": 40
+            },
+            "scroll": {
+              "w": 178,
+              "h": 38,
+              "cw": 178,
+              "ch": 38
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "71",
+            "tag": "BUTTON",
+            "role": "combobox",
+            "text": "Todos",
+            "rect": {
+              "x": 1251,
+              "y": 345,
+              "right": 1391,
+              "bottom": 385,
+              "w": 140,
+              "h": 40
+            },
+            "scroll": {
+              "w": 138,
+              "h": 38,
+              "cw": 138,
+              "ch": 38
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "72",
+            "tag": "TABLE",
+            "role": null,
+            "text": "NomeEmailPerfilVínculoStatusAçõesHomologação sintética com nome representativo muito extenso para revisão de conteúdo completoqa@example.invalidConsultor TécnicoVínculo indisponível no momentoAtivo",
+            "rect": {
+              "x": 305,
+              "y": 401,
+              "right": 1391,
+              "bottom": 521.5,
+              "w": 1086,
+              "h": 120.5
+            },
+            "scroll": {
+              "w": 1086,
+              "h": 121,
+              "cw": 1086,
+              "ch": 121
+            },
+            "clipped": [],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              }
+            ]
+          },
+          {
+            "id": "68",
+            "tag": "DIV",
+            "role": "dialog",
+            "text": "Cadastrar Novo UsuárioTipo de cadastroInternoEquipe da empresaParceiro B2BPerfis externos do parceiroCliente ProdutorVinculado a clientesNome *Email *Senha *A senha deve ter de 8 a 128 caracteres, com ao menos uma letra e um número.Perfis * (selecione um ou mais)Administrador da empresaGestorConsultor TécnicoTécnico AgrônomoAdministrativoOperador de ProduçãoProduçãoAplicadorFinanceiroGestor ComercialTelefoneCargoCPF/CNPJCriar UsuárioFechar",
+            "rect": {
+              "x": 496,
+              "y": 16,
+              "right": 944,
+              "bottom": 884,
+              "w": 448,
+              "h": 868
+            },
+            "scroll": {
+              "w": 446,
+              "h": 866,
+              "cw": 446,
+              "ch": 866
+            },
+            "clipped": [
+              {
+                "text": "InternoEquipe da empresa",
+                "tag": "BUTTON",
+                "w": 125,
+                "sw": 125,
+                "h": 62,
+                "sh": 68
+              },
+              {
+                "text": "Parceiro B2BPerfis externos do parceiro",
+                "tag": "BUTTON",
+                "w": 125,
+                "sw": 125,
+                "h": 62,
+                "sh": 68
+              },
+              {
+                "text": "Cliente ProdutorVinculado a clientes",
+                "tag": "BUTTON",
+                "w": 125,
+                "sw": 125,
+                "h": 62,
+                "sh": 88
+              }
+            ],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "text": "InternoEquipe da empresa",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "Parceiro B2BPerfis externos do parceiro",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "Cliente ProdutorVinculado a clientes",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "Criar Usuário",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "Fechar",
+                "disabled": false
+              }
+            ]
+          },
+          {
+            "id": "69",
+            "tag": "BUTTON",
+            "role": "radio",
+            "text": "InternoEquipe da empresa",
+            "rect": {
+              "x": 521,
+              "y": 122.75,
+              "right": 648.328125,
+              "bottom": 186.75,
+              "w": 127.328125,
+              "h": 64
+            },
+            "scroll": {
+              "w": 125,
+              "h": 68,
+              "cw": 125,
+              "ch": 62
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "69",
+            "tag": "BUTTON",
+            "role": "radio",
+            "text": "Parceiro B2BPerfis externos do parceiro",
+            "rect": {
+              "x": 656.328125,
+              "y": 122.75,
+              "right": 783.65625,
+              "bottom": 186.75,
+              "w": 127.328125,
+              "h": 64
+            },
+            "scroll": {
+              "w": 125,
+              "h": 68,
+              "cw": 125,
+              "ch": 62
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "69",
+            "tag": "BUTTON",
+            "role": "radio",
+            "text": "Cliente ProdutorVinculado a clientes",
+            "rect": {
+              "x": 791.65625,
+              "y": 122.75,
+              "right": 919,
+              "bottom": 186.75,
+              "w": 127.34375,
+              "h": 64
+            },
+            "scroll": {
+              "w": 125,
+              "h": 88,
+              "cw": 125,
+              "ch": 62
+            },
+            "clipped": [],
+            "controls": []
+          }
+        ],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nGestão de Usuários\n\nGerencie os perfis de acesso dos usuários do sistema\n\nAuditoria de Senhas\nNovo Usuário\nTodos os perfis\nTodos\nNome\tEmail\tPerfil\tVínculo\tStatus\tAções\nHomologação sintética com nome representativo muito extenso para revisão de conteúdo completo\tqa@example.invalid\tConsultor Técnico\tVínculo indisponível no momento\t\nAtivo\n\t\n\nExibindo 1–1 de 1 usuários\n\nAnterior\nPágina 1 de 1\nPróxima\nCadastrar Novo Usuário\nTipo de cadastro\nInterno\nEquipe da empresa\nParceiro B2B\nPerfis externos do parceiro\nCliente Produtor\nVinculado a clientes\nNome *\nEmail *\nSenha *\n\nA senha deve ter de 8 a 128 caracteres, com ao menos uma letra e um número.\n\nPerfis * (selecione um ou mais)\nAdministrador da empresa\nGestor\nConsultor Técnico\nTécnico Agrônomo\nAdministrativo\nOperador de Produção\nProdução\nAplicador\nFinanceiro\nGestor Comercial\nTelefone\nCargo\nCPF/CNPJ\nCriar Usuário\nFechar"
       },
       {
-        "name": "tab-6",
-        "artifact": "survey/_configuracoes-administrador-1440-tab-6.png",
-        "mounted": [],
-        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nSLA de Pedidos B2B\n\nPrazos máximos por fase do pedido. Quando uma fase ultrapassa o limite, um alerta é gerado automaticamente na Central de Alertas (verificação a cada 30 minutos).\n\nFase\tPrazo (horas)\tAtivo\t"
+        "name": "last-action-6",
+        "artifact": "survey/_configuracoes-administrador-1440-last-action-6.png",
+        "mounted": [
+          {
+            "id": "70",
+            "tag": "BUTTON",
+            "role": "combobox",
+            "text": "Todos os perfis",
+            "rect": {
+              "x": 1059,
+              "y": 345,
+              "right": 1239,
+              "bottom": 385,
+              "w": 180,
+              "h": 40
+            },
+            "scroll": {
+              "w": 178,
+              "h": 38,
+              "cw": 178,
+              "ch": 38
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "71",
+            "tag": "BUTTON",
+            "role": "combobox",
+            "text": "Todos",
+            "rect": {
+              "x": 1251,
+              "y": 345,
+              "right": 1391,
+              "bottom": 385,
+              "w": 140,
+              "h": 40
+            },
+            "scroll": {
+              "w": 138,
+              "h": 38,
+              "cw": 138,
+              "ch": 38
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "72",
+            "tag": "TABLE",
+            "role": null,
+            "text": "NomeEmailPerfilVínculoStatusAçõesHomologação sintética com nome representativo muito extenso para revisão de conteúdo completoqa@example.invalidConsultor TécnicoVínculo indisponível no momentoAtivo",
+            "rect": {
+              "x": 305,
+              "y": 401,
+              "right": 1391,
+              "bottom": 521.5,
+              "w": 1086,
+              "h": 120.5
+            },
+            "scroll": {
+              "w": 1086,
+              "h": 121,
+              "cw": 1086,
+              "ch": 121
+            },
+            "clipped": [],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              }
+            ]
+          },
+          {
+            "id": "68",
+            "tag": "DIV",
+            "role": "dialog",
+            "text": "Cadastrar Novo UsuárioTipo de cadastroInternoEquipe da empresaParceiro B2BPerfis externos do parceiroCliente ProdutorVinculado a clientesNome *Email *Senha *A senha deve ter de 8 a 128 caracteres, com ao menos uma letra e um número.Perfis * (selecione um ou mais)Administrador da empresaGestorConsultor TécnicoTécnico AgrônomoAdministrativoOperador de ProduçãoProduçãoAplicadorFinanceiroGestor ComercialTelefoneCargoCPF/CNPJCriar UsuárioFechar",
+            "rect": {
+              "x": 496,
+              "y": 16,
+              "right": 944,
+              "bottom": 884,
+              "w": 448,
+              "h": 868
+            },
+            "scroll": {
+              "w": 446,
+              "h": 866,
+              "cw": 446,
+              "ch": 866
+            },
+            "clipped": [
+              {
+                "text": "InternoEquipe da empresa",
+                "tag": "BUTTON",
+                "w": 125,
+                "sw": 125,
+                "h": 62,
+                "sh": 68
+              },
+              {
+                "text": "Parceiro B2BPerfis externos do parceiro",
+                "tag": "BUTTON",
+                "w": 125,
+                "sw": 125,
+                "h": 62,
+                "sh": 68
+              },
+              {
+                "text": "Cliente ProdutorVinculado a clientes",
+                "tag": "BUTTON",
+                "w": 125,
+                "sw": 125,
+                "h": 62,
+                "sh": 88
+              }
+            ],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "text": "InternoEquipe da empresa",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "Parceiro B2BPerfis externos do parceiro",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "Cliente ProdutorVinculado a clientes",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "INPUT",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "Criar Usuário",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "Fechar",
+                "disabled": false
+              }
+            ]
+          },
+          {
+            "id": "69",
+            "tag": "BUTTON",
+            "role": "radio",
+            "text": "InternoEquipe da empresa",
+            "rect": {
+              "x": 521,
+              "y": 122.75,
+              "right": 648.328125,
+              "bottom": 186.75,
+              "w": 127.328125,
+              "h": 64
+            },
+            "scroll": {
+              "w": 125,
+              "h": 68,
+              "cw": 125,
+              "ch": 62
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "69",
+            "tag": "BUTTON",
+            "role": "radio",
+            "text": "Parceiro B2BPerfis externos do parceiro",
+            "rect": {
+              "x": 656.328125,
+              "y": 122.75,
+              "right": 783.65625,
+              "bottom": 186.75,
+              "w": 127.328125,
+              "h": 64
+            },
+            "scroll": {
+              "w": 125,
+              "h": 68,
+              "cw": 125,
+              "ch": 62
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "69",
+            "tag": "BUTTON",
+            "role": "radio",
+            "text": "Cliente ProdutorVinculado a clientes",
+            "rect": {
+              "x": 791.65625,
+              "y": 122.75,
+              "right": 919,
+              "bottom": 186.75,
+              "w": 127.34375,
+              "h": 64
+            },
+            "scroll": {
+              "w": 125,
+              "h": 88,
+              "cw": 125,
+              "ch": 62
+            },
+            "clipped": [],
+            "controls": []
+          }
+        ],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nGestão de Usuários\n\nGerencie os perfis de acesso dos usuários do sistema\n\nAuditoria de Senhas\nNovo Usuário\nTodos os perfis\nTodos\nNome\tEmail\tPerfil\tVínculo\tStatus\tAções\nHomologação sintética com nome representativo muito extenso para revisão de conteúdo completo\tqa@example.invalid\tConsultor Técnico\tVínculo indisponível no momento\t\nAtivo\n\t\n\nExibindo 1–1 de 1 usuários\n\nAnterior\nPágina 1 de 1\nPróxima\nCadastrar Novo Usuário\nTipo de cadastro\nInterno\nEquipe da empresa\nParceiro B2B\nPerfis externos do parceiro\nCliente Produtor\nVinculado a clientes\nNome *\nEmail *\nSenha *\n\nA senha deve ter de 8 a 128 caracteres, com ao menos uma letra e um número.\n\nPerfis * (selecione um ou mais)\nAdministrador da empresa\nGestor\nConsultor Técnico\nTécnico Agrônomo\nAdministrativo\nOperador de Produção\nProdução\nAplicador\nFinanceiro\nGestor Comercial\nTelefone\nCargo\nCPF/CNPJ\nCriar Usuário\nFechar"
       },
       {
         "name": "tab-7",
         "artifact": "survey/_configuracoes-administrador-1440-tab-7.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nCatálogos\n\nGerencie listas e sugestões pré-definidas exibidas nos formulários do sistema.\n\nObjetivos de Visita Técnica\nSugestões exibidas no campo \"Objetivo da visita\" do formulário, por cultura ou genéricas.\nParâmetros de referência do CQ\nFaixas esperadas (pH, concentração, aparência, odor, contaminação) por microrganismo/produto — exibidas como comparativo informativo no registro do CQ."
+      },
+      {
+        "name": "tab-8",
+        "artifact": "survey/_configuracoes-administrador-1440-tab-8.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nSLA de Pedidos B2B\n\nPrazos máximos por fase do pedido. Quando uma fase ultrapassa o limite, um alerta é gerado automaticamente na Central de Alertas (verificação a cada 30 minutos).\n\nFase\tPrazo (horas)\tAtivo\t"
+      },
+      {
+        "name": "tab-9",
+        "artifact": "survey/_configuracoes-administrador-1440-tab-9.png",
         "mounted": [],
         "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nConfigurações financeiras\n\nAjustes gerais do módulo financeiro\n\nComprovantes\nExigir comprovante em recebimentos\n\nBloqueia a baixa de contas a receber sem anexo.\n\nExigir comprovante em pagamentos\n\nBloqueia a baixa de contas a pagar sem anexo."
       }
@@ -504,6 +1702,18 @@
         "write": false
       },
       {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
         "name": "h15_actor_organization",
         "args": null,
         "one": false,
@@ -538,22 +1748,9 @@
         "args": null,
         "one": true,
         "write": false
-      },
-      {
-        "name": "alertas_operacionais",
-        "args": null,
-        "one": false,
-        "write": false
-      },
-      {
-        "name": "alertas_operacionais",
-        "args": null,
-        "one": false,
-        "write": false
       }
     ],
     "writes": [
-      "tenant-email-settings",
       "tenant-email-settings"
     ]
   },
@@ -704,7 +1901,7 @@
       900
     ],
     "level": true,
-    "url": "http://localhost:8080/configuracoes?reviewRole=gestor&tab=financeiro",
+    "url": "http://localhost:8080/configuracoes?reviewRole=gestor",
     "expected": [
       68,
       69,
@@ -717,7 +1914,7 @@
         "name": "entry",
         "artifact": "survey/_configuracoes-gestor-1440-entry.png",
         "mounted": [],
-        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSG\nSessão sintética gestor\nGestor\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nCatálogos\nSLA B2B\nFinanceiro\nConfigurações financeiras\n\nAjustes gerais do módulo financeiro\n\nComprovantes\nExigir comprovante em recebimentos\n\nBloqueia a baixa de contas a receber sem anexo.\n\nExigir comprovante em pagamentos\n\nBloqueia a baixa de contas a pagar sem anexo."
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSG\nSessão sintética gestor\nGestor\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nCatálogos\nSLA B2B\nFinanceiro\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEmail\nNome\nTelefone\nCPF/CNPJ\nPerfil de Acesso\nGestor\nSalvar Alterações"
       },
       {
         "name": "tab-1",
@@ -821,6 +2018,18 @@
         "write": false
       },
       {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
         "name": "partner_order_sla_config",
         "args": null,
         "one": false,
@@ -830,18 +2039,6 @@
         "name": "financial_settings",
         "args": null,
         "one": true,
-        "write": false
-      },
-      {
-        "name": "alertas_operacionais",
-        "args": null,
-        "one": false,
-        "write": false
-      },
-      {
-        "name": "alertas_operacionais",
-        "args": null,
-        "one": false,
         "write": false
       }
     ],
@@ -1722,7 +2919,7 @@
       900
     ],
     "level": true,
-    "url": "http://localhost:8080/configuracoes?reviewRole=administrativo&tab=sla-b2b",
+    "url": "http://localhost:8080/configuracoes?reviewRole=administrativo",
     "expected": [
       68,
       69,
@@ -1735,7 +2932,7 @@
         "name": "entry",
         "artifact": "survey/_configuracoes-administrativo-1440-entry.png",
         "mounted": [],
-        "body": "Cultivo Farm\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrativo\nAdministrativo\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nSLA B2B\nSLA de Pedidos B2B\n\nPrazos máximos por fase do pedido. Quando uma fase ultrapassa o limite, um alerta é gerado automaticamente na Central de Alertas (verificação a cada 30 minutos).\n\nFase\tPrazo (horas)\tAtivo\t\n\nApenas administrador e gestor podem alterar os prazos."
+        "body": "Cultivo Farm\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrativo\nAdministrativo\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nSLA B2B\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEmail\nNome\nTelefone\nCPF/CNPJ\nPerfil de Acesso\nAdministrativo\nSalvar Alterações"
       },
       {
         "name": "tab-1",
@@ -1813,19 +3010,19 @@
         "write": false
       },
       {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
         "name": "partner_order_sla_config",
-        "args": null,
-        "one": false,
-        "write": false
-      },
-      {
-        "name": "alertas_operacionais",
-        "args": null,
-        "one": false,
-        "write": false
-      },
-      {
-        "name": "alertas_operacionais",
         "args": null,
         "one": false,
         "write": false
@@ -2150,7 +3347,7 @@
       900
     ],
     "level": true,
-    "url": "http://localhost:8080/configuracoes?reviewRole=producao&tab=sla-b2b",
+    "url": "http://localhost:8080/configuracoes?reviewRole=producao",
     "expected": [
       68,
       69,
@@ -2163,7 +3360,7 @@
         "name": "entry",
         "artifact": "survey/_configuracoes-producao-1440-entry.png",
         "mounted": [],
-        "body": "Cultivo Farm\nCAMPO E ASSISTÊNCIA TÉCNICA\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSP\nSessão sintética producao\nProdução\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nSLA B2B\nSLA de Pedidos B2B\n\nPrazos máximos por fase do pedido. Quando uma fase ultrapassa o limite, um alerta é gerado automaticamente na Central de Alertas (verificação a cada 30 minutos).\n\nFase\tPrazo (horas)\tAtivo\t\n\nApenas administrador e gestor podem alterar os prazos."
+        "body": "Cultivo Farm\nCAMPO E ASSISTÊNCIA TÉCNICA\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSP\nSessão sintética producao\nProdução\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nSLA B2B\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEmail\nNome\nTelefone\nCPF/CNPJ\nPerfil de Acesso\nProdução\nSalvar Alterações"
       },
       {
         "name": "tab-1",
@@ -2241,19 +3438,19 @@
         "write": false
       },
       {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
         "name": "partner_order_sla_config",
-        "args": null,
-        "one": false,
-        "write": false
-      },
-      {
-        "name": "alertas_operacionais",
-        "args": null,
-        "one": false,
-        "write": false
-      },
-      {
-        "name": "alertas_operacionais",
         "args": null,
         "one": false,
         "write": false
@@ -3831,7 +5028,7 @@
       900
     ],
     "level": true,
-    "url": "http://localhost:8080/dashboard/executivo?reviewRole=administrador",
+    "url": "http://localhost:8080/dashboard/geral?reviewRole=administrador",
     "expected": [
       102
     ],
@@ -3839,6 +5036,96 @@
       {
         "name": "entry",
         "artifact": "survey/_dashboard_geral-administrador-1440-entry.png",
+        "mounted": [
+          {
+            "id": "102",
+            "tag": "DIV",
+            "role": "tablist",
+            "text": " Visão Geral Visão Executiva Visão Operacional",
+            "rect": {
+              "x": 304,
+              "y": 100,
+              "right": 1392,
+              "bottom": 140,
+              "w": 1088,
+              "h": 40
+            },
+            "scroll": {
+              "w": 1088,
+              "h": 40,
+              "cw": 1088,
+              "ch": 40
+            },
+            "clipped": [],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "text": " Visão Geral",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": " Visão Executiva",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": " Visão Operacional",
+                "disabled": false
+              }
+            ]
+          }
+        ],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nVisão Geral\nVisão Executiva\nVisão Operacional\nVisão Geral\n\nPeríodo: últimos 30 dias · Indicadores de posição atual marcados como “Agora”.\n\nSaúde Operacional\n—\nsem dados\n\nAgora\n\nAlertas\n0\nVer alertas →\n\nAgora\n\nReceita recebida\n—\nAbrir financeiro →\n\nÚltimos 30 dias\n\nClientes ativos\n0\nVer clientes →\n\nAgora\n\nPrioridades imediatas\n\nSem prioridades críticas.\n\nFluxo do dia (Hoje)\n\nCheck-ins hoje\n\n0\n\nVisitas hoje\n\n0\n\nOS abertas\n\n0\n\nRecom. pendentes\n\n0\n\nSituação do Laboratório\n(Agora)\nAbrir Cockpit Laboratório\nOS aguardando\n0\nLotes em produção\n0\nCQ pendente\n0\nEnvases pendentes\n0\nInsumos críticos\n0\nEntregas pendentes\n0\nAcesso rápido\nVer Visão Executiva\nVer Visão Operacional\nBI Agronômico\nBI Operacional\nRelatórios"
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_dashboard_geral-administrador-1440-tab-1.png",
+        "mounted": [
+          {
+            "id": "102",
+            "tag": "DIV",
+            "role": "tablist",
+            "text": " Visão Geral Visão Executiva Visão Operacional",
+            "rect": {
+              "x": 304,
+              "y": 100,
+              "right": 1392,
+              "bottom": 140,
+              "w": 1088,
+              "h": 40
+            },
+            "scroll": {
+              "w": 1088,
+              "h": 40,
+              "cw": 1088,
+              "ch": 40
+            },
+            "clipped": [],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "text": " Visão Geral",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": " Visão Executiva",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": " Visão Operacional",
+                "disabled": false
+              }
+            ]
+          }
+        ],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nVisão Geral\nVisão Executiva\nVisão Operacional\nVisão Geral\n\nPeríodo: últimos 30 dias · Indicadores de posição atual marcados como “Agora”.\n\nSaúde Operacional\n—\nsem dados\n\nAgora\n\nAlertas\n0\nVer alertas →\n\nAgora\n\nReceita recebida\n—\nAbrir financeiro →\n\nÚltimos 30 dias\n\nClientes ativos\n0\nVer clientes →\n\nAgora\n\nPrioridades imediatas\n\nSem prioridades críticas.\n\nFluxo do dia (Hoje)\n\nCheck-ins hoje\n\n0\n\nVisitas hoje\n\n0\n\nOS abertas\n\n0\n\nRecom. pendentes\n\n0\n\nSituação do Laboratório\n(Agora)\nAbrir Cockpit Laboratório\nOS aguardando\n0\nLotes em produção\n0\nCQ pendente\n0\nEnvases pendentes\n0\nInsumos críticos\n0\nEntregas pendentes\n0\nAcesso rápido\nVer Visão Executiva\nVer Visão Operacional\nBI Agronômico\nBI Operacional\nRelatórios"
+      },
+      {
+        "name": "tab-2",
+        "artifact": "survey/_dashboard_geral-administrador-1440-tab-2.png",
         "mounted": [],
         "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
       }
@@ -4151,7 +5438,7 @@
       900
     ],
     "level": true,
-    "url": "http://localhost:8080/dashboard/executivo?reviewRole=gestor",
+    "url": "http://localhost:8080/dashboard/geral?reviewRole=gestor",
     "expected": [
       102
     ],
@@ -4159,6 +5446,96 @@
       {
         "name": "entry",
         "artifact": "survey/_dashboard_geral-gestor-1440-entry.png",
+        "mounted": [
+          {
+            "id": "102",
+            "tag": "DIV",
+            "role": "tablist",
+            "text": " Visão Geral Visão Executiva Visão Operacional",
+            "rect": {
+              "x": 304,
+              "y": 100,
+              "right": 1392,
+              "bottom": 140,
+              "w": 1088,
+              "h": 40
+            },
+            "scroll": {
+              "w": 1088,
+              "h": 40,
+              "cw": 1088,
+              "ch": 40
+            },
+            "clipped": [],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "text": " Visão Geral",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": " Visão Executiva",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": " Visão Operacional",
+                "disabled": false
+              }
+            ]
+          }
+        ],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSG\nSessão sintética gestor\nGestor\nVisão Geral\nVisão Executiva\nVisão Operacional\nVisão Geral\n\nPeríodo: últimos 30 dias · Indicadores de posição atual marcados como “Agora”.\n\nSaúde Operacional\n—\nsem dados\n\nAgora\n\nAlertas\n0\nVer alertas →\n\nAgora\n\nReceita recebida\n—\nAbrir financeiro →\n\nÚltimos 30 dias\n\nClientes ativos\n0\nVer clientes →\n\nAgora\n\nPrioridades imediatas\n\nSem prioridades críticas.\n\nFluxo do dia (Hoje)\n\nCheck-ins hoje\n\n0\n\nVisitas hoje\n\n0\n\nOS abertas\n\n0\n\nRecom. pendentes\n\n0\n\nSituação do Laboratório\n(Agora)\nAbrir Cockpit Laboratório\nOS aguardando\n0\nLotes em produção\n0\nCQ pendente\n0\nEnvases pendentes\n0\nInsumos críticos\n0\nEntregas pendentes\n0\nAcesso rápido\nVer Visão Executiva\nVer Visão Operacional\nBI Agronômico\nBI Operacional\nRelatórios"
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_dashboard_geral-gestor-1440-tab-1.png",
+        "mounted": [
+          {
+            "id": "102",
+            "tag": "DIV",
+            "role": "tablist",
+            "text": " Visão Geral Visão Executiva Visão Operacional",
+            "rect": {
+              "x": 304,
+              "y": 100,
+              "right": 1392,
+              "bottom": 140,
+              "w": 1088,
+              "h": 40
+            },
+            "scroll": {
+              "w": 1088,
+              "h": 40,
+              "cw": 1088,
+              "ch": 40
+            },
+            "clipped": [],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "text": " Visão Geral",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": " Visão Executiva",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": " Visão Operacional",
+                "disabled": false
+              }
+            ]
+          }
+        ],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSG\nSessão sintética gestor\nGestor\nVisão Geral\nVisão Executiva\nVisão Operacional\nVisão Geral\n\nPeríodo: últimos 30 dias · Indicadores de posição atual marcados como “Agora”.\n\nSaúde Operacional\n—\nsem dados\n\nAgora\n\nAlertas\n0\nVer alertas →\n\nAgora\n\nReceita recebida\n—\nAbrir financeiro →\n\nÚltimos 30 dias\n\nClientes ativos\n0\nVer clientes →\n\nAgora\n\nPrioridades imediatas\n\nSem prioridades críticas.\n\nFluxo do dia (Hoje)\n\nCheck-ins hoje\n\n0\n\nVisitas hoje\n\n0\n\nOS abertas\n\n0\n\nRecom. pendentes\n\n0\n\nSituação do Laboratório\n(Agora)\nAbrir Cockpit Laboratório\nOS aguardando\n0\nLotes em produção\n0\nCQ pendente\n0\nEnvases pendentes\n0\nInsumos críticos\n0\nEntregas pendentes\n0\nAcesso rápido\nVer Visão Executiva\nVer Visão Operacional\nBI Agronômico\nBI Operacional\nRelatórios"
+      },
+      {
+        "name": "tab-2",
+        "artifact": "survey/_dashboard_geral-gestor-1440-tab-2.png",
         "mounted": [],
         "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSG\nSessão sintética gestor\nGestor\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
       }
