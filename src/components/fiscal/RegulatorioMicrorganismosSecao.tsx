@@ -30,6 +30,8 @@ import {
   Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 import { Loader2, ShieldOff, FileWarning } from "lucide-react";
+import { ProductRegulatoryNavigation } from "./ProductRegulatoryNavigation";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 
 const NOT_INFORMED = "não informado";
 
@@ -234,13 +236,13 @@ export function RegulatorioMicrorganismosSecao() {
                   )}
                   {row.fiscally_ready && <Badge variant="secondary">Apto fiscal</Badge>}
                 </div>
-                <div className="mt-2 flex items-center gap-2">
+                {row.dossier_status !== 'NONE' && row.checklist_total > 0 && <div className="mt-2 flex items-center gap-2">
                   <Progress value={row.progress_pct} className="h-2 max-w-xs" />
                   <span className="text-xs text-muted-foreground">
                     {row.checklist_confirmed}/{row.checklist_total} itens · {row.progress_pct}%
                   </span>
-                </div>
-                {row.pendencies.length > 0 && (
+                </div>}
+                {row.dossier_status !== 'NONE' && row.pendencies.length > 0 && (
                   <div className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
                     <FileWarning className="h-3 w-3" aria-hidden />
                     {row.pendencies.length} pendência(s): {row.pendencies[0].message}
@@ -253,14 +255,15 @@ export function RegulatorioMicrorganismosSecao() {
                 onClick={() => setSelected(row)}
                 aria-label={`Abrir dossiê regulatório de ${row.nome}`}
               >
-                Abrir dossiê
+                Produtos vinculados
               </Button>
             </li>
           ))}
         </ul>
       </CardContent>
 
-      <DossierSheet
+      <RegulatoryNavigationSheet
+        key={selected?.microorganism_id ?? 'none'}
         row={selected}
         open={Boolean(selected)}
         onOpenChange={(o) => { if (!o) setSelected(null); }}
@@ -273,6 +276,19 @@ interface DossierSheetProps {
   row: RegulatoryOverviewRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+function RegulatoryNavigationSheet({row,open,onOpenChange}:DossierSheetProps) {
+  const [legacy,setLegacy]=useState(false);
+  const access=useStorageAccessScope('regulatory-navigation');
+  if(legacy) return <DossierSheet row={row} open={open && access.ready} onOpenChange={onOpenChange}/>;
+  return <Sheet open={open && access.ready} onOpenChange={onOpenChange}>
+    <SheetContent className="w-full sm:max-w-2xl overflow-y-auto" data-testid="regulatorio-produtos-sheet">
+      <SheetHeader><SheetTitle>{row?.nome ?? 'Produtos vinculados'}</SheetTitle><SheetDescription>Produtos comerciais</SheetDescription></SheetHeader>
+      {row && <ProductRegulatoryNavigation key={`${row.microorganism_id}:${access.scope}`} microId={row.microorganism_id} onLegacy={()=>setLegacy(true)}/>}
+      <SheetFooter><Button variant="outline" onClick={()=>onOpenChange(false)}>Fechar</Button></SheetFooter>
+    </SheetContent>
+  </Sheet>;
 }
 
 function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
@@ -300,7 +316,7 @@ function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
             {detail.isLoading ? "Carregando dossiê…"
               : failed ? (denied ? "Sem permissão para consultar este dossiê." : "Não foi possível consultar o dossiê.")
               : dossier ? `Versão ${dossier.version} · ${DOSSIER_STATUS_LABEL[dossier.status]}`
-              : "Nenhum dossiê existente para este microrganismo."}
+              : "Dossiê legado do microrganismo"}
           </SheetDescription>
         </SheetHeader>
         <Alert className="mt-4">
@@ -326,8 +342,7 @@ function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
         {!detail.isLoading && !failed && !dossier && (
           <div className="py-6 space-y-3">
             <p className="text-sm text-muted-foreground">
-              Nenhum dossiê registrado. Modo consulta: o cadastro regulatório global
-              será feito pela gestão da plataforma.
+              Nenhum dossiê registrado para este microrganismo.
             </p>
           </div>
         )}
