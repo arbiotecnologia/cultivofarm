@@ -1,3 +1,6 @@
+## 14/11 15:02 — Fechamento concretos 00564ff4
+- [ ] Rastrear 61 cadeias, completar dez IDs/filtros e corrigir seletor staff mobile; reconciliar matriz sem publicar.
+
 ## 14/11 14:41 — Fechamento das lacunas responsivas
 - [x] Retestar prioridades e corrigir título BI; regressões 238+19 PASS, build automático OK; MATRIX reconciliada 34 completas locais/71 parciais/9 N/A/2 gaps.
 - [ ] Pendências explícitas: IDs/perfis de ação não totalmente resolvidos e comparações listadas em scripts/responsive-layout-116/closure/REPORT.md; revisão não integralmente certificada.
