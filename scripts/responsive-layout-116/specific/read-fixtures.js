@@ -9,6 +9,8 @@ const order={...base,numero_os:'QA-116',origem:'manual',status:'programada',prio
 const receipt={...base,receipt_year:2026,receipt_number:'QA-116-2026',payment_date:'2026-11-14',amount:1234.56,status:'ISSUED',customer_id:id,storage_bucket:null,storage_path:null,authenticity_code:'SYNTHETIC',issued_at:'2026-11-14T00:00:00Z',payment_id:id,receivable_id:id,cancel_reason:null,customer:{nome:client.nome},method:{name:'Transferência'}};
 const fiscal={code:'5101',description:'Operação sintética de venda com descrição extensa para leitura do código e finalidade completos',parent_code:null,metadata:{},is_active:true,is_preferred:true,catalog_version:'synthetic'};
 function read(name,args,one){
+ if(name==='tenant_admin_list_users')return {items:[{user_id:id,nome:'Usuário sintético representativo',email:'fixture@example.invalid',roles:['gestor'],ativo:true,updated_at:base.updated_at}],total:1};
+ if(name==='alertas_agronomicos')return [{...base,titulo:'Monitoramento sintético',descricao:'Acompanhamento contextualizado',status:'monitoramento',data_vencimento:'2026-11-20',registro_origem_id:id,registro_origem_updated_at:base.updated_at,tipo:'praga',severidade:'media',fazendas:{nome:farm.nome},talhoes:{nome:plot.nome,fazendas:{clientes:{nome:client.nome}}}}];
  if(name==='tenant_product_dossier_management_context')return {product_id:id,can_edit:false,versions:[],microorganisms:[],dossier_microorganism_id:null};
  if(name==='tenant_product_dossier_upload_pending')return [];
  if(name==='microrganismos')return [{...base,nome:'Microrganismo sintético',nome_cientifico:'Bacillus sintético',tipo:'bacteria',codigo:'QA-116'}];

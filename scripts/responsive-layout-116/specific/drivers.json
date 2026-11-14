@@ -658,6 +658,42 @@
     ],
     "kind": "producer-progress",
     "expected": "Acompanhamento",
-    "trigger": "Portal produtor > Acompanhamento > filtro de fazenda"
+    "trigger": "Portal produtor > Acompanhamento > filtro de fazenda",
+    "tab": "Histórico"
+  },
+  {
+    "ids": [
+      70,
+      71,
+      72
+    ],
+    "file": "src/pages/Configuracoes.tsx",
+    "export": "default",
+    "route": "/configuracoes",
+    "profiles": [
+      "administrador"
+    ],
+    "kind": "users-filter",
+    "tab": "Usuários",
+    "expected": "Gestão de Usuários",
+    "trigger": "Configurações > Usuários > filtros e tabela"
+  },
+  {
+    "ids": [
+      82
+    ],
+    "file": "src/pages/MonitoramentoAlertas.tsx",
+    "export": "default",
+    "route": "/monitoramento-alertas",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "consultor_tecnico",
+      "tecnico_agronomo"
+    ],
+    "kind": "monitor-dialog",
+    "open": "Reprogramar",
+    "expected": "Reprogramar Monitoramento",
+    "trigger": "Monitoramento > alerta com origem > Reprogramar"
   }
 ]
