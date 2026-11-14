@@ -123,9 +123,7 @@ describe("Fase F2 — integração na tela fiscal", () => {
     for (const id of [
       "regulatorio-micro-secao",
       "regulatorio-micro-lista",
-      "regulatorio-dossie-sheet",
-      "reg-validados",
-      "reg-bloqueados",
+      "regulatorio-produtos-sheet",
     ]) {
       expect(secao).toContain(id);
     }
@@ -145,14 +143,14 @@ describe("Fase F2 — publicação e trilha", () => {
 
   it("documentos exigem hash de conteúdo", () => {
     expect(migration).toContain("content_sha256");
-    expect(secao).toContain("SHA-256");
+    expect(read("src/hooks/useProductRegulatoryDossiers.ts")).toContain("SHA-256");
   });
 
   it("candidatos de NCM exigem fonte oficial no servidor; formulário de empresa removido (modo consulta)", () => {
     expect(migration).toContain("p_source_key");
     // Contenção 20261014195911: o formulário de candidato NCM não existe mais para empresas.
     expect(secao).not.toContain("Chave da fonte oficial");
-    expect(secao).toContain("Modo consulta");
+    expect(secao).toContain("ProductRegulatoryNavigation");
   });
 });
 

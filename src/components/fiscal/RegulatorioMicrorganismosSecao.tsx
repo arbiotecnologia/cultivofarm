@@ -14,7 +14,6 @@ import { useMemo, useState } from "react";
 import {
   useMicroorganismRegulatoryOverview,
   type RegulatoryOverviewRow,
-  type DossierStatus,
 } from "@/hooks/useMicroorganismRegulatory";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -24,26 +23,11 @@ import { Separator } from "@/components/ui/separator";
 import {
   Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
-import { Loader2, ShieldOff, FileWarning } from "lucide-react";
+import { Loader2, ShieldOff } from "lucide-react";
 import { ProductRegulatoryNavigation } from "./ProductRegulatoryNavigation";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 
 const NOT_INFORMED = "não informado";
-
-const DOSSIER_STATUS_LABEL: Record<DossierStatus, string> = {
-  NONE: "Sem dossiê",
-  DRAFT: "Rascunho",
-  PENDING_REVIEW: "Em revisão",
-  VALIDATED: "Validado",
-  BLOCKED: "Bloqueado",
-};
-
-function statusVariant(status: DossierStatus): "default" | "secondary" | "outline" | "destructive" {
-  if (status === "VALIDATED") return "default";
-  if (status === "BLOCKED") return "destructive";
-  if (status === "PENDING_REVIEW") return "secondary";
-  return "outline";
-}
 
 function text(value: string | null | undefined): string {
   const v = (value ?? "").trim();
@@ -114,15 +98,6 @@ function RegulatorySection() {
   const [selected, setSelected] = useState<RegulatoryOverviewRow | null>(null);
 
   const rows = useMemo(() => overview.data ?? [], [overview.data]);
-  const resumo = useMemo(() => {
-    const total = rows.length;
-    const validados = rows.filter((r) => r.dossier_status === "VALIDATED").length;
-    const bloqueados = rows.filter((r) => r.dossier_status === "BLOCKED").length;
-    const pendentes = rows.filter(
-      (r) => r.dossier_status !== "VALIDATED" && r.dossier_status !== "BLOCKED",
-    ).length;
-    return { total, validados, bloqueados, pendentes };
-  }, [rows]);
 
   if (!overview.ready || overview.isLoading) {
     return (
@@ -165,24 +140,6 @@ function RegulatorySection() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-          <div>
-            <div className="text-muted-foreground">Microrganismos ativos</div>
-            <div className="font-medium" data-testid="reg-total">{resumo.total}</div>
-          </div>
-          <div>
-            <div className="text-muted-foreground">Dossiês validados</div>
-            <div className="font-medium" data-testid="reg-validados">{resumo.validados}</div>
-          </div>
-          <div>
-            <div className="text-muted-foreground">Em preparação/revisão</div>
-            <div className="font-medium" data-testid="reg-pendentes">{resumo.pendentes}</div>
-          </div>
-          <div>
-            <div className="text-muted-foreground">Bloqueados</div>
-            <div className="font-medium" data-testid="reg-bloqueados">{resumo.bloqueados}</div>
-          </div>
-        </div>
 
         <Alert data-testid="regulatorio-regras">
           <AlertTitle>Regras obrigatórias deste cadastro</AlertTitle>
