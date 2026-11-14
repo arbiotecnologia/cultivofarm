@@ -28,7 +28,7 @@ async def main():
    await r.continue_()
   await c.route('**/*',intercept)
   for w,h in [(390,844),(1440,900)]:
-   for mode in ['positive','capability-denied','foreign-target','no-volumes','packaging-invalid']:
+   for mode in ['positive','capability-denied','foreign-target','no-volumes','packaging-invalid','whole-packaging']:
     target='99999999-9999-4999-8999-999999999999' if mode=='foreign-target' else '33333333-3333-4333-8333-333333333333'
     route='/comercial/minha-carteira' if role=='vendedor' and mode!='foreign-target' else '/comercial/minha-carteira/pedido' if role=='vendedor' else '/comercial/pedidos-b2b/novo'
     current=route+'?reviewRole='+role+'&fixture='+mode+(('&parceiro='+target) if mode=='foreign-target' else '')
@@ -50,6 +50,8 @@ async def main():
       dialog=page.get_by_role('dialog').last
       if mode=='packaging-invalid':await dialog.get_by_test_id('packaging-state').wait_for();assert await dialog.get_by_role('button',name='Adicionar ao carrinho',exact=True).count()==0;rec['result']='PASS_PACKAGING_INVALID_CLOSED'
       elif mode=='no-volumes':await dialog.get_by_text('Nenhum volume comercial',exact=False).wait_for();assert not await dialog.get_by_role('button',name='Adicionar ao carrinho',exact=True).is_enabled();rec['result']='PASS_MISSING_PRESENTATION_DISABLED'
+      elif mode=='whole-packaging':
+       await dialog.get_by_role('radio',name='Embalagem 5 L SKU-QA-3',exact=False).click();await dialog.get_by_label('Quantidade de embalagens',exact=True).fill('3');action=dialog.get_by_role('button',name='Adicionar',exact=True);assert await action.is_enabled();await action.scroll_into_view_if_needed();assert (await action.evaluate(BOX))['within'];await page.screenshot(path=str(O/f'{role}-{w}-{mode}-dialog.png'));await action.click();assert await page.get_by_role('dialog').count()==0;assert '150,00' in await page.locator('main').inner_text();rec['result']='PASS_ALTERNATIVE_WHOLE_PACKAGING_UI';rec['assertions'].append({'alternative_original_dialog':True,'quantity':3,'sku':'SKU-QA-3'})
       else:
        await dialog.get_by_placeholder('Ex.: 20',exact=True).fill('40')
        combos=dialog.get_by_role('combobox');await combos.first.click();await page.get_by_role('option').filter(has_text='5 L').first.click()

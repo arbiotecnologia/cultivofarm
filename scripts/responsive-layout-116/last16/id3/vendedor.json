@@ -9,97 +9,14 @@
     "mode": "positive",
     "route": "/comercial/minha-carteira",
     "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
-    "assertions": [
-      {
-        "last_action": {
-          "text": "Adicionar ao carrinho",
-          "rect": {
-            "x": 24,
-            "y": 698,
-            "width": 332.9375,
-            "height": 44,
-            "top": 698,
-            "right": 356.9375,
-            "bottom": 742,
-            "left": 24
-          },
-          "within": true,
-          "clipped": false
-        }
-      },
-      {
-        "local_cart_readback": true
-      }
+    "assertions": [],
+    "result": "GAP",
+    "error": "Locator.click: Timeout 6000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"link\", name=\"Lançar pedido\", exact=True)\n",
+    "text": "",
+    "reads": [],
+    "errors": [
+      "The requested module '/__role-guard.js' does not provide an export named 'RoleGuard'"
     ],
-    "description_box": {
-      "text": "Bioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integralSKU-QA-3",
-      "rect": {
-        "x": 24,
-        "y": 80,
-        "width": 292.9375,
-        "height": 63,
-        "top": 80,
-        "right": 316.9375,
-        "bottom": 143,
-        "left": 24
-      },
-      "within": true,
-      "clipped": false
-    },
-    "dialog_text": "Adicionar ao carrinho\n\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integralSKU-QA-3\n\nÁREA-ALVO (HA)\nVOLUME TOTAL (L)\n\nDose referencial: 1 L/ha. Os vasilhames são sugeridos automaticamente — ajuste se necessário.\n\nCOMBINAR VASILHAMES\n\nMistura tamanhos diferentes para minimizar sobra (ex.: 20 L + 5 L). Alterar reaplica a sugestão.\n\nVASILHAMES\nSugerir conjunto ideal\nVOLUME\nRecipiente 5 L· R$ 10,00/L\nQTD\n3 × R$ 50,00\nR$ 150,00\nAdicionar vasilhame\nVolume total entregue\n15 L\nFaltante\n-25 L\nDose 100 mL\n150 Doses\nCobertura estimada\n15 ha\nTotal a pagar\nR$ 150,00\nCancelar\nAdicionar ao carrinho\nFechar",
-    "result": "PASS_CART_UI_ROUNDTRIP",
-    "reads": [
-      {
-        "name": "get_my_entitlement_context",
-        "args": null
-      },
-      {
-        "name": "get_my_entitlements",
-        "args": null
-      },
-      {
-        "name": "seller_portfolio_capability_v1",
-        "args": null
-      },
-      {
-        "name": "seller_portfolio_orders_v1",
-        "args": null
-      },
-      {
-        "name": "tenant_catalog_active_families_v1",
-        "args": null
-      },
-      {
-        "name": "get_partner_catalog_secure",
-        "args": {
-          "p_partner_id": "33333333-3333-4333-8333-333333333333",
-          "p_catalog_v2": true
-        }
-      },
-      {
-        "name": "get_partner_catalog_volumes_secure",
-        "args": {
-          "p_partner_id": "33333333-3333-4333-8333-333333333333"
-        }
-      },
-      {
-        "name": "get_partner_packaging_offers_secure",
-        "args": {
-          "p_partner_id": "33333333-3333-4333-8333-333333333333"
-        }
-      },
-      {
-        "name": "rpc_b2b_list_selectable_payment_plans",
-        "args": null
-      },
-      {
-        "name": "partner_order_journal_capability_v1",
-        "args": {
-          "p_partner": "33333333-3333-4333-8333-333333333333"
-        }
-      }
-    ],
-    "errors": [],
     "evidence": "last16/id3/vendedor-390-positive.png"
   },
   {
@@ -295,6 +212,74 @@
     ],
     "errors": [],
     "evidence": "last16/id3/vendedor-390-packaging-invalid.png"
+  },
+  {
+    "id": 3,
+    "profile": "vendedor",
+    "viewport": [
+      390,
+      844
+    ],
+    "mode": "whole-packaging",
+    "route": "/comercial/minha-carteira",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "GAP",
+    "error": "",
+    "text": "Lançar pedido para parceiro da minha carteira\n\nSomente parceiros atribuídos a você. A aprovação continua com o comercial e o financeiro.\n\nVoltar para Minha carteira\nParceiro da carteira\nParceiro sintético da carteira com nome extenso e vínculo de empresa confirmado\nNovo Pedido\n\nSelecione produtos e/ou microrganismos. Condição comercial B2B aplicada.\n\nEscolha o volume comercial desejado, informe a área (ha) se aplicável e confirme a quantidade.\n\nNão foi possível verificar a continuidade do pedido. Nada foi liberado.\nVerificar novamente\nCatálogo\nFAMÍLIA DO CATÁLOGO\nTodas as famílias\nTodos os tipos\nNome (A→Z)\nPRODUTO\nSKU-QA-3\nB2B\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integral\nR$ 10,00/L\nCusto estimado R$ 10,00/ha (dose referencial)\nVer ficha\nFicha completa\nAdicionar ao pedido\n\nAs recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica conforme cultura, alvo, ambiente, histórico da área e manejo adotado.\n\n1 item(s)\nR$ 150,00\nContinuar para condição de pagamento\nProduto\n\nEscolha a embalagem. Vendemos somente embalagens inteiras.\n\nQUANTIDADE DE EMBALAGENS\nCancelar\nAdicionar\nFechar",
+    "reads": [
+      {
+        "name": "get_my_entitlement_context",
+        "args": null
+      },
+      {
+        "name": "get_my_entitlements",
+        "args": null
+      },
+      {
+        "name": "seller_portfolio_capability_v1",
+        "args": null
+      },
+      {
+        "name": "seller_portfolio_orders_v1",
+        "args": null
+      },
+      {
+        "name": "tenant_catalog_active_families_v1",
+        "args": null
+      },
+      {
+        "name": "get_partner_catalog_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333",
+          "p_catalog_v2": true
+        }
+      },
+      {
+        "name": "get_partner_catalog_volumes_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "get_partner_packaging_offers_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "rpc_b2b_list_selectable_payment_plans",
+        "args": null
+      },
+      {
+        "name": "partner_order_journal_capability_v1",
+        "args": {
+          "p_partner": "33333333-3333-4333-8333-333333333333"
+        }
+      }
+    ],
+    "errors": [],
+    "evidence": "last16/id3/vendedor-390-whole-packaging.png"
   },
   {
     "id": 3,
@@ -592,5 +577,73 @@
     ],
     "errors": [],
     "evidence": "last16/id3/vendedor-1440-packaging-invalid.png"
+  },
+  {
+    "id": 3,
+    "profile": "vendedor",
+    "viewport": [
+      1440,
+      900
+    ],
+    "mode": "whole-packaging",
+    "route": "/comercial/minha-carteira",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "GAP",
+    "error": "",
+    "text": "Lançar pedido para parceiro da minha carteira\n\nSomente parceiros atribuídos a você. A aprovação continua com o comercial e o financeiro.\n\nVoltar para Minha carteira\nParceiro da carteira\nParceiro sintético da carteira com nome extenso e vínculo de empresa confirmado\nNovo Pedido\n\nSelecione produtos e/ou microrganismos. Condição comercial B2B aplicada.\n\nEscolha o volume comercial desejado, informe a área (ha) se aplicável e confirme a quantidade.\n\nNão foi possível verificar a continuidade do pedido. Nada foi liberado.\nVerificar novamente\nCatálogo\nBiológicos\nQuímicos\nFertilizantes/Adubos\nSem classificação\nTodos os tipos\nNome (A→Z)\nPRODUTO\nSKU-QA-3\nB2B\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integral\nR$ 10,00/L\nCusto estimado R$ 10,00/ha (dose referencial)\nVer ficha\nFicha completa\nAdicionar ao pedido\n\nAs recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica conforme cultura, alvo, ambiente, histórico da área e manejo adotado.\n\nCarrinho (1)\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integral\nProduto\n× Embalagem 5 L SKU-QA-3 ·\nR$ 50,00/un\nR$ 150,00\nPeso para frete: 15 kg\nData desejada de entrega\n\nPrazo mínimo de 8 dias. A data efetiva é confirmada pelo comercial da Empresa vendedora sintética após análise do pedido.\n\nSubtotal do carrinho\nR$ 150,00\nContinuar para condição de pagamento\nSalvar como favorito\nProduto\n\nEscolha a embalagem. Vendemos somente embalagens inteiras.\n\nQuantidade de embalagens\nCancelar\nAdicionar\nFechar",
+    "reads": [
+      {
+        "name": "get_my_entitlement_context",
+        "args": null
+      },
+      {
+        "name": "get_my_entitlements",
+        "args": null
+      },
+      {
+        "name": "seller_portfolio_capability_v1",
+        "args": null
+      },
+      {
+        "name": "seller_portfolio_orders_v1",
+        "args": null
+      },
+      {
+        "name": "tenant_catalog_active_families_v1",
+        "args": null
+      },
+      {
+        "name": "get_partner_catalog_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333",
+          "p_catalog_v2": true
+        }
+      },
+      {
+        "name": "get_partner_catalog_volumes_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "get_partner_packaging_offers_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "rpc_b2b_list_selectable_payment_plans",
+        "args": null
+      },
+      {
+        "name": "partner_order_journal_capability_v1",
+        "args": {
+          "p_partner": "33333333-3333-4333-8333-333333333333"
+        }
+      }
+    ],
+    "errors": [],
+    "evidence": "last16/id3/vendedor-1440-whole-packaging.png"
   }
 ]

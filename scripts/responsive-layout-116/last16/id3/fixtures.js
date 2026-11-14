@@ -9,7 +9,7 @@ function read(n,a){
  if(n==='internal_actor_context_v1')return {v:1,user_id:actor,organization_id:org,roles:[window.reviewRole],roles_confirmed:true,profile:{user_id:actor,organization_id:org,ativo:true,senha_provisoria:false}};
  if(n==='get_partner_catalog_secure')return catalog;
  if(n==='get_partner_catalog_volumes_secure')return {contract:'B2B_PARTNER_VOLUMES_V1',partner_id:a.p_partner_id,seller:{name:'Empresa vendedora sintética'},volumes:mode==='no-volumes'?[]:[{id:v1,item_tipo:'produto',produto_id:product,microrganismo_id:null,volume_ml:5000,rotulo:'Recipiente 5 L',ordem:1},{id:v2,item_tipo:'produto',produto_id:product,microrganismo_id:null,volume_ml:20000,rotulo:'Recipiente 20 L',ordem:2}]};
- if(n==='get_partner_packaging_offers_secure')return mode==='packaging-invalid'?{contract:'invalid'}:{contract:'B2B_PARTNER_PACKAGING_ORDER_V1',partner_id:a.p_partner_id,offers:[],solid_products:[]};
+ if(n==='get_partner_packaging_offers_secure')return mode==='packaging-invalid'?{contract:'invalid'}:{contract:'B2B_PARTNER_PACKAGING_ORDER_V1',partner_id:a.p_partner_id,offers:mode==='whole-packaging'?[{product_id:product,packaging_id:v1,codigo:'PK-QA-3',descricao:'Embalagem inteira sintética',rotulo:'Embalagem 5 L SKU-QA-3',unidade_conteudo:'l',peso_liquido_kg:5,version:1,preco_tabela_brl:50}]:[],solid_products:[]};
  if(n==='get_my_entitlement_context')return 'active';
  if(n==='get_my_entitlements')return ['pedidos_b2b','catalogo_precos','fichas_tecnicas'].map(feature_key=>({feature_key}));
  return undefined;
