@@ -403,5 +403,38 @@
     "expected": "Produto sintético",
     "trigger": "Portal parceiro contextualizado > Fichas > Visualizar",
     "open": "Visualizar"
+  },
+  {
+    "ids": [
+      99
+    ],
+    "file": "src/pages/comercial/CommercialPaymentPlansPage.tsx",
+    "export": "default",
+    "route": "/comercial/planos",
+    "profiles": [
+      "administrador",
+      "gestor_comercial"
+    ],
+    "kind": "plans",
+    "open": "Novo plano",
+    "expected": "Novo plano",
+    "trigger": "Planos comerciais > Novo plano (sem salvar)"
+  },
+  {
+    "ids": [
+      103
+    ],
+    "file": "src/pages/financeiro/EntregasNaoFaturadas.tsx",
+    "export": "default",
+    "route": "/financeiro/entregas-nao-faturadas",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "financeiro"
+    ],
+    "kind": "unbilled",
+    "open": "Marcar como sem cobrança",
+    "expected": "Sem cobrança",
+    "trigger": "Entrega pendente > Marcar sem cobrança (sem confirmar)"
   }
 ]
