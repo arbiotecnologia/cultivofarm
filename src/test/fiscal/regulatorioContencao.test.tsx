@@ -105,7 +105,7 @@ describe("render do dossiê em modo consulta", () => {
     expect(await within(sheet).findByText(/Nenhum dossiê registrado/)).toBeTruthy();
     expect(within(sheet).getByText("Modo consulta")).toBeTruthy();
     expect(within(sheet).queryAllByRole("button").filter((b) => WRITE_LABELS.test(b.textContent ?? ""))).toHaveLength(0);
-    expect(mocks.rpc.mock.calls.every(([fn]) => String(fn).match(/overview|dossier_detail/))).toBe(true);
+    expect(mocks.rpc.mock.calls.every(([fn]) => ['rpc_microorganism_regulatory_overview','rpc_regulatory_dossier_detail','rpc_regulatory_microorganism_products'].includes(String(fn)))).toBe(true);
   });
   it("dossiê preenchido: fatos em consulta, sem campos editáveis nem botões de escrita", async () => {
     detail = filled;
@@ -113,7 +113,7 @@ describe("render do dossiê em modo consulta", () => {
     expect(await within(sheet).findByText("Cepa teste")).toBeTruthy();
     expect(within(sheet).queryAllByRole("textbox")).toHaveLength(0);
     expect(within(sheet).queryAllByRole("button").filter((b) => WRITE_LABELS.test(b.textContent ?? ""))).toHaveLength(0);
-    expect(mocks.rpc.mock.calls.every(([fn]) => String(fn).match(/overview|dossier_detail/))).toBe(true);
+    expect(mocks.rpc.mock.calls.every(([fn]) => ['rpc_microorganism_regulatory_overview','rpc_regulatory_dossier_detail','rpc_regulatory_microorganism_products'].includes(String(fn)))).toBe(true);
   });
   it("erro de permissão não aparece como ausência e oculta dados", async () => {
     mocks.rpc.mockImplementation(async (fn: string) =>
