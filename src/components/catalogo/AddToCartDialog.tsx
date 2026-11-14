@@ -286,7 +286,7 @@ export function AddToCartDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-base">Adicionar ao carrinho</DialogTitle>
-          <DialogDescription className="truncate">
+          <DialogDescription className="min-w-0 break-words whitespace-normal">
             {row?.nome}
             {row?.codigo && <span className="font-mono ml-2 text-[10px]">{row.codigo}</span>}
           </DialogDescription>

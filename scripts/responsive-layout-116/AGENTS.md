@@ -2,3 +2,4 @@
 - Use local browser transport/session fixtures only, block external requests and all writes; distinguish attempted routes, mounted occurrences, exercised controls and visually reviewed scenarios from static evidence.
 - Never certify missing data, closed capability gates, generic shared controls or synthetic identity as production/JWT evidence.
 - Specific drivers assert contextual content and the last useful control; read-only detail dialogs assert the last row and closing control — avoids counting only the close icon as form coverage.
+- Order-entry drivers mount original guarded parent/index routes and mutate only local cart state through scoped synthetic read fixtures; packaging offers prove the alternative dialog separately — prevents isolated-dialog evidence posing as commercial or seller chain coverage.

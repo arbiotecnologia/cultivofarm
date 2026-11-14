@@ -1,0 +1,754 @@
+[
+  {
+    "id": 3,
+    "profile": "gestor_comercial",
+    "viewport": [
+      390,
+      844
+    ],
+    "mode": "positive",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [
+      {
+        "last_action": {
+          "text": "Adicionar ao carrinho",
+          "rect": {
+            "x": 24,
+            "y": 698,
+            "width": 332.9375,
+            "height": 44,
+            "top": 698,
+            "right": 356.9375,
+            "bottom": 742,
+            "left": 24
+          },
+          "within": true,
+          "clipped": false
+        }
+      },
+      {
+        "local_cart_readback": true
+      },
+      {
+        "readback_quantity": 3,
+        "readback_presentation": "5 L",
+        "sku": "SKU-QA-3",
+        "visible_cart": true
+      }
+    ],
+    "description_box": {
+      "text": "Bioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integralSKU-QA-3",
+      "rect": {
+        "x": 24,
+        "y": 80,
+        "width": 292.9375,
+        "height": 63,
+        "top": 80,
+        "right": 316.9375,
+        "bottom": 143,
+        "left": 24
+      },
+      "within": true,
+      "clipped": false
+    },
+    "dialog_text": "Adicionar ao carrinho\n\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integralSKU-QA-3\n\nÁREA-ALVO (HA)\nVOLUME TOTAL (L)\n\nDose referencial: 1 L/ha. Os vasilhames são sugeridos automaticamente — ajuste se necessário.\n\nCOMBINAR VASILHAMES\n\nMistura tamanhos diferentes para minimizar sobra (ex.: 20 L + 5 L). Alterar reaplica a sugestão.\n\nVASILHAMES\nSugerir conjunto ideal\nVOLUME\nRecipiente 5 L· R$ 10,00/L\nQTD\n3 × R$ 50,00\nR$ 150,00\nAdicionar vasilhame\nVolume total entregue\n15 L\nFaltante\n-25 L\nDose 100 mL\n150 Doses\nCobertura estimada\n15 ha\nTotal a pagar\nR$ 150,00\nCancelar\nAdicionar ao carrinho\nFechar",
+    "result": "PASS_CART_UI_ROUNDTRIP",
+    "summary_name_box": {
+      "text": "Bioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integralProduto",
+      "rect": {
+        "x": 42,
+        "y": 224.75,
+        "width": 233.390625,
+        "height": 84,
+        "top": 224.75,
+        "right": 275.390625,
+        "bottom": 308.75,
+        "left": 42
+      },
+      "within": true,
+      "clipped": false
+    },
+    "reads": [
+      {
+        "name": "get_my_entitlement_context",
+        "args": null
+      },
+      {
+        "name": "get_my_entitlements",
+        "args": null
+      },
+      {
+        "name": "c2_internal_order_entry_capability_v1",
+        "args": null
+      },
+      {
+        "name": "tenant_catalog_active_families_v1",
+        "args": null
+      },
+      {
+        "name": "get_partner_catalog_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333",
+          "p_catalog_v2": true
+        }
+      },
+      {
+        "name": "get_partner_catalog_volumes_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "get_partner_packaging_offers_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "rpc_b2b_list_selectable_payment_plans",
+        "args": null
+      },
+      {
+        "name": "partner_order_journal_capability_v1",
+        "args": {
+          "p_partner": "33333333-3333-4333-8333-333333333333"
+        }
+      }
+    ],
+    "errors": [],
+    "evidence": "last16/id3/gestor_comercial-390-positive.png"
+  },
+  {
+    "id": 3,
+    "profile": "gestor_comercial",
+    "viewport": [
+      390,
+      844
+    ],
+    "mode": "capability-denied",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "PASS_CAPABILITY_DENIED",
+    "reads": [
+      {
+        "name": "get_my_entitlement_context",
+        "args": null
+      },
+      {
+        "name": "get_my_entitlements",
+        "args": null
+      },
+      {
+        "name": "c2_internal_order_entry_capability_v1",
+        "args": null
+      }
+    ],
+    "errors": [],
+    "evidence": "last16/id3/gestor_comercial-390-capability-denied.png"
+  },
+  {
+    "id": 3,
+    "profile": "gestor_comercial",
+    "viewport": [
+      390,
+      844
+    ],
+    "mode": "foreign-target",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "PASS_UNASSIGNED_TARGET_DENIED",
+    "reads": [
+      {
+        "name": "get_my_entitlement_context",
+        "args": null
+      },
+      {
+        "name": "get_my_entitlements",
+        "args": null
+      },
+      {
+        "name": "c2_internal_order_entry_capability_v1",
+        "args": null
+      }
+    ],
+    "errors": [],
+    "evidence": "last16/id3/gestor_comercial-390-foreign-target.png"
+  },
+  {
+    "id": 3,
+    "profile": "gestor_comercial",
+    "viewport": [
+      390,
+      844
+    ],
+    "mode": "no-volumes",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "PASS_MISSING_PRESENTATION_DISABLED",
+    "reads": [
+      {
+        "name": "get_my_entitlement_context",
+        "args": null
+      },
+      {
+        "name": "get_my_entitlements",
+        "args": null
+      },
+      {
+        "name": "c2_internal_order_entry_capability_v1",
+        "args": null
+      },
+      {
+        "name": "tenant_catalog_active_families_v1",
+        "args": null
+      },
+      {
+        "name": "get_partner_catalog_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333",
+          "p_catalog_v2": true
+        }
+      },
+      {
+        "name": "get_partner_catalog_volumes_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "get_partner_packaging_offers_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "rpc_b2b_list_selectable_payment_plans",
+        "args": null
+      },
+      {
+        "name": "partner_order_journal_capability_v1",
+        "args": {
+          "p_partner": "33333333-3333-4333-8333-333333333333"
+        }
+      }
+    ],
+    "errors": [],
+    "evidence": "last16/id3/gestor_comercial-390-no-volumes.png"
+  },
+  {
+    "id": 3,
+    "profile": "gestor_comercial",
+    "viewport": [
+      390,
+      844
+    ],
+    "mode": "packaging-invalid",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "PASS_PACKAGING_INVALID_CLOSED",
+    "reads": [
+      {
+        "name": "get_my_entitlement_context",
+        "args": null
+      },
+      {
+        "name": "get_my_entitlements",
+        "args": null
+      },
+      {
+        "name": "c2_internal_order_entry_capability_v1",
+        "args": null
+      },
+      {
+        "name": "tenant_catalog_active_families_v1",
+        "args": null
+      },
+      {
+        "name": "get_partner_catalog_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333",
+          "p_catalog_v2": true
+        }
+      },
+      {
+        "name": "get_partner_catalog_volumes_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "get_partner_packaging_offers_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "rpc_b2b_list_selectable_payment_plans",
+        "args": null
+      },
+      {
+        "name": "partner_order_journal_capability_v1",
+        "args": {
+          "p_partner": "33333333-3333-4333-8333-333333333333"
+        }
+      }
+    ],
+    "errors": [],
+    "evidence": "last16/id3/gestor_comercial-390-packaging-invalid.png"
+  },
+  {
+    "id": 3,
+    "profile": "gestor_comercial",
+    "viewport": [
+      390,
+      844
+    ],
+    "mode": "whole-packaging",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [
+      {
+        "alternative_original_dialog": true,
+        "quantity": 3,
+        "sku": "SKU-QA-3"
+      },
+      {
+        "readback_quantity": 3,
+        "readback_presentation": "5 L",
+        "sku": "SKU-QA-3",
+        "visible_cart": true
+      }
+    ],
+    "result": "PASS_ALTERNATIVE_WHOLE_PACKAGING_UI",
+    "summary_name_box": {
+      "text": "Bioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integralProduto",
+      "rect": {
+        "x": 42,
+        "y": 224.75,
+        "width": 233.390625,
+        "height": 84,
+        "top": 224.75,
+        "right": 275.390625,
+        "bottom": 308.75,
+        "left": 42
+      },
+      "within": true,
+      "clipped": false
+    },
+    "reads": [
+      {
+        "name": "get_my_entitlement_context",
+        "args": null
+      },
+      {
+        "name": "get_my_entitlements",
+        "args": null
+      },
+      {
+        "name": "c2_internal_order_entry_capability_v1",
+        "args": null
+      },
+      {
+        "name": "tenant_catalog_active_families_v1",
+        "args": null
+      },
+      {
+        "name": "get_partner_catalog_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333",
+          "p_catalog_v2": true
+        }
+      },
+      {
+        "name": "get_partner_catalog_volumes_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "get_partner_packaging_offers_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "rpc_b2b_list_selectable_payment_plans",
+        "args": null
+      },
+      {
+        "name": "partner_order_journal_capability_v1",
+        "args": {
+          "p_partner": "33333333-3333-4333-8333-333333333333"
+        }
+      }
+    ],
+    "errors": [],
+    "evidence": "last16/id3/gestor_comercial-390-whole-packaging.png"
+  },
+  {
+    "id": 3,
+    "profile": "gestor_comercial",
+    "viewport": [
+      1440,
+      900
+    ],
+    "mode": "positive",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [
+      {
+        "last_action": {
+          "text": "Adicionar ao carrinho",
+          "rect": {
+            "x": 774.984375,
+            "y": 746,
+            "width": 176.015625,
+            "height": 44,
+            "top": 746,
+            "right": 951,
+            "bottom": 790,
+            "left": 774.984375
+          },
+          "within": true,
+          "clipped": false
+        }
+      },
+      {
+        "local_cart_readback": true
+      },
+      {
+        "readback_quantity": 3,
+        "readback_presentation": "5 L",
+        "sku": "SKU-QA-3",
+        "visible_cart": true
+      }
+    ],
+    "description_box": {
+      "text": "Bioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integralSKU-QA-3",
+      "rect": {
+        "x": 489,
+        "y": 140,
+        "width": 422,
+        "height": 43,
+        "top": 140,
+        "right": 911,
+        "bottom": 183,
+        "left": 489
+      },
+      "within": true,
+      "clipped": false
+    },
+    "dialog_text": "Adicionar ao carrinho\n\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integralSKU-QA-3\n\nÁrea-alvo (ha)\nVolume total (L)\n\nDose referencial: 1 L/ha. Os vasilhames são sugeridos automaticamente — ajuste se necessário.\n\nCombinar vasilhames\n\nMistura tamanhos diferentes para minimizar sobra (ex.: 20 L + 5 L). Alterar reaplica a sugestão.\n\nVasilhames\nSugerir conjunto ideal\nVolume\nRecipiente 5 L· R$ 10,00/L\nQtd\n3 × R$ 50,00\nR$ 150,00\nAdicionar vasilhame\nVolume total entregue\n15 L\nFaltante\n-25 L\nDose 100 mL\n150 Doses\nCobertura estimada\n15 ha\nTotal a pagar\nR$ 150,00\nCancelar\nAdicionar ao carrinho\nFechar",
+    "result": "PASS_CART_UI_ROUNDTRIP",
+    "reads": [
+      {
+        "name": "get_my_entitlement_context",
+        "args": null
+      },
+      {
+        "name": "get_my_entitlements",
+        "args": null
+      },
+      {
+        "name": "c2_internal_order_entry_capability_v1",
+        "args": null
+      },
+      {
+        "name": "tenant_catalog_active_families_v1",
+        "args": null
+      },
+      {
+        "name": "get_partner_catalog_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333",
+          "p_catalog_v2": true
+        }
+      },
+      {
+        "name": "get_partner_catalog_volumes_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "get_partner_packaging_offers_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "rpc_b2b_list_selectable_payment_plans",
+        "args": null
+      },
+      {
+        "name": "partner_order_journal_capability_v1",
+        "args": {
+          "p_partner": "33333333-3333-4333-8333-333333333333"
+        }
+      }
+    ],
+    "errors": [],
+    "evidence": "last16/id3/gestor_comercial-1440-positive.png"
+  },
+  {
+    "id": 3,
+    "profile": "gestor_comercial",
+    "viewport": [
+      1440,
+      900
+    ],
+    "mode": "capability-denied",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "PASS_CAPABILITY_DENIED",
+    "reads": [
+      {
+        "name": "get_my_entitlement_context",
+        "args": null
+      },
+      {
+        "name": "get_my_entitlements",
+        "args": null
+      },
+      {
+        "name": "c2_internal_order_entry_capability_v1",
+        "args": null
+      }
+    ],
+    "errors": [],
+    "evidence": "last16/id3/gestor_comercial-1440-capability-denied.png"
+  },
+  {
+    "id": 3,
+    "profile": "gestor_comercial",
+    "viewport": [
+      1440,
+      900
+    ],
+    "mode": "foreign-target",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "PASS_UNASSIGNED_TARGET_DENIED",
+    "reads": [
+      {
+        "name": "get_my_entitlement_context",
+        "args": null
+      },
+      {
+        "name": "get_my_entitlements",
+        "args": null
+      },
+      {
+        "name": "c2_internal_order_entry_capability_v1",
+        "args": null
+      }
+    ],
+    "errors": [],
+    "evidence": "last16/id3/gestor_comercial-1440-foreign-target.png"
+  },
+  {
+    "id": 3,
+    "profile": "gestor_comercial",
+    "viewport": [
+      1440,
+      900
+    ],
+    "mode": "no-volumes",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "PASS_MISSING_PRESENTATION_DISABLED",
+    "reads": [
+      {
+        "name": "get_my_entitlement_context",
+        "args": null
+      },
+      {
+        "name": "get_my_entitlements",
+        "args": null
+      },
+      {
+        "name": "c2_internal_order_entry_capability_v1",
+        "args": null
+      },
+      {
+        "name": "tenant_catalog_active_families_v1",
+        "args": null
+      },
+      {
+        "name": "get_partner_catalog_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333",
+          "p_catalog_v2": true
+        }
+      },
+      {
+        "name": "get_partner_catalog_volumes_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "get_partner_packaging_offers_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "rpc_b2b_list_selectable_payment_plans",
+        "args": null
+      },
+      {
+        "name": "partner_order_journal_capability_v1",
+        "args": {
+          "p_partner": "33333333-3333-4333-8333-333333333333"
+        }
+      }
+    ],
+    "errors": [],
+    "evidence": "last16/id3/gestor_comercial-1440-no-volumes.png"
+  },
+  {
+    "id": 3,
+    "profile": "gestor_comercial",
+    "viewport": [
+      1440,
+      900
+    ],
+    "mode": "packaging-invalid",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "PASS_PACKAGING_INVALID_CLOSED",
+    "reads": [
+      {
+        "name": "get_my_entitlement_context",
+        "args": null
+      },
+      {
+        "name": "get_my_entitlements",
+        "args": null
+      },
+      {
+        "name": "c2_internal_order_entry_capability_v1",
+        "args": null
+      },
+      {
+        "name": "tenant_catalog_active_families_v1",
+        "args": null
+      },
+      {
+        "name": "get_partner_catalog_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333",
+          "p_catalog_v2": true
+        }
+      },
+      {
+        "name": "get_partner_catalog_volumes_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "get_partner_packaging_offers_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "rpc_b2b_list_selectable_payment_plans",
+        "args": null
+      },
+      {
+        "name": "partner_order_journal_capability_v1",
+        "args": {
+          "p_partner": "33333333-3333-4333-8333-333333333333"
+        }
+      }
+    ],
+    "errors": [],
+    "evidence": "last16/id3/gestor_comercial-1440-packaging-invalid.png"
+  },
+  {
+    "id": 3,
+    "profile": "gestor_comercial",
+    "viewport": [
+      1440,
+      900
+    ],
+    "mode": "whole-packaging",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [
+      {
+        "alternative_original_dialog": true,
+        "quantity": 3,
+        "sku": "SKU-QA-3"
+      },
+      {
+        "readback_quantity": 3,
+        "readback_presentation": "5 L",
+        "sku": "SKU-QA-3",
+        "visible_cart": true
+      }
+    ],
+    "result": "PASS_ALTERNATIVE_WHOLE_PACKAGING_UI",
+    "reads": [
+      {
+        "name": "get_my_entitlement_context",
+        "args": null
+      },
+      {
+        "name": "get_my_entitlements",
+        "args": null
+      },
+      {
+        "name": "c2_internal_order_entry_capability_v1",
+        "args": null
+      },
+      {
+        "name": "tenant_catalog_active_families_v1",
+        "args": null
+      },
+      {
+        "name": "get_partner_catalog_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333",
+          "p_catalog_v2": true
+        }
+      },
+      {
+        "name": "get_partner_catalog_volumes_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "get_partner_packaging_offers_secure",
+        "args": {
+          "p_partner_id": "33333333-3333-4333-8333-333333333333"
+        }
+      },
+      {
+        "name": "rpc_b2b_list_selectable_payment_plans",
+        "args": null
+      },
+      {
+        "name": "partner_order_journal_capability_v1",
+        "args": {
+          "p_partner": "33333333-3333-4333-8333-333333333333"
+        }
+      }
+    ],
+    "errors": [],
+    "evidence": "last16/id3/gestor_comercial-1440-whole-packaging.png"
+  }
+]
