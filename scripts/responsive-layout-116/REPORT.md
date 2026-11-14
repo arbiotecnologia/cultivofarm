@@ -38,3 +38,7 @@ Falhas de infraestrutura preservadas: timeout de carregamento, script chamado `q
 Prévia: `/revisao-responsiva-116/index.html` (arquivo estático, não nova rota React). Compara antes/depois e oferece matriz. Página verificada mobile/desktop, oito imagens renderizadas. Scripts e comandos em `harness/` e `COMMANDS.txt`; scripts são copiados para `/tmp/browser/responsive-116` para execução. Antes/depois só é reproduzível alternando a revisão pelo histórico da plataforma, não executando “before” no código corrigido.
 
 Revisão base: `da80884ad25c78c0f9623df95f526888957fdb19`. Revisões posteriores são gerenciadas pela plataforma e registradas em `MATRIX.json`; nenhum commit manual. Rollback somente dos quatro ajustes de apresentação pelo histórico; nunca de guards/RPCs/dados.
+
+## Checkpoint final consolidado
+{"ids": 116, "checkpoint_complete": 116, "isolated_scenarios": 1914, "mounted_isolated": 577, "navigation_profiles": 15, "navigation_scenarios": 30, "visual_approval": "ONLY corrected focused scenarios; all others are measurements or gaps"}
+Retestes refinados adicionais preservam arquivos `.initial.json`; não corrigem automaticamente ausência de controle. Metadados e imagens contêm apenas dados sintéticos. O refinamento de BI mostra título repartido com nome longo, sem sobreposição confirmada visualmente; não foi alterado como defeito de negócio.
