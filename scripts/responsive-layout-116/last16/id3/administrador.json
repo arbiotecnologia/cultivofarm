@@ -31,10 +31,23 @@
         "local_cart_readback": true
       }
     ],
+    "description_box": {
+      "text": "Bioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integralSKU-QA-3",
+      "rect": {
+        "x": 24,
+        "y": 100,
+        "width": 292.9375,
+        "height": 23,
+        "top": 100,
+        "right": 316.9375,
+        "bottom": 123,
+        "left": 24
+      },
+      "within": true,
+      "clipped": true
+    },
     "dialog_text": "Adicionar ao carrinho\n\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integralSKU-QA-3\n\nÁREA-ALVO (HA)\nVOLUME TOTAL (L)\n\nDose referencial: 1 L/ha. Os vasilhames são sugeridos automaticamente — ajuste se necessário.\n\nCOMBINAR VASILHAMES\n\nMistura tamanhos diferentes para minimizar sobra (ex.: 20 L + 5 L). Alterar reaplica a sugestão.\n\nVASILHAMES\nSugerir conjunto ideal\nVOLUME\nRecipiente 5 L· R$ 10,00/L\nQTD\n3 × R$ 50,00\nR$ 150,00\nAdicionar vasilhame\nVolume total entregue\n15 L\nFaltante\n-25 L\nDose 100 mL\n150 Doses\nCobertura estimada\n15 ha\nTotal a pagar\nR$ 150,00\nCancelar\nAdicionar ao carrinho\nFechar",
-    "result": "GAP",
-    "error": "write attempted",
-    "text": "Registrar venda para parceiro da carteira\n\nSomente parceiros da carteira desta empresa. Não é compra para a própria empresa.\n\nVoltar para Pedidos B2B\nParceiro da carteira\nParceiro sintético da carteira com nome extenso e vínculo de empresa confirmado\nNovo Pedido\n\nSelecione produtos e/ou microrganismos. Condição comercial B2B aplicada.\n\nEscolha o volume comercial desejado, informe a área (ha) se aplicável e confirme a quantidade.\n\nNão foi possível verificar a continuidade do pedido. Nada foi liberado.\nVerificar novamente\nCatálogo\nFAMÍLIA DO CATÁLOGO\nTodas as famílias\nTodos os tipos\nNome (A→Z)\nPRODUTO\nSKU-QA-3\nB2B\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integral\nR$ 10,00/L\nCusto estimado R$ 10,00/ha (dose referencial)\nVer ficha\nFicha completa\nAdicionar ao pedido\n\nAs recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica conforme cultura, alvo, ambiente, histórico da área e manejo adotado.\n\n1 item(s)\nR$ 150,00\nContinuar para condição de pagamento\n1. Pedido\n2. Aprovação\n3. Financeiro\n4. Fiscal\n5. Entrega\n\nCada etapa depende das autorizações e validações próprias. Aprovação comercial não confirma cobrança, emissão fiscal ou entrega.",
+    "result": "PASS_CART_UI_ROUNDTRIP",
     "reads": [
       {
         "name": "get_my_entitlement_context",
@@ -154,9 +167,7 @@
     "route": "/comercial/pedidos-b2b/novo",
     "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
     "assertions": [],
-    "result": "GAP",
-    "error": "write attempted",
-    "text": "Registrar venda para parceiro da carteira\n\nSomente parceiros da carteira desta empresa. Não é compra para a própria empresa.\n\nVoltar para Pedidos B2B\nParceiro da carteira\nParceiro sintético da carteira com nome extenso e vínculo de empresa confirmado\nNovo Pedido\n\nSelecione produtos e/ou microrganismos. Condição comercial B2B aplicada.\n\nEscolha o volume comercial desejado, informe a área (ha) se aplicável e confirme a quantidade.\n\nNão foi possível verificar a continuidade do pedido. Nada foi liberado.\nVerificar novamente\nCatálogo\nFAMÍLIA DO CATÁLOGO\nTodas as famílias\nTodos os tipos\nNome (A→Z)\nPRODUTO\nSKU-QA-3\nB2B\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integral\nR$ 10,00/L\nCusto estimado R$ 10,00/ha (dose referencial)\nVer ficha\nFicha completa\nAdicionar ao pedido\n\nAs recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica conforme cultura, alvo, ambiente, histórico da área e manejo adotado.\n\n1. Pedido\n2. Aprovação\n3. Financeiro\n4. Fiscal\n5. Entrega\n\nCada etapa depende das autorizações e validações próprias. Aprovação comercial não confirma cobrança, emissão fiscal ou entrega.\n\nAdicionar ao carrinho\n\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integralSKU-QA-3\n\nNenhum volume comercial cadastrado para este item. Solicite à Empresa vendedora sintética.\nCancelar\nAdicionar ao carrinho\nFechar",
+    "result": "PASS_MISSING_PRESENTATION_DISABLED",
     "reads": [
       {
         "name": "get_my_entitlement_context",
@@ -218,9 +229,7 @@
     "route": "/comercial/pedidos-b2b/novo",
     "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
     "assertions": [],
-    "result": "GAP",
-    "error": "Locator.wait_for: Timeout 6000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"dialog\").last.get_by_text(\"Não foi possível\").first to be visible\n",
-    "text": "Registrar venda para parceiro da carteira\n\nSomente parceiros da carteira desta empresa. Não é compra para a própria empresa.\n\nVoltar para Pedidos B2B\nParceiro da carteira\nParceiro sintético da carteira com nome extenso e vínculo de empresa confirmado\nNovo Pedido\n\nSelecione produtos e/ou microrganismos. Condição comercial B2B aplicada.\n\nEscolha o volume comercial desejado, informe a área (ha) se aplicável e confirme a quantidade.\n\nNão foi possível verificar a continuidade do pedido. Nada foi liberado.\nVerificar novamente\nCatálogo\nFAMÍLIA DO CATÁLOGO\nTodas as famílias\nTodos os tipos\nNome (A→Z)\nPRODUTO\nSKU-QA-3\nB2B\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integral\nR$ 10,00/L\nCusto estimado R$ 10,00/ha (dose referencial)\nVer ficha\nFicha completa\nAdicionar ao pedido\n\nAs recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica conforme cultura, alvo, ambiente, histórico da área e manejo adotado.\n\n1. Pedido\n2. Aprovação\n3. Financeiro\n4. Fiscal\n5. Entrega\n\nCada etapa depende das autorizações e validações próprias. Aprovação comercial não confirma cobrança, emissão fiscal ou entrega.\n\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integral\n\nA resposta de apresentações do fornecedor veio em formato não reconhecido. Nada foi adicionado; tente novamente mais tarde.\n\nFechar\nFechar",
+    "result": "PASS_PACKAGING_INVALID_CLOSED",
     "reads": [
       {
         "name": "get_my_entitlement_context",
@@ -303,10 +312,23 @@
         "local_cart_readback": true
       }
     ],
+    "description_box": {
+      "text": "Bioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integralSKU-QA-3",
+      "rect": {
+        "x": 489,
+        "y": 150,
+        "width": 422,
+        "height": 23,
+        "top": 150,
+        "right": 911,
+        "bottom": 173,
+        "left": 489
+      },
+      "within": true,
+      "clipped": true
+    },
     "dialog_text": "Adicionar ao carrinho\n\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integralSKU-QA-3\n\nÁrea-alvo (ha)\nVolume total (L)\n\nDose referencial: 1 L/ha. Os vasilhames são sugeridos automaticamente — ajuste se necessário.\n\nCombinar vasilhames\n\nMistura tamanhos diferentes para minimizar sobra (ex.: 20 L + 5 L). Alterar reaplica a sugestão.\n\nVasilhames\nSugerir conjunto ideal\nVolume\nRecipiente 5 L· R$ 10,00/L\nQtd\n3 × R$ 50,00\nR$ 150,00\nAdicionar vasilhame\nVolume total entregue\n15 L\nFaltante\n-25 L\nDose 100 mL\n150 Doses\nCobertura estimada\n15 ha\nTotal a pagar\nR$ 150,00\nCancelar\nAdicionar ao carrinho\nFechar",
-    "result": "GAP",
-    "error": "write attempted",
-    "text": "Registrar venda para parceiro da carteira\n\nSomente parceiros da carteira desta empresa. Não é compra para a própria empresa.\n\nVoltar para Pedidos B2B\nParceiro da carteira\nParceiro sintético da carteira com nome extenso e vínculo de empresa confirmado\nNovo Pedido\n\nSelecione produtos e/ou microrganismos. Condição comercial B2B aplicada.\n\nEscolha o volume comercial desejado, informe a área (ha) se aplicável e confirme a quantidade.\n\nNão foi possível verificar a continuidade do pedido. Nada foi liberado.\nVerificar novamente\nCatálogo\nBiológicos\nQuímicos\nFertilizantes/Adubos\nSem classificação\nTodos os tipos\nNome (A→Z)\nPRODUTO\nSKU-QA-3\nB2B\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integral\nR$ 10,00/L\nCusto estimado R$ 10,00/ha (dose referencial)\nVer ficha\nFicha completa\nAdicionar ao pedido\n\nAs recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica conforme cultura, alvo, ambiente, histórico da área e manejo adotado.\n\nCarrinho (1)\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integral\nProduto\n× Recipiente 5 L ·\nR$ 50,00/un\nR$ 150,00\nTotal: 15 L · Área-alvo: 40 ha\nData desejada de entrega\n\nPrazo mínimo de 8 dias. A data efetiva é confirmada pelo comercial da Empresa vendedora sintética após análise do pedido.\n\nSubtotal do carrinho\nR$ 150,00\nContinuar para condição de pagamento\nSalvar como favorito\n1. Pedido\n2. Aprovação\n3. Financeiro\n4. Fiscal\n5. Entrega\n\nCada etapa depende das autorizações e validações próprias. Aprovação comercial não confirma cobrança, emissão fiscal ou entrega.",
+    "result": "PASS_CART_UI_ROUNDTRIP",
     "reads": [
       {
         "name": "get_my_entitlement_context",
@@ -426,9 +448,7 @@
     "route": "/comercial/pedidos-b2b/novo",
     "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
     "assertions": [],
-    "result": "GAP",
-    "error": "write attempted",
-    "text": "Registrar venda para parceiro da carteira\n\nSomente parceiros da carteira desta empresa. Não é compra para a própria empresa.\n\nVoltar para Pedidos B2B\nParceiro da carteira\nParceiro sintético da carteira com nome extenso e vínculo de empresa confirmado\nNovo Pedido\n\nSelecione produtos e/ou microrganismos. Condição comercial B2B aplicada.\n\nEscolha o volume comercial desejado, informe a área (ha) se aplicável e confirme a quantidade.\n\nNão foi possível verificar a continuidade do pedido. Nada foi liberado.\nVerificar novamente\nCatálogo\nBiológicos\nQuímicos\nFertilizantes/Adubos\nSem classificação\nTodos os tipos\nNome (A→Z)\nPRODUTO\nSKU-QA-3\nB2B\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integral\nR$ 10,00/L\nCusto estimado R$ 10,00/ha (dose referencial)\nVer ficha\nFicha completa\nAdicionar ao pedido\n\nAs recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica conforme cultura, alvo, ambiente, histórico da área e manejo adotado.\n\nCarrinho (0)\nCarrinho vazio\nData desejada de entrega\n\nPrazo mínimo de 8 dias. A data efetiva é confirmada pelo comercial da Empresa vendedora sintética após análise do pedido.\n\nSubtotal do carrinho\nR$ 0,00\nContinuar para condição de pagamento\nSalvar como favorito\n1. Pedido\n2. Aprovação\n3. Financeiro\n4. Fiscal\n5. Entrega\n\nCada etapa depende das autorizações e validações próprias. Aprovação comercial não confirma cobrança, emissão fiscal ou entrega.\n\nAdicionar ao carrinho\n\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integralSKU-QA-3\n\nNenhum volume comercial cadastrado para este item. Solicite à Empresa vendedora sintética.\nCancelar\nAdicionar ao carrinho\nFechar",
+    "result": "PASS_MISSING_PRESENTATION_DISABLED",
     "reads": [
       {
         "name": "get_my_entitlement_context",
@@ -490,9 +510,7 @@
     "route": "/comercial/pedidos-b2b/novo",
     "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
     "assertions": [],
-    "result": "GAP",
-    "error": "Locator.wait_for: Timeout 6000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"dialog\").last.get_by_text(\"Não foi possível\").first to be visible\n",
-    "text": "Registrar venda para parceiro da carteira\n\nSomente parceiros da carteira desta empresa. Não é compra para a própria empresa.\n\nVoltar para Pedidos B2B\nParceiro da carteira\nParceiro sintético da carteira com nome extenso e vínculo de empresa confirmado\nNovo Pedido\n\nSelecione produtos e/ou microrganismos. Condição comercial B2B aplicada.\n\nEscolha o volume comercial desejado, informe a área (ha) se aplicável e confirme a quantidade.\n\nNão foi possível verificar a continuidade do pedido. Nada foi liberado.\nVerificar novamente\nCatálogo\nBiológicos\nQuímicos\nFertilizantes/Adubos\nSem classificação\nTodos os tipos\nNome (A→Z)\nPRODUTO\nSKU-QA-3\nB2B\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integral\nR$ 10,00/L\nCusto estimado R$ 10,00/ha (dose referencial)\nVer ficha\nFicha completa\nAdicionar ao pedido\n\nAs recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica conforme cultura, alvo, ambiente, histórico da área e manejo adotado.\n\nCarrinho (0)\nCarrinho vazio\nData desejada de entrega\n\nPrazo mínimo de 8 dias. A data efetiva é confirmada pelo comercial da Empresa vendedora sintética após análise do pedido.\n\nSubtotal do carrinho\nR$ 0,00\nContinuar para condição de pagamento\nSalvar como favorito\n1. Pedido\n2. Aprovação\n3. Financeiro\n4. Fiscal\n5. Entrega\n\nCada etapa depende das autorizações e validações próprias. Aprovação comercial não confirma cobrança, emissão fiscal ou entrega.\n\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integral\n\nA resposta de apresentações do fornecedor veio em formato não reconhecido. Nada foi adicionado; tente novamente mais tarde.\n\nFechar\nFechar",
+    "result": "PASS_PACKAGING_INVALID_CLOSED",
     "reads": [
       {
         "name": "get_my_entitlement_context",

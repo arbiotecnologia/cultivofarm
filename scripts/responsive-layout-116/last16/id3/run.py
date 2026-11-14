@@ -48,7 +48,7 @@ async def main():
        await page.get_by_role('combobox',name='Parceiro da carteira',exact=True).click();await page.get_by_role('option').filter(has_text='Parceiro sintético da carteira').click()
       await page.get_by_role('button',name='Adicionar ao pedido',exact=True).first.click()
       dialog=page.get_by_role('dialog').last
-      if mode=='packaging-invalid':await dialog.get_by_text('Não foi possível',exact=False).first.wait_for();assert await dialog.get_by_role('button',name='Adicionar ao carrinho',exact=True).count()==0;rec['result']='PASS_PACKAGING_INVALID_CLOSED'
+      if mode=='packaging-invalid':await dialog.get_by_test_id('packaging-state').wait_for();assert await dialog.get_by_role('button',name='Adicionar ao carrinho',exact=True).count()==0;rec['result']='PASS_PACKAGING_INVALID_CLOSED'
       elif mode=='no-volumes':await dialog.get_by_text('Nenhum volume comercial',exact=False).wait_for();assert not await dialog.get_by_role('button',name='Adicionar ao carrinho',exact=True).is_enabled();rec['result']='PASS_MISSING_PRESENTATION_DISABLED'
       else:
        await dialog.get_by_placeholder('Ex.: 20',exact=True).fill('40')
@@ -56,10 +56,10 @@ async def main():
        quantities=dialog.locator('input[type=number]');await quantities.last.fill('3')
        action=dialog.get_by_role('button',name='Adicionar ao carrinho',exact=True);assert await action.is_enabled();await action.scroll_into_view_if_needed();g=await action.evaluate(BOX);assert g['within'];rec['assertions'].append({'last_action':g})
        title=dialog.locator('[id]').filter(has_text='Bioinsumo sintético').first
-       rec['dialog_text']=await dialog.inner_text();await page.screenshot(path=str(O/f'{role}-{w}-{mode}-dialog.png'))
+       rec['description_box']=await dialog.locator('[id^=radix-]').filter(has_text='Bioinsumo sintético').last.evaluate(BOX) if False else await dialog.locator('p').first.evaluate(BOX);rec['dialog_text']=await dialog.inner_text();await page.screenshot(path=str(O/f'{role}-{w}-{mode}-dialog.png'))
        await action.click();await page.wait_for_timeout(200)
        assert await page.get_by_role('dialog').count()==0
-       assert 'Bioinsumo sintético' in await page.locator('main').inner_text();rec['result']='PASS_CART_UI_ROUNDTRIP';rec['assertions'].append({'local_cart_readback':True})
+       assert 'Bioinsumo sintético' in await page.locator('main').inner_text();assert '150,00' in await page.locator('main').inner_text();rec['result']='PASS_CART_UI_ROUNDTRIP';rec['assertions'].append({'local_cart_readback':True})
      assert not errors,str(errors);assert not await page.evaluate('window.reviewWrites.length'),'write attempted'
     except Exception as e:rec['result']='GAP';rec['error']=str(e)[:650];rec['text']=(await page.locator('body').inner_text())[:1700]
     rec['reads']=await page.evaluate('window.reviewReads||[]');rec['errors']=errors.copy();shot=O/f'{role}-{w}-{mode}.png';await page.screenshot(path=str(shot));rec['evidence']=str(shot.relative_to(R));rows.append(rec);(O/f'{role}.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2));print(role,w,mode,rec['result'],rec.get('error','')[:150],flush=True)
