@@ -261,7 +261,7 @@ P1: diálogo com tamanho fixo e abas com grade rígida; P2: seletores de largura
 | P2 | src/pages/CockpitLaboratorio.tsx:682 | SelectTrigger | "h-9 min-w-0 flex-1 basis-[145px] text-xs truncate sm:flex-none sm:w-[150px]" |
 | P2 | src/pages/CockpitLaboratorio.tsx:689 | SelectTrigger | "h-9 min-w-0 flex-1 basis-[145px] text-xs truncate sm:flex-none sm:w-[150px]" |
 | P1 | src/pages/CockpitLaboratorio.tsx:747 | TabsList | "grid h-auto w-full grid-cols-2 gap-1 bg-muted/50 p-1 mb-4 sm:grid-cols-3" |
-| P1 | src/pages/Configuracoes.tsx:839 | DialogContent | "max-w-md flex flex-col max-h-[calc(100dvh-2rem)] gap-0 overflow-hidden p-0 sm:p-0" |
+| P1 | src/pages/Configuracoes.tsx:839 | DialogContent | "max-w-md flex flex-col max-h-[calc(100dvh-2rem)] gap-0 overflow-clip p-0 sm:p-0" |
 | P2 | src/pages/Configuracoes.tsx:852 | Button | {`h-auto min-h-16 min-w-0 w-full flex-col items-start justify-start gap-1 whitespace-normal rounded-md border p-3 text-left transition-colors disabled:opacity-50 ${registrationKind === opcao.kind ? "border-primary bg-primary/10" : "border-border hover:bg-accent"}`} |
 | P2 | src/pages/Configuracoes.tsx:954 | SelectTrigger | "w-full sm:w-[180px]" |
 | P2 | src/pages/Configuracoes.tsx:961 | SelectTrigger | "w-full sm:w-[140px]" |

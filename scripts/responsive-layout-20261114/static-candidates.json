@@ -472,7 +472,7 @@
     "file": "src/pages/Configuracoes.tsx",
     "tag": "DialogContent",
     "line": 839,
-    "className": "\"max-w-md flex flex-col max-h-[calc(100dvh-2rem)] gap-0 overflow-hidden p-0 sm:p-0\"",
+    "className": "\"max-w-md flex flex-col max-h-[calc(100dvh-2rem)] gap-0 overflow-clip p-0 sm:p-0\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED"
   },
   {
