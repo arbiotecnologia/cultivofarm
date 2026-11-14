@@ -11275,6 +11275,7 @@ export type Database = {
           mapa_status: string | null
           mapa_valid_until: string | null
           microorganism_id: string
+          product_id: string | null
           published_at: string | null
           published_by: string | null
           published_cest: string | null
@@ -11324,6 +11325,7 @@ export type Database = {
           mapa_status?: string | null
           mapa_valid_until?: string | null
           microorganism_id: string
+          product_id?: string | null
           published_at?: string | null
           published_by?: string | null
           published_cest?: string | null
@@ -11373,6 +11375,7 @@ export type Database = {
           mapa_status?: string | null
           mapa_valid_until?: string | null
           microorganism_id?: string
+          product_id?: string | null
           published_at?: string | null
           published_by?: string | null
           published_cest?: string | null
@@ -11412,6 +11415,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_microorganism_fiscal_readiness"
             referencedColumns: ["microorganism_id"]
+          },
+          {
+            foreignKeyName: "microorganism_regulatory_dossiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "mrd_published_candidate_fk"
@@ -23996,6 +24006,81 @@ export type Database = {
       }
       platform_org_admin_access_state: {
         Args: { p_actor_id: string; p_invite_id: string }
+        Returns: Json
+      }
+      platform_product_dossier_management_checklist: {
+        Args: {
+          p_dossier_id: string
+          p_expected_updated_at: string
+          p_item_key: string
+          p_justification?: string
+          p_product_id: string
+          p_state: string
+        }
+        Returns: Json
+      }
+      platform_product_dossier_management_context: {
+        Args: { p_product_id: string }
+        Returns: Json
+      }
+      platform_product_dossier_management_create: {
+        Args: { p_microorganism_id: string; p_product_id: string }
+        Returns: Json
+      }
+      platform_product_dossier_management_list: {
+        Args: { p_search?: string }
+        Returns: Json
+      }
+      platform_product_dossier_management_save: {
+        Args: {
+          p_dossier_id: string
+          p_expected_updated_at: string
+          p_patch: Json
+          p_product_id: string
+        }
+        Returns: Json
+      }
+      platform_product_dossier_management_submit: {
+        Args: {
+          p_dossier_id: string
+          p_expected_updated_at: string
+          p_product_id: string
+        }
+        Returns: Json
+      }
+      platform_product_dossier_upload_access: {
+        Args: { p_upload_id: string }
+        Returns: Json
+      }
+      platform_product_dossier_upload_attest: {
+        Args: {
+          p_mime: string
+          p_sha256: string
+          p_size: number
+          p_upload_id: string
+        }
+        Returns: undefined
+      }
+      platform_product_dossier_upload_cancel: {
+        Args: { p_upload_id: string }
+        Returns: undefined
+      }
+      platform_product_dossier_upload_finalize: {
+        Args: { p_upload_id: string }
+        Returns: Json
+      }
+      platform_product_dossier_upload_pending: {
+        Args: { p_product_id: string }
+        Returns: Json
+      }
+      platform_product_dossier_upload_prepare: {
+        Args: {
+          p_dossier_id: string
+          p_expected_updated_at: string
+          p_intent: Json
+          p_product_id: string
+          p_upload_id: string
+        }
         Returns: Json
       }
       platform_publish_plan_version: {
