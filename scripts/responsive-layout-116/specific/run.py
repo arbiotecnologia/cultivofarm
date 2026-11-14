@@ -46,8 +46,10 @@ async def main():
        await page.locator('iframe').wait_for(state='visible')
       if d['kind']=='pdf':await page.locator('iframe').wait_for(state='visible');rec['assertions'].append({'pdf_iframe':True})
       await page.get_by_text(d['expected'],exact=False).first.wait_for(state='visible');rec['assertions'].append({'contextual_content':True})
-      for id in ([] if d['kind']=='cockpit-na' else d['ids']):
+      for id in ([] if d['kind']=='cockpit-na' else [39] if d['kind']=='micro-filter-na' else d['ids']):
        loc=page.locator(f'[data-review-occurrence="{id}"]:visible').first;await loc.wait_for(state='visible');await loc.scroll_into_view_if_needed();g=await loc.evaluate(MEASURE);rec['assertions'].append({'id':id,'target':g});assert g['visible'], 'target invisible'
+      if d['kind']=='micro-filter-na':
+       assert await page.locator('[data-review-occurrence="40"]:visible').count()==0;assert await page.get_by_role('button',name='Novo Microrganismo').count()==0;rec['assertions'].append({'global_editor_absent':True});rec['classification']='ID40_N_A_GLOBAL_EDITOR_CLOSED'
       if d['kind']=='cockpit-na':
        assert await page.locator('[data-review-occurrence]').count()==0;rec['assertions'].append({'legacy_controls_absent':True});rec['classification']='N_A_RETIRED_WORKSPACE_CURRENT_ROUTE_PROVED'
       tabs=page.get_by_role('tab')

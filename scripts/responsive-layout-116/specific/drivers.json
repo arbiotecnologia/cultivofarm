@@ -534,5 +534,37 @@
     "kind": "application",
     "expected": "Detalhes da Aplicação",
     "trigger": "Aplicações > linha/cartão de aplicação > detalhes"
+  },
+  {
+    "ids": [
+      39,
+      40
+    ],
+    "file": "src/components/protocolos/MicrorganismosTab.tsx",
+    "export": "MicrorganismosTab",
+    "route": "/base-tecnica",
+    "profiles": [
+      "administrador",
+      "gestor"
+    ],
+    "kind": "micro-filter-na",
+    "expected": "Microrganismos",
+    "trigger": "Base Técnica > Microrganismos; filtro ativo, editor global fechado"
+  },
+  {
+    "ids": [
+      80
+    ],
+    "file": "src/pages/Fazendas.tsx",
+    "export": "default",
+    "route": "/fazendas",
+    "profiles": [
+      "administrador",
+      "gestor"
+    ],
+    "kind": "farm-create",
+    "open": "Nova Fazenda",
+    "expected": "Nova Fazenda",
+    "trigger": "Fazendas > Nova Fazenda"
   }
 ]
