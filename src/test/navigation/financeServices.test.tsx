@@ -25,13 +25,13 @@ it('sidebar Financeiro mostra exatamente Produtos e Serviços no catálogo; cliq
   render(<MemoryRouter><AppSidebar /></MemoryRouter>);
   const catalogueLinks = screen.getAllByRole('link').filter(link => link.getAttribute('href')?.startsWith('/base-tecnica?'));
   expect(catalogueLinks.map(link => link.getAttribute('href'))).toEqual(['/base-tecnica?tab=produtos', '/base-tecnica?tab=servicos']);
-  expect(screen.getByRole('link', { name: 'Serviços', exact: true })).toHaveAttribute('href', '/base-tecnica?tab=servicos');
+  expect(screen.getByRole('link', { name: /^Serviços$/ })).toHaveAttribute('href', '/base-tecnica?tab=servicos');
   expect(state.fetch).not.toHaveBeenCalled();
 });
 it('sem catalogo_precos a sidebar não oferece Produtos nem Serviços', () => {
   state.feature = false; render(<MemoryRouter><AppSidebar /></MemoryRouter>);
-  expect(screen.queryByRole('link', { name: 'Serviços', exact: true })).toBeNull();
-  expect(screen.queryByRole('link', { name: 'Produtos', exact: true })).toBeNull();
+  expect(screen.queryByRole('link', { name: /^Serviços$/ })).toBeNull();
+  expect(screen.queryByRole('link', { name: /^Produtos$/ })).toBeNull();
 });
 it.each(['financeiro', 'administrador', 'gestor'])('%s possui autorização própria de catálogo de serviços', role => {
   expect(canAccess(role, '/base-tecnica?tab=servicos')).toBe(true);
@@ -55,12 +55,12 @@ it.each(['consultor_tecnico', 'parceiro_b2b', 'parceiro_b2b_tecnico', 'cliente_p
 it('Financeiro navega Produtos → Serviços pela aba canônica sem montar irmãos técnicos', async () => {
   render(<MemoryRouter initialEntries={['/base-tecnica?tab=produtos']}><Protocolos /></MemoryRouter>);
   expect(screen.getByText('Consulta de produtos')).toBeInTheDocument();
-  fireEvent.mouseDown(screen.getByRole('tab', { name: 'Serviços', exact: true }), { button: 0, ctrlKey: false });
+  fireEvent.mouseDown(screen.getByRole('tab', { name: /^Serviços$/ }), { button: 0, ctrlKey: false });
   expect(await screen.findByText('Cadastro de serviços')).toBeInTheDocument();
-  expect(screen.getByRole('tab', { name: 'Serviços', exact: true })).toHaveAttribute('aria-selected', 'true');
+  expect(screen.getByRole('tab', { name: /^Serviços$/ })).toHaveAttribute('aria-selected', 'true');
   expect(screen.queryByText('Consulta de produtos')).toBeNull();
-  expect(screen.queryByRole('tab', { name: 'Culturas', exact: true })).toBeNull();
-  expect(screen.queryByRole('tab', { name: 'Microrganismos', exact: true })).toBeNull();
+  expect(screen.queryByRole('tab', { name: /^Culturas$/ })).toBeNull();
+  expect(screen.queryByRole('tab', { name: /^Microrganismos$/ })).toBeNull();
   expect(state.fetch).not.toHaveBeenCalled();
 });
 it.each(['servicos&tab=produtos', 'servicos&tab=servicos', 'inexistente'])('Financeiro recusa tab ambígua/inválida %s antes de leitores', async query => {
