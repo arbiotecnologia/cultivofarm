@@ -16292,6 +16292,42 @@ export type Database = {
           },
         ]
       }
+      product_regulatory_dossier_links: {
+        Row: {
+          created_at: string
+          dossier_id: string
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dossier_id: string
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dossier_id?: string
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_regulatory_dossier_links_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: true
+            referencedRelation: "microorganism_regulatory_dossiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_regulatory_dossier_links_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_sale_units: {
         Row: {
           forma_fisica: string | null
@@ -24304,6 +24340,10 @@ export type Database = {
       }
       prefixo_para_microrganismo: { Args: { _tipo: string }; Returns: string }
       prefixo_para_produto: { Args: { _tipo: string }; Returns: string }
+      product_regulatory_storage_read_allowed: {
+        Args: { p_path: string }
+        Returns: boolean
+      }
       proximo_codigo: {
         Args: { _prefixo: string; _tabela: string }
         Returns: string
@@ -26714,6 +26754,10 @@ export type Database = {
         Args: { p_dossier_id: string; p_patch: Json }
         Returns: Json
       }
+      rpc_regulatory_microorganism_products: {
+        Args: { p_microorganism_id: string }
+        Returns: Json
+      }
       rpc_regulatory_ncm_candidate_add: {
         Args: {
           p_cest?: string
@@ -26741,6 +26785,18 @@ export type Database = {
       rpc_regulatory_presentation_upsert: {
         Args: { p_dossier_id: string; p_patch?: Json; p_volume_ml: number }
         Returns: string
+      }
+      rpc_regulatory_product_document_access: {
+        Args: {
+          p_document_id: string
+          p_microorganism_id: string
+          p_product_id: string
+        }
+        Returns: Json
+      }
+      rpc_regulatory_product_dossier_detail: {
+        Args: { p_microorganism_id: string; p_product_id: string }
+        Returns: Json
       }
       rpc_regulatory_review_decide: {
         Args: {
