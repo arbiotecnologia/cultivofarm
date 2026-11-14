@@ -22,6 +22,22 @@ CREATE TABLE platform_private.product_dossier_uploads(
 );
 REVOKE ALL ON platform_private.product_dossier_uploads FROM PUBLIC,anon,authenticated,service_role;
 ALTER TABLE platform_private.product_dossier_uploads ENABLE ROW LEVEL SECURITY;
+CREATE TABLE platform_private.product_dossier_write_permits(txid bigint NOT NULL,dossier_id uuid NOT NULL,PRIMARY KEY(txid,dossier_id));
+REVOKE ALL ON platform_private.product_dossier_write_permits FROM PUBLIC,anon,authenticated,service_role;
+ALTER TABLE platform_private.product_dossier_write_permits ENABLE ROW LEVEL SECURITY;
+CREATE OR REPLACE FUNCTION platform_private.product_dossier_write_guard()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ DECLARE v_id uuid; p uuid; BEGIN
+ IF TG_TABLE_NAME='microorganism_regulatory_dossiers' THEN
+ v_id:=coalesce(NEW.id,OLD.id); p:=coalesce(NEW.product_id,OLD.product_id);
+ IF TG_OP='UPDATE' AND (NEW.product_id IS DISTINCT FROM OLD.product_id OR NEW.microorganism_id IS DISTINCT FROM OLD.microorganism_id) THEN RAISE EXCEPTION 'REGULATORY_SCOPE_IMMUTABLE' USING ERRCODE='42501'; END IF;
+ ELSE v_id:=coalesce(NEW.dossier_id,OLD.dossier_id); SELECT product_id INTO p FROM public.microorganism_regulatory_dossiers WHERE id=v_id; END IF;
+ IF p IS NOT NULL AND NOT EXISTS(SELECT 1 FROM platform_private.product_dossier_write_permits WHERE txid=txid_current() AND dossier_id=v_id) THEN RAISE EXCEPTION 'REGULATORY_PRODUCT_WRITER_REQUIRED' USING ERRCODE='42501'; END IF;
+ RETURN coalesce(NEW,OLD);
+END $$;
+REVOKE ALL ON FUNCTION platform_private.product_dossier_write_guard() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER product_dossier_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.microorganism_regulatory_dossiers FOR EACH ROW EXECUTE FUNCTION platform_private.product_dossier_write_guard();
+CREATE TRIGGER product_dossier_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.microorganism_regulatory_documents FOR EACH ROW EXECUTE FUNCTION platform_private.product_dossier_write_guard();
+CREATE TRIGGER product_dossier_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.microorganism_regulatory_checklist FOR EACH ROW EXECUTE FUNCTION platform_private.product_dossier_write_guard();
 CREATE OR REPLACE FUNCTION platform_private.product_dossier_manage_scope(p_product uuid,p_micro uuid DEFAULT NULL)
 RETURNS uuid LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
 DECLARE org uuid; BEGIN
@@ -57,6 +73,7 @@ RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$ 
 END $$;
 CREATE OR REPLACE FUNCTION platform_private.product_dossier_management_create(p_product_id uuid,p_microorganism_id uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ DECLARE d public.microorganism_regulatory_dossiers; v int; BEGIN
+ IF p_microorganism_id IS NULL THEN RAISE EXCEPTION 'REGULATORY_MICRO_REQUIRED' USING ERRCODE='22023'; END IF;
  PERFORM platform_private.product_dossier_manage_scope(p_product_id,p_microorganism_id);
  PERFORM pg_advisory_xact_lock(hashtextextended('product-dossier:'||p_product_id,0));
  PERFORM pg_advisory_xact_lock(hashtextextended('regulatory_dossier:'||p_microorganism_id,0));
@@ -67,9 +84,12 @@ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ DECLARE
   RETURN jsonb_build_object('product_id',p_product_id,'dossier_id',d.id);
  END IF;
  SELECT coalesce(max(version),0)+1 INTO v FROM public.microorganism_regulatory_dossiers WHERE microorganism_id=p_microorganism_id;
- INSERT INTO public.microorganism_regulatory_dossiers(product_id,microorganism_id,version,status,created_by,updated_by) VALUES(p_product_id,p_microorganism_id,v,'DRAFT',auth.uid(),auth.uid()) RETURNING * INTO d;
+ d.id:=gen_random_uuid();
+ INSERT INTO platform_private.product_dossier_write_permits VALUES(txid_current(),d.id);
+ INSERT INTO public.microorganism_regulatory_dossiers(id,product_id,microorganism_id,version,status,created_by,updated_by) VALUES(d.id,p_product_id,p_microorganism_id,v,'DRAFT',auth.uid(),auth.uid()) RETURNING * INTO d;
  INSERT INTO public.product_regulatory_dossier_links(product_id,dossier_id) VALUES(p_product_id,d.id);
  INSERT INTO public.microorganism_regulatory_checklist(dossier_id,item_key,state) SELECT d.id,k,'PENDING' FROM unnest(ARRAY['FINALIDADE_REGULATORIA','CEPA','FORMULACAO','GARANTIA_ROTULO','REGISTRO_MAPA','TITULAR_FABRICANTE','NCM_CEST_TIPI','GTIN','UNIDADE_CONVERSAO','ORIGEM','CFOP','TRIBUTACAO'])k;
+ DELETE FROM platform_private.product_dossier_write_permits WHERE txid=txid_current() AND dossier_id=d.id;
  RETURN jsonb_build_object('product_id',p_product_id,'dossier_id',d.id);
 END $$;
 CREATE OR REPLACE FUNCTION platform_private.product_dossier_lock(p_product_id uuid,p_dossier_id uuid,p_expected_updated_at timestamptz)
@@ -80,6 +100,7 @@ RETURNS public.microorganism_regulatory_dossiers LANGUAGE plpgsql SECURITY DEFIN
  IF d.id IS NULL THEN RAISE EXCEPTION 'REGULATORY_FORBIDDEN' USING ERRCODE='42501'; END IF;
  IF d.status NOT IN ('DRAFT','PENDING_REVIEW') THEN RAISE EXCEPTION 'REGULATORY_DOSSIER_NOT_EDITABLE' USING ERRCODE='55006'; END IF;
  IF p_expected_updated_at IS NULL OR d.updated_at IS DISTINCT FROM p_expected_updated_at THEN RAISE EXCEPTION 'REGULATORY_VERSION_CONFLICT' USING ERRCODE='PT409'; END IF;
+ INSERT INTO platform_private.product_dossier_write_permits VALUES(txid_current(),d.id) ON CONFLICT DO NOTHING;
  RETURN d;
 END $$;
 CREATE OR REPLACE FUNCTION platform_private.product_dossier_management_save(p_product_id uuid,p_dossier_id uuid,p_expected_updated_at timestamptz,p_patch jsonb)
@@ -90,6 +111,7 @@ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ DECLARE
  IF k<>ALL(ARRAY['strain_code','strain_name','regulatory_category','formulation','label_guarantee','guarantee_unit','mapa_registration_number','mapa_holder','mapa_manufacturer','mapa_status','mapa_valid_until','mapa_not_applicable_reason','notes']) OR (jsonb_typeof(p_patch->k) NOT IN ('string','null')) OR length(p_patch->>k)>10000 THEN RAISE EXCEPTION 'REGULATORY_PATCH_INVALID' USING ERRCODE='22023'; END IF; END LOOP;
  r:=jsonb_populate_record(d,p_patch);
  UPDATE public.microorganism_regulatory_dossiers SET strain_code=r.strain_code,strain_name=r.strain_name,regulatory_category=r.regulatory_category,formulation=r.formulation,label_guarantee=r.label_guarantee,guarantee_unit=r.guarantee_unit,mapa_registration_number=r.mapa_registration_number,mapa_holder=r.mapa_holder,mapa_manufacturer=r.mapa_manufacturer,mapa_status=r.mapa_status,mapa_valid_until=r.mapa_valid_until,mapa_not_applicable_reason=r.mapa_not_applicable_reason,notes=r.notes,technical_review_status='PENDING',regulatory_review_status='PENDING',fiscal_review_status='PENDING',updated_by=auth.uid() WHERE id=d.id RETURNING * INTO d;
+ DELETE FROM platform_private.product_dossier_write_permits WHERE txid=txid_current() AND dossier_id=d.id;
  RETURN jsonb_build_object('product_id',p_product_id,'dossier_id',d.id,'updated_at',d.updated_at);
 END $$;
 CREATE OR REPLACE FUNCTION platform_private.product_dossier_management_checklist(p_product_id uuid,p_dossier_id uuid,p_expected_updated_at timestamptz,p_item_key text,p_state text,p_justification text DEFAULT NULL)
@@ -98,6 +120,7 @@ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ DECLARE
  IF p_state IS NULL OR p_state<>ALL(ARRAY['PENDING','CONFIRMED','NOT_APPLICABLE']) OR NOT EXISTS(SELECT 1 FROM public.microorganism_regulatory_checklist WHERE dossier_id=d.id AND item_key=p_item_key) OR (p_state='NOT_APPLICABLE' AND length(btrim(coalesce(p_justification,'')))=0) THEN RAISE EXCEPTION 'REGULATORY_CHECKLIST_INVALID' USING ERRCODE='22023'; END IF;
  UPDATE public.microorganism_regulatory_checklist SET state=p_state,justification=p_justification,decided_by=CASE WHEN p_state='PENDING' THEN NULL ELSE auth.uid() END,decided_at=CASE WHEN p_state='PENDING' THEN NULL ELSE now() END WHERE dossier_id=d.id AND item_key=p_item_key;
  UPDATE public.microorganism_regulatory_dossiers SET technical_review_status='PENDING',regulatory_review_status='PENDING',fiscal_review_status='PENDING',updated_by=auth.uid() WHERE id=d.id RETURNING * INTO d;
+ DELETE FROM platform_private.product_dossier_write_permits WHERE txid=txid_current() AND dossier_id=d.id;
  RETURN jsonb_build_object('product_id',p_product_id,'dossier_id',d.id,'updated_at',d.updated_at);
 END $$;
 CREATE OR REPLACE FUNCTION platform_private.product_dossier_management_submit(p_product_id uuid,p_dossier_id uuid,p_expected_updated_at timestamptz)
@@ -105,6 +128,7 @@ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ DECLARE
  d:=platform_private.product_dossier_lock(p_product_id,p_dossier_id,p_expected_updated_at);
  IF d.status<>'DRAFT' OR EXISTS(SELECT 1 FROM platform_private.product_dossier_uploads WHERE dossier_id=d.id AND state IN ('RESERVED','VERIFIED')) THEN RAISE EXCEPTION 'REGULATORY_INVALID_TRANSITION' USING ERRCODE='55006'; END IF;
  UPDATE public.microorganism_regulatory_dossiers SET status='PENDING_REVIEW',updated_by=auth.uid() WHERE id=d.id RETURNING * INTO d;
+ DELETE FROM platform_private.product_dossier_write_permits WHERE txid=txid_current() AND dossier_id=d.id;
  RETURN jsonb_build_object('product_id',p_product_id,'dossier_id',d.id,'updated_at',d.updated_at);
 END $$;
 CREATE OR REPLACE FUNCTION platform_private.product_dossier_upload_prepare(p_product_id uuid,p_dossier_id uuid,p_expected_updated_at timestamptz,p_upload_id uuid,p_intent jsonb)
@@ -124,6 +148,7 @@ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ DECLARE
  IF EXISTS(SELECT 1 FROM public.microorganism_regulatory_documents WHERE dossier_id=d.id AND content_sha256=sha AND deleted_at IS NULL) THEN RAISE EXCEPTION 'REGULATORY_DOCUMENT_DUPLICATE' USING ERRCODE='PT409'; END IF;
  IF EXISTS(SELECT 1 FROM platform_private.product_dossier_uploads WHERE dossier_id=d.id AND sha256=sha AND state IN ('RESERVED','VERIFIED')) THEN RAISE EXCEPTION 'REGULATORY_UPLOAD_PENDING' USING ERRCODE='PT409'; END IF;
  INSERT INTO platform_private.product_dossier_uploads(id,actor_id,product_id,dossier_id,intent,storage_path,sha256,size_bytes,mime) VALUES(p_upload_id,auth.uid(),p_product_id,d.id,p_intent,'dossiers/'||d.id||'/'||p_upload_id||'/'||filename,sha,sz,mime) RETURNING * INTO u;
+ DELETE FROM platform_private.product_dossier_write_permits WHERE txid=txid_current() AND dossier_id=d.id;
  RETURN to_jsonb(u)-'actor_id'-'intent';
 END $$;
 CREATE OR REPLACE FUNCTION platform_private.product_dossier_upload_access(p_upload_id uuid)
@@ -150,9 +175,11 @@ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ DECLARE
  IF u.actor_id<>auth.uid() THEN RAISE EXCEPTION 'REGULATORY_FORBIDDEN' USING ERRCODE='42501'; END IF;
  IF u.state='COMMITTED' THEN RETURN jsonb_build_object('product_id',u.product_id,'document_id',u.id,'state','COMMITTED'); END IF;
  IF d.status NOT IN ('DRAFT','PENDING_REVIEW') OR u.state<>'VERIFIED' OR NOT EXISTS(SELECT 1 FROM public.product_regulatory_dossier_links WHERE product_id=u.product_id AND dossier_id=d.id) OR NOT EXISTS(SELECT 1 FROM storage.objects WHERE bucket_id='fiscal-regulatorio' AND name=u.storage_path) THEN RAISE EXCEPTION 'REGULATORY_UPLOAD_NOT_READY' USING ERRCODE='55006'; END IF;
+ INSERT INTO platform_private.product_dossier_write_permits VALUES(txid_current(),d.id) ON CONFLICT DO NOTHING;
  INSERT INTO public.microorganism_regulatory_documents(id,dossier_id,doc_type,title,storage_path,content_sha256,issuer,issued_at,valid_until,uploaded_by) VALUES(u.id,u.dossier_id,u.intent->>'doc_type',u.intent->>'title',u.storage_path,u.sha256,nullif(u.intent->>'issuer',''),nullif(u.intent->>'issued_at','')::date,nullif(u.intent->>'valid_until','')::date,auth.uid());
  UPDATE public.microorganism_regulatory_dossiers SET technical_review_status='PENDING',regulatory_review_status='PENDING',fiscal_review_status='PENDING',updated_by=auth.uid() WHERE id=d.id;
  UPDATE platform_private.product_dossier_uploads SET state='COMMITTED',updated_at=clock_timestamp() WHERE id=u.id;
+ DELETE FROM platform_private.product_dossier_write_permits WHERE txid=txid_current() AND dossier_id=d.id;
  RETURN jsonb_build_object('product_id',u.product_id,'document_id',u.id,'state','COMMITTED');
 END $$;
 CREATE OR REPLACE FUNCTION platform_private.product_dossier_upload_pending(p_product_id uuid)
