@@ -1,5 +1,7 @@
+import { createRecipientLabelsPdf, labelLayout } from './etiquetasLayout';
+import { outputFormat } from './etiquetasRecipientes';
 import { jsPDF } from "jspdf";
-import { LABEL_TEMPLATES, labelDetails, labelTemplate, snapshotCompany, type LabelData } from "./etiquetas";
+import { LABEL_TEMPLATES, asRecipientLabel, canPrintLabel, labelDetails, labelTemplate, snapshotCompany, type LabelData } from "./etiquetas";
 import { formatDateDisplay } from "./date-utils";
 async function imageData(src: string): Promise<string> {
   const image = new Image(); image.crossOrigin = "anonymous";
@@ -10,6 +12,8 @@ async function imageData(src: string): Promise<string> {
 }
 export async function createLabelsPdf(labels: LabelData[], root: HTMLElement): Promise<jsPDF> {
   if (!labels.length) throw new Error("Selecione recipientes.");
+  assertLabelsOutput(labels);
+  if (labels.every(label => label.snapshot?.layout_versao === 'recipiente-v2')) return createRecipientLabelsPdf(labels.map(asRecipientLabel), '100x150', 'termica', 'https://app.cultivofarm.com.br');
   const first = LABEL_TEMPLATES[labelTemplate(labels[0])];
   const pdf = new jsPDF({ unit: "mm", format: [first.width, first.height], orientation: first.width > first.height ? "landscape" : "portrait" });
   for (const [index, label] of labels.entries()) {
@@ -37,4 +41,13 @@ export async function createLabelsPdf(labels: LabelData[], root: HTMLElement): P
     if (!compact) { y = Math.max(y, qrY + qrSize + 2); pdf.setFontSize(7); for (const [key, value] of labelDetails(label)) text(`${key}: ${value}`, size.width - margin * 2); }
   }
   return pdf;
+}
+
+export function assertLabelsOutput(labels: LabelData[]) {
+  for (const row of labels) {
+    if (!canPrintLabel(row)) throw new Error('Impressão bloqueada: CQ não liberado ou etiqueta histórica.');
+    const label = asRecipientLabel(row);
+    if (label.snapshot.layout_versao !== 'recipiente-v2') throw new Error('Etiqueta legada: regularização para recipiente-v2 obrigatória antes da saída de recipientes.');
+    labelLayout(label, outputFormat(label, '100x150'));
+  }
 }

@@ -1,3 +1,4 @@
+import { LabelTechnicalDataDialog } from '@/components/etiquetas/LabelTechnicalDataDialog';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/cultivofarm.types';
@@ -129,7 +130,7 @@ export default function Lotes() {
           <TableCell className="min-w-44"><p>Produzido: {volumeL(v?.produzido)}</p><p>Envasado: {volumeL(v?.envasado)}</p><p>Saldo de envase: {volumeL(v?.saldo)}</p>{v?.inconsistente && <p className="text-destructive text-xs">Volumes inconsistentes ou incompletos</p>}</TableCell>
           <TableCell>{l.tanque || '—'}<p className="text-muted-foreground">{l.responsavel_producao || '—'}</p></TableCell>
           <TableCell><Badge variant="outline">{labels[l.status] || l.status || 'Não informado'}</Badge></TableCell>
-          <TableCell><EtiquetaProdutoActions loteId={l.id} /><Button variant="outline" size="sm" disabled={!l.osId} aria-label={`Consultar lote ${l.codigo_lote || 'sem código'} no Cockpit`} onClick={() => navigate(cockpitLote(l.osId))}>Consultar no Cockpit</Button>{!l.osId && <p className="text-xs text-muted-foreground mt-1">{l.vinculo}</p>}</TableCell>
+          <TableCell><EtiquetaProdutoActions loteId={l.id} /><LabelTechnicalDataDialog kind="validade" targetId={l.id} targetName={l.codigo_lote || "Lote sem código"} /><Button variant="outline" size="sm" disabled={!l.osId} aria-label={`Consultar lote ${l.codigo_lote || 'sem código'} no Cockpit`} onClick={() => navigate(cockpitLote(l.osId))}>Consultar no Cockpit</Button>{!l.osId && <p className="text-xs text-muted-foreground mt-1">{l.vinculo}</p>}</TableCell>
         </TableRow>;
       })}</TableBody></Table></div>}
       <nav aria-label="Paginação de lotes" className="flex flex-wrap items-center justify-end gap-3"><Button variant="outline" size="icon" aria-label="Página anterior" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}><ChevronLeft className="h-4 w-4" /></Button><span aria-live="polite">Página {currentPage} de {totalPages}</span><Button variant="outline" size="icon" aria-label="Próxima página" disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)}><ChevronRight className="h-4 w-4" /></Button></nav>
