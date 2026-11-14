@@ -17,6 +17,7 @@ function read(name,args,one){
  if(name==='platform_read_global_cultures')return {items:[{id,nome:'Cultura sintética',ativo:true}],has_more:false};
  if(name==='platform_read_global_culture_detail')return {id,nome:'Cultura sintética',descricao:'Descrição contextualizada',ativo:true,updated_at:'2026-11-14T00:00:00Z',desativada_em:null};
  if(name==='envase')return [{...base,lote_id:id,data_envase:'2026-11-14'}];
+ if(name==='registros_consultor'&&!one)return [];
  if(name==='registros_consultor')return {...base,status:'rascunho',version:7,cultura_id:id,clientes:{nome:client.nome},fazendas:{nome:farm.nome},talhoes:{nome:plot.nome},culturas:{nome:'Milho'}};
  if(name==='get_cliente_ids_for_user')return [id];
  if(name==='user_clientes')return [{cliente_id:id,principal:true,is_active:true,revoked_at:null,valid_from:null,valid_until:null}];
