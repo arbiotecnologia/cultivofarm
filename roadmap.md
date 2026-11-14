@@ -1,3 +1,8 @@
+## 14/11 02:46 — Atesto service-only e recuperação de reserva
+- [ ] Corrigir pontes de atesto/cancelamento sem USAGE geral; auditar ACL real.
+- [ ] Reconsultar reservas em Atualizar/reload; testar retomada e descarte com confirmação.
+- [ ] Preservar QA integralmente, aplicar migração e relatar provas sem publicar.
+
 ## 14/11 02:29 — Gestão de dossiês pelo tenant proprietário
 - [x] Substituir autoridade global por editor/leitor proprietário, mantendo leitores publicados compatíveis.
 - [x] Cobertura múltipla explícita, versões e abrangência documental; navegação canônica nas duas entradas.
