@@ -1,3 +1,9 @@
+## 14/11 — Dossiês por produto e perfil fiscal automático
+- [ ] Verificar schema, ownership, vínculos explícitos e inserções reais.
+- [ ] Implementar navegação e documentos privados por produto, preservando dossiês legados e estados distintos.
+- [ ] Garantir perfil fiscal DRAFT único na inserção e preencher ausências sem sobrescrever parametrizações.
+- [ ] Testar persistência, isolamento, navegação e parametrização; informar limites sem publicar frontend.
+
 ## 12/11 04:13 — Auditoria E2E adicional após catálogo
 - [x] Três entradas/perfis auditados por regressões e bloqueios UI; primeira falha de famílias B2B reproduzida/corrigida, retestes 67/67 e 16/16. Relatório/matriz/hashes em scripts/order-three-origins-audit-20261112.
 - [ ] E2E UI→persistência das três origens: BLOCKED espelho atual ausente; reconstrução histórica usa bypass de fixtures e não foi usada como prova. Papéis/gates intactos, nenhum pedido/NF/título real ou sintético final fabricado.
