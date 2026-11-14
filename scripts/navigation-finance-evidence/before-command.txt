@@ -1,0 +1,1 @@
+bun run test -- src/test/catalogo/unifiedProducts.realClient.test.tsx -t 'Financeiro conserva consulta via redirect' --maxWorkers=2

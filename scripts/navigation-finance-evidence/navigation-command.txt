@@ -1,0 +1,1 @@
+bun run test -- src/test/navigation/financeServices.test.tsx src/test/services/serviceBilling.test.ts --maxWorkers=2

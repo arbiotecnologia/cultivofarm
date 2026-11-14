@@ -10779,6 +10779,7 @@ export type Database = {
           status: Database["public"]["Enums"]["status_lote"]
           tanque: string | null
           updated_at: string
+          validade: string | null
           volume_produzido: number | null
         }
         Insert: {
@@ -10796,6 +10797,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["status_lote"]
           tanque?: string | null
           updated_at?: string
+          validade?: string | null
           volume_produzido?: number | null
         }
         Update: {
@@ -10813,6 +10815,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["status_lote"]
           tanque?: string | null
           updated_at?: string
+          validade?: string | null
           volume_produzido?: number | null
         }
         Relationships: [
@@ -16880,6 +16883,7 @@ export type Database = {
           responsavel_tecnico_registro: string | null
           status: string
           template_versao: string | null
+          toxicidade: string | null
           transporte_texto: string | null
           updated_at: string
           uso_texto: string | null
@@ -16916,6 +16920,7 @@ export type Database = {
           responsavel_tecnico_registro?: string | null
           status?: string
           template_versao?: string | null
+          toxicidade?: string | null
           transporte_texto?: string | null
           updated_at?: string
           uso_texto?: string | null
@@ -16952,6 +16957,7 @@ export type Database = {
           responsavel_tecnico_registro?: string | null
           status?: string
           template_versao?: string | null
+          toxicidade?: string | null
           transporte_texto?: string | null
           updated_at?: string
           uso_texto?: string | null
@@ -22500,6 +22506,7 @@ export type Database = {
           responsavel_tecnico_registro: string | null
           status: string
           template_versao: string | null
+          toxicidade: string | null
           transporte_texto: string | null
           updated_at: string
           uso_texto: string | null
@@ -24678,6 +24685,10 @@ export type Database = {
         Args: { p_origem: string; p_os_id: string }
         Returns: Json
       }
+      rpc_aprovar_validade_etiqueta_lote: {
+        Args: { p_lote_id: string; p_referencia: string; p_validade: string }
+        Returns: undefined
+      }
       rpc_archive_communication_template: {
         Args: { p_template_id: string }
         Returns: Json
@@ -25173,6 +25184,14 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      rpc_cadastrar_toxicidade_etiqueta_produto: {
+        Args: {
+          p_produto_id: string
+          p_referencia: string
+          p_toxicidade: string
+        }
+        Returns: string
       }
       rpc_campaign_delete: { Args: { p_id: string }; Returns: undefined }
       rpc_campaign_upsert: {

@@ -1,3 +1,7 @@
+## 14/11 12:39 — Falha Financeiro/Serviços
+- [x] Falha isolada reproduzida; expectativa obsoleta comprovada por matriz própria de Serviços, testes preexistentes, página real, guards e sidebar. Permissões/rotas inalteradas.
+- [x] Teste corrigido com listas exatas e negativas mantidas; bateria completa sem filtros: 238/238 em 16/16 arquivos, navegação+Serviços 26/26, build automático OK. Comandos/stdout/exit/browser e limites em scripts/navigation-finance-evidence/REPORT.md. Sem publicação/deploy/banco.
+
 ## 14/11 12:24 — Layout e cadastro técnico homologados
 - [x] Integrar recipiente-v2 por volume e cadastro separado de validade/toxicidade em Lotes/Produtos; binding, legado e contenções preservados, sem remoto/publicação.
 - [x] 203 testes/15 arquivos PASS, build automático OK; PDF três medidas exatas e QR 3/3, formulários/ACK sintéticos e Ctrl+P fechado. Revisão, arquivos, rollback e evidências em scripts/labels-frontend-integration-20261114/recipient-v2/REPORT.md.
