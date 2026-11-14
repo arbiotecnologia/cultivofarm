@@ -1,3 +1,7 @@
+## 14/11 12:39 — Falha Financeiro/Serviços
+- [ ] Reproduzir isoladamente e provar a regra vigente por fontes independentes, sem modificar permissões.
+- [ ] Corrigir a causa e cobrir navegação autorizada/restrita; executar a bateria completa de 16 arquivos e registrar antes/depois, build e navegação em scripts/navigation-finance-evidence.
+
 ## 14/11 12:24 — Layout e cadastro técnico homologados
 - [x] Integrar recipiente-v2 por volume e cadastro separado de validade/toxicidade em Lotes/Produtos; binding, legado e contenções preservados, sem remoto/publicação.
 - [x] 203 testes/15 arquivos PASS, build automático OK; PDF três medidas exatas e QR 3/3, formulários/ACK sintéticos e Ctrl+P fechado. Revisão, arquivos, rollback e evidências em scripts/labels-frontend-integration-20261114/recipient-v2/REPORT.md.
