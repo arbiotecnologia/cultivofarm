@@ -63,7 +63,7 @@ export function PasswordRecoveryForm({ initialEmail = "", onBack }: { initialEma
       <ArrowLeft className="h-4 w-4" /> Voltar ao login
     </Button>
     {confirmed ? <p role="status" className="text-sm text-muted-foreground">
-      Se houver uma conta elegível para este email, você receberá um link para recuperar sua senha.
+      Se houver uma conta elegível para este email, você receberá um link para definir sua senha.
     </p> : <form onSubmit={submit} className="space-y-4" aria-label="Recuperar senha" aria-busy={loading}>
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
       <div className="space-y-2">

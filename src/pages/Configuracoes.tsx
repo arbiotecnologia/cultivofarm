@@ -339,7 +339,9 @@ export default function Configuracoes() {
       if (!current()) return;
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       queryClient.invalidateQueries({ queryKey: ["partner-users-links"] });
-      toast({ title: "Usuário criado com sucesso" });
+      toast(registrationKind === "internal"
+        ? { title: "Usuário criado com sucesso" }
+        : { title: "Cadastro concluído", description: "Para definir a senha, o titular deve abrir a tela de login, selecionar Primeiro acesso ou esqueci minha senha e solicitar o link com o e-mail cadastrado." });
       setCreateOpen(false);
       setNewUser(initialNewUser);
       setCreateErros({});

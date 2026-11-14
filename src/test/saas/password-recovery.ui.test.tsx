@@ -90,8 +90,8 @@ describe("pausa local de recuperação", () => {
 });
 
 for (const [name, Page, recoveryButton] of [
-  ["principal", Auth, "Esqueci minha senha"],
-  ["mobile", MobileLogin, "Esqueceu a senha?"],
+  ["principal", Auth, "Primeiro acesso ou esqueci minha senha"],
+  ["mobile", MobileLogin, "Primeiro acesso ou esqueci minha senha"],
 ] as const) {
   describe(`recuperação ${name}`, () => {
     async function open() {

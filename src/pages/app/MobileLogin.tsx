@@ -110,7 +110,7 @@ export default function MobileLogin() {
             onClick={() => setMode("recovery")}
             className="block w-full text-center text-sm text-primary font-medium"
           >
-            Esqueceu a senha?
+            Primeiro acesso ou esqueci minha senha
           </Button>
         </form>
       ) : (
