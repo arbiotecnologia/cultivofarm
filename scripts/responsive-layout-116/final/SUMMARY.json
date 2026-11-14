@@ -1,0 +1,15 @@
+{
+  "ids": 116,
+  "by_id": {
+    "COMPLETE_DECLARED_ACTION_PROFILE_GEOMETRY": 88,
+    "ASSERTED_GEOMETRY_WITH_CONTEXT_OR_CHAIN_GAP": 16,
+    "N_A_CURRENT_CLOSED_OR_RETIRED_CONTEXTUAL_ASSERTION": 9,
+    "N_A_ORIGINAL_CONSUMER_GATE_CLOSED": 2,
+    "COMPLETE_LOCAL_STAFF_SELECTOR_GEOMETRY_ROUTE_GUARD_DENIES": 1
+  },
+  "chains_traced": 61,
+  "new_browser_scenarios": 142,
+  "new_browser_positive": 140,
+  "guard_comparisons": 270,
+  "scope": "local synthetic geometry; source chain qualification; guards kept original; no production JWT/RLS/Storage certification"
+}
