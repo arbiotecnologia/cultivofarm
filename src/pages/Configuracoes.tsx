@@ -836,12 +836,14 @@ export default function Configuracoes() {
                       <DialogTrigger asChild>
                         <Button><Plus className="h-4 w-4 mr-2" />Novo Usuário</Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-md flex flex-col max-h-[85vh] gap-0 overflow-hidden p-0">
-                        <DialogHeader className="shrink-0 border-b px-6 pt-6 pb-4">
+                      <DialogContent className="max-w-md flex flex-col max-h-[calc(100dvh-2rem)] gap-0 overflow-hidden p-0">
+                        <DialogHeader className="shrink-0 border-b px-4 sm:px-6 pt-6 pb-4 pr-14">
                           <DialogTitle>Cadastrar Novo Usuário</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6 py-4 [overflow-wrap:anywhere]">
                           <div className="pt-2">
                             <Label id="tipo-cadastro-label">Tipo de cadastro</Label>
-                            <div role="radiogroup" aria-labelledby="tipo-cadastro-label" className="grid grid-cols-3 gap-2 mt-1">
+                            <div role="radiogroup" aria-labelledby="tipo-cadastro-label" className="grid grid-cols-1 min-[480px]:grid-cols-3 gap-2 mt-1">
                               {([
                                 { kind: "internal" as UserRegistrationKind, titulo: "Interno", descricao: "Equipe da empresa" },
                                 { kind: "b2b" as UserRegistrationKind, titulo: "Parceiro B2B", descricao: "Perfis externos do parceiro" },
@@ -855,16 +857,14 @@ export default function Configuracoes() {
                                   aria-checked={registrationKind === opcao.kind}
                                   disabled={createUser.isPending}
                                   onClick={() => changeKind(opcao.kind)}
-                                  className={`rounded-md border p-2 text-left transition-colors disabled:opacity-50 ${registrationKind === opcao.kind ? "border-primary bg-primary/10" : "border-border hover:bg-accent"}`}
+                                  className={`h-auto min-h-16 min-w-0 w-full flex-col items-start justify-start gap-1 whitespace-normal rounded-md border p-3 text-left transition-colors disabled:opacity-50 ${registrationKind === opcao.kind ? "border-primary bg-primary/10" : "border-border hover:bg-accent"}`}
                                 >
-                                  <span className="block text-sm font-medium">{opcao.titulo}</span>
-                                  <span className="block text-xs text-muted-foreground">{opcao.descricao}</span>
+                                  <span className="block w-full break-words text-sm font-medium leading-5">{opcao.titulo}</span>
+                                  <span className="block w-full break-words text-xs leading-4 text-muted-foreground">{opcao.descricao}</span>
                                 </Button>
                               ))}
                             </div>
                           </div>
-                        </DialogHeader>
-                        <div className="space-y-3 flex-1 overflow-y-auto px-6 py-4">
                           {createResumo && (
                             <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
                               {createResumo}
@@ -901,7 +901,7 @@ export default function Configuracoes() {
                             <div
                               ref={registrarCampo("roles")}
                               tabIndex={-1}
-                              className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto"
+                              className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto"
                               {...erroProps("roles")}
                             >
                               {TENANT_MANAGEABLE_ROLES.map(r => {
@@ -933,8 +933,8 @@ export default function Configuracoes() {
                           )}
 
                         </div>
-                        <div className="shrink-0 border-t px-6 py-4">
-                          <Button className="w-full" onClick={handleCriarUsuario} disabled={createUser.isPending || (registrationKind !== "internal" && !EXTERNAL_USER_ACTIVATION_REVIEWED)}>
+                        <div className="shrink-0 border-t bg-background px-4 sm:px-6 py-3">
+                          <Button className="w-full h-auto min-h-12 whitespace-normal break-words" onClick={handleCriarUsuario} disabled={createUser.isPending || (registrationKind !== "internal" && !EXTERNAL_USER_ACTIVATION_REVIEWED)}>
                             {createUser.isPending ? "Criando..." : "Criar Usuário"}
                           </Button>
                         </div>
@@ -951,14 +951,14 @@ export default function Configuracoes() {
                     <Input placeholder="Buscar por nome ou email..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9" />
                   </div>
                   <Select value={filterRole} onValueChange={setFilterRole}>
-                    <SelectTrigger className="w-[180px]"><SelectValue placeholder="Filtrar perfil" /></SelectTrigger>
+                    <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Filtrar perfil" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos os perfis</SelectItem>
                       {ACTIVE_ROLES.map(r => <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>)}
                     </SelectContent>
                   </Select>
                   <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                    <SelectTrigger className="w-full sm:w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
                       <SelectItem value="ativo">Ativos</SelectItem>
@@ -1180,7 +1180,7 @@ export default function Configuracoes() {
                     {editSomenteLeitura && <p role="status" className="text-xs text-muted-foreground border rounded-md p-2">{MSG_EDICAO_EXTERNA_INDISPONIVEL}</p>}
                     {editTipo === 'internal' && <div>
                       <Label>Perfis de Acesso (selecione um ou mais)</Label>
-                      <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
+                      <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
                       {TENANT_MANAGEABLE_ROLES.map(r => {
                           const currentRoles: string[] = editUser.roles ?? [];
                           const checked = currentRoles.includes(r);
@@ -1224,7 +1224,7 @@ export default function Configuracoes() {
                         ))}
                       </ul>
                     )}
-                    <Button className="w-full" onClick={() => { if (!saveEditUser.isPending) saveEditUser.mutate(); }} disabled={saveEditUser.isPending || exigeRecargaEdicao || editSomenteLeitura}>
+                    <Button className="w-full h-auto min-h-12 whitespace-normal break-words" onClick={() => { if (!saveEditUser.isPending) saveEditUser.mutate(); }} disabled={saveEditUser.isPending || exigeRecargaEdicao || editSomenteLeitura}>
                       {saveEditUser.isPending ? "Salvando..." : exigeRecargaEdicao ? "Recarregue a lista para tentar novamente" : editSomenteLeitura ? "Edição indisponível para usuário externo" : "Salvar Alterações"}
                     </Button>
                     </>}

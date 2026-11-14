@@ -16,7 +16,7 @@ export function ResponsiveTable({ children, mobileCards }: ResponsiveTableProps)
   }
 
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="min-w-0 w-full max-w-full overflow-x-auto">
       {children}
     </div>
   );
@@ -35,7 +35,7 @@ export function PageHeader({ title, description, action }: PageHeaderProps) {
         <h1 className="text-xl sm:text-2xl font-bold text-foreground break-words leading-tight">{title}</h1>
         <p className="text-sm text-muted-foreground break-words">{description}</p>
       </div>
-      {action && <div className="shrink-0 w-full lg:w-auto flex justify-end flex-wrap gap-1.5">{action}</div>}
+      {action && <div className="min-w-0 max-w-full w-full lg:w-auto flex justify-end flex-wrap gap-1.5 [&>button]:max-w-full [&>button]:h-auto [&>button]:min-h-11 [&>button]:whitespace-normal">{action}</div>}
     </div>
   );
 }
@@ -72,12 +72,12 @@ export function MobileCard({ title, subtitle, status, content, actions, onClick,
       aria-label={ariaLabel}
     >
       <CardContent className="p-4">
-        <div className="flex justify-between items-start mb-3">
-          <div className="flex-1">
+        <div className="flex flex-wrap gap-2 justify-between items-start mb-3">
+          <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
             <div className="font-bold text-base">{title}</div>
             {subtitle && <div className="text-xs text-muted-foreground">{subtitle}</div>}
           </div>
-          {status && <div className="ml-2">{status}</div>}
+          {status && <div className="max-w-full break-words">{status}</div>}
         </div>
         
         <div className={cn(
@@ -86,10 +86,10 @@ export function MobileCard({ title, subtitle, status, content, actions, onClick,
         )}>
           {content.map((item, idx) => (
             <div key={idx} className="flex flex-col min-w-0">
-              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold flex items-center gap-1 mb-0.5">
+              <span className="text-[9px] uppercase break-words text-muted-foreground font-bold flex flex-wrap items-center gap-1 mb-0.5">
                 {item.icon} {item.label}
               </span>
-              <span className="text-sm font-medium truncate">
+              <span className="text-sm font-medium [overflow-wrap:anywhere]">
                 {item.value}
               </span>
             </div>
@@ -97,7 +97,7 @@ export function MobileCard({ title, subtitle, status, content, actions, onClick,
         </div>
 
         {actions && (
-          <div className="flex gap-2 pt-3 border-t">
+          <div className="flex flex-wrap gap-2 pt-3 border-t [&>button]:max-w-full [&>button]:h-auto [&>button]:min-h-11 [&>button]:whitespace-normal">
             {actions}
           </div>
         )}
