@@ -326,5 +326,41 @@
     "open": "Laudo",
     "expected": "Laudo de análise técnica",
     "trigger": "Controle de Qualidade > análise > Laudo"
+  },
+  {
+    "ids": [
+      89
+    ],
+    "file": "src/pages/app/wizard/WizardRecomendacaoStep.tsx",
+    "export": "default",
+    "route": "/app/visita/33333333-3333-4333-8333-333333333333",
+    "profiles": [
+      "administrador",
+      "consultor_tecnico",
+      "tecnico_agronomo",
+      "aplicador"
+    ],
+    "kind": "wizard-rec",
+    "open": "Nova",
+    "expected": "Nova recomendação",
+    "trigger": "Visita persistida > Recomendação > Nova"
+  },
+  {
+    "ids": [
+      90
+    ],
+    "file": "src/pages/app/wizard/WizardRevisaoStep.tsx",
+    "export": "default",
+    "route": "/app/visita/33333333-3333-4333-8333-333333333333",
+    "profiles": [
+      "administrador",
+      "consultor_tecnico",
+      "tecnico_agronomo",
+      "aplicador"
+    ],
+    "kind": "wizard-review",
+    "open": "Finalizar visita",
+    "expected": "Finalizar esta visita?",
+    "trigger": "Visita com cultura/checkin/diagnóstico > Revisão > Finalizar (sem confirmar)"
   }
 ]
