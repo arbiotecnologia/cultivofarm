@@ -15,7 +15,7 @@ CREATE FUNCTION public.fn_regulatory_storage_path_ok(text) RETURNS boolean LANGU
 -- Synthetic facts stub isolates subject selection. Gate evaluation uses original body.
 CREATE FUNCTION public.fn_microorganism_regulatory_facts(p_microorganism_id uuid) RETURNS jsonb LANGUAGE sql AS $$SELECT jsonb_build_object('dossier_id',id,'status',status,'has_label_document',EXISTS(SELECT 1 FROM public.microorganism_regulatory_documents x WHERE x.dossier_id=d.id AND x.doc_type='ROTULO' AND x.deleted_at IS NULL),'has_report_document',false) FROM public.microorganism_regulatory_dossiers d WHERE microorganism_id = p_microorganism_id AND deleted_at IS NULL LIMIT 1$$;
 \i /tmp/product-dossier-gate-test.sql
-\i dossier-contract.sql
+\ir dossier-contract.sql
 INSERT INTO public.microrganismos VALUES('00000000-0000-4000-8000-000000000100','00000000-0000-4000-8000-000000000010',NULL),('00000000-0000-4000-8000-000000000200','00000000-0000-4000-8000-000000000020',NULL);
 INSERT INTO public.formulacoes VALUES('00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000100','00000000-0000-4000-8000-000000000010');
 INSERT INTO public.microorganism_regulatory_dossiers VALUES('00000000-0000-4000-8000-000000000110','00000000-0000-4000-8000-000000000100',1,'DRAFT',NULL),('00000000-0000-4000-8000-000000000120','00000000-0000-4000-8000-000000000100',2,'DRAFT',NULL);
