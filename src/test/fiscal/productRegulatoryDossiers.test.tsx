@@ -1,6 +1,7 @@
 import {cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
+import {webcrypto} from 'node:crypto';
 const mock=vi.hoisted(()=>({rpc:vi.fn(),download:vi.fn(),epoch:0}));
 vi.mock('@/hooks/useAuth',()=>({useAuth:()=>({user:{id:'u'},profile:{user_id:'u',organization_id:'org',ativo:true},roles:['administrador'],loading:false,authzEpoch:mock.epoch})}));
 vi.mock('@/integrations/supabase/client',()=>({supabase:{rpc:mock.rpc}}));
@@ -22,4 +23,24 @@ describe('dossiê individual canônico',()=>{
  it('documento de outro dossiê é recusado',()=>{expect(()=>parseProductDossier({...filled,documents:[{id:doc,dossier_id:mid,title:'errado',doc_type:'LAUDO',issuer:null,valid_until:null,storage_bucket:'fiscal-regulatorio',storage_path:'x',content_sha256:'a'}]},pid)).toThrow('regulatory_target_mismatch');});
  it('documento privado sem autorização não lê bytes',async()=>{mock.rpc.mockResolvedValue({data:null,error:{code:'42501'}});await expect(loadProductRegulatoryDocument(mid,pid,doc,new AbortController().signal)).rejects.toThrow();expect(mock.download).not.toHaveBeenCalled();});
  it('carregamento não é ausência',async()=>{mock.rpc.mockImplementation(()=>new Promise(()=>{}));mount();expect(screen.getByText('Carregando…')).toBeTruthy();expect(screen.queryByText(/Nenhum produto/)).toBeNull();});
+ it('arquivo autorizado tem hash conferido e autoridade relida depois dos bytes',async()=>{
+  vi.stubGlobal('crypto',webcrypto);
+  const bytes=new TextEncoder().encode('synthetic document');
+  const sha=Array.from(new Uint8Array(await webcrypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
+  const locator={document_id:doc,dossier_id:did,product_id:pid,bucket:'fiscal-regulatorio',path:`dossiers/${did}/${doc}/file.pdf`,sha256:sha};
+  mock.rpc.mockResolvedValue({data:locator,error:null});
+  mock.download.mockResolvedValue({arrayBuffer:async()=>bytes.buffer});
+  await loadProductRegulatoryDocument(mid,pid,doc,new AbortController().signal);
+  expect(mock.rpc).toHaveBeenCalledTimes(2);expect(mock.download).toHaveBeenCalledWith('fiscal-regulatorio',locator.path,expect.any(AbortSignal));
+  vi.unstubAllGlobals();
+ });
+ it('revogação depois dos bytes impede entregar arquivo',async()=>{
+  vi.stubGlobal('crypto',webcrypto);
+  const bytes=new TextEncoder().encode('synthetic document');
+  const sha=Array.from(new Uint8Array(await webcrypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
+  mock.rpc.mockResolvedValueOnce({data:{document_id:doc,dossier_id:did,product_id:pid,bucket:'fiscal-regulatorio',path:`dossiers/${did}/${doc}/file.pdf`,sha256:sha},error:null}).mockResolvedValueOnce({data:null,error:{code:'42501'}});
+  mock.download.mockResolvedValue({arrayBuffer:async()=>bytes.buffer});
+  await expect(loadProductRegulatoryDocument(mid,pid,doc,new AbortController().signal)).rejects.toThrow('permission_denied');
+  vi.unstubAllGlobals();
+ });
 });
