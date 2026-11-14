@@ -133,7 +133,7 @@ export function BulkAlvosDialog({ open, onOpenChange, kind, parentId }: Props) {
         </DialogHeader>
 
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid grid-cols-3 w-full">
+          <TabsList className="flex h-auto w-full gap-1 [&>button]:min-h-10">
             <TabsTrigger value="colar"><ClipboardList className="h-3.5 w-3.5 mr-1" /> Colar lista</TabsTrigger>
             <TabsTrigger value="catalogo"><BookMarked className="h-3.5 w-3.5 mr-1" /> Catálogo</TabsTrigger>
             <TabsTrigger value="ia"><Sparkles className="h-3.5 w-3.5 mr-1" /> Sugerir com IA</TabsTrigger>

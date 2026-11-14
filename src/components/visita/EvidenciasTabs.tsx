@@ -455,7 +455,7 @@ export function EvidenciasTabs({
         />
 
         <Tabs defaultValue="fotos">
-          <TabsList className="grid grid-cols-4 w-full">
+          <TabsList className="flex h-auto w-full gap-1 [&>button]:min-h-10">
             <TabsTrigger value="fotos" className="text-xs gap-1">
               <Camera className="h-3.5 w-3.5" /> Fotos
               <Badge variant="outline" className="ml-1 text-[10px]">{fotos.length}</Badge>
