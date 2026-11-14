@@ -1,5 +1,14 @@
 # Gestão de dossiês pela empresa proprietária — 14/11/2026
 
+## Correção E2E 02:46 — atesto e retomada
+- Causa confirmada por metadados hosted: service_role possuía EXECUTE no core, mas não USAGE em platform_private; a fachada SQL INVOKER falhava antes do atesto. O mesmo defeito atingia cancelamento final e aliases antigos.
+- Aplicada `20261114024720_4946b45d-4c5f-4f1d-9fa7-79ab75270eb0.sql`: quatro fachadas específicas de atesto/cancelamento agora DEFINER, search_path vazio, conferem `platform_private.require_service_role()` e delegam aos cores existentes. EXECUTE exclusivo service_role/postgres; anon/authenticated negados. Nenhum USAGE geral concedido. Demais wrappers de acesso/preparo/finalização/pendentes continuam INVOKER com contrato tenant. O alias antigo cancel_begin mantém ACL anterior; não é ponte de atesto/limpeza final.
+- Prévia: Atualizar relê explicitamente reservas antes do detalhe/contexto; nova montagem consulta reservas duráveis, sem depender de memória do upload. Concluir/Descartar exigem ACK COMMITTED/CANCELLED; ausência de confirmação mantém a tentativa. Carregamento da lista é distinguido de falha.
+- Executados 24 Vitest (14 gestão + 10 leitura), todos PASS: Atualizar encontra reserva posterior, remount preserva recuperação, resume usa a mesma chave sem prepare, descarte não confirmado mantém reserva. Transporte simulado, não sessão real.
+- Executadas 9 verificações PostgreSQL PASS com SET ROLE real, ACL e guard canônico espelhados em fixture descartável: core direto negado sem USAGE, ponte service-only acessível, identidade inadequada negada, atesto persistido, limpeza bloqueada enquanto bytes existem e concluída após remoção sintética, clientes negados nas quatro pontes. Migração real executada intacta no fixture. Não é prova JWT/Storage hosted.
+- ACL hosted pós-migração confirma quatro DEFINER com search_path vazio, anon/authenticated sem EXECUTE e service_role com EXECUTE; service_role continua sem USAGE privado. Build automático OK em 02:48:22 UTC. Migração sem novos achados, 497 anteriores permanecem.
+- Nenhum rascunho, objeto ou reserva de QA foi consultado, alterado, atestado, retomado ou removido pelo agente. Edge existente não exigiu alteração/reimplantação; frontend não publicado. Retomada autenticada do PNG e recálculo real serão validados pelo usuário em sua sessão.
+
 ## Aplicado
 Destino: `swzpzcwiasxmjutrmvkm`. Entradas: Base Técnica > Produtos e Fiscal > Perfis Fiscais > Produtos, ação **Gerenciar dossiê**, mesmo detalhe. A antiga aba da plataforma foi retirada da prévia. Wrappers antigos foram preservados para compatibilidade, mas agora respeitam o proprietário. Superadmin isolado é negado; edição pelo contrato catalog_tenant_actor/mutate (administrador/gestor próprios), leitura pelo contrato da empresa. Revisão/publicação mantêm alçadas anteriores e recebem verificação prévia de propriedade.
 

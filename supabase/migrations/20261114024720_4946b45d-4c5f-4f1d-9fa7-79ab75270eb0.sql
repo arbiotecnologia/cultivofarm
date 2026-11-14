@@ -1,0 +1,12 @@
+CREATE OR REPLACE FUNCTION public.tenant_product_dossier_upload_attest(p_upload_id uuid,p_sha256 text,p_size bigint,p_mime text) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ BEGIN PERFORM platform_private.require_service_role(); PERFORM platform_private.product_dossier_upload_attest(p_upload_id,p_sha256,p_size,p_mime); END $$;
+REVOKE ALL ON FUNCTION public.tenant_product_dossier_upload_attest(uuid,text,bigint,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.tenant_product_dossier_upload_attest(uuid,text,bigint,text) TO service_role;
+CREATE OR REPLACE FUNCTION public.tenant_product_dossier_upload_cancel(p_upload_id uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ BEGIN PERFORM platform_private.require_service_role(); PERFORM platform_private.product_dossier_upload_cancel(p_upload_id); END $$;
+REVOKE ALL ON FUNCTION public.tenant_product_dossier_upload_cancel(uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.tenant_product_dossier_upload_cancel(uuid) TO service_role;
+CREATE OR REPLACE FUNCTION public.platform_product_dossier_upload_attest(p_upload_id uuid,p_sha256 text,p_size bigint,p_mime text) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ BEGIN PERFORM platform_private.require_service_role(); PERFORM platform_private.product_dossier_upload_attest(p_upload_id,p_sha256,p_size,p_mime); END $$;
+REVOKE ALL ON FUNCTION public.platform_product_dossier_upload_attest(uuid,text,bigint,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.platform_product_dossier_upload_attest(uuid,text,bigint,text) TO service_role;
+CREATE OR REPLACE FUNCTION public.platform_product_dossier_upload_cancel(p_upload_id uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ BEGIN PERFORM platform_private.require_service_role(); PERFORM platform_private.product_dossier_upload_cancel(p_upload_id); END $$;
+REVOKE ALL ON FUNCTION public.platform_product_dossier_upload_cancel(uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.platform_product_dossier_upload_cancel(uuid) TO service_role;
