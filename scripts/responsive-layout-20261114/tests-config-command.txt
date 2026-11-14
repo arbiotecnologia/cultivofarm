@@ -1,0 +1,1 @@
+bun run test -- src/test/config/usuariosValidation.test.ts src/test/config/usuariosListQuery.test.ts src/test/config/externalUserDraft.test.ts src/test/config/externalUserEditCandidate.test.ts src/test/config/configuracoesTabs.test.ts src/test/saas/admin-acesso-dialog.ui.test.tsx src/test/navigation/financeServices.test.tsx --maxWorkers=2

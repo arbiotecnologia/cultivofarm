@@ -48,7 +48,7 @@ export function ExternalRegistrationFields(props: Props) {
   useEffect(() => { latest.current.onVerified(fence.ready && producer && !proof.isFetching && !proof.isError ? proof.data?.ids ?? [] : []); },
     [fence.ready, fence.scope, producer, proof.data, proof.isFetching, proof.isError]);
   if (!fence.ready) return <p role="alert">Sessão indisponível para consultar vínculos.</p>;
-  return <fieldset disabled={props.disabled} className="space-y-3" aria-label="Perfis e vínculos externos">
+  return <fieldset disabled={props.disabled} className="min-w-0 space-y-3 [overflow-wrap:anywhere] [&_label]:min-w-0 [&_label]:max-w-full [&_button[role=checkbox]]:shrink-0" aria-label="Perfis e vínculos externos">
     <div><span className="text-sm">Empresa do cadastro</span><p>{props.companyLabel || profile?.organization_id}</p></div>
     {!props.partnerOnly && <div className="flex flex-wrap gap-3">{EXTERNAL_ROLES.map(r => <label key={r} className="flex items-center gap-2"><Checkbox checked={props.roles.includes(r)} onCheckedChange={v => {
       const next = v === true ? [...props.roles, r] : props.roles.filter(x => x !== r); props.onRoles(next);
@@ -58,10 +58,10 @@ export function ExternalRegistrationFields(props: Props) {
     <label className="block">Buscar vínculos<Input value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} /></label>
     {options.isFetching ? <p role="status">Carregando vínculos…</p> : options.isError ? <div role="alert">Não foi possível consultar os vínculos.<Button variant="outline" onClick={() => void options.refetch()}>Tentar novamente</Button></div> : <>
       {partner && <fieldset aria-label="Parceiro da empresa"><legend>Parceiro da empresa</legend>{options.data?.partners.map(p => <label key={p.id} className="flex items-center gap-2"><Checkbox checked={props.partnerId === p.id} onCheckedChange={v => props.onPartner(v === true ? p.id : "")} />{p.razao_social}</label>)}</fieldset>}
-      {producer && <fieldset aria-label="Clientes do produtor"><legend>Clientes do produtor</legend>{options.data?.clients.map(c => <div key={c.id} className="flex items-center gap-2"><label className="flex items-center gap-2"><Checkbox checked={props.clients.includes(c.id)} onCheckedChange={v => {
+      {producer && <fieldset aria-label="Clientes do produtor"><legend>Clientes do produtor</legend>{options.data?.clients.map(c => <div key={c.id} className="flex flex-wrap items-center gap-2"><label className="flex items-center gap-2"><Checkbox checked={props.clients.includes(c.id)} onCheckedChange={v => {
         const next = v === true ? [...props.clients, c.id] : props.clients.filter(id => id !== c.id); props.onClients(next, next.includes(props.primary ?? "") ? props.primary : next[0] ?? null);
       }} />{c.nome}</label>{props.clients.includes(c.id) && <Button size="sm" variant="outline" onClick={() => props.onClients(props.clients, c.id)}>{props.primary === c.id ? "Principal" : "Tornar principal"}</Button>}</div>)}</fieldset>}
-      <div className="flex gap-2"><Button variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</Button><Button variant="outline" disabled={(page + 1) * 20 >= (options.data?.total ?? 0)} onClick={() => setPage(p => p + 1)}>Próxima</Button></div>
+      <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</Button><Button variant="outline" disabled={(page + 1) * 20 >= (options.data?.total ?? 0)} onClick={() => setPage(p => p + 1)}>Próxima</Button></div>
     </>}
     {producer && props.clients.length > 0 && (proof.isFetching ? <p role="status">Validando clientes e fazendas…</p> : proof.isError ? <p role="alert">Não foi possível validar clientes e fazendas.</p> : <>
       <ul aria-label="Fazendas ativas dos clientes">{proof.data?.farms.map(f => <li key={f.id}>{f.nome}</li>)}</ul>

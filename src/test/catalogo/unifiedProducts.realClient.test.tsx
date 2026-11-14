@@ -246,7 +246,7 @@ it("parcial montado mantém diálogo e input congelados; retry exato não cria o
   expect(screen.getByRole("tab", { name: "Identificação" }).matches(":disabled")).toBe(true);
   expect(screen.getByRole("alert").textContent).toContain("composição não confirmada");
   expect(rpcCalls("tenant_product_save")).toHaveLength(1);
-  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
   expect(screen.getByRole("dialog")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Reconciliar composição" }));
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
@@ -421,7 +421,7 @@ it("recusa definitiva persistente: sem replay inútil, rascunho exportável e vo
   const exported = JSON.parse((screen.getByLabelText("Rascunho exportável") as HTMLTextAreaElement).value);
   expect(exported).toMatchObject({ produto_id: "p1", versao_confirmada_produto: stamp, resultado_composicao: "recusada_pelo_servidor",
     composicao_rascunho: [{ microrganismo_id: "m1", volume_ml: 200, nome: "Bacillus preservado" }] });
-  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
   expect(screen.getByRole("dialog")).toBeTruthy();
   // 1ª leitura fresca falha: nada é reconhecido, estado parcial e ID preservados.
   await waitFor(() => expect(state.fetch.mock.calls.filter(([u]) => String(u).endsWith("tenant_product_list")).length).toBeGreaterThan(1));
@@ -553,7 +553,7 @@ it("unidade canônica: A→B, fechar/reabrir com cache, escolha do usuário sobr
     fireEvent.click(row.querySelector('button[aria-label="Editar"], button[title="Editar"]') ?? screen.getAllByRole("button", { name: "Editar" })[nome === "Produto A" ? 0 : 1]);
     await waitFor(() => expect((screen.getByLabelText("Nome Comercial *") as HTMLInputElement).value).toBe(nome));
   };
-  const close = async () => { fireEvent.click(screen.getByRole("button", { name: "Close" })); fireEvent.click(await screen.findByRole("button", { name: "Descartar e sair" })); await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull()); };
+  const close = async () => { fireEvent.click(screen.getByRole("button", { name: "Fechar" })); fireEvent.click(await screen.findByRole("button", { name: "Descartar e sair" })); await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull()); };
   await edit("Produto A"); await unitLoaded("kg"); await close();
   await edit("Produto A"); await unitLoaded("kg"); await close(); // mesmo produto, mesma chave em cache
   await edit("Produto B"); await unitLoaded("g"); await close();

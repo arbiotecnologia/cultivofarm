@@ -1,3 +1,8 @@
+## 14/11 13:21 — Revisão responsiva de cadastro e controles compartilhados
+- [x] Sobreposição reproduzida; três tipos empilhados no corpo rolável, header/ação/fechamento acessíveis; vínculos/perfis/ações extensos ajustados sem funções/permissões.
+- [x] Inventário AST atual: 183 rotas/2035 fontes, compartilhados revisados e cortes reproduzidos corrigidos; 116 candidatos estáticos P1/P2 registrados, sem certificação visual das demais telas.
+- [x] 30 estados sintéticos 320px–desktop, 464×522, reflow e texto200%, zero pageerrors; 97/97 cadastro+navegação e 238/238 bateria16, build automático OK. Evidências/limites em scripts/responsive-layout-20261114/REPORT.md; sem banco/publicação.
+
 ## 14/11 12:39 — Falha Financeiro/Serviços
 - [x] Falha isolada reproduzida; expectativa obsoleta comprovada por matriz própria de Serviços, testes preexistentes, página real, guards e sidebar. Permissões/rotas inalteradas.
 - [x] Teste corrigido com listas exatas e negativas mantidas; bateria completa sem filtros: 238/238 em 16/16 arquivos, navegação+Serviços 26/26, build automático OK. Comandos/stdout/exit/browser e limites em scripts/navigation-finance-evidence/REPORT.md. Sem publicação/deploy/banco.

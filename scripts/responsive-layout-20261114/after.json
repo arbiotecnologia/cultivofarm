@@ -1,0 +1,4025 @@
+{
+  "results": [
+    {
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "w": 288,
+        "h": 536,
+        "right": 304,
+        "bottom": 552
+      },
+      "bodyWidth": 320,
+      "viewport": 320,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 33,
+            "y": 117.75,
+            "w": 254,
+            "h": 66,
+            "right": 287,
+            "bottom": 183.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": 130.75,
+              "w": 228,
+              "h": 20,
+              "right": 274,
+              "bottom": 150.75
+            },
+            {
+              "x": 46,
+              "y": 154.75,
+              "w": 228,
+              "h": 16,
+              "right": 274,
+              "bottom": 170.75
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 33,
+            "y": 191.75,
+            "w": 254,
+            "h": 66,
+            "right": 287,
+            "bottom": 257.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": 204.75,
+              "w": 228,
+              "h": 20,
+              "right": 274,
+              "bottom": 224.75
+            },
+            {
+              "x": 46,
+              "y": 228.75,
+              "w": 228,
+              "h": 16,
+              "right": 274,
+              "bottom": 244.75
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 33,
+            "y": 265.75,
+            "w": 254,
+            "h": 66,
+            "right": 287,
+            "bottom": 331.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": 278.75,
+              "w": 228,
+              "h": 20,
+              "right": 274,
+              "bottom": 298.75
+            },
+            {
+              "x": 46,
+              "y": 302.75,
+              "w": 228,
+              "h": 16,
+              "right": 274,
+              "bottom": 318.75
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 33,
+            "y": 491,
+            "w": 254,
+            "h": 48,
+            "right": 287,
+            "bottom": 539
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 251,
+            "y": 25,
+            "w": 44,
+            "h": 44,
+            "right": 295,
+            "bottom": 69
+          }
+        }
+      ],
+      "width": 320,
+      "height": 568,
+      "kind": "Interno",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "w": 288,
+        "h": 536,
+        "right": 304,
+        "bottom": 552
+      },
+      "bodyWidth": 320,
+      "viewport": 320,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 33,
+            "y": -621.25,
+            "w": 254,
+            "h": 66,
+            "right": 287,
+            "bottom": -555.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -608.25,
+              "w": 228,
+              "h": 20,
+              "right": 274,
+              "bottom": -588.25
+            },
+            {
+              "x": 46,
+              "y": -584.25,
+              "w": 228,
+              "h": 16,
+              "right": 274,
+              "bottom": -568.25
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 33,
+            "y": -547.25,
+            "w": 254,
+            "h": 66,
+            "right": 287,
+            "bottom": -481.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -534.25,
+              "w": 228,
+              "h": 20,
+              "right": 274,
+              "bottom": -514.25
+            },
+            {
+              "x": 46,
+              "y": -510.25,
+              "w": 228,
+              "h": 16,
+              "right": 274,
+              "bottom": -494.25
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 33,
+            "y": -473.25,
+            "w": 254,
+            "h": 66,
+            "right": 287,
+            "bottom": -407.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -460.25,
+              "w": 228,
+              "h": 20,
+              "right": 274,
+              "bottom": -440.25
+            },
+            {
+              "x": 46,
+              "y": -436.25,
+              "w": 228,
+              "h": 16,
+              "right": 274,
+              "bottom": -420.25
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 33,
+            "y": 491,
+            "w": 254,
+            "h": 48,
+            "right": 287,
+            "bottom": 539
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 251,
+            "y": 25,
+            "w": 44,
+            "h": 44,
+            "right": 295,
+            "bottom": 69
+          }
+        }
+      ],
+      "width": 320,
+      "height": 568,
+      "kind": "Parceiro B2B",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "w": 288,
+        "h": 536,
+        "right": 304,
+        "bottom": 552
+      },
+      "bodyWidth": 320,
+      "viewport": 320,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 33,
+            "y": -597.25,
+            "w": 254,
+            "h": 66,
+            "right": 287,
+            "bottom": -531.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -584.25,
+              "w": 228,
+              "h": 20,
+              "right": 274,
+              "bottom": -564.25
+            },
+            {
+              "x": 46,
+              "y": -560.25,
+              "w": 228,
+              "h": 16,
+              "right": 274,
+              "bottom": -544.25
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 33,
+            "y": -523.25,
+            "w": 254,
+            "h": 66,
+            "right": 287,
+            "bottom": -457.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -510.25,
+              "w": 228,
+              "h": 20,
+              "right": 274,
+              "bottom": -490.25
+            },
+            {
+              "x": 46,
+              "y": -486.25,
+              "w": 228,
+              "h": 16,
+              "right": 274,
+              "bottom": -470.25
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 33,
+            "y": -449.25,
+            "w": 254,
+            "h": 66,
+            "right": 287,
+            "bottom": -383.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -436.25,
+              "w": 228,
+              "h": 20,
+              "right": 274,
+              "bottom": -416.25
+            },
+            {
+              "x": 46,
+              "y": -412.25,
+              "w": 228,
+              "h": 16,
+              "right": 274,
+              "bottom": -396.25
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 33,
+            "y": 491,
+            "w": 254,
+            "h": 48,
+            "right": 287,
+            "bottom": 539
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 251,
+            "y": 25,
+            "w": 44,
+            "h": 44,
+            "right": 295,
+            "bottom": 69
+          }
+        }
+      ],
+      "width": 320,
+      "height": 568,
+      "kind": "Cliente Produtor",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "w": 328,
+        "h": 608,
+        "right": 344,
+        "bottom": 624
+      },
+      "bodyWidth": 360,
+      "viewport": 360,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 33,
+            "y": 117.75,
+            "w": 294,
+            "h": 66,
+            "right": 327,
+            "bottom": 183.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": 130.75,
+              "w": 268,
+              "h": 20,
+              "right": 314,
+              "bottom": 150.75
+            },
+            {
+              "x": 46,
+              "y": 154.75,
+              "w": 268,
+              "h": 16,
+              "right": 314,
+              "bottom": 170.75
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 33,
+            "y": 191.75,
+            "w": 294,
+            "h": 66,
+            "right": 327,
+            "bottom": 257.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": 204.75,
+              "w": 268,
+              "h": 20,
+              "right": 314,
+              "bottom": 224.75
+            },
+            {
+              "x": 46,
+              "y": 228.75,
+              "w": 268,
+              "h": 16,
+              "right": 314,
+              "bottom": 244.75
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 33,
+            "y": 265.75,
+            "w": 294,
+            "h": 66,
+            "right": 327,
+            "bottom": 331.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": 278.75,
+              "w": 268,
+              "h": 20,
+              "right": 314,
+              "bottom": 298.75
+            },
+            {
+              "x": 46,
+              "y": 302.75,
+              "w": 268,
+              "h": 16,
+              "right": 314,
+              "bottom": 318.75
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 33,
+            "y": 563,
+            "w": 294,
+            "h": 48,
+            "right": 327,
+            "bottom": 611
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 291,
+            "y": 25,
+            "w": 44,
+            "h": 44,
+            "right": 335,
+            "bottom": 69
+          }
+        }
+      ],
+      "width": 360,
+      "height": 640,
+      "kind": "Interno",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "w": 328,
+        "h": 608,
+        "right": 344,
+        "bottom": 624
+      },
+      "bodyWidth": 360,
+      "viewport": 360,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 33,
+            "y": -477.25,
+            "w": 294,
+            "h": 66,
+            "right": 327,
+            "bottom": -411.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -464.25,
+              "w": 268,
+              "h": 20,
+              "right": 314,
+              "bottom": -444.25
+            },
+            {
+              "x": 46,
+              "y": -440.25,
+              "w": 268,
+              "h": 16,
+              "right": 314,
+              "bottom": -424.25
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 33,
+            "y": -403.25,
+            "w": 294,
+            "h": 66,
+            "right": 327,
+            "bottom": -337.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -390.25,
+              "w": 268,
+              "h": 20,
+              "right": 314,
+              "bottom": -370.25
+            },
+            {
+              "x": 46,
+              "y": -366.25,
+              "w": 268,
+              "h": 16,
+              "right": 314,
+              "bottom": -350.25
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 33,
+            "y": -329.25,
+            "w": 294,
+            "h": 66,
+            "right": 327,
+            "bottom": -263.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -316.25,
+              "w": 268,
+              "h": 20,
+              "right": 314,
+              "bottom": -296.25
+            },
+            {
+              "x": 46,
+              "y": -292.25,
+              "w": 268,
+              "h": 16,
+              "right": 314,
+              "bottom": -276.25
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 33,
+            "y": 563,
+            "w": 294,
+            "h": 48,
+            "right": 327,
+            "bottom": 611
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 291,
+            "y": 25,
+            "w": 44,
+            "h": 44,
+            "right": 335,
+            "bottom": 69
+          }
+        }
+      ],
+      "width": 360,
+      "height": 640,
+      "kind": "Parceiro B2B",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "w": 328,
+        "h": 608,
+        "right": 344,
+        "bottom": 624
+      },
+      "bodyWidth": 360,
+      "viewport": 360,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 33,
+            "y": -477.25,
+            "w": 294,
+            "h": 66,
+            "right": 327,
+            "bottom": -411.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -464.25,
+              "w": 268,
+              "h": 20,
+              "right": 314,
+              "bottom": -444.25
+            },
+            {
+              "x": 46,
+              "y": -440.25,
+              "w": 268,
+              "h": 16,
+              "right": 314,
+              "bottom": -424.25
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 33,
+            "y": -403.25,
+            "w": 294,
+            "h": 66,
+            "right": 327,
+            "bottom": -337.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -390.25,
+              "w": 268,
+              "h": 20,
+              "right": 314,
+              "bottom": -370.25
+            },
+            {
+              "x": 46,
+              "y": -366.25,
+              "w": 268,
+              "h": 16,
+              "right": 314,
+              "bottom": -350.25
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 33,
+            "y": -329.25,
+            "w": 294,
+            "h": 66,
+            "right": 327,
+            "bottom": -263.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -316.25,
+              "w": 268,
+              "h": 20,
+              "right": 314,
+              "bottom": -296.25
+            },
+            {
+              "x": 46,
+              "y": -292.25,
+              "w": 268,
+              "h": 16,
+              "right": 314,
+              "bottom": -276.25
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 33,
+            "y": 563,
+            "w": 294,
+            "h": 48,
+            "right": 327,
+            "bottom": 611
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 291,
+            "y": 25,
+            "w": 44,
+            "h": 44,
+            "right": 335,
+            "bottom": 69
+          }
+        }
+      ],
+      "width": 360,
+      "height": 640,
+      "kind": "Cliente Produtor",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "w": 358,
+        "h": 812,
+        "right": 374,
+        "bottom": 828
+      },
+      "bodyWidth": 390,
+      "viewport": 390,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 33,
+            "y": 117.75,
+            "w": 324,
+            "h": 66,
+            "right": 357,
+            "bottom": 183.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": 130.75,
+              "w": 298,
+              "h": 20,
+              "right": 344,
+              "bottom": 150.75
+            },
+            {
+              "x": 46,
+              "y": 154.75,
+              "w": 298,
+              "h": 16,
+              "right": 344,
+              "bottom": 170.75
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 33,
+            "y": 191.75,
+            "w": 324,
+            "h": 66,
+            "right": 357,
+            "bottom": 257.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": 204.75,
+              "w": 298,
+              "h": 20,
+              "right": 344,
+              "bottom": 224.75
+            },
+            {
+              "x": 46,
+              "y": 228.75,
+              "w": 298,
+              "h": 16,
+              "right": 344,
+              "bottom": 244.75
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 33,
+            "y": 265.75,
+            "w": 324,
+            "h": 66,
+            "right": 357,
+            "bottom": 331.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": 278.75,
+              "w": 298,
+              "h": 20,
+              "right": 344,
+              "bottom": 298.75
+            },
+            {
+              "x": 46,
+              "y": 302.75,
+              "w": 298,
+              "h": 16,
+              "right": 344,
+              "bottom": 318.75
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 33,
+            "y": 767,
+            "w": 324,
+            "h": 48,
+            "right": 357,
+            "bottom": 815
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 321,
+            "y": 25,
+            "w": 44,
+            "h": 44,
+            "right": 365,
+            "bottom": 69
+          }
+        }
+      ],
+      "width": 390,
+      "height": 844,
+      "kind": "Interno",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "w": 358,
+        "h": 812,
+        "right": 374,
+        "bottom": 828
+      },
+      "bodyWidth": 390,
+      "viewport": 390,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 33,
+            "y": -225.25,
+            "w": 324,
+            "h": 66,
+            "right": 357,
+            "bottom": -159.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -212.25,
+              "w": 298,
+              "h": 20,
+              "right": 344,
+              "bottom": -192.25
+            },
+            {
+              "x": 46,
+              "y": -188.25,
+              "w": 298,
+              "h": 16,
+              "right": 344,
+              "bottom": -172.25
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 33,
+            "y": -151.25,
+            "w": 324,
+            "h": 66,
+            "right": 357,
+            "bottom": -85.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -138.25,
+              "w": 298,
+              "h": 20,
+              "right": 344,
+              "bottom": -118.25
+            },
+            {
+              "x": 46,
+              "y": -114.25,
+              "w": 298,
+              "h": 16,
+              "right": 344,
+              "bottom": -98.25
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 33,
+            "y": -77.25,
+            "w": 324,
+            "h": 66,
+            "right": 357,
+            "bottom": -11.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -64.25,
+              "w": 298,
+              "h": 20,
+              "right": 344,
+              "bottom": -44.25
+            },
+            {
+              "x": 46,
+              "y": -40.25,
+              "w": 298,
+              "h": 16,
+              "right": 344,
+              "bottom": -24.25
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 33,
+            "y": 767,
+            "w": 324,
+            "h": 48,
+            "right": 357,
+            "bottom": 815
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 321,
+            "y": 25,
+            "w": 44,
+            "h": 44,
+            "right": 365,
+            "bottom": 69
+          }
+        }
+      ],
+      "width": 390,
+      "height": 844,
+      "kind": "Parceiro B2B",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "w": 358,
+        "h": 812,
+        "right": 374,
+        "bottom": 828
+      },
+      "bodyWidth": 390,
+      "viewport": 390,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 33,
+            "y": -225.25,
+            "w": 324,
+            "h": 66,
+            "right": 357,
+            "bottom": -159.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -212.25,
+              "w": 298,
+              "h": 20,
+              "right": 344,
+              "bottom": -192.25
+            },
+            {
+              "x": 46,
+              "y": -188.25,
+              "w": 298,
+              "h": 16,
+              "right": 344,
+              "bottom": -172.25
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 33,
+            "y": -151.25,
+            "w": 324,
+            "h": 66,
+            "right": 357,
+            "bottom": -85.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -138.25,
+              "w": 298,
+              "h": 20,
+              "right": 344,
+              "bottom": -118.25
+            },
+            {
+              "x": 46,
+              "y": -114.25,
+              "w": 298,
+              "h": 16,
+              "right": 344,
+              "bottom": -98.25
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 33,
+            "y": -77.25,
+            "w": 324,
+            "h": 66,
+            "right": 357,
+            "bottom": -11.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -64.25,
+              "w": 298,
+              "h": 20,
+              "right": 344,
+              "bottom": -44.25
+            },
+            {
+              "x": 46,
+              "y": -40.25,
+              "w": 298,
+              "h": 16,
+              "right": 344,
+              "bottom": -24.25
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 33,
+            "y": 767,
+            "w": 324,
+            "h": 48,
+            "right": 357,
+            "bottom": 815
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 321,
+            "y": 25,
+            "w": 44,
+            "h": 44,
+            "right": 365,
+            "bottom": 69
+          }
+        }
+      ],
+      "width": 390,
+      "height": 844,
+      "kind": "Cliente Produtor",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "w": 432,
+        "h": 490,
+        "right": 448,
+        "bottom": 506
+      },
+      "bodyWidth": 464,
+      "viewport": 464,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 33,
+            "y": 72.75,
+            "w": 398,
+            "h": 66,
+            "right": 431,
+            "bottom": 138.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": 85.75,
+              "w": 372,
+              "h": 20,
+              "right": 418,
+              "bottom": 105.75
+            },
+            {
+              "x": 46,
+              "y": 109.75,
+              "w": 372,
+              "h": 16,
+              "right": 418,
+              "bottom": 125.75
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 33,
+            "y": 146.75,
+            "w": 398,
+            "h": 66,
+            "right": 431,
+            "bottom": 212.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": 159.75,
+              "w": 372,
+              "h": 20,
+              "right": 418,
+              "bottom": 179.75
+            },
+            {
+              "x": 46,
+              "y": 183.75,
+              "w": 372,
+              "h": 16,
+              "right": 418,
+              "bottom": 199.75
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 33,
+            "y": 220.75,
+            "w": 398,
+            "h": 66,
+            "right": 431,
+            "bottom": 286.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": 233.75,
+              "w": 372,
+              "h": 20,
+              "right": 418,
+              "bottom": 253.75
+            },
+            {
+              "x": 46,
+              "y": 257.75,
+              "w": 372,
+              "h": 16,
+              "right": 418,
+              "bottom": 273.75
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 33,
+            "y": 445,
+            "w": 398,
+            "h": 48,
+            "right": 431,
+            "bottom": 493
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 395,
+            "y": 25,
+            "w": 44,
+            "h": 44,
+            "right": 439,
+            "bottom": 69
+          }
+        }
+      ],
+      "width": 464,
+      "height": 522,
+      "kind": "Interno",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "w": 432,
+        "h": 490,
+        "right": 448,
+        "bottom": 506
+      },
+      "bodyWidth": 464,
+      "viewport": 464,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 33,
+            "y": -463.25,
+            "w": 398,
+            "h": 66,
+            "right": 431,
+            "bottom": -397.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -450.25,
+              "w": 372,
+              "h": 20,
+              "right": 418,
+              "bottom": -430.25
+            },
+            {
+              "x": 46,
+              "y": -426.25,
+              "w": 372,
+              "h": 16,
+              "right": 418,
+              "bottom": -410.25
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 33,
+            "y": -389.25,
+            "w": 398,
+            "h": 66,
+            "right": 431,
+            "bottom": -323.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -376.25,
+              "w": 372,
+              "h": 20,
+              "right": 418,
+              "bottom": -356.25
+            },
+            {
+              "x": 46,
+              "y": -352.25,
+              "w": 372,
+              "h": 16,
+              "right": 418,
+              "bottom": -336.25
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 33,
+            "y": -315.25,
+            "w": 398,
+            "h": 66,
+            "right": 431,
+            "bottom": -249.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -302.25,
+              "w": 372,
+              "h": 20,
+              "right": 418,
+              "bottom": -282.25
+            },
+            {
+              "x": 46,
+              "y": -278.25,
+              "w": 372,
+              "h": 16,
+              "right": 418,
+              "bottom": -262.25
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 33,
+            "y": 445,
+            "w": 398,
+            "h": 48,
+            "right": 431,
+            "bottom": 493
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 395,
+            "y": 25,
+            "w": 44,
+            "h": 44,
+            "right": 439,
+            "bottom": 69
+          }
+        }
+      ],
+      "width": 464,
+      "height": 522,
+      "kind": "Parceiro B2B",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "w": 432,
+        "h": 490,
+        "right": 448,
+        "bottom": 506
+      },
+      "bodyWidth": 464,
+      "viewport": 464,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 33,
+            "y": -463.25,
+            "w": 398,
+            "h": 66,
+            "right": 431,
+            "bottom": -397.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -450.25,
+              "w": 372,
+              "h": 20,
+              "right": 418,
+              "bottom": -430.25
+            },
+            {
+              "x": 46,
+              "y": -426.25,
+              "w": 372,
+              "h": 16,
+              "right": 418,
+              "bottom": -410.25
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 33,
+            "y": -389.25,
+            "w": 398,
+            "h": 66,
+            "right": 431,
+            "bottom": -323.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -376.25,
+              "w": 372,
+              "h": 20,
+              "right": 418,
+              "bottom": -356.25
+            },
+            {
+              "x": 46,
+              "y": -352.25,
+              "w": 372,
+              "h": 16,
+              "right": 418,
+              "bottom": -336.25
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 33,
+            "y": -315.25,
+            "w": 398,
+            "h": 66,
+            "right": 431,
+            "bottom": -249.25
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 46,
+              "y": -302.25,
+              "w": 372,
+              "h": 20,
+              "right": 418,
+              "bottom": -282.25
+            },
+            {
+              "x": 46,
+              "y": -278.25,
+              "w": 372,
+              "h": 16,
+              "right": 418,
+              "bottom": -262.25
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 33,
+            "y": 445,
+            "w": 398,
+            "h": 48,
+            "right": 431,
+            "bottom": 493
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 395,
+            "y": 25,
+            "w": 44,
+            "h": 44,
+            "right": 439,
+            "bottom": 69
+          }
+        }
+      ],
+      "width": 464,
+      "height": 522,
+      "kind": "Cliente Produtor",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 160,
+        "y": 28.625,
+        "w": 448,
+        "h": 966.75,
+        "right": 608,
+        "bottom": 995.375
+      },
+      "bodyWidth": 768,
+      "viewport": 768,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 185,
+            "y": 135.375,
+            "w": 127.328125,
+            "h": 64,
+            "right": 312.328125,
+            "bottom": 199.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 198,
+              "y": 148.375,
+              "w": 101.328125,
+              "h": 20,
+              "right": 299.328125,
+              "bottom": 168.375
+            },
+            {
+              "x": 198,
+              "y": 172.375,
+              "w": 101.328125,
+              "h": 32,
+              "right": 299.328125,
+              "bottom": 204.375
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 320.328125,
+            "y": 135.375,
+            "w": 127.328125,
+            "h": 64,
+            "right": 447.65625,
+            "bottom": 199.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 333.328125,
+              "y": 148.375,
+              "w": 101.328125,
+              "h": 20,
+              "right": 434.65625,
+              "bottom": 168.375
+            },
+            {
+              "x": 333.328125,
+              "y": 172.375,
+              "w": 101.328125,
+              "h": 32,
+              "right": 434.65625,
+              "bottom": 204.375
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 455.65625,
+            "y": 135.375,
+            "w": 127.34375,
+            "h": 64,
+            "right": 583,
+            "bottom": 199.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 468.65625,
+              "y": 148.375,
+              "w": 101.34375,
+              "h": 40,
+              "right": 570,
+              "bottom": 188.375
+            },
+            {
+              "x": 468.65625,
+              "y": 192.375,
+              "w": 101.34375,
+              "h": 32,
+              "right": 570,
+              "bottom": 224.375
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 185,
+            "y": 934.375,
+            "w": 398,
+            "h": 48,
+            "right": 583,
+            "bottom": 982.375
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 555,
+            "y": 37.625,
+            "w": 44,
+            "h": 44,
+            "right": 599,
+            "bottom": 81.625
+          }
+        }
+      ],
+      "width": 768,
+      "height": 1024,
+      "kind": "Interno",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 160,
+        "y": 45.625,
+        "w": 448,
+        "h": 932.75,
+        "right": 608,
+        "bottom": 978.375
+      },
+      "bodyWidth": 768,
+      "viewport": 768,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 185,
+            "y": 152.375,
+            "w": 127.328125,
+            "h": 64,
+            "right": 312.328125,
+            "bottom": 216.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 198,
+              "y": 165.375,
+              "w": 101.328125,
+              "h": 20,
+              "right": 299.328125,
+              "bottom": 185.375
+            },
+            {
+              "x": 198,
+              "y": 189.375,
+              "w": 101.328125,
+              "h": 32,
+              "right": 299.328125,
+              "bottom": 221.375
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 320.328125,
+            "y": 152.375,
+            "w": 127.328125,
+            "h": 64,
+            "right": 447.65625,
+            "bottom": 216.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 333.328125,
+              "y": 165.375,
+              "w": 101.328125,
+              "h": 20,
+              "right": 434.65625,
+              "bottom": 185.375
+            },
+            {
+              "x": 333.328125,
+              "y": 189.375,
+              "w": 101.328125,
+              "h": 32,
+              "right": 434.65625,
+              "bottom": 221.375
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 455.65625,
+            "y": 152.375,
+            "w": 127.34375,
+            "h": 64,
+            "right": 583,
+            "bottom": 216.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 468.65625,
+              "y": 165.375,
+              "w": 101.34375,
+              "h": 40,
+              "right": 570,
+              "bottom": 205.375
+            },
+            {
+              "x": 468.65625,
+              "y": 209.375,
+              "w": 101.34375,
+              "h": 32,
+              "right": 570,
+              "bottom": 241.375
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 185,
+            "y": 917.375,
+            "w": 398,
+            "h": 48,
+            "right": 583,
+            "bottom": 965.375
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 555,
+            "y": 54.625,
+            "w": 44,
+            "h": 44,
+            "right": 599,
+            "bottom": 98.625
+          }
+        }
+      ],
+      "width": 768,
+      "height": 1024,
+      "kind": "Parceiro B2B",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 160,
+        "y": 45.625,
+        "w": 448,
+        "h": 932.75,
+        "right": 608,
+        "bottom": 978.375
+      },
+      "bodyWidth": 768,
+      "viewport": 768,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 185,
+            "y": 152.375,
+            "w": 127.328125,
+            "h": 64,
+            "right": 312.328125,
+            "bottom": 216.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 198,
+              "y": 165.375,
+              "w": 101.328125,
+              "h": 20,
+              "right": 299.328125,
+              "bottom": 185.375
+            },
+            {
+              "x": 198,
+              "y": 189.375,
+              "w": 101.328125,
+              "h": 32,
+              "right": 299.328125,
+              "bottom": 221.375
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 320.328125,
+            "y": 152.375,
+            "w": 127.328125,
+            "h": 64,
+            "right": 447.65625,
+            "bottom": 216.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 333.328125,
+              "y": 165.375,
+              "w": 101.328125,
+              "h": 20,
+              "right": 434.65625,
+              "bottom": 185.375
+            },
+            {
+              "x": 333.328125,
+              "y": 189.375,
+              "w": 101.328125,
+              "h": 32,
+              "right": 434.65625,
+              "bottom": 221.375
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 455.65625,
+            "y": 152.375,
+            "w": 127.34375,
+            "h": 64,
+            "right": 583,
+            "bottom": 216.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 468.65625,
+              "y": 165.375,
+              "w": 101.34375,
+              "h": 40,
+              "right": 570,
+              "bottom": 205.375
+            },
+            {
+              "x": 468.65625,
+              "y": 209.375,
+              "w": 101.34375,
+              "h": 32,
+              "right": 570,
+              "bottom": 241.375
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 185,
+            "y": 917.375,
+            "w": 398,
+            "h": 48,
+            "right": 583,
+            "bottom": 965.375
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 555,
+            "y": 54.625,
+            "w": 44,
+            "h": 44,
+            "right": 599,
+            "bottom": 98.625
+          }
+        }
+      ],
+      "width": 768,
+      "height": 1024,
+      "kind": "Cliente Produtor",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 416,
+        "y": 416.625,
+        "w": 448,
+        "h": 966.75,
+        "right": 864,
+        "bottom": 1383.375
+      },
+      "bodyWidth": 1280,
+      "viewport": 1280,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 441,
+            "y": 523.375,
+            "w": 127.328125,
+            "h": 64,
+            "right": 568.328125,
+            "bottom": 587.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 454,
+              "y": 536.375,
+              "w": 101.328125,
+              "h": 20,
+              "right": 555.328125,
+              "bottom": 556.375
+            },
+            {
+              "x": 454,
+              "y": 560.375,
+              "w": 101.328125,
+              "h": 32,
+              "right": 555.328125,
+              "bottom": 592.375
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 576.328125,
+            "y": 523.375,
+            "w": 127.328125,
+            "h": 64,
+            "right": 703.65625,
+            "bottom": 587.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 589.328125,
+              "y": 536.375,
+              "w": 101.328125,
+              "h": 20,
+              "right": 690.65625,
+              "bottom": 556.375
+            },
+            {
+              "x": 589.328125,
+              "y": 560.375,
+              "w": 101.328125,
+              "h": 32,
+              "right": 690.65625,
+              "bottom": 592.375
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 711.65625,
+            "y": 523.375,
+            "w": 127.34375,
+            "h": 64,
+            "right": 839,
+            "bottom": 587.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 724.65625,
+              "y": 536.375,
+              "w": 101.34375,
+              "h": 40,
+              "right": 826,
+              "bottom": 576.375
+            },
+            {
+              "x": 724.65625,
+              "y": 580.375,
+              "w": 101.34375,
+              "h": 32,
+              "right": 826,
+              "bottom": 612.375
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 441,
+            "y": 1322.375,
+            "w": 398,
+            "h": 48,
+            "right": 839,
+            "bottom": 1370.375
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 811,
+            "y": 425.625,
+            "w": 44,
+            "h": 44,
+            "right": 855,
+            "bottom": 469.625
+          }
+        }
+      ],
+      "width": 1280,
+      "height": 1800,
+      "kind": "Interno",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 416,
+        "y": 433.625,
+        "w": 448,
+        "h": 932.75,
+        "right": 864,
+        "bottom": 1366.375
+      },
+      "bodyWidth": 1280,
+      "viewport": 1280,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 441,
+            "y": 540.375,
+            "w": 127.328125,
+            "h": 64,
+            "right": 568.328125,
+            "bottom": 604.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 454,
+              "y": 553.375,
+              "w": 101.328125,
+              "h": 20,
+              "right": 555.328125,
+              "bottom": 573.375
+            },
+            {
+              "x": 454,
+              "y": 577.375,
+              "w": 101.328125,
+              "h": 32,
+              "right": 555.328125,
+              "bottom": 609.375
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 576.328125,
+            "y": 540.375,
+            "w": 127.328125,
+            "h": 64,
+            "right": 703.65625,
+            "bottom": 604.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 589.328125,
+              "y": 553.375,
+              "w": 101.328125,
+              "h": 20,
+              "right": 690.65625,
+              "bottom": 573.375
+            },
+            {
+              "x": 589.328125,
+              "y": 577.375,
+              "w": 101.328125,
+              "h": 32,
+              "right": 690.65625,
+              "bottom": 609.375
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 711.65625,
+            "y": 540.375,
+            "w": 127.34375,
+            "h": 64,
+            "right": 839,
+            "bottom": 604.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 724.65625,
+              "y": 553.375,
+              "w": 101.34375,
+              "h": 40,
+              "right": 826,
+              "bottom": 593.375
+            },
+            {
+              "x": 724.65625,
+              "y": 597.375,
+              "w": 101.34375,
+              "h": 32,
+              "right": 826,
+              "bottom": 629.375
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 441,
+            "y": 1305.375,
+            "w": 398,
+            "h": 48,
+            "right": 839,
+            "bottom": 1353.375
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 811,
+            "y": 442.625,
+            "w": 44,
+            "h": 44,
+            "right": 855,
+            "bottom": 486.625
+          }
+        }
+      ],
+      "width": 1280,
+      "height": 1800,
+      "kind": "Parceiro B2B",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 416,
+        "y": 433.625,
+        "w": 448,
+        "h": 932.75,
+        "right": 864,
+        "bottom": 1366.375
+      },
+      "bodyWidth": 1280,
+      "viewport": 1280,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 441,
+            "y": 540.375,
+            "w": 127.328125,
+            "h": 64,
+            "right": 568.328125,
+            "bottom": 604.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 454,
+              "y": 553.375,
+              "w": 101.328125,
+              "h": 20,
+              "right": 555.328125,
+              "bottom": 573.375
+            },
+            {
+              "x": 454,
+              "y": 577.375,
+              "w": 101.328125,
+              "h": 32,
+              "right": 555.328125,
+              "bottom": 609.375
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 576.328125,
+            "y": 540.375,
+            "w": 127.328125,
+            "h": 64,
+            "right": 703.65625,
+            "bottom": 604.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 589.328125,
+              "y": 553.375,
+              "w": 101.328125,
+              "h": 20,
+              "right": 690.65625,
+              "bottom": 573.375
+            },
+            {
+              "x": 589.328125,
+              "y": 577.375,
+              "w": 101.328125,
+              "h": 32,
+              "right": 690.65625,
+              "bottom": 609.375
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 711.65625,
+            "y": 540.375,
+            "w": 127.34375,
+            "h": 64,
+            "right": 839,
+            "bottom": 604.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 724.65625,
+              "y": 553.375,
+              "w": 101.34375,
+              "h": 40,
+              "right": 826,
+              "bottom": 593.375
+            },
+            {
+              "x": 724.65625,
+              "y": 597.375,
+              "w": 101.34375,
+              "h": 32,
+              "right": 826,
+              "bottom": 629.375
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 441,
+            "y": 1305.375,
+            "w": 398,
+            "h": 48,
+            "right": 839,
+            "bottom": 1353.375
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 811,
+            "y": 442.625,
+            "w": 44,
+            "h": 44,
+            "right": 855,
+            "bottom": 486.625
+          }
+        }
+      ],
+      "width": 1280,
+      "height": 1800,
+      "kind": "Cliente Produtor",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 736,
+        "y": 56.625,
+        "w": 448,
+        "h": 966.75,
+        "right": 1184,
+        "bottom": 1023.375
+      },
+      "bodyWidth": 1920,
+      "viewport": 1920,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 761,
+            "y": 163.375,
+            "w": 127.328125,
+            "h": 64,
+            "right": 888.328125,
+            "bottom": 227.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 774,
+              "y": 176.375,
+              "w": 101.328125,
+              "h": 20,
+              "right": 875.328125,
+              "bottom": 196.375
+            },
+            {
+              "x": 774,
+              "y": 200.375,
+              "w": 101.328125,
+              "h": 32,
+              "right": 875.328125,
+              "bottom": 232.375
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 896.328125,
+            "y": 163.375,
+            "w": 127.328125,
+            "h": 64,
+            "right": 1023.65625,
+            "bottom": 227.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 909.328125,
+              "y": 176.375,
+              "w": 101.328125,
+              "h": 20,
+              "right": 1010.65625,
+              "bottom": 196.375
+            },
+            {
+              "x": 909.328125,
+              "y": 200.375,
+              "w": 101.328125,
+              "h": 32,
+              "right": 1010.65625,
+              "bottom": 232.375
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 1031.65625,
+            "y": 163.375,
+            "w": 127.34375,
+            "h": 64,
+            "right": 1159,
+            "bottom": 227.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 1044.65625,
+              "y": 176.375,
+              "w": 101.34375,
+              "h": 40,
+              "right": 1146,
+              "bottom": 216.375
+            },
+            {
+              "x": 1044.65625,
+              "y": 220.375,
+              "w": 101.34375,
+              "h": 32,
+              "right": 1146,
+              "bottom": 252.375
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 761,
+            "y": 962.375,
+            "w": 398,
+            "h": 48,
+            "right": 1159,
+            "bottom": 1010.375
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 1131,
+            "y": 65.625,
+            "w": 44,
+            "h": 44,
+            "right": 1175,
+            "bottom": 109.625
+          }
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "kind": "Interno",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 736,
+        "y": 73.625,
+        "w": 448,
+        "h": 932.75,
+        "right": 1184,
+        "bottom": 1006.375
+      },
+      "bodyWidth": 1920,
+      "viewport": 1920,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 761,
+            "y": 180.375,
+            "w": 127.328125,
+            "h": 64,
+            "right": 888.328125,
+            "bottom": 244.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 774,
+              "y": 193.375,
+              "w": 101.328125,
+              "h": 20,
+              "right": 875.328125,
+              "bottom": 213.375
+            },
+            {
+              "x": 774,
+              "y": 217.375,
+              "w": 101.328125,
+              "h": 32,
+              "right": 875.328125,
+              "bottom": 249.375
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 896.328125,
+            "y": 180.375,
+            "w": 127.328125,
+            "h": 64,
+            "right": 1023.65625,
+            "bottom": 244.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 909.328125,
+              "y": 193.375,
+              "w": 101.328125,
+              "h": 20,
+              "right": 1010.65625,
+              "bottom": 213.375
+            },
+            {
+              "x": 909.328125,
+              "y": 217.375,
+              "w": 101.328125,
+              "h": 32,
+              "right": 1010.65625,
+              "bottom": 249.375
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 1031.65625,
+            "y": 180.375,
+            "w": 127.34375,
+            "h": 64,
+            "right": 1159,
+            "bottom": 244.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 1044.65625,
+              "y": 193.375,
+              "w": 101.34375,
+              "h": 40,
+              "right": 1146,
+              "bottom": 233.375
+            },
+            {
+              "x": 1044.65625,
+              "y": 237.375,
+              "w": 101.34375,
+              "h": 32,
+              "right": 1146,
+              "bottom": 269.375
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 761,
+            "y": 945.375,
+            "w": 398,
+            "h": 48,
+            "right": 1159,
+            "bottom": 993.375
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 1131,
+            "y": 82.625,
+            "w": 44,
+            "h": 44,
+            "right": 1175,
+            "bottom": 126.625
+          }
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "kind": "Parceiro B2B",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 736,
+        "y": 73.625,
+        "w": 448,
+        "h": 932.75,
+        "right": 1184,
+        "bottom": 1006.375
+      },
+      "bodyWidth": 1920,
+      "viewport": 1920,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 761,
+            "y": 180.375,
+            "w": 127.328125,
+            "h": 64,
+            "right": 888.328125,
+            "bottom": 244.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 774,
+              "y": 193.375,
+              "w": 101.328125,
+              "h": 20,
+              "right": 875.328125,
+              "bottom": 213.375
+            },
+            {
+              "x": 774,
+              "y": 217.375,
+              "w": 101.328125,
+              "h": 32,
+              "right": 875.328125,
+              "bottom": 249.375
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 896.328125,
+            "y": 180.375,
+            "w": 127.328125,
+            "h": 64,
+            "right": 1023.65625,
+            "bottom": 244.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 909.328125,
+              "y": 193.375,
+              "w": 101.328125,
+              "h": 20,
+              "right": 1010.65625,
+              "bottom": 213.375
+            },
+            {
+              "x": 909.328125,
+              "y": 217.375,
+              "w": 101.328125,
+              "h": 32,
+              "right": 1010.65625,
+              "bottom": 249.375
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 1031.65625,
+            "y": 180.375,
+            "w": 127.34375,
+            "h": 64,
+            "right": 1159,
+            "bottom": 244.375
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 1044.65625,
+              "y": 193.375,
+              "w": 101.34375,
+              "h": 40,
+              "right": 1146,
+              "bottom": 233.375
+            },
+            {
+              "x": 1044.65625,
+              "y": 237.375,
+              "w": 101.34375,
+              "h": 32,
+              "right": 1146,
+              "bottom": 269.375
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 761,
+            "y": 945.375,
+            "w": 398,
+            "h": 48,
+            "right": 1159,
+            "bottom": 993.375
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 1131,
+            "y": 82.625,
+            "w": 44,
+            "h": 44,
+            "right": 1175,
+            "bottom": 126.625
+          }
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "kind": "Cliente Produtor",
+      "mode": "viewport"
+    },
+    {
+      "dialog": {
+        "x": 96,
+        "y": 16,
+        "w": 448,
+        "h": 868,
+        "right": 544,
+        "bottom": 884
+      },
+      "bodyWidth": 640,
+      "viewport": 640,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 121,
+            "y": 122.75,
+            "w": 127.328125,
+            "h": 64,
+            "right": 248.328125,
+            "bottom": 186.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 134,
+              "y": 135.75,
+              "w": 101.328125,
+              "h": 20,
+              "right": 235.328125,
+              "bottom": 155.75
+            },
+            {
+              "x": 134,
+              "y": 159.75,
+              "w": 101.328125,
+              "h": 32,
+              "right": 235.328125,
+              "bottom": 191.75
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 256.328125,
+            "y": 122.75,
+            "w": 127.328125,
+            "h": 64,
+            "right": 383.65625,
+            "bottom": 186.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 269.328125,
+              "y": 135.75,
+              "w": 101.328125,
+              "h": 20,
+              "right": 370.65625,
+              "bottom": 155.75
+            },
+            {
+              "x": 269.328125,
+              "y": 159.75,
+              "w": 101.328125,
+              "h": 32,
+              "right": 370.65625,
+              "bottom": 191.75
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 391.65625,
+            "y": 122.75,
+            "w": 127.34375,
+            "h": 64,
+            "right": 519,
+            "bottom": 186.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 404.65625,
+              "y": 135.75,
+              "w": 101.34375,
+              "h": 40,
+              "right": 506,
+              "bottom": 175.75
+            },
+            {
+              "x": 404.65625,
+              "y": 179.75,
+              "w": 101.34375,
+              "h": 32,
+              "right": 506,
+              "bottom": 211.75
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 121,
+            "y": 823,
+            "w": 398,
+            "h": 48,
+            "right": 519,
+            "bottom": 871
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 491,
+            "y": 25,
+            "w": 44,
+            "h": 44,
+            "right": 535,
+            "bottom": 69
+          }
+        }
+      ],
+      "width": 640,
+      "height": 900,
+      "kind": "Interno",
+      "mode": "reflow-200-percent"
+    },
+    {
+      "dialog": {
+        "x": 96,
+        "y": 16,
+        "w": 448,
+        "h": 868,
+        "right": 544,
+        "bottom": 884
+      },
+      "bodyWidth": 640,
+      "viewport": 640,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 121,
+            "y": 84.75,
+            "w": 127.328125,
+            "h": 64,
+            "right": 248.328125,
+            "bottom": 148.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 134,
+              "y": 97.75,
+              "w": 101.328125,
+              "h": 20,
+              "right": 235.328125,
+              "bottom": 117.75
+            },
+            {
+              "x": 134,
+              "y": 121.75,
+              "w": 101.328125,
+              "h": 32,
+              "right": 235.328125,
+              "bottom": 153.75
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 256.328125,
+            "y": 84.75,
+            "w": 127.328125,
+            "h": 64,
+            "right": 383.65625,
+            "bottom": 148.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 269.328125,
+              "y": 97.75,
+              "w": 101.328125,
+              "h": 20,
+              "right": 370.65625,
+              "bottom": 117.75
+            },
+            {
+              "x": 269.328125,
+              "y": 121.75,
+              "w": 101.328125,
+              "h": 32,
+              "right": 370.65625,
+              "bottom": 153.75
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 391.65625,
+            "y": 84.75,
+            "w": 127.34375,
+            "h": 64,
+            "right": 519,
+            "bottom": 148.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 404.65625,
+              "y": 97.75,
+              "w": 101.34375,
+              "h": 40,
+              "right": 506,
+              "bottom": 137.75
+            },
+            {
+              "x": 404.65625,
+              "y": 141.75,
+              "w": 101.34375,
+              "h": 32,
+              "right": 506,
+              "bottom": 173.75
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 121,
+            "y": 823,
+            "w": 398,
+            "h": 48,
+            "right": 519,
+            "bottom": 871
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 491,
+            "y": 25,
+            "w": 44,
+            "h": 44,
+            "right": 535,
+            "bottom": 69
+          }
+        }
+      ],
+      "width": 640,
+      "height": 900,
+      "kind": "Parceiro B2B",
+      "mode": "reflow-200-percent"
+    },
+    {
+      "dialog": {
+        "x": 96,
+        "y": 16,
+        "w": 448,
+        "h": 868,
+        "right": 544,
+        "bottom": 884
+      },
+      "bodyWidth": 640,
+      "viewport": 640,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 121,
+            "y": 84.75,
+            "w": 127.328125,
+            "h": 64,
+            "right": 248.328125,
+            "bottom": 148.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 134,
+              "y": 97.75,
+              "w": 101.328125,
+              "h": 20,
+              "right": 235.328125,
+              "bottom": 117.75
+            },
+            {
+              "x": 134,
+              "y": 121.75,
+              "w": 101.328125,
+              "h": 32,
+              "right": 235.328125,
+              "bottom": 153.75
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 256.328125,
+            "y": 84.75,
+            "w": 127.328125,
+            "h": 64,
+            "right": 383.65625,
+            "bottom": 148.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 269.328125,
+              "y": 97.75,
+              "w": 101.328125,
+              "h": 20,
+              "right": 370.65625,
+              "bottom": 117.75
+            },
+            {
+              "x": 269.328125,
+              "y": 121.75,
+              "w": 101.328125,
+              "h": 32,
+              "right": 370.65625,
+              "bottom": 153.75
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 391.65625,
+            "y": 84.75,
+            "w": 127.34375,
+            "h": 64,
+            "right": 519,
+            "bottom": 148.75
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 404.65625,
+              "y": 97.75,
+              "w": 101.34375,
+              "h": 40,
+              "right": 506,
+              "bottom": 137.75
+            },
+            {
+              "x": 404.65625,
+              "y": 141.75,
+              "w": 101.34375,
+              "h": 32,
+              "right": 506,
+              "bottom": 173.75
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 121,
+            "y": 823,
+            "w": 398,
+            "h": 48,
+            "right": 519,
+            "bottom": 871
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 491,
+            "y": 25,
+            "w": 44,
+            "h": 44,
+            "right": 535,
+            "bottom": 69
+          }
+        }
+      ],
+      "width": 640,
+      "height": 900,
+      "kind": "Cliente Produtor",
+      "mode": "reflow-200-percent"
+    },
+    {
+      "dialog": {
+        "x": 32,
+        "y": 32,
+        "w": 400,
+        "h": 458,
+        "right": 432,
+        "bottom": 490
+      },
+      "bodyWidth": 464,
+      "viewport": 464,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 65,
+            "y": -374,
+            "w": 334,
+            "h": 130,
+            "right": 399,
+            "bottom": -244
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 90,
+              "y": -349,
+              "w": 284,
+              "h": 40,
+              "right": 374,
+              "bottom": -309
+            },
+            {
+              "x": 90,
+              "y": -301,
+              "w": 284,
+              "h": 32,
+              "right": 374,
+              "bottom": -269
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 65,
+            "y": -228,
+            "w": 334,
+            "h": 162,
+            "right": 399,
+            "bottom": -66
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 90,
+              "y": -203,
+              "w": 284,
+              "h": 40,
+              "right": 374,
+              "bottom": -163
+            },
+            {
+              "x": 90,
+              "y": -155,
+              "w": 284,
+              "h": 64,
+              "right": 374,
+              "bottom": -91
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 65,
+            "y": -50,
+            "w": 334,
+            "h": 130,
+            "right": 399,
+            "bottom": 80
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 90,
+              "y": -25,
+              "w": 284,
+              "h": 40,
+              "right": 374,
+              "bottom": 15
+            },
+            {
+              "x": 90,
+              "y": 23,
+              "w": 284,
+              "h": 32,
+              "right": 374,
+              "bottom": 55
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 65,
+            "y": 369,
+            "w": 334,
+            "h": 96,
+            "right": 399,
+            "bottom": 465
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 379,
+            "y": 41,
+            "w": 44,
+            "h": 44,
+            "right": 423,
+            "bottom": 85
+          }
+        }
+      ],
+      "width": 464,
+      "height": 522,
+      "kind": "Interno",
+      "mode": "text-zoom-200-percent"
+    },
+    {
+      "dialog": {
+        "x": 32,
+        "y": 32,
+        "w": 400,
+        "h": 458,
+        "right": 432,
+        "bottom": 490
+      },
+      "bodyWidth": 464,
+      "viewport": 464,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 65,
+            "y": -2470,
+            "w": 334,
+            "h": 130,
+            "right": 399,
+            "bottom": -2340
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 90,
+              "y": -2445,
+              "w": 284,
+              "h": 40,
+              "right": 374,
+              "bottom": -2405
+            },
+            {
+              "x": 90,
+              "y": -2397,
+              "w": 284,
+              "h": 32,
+              "right": 374,
+              "bottom": -2365
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 65,
+            "y": -2324,
+            "w": 334,
+            "h": 162,
+            "right": 399,
+            "bottom": -2162
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 90,
+              "y": -2299,
+              "w": 284,
+              "h": 40,
+              "right": 374,
+              "bottom": -2259
+            },
+            {
+              "x": 90,
+              "y": -2251,
+              "w": 284,
+              "h": 64,
+              "right": 374,
+              "bottom": -2187
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 65,
+            "y": -2146,
+            "w": 334,
+            "h": 130,
+            "right": 399,
+            "bottom": -2016
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 90,
+              "y": -2121,
+              "w": 284,
+              "h": 40,
+              "right": 374,
+              "bottom": -2081
+            },
+            {
+              "x": 90,
+              "y": -2073,
+              "w": 284,
+              "h": 32,
+              "right": 374,
+              "bottom": -2041
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 65,
+            "y": 369,
+            "w": 334,
+            "h": 96,
+            "right": 399,
+            "bottom": 465
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 379,
+            "y": 41,
+            "w": 44,
+            "h": 44,
+            "right": 423,
+            "bottom": 85
+          }
+        }
+      ],
+      "width": 464,
+      "height": 522,
+      "kind": "Parceiro B2B",
+      "mode": "text-zoom-200-percent"
+    },
+    {
+      "dialog": {
+        "x": 32,
+        "y": 32,
+        "w": 400,
+        "h": 458,
+        "right": 432,
+        "bottom": 490
+      },
+      "bodyWidth": 464,
+      "viewport": 464,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 65,
+            "y": -2470,
+            "w": 334,
+            "h": 130,
+            "right": 399,
+            "bottom": -2340
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 90,
+              "y": -2445,
+              "w": 284,
+              "h": 40,
+              "right": 374,
+              "bottom": -2405
+            },
+            {
+              "x": 90,
+              "y": -2397,
+              "w": 284,
+              "h": 32,
+              "right": 374,
+              "bottom": -2365
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 65,
+            "y": -2324,
+            "w": 334,
+            "h": 162,
+            "right": 399,
+            "bottom": -2162
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 90,
+              "y": -2299,
+              "w": 284,
+              "h": 40,
+              "right": 374,
+              "bottom": -2259
+            },
+            {
+              "x": 90,
+              "y": -2251,
+              "w": 284,
+              "h": 64,
+              "right": 374,
+              "bottom": -2187
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 65,
+            "y": -2146,
+            "w": 334,
+            "h": 130,
+            "right": 399,
+            "bottom": -2016
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 90,
+              "y": -2121,
+              "w": 284,
+              "h": 40,
+              "right": 374,
+              "bottom": -2081
+            },
+            {
+              "x": 90,
+              "y": -2073,
+              "w": 284,
+              "h": 32,
+              "right": 374,
+              "bottom": -2041
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 65,
+            "y": 369,
+            "w": 334,
+            "h": 96,
+            "right": 399,
+            "bottom": 465
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 379,
+            "y": 41,
+            "w": 44,
+            "h": 44,
+            "right": 423,
+            "bottom": 85
+          }
+        }
+      ],
+      "width": 464,
+      "height": 522,
+      "kind": "Cliente Produtor",
+      "mode": "text-zoom-200-percent"
+    },
+    {
+      "dialog": {
+        "x": 32,
+        "y": 32,
+        "w": 256,
+        "h": 504,
+        "right": 288,
+        "bottom": 536
+      },
+      "bodyWidth": 320,
+      "viewport": 320,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 65,
+            "y": -535.5,
+            "w": 190,
+            "h": 162,
+            "right": 255,
+            "bottom": -373.5
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 90,
+              "y": -510.5,
+              "w": 140,
+              "h": 40,
+              "right": 230,
+              "bottom": -470.5
+            },
+            {
+              "x": 90,
+              "y": -462.5,
+              "w": 140,
+              "h": 64,
+              "right": 230,
+              "bottom": -398.5
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 65,
+            "y": -357.5,
+            "w": 190,
+            "h": 234,
+            "right": 255,
+            "bottom": -123.5
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 90,
+              "y": -332.5,
+              "w": 140,
+              "h": 80,
+              "right": 230,
+              "bottom": -252.5
+            },
+            {
+              "x": 90,
+              "y": -244.5,
+              "w": 140,
+              "h": 96,
+              "right": 230,
+              "bottom": -148.5
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 65,
+            "y": -107.5,
+            "w": 190,
+            "h": 202,
+            "right": 255,
+            "bottom": 94.5
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 90,
+              "y": -82.5,
+              "w": 140,
+              "h": 80,
+              "right": 230,
+              "bottom": -2.5
+            },
+            {
+              "x": 90,
+              "y": 5.5,
+              "w": 140,
+              "h": 64,
+              "right": 230,
+              "bottom": 69.5
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 65,
+            "y": 383,
+            "w": 190,
+            "h": 128,
+            "right": 255,
+            "bottom": 511
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 235,
+            "y": 41,
+            "w": 44,
+            "h": 44,
+            "right": 279,
+            "bottom": 85
+          }
+        }
+      ],
+      "width": 320,
+      "height": 568,
+      "kind": "Interno",
+      "mode": "text-zoom-200-percent"
+    },
+    {
+      "dialog": {
+        "x": 32,
+        "y": 32,
+        "w": 256,
+        "h": 504,
+        "right": 288,
+        "bottom": 536
+      },
+      "bodyWidth": 320,
+      "viewport": 320,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 65,
+            "y": -4255.5,
+            "w": 190,
+            "h": 162,
+            "right": 255,
+            "bottom": -4093.5
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 90,
+              "y": -4230.5,
+              "w": 140,
+              "h": 40,
+              "right": 230,
+              "bottom": -4190.5
+            },
+            {
+              "x": 90,
+              "y": -4182.5,
+              "w": 140,
+              "h": 64,
+              "right": 230,
+              "bottom": -4118.5
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 65,
+            "y": -4077.5,
+            "w": 190,
+            "h": 234,
+            "right": 255,
+            "bottom": -3843.5
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 90,
+              "y": -4052.5,
+              "w": 140,
+              "h": 80,
+              "right": 230,
+              "bottom": -3972.5
+            },
+            {
+              "x": 90,
+              "y": -3964.5,
+              "w": 140,
+              "h": 96,
+              "right": 230,
+              "bottom": -3868.5
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 65,
+            "y": -3827.5,
+            "w": 190,
+            "h": 202,
+            "right": 255,
+            "bottom": -3625.5
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 90,
+              "y": -3802.5,
+              "w": 140,
+              "h": 80,
+              "right": 230,
+              "bottom": -3722.5
+            },
+            {
+              "x": 90,
+              "y": -3714.5,
+              "w": 140,
+              "h": 64,
+              "right": 230,
+              "bottom": -3650.5
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 65,
+            "y": 383,
+            "w": 190,
+            "h": 128,
+            "right": 255,
+            "bottom": 511
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 235,
+            "y": 41,
+            "w": 44,
+            "h": 44,
+            "right": 279,
+            "bottom": 85
+          }
+        }
+      ],
+      "width": 320,
+      "height": 568,
+      "kind": "Parceiro B2B",
+      "mode": "text-zoom-200-percent"
+    },
+    {
+      "dialog": {
+        "x": 32,
+        "y": 32,
+        "w": 256,
+        "h": 504,
+        "right": 288,
+        "bottom": 536
+      },
+      "bodyWidth": 320,
+      "viewport": 320,
+      "radios": [
+        {
+          "text": "InternoEquipe da empresa",
+          "rect": {
+            "x": 65,
+            "y": -4159.5,
+            "w": 190,
+            "h": 162,
+            "right": 255,
+            "bottom": -3997.5
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 90,
+              "y": -4134.5,
+              "w": 140,
+              "h": 40,
+              "right": 230,
+              "bottom": -4094.5
+            },
+            {
+              "x": 90,
+              "y": -4086.5,
+              "w": 140,
+              "h": 64,
+              "right": 230,
+              "bottom": -4022.5
+            }
+          ]
+        },
+        {
+          "text": "Parceiro B2BPerfis externos do parceiro",
+          "rect": {
+            "x": 65,
+            "y": -3981.5,
+            "w": 190,
+            "h": 234,
+            "right": 255,
+            "bottom": -3747.5
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 90,
+              "y": -3956.5,
+              "w": 140,
+              "h": 80,
+              "right": 230,
+              "bottom": -3876.5
+            },
+            {
+              "x": 90,
+              "y": -3868.5,
+              "w": 140,
+              "h": 96,
+              "right": 230,
+              "bottom": -3772.5
+            }
+          ]
+        },
+        {
+          "text": "Cliente ProdutorVinculado a clientes",
+          "rect": {
+            "x": 65,
+            "y": -3731.5,
+            "w": 190,
+            "h": 202,
+            "right": 255,
+            "bottom": -3529.5
+          },
+          "overflow": false,
+          "spans": [
+            {
+              "x": 90,
+              "y": -3706.5,
+              "w": 140,
+              "h": 80,
+              "right": 230,
+              "bottom": -3626.5
+            },
+            {
+              "x": 90,
+              "y": -3618.5,
+              "w": 140,
+              "h": 64,
+              "right": 230,
+              "bottom": -3554.5
+            }
+          ]
+        }
+      ],
+      "buttons": [
+        {
+          "text": "Criar Usu\u00e1rio",
+          "rect": {
+            "x": 65,
+            "y": 383,
+            "w": 190,
+            "h": 128,
+            "right": 255,
+            "bottom": 511
+          }
+        },
+        {
+          "text": "Fechar",
+          "rect": {
+            "x": 235,
+            "y": 41,
+            "w": 44,
+            "h": 44,
+            "right": 279,
+            "bottom": 85
+          }
+        }
+      ],
+      "width": 320,
+      "height": 568,
+      "kind": "Cliente Produtor",
+      "mode": "text-zoom-200-percent"
+    },
+    {
+      "shared": true,
+      "width": 320,
+      "pageWidth": 320
+    },
+    {
+      "alert": true,
+      "width": 320,
+      "height": 568,
+      "rect": {
+        "x": 16,
+        "y": 16,
+        "right": 304,
+        "bottom": 552,
+        "width": 288,
+        "height": 536,
+        "scroll": 1228,
+        "client": 534
+      }
+    },
+    {
+      "shared": true,
+      "width": 464,
+      "pageWidth": 464
+    },
+    {
+      "alert": true,
+      "width": 464,
+      "height": 522,
+      "rect": {
+        "x": 16,
+        "y": 16,
+        "right": 448,
+        "bottom": 506,
+        "width": 432,
+        "height": 490,
+        "scroll": 904,
+        "client": 488
+      }
+    },
+    {
+      "shared": true,
+      "width": 1280,
+      "pageWidth": 1280
+    },
+    {
+      "alert": true,
+      "width": 1280,
+      "height": 1800,
+      "rect": {
+        "x": 384,
+        "y": 517,
+        "right": 896,
+        "bottom": 1283,
+        "width": 512,
+        "height": 766,
+        "scroll": 764,
+        "client": 764
+      }
+    }
+  ],
+  "errors": []
+}

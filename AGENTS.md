@@ -24,6 +24,7 @@
 - Fixtures need Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
+- Shared dialogs constrain dynamic viewport height/width and wrap titles, tabs/tables keep local scroll and mobile actions wrap; the canonical user registration keeps its type selector inside the scroll body with fixed header/footer — prevents clipping without changing authorization or submit flows.
 - Operational recipient labels reuse canonical routes/RPCs and the homologated shared scene for preview/PDF/print; recipient-v2 volume selects media, validity/toxicity and overflow fail closed, while technical approvals stay in Lots/Products and production QR/logo origin is preserved. Historical reads/correction and scoped post-audit one-shot print permits remain — prevents layout drift, stale output and keyboard bypass.
 - Private dossier documents render inside the shared detail through the scoped authenticated opener with byte-signature/hash verification and revoked object URLs on close/context disposal — avoids popup/download-only failures without bearer links.
 - Product dossiers share one owner-tenant detail at catalog/fiscal entries; explicit per-version coverage and document subsets follow scripts/product-regulatory-profiles-20261114/management/AGENTS.md, while fiscal profiles start atomic blank DRAFTs — prevents global authority and inherited evidence.
