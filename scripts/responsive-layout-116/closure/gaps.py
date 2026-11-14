@@ -30,7 +30,7 @@ async def main():
       await page.set_viewport_size({'width':w,'height':h});await page.goto('http://localhost:8080'+d['route']+'?reviewRole='+role);await page.wait_for_timeout(650)
       if d['kind']=='delivery-confirm':await page.get_by_role('button',name='Registrar entrega (',exact=False).click()
       if d['kind']=='consultor-image':
-       await page.get_by_text('Consultor sintético',exact=True).first.click();await page.get_by_text('Ver histórico de vistorias',exact=False).first.click();await page.get_by_text('Fazenda sintética',exact=False).last.click();await page.get_by_alt_text('Evidência sintética').first.click()
+       await page.get_by_text('Consultor sintético',exact=True).first.click();await page.get_by_text('Vistorias / mês',exact=False).first.click();await page.get_by_text('Fazenda sintética',exact=False).last.click();await page.get_by_alt_text('Evidência sintética').first.click()
       if d.get('tab'):await page.get_by_role('tab',name=d['tab'],exact=True).click();await page.wait_for_timeout(700)
       if d['kind']=='order' and w==390:await page.get_by_role('heading',name='QA-116',exact=False).first.click()
       elif d.get('open'):await page.get_by_role('button',name=d['open'],exact=False).first.click();await page.wait_for_timeout(350)

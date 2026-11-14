@@ -14,7 +14,7 @@ async def main():
    if path=='/src/integrations/supabase/client.ts':return await r.fulfill(content_type='application/javascript',body=ns['CLIENT'])
    if r.request.resource_type=='document':return await r.fulfill(content_type='text/html',body=ns['ns']['HTML'].replace("import App from '/src/App.tsx';ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));",ns['BOOT'].replace('MANIFEST',json.dumps(current)).replace('ROLES',json.dumps(ns['ROLES']))))
    f=ns['BASE']/'modules'/path.lstrip('/').replace('/','__')
-   if f.is_file():return await r.fulfill(content_type='application/javascript',body=f.read_text())
+   if f.is_file() and path!='/src/components/bi/modal/BIDrillDownModal.tsx':return await r.fulfill(content_type='application/javascript',body=f.read_text())
    await r.continue_()
   await c.route('**/*',intercept)
   for ix,id in enumerate(IDS):
