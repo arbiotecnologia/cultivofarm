@@ -24065,6 +24065,10 @@ export type Database = {
         Args: { p_upload_id: string }
         Returns: undefined
       }
+      platform_product_dossier_upload_cancel_begin: {
+        Args: { p_upload_id: string }
+        Returns: Json
+      }
       platform_product_dossier_upload_finalize: {
         Args: { p_upload_id: string }
         Returns: Json
