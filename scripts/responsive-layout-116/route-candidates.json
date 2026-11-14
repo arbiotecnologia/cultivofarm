@@ -6,7 +6,23 @@
     "className": "\"max-w-3xl max-h-[92vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 1,
-    "routes": []
+    "routes": [
+      {
+        "path": "/portal/aplicacoes",
+        "components": [
+          "PortalAplicacoes"
+        ],
+        "size": 60
+      },
+      {
+        "path": "/aplicacoes",
+        "components": [
+          "RoleGuard",
+          "Aplicacoes"
+        ],
+        "size": 61
+      }
+    ]
   },
   {
     "file": "src/components/bi/modal/BIDrillDownModal.tsx",
@@ -15,7 +31,16 @@
     "className": "\"max-w-5xl max-h-[85vh] overflow-hidden flex flex-col\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 2,
-    "routes": []
+    "routes": [
+      {
+        "path": "/bi-operacional",
+        "components": [
+          "RoleGuard",
+          "BIOperacional"
+        ],
+        "size": 90
+      }
+    ]
   },
   {
     "file": "src/components/catalogo/AddToCartDialog.tsx",
@@ -24,7 +49,29 @@
     "className": "\"h-8 text-xs w-full min-w-0\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 3,
-    "routes": []
+    "routes": [
+      {
+        "path": "novo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "catalogo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "simulador",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      }
+    ]
   },
   {
     "file": "src/components/clientes/ClienteFormTabs.tsx",
@@ -33,7 +80,16 @@
     "className": "\"font-mono-data font-semibold max-w-[200px] bg-muted/40\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 4,
-    "routes": []
+    "routes": [
+      {
+        "path": "/clientes",
+        "components": [
+          "RoleGuard",
+          "Clientes"
+        ],
+        "size": 88
+      }
+    ]
   },
   {
     "file": "src/components/clientes/ClienteFormTabs.tsx",
@@ -42,7 +98,16 @@
     "className": "\"w-[100px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 5,
-    "routes": []
+    "routes": [
+      {
+        "path": "/clientes",
+        "components": [
+          "RoleGuard",
+          "Clientes"
+        ],
+        "size": 88
+      }
+    ]
   },
   {
     "file": "src/components/clientes/ClienteHistoricoDialog.tsx",
@@ -51,7 +116,16 @@
     "className": "\"max-w-4xl max-h-[80vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 6,
-    "routes": []
+    "routes": [
+      {
+        "path": "/clientes",
+        "components": [
+          "RoleGuard",
+          "Clientes"
+        ],
+        "size": 88
+      }
+    ]
   },
   {
     "file": "src/components/cockpit/GerarLoteDialog.tsx",
@@ -60,7 +134,40 @@
     "className": "\"max-w-lg max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 7,
-    "routes": []
+    "routes": [
+      {
+        "path": "/ordens-servico",
+        "components": [
+          "RoleGuard",
+          "OrdensServico"
+        ],
+        "size": 69
+      },
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      },
+      {
+        "path": "/clientes/:id",
+        "components": [
+          "RoleGuard",
+          "ClienteDetalhe"
+        ],
+        "size": 109
+      },
+      {
+        "path": "/parceiros/:id",
+        "components": [
+          "RoleGuard",
+          "ParceiroDetalhe"
+        ],
+        "size": 110
+      }
+    ]
   },
   {
     "file": "src/components/cockpit/RegistrarCQDialog.tsx",
@@ -69,7 +176,40 @@
     "className": "\"max-w-lg max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 8,
-    "routes": []
+    "routes": [
+      {
+        "path": "/ordens-servico",
+        "components": [
+          "RoleGuard",
+          "OrdensServico"
+        ],
+        "size": 69
+      },
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      },
+      {
+        "path": "/clientes/:id",
+        "components": [
+          "RoleGuard",
+          "ClienteDetalhe"
+        ],
+        "size": 109
+      },
+      {
+        "path": "/parceiros/:id",
+        "components": [
+          "RoleGuard",
+          "ParceiroDetalhe"
+        ],
+        "size": 110
+      }
+    ]
   },
   {
     "file": "src/components/cockpit/RegistrarEnvaseDialog.tsx",
@@ -78,7 +218,16 @@
     "className": "\"max-w-lg max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 9,
-    "routes": []
+    "routes": [
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      }
+    ]
   },
   {
     "file": "src/components/cockpit/ReservarEstoqueDialog.tsx",
@@ -87,7 +236,16 @@
     "className": "\"max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 10,
-    "routes": []
+    "routes": [
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      }
+    ]
   },
   {
     "file": "src/components/comercial/MatrizPrecosTab.tsx",
@@ -96,7 +254,16 @@
     "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 11,
-    "routes": []
+    "routes": [
+      {
+        "path": "/comercial/condicoes-pagamento",
+        "components": [
+          "RoleGuard",
+          "CommercialPaymentPlansPage"
+        ],
+        "size": 62
+      }
+    ]
   },
   {
     "file": "src/components/comercial/ParceiroB2BFormDialog.tsx",
@@ -105,7 +272,16 @@
     "className": "\"max-w-4xl max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 12,
-    "routes": []
+    "routes": [
+      {
+        "path": "/clientes",
+        "components": [
+          "RoleGuard",
+          "Clientes"
+        ],
+        "size": 88
+      }
+    ]
   },
   {
     "file": "src/components/comercial/ResponderCotacaoDialog.tsx",
@@ -114,7 +290,24 @@
     "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 13,
-    "routes": []
+    "routes": [
+      {
+        "path": "/comercial/minha-carteira",
+        "components": [
+          "RoleGuard",
+          "MinhaCarteiraVendedor"
+        ],
+        "size": 47
+      },
+      {
+        "path": "/comercial/pedidos-b2b",
+        "components": [
+          "RoleGuard",
+          "PedidosB2B"
+        ],
+        "size": 99
+      }
+    ]
   },
   {
     "file": "src/components/configuracoes/AuditSenhaDialog.tsx",
@@ -132,7 +325,16 @@
     "className": "\"max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 15,
-    "routes": []
+    "routes": [
+      {
+        "path": "/entregas",
+        "components": [
+          "RoleGuard",
+          "Entregas"
+        ],
+        "size": 105
+      }
+    ]
   },
   {
     "file": "src/components/entregas/RegistrarEntregaDialog.tsx",
@@ -141,7 +343,16 @@
     "className": "\"max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden mx-2 sm:mx-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 16,
-    "routes": []
+    "routes": [
+      {
+        "path": "/entregas",
+        "components": [
+          "RoleGuard",
+          "Entregas"
+        ],
+        "size": 105
+      }
+    ]
   },
   {
     "file": "src/components/entregas/RegistrarEntregaDialog.tsx",
@@ -150,7 +361,16 @@
     "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 17,
-    "routes": []
+    "routes": [
+      {
+        "path": "/entregas",
+        "components": [
+          "RoleGuard",
+          "Entregas"
+        ],
+        "size": 105
+      }
+    ]
   },
   {
     "file": "src/components/estoque/ReservaDialog.tsx",
@@ -159,7 +379,16 @@
     "className": "\"max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 18,
-    "routes": []
+    "routes": [
+      {
+        "path": "/estoque",
+        "components": [
+          "RoleGuard",
+          "Estoque"
+        ],
+        "size": 74
+      }
+    ]
   },
   {
     "file": "src/components/faturamento/BaseFaturamentoDialog.tsx",
@@ -168,7 +397,16 @@
     "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 19,
-    "routes": []
+    "routes": [
+      {
+        "path": "/ordens-servico",
+        "components": [
+          "RoleGuard",
+          "OrdensServico"
+        ],
+        "size": 69
+      }
+    ]
   },
   {
     "file": "src/components/fazendas/TalhoesFazendaTab.tsx",
@@ -177,7 +415,16 @@
     "className": "\"max-w-lg w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 20,
-    "routes": []
+    "routes": [
+      {
+        "path": "/fazendas/:id",
+        "components": [
+          "RoleGuard",
+          "FazendaDetalhe"
+        ],
+        "size": 64
+      }
+    ]
   },
   {
     "file": "src/components/financeiro/BaixaDialog.tsx",
@@ -186,7 +433,24 @@
     "className": "\"max-w-lg max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 21,
-    "routes": []
+    "routes": [
+      {
+        "path": "/financeiro/receber",
+        "components": [
+          "RoleGuard",
+          "ContasReceber"
+        ],
+        "size": 76
+      },
+      {
+        "path": "/financeiro/pagar",
+        "components": [
+          "RoleGuard",
+          "ContasPagar"
+        ],
+        "size": 76
+      }
+    ]
   },
   {
     "file": "src/components/financeiro/ConfirmarEntregaFinanceiroDialog.tsx",
@@ -195,7 +459,24 @@
     "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 22,
-    "routes": []
+    "routes": [
+      {
+        "path": "/financeiro/entregas-nao-faturadas",
+        "components": [
+          "RoleGuard",
+          "FinEntregasNaoFaturadas"
+        ],
+        "size": 47
+      },
+      {
+        "path": "/entregas",
+        "components": [
+          "RoleGuard",
+          "Entregas"
+        ],
+        "size": 105
+      }
+    ]
   },
   {
     "file": "src/components/financeiro/NovaContaDialog.tsx",
@@ -204,7 +485,24 @@
     "className": "\"max-w-3xl max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 23,
-    "routes": []
+    "routes": [
+      {
+        "path": "/financeiro/receber",
+        "components": [
+          "RoleGuard",
+          "ContasReceber"
+        ],
+        "size": 76
+      },
+      {
+        "path": "/financeiro/pagar",
+        "components": [
+          "RoleGuard",
+          "ContasPagar"
+        ],
+        "size": 76
+      }
+    ]
   },
   {
     "file": "src/components/fiscal/FiscalCatalogCombobox.tsx",
@@ -213,7 +511,16 @@
     "className": "{cn(\"w-full min-w-0 justify-between font-normal\", multiline && \"h-auto min-h-10 whitespace-normal py-3\", addAction && \"w-auto justify-center\")}",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 24,
-    "routes": []
+    "routes": [
+      {
+        "path": "/configuracoes/fiscal/empresa",
+        "components": [
+          "RoleGuard",
+          "FiscalEmpresa"
+        ],
+        "size": 128
+      }
+    ]
   },
   {
     "file": "src/components/fiscal/NatureOperationCombobox.tsx",
@@ -222,7 +529,24 @@
     "className": "\"h-auto min-h-10 w-full min-w-0 justify-between whitespace-normal py-2 font-normal\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 25,
-    "routes": []
+    "routes": [
+      {
+        "path": "/configuracoes/fiscal/empresa",
+        "components": [
+          "RoleGuard",
+          "FiscalEmpresa"
+        ],
+        "size": 128
+      },
+      {
+        "path": "/fiscal/documentos",
+        "components": [
+          "RoleGuard",
+          "FiscalDocumentos"
+        ],
+        "size": 130
+      }
+    ]
   },
   {
     "file": "src/components/fiscal/ProductDossierManagement.tsx",
@@ -231,7 +555,63 @@
     "className": "\"max-w-5xl max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 26,
-    "routes": []
+    "routes": [
+      {
+        "path": "/configuracoes/fiscal/produtos",
+        "components": [
+          "RoleGuard",
+          "FiscalProdutos"
+        ],
+        "size": 77
+      },
+      {
+        "path": "/clientes/:id",
+        "components": [
+          "RoleGuard",
+          "ClienteDetalhe"
+        ],
+        "size": 109
+      },
+      {
+        "path": "/parceiros/:id",
+        "components": [
+          "RoleGuard",
+          "ParceiroDetalhe"
+        ],
+        "size": 110
+      },
+      {
+        "path": "/configuracoes/fiscal/empresa",
+        "components": [
+          "RoleGuard",
+          "FiscalEmpresa"
+        ],
+        "size": 128
+      },
+      {
+        "path": "/fiscal/documentos",
+        "components": [
+          "RoleGuard",
+          "FiscalDocumentos"
+        ],
+        "size": 130
+      },
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ]
   },
   {
     "file": "src/components/ordens-servico/OSDetalhesDialog.tsx",
@@ -240,7 +620,32 @@
     "className": "\"max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0 sm:p-0\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 27,
-    "routes": []
+    "routes": [
+      {
+        "path": "/ordens-servico",
+        "components": [
+          "RoleGuard",
+          "OrdensServico"
+        ],
+        "size": 69
+      },
+      {
+        "path": "/clientes/:id",
+        "components": [
+          "RoleGuard",
+          "ClienteDetalhe"
+        ],
+        "size": 109
+      },
+      {
+        "path": "/parceiros/:id",
+        "components": [
+          "RoleGuard",
+          "ParceiroDetalhe"
+        ],
+        "size": 110
+      }
+    ]
   },
   {
     "file": "src/components/plataforma/AdminGestaoAcoes.tsx",
@@ -249,7 +654,15 @@
     "className": "\"max-h-[90dvh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto [&_button:not([role=checkbox])]:min-h-11\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 28,
-    "routes": []
+    "routes": [
+      {
+        "path": "/plataforma",
+        "components": [
+          "PlataformaHome"
+        ],
+        "size": 74
+      }
+    ]
   },
   {
     "file": "src/components/plataforma/AdminGestaoAcoes.tsx",
@@ -258,7 +671,15 @@
     "className": "\"grid h-auto w-full grid-cols-3 gap-1\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 29,
-    "routes": []
+    "routes": [
+      {
+        "path": "/plataforma",
+        "components": [
+          "PlataformaHome"
+        ],
+        "size": 74
+      }
+    ]
   },
   {
     "file": "src/components/plataforma/PlatformCatalogB2BDialog.tsx",
@@ -330,7 +751,23 @@
     "className": "\"max-w-5xl w-[96vw] max-h-[92vh] overflow-y-auto overflow-x-hidden\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 37,
-    "routes": []
+    "routes": [
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ]
   },
   {
     "file": "src/components/protocolos/MicroorganismTechnicalProfileDialog.tsx",
@@ -339,7 +776,52 @@
     "className": "\"max-w-3xl w-[95vw] max-h-[92vh] overflow-y-auto overflow-x-hidden [&_button]:min-h-11 [&_input]:min-h-11\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 38,
-    "routes": []
+    "routes": [
+      {
+        "path": "novo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "catalogo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "simulador",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "/portal-parceiro",
+        "components": [
+          "B2BRouteGuard",
+          "PortalParceiroLayout"
+        ],
+        "size": 176
+      },
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ]
   },
   {
     "file": "src/components/protocolos/MicrorganismosTab.tsx",
@@ -348,7 +830,16 @@
     "className": "\"w-[140px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 39,
-    "routes": []
+    "routes": [
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ]
   },
   {
     "file": "src/components/protocolos/MicrorganismosTab.tsx",
@@ -357,7 +848,16 @@
     "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 40,
-    "routes": []
+    "routes": [
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ]
   },
   {
     "file": "src/components/protocolos/OwnedCatalogItemDialog.tsx",
@@ -366,7 +866,16 @@
     "className": "\"max-w-3xl max-h-[92vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 41,
-    "routes": []
+    "routes": [
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ]
   },
   {
     "file": "src/components/protocolos/ProductTechnicalProfileDialog.tsx",
@@ -375,7 +884,52 @@
     "className": "\"max-w-3xl w-[95vw] max-h-[92vh] overflow-y-auto overflow-x-hidden [&_button]:min-h-11 [&_input]:min-h-11\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 42,
-    "routes": []
+    "routes": [
+      {
+        "path": "novo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "catalogo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "simulador",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "/portal-parceiro",
+        "components": [
+          "B2BRouteGuard",
+          "PortalParceiroLayout"
+        ],
+        "size": 176
+      },
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ]
   },
   {
     "file": "src/components/protocolos/ProdutosTab.tsx",
@@ -384,7 +938,23 @@
     "className": "\"w-[140px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 43,
-    "routes": []
+    "routes": [
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ]
   },
   {
     "file": "src/components/protocolos/ProdutosTab.tsx",
@@ -393,7 +963,23 @@
     "className": "\"max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 44,
-    "routes": []
+    "routes": [
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ]
   },
   {
     "file": "src/components/protocolos/ProdutosTab.tsx",
@@ -402,7 +988,23 @@
     "className": "\"flex w-full h-auto flex-wrap mb-4 [&_button]:flex-1 [&_button]:whitespace-normal [&_button]:min-w-20\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 45,
-    "routes": []
+    "routes": [
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ]
   },
   {
     "file": "src/components/protocolos/TenantProblemPanel.tsx",
@@ -411,7 +1013,52 @@
     "className": "\"max-h-[90dvh] overflow-y-auto [&_input]:min-h-11 [&_button]:min-h-11\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 46,
-    "routes": []
+    "routes": [
+      {
+        "path": "novo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "catalogo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "simulador",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "/portal-parceiro",
+        "components": [
+          "B2BRouteGuard",
+          "PortalParceiroLayout"
+        ],
+        "size": 176
+      },
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ]
   },
   {
     "file": "src/components/protocolos/TenantReferencePanel.tsx",
@@ -420,7 +1067,52 @@
     "className": "\"max-h-[90dvh] overflow-y-auto [&_input]:min-h-11 [&_button]:min-h-11\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 47,
-    "routes": []
+    "routes": [
+      {
+        "path": "novo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "catalogo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "simulador",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "/portal-parceiro",
+        "components": [
+          "B2BRouteGuard",
+          "PortalParceiroLayout"
+        ],
+        "size": 176
+      },
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ]
   },
   {
     "file": "src/components/protocolos/catalog/BulkAlvosDialog.tsx",
@@ -429,7 +1121,52 @@
     "className": "\"grid grid-cols-3 w-full\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 48,
-    "routes": []
+    "routes": [
+      {
+        "path": "novo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "catalogo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "simulador",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "/portal-parceiro",
+        "components": [
+          "B2BRouteGuard",
+          "PortalParceiroLayout"
+        ],
+        "size": 176
+      },
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ]
   },
   {
     "file": "src/components/protocolos/catalog/SourceFormDialog.tsx",
@@ -438,7 +1175,52 @@
     "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 49,
-    "routes": []
+    "routes": [
+      {
+        "path": "novo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "catalogo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "simulador",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "/portal-parceiro",
+        "components": [
+          "B2BRouteGuard",
+          "PortalParceiroLayout"
+        ],
+        "size": 176
+      },
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ]
   },
   {
     "file": "src/components/talhoes/SafrasTalhaoDialog.tsx",
@@ -447,7 +1229,16 @@
     "className": "\"max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 50,
-    "routes": []
+    "routes": [
+      {
+        "path": "/fazendas/:id",
+        "components": [
+          "RoleGuard",
+          "FazendaDetalhe"
+        ],
+        "size": 64
+      }
+    ]
   },
   {
     "file": "src/components/visita/CameraDialog.tsx",
@@ -456,7 +1247,24 @@
     "className": "\"sm:max-w-md p-0 overflow-hidden bg-black border-none h-[85vh] flex flex-col gap-0\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 51,
-    "routes": []
+    "routes": [
+      {
+        "path": "/visita-tecnica/nova",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      },
+      {
+        "path": "/visita-tecnica/:id",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      }
+    ]
   },
   {
     "file": "src/components/visita/EvidenciasTabs.tsx",
@@ -465,7 +1273,24 @@
     "className": "\"grid grid-cols-4 w-full\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 52,
-    "routes": []
+    "routes": [
+      {
+        "path": "/visita-tecnica/nova",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      },
+      {
+        "path": "/visita-tecnica/:id",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      }
+    ]
   },
   {
     "file": "src/components/visita/PdfPreviewDialog.tsx",
@@ -474,7 +1299,24 @@
     "className": "\"max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 53,
-    "routes": []
+    "routes": [
+      {
+        "path": "/visita-tecnica/nova",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      },
+      {
+        "path": "/visita-tecnica/:id",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      }
+    ]
   },
   {
     "file": "src/components/visita/PlanoMonitoramentoEditor.tsx",
@@ -483,7 +1325,24 @@
     "className": "\"sm:max-w-[425px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 54,
-    "routes": []
+    "routes": [
+      {
+        "path": "/visita-tecnica/nova",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      },
+      {
+        "path": "/visita-tecnica/:id",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      }
+    ]
   },
   {
     "file": "src/components/visita/UploadQueuePanel.tsx",
@@ -492,7 +1351,24 @@
     "className": "\"h-7 text-[10px] flex-1 border-destructive/30 hover:bg-destructive/10 text-destructive whitespace-nowrap\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 55,
-    "routes": []
+    "routes": [
+      {
+        "path": "/visita-tecnica/nova",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      },
+      {
+        "path": "/visita-tecnica/:id",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      }
+    ]
   },
   {
     "file": "src/components/visita/UploadQueuePanel.tsx",
@@ -501,7 +1377,24 @@
     "className": "\"h-7 text-[10px] flex-1 border-muted-foreground/30 hover:bg-muted whitespace-nowrap\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 56,
-    "routes": []
+    "routes": [
+      {
+        "path": "/visita-tecnica/nova",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      },
+      {
+        "path": "/visita-tecnica/:id",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      }
+    ]
   },
   {
     "file": "src/pages/Aplicacoes.tsx",
@@ -510,7 +1403,16 @@
     "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 57,
-    "routes": []
+    "routes": [
+      {
+        "path": "/aplicacoes",
+        "components": [
+          "RoleGuard",
+          "Aplicacoes"
+        ],
+        "size": 61
+      }
+    ]
   },
   {
     "file": "src/pages/BIAgronomico.tsx",
@@ -519,7 +1421,16 @@
     "className": "\"w-max sm:w-auto flex min-w-full\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 58,
-    "routes": []
+    "routes": [
+      {
+        "path": "/bi-agronomico",
+        "components": [
+          "RoleGuard",
+          "BIAgronomico"
+        ],
+        "size": 22
+      }
+    ]
   },
   {
     "file": "src/pages/ClienteDetalhe.tsx",
@@ -528,7 +1439,24 @@
     "className": "\"h-8 w-[200px] text-xs\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 59,
-    "routes": []
+    "routes": [
+      {
+        "path": "/clientes/:id",
+        "components": [
+          "RoleGuard",
+          "ClienteDetalhe"
+        ],
+        "size": 109
+      },
+      {
+        "path": "/parceiros/:id",
+        "components": [
+          "RoleGuard",
+          "ParceiroDetalhe"
+        ],
+        "size": 110
+      }
+    ]
   },
   {
     "file": "src/pages/ClienteDetalhe.tsx",
@@ -537,7 +1465,24 @@
     "className": "\"h-8 w-[220px] text-xs\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 60,
-    "routes": []
+    "routes": [
+      {
+        "path": "/clientes/:id",
+        "components": [
+          "RoleGuard",
+          "ClienteDetalhe"
+        ],
+        "size": 109
+      },
+      {
+        "path": "/parceiros/:id",
+        "components": [
+          "RoleGuard",
+          "ParceiroDetalhe"
+        ],
+        "size": 110
+      }
+    ]
   },
   {
     "file": "src/pages/CockpitLaboratorio.tsx",
@@ -546,7 +1491,16 @@
     "className": "\"h-9 min-w-0 flex-1 basis-[145px] sm:flex-none sm:w-[150px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 61,
-    "routes": []
+    "routes": [
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      }
+    ]
   },
   {
     "file": "src/pages/CockpitLaboratorio.tsx",
@@ -555,7 +1509,16 @@
     "className": "\"h-9 min-w-0 flex-1 basis-[145px] text-xs sm:flex-none sm:w-[170px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 62,
-    "routes": []
+    "routes": [
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      }
+    ]
   },
   {
     "file": "src/pages/CockpitLaboratorio.tsx",
@@ -564,7 +1527,16 @@
     "className": "\"h-9 min-w-0 flex-1 basis-[145px] text-xs sm:flex-none sm:w-[180px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 63,
-    "routes": []
+    "routes": [
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      }
+    ]
   },
   {
     "file": "src/pages/CockpitLaboratorio.tsx",
@@ -573,7 +1545,16 @@
     "className": "\"h-9 min-w-0 flex-1 basis-[145px] text-xs truncate sm:flex-none sm:w-[150px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 64,
-    "routes": []
+    "routes": [
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      }
+    ]
   },
   {
     "file": "src/pages/CockpitLaboratorio.tsx",
@@ -582,7 +1563,16 @@
     "className": "\"h-9 min-w-0 flex-1 basis-[145px] text-xs truncate sm:flex-none sm:w-[150px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 65,
-    "routes": []
+    "routes": [
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      }
+    ]
   },
   {
     "file": "src/pages/CockpitLaboratorio.tsx",
@@ -591,7 +1581,16 @@
     "className": "\"h-9 min-w-0 flex-1 basis-[145px] text-xs truncate sm:flex-none sm:w-[150px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 66,
-    "routes": []
+    "routes": [
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      }
+    ]
   },
   {
     "file": "src/pages/CockpitLaboratorio.tsx",
@@ -600,7 +1599,16 @@
     "className": "\"grid h-auto w-full grid-cols-2 gap-1 bg-muted/50 p-1 mb-4 sm:grid-cols-3\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 67,
-    "routes": []
+    "routes": [
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      }
+    ]
   },
   {
     "file": "src/pages/Configuracoes.tsx",
@@ -609,7 +1617,16 @@
     "className": "\"max-w-md flex flex-col max-h-[calc(100dvh-2rem)] gap-0 overflow-clip p-0 sm:p-0\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 68,
-    "routes": []
+    "routes": [
+      {
+        "path": "/configuracoes",
+        "components": [
+          "RoleGuard",
+          "Configuracoes"
+        ],
+        "size": 82
+      }
+    ]
   },
   {
     "file": "src/pages/Configuracoes.tsx",
@@ -618,7 +1635,16 @@
     "className": "{`h-auto min-h-16 min-w-0 w-full flex-col items-start justify-start gap-1 whitespace-normal rounded-md border p-3 text-left transition-colors disabled:opacity-50 ${registrationKind === opcao.kind ? \"border-primary bg-primary/10\" : \"border-border hover:bg-accent\"}`}",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 69,
-    "routes": []
+    "routes": [
+      {
+        "path": "/configuracoes",
+        "components": [
+          "RoleGuard",
+          "Configuracoes"
+        ],
+        "size": 82
+      }
+    ]
   },
   {
     "file": "src/pages/Configuracoes.tsx",
@@ -627,7 +1653,16 @@
     "className": "\"w-full sm:w-[180px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 70,
-    "routes": []
+    "routes": [
+      {
+        "path": "/configuracoes",
+        "components": [
+          "RoleGuard",
+          "Configuracoes"
+        ],
+        "size": 82
+      }
+    ]
   },
   {
     "file": "src/pages/Configuracoes.tsx",
@@ -636,7 +1671,16 @@
     "className": "\"w-full sm:w-[140px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 71,
-    "routes": []
+    "routes": [
+      {
+        "path": "/configuracoes",
+        "components": [
+          "RoleGuard",
+          "Configuracoes"
+        ],
+        "size": 82
+      }
+    ]
   },
   {
     "file": "src/pages/Configuracoes.tsx",
@@ -645,7 +1689,16 @@
     "className": "\"min-w-[700px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 72,
-    "routes": []
+    "routes": [
+      {
+        "path": "/configuracoes",
+        "components": [
+          "RoleGuard",
+          "Configuracoes"
+        ],
+        "size": 82
+      }
+    ]
   },
   {
     "file": "src/pages/ConsultorTecnico.tsx",
@@ -654,7 +1707,16 @@
     "className": "\"max-w-4xl p-0 overflow-visible bg-transparent border-none shadow-none flex flex-col items-center justify-center h-[90vh] outline-none\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 73,
-    "routes": []
+    "routes": [
+      {
+        "path": "/consultor-tecnico",
+        "components": [
+          "RoleGuard",
+          "ConsultorTecnico"
+        ],
+        "size": 54
+      }
+    ]
   },
   {
     "file": "src/pages/ControleQualidade.tsx",
@@ -663,7 +1725,16 @@
     "className": "\"max-h-[85vh] max-w-2xl overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 74,
-    "routes": []
+    "routes": [
+      {
+        "path": "/controle-qualidade",
+        "components": [
+          "RoleGuard",
+          "ControleQualidade"
+        ],
+        "size": 18
+      }
+    ]
   },
   {
     "file": "src/pages/Entregas.tsx",
@@ -672,7 +1743,16 @@
     "className": "\"max-w-3xl max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 75,
-    "routes": []
+    "routes": [
+      {
+        "path": "/entregas",
+        "components": [
+          "RoleGuard",
+          "Entregas"
+        ],
+        "size": 105
+      }
+    ]
   },
   {
     "file": "src/pages/EnvasePage.tsx",
@@ -681,7 +1761,16 @@
     "className": "\"min-w-[750px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 76,
-    "routes": []
+    "routes": [
+      {
+        "path": "/envase",
+        "components": [
+          "RoleGuard",
+          "EnvasePage"
+        ],
+        "size": 46
+      }
+    ]
   },
   {
     "file": "src/pages/Estoque.tsx",
@@ -690,7 +1779,16 @@
     "className": "\"max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 77,
-    "routes": []
+    "routes": [
+      {
+        "path": "/estoque",
+        "components": [
+          "RoleGuard",
+          "Estoque"
+        ],
+        "size": 74
+      }
+    ]
   },
   {
     "file": "src/pages/Estoque.tsx",
@@ -699,7 +1797,16 @@
     "className": "\"w-full sm:w-[220px] h-9\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 78,
-    "routes": []
+    "routes": [
+      {
+        "path": "/estoque",
+        "components": [
+          "RoleGuard",
+          "Estoque"
+        ],
+        "size": 74
+      }
+    ]
   },
   {
     "file": "src/pages/Estoque.tsx",
@@ -708,7 +1815,16 @@
     "className": "\"max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 79,
-    "routes": []
+    "routes": [
+      {
+        "path": "/estoque",
+        "components": [
+          "RoleGuard",
+          "Estoque"
+        ],
+        "size": 74
+      }
+    ]
   },
   {
     "file": "src/pages/Fazendas.tsx",
@@ -717,7 +1833,16 @@
     "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 80,
-    "routes": []
+    "routes": [
+      {
+        "path": "/fazendas",
+        "components": [
+          "RoleGuard",
+          "Fazendas"
+        ],
+        "size": 62
+      }
+    ]
   },
   {
     "file": "src/pages/FluxoTecnico.tsx",
@@ -726,7 +1851,16 @@
     "className": "\"w-[180px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 81,
-    "routes": []
+    "routes": [
+      {
+        "path": "/fluxo-tecnico",
+        "components": [
+          "RoleGuard",
+          "FluxoTecnico"
+        ],
+        "size": 51
+      }
+    ]
   },
   {
     "file": "src/pages/MonitoramentoAlertas.tsx",
@@ -735,7 +1869,16 @@
     "className": "\"sm:max-w-md max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 82,
-    "routes": []
+    "routes": [
+      {
+        "path": "/monitoramento-alertas",
+        "components": [
+          "RoleGuard",
+          "MonitoramentoAlertas"
+        ],
+        "size": 43
+      }
+    ]
   },
   {
     "file": "src/pages/OrdensServico.tsx",
@@ -744,7 +1887,16 @@
     "className": "\"max-w-lg max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 83,
-    "routes": []
+    "routes": [
+      {
+        "path": "/ordens-servico",
+        "components": [
+          "RoleGuard",
+          "OrdensServico"
+        ],
+        "size": 69
+      }
+    ]
   },
   {
     "file": "src/pages/Relatorios.tsx",
@@ -753,7 +1905,16 @@
     "className": "\"pl-8 h-9 text-sm w-full sm:w-[180px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 84,
-    "routes": []
+    "routes": [
+      {
+        "path": "/relatorios",
+        "components": [
+          "RoleGuard",
+          "Relatorios"
+        ],
+        "size": 44
+      }
+    ]
   },
   {
     "file": "src/pages/Relatorios.tsx",
@@ -762,7 +1923,16 @@
     "className": "\"pl-8 h-9 text-sm w-full sm:w-[180px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 85,
-    "routes": []
+    "routes": [
+      {
+        "path": "/relatorios",
+        "components": [
+          "RoleGuard",
+          "Relatorios"
+        ],
+        "size": 44
+      }
+    ]
   },
   {
     "file": "src/pages/Talhoes.tsx",
@@ -771,7 +1941,16 @@
     "className": "\"max-w-lg w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 86,
-    "routes": []
+    "routes": [
+      {
+        "path": "/talhoes",
+        "components": [
+          "RoleGuard",
+          "Talhoes"
+        ],
+        "size": 57
+      }
+    ]
   },
   {
     "file": "src/pages/app/MobileCatalogoTecnico.tsx",
@@ -780,7 +1959,15 @@
     "className": "\"grid grid-cols-3 w-full\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 87,
-    "routes": []
+    "routes": [
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      }
+    ]
   },
   {
     "file": "src/pages/app/MobileVisitaWizard.tsx",
@@ -789,7 +1976,22 @@
     "className": "\"flex-1 max-w-[220px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 88,
-    "routes": []
+    "routes": [
+      {
+        "path": "/app/visita/novo",
+        "components": [
+          "MobileVisita"
+        ],
+        "size": 83
+      },
+      {
+        "path": "/app/visita/:id",
+        "components": [
+          "MobileVisita"
+        ],
+        "size": 83
+      }
+    ]
   },
   {
     "file": "src/pages/app/wizard/WizardRecomendacaoStep.tsx",
@@ -798,7 +2000,22 @@
     "className": "\"max-w-md max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 89,
-    "routes": []
+    "routes": [
+      {
+        "path": "/app/visita/novo",
+        "components": [
+          "MobileVisita"
+        ],
+        "size": 83
+      },
+      {
+        "path": "/app/visita/:id",
+        "components": [
+          "MobileVisita"
+        ],
+        "size": 83
+      }
+    ]
   },
   {
     "file": "src/pages/app/wizard/WizardRevisaoStep.tsx",
@@ -807,7 +2024,22 @@
     "className": "\"max-w-[calc(100%-2rem)] sm:max-w-lg\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 90,
-    "routes": []
+    "routes": [
+      {
+        "path": "/app/visita/novo",
+        "components": [
+          "MobileVisita"
+        ],
+        "size": 83
+      },
+      {
+        "path": "/app/visita/:id",
+        "components": [
+          "MobileVisita"
+        ],
+        "size": 83
+      }
+    ]
   },
   {
     "file": "src/pages/auditoria/AgendaTab.tsx",
@@ -816,7 +2048,16 @@
     "className": "\"min-w-[720px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 91,
-    "routes": []
+    "routes": [
+      {
+        "path": "/auditoria",
+        "components": [
+          "RoleGuard",
+          "Auditoria"
+        ],
+        "size": 57
+      }
+    ]
   },
   {
     "file": "src/pages/auditoria/ClientesTab.tsx",
@@ -825,7 +2066,16 @@
     "className": "\"min-w-[720px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 92,
-    "routes": []
+    "routes": [
+      {
+        "path": "/auditoria",
+        "components": [
+          "RoleGuard",
+          "Auditoria"
+        ],
+        "size": 57
+      }
+    ]
   },
   {
     "file": "src/pages/auditoria/ComunicacaoTab.tsx",
@@ -834,7 +2084,16 @@
     "className": "\"min-w-[860px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 93,
-    "routes": []
+    "routes": [
+      {
+        "path": "/auditoria",
+        "components": [
+          "RoleGuard",
+          "Auditoria"
+        ],
+        "size": 57
+      }
+    ]
   },
   {
     "file": "src/pages/auditoria/SenhasTab.tsx",
@@ -843,7 +2102,16 @@
     "className": "\"min-w-[560px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 94,
-    "routes": []
+    "routes": [
+      {
+        "path": "/auditoria",
+        "components": [
+          "RoleGuard",
+          "Auditoria"
+        ],
+        "size": 57
+      }
+    ]
   },
   {
     "file": "src/pages/auditoria/VisitasTab.tsx",
@@ -852,7 +2120,16 @@
     "className": "\"min-w-[640px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 95,
-    "routes": []
+    "routes": [
+      {
+        "path": "/auditoria",
+        "components": [
+          "RoleGuard",
+          "Auditoria"
+        ],
+        "size": 57
+      }
+    ]
   },
   {
     "file": "src/pages/clientes/ParceirosB2BTab.tsx",
@@ -861,7 +2138,16 @@
     "className": "\"w-full sm:w-[160px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 96,
-    "routes": []
+    "routes": [
+      {
+        "path": "/clientes",
+        "components": [
+          "RoleGuard",
+          "Clientes"
+        ],
+        "size": 88
+      }
+    ]
   },
   {
     "file": "src/pages/clientes/ProdutoresTab.tsx",
@@ -870,7 +2156,16 @@
     "className": "\"max-w-3xl max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 97,
-    "routes": []
+    "routes": [
+      {
+        "path": "/clientes",
+        "components": [
+          "RoleGuard",
+          "Clientes"
+        ],
+        "size": 88
+      }
+    ]
   },
   {
     "file": "src/pages/comercial/CampanhasComerciais.tsx",
@@ -879,7 +2174,16 @@
     "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 98,
-    "routes": []
+    "routes": [
+      {
+        "path": "/comercial/campanhas",
+        "components": [
+          "RoleGuard",
+          "CampanhasComerciais"
+        ],
+        "size": 48
+      }
+    ]
   },
   {
     "file": "src/pages/comercial/CommercialPaymentPlansPage.tsx",
@@ -888,7 +2192,16 @@
     "className": "\"max-w-4xl max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 99,
-    "routes": []
+    "routes": [
+      {
+        "path": "/comercial/condicoes-pagamento",
+        "components": [
+          "RoleGuard",
+          "CommercialPaymentPlansPage"
+        ],
+        "size": 62
+      }
+    ]
   },
   {
     "file": "src/pages/comercial/PedidosB2B.tsx",
@@ -897,7 +2210,16 @@
     "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 100,
-    "routes": []
+    "routes": [
+      {
+        "path": "/comercial/pedidos-b2b",
+        "components": [
+          "RoleGuard",
+          "PedidosB2B"
+        ],
+        "size": 99
+      }
+    ]
   },
   {
     "file": "src/pages/configuracoes/FiscalProdutos.tsx",
@@ -906,7 +2228,63 @@
     "className": "\"max-w-[220px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 101,
-    "routes": []
+    "routes": [
+      {
+        "path": "/configuracoes/fiscal/produtos",
+        "components": [
+          "RoleGuard",
+          "FiscalProdutos"
+        ],
+        "size": 77
+      },
+      {
+        "path": "/clientes/:id",
+        "components": [
+          "RoleGuard",
+          "ClienteDetalhe"
+        ],
+        "size": 109
+      },
+      {
+        "path": "/parceiros/:id",
+        "components": [
+          "RoleGuard",
+          "ParceiroDetalhe"
+        ],
+        "size": 110
+      },
+      {
+        "path": "/configuracoes/fiscal/empresa",
+        "components": [
+          "RoleGuard",
+          "FiscalEmpresa"
+        ],
+        "size": 128
+      },
+      {
+        "path": "/fiscal/documentos",
+        "components": [
+          "RoleGuard",
+          "FiscalDocumentos"
+        ],
+        "size": 130
+      },
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ]
   },
   {
     "file": "src/pages/dashboard/DashboardUnificado.tsx",
@@ -915,7 +2293,32 @@
     "className": "\"w-max min-w-full sm:w-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 102,
-    "routes": []
+    "routes": [
+      {
+        "path": "/dashboard/geral",
+        "components": [
+          "RoleGuard",
+          "DashboardUnificado"
+        ],
+        "size": 13
+      },
+      {
+        "path": "/dashboard/executivo",
+        "components": [
+          "RoleGuard",
+          "DashboardUnificado"
+        ],
+        "size": 13
+      },
+      {
+        "path": "/dashboard/operacional",
+        "components": [
+          "RoleGuard",
+          "DashboardUnificado"
+        ],
+        "size": 13
+      }
+    ]
   },
   {
     "file": "src/pages/financeiro/EntregasNaoFaturadas.tsx",
@@ -924,7 +2327,16 @@
     "className": "\"max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 103,
-    "routes": []
+    "routes": [
+      {
+        "path": "/financeiro/entregas-nao-faturadas",
+        "components": [
+          "RoleGuard",
+          "FinEntregasNaoFaturadas"
+        ],
+        "size": 47
+      }
+    ]
   },
   {
     "file": "src/pages/financeiro/FluxoCaixa.tsx",
@@ -933,7 +2345,16 @@
     "className": "\"max-w-3xl max-h-[80vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 104,
-    "routes": []
+    "routes": [
+      {
+        "path": "/financeiro/fluxo-caixa",
+        "components": [
+          "RoleGuard",
+          "FinFluxoCaixa"
+        ],
+        "size": 21
+      }
+    ]
   },
   {
     "file": "src/pages/financeiro/RecibosList.tsx",
@@ -942,7 +2363,16 @@
     "className": "\"max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 105,
-    "routes": []
+    "routes": [
+      {
+        "path": "/financeiro/recibos",
+        "components": [
+          "RoleGuard",
+          "FinRecibos"
+        ],
+        "size": 48
+      }
+    ]
   },
   {
     "file": "src/pages/financeiro/Recorrencias.tsx",
@@ -951,7 +2381,16 @@
     "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 106,
-    "routes": []
+    "routes": [
+      {
+        "path": "/financeiro/recorrencias",
+        "components": [
+          "RoleGuard",
+          "FinRecorrencias"
+        ],
+        "size": 47
+      }
+    ]
   },
   {
     "file": "src/pages/plataforma/EmpresaDetalhe.tsx",
@@ -960,7 +2399,15 @@
     "className": "\"max-h-[90dvh] overflow-y-auto sm:max-w-2xl\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 107,
-    "routes": []
+    "routes": [
+      {
+        "path": "/plataforma",
+        "components": [
+          "PlataformaHome"
+        ],
+        "size": 74
+      }
+    ]
   },
   {
     "file": "src/pages/plataforma/PlataformaHome.tsx",
@@ -969,7 +2416,15 @@
     "className": "\"h-auto w-full justify-start gap-1 overflow-x-auto overflow-y-hidden whitespace-nowrap p-1 [scrollbar-width:thin] [&>button]:min-h-10 [&>button]:shrink-0 [&>button]:px-3 [&>button:focus-visible]:ring-2 [&>button:focus-visible]:ring-ring\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 108,
-    "routes": []
+    "routes": [
+      {
+        "path": "/plataforma",
+        "components": [
+          "PlataformaHome"
+        ],
+        "size": 74
+      }
+    ]
   },
   {
     "file": "src/pages/portal/PortalAcompanhamento.tsx",
@@ -978,7 +2433,15 @@
     "className": "\"sm:w-[160px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 109,
-    "routes": []
+    "routes": [
+      {
+        "path": "/portal/acompanhamento",
+        "components": [
+          "PortalAcompanhamento"
+        ],
+        "size": 47
+      }
+    ]
   },
   {
     "file": "src/pages/portal/PortalAcompanhamento.tsx",
@@ -987,7 +2450,15 @@
     "className": "\"sm:w-[180px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 110,
-    "routes": []
+    "routes": [
+      {
+        "path": "/portal/acompanhamento",
+        "components": [
+          "PortalAcompanhamento"
+        ],
+        "size": 47
+      }
+    ]
   },
   {
     "file": "src/pages/portal/PortalFazendaDetalhe.tsx",
@@ -996,7 +2467,15 @@
     "className": "\"grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 h-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 111,
-    "routes": []
+    "routes": [
+      {
+        "path": "/portal/fazendas/:id",
+        "components": [
+          "PortalFazendaDetalhe"
+        ],
+        "size": 37
+      }
+    ]
   },
   {
     "file": "src/pages/portal/PortalLayout.tsx",
@@ -1014,7 +2493,15 @@
     "className": "\"max-w-2xl bg-slate-50 max-h-[90vh] overflow-y-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 113,
-    "routes": []
+    "routes": [
+      {
+        "path": "/portal/acompanhamento",
+        "components": [
+          "PortalAcompanhamento"
+        ],
+        "size": 47
+      }
+    ]
   },
   {
     "file": "src/pages/portal/PortalTalhaoDetalhe.tsx",
@@ -1023,7 +2510,15 @@
     "className": "\"grid w-full grid-cols-2 sm:grid-cols-4 h-auto\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 114,
-    "routes": []
+    "routes": [
+      {
+        "path": "/portal/talhoes/:id",
+        "components": [
+          "PortalTalhaoDetalhe"
+        ],
+        "size": 37
+      }
+    ]
   },
   {
     "file": "src/pages/portal-parceiro/FichasTecnicas.tsx",
@@ -1032,7 +2527,15 @@
     "className": "\"max-w-5xl w-[95vw]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 115,
-    "routes": []
+    "routes": [
+      {
+        "path": "fichas",
+        "components": [
+          "ParceiroFichasTecnicas"
+        ],
+        "size": 61
+      }
+    ]
   },
   {
     "file": "src/pages/portal-parceiro/PortalParceiroLayout.tsx",
@@ -1041,6 +2544,15 @@
     "className": "\"h-8 text-sm w-[200px]\"",
     "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
     "id": 116,
-    "routes": []
+    "routes": [
+      {
+        "path": "/portal-parceiro",
+        "components": [
+          "B2BRouteGuard",
+          "PortalParceiroLayout"
+        ],
+        "size": 176
+      }
+    ]
   }
 ]
