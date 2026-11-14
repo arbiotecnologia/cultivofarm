@@ -35,7 +35,7 @@ async def main():
       if False and d['kind']=='stock':
        await page.locator('[data-review-occurrence="78"]').click();await page.get_by_role('option').last.scroll_into_view_if_needed();await page.keyboard.press('Escape')
       if d.get('open'):await page.get_by_role('button',name=d['open'],exact=d['kind'] in ['receipt','platform']).first.click()
-      if d['kind']=='fiscal-combo':await page.get_by_role('combobox').first.click();await page.get_by_role('option').last.scroll_into_view_if_needed()
+      if d['kind']=='fiscal-combo':await page.get_by_test_id('fiscal-catalog-cfop').click();await page.get_by_role('option').last.scroll_into_view_if_needed()
       if d['kind']=='cart':
        await page.locator('input').first.fill('20')
       if d['kind']=='pdf':await page.locator('iframe').wait_for(state='visible');rec['assertions'].append({'pdf_iframe':True})
