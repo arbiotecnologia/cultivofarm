@@ -14,6 +14,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
 import type { Database, Json } from "@/integrations/supabase/cultivofarm.types";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 
 
 export type RegulatoryLayer = "TECHNICAL" | "REGULATORY";
@@ -340,7 +341,7 @@ function fromJson<T>(payload: Json | null): T | null {
 }
 
 export function useMicroorganismRegulatoryOverview(options?: { enabled?: boolean }) {
-  return useQuery({
+  const result = useScopedPortalQuery({
     queryKey: REGULATORY_KEYS.overview(),
     enabled: options?.enabled ?? true,
     queryFn: async (): Promise<RegulatoryOverviewRow[]> => {
@@ -351,13 +352,14 @@ export function useMicroorganismRegulatoryOverview(options?: { enabled?: boolean
       return fromJson<RegulatoryOverviewRow[]>(payload) ?? [];
     },
   });
+  return {...result, data: result.ready && !result.isError ? result.data : undefined};
 }
 
 export function useRegulatoryDossierDetail(
   microorganismId: string | null,
   options?: { enabled?: boolean },
 ) {
-  return useQuery({
+  const result = useScopedPortalQuery({
     queryKey: REGULATORY_KEYS.detail(microorganismId),
     enabled: Boolean(microorganismId) && (options?.enabled ?? true),
     queryFn: async (): Promise<RegulatoryDossierDetail | null> => {
@@ -368,6 +370,7 @@ export function useRegulatoryDossierDetail(
       return fromJson<RegulatoryDossierDetail>(payload);
     },
   });
+  return {...result, data: result.ready && !result.isError ? result.data : undefined};
 }
 
 

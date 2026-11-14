@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GlobalCatalogWriteBlockedError } from "@/lib/catalogo/globalCatalogWriteContainment";
 
 const mocks = vi.hoisted(() => ({ rpc: vi.fn() }));
+vi.mock("@/hooks/useAuth", () => ({useAuth:()=>({user:{id:'00000000-0000-4000-8000-000000000001'},profile:{user_id:'00000000-0000-4000-8000-000000000001',organization_id:'00000000-0000-4000-8000-000000000002',ativo:true},roles:['administrador'],loading:false})}));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: mocks.rpc, from: vi.fn() } }));
 
 import {
@@ -93,6 +94,7 @@ async function openSheet() {
   const W = wrapper();
   render(<W><RegulatorioMicrorganismosSecao /></W>);
   fireEvent.click(await screen.findByRole("button", { name: "Abrir dossiê regulatório de Micro teste" }));
+  fireEvent.click(await screen.findByRole("button", {name:'Dossiê legado do microrganismo'}));
   return screen.findByTestId("regulatorio-dossie-sheet");
 }
 
