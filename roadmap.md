@@ -1,3 +1,8 @@
+## 14/11 03:31 — Visualização privada e limpeza QA autorizada
+- [x] Visualizador imagem/PDF integrado, tipo/hash verificados e URLs revogadas; 39 testes PASS, Chrome desktop/mobile PNG/download/fechar PASS sintéticos; build automático OK.
+- [ ] Limpeza exata BLOCKED: API Storage administrativa sem credencial disponível ao exec, mesmo após rebind; DELETE checklist recusado 42501 REGULATORY_PRODUCT_WRITER_REQUIRED, sem bypass/permits fabricados. Permanecem 1 objeto, 2 documentos, 2 reservas, 12 checklist, 1 link, 1 rascunho, 1 vínculo temporário; exige canal administrativo servidor autorizado.
+- [x] Evidências e canais necessários registrados em management/REPORT.md; hashes produto/perfil QA/Bombarbio idênticos, sem publicação. Sessão real/IAB não executados.
+
 ## 14/11 03:23 — Fiscal microrganismo → produto proprietário
 - [x] Retirar navegação legada e resumo legado; usar gestão/consulta canônica por produto nas entradas fiscais.
 - [x] Verificar filtros/RLS/Storage; duas migrações aplicadas, 75 Vitest e 37+9 checks PG sintéticos PASS, build/typecheck automático OK.
