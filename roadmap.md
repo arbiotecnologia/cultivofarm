@@ -1,3 +1,7 @@
+## 14/11 14:41 — Fechamento das lacunas responsivas
+- [x] Retestar prioridades e corrigir título BI; regressões 238+19 PASS, build automático OK; MATRIX reconciliada 34 completas locais/71 parciais/9 N/A/2 gaps.
+- [ ] Pendências explícitas: IDs/perfis de ação não totalmente resolvidos e comparações listadas em scripts/responsive-layout-116/closure/REPORT.md; revisão não integralmente certificada.
+
 ## 14/11 14:24 — Lacunas responsivas específicas
 - [x] Calcular 66 IDs sem montagem da matriz; retirar apresentação de public e preservar em scripts.
 - [x] Drivers específicos: 252 cenários, 250 asserções PASS/2 gaps; 44 IDs contextualizados novos, 9 N/A contextualizados. Títulos fazenda/ficha corrigidos e retestados.
