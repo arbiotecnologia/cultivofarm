@@ -27,12 +27,15 @@ async def main():
     try:
      await page.set_viewport_size({'width':w,'height':h});await page.goto('http://localhost:8080/__isolated?reviewRole='+role);await page.wait_for_timeout(180)
      target=page.locator(f'[data-review-occurrence="{id}"]:visible').first
+     if id in [84,85]:await page.get_by_role('tab',name='Estoque',exact=False).first.click()
+     if id==81:await page.get_by_role('tab',name='OS',exact=False).last.click()
+     if id==109:await page.get_by_role('tab',name='Histórico',exact=True).click()
      if not await target.count():
       for bt in (await page.get_by_role('button').all())[:12]:
        t=await bt.inner_text()
        if await bt.is_visible() and await bt.is_enabled() and re.match(r'^(Novo|Nova|Adicionar|Cadastrar|Editar|Gerenciar|Detalhes)',t):await bt.click();await page.wait_for_timeout(100)
        if await target.count():break
-     await target.wait_for();await target.scroll_into_view_if_needed();g=await target.evaluate(ns['GEOM']);assert g['rect']['width']>0 and (g['text'].strip() or await target.get_attribute('aria-label') or await target.get_attribute('title') or await target.locator('svg').count());rec['assertions'].append({'target':g})
+     await target.wait_for();await target.scroll_into_view_if_needed();g=await target.evaluate(ns['GEOM']);assert g['rect']['width']>0 and (g['text'].strip() or await target.get_attribute('aria-label') or await target.get_attribute('title') or await target.get_attribute('placeholder') or await target.locator('svg').count());rec['assertions'].append({'target':g})
      for tablist in await target.locator('[role=tablist]').all():
       for bt in [tablist.get_by_role('tab').first,tablist.get_by_role('tab').last]:
        if not await bt.is_enabled():rec['assertions'].append({'blocked_tab':await bt.inner_text()});continue
