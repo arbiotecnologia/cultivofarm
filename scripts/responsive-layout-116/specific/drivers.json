@@ -468,5 +468,71 @@
     "open": "Novo Produtor",
     "expected": "Novo Produtor",
     "trigger": "Clientes > Produtores > Novo Produtor"
+  },
+  {
+    "ids": [
+      43
+    ],
+    "file": "src/components/protocolos/ProdutosTab.tsx",
+    "export": "ProdutosTab",
+    "route": "/base-tecnica",
+    "profiles": [
+      "administrador",
+      "gestor"
+    ],
+    "kind": "products-filter",
+    "expected": "Produto sintético",
+    "trigger": "Catálogo Produtos > filtro de situação"
+  },
+  {
+    "ids": [
+      44,
+      45
+    ],
+    "file": "src/components/protocolos/ProdutosTab.tsx",
+    "export": "ProdutosTab",
+    "route": "/base-tecnica",
+    "profiles": [
+      "administrador",
+      "gestor"
+    ],
+    "kind": "product-editor",
+    "open": "Novo produto",
+    "expected": "Novo produto",
+    "trigger": "Produtos > Novo produto > primeira/última aba"
+  },
+  {
+    "ids": [
+      107
+    ],
+    "file": "src/pages/plataforma/EmpresaDetalhe.tsx",
+    "export": "default",
+    "route": "/plataforma",
+    "profiles": [
+      "superadmin"
+    ],
+    "kind": "org-editor",
+    "open": "Editar empresa",
+    "expected": "Editar empresa",
+    "trigger": "Plataforma > Empresa > Editar empresa"
+  },
+  {
+    "ids": [
+      57
+    ],
+    "file": "src/pages/Aplicacoes.tsx",
+    "export": "default",
+    "route": "/aplicacoes",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "aplicador",
+      "cliente_produtor",
+      "administrativo",
+      "financeiro"
+    ],
+    "kind": "application",
+    "expected": "Detalhes da Aplicação",
+    "trigger": "Aplicações > linha/cartão de aplicação > detalhes"
   }
 ]
