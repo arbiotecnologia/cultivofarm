@@ -2,3 +2,4 @@
 - Product dossiers have explicit product scope in the legacy table; micro-only indexes remain for unassigned legacy dossiers — prevents multiple products sharing a microorganism from inheriting each other's drafts.
 - Uploads reserve a durable exact intent before bytes, verify format/hash on the server and attest through a service-only core before caller-fenced finalization; pending files stay tracked and recoverable, never reported as committed — prevents orphans and fabricated integrity.
 - Management exposes draft editing, checklist and submission only; reviews/publication remain in their original gated contracts — prevents implicit approval.
+- Tenant deployment deltas are the versioned migrations beginning 20261114023631; tenant-owner.sql is an assembly prototype, never an installation source — prevents replaying pre-remediation definitions.
