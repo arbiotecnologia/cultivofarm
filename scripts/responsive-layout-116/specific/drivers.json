@@ -402,6 +402,6 @@
     "kind": "partner-sheets",
     "expected": "Produto sintético",
     "trigger": "Portal parceiro contextualizado > Fichas > Visualizar",
-    "open": "Ver ficha"
+    "open": "Visualizar"
   }
 ]
