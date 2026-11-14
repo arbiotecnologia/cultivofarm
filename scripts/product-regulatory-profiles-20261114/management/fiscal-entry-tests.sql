@@ -20,6 +20,8 @@ DO $$ DECLARE legacy uuid:='00000000-0000-4000-8000-000000000090'; own uuid; v j
  IF platform_private.product_dossier_row_read(own) THEN RAISE EXCEPTION 'superadmin disclosed'; END IF; RAISE NOTICE 'PASS superadmin-only denied';
  END $$;
 -- Exercise the restrictive policies installed by the owner delta with SQL roles.
+ALTER TABLE public.microorganism_regulatory_dossiers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.microorganism_regulatory_documents ENABLE ROW LEVEL SECURITY;
 GRANT USAGE ON SCHEMA platform_private,auth TO authenticated;
 GRANT SELECT ON public.microorganism_regulatory_dossiers,public.microorganism_regulatory_documents TO authenticated;
 CREATE POLICY fixture_reader ON public.microorganism_regulatory_dossiers FOR SELECT TO authenticated USING (true);
