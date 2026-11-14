@@ -163,6 +163,28 @@ DO $$ DECLARE b text; BEGIN
  b:=replace(b,'WHERE l.product_id=p_product_id','WHERE d.product_id=p_product_id'); EXECUTE b;
 END $$;
 
+
+-- Close old micro-only readers without changing their payloads or permitting cross-tenant reads.
+DO $$ DECLARE b text; BEGIN
+ b:=pg_get_functiondef('public.rpc_regulatory_dossier_detail(uuid)'::regprocedure);
+ b:=replace(b,'BEGIN','BEGIN PERFORM platform_private.regulatory_product_scope(p_microorganism_id);'); EXECUTE b;
+ b:=pg_get_functiondef('public.fn_microorganism_regulatory_facts(uuid)'::regprocedure);
+ b:=regexp_replace(b,'SELECT \(auth.uid\(\) IS NULL.*?AS ok','SELECT EXISTS(SELECT 1 FROM public.microrganismos m WHERE m.id=p_microorganism_id AND m.owner_organization_id=platform_private.catalog_tenant_actor(''read_catalog'')) AS ok','s'); EXECUTE b;
+END $$;
+-- Every legacy writer on parents/children must prove current tenant. Existing review gates remain additional requirements.
+CREATE OR REPLACE FUNCTION platform_private.regulatory_owner_write_guard()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ DECLARE org uuid; micro uuid; prod uuid; did uuid; BEGIN
+ org:=platform_private.catalog_tenant_actor('read_catalog');
+ IF TG_TABLE_NAME='microorganism_regulatory_dossiers' THEN micro:=coalesce(NEW.microorganism_id,OLD.microorganism_id);prod:=coalesce(NEW.product_id,OLD.product_id);
+ ELSE did:=coalesce(NEW.dossier_id,OLD.dossier_id);SELECT microorganism_id,product_id INTO micro,prod FROM public.microorganism_regulatory_dossiers WHERE id=did; END IF;
+ IF prod IS NOT NULL THEN PERFORM platform_private.product_dossier_read_scope(prod,micro);
+ ELSIF NOT EXISTS(SELECT 1 FROM public.microrganismos WHERE id=micro AND owner_organization_id=org) THEN RAISE EXCEPTION 'REGULATORY_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ RETURN coalesce(NEW,OLD);
+END $$;
+REVOKE ALL ON FUNCTION platform_private.regulatory_owner_write_guard() FROM PUBLIC,anon,authenticated,service_role;
+DO $$ DECLARE t text; BEGIN FOREACH t IN ARRAY ARRAY['microorganism_regulatory_dossiers','microorganism_regulatory_documents','microorganism_regulatory_checklist','microorganism_regulatory_presentations','microorganism_ncm_candidates','microorganism_regulatory_publication_snapshots'] LOOP
+ EXECUTE format('CREATE TRIGGER regulatory_owner_session_guard BEFORE INSERT OR UPDATE OR DELETE ON public.%I FOR EACH ROW EXECUTE FUNCTION platform_private.regulatory_owner_write_guard()',t); END LOOP;END $$;
+
 -- Existing names preserved; tenant aliases are the new UI/Edge contract.
 DO $$ DECLARE f record; args text; alias text; BEGIN
  FOR f IN SELECT p.oid,p.proname,pg_get_function_arguments(p.oid) arguments,pg_get_function_identity_arguments(p.oid) ident,pg_get_function_result(p.oid) result FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='platform_private' AND (p.proname LIKE 'product_dossier_management_%' OR p.proname LIKE 'product_dossier_upload_%' OR p.proname IN ('product_dossier_set_coverage','product_dossier_create_covered','product_dossier_new_version','product_dossier_version_detail')) LOOP
