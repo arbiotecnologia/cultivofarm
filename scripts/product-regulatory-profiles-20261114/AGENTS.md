@@ -1,0 +1,3 @@
+- Automatic fiscal profiles use a private transaction-bound permit only for entirely blank DRAFT insertion; existing fiscal writers and validation gates remain authoritative — prevents bootstrapping from granting classification authority.
+- Product dossier links are explicit, unique and same-owner; no automatic migration from legacy microorganism dossiers — prevents document inheritance by composition.
+- Local PostgreSQL and browser fixtures are synthetic evidence, never hosted JWT/Storage certification — preserves evidence boundaries.
