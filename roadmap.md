@@ -1,3 +1,8 @@
+## 14/11 12:24 — Layout e cadastro técnico homologados
+- [x] Integrar recipiente-v2 por volume e cadastro separado de validade/toxicidade em Lotes/Produtos; binding, legado e contenções preservados, sem remoto/publicação.
+- [x] 203 testes/15 arquivos PASS, build automático OK; PDF três medidas exatas e QR 3/3, formulários/ACK sintéticos e Ctrl+P fechado. Revisão, arquivos, rollback e evidências em scripts/labels-frontend-integration-20261114/recipient-v2/REPORT.md.
+- [x] Bateria ampliada registrou uma divergência já existente de navegação Financeiro/Serviços (233 PASS/1 FAIL); sem alterar rotas/permissões. Sessão/banco/impressora reais não exercitados.
+
 ## 14/11 04:15 — Revisão canônica das etiquetas
 - [x] Template aninhado/versionado corrigido, campos úteis sem IDs, substituta/seleção deduplicadas e janela de impressão fechada por padrão.
 - [x] 150 testes/12 arquivos PASS; Chrome sintético e PDFs com quatro medidas exatas/QR 4 de 4, Ctrl+P com PDF vazio, afterprint limpa permit; build automático OK. Sem banco/deploy/publicação; evidências em scripts/labels-frontend-integration-20261114/revision-0415/REPORT.md.

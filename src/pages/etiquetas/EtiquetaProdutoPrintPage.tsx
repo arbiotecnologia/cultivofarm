@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Printer, Download, RefreshCw, Pencil } from "lucide-react";
 import { LABEL_TEMPLATES, assertMutationAck, canPrintLabel, correctionReplacement, replaceLabelIds, isUuid, labelDetails, labelTemplate, type LabelData, type LabelTemplate } from "@/lib/etiquetas";
-import { createLabelsPdf } from "@/lib/etiquetasPdf";
+import { assertLabelsOutput, createLabelsPdf } from "@/lib/etiquetasPdf";
 import { labelPrintPermit } from "@/lib/etiquetasPrintPermit";
 export default function EtiquetaProdutoPrintPage() {
   const { id } = useParams(); const [params] = useSearchParams();
@@ -58,12 +58,15 @@ function PrintWorkspace({ ids, initialSelected, scope }: { ids: string[]; initia
   };
   useEffect(() => { void load(); return () => { ++sequence.current; }; }, []);
   const chosen = labels.filter(l => selected.includes(l.id));
-  const formats = new Set(chosen.map(labelTemplate));
+  let outputError = '';
+  try { assertLabelsOutput(chosen); } catch (cause) { outputError = cause instanceof Error ? cause.message : 'Saída indisponível.'; }
+  const formats = new Set(chosen.map(l => { try { return labelTemplate(l); } catch { return null; } }));
   const print = async (pdfOutput: boolean) => {
-    if (lock.current || !scope.ready || !chosen.length || !chosen.every(canPrintLabel) || reason.trim().length < 3 || (!pdfOutput && mode === "termica" && formats.size > 1)) return;
+    if (lock.current || !scope.ready || !chosen.length || (Boolean(outputError) || !chosen.every(canPrintLabel)) || reason.trim().length < 3 || (!pdfOutput && mode === "termica" && formats.size > 1)) return;
     const current = scope.capture(); lock.current = true; setBusy(true); setError("");
     try {
       const root = printRoot.current; if (!root) throw new Error("Prévia indisponível.");
+      assertLabelsOutput(chosen);
       // Prepare PDF and reject overflow before the audit writer, without downloading it.
       const pdf = pdfOutput ? await createLabelsPdf(chosen, root) : null;
       await document.fonts?.ready;
@@ -97,16 +100,18 @@ function PrintWorkspace({ ids, initialSelected, scope }: { ids: string[]; initia
     } catch (e) { if (current()) setError(e instanceof Error ? e.message : "Correção não confirmada; mantenha a mesma tentativa."); }
     finally { lock.current = false; if (current()) setBusy(false); }
   };
-  const d = chosen[0] ? LABEL_TEMPLATES[labelTemplate(chosen[0])] : LABEL_TEMPLATES["etiqueta-op-100x150"];
+  const firstFormat = [...formats][0];
+  const d = firstFormat ? LABEL_TEMPLATES[firstFormat] : LABEL_TEMPLATES["etiqueta-op-100x150"];
   return <div className="p-4 sm:p-6 space-y-4">
     <div className="print:hidden space-y-4"><div className="flex flex-wrap justify-between gap-2"><h1 className="text-xl font-bold">Etiquetas por recipiente</h1><Button variant="outline" disabled={busy || loading} onClick={load}><RefreshCw className="h-4 w-4 mr-2" />Atualizar</Button></div>
       {loading && <p role="status">Carregando etiquetas…</p>}{error && <p role="alert" className="text-destructive">{error}</p>}
       <div className="flex flex-wrap gap-3"><Button variant="outline" disabled={busy} onClick={() => setSelected(labels.map(l => l.id))}>Selecionar todos</Button><Button variant="outline" disabled={busy} onClick={() => setSelected([])}>Limpar seleção</Button></div>
       <div className="divide-y">{labels.map(l => <div key={l.id} className="py-2 flex flex-wrap items-center gap-3"><Checkbox disabled={busy} aria-label={`Selecionar ${l.codigo_etiqueta}`} checked={selected.includes(l.id)} onCheckedChange={v => setSelected(old => v ? [...old, l.id] : old.filter(id => id !== l.id))} /><span className="flex-1 min-w-0 break-words">{l.codigo_etiqueta} · Recipiente {l.recipiente_seq ?? "—"} · {l.status}</span><Button variant="outline" size="sm" disabled={busy || Boolean(correctionIntent.current) || l.status === "cancelada" || l.status === "substituida"} onClick={() => { setEditing(l); setObs(l.observacoes || ""); setTemplate(labelTemplate(l)); setCorrectionReason(""); correctionKey.current = crypto.randomUUID(); }}><Pencil className="h-3 w-3 mr-1" />Corrigir</Button><details className="w-full text-sm"><summary>Dados completos autorizados</summary>{labelDetails(l).map(([k, v]) => <p className="break-words" key={k}><b>{k}:</b> {v}</p>)}</details></div>)}</div>
-      {editing && <section className="border-t pt-4 space-y-3"><h2 className="font-semibold">Correção · {editing.codigo_etiqueta}</h2><label className="block">Observações<Textarea value={obs} disabled={busy} onChange={e => setObs(e.target.value)} /></label><label className="block">Formato<Select value={template} disabled={busy} onValueChange={v => setTemplate(v as LabelTemplate)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Object.entries(LABEL_TEMPLATES).map(([k, d]) => <SelectItem key={k} value={k}>{d.width}×{d.height} mm</SelectItem>)}</SelectContent></Select></label><label className="block">Motivo da correção<Textarea value={correctionReason} disabled={busy} onChange={e => setCorrectionReason(e.target.value)} /></label><Button disabled={busy || correctionReason.trim().length < 3} onClick={correct}>Salvar correção</Button><Button variant="outline" disabled={busy || Boolean(correctionIntent.current)} onClick={() => setEditing(null)}>Voltar</Button></section>}
+      {editing && <section className="border-t pt-4 space-y-3"><h2 className="font-semibold">Correção · {editing.codigo_etiqueta}</h2><label className="block">Observações<Textarea value={obs} disabled={busy} onChange={e => setObs(e.target.value)} /></label><label className="block">Formato<Select value={template} disabled={busy || editing.snapshot?.layout_versao === "recipiente-v2"} onValueChange={v => setTemplate(v as LabelTemplate)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Object.entries(LABEL_TEMPLATES).map(([k, d]) => <SelectItem key={k} value={k}>{d.width}×{d.height} mm</SelectItem>)}</SelectContent></Select></label><label className="block">Motivo da correção<Textarea value={correctionReason} disabled={busy} onChange={e => setCorrectionReason(e.target.value)} /></label><Button disabled={busy || correctionReason.trim().length < 3} onClick={correct}>Salvar correção</Button><Button variant="outline" disabled={busy || Boolean(correctionIntent.current)} onClick={() => setEditing(null)}>Voltar</Button></section>}
       <label className="block">Impressora<Select value={mode} disabled={busy} onValueChange={setMode}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="termica">Térmica · tamanho da etiqueta</SelectItem><SelectItem value="convencional">Convencional · A4</SelectItem></SelectContent></Select></label>
       <label className="block">Motivo da impressão ou reimpressão<Textarea value={reason} disabled={busy} onChange={e => setReason(e.target.value)} /></label>
-      <div className="flex flex-wrap gap-2"><Button disabled={busy || !chosen.length || !chosen.every(canPrintLabel) || reason.trim().length < 3 || (mode === "termica" && formats.size > 1)} onClick={() => print(false)}><Printer className="h-4 w-4 mr-2" />Imprimir selecionados</Button><Button variant="outline" disabled={busy || !chosen.length || !chosen.every(canPrintLabel) || reason.trim().length < 3} onClick={() => print(true)}><Download className="h-4 w-4 mr-2" />PDF multipágina</Button></div>
+      <div className="flex flex-wrap gap-2"><Button disabled={busy || !chosen.length || (Boolean(outputError) || !chosen.every(canPrintLabel)) || reason.trim().length < 3 || (mode === "termica" && formats.size > 1)} onClick={() => print(false)}><Printer className="h-4 w-4 mr-2" />Imprimir selecionados</Button><Button variant="outline" disabled={busy || !chosen.length || (Boolean(outputError) || !chosen.every(canPrintLabel)) || reason.trim().length < 3} onClick={() => print(true)}><Download className="h-4 w-4 mr-2" />PDF multipágina</Button></div>
+      {outputError && <p role="alert">{outputError}</p>}
       {chosen.some(l => !canPrintLabel(l)) && <p role="alert">Impressão bloqueada: CQ não liberado ou etiqueta histórica, cancelada ou substituída.</p>}
       {mode === "termica" && formats.size > 1 && <p role="alert">Selecione um único formato para impressão térmica.</p>}
     </div>

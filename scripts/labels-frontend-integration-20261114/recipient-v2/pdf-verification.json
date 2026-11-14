@@ -1,0 +1,29 @@
+{
+  "pages": [
+    {
+      "page": 1,
+      "width_mm": 100.0,
+      "height_mm": 150.0,
+      "qr": [
+        "https://app.cultivofarm.com.br/rastrear-produto/22222222-2222-4222-8222-222222222222"
+      ]
+    },
+    {
+      "page": 2,
+      "width_mm": 100.0,
+      "height_mm": 100.0,
+      "qr": [
+        "https://app.cultivofarm.com.br/rastrear-produto/22222222-2222-4222-8222-222222222222"
+      ]
+    },
+    {
+      "page": 3,
+      "width_mm": 80.0,
+      "height_mm": 50.0,
+      "qr": [
+        "https://app.cultivofarm.com.br/rastrear-produto/22222222-2222-4222-8222-222222222222"
+      ]
+    }
+  ],
+  "direct_print_closed": true
+}

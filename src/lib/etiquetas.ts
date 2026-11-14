@@ -1,3 +1,4 @@
+import { formatForVolumeMl, recipientVolumeMl, type RecipientLabel } from './etiquetasRecipientes';
 export const LABEL_TEMPLATES = {
   "etiqueta-op-100x150": { width: 100, height: 150 },
   "etiqueta-op-100x100": { width: 100, height: 100 },
@@ -19,6 +20,7 @@ export interface LabelData {
 }
 export const isUuid = (value: unknown): value is string => typeof value === "string" && /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(value);
 export function labelTemplate(label: LabelData): LabelTemplate {
+  if (label.snapshot?.layout_versao === 'recipiente-v2') return `etiqueta-op-${formatForVolumeMl(recipientVolumeMl(asRecipientLabel(label)))}`;
   const template = recordOf(label.snapshot?.template);
   // Frozen canonical snapshot first, persisted version second, older consumer shapes last.
   const candidates = [template.codigo, label.template_versao?.split("@v")[0],
@@ -104,4 +106,7 @@ export function labelDetails(label: LabelData): [string, string][] {
     ["Conformidade", usefulFields(label.snapshot?.conformidade, ["responsavel_tecnico_nome", "responsavel_tecnico_registro", "registro_mapa", "registro", "versao", "aprovado_em", "responsavel_informacao", "fonte_documento", "advertencias", "transporte_texto"])],
     ["Conservação", label.conservacao || ""], ["Uso", label.uso_recomendado || ""], ["Observações", label.observacoes || ""],
   ].filter((row): row is [string, string] => Boolean(row[1]));
+}
+export function asRecipientLabel(label: LabelData): RecipientLabel {
+  return { ...label, template_versao: label.template_versao ?? undefined, snapshot: label.snapshot ?? {} };
 }

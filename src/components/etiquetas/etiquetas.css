@@ -33,6 +33,11 @@
 .label-details p { margin: 0 0 1mm; }
 .label-pages { display: flex; flex-wrap: wrap; gap: 5mm; }
 .label-preview-scroll { overflow: auto; max-width: 100%; }
+.product-label.product-label-v2 { padding: 0; border: 0; gap: 0; }
+.recipient-label-scene { display: block; flex-shrink: 0; }
+.label-paper { fill: var(--label-paper); }
+.label-text { fill: var(--label-ink); }
+.label-rule { stroke: var(--label-ink); }
 @media print {
   body:has(.label-print-page) * { visibility: hidden !important; }
   body:has(.label-print-page) .product-label { display: none !important; }

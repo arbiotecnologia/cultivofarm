@@ -1,0 +1,51 @@
+{
+  "dimensions": [
+    {
+      "template": "etiqueta-op-100x150",
+      "w": 99.99596354166665,
+      "h": 149.99807942708333
+    },
+    {
+      "template": "etiqueta-op-100x100",
+      "w": 99.99596354166665,
+      "h": 99.99596354166665
+    },
+    {
+      "template": "etiqueta-op-80x50",
+      "w": 79.99925130208332,
+      "h": 49.99798177083333
+    }
+  ],
+  "calls": [
+    {
+      "name": "rpc_aprovar_validade_etiqueta_lote",
+      "args": {
+        "p_lote_id": "11111111-1111-4111-8111-111111111111",
+        "p_validade": "2099-12-31",
+        "p_referencia": "QA-REFERENCIA"
+      }
+    },
+    {
+      "name": "rpc_cadastrar_toxicidade_etiqueta_produto",
+      "args": {
+        "p_produto_id": "11111111-1111-4111-8111-111111111111",
+        "p_toxicidade": "Texto t\u00e9cnico sint\u00e9tico.",
+        "p_referencia": "QA-REFERENCIA"
+      }
+    },
+    {
+      "name": "rpc_imprimir_etiquetas_recipientes_v1",
+      "args": {
+        "p_ids": [
+          "11111111-1111-4111-8111-111111111111",
+          "22222222-1111-4111-8111-111111111111",
+          "33333333-1111-4111-8111-111111111111"
+        ],
+        "p_motivo": "PDF sint\u00e9tico de teste"
+      }
+    }
+  ],
+  "permit": null,
+  "mobileOverflow": false,
+  "errors": []
+}
