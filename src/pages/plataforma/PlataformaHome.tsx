@@ -18,7 +18,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
 import { PwaManualCheckButton } from "@/pwa/PwaManualCheckButton";
-import { ProductDossierManagement } from "@/components/fiscal/ProductDossierManagement";
 import {
   useAssinaturasSaaS,
   useHistoricoAssinaturasSaaS,
@@ -181,7 +180,6 @@ export default function PlataformaHome() {
               <History className="mr-2 h-4 w-4" aria-hidden="true" />
               Histórico
             </TabsTrigger>
-            <TabsTrigger value="dossies">Dossiês por produto</TabsTrigger>
           </TabsList>
 
           {/* PLANOS ------------------------------------------------------- */}
@@ -315,7 +313,6 @@ export default function PlataformaHome() {
           <TabsContent value="admins">
             <PlataformaAdmins organizationIdInicial={organizacaoEmContexto} />
           </TabsContent>
-          <TabsContent value="dossies"><ProductDossierManagement /></TabsContent>
 
           <TabsContent value="comunicacao">
             <ComunicacaoConfigTab />

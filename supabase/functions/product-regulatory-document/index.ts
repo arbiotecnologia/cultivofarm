@@ -18,7 +18,7 @@ Deno.serve(async req=>{
  const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),25000);
  try {
  const actor=createClient(base,anon,{global:{headers:{Authorization:bearer}},auth:{persistSession:false,autoRefreshToken:false}});
- const verified=await actor.auth.getUser(); if(verified.error||!verified.data.user) return json(401,{error:'access_denied'});
+ const verified=await actor.auth.getUser(bearer.slice(7)); if(verified.error||!verified.data.user) return json(401,{error:'access_denied'});
  const service=createClient(base,secret,{auth:{persistSession:false,autoRefreshToken:false}});
  const call=async(name:string,args:Record<string,unknown>)=>{const r=await actor.rpc(name,args).abortSignal(controller.signal);if(r.error)throw new Error('access_denied');return r.data;};
  const url=new URL(req.url); const action=url.searchParams.get('action');
@@ -34,12 +34,12 @@ Deno.serve(async req=>{
  return new Response(new Uint8Array(bytes).buffer,{headers:{...headers,'Content-Type':documentMime(bytes)??'application/octet-stream','X-Content-Type-Options':'nosniff'}});
  }
  const id=url.searchParams.get('upload_id'); if(!id||!uuid.test(id)) return json(400,{error:'invalid_request'});
- const snap=()=>call('platform_product_dossier_upload_access',{p_upload_id:id});
+ const snap=()=>call('tenant_product_dossier_upload_access',{p_upload_id:id});
  if(action==='cancel') {
  // No deletion of committed documents; uncertain cleanup stays tracked.
- const cancel=await call('platform_product_dossier_upload_cancel_begin',{p_upload_id:id});
+ const cancel=await call('tenant_product_dossier_upload_cancel_begin',{p_upload_id:id});
  const removed=await service.storage.from('fiscal-regulatorio').remove([cancel.storage_path]); if(removed.error) return json(409,{error:'cleanup_pending'});
- const r=await service.rpc('platform_product_dossier_upload_cancel',{p_upload_id:id}); if(r.error)return json(409,{error:'cleanup_pending'});
+ const r=await service.rpc('tenant_product_dossier_upload_cancel',{p_upload_id:id}); if(r.error)return json(409,{error:'cleanup_pending'});
  return json(200,{state:'CANCELLED'});
  }
  const before=await snap();
@@ -62,8 +62,8 @@ Deno.serve(async req=>{
  }
  const sha=await digest(bytes); if(sha!==before.sha256||bytes.length!==before.size_bytes||documentMime(bytes)!==before.mime) return json(409,{error:'integrity_mismatch'});
  await snap();
- const attested=await service.rpc('platform_product_dossier_upload_attest',{p_upload_id:id,p_sha256:sha,p_size:bytes.length,p_mime:before.mime}); if(attested.error)return json(409,{error:'upload_pending'});
- const ack=await call('platform_product_dossier_upload_finalize',{p_upload_id:id});
+ const attested=await service.rpc('tenant_product_dossier_upload_attest',{p_upload_id:id,p_sha256:sha,p_size:bytes.length,p_mime:before.mime}); if(attested.error)return json(409,{error:'upload_pending'});
+ const ack=await call('tenant_product_dossier_upload_finalize',{p_upload_id:id});
  return json(200,ack);
  }catch{return json(409,{error:'operation_unconfirmed'});}finally{clearTimeout(timer);}
 });
