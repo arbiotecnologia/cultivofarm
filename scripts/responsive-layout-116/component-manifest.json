@@ -1,0 +1,8512 @@
+[
+  {
+    "file": "src/components/aplicacao/AplicacaoFormDialog.tsx",
+    "tag": "DialogContent",
+    "line": 316,
+    "className": "\"max-w-3xl max-h-[92vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 1,
+    "routes": [
+      {
+        "path": "/portal/aplicacoes",
+        "components": [
+          "PortalAplicacoes"
+        ],
+        "size": 60
+      },
+      {
+        "path": "/aplicacoes",
+        "components": [
+          "RoleGuard",
+          "Aplicacoes"
+        ],
+        "size": 61
+      }
+    ],
+    "export": "AplicacaoFormDialog",
+    "exports": [
+      "AplicacaoFormDialog"
+    ],
+    "props": [
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(o: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "defaultOsId",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "rectifyId",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "onSuccess",
+        "type": "() => void",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/bi/modal/BIDrillDownModal.tsx",
+    "tag": "DialogContent",
+    "line": 97,
+    "className": "\"max-w-5xl max-h-[85vh] overflow-hidden flex flex-col\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 2,
+    "routes": [
+      {
+        "path": "/bi-operacional",
+        "components": [
+          "RoleGuard",
+          "BIOperacional"
+        ],
+        "size": 90
+      }
+    ],
+    "export": "BIDrillDownModal",
+    "exports": [
+      "BIDrillDownModal"
+    ],
+    "props": [
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onClose",
+        "type": "() => void",
+        "optional": false
+      },
+      {
+        "name": "tipo",
+        "type": "DrillDownTipo",
+        "optional": false
+      },
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "dados",
+        "type": "any[]",
+        "optional": false
+      },
+      {
+        "name": "origem",
+        "type": "\"visitas\" | \"esteira\"",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/components/catalogo/AddToCartDialog.tsx",
+    "tag": "SelectTrigger",
+    "line": 390,
+    "className": "\"h-8 text-xs w-full min-w-0\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 3,
+    "routes": [
+      {
+        "path": "novo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "catalogo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "simulador",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      }
+    ],
+    "export": "AddToCartDialog",
+    "exports": [
+      "AddToCartDialog"
+    ],
+    "props": [
+      {
+        "name": "volume",
+        "type": "CatalogoVolume",
+        "optional": false
+      },
+      {
+        "name": "area_ha",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "quantidade",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "preco_unitario",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "subtotal",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "preco_unitario_cheio",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "subtotal_cheio",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "desconto_percentual",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(open: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "row",
+        "type": "CatalogoUnificadoRow | null",
+        "optional": false
+      },
+      {
+        "name": "doseRecomendadaLitroHa",
+        "type": "number | null",
+        "optional": true
+      },
+      {
+        "name": "precoPorVolume",
+        "type": "(v: CatalogoVolume) => number | null",
+        "optional": true
+      },
+      {
+        "name": "valorLitroBase",
+        "type": "number | null",
+        "optional": true
+      },
+      {
+        "name": "valorLitroCheio",
+        "type": "number | null",
+        "optional": true
+      },
+      {
+        "name": "descontoPct",
+        "type": "number | null",
+        "optional": true
+      },
+      {
+        "name": "onConfirm",
+        "type": "(payloads: AddToCartPayload[]) => void",
+        "optional": false
+      },
+      {
+        "name": "volumesCat",
+        "type": "{ porProdutoId: Map<string, CatalogoVolume[]>; porMicrorganismoId: Map<string, CatalogoVolume[]> } | null",
+        "optional": true
+      },
+      {
+        "name": "volumesStatus",
+        "type": "\"pending\" | \"error\" | \"success\"",
+        "optional": true
+      },
+      {
+        "name": "supplierName",
+        "type": "string | null",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/clientes/ClienteFormTabs.tsx",
+    "tag": "Input",
+    "line": 279,
+    "className": "\"font-mono-data font-semibold max-w-[200px] bg-muted/40\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 4,
+    "routes": [
+      {
+        "path": "/clientes",
+        "components": [
+          "RoleGuard",
+          "Clientes"
+        ],
+        "size": 88
+      }
+    ],
+    "export": "ClienteFormTabs",
+    "exports": [
+      "ClienteFormTabs"
+    ],
+    "props": [
+      {
+        "name": "clienteId",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "initialTab",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "onTabChange",
+        "type": "(tab: string) => void",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/clientes/ClienteFormTabs.tsx",
+    "tag": "SelectTrigger",
+    "line": 554,
+    "className": "\"w-[100px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 5,
+    "routes": [
+      {
+        "path": "/clientes",
+        "components": [
+          "RoleGuard",
+          "Clientes"
+        ],
+        "size": 88
+      }
+    ],
+    "export": "ClienteFormTabs",
+    "exports": [
+      "ClienteFormTabs"
+    ],
+    "props": [
+      {
+        "name": "clienteId",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "initialTab",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "onTabChange",
+        "type": "(tab: string) => void",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/clientes/ClienteHistoricoDialog.tsx",
+    "tag": "DialogContent",
+    "line": 29,
+    "className": "\"max-w-4xl max-h-[80vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 6,
+    "routes": [
+      {
+        "path": "/clientes",
+        "components": [
+          "RoleGuard",
+          "Clientes"
+        ],
+        "size": 88
+      }
+    ],
+    "export": "ClienteHistoricoDialog",
+    "exports": [
+      "ClienteHistoricoDialog"
+    ],
+    "props": [
+      {
+        "name": "clienteId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(open: boolean) => void",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/components/cockpit/GerarLoteDialog.tsx",
+    "tag": "DialogContent",
+    "line": 106,
+    "className": "\"max-w-lg max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 7,
+    "routes": [
+      {
+        "path": "/ordens-servico",
+        "components": [
+          "RoleGuard",
+          "OrdensServico"
+        ],
+        "size": 69
+      },
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      },
+      {
+        "path": "/clientes/:id",
+        "components": [
+          "RoleGuard",
+          "ClienteDetalhe"
+        ],
+        "size": 109
+      },
+      {
+        "path": "/parceiros/:id",
+        "components": [
+          "RoleGuard",
+          "ParceiroDetalhe"
+        ],
+        "size": 110
+      }
+    ],
+    "export": "GerarLoteDialog",
+    "exports": [
+      "litrosParaMl",
+      "GerarLoteDialog"
+    ],
+    "props": [
+      {
+        "name": "programacao_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "os_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "origem",
+        "type": "\"manual\" | \"onfarm\" | string",
+        "optional": false
+      },
+      {
+        "name": "numero_os",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "cliente",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "produto_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "microrganismo_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "produto_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "volume_solicitado",
+        "type": "number",
+        "optional": true
+      },
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(open: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "target",
+        "type": "GerarLoteTarget | null",
+        "optional": false
+      },
+      {
+        "name": "onCreated",
+        "type": "() => void",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/cockpit/RegistrarCQDialog.tsx",
+    "tag": "DialogContent",
+    "line": 114,
+    "className": "\"max-w-lg max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 8,
+    "routes": [
+      {
+        "path": "/ordens-servico",
+        "components": [
+          "RoleGuard",
+          "OrdensServico"
+        ],
+        "size": 69
+      },
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      },
+      {
+        "path": "/clientes/:id",
+        "components": [
+          "RoleGuard",
+          "ClienteDetalhe"
+        ],
+        "size": 109
+      },
+      {
+        "path": "/parceiros/:id",
+        "components": [
+          "RoleGuard",
+          "ParceiroDetalhe"
+        ],
+        "size": 110
+      }
+    ],
+    "export": "RegistrarCQDialog",
+    "exports": [
+      "RegistrarCQDialog"
+    ],
+    "props": [
+      {
+        "name": "programacao_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "os_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "origem",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "lote_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "codigo_lote",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "produto",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "produto_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "microrganismo_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(open: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "target",
+        "type": "RegistrarCQTarget | null",
+        "optional": false
+      },
+      {
+        "name": "phase",
+        "type": "\"send\" | \"record\"",
+        "optional": true
+      },
+      {
+        "name": "onCompleted",
+        "type": "() => void",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/cockpit/RegistrarEnvaseDialog.tsx",
+    "tag": "DialogContent",
+    "line": 258,
+    "className": "\"max-w-lg max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 9,
+    "routes": [
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      }
+    ],
+    "export": "RegistrarEnvaseDialog",
+    "exports": [
+      "RegistrarEnvaseDialog"
+    ],
+    "props": [
+      {
+        "name": "programacao_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "os_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "origem",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "lote_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "codigo_lote",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "produto",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "produto_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "microrganismo_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(open: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "target",
+        "type": "RegistrarEnvaseTarget | null",
+        "optional": false
+      },
+      {
+        "name": "tipo_embalagem",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "quantidade",
+        "type": "string",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/components/cockpit/ReservarEstoqueDialog.tsx",
+    "tag": "DialogContent",
+    "line": 185,
+    "className": "\"max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 10,
+    "routes": [
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      }
+    ],
+    "export": "ReservarEstoqueDialog",
+    "exports": [
+      "ReservarEstoqueDialog"
+    ],
+    "props": [
+      {
+        "name": "programacao_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "os_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "origem",
+        "type": "\"manual\" | \"onfarm\" | \"b2b\" | string",
+        "optional": false
+      },
+      {
+        "name": "lote_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "codigo_lote",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "produto",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "cliente_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "cliente_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "titular_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "titular_tipo",
+        "type": "\"cliente\" | \"parceiro\" | \"desconhecido\"",
+        "optional": true
+      },
+      {
+        "name": "numero_os",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "partner_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "partner_order_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(v: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "target",
+        "type": "ReservarEstoqueTarget | null",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/components/comercial/MatrizPrecosTab.tsx",
+    "tag": "DialogContent",
+    "line": 236,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 11,
+    "routes": [
+      {
+        "path": "/comercial/condicoes-pagamento",
+        "components": [
+          "RoleGuard",
+          "CommercialPaymentPlansPage"
+        ],
+        "size": 62
+      }
+    ],
+    "export": "MatrizPrecosTab",
+    "exports": [
+      "MatrizPrecosTab"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/components/comercial/ParceiroB2BFormDialog.tsx",
+    "tag": "DialogContent",
+    "line": 399,
+    "className": "\"max-w-4xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 12,
+    "routes": [
+      {
+        "path": "/clientes",
+        "components": [
+          "RoleGuard",
+          "Clientes"
+        ],
+        "size": 88
+      }
+    ],
+    "export": "ParceiroB2BFormDialog",
+    "exports": [
+      "ParceiroB2BFormDialog"
+    ],
+    "props": [
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(v: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "parceiro",
+        "type": "ParceiroB2B | null",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/comercial/ResponderCotacaoDialog.tsx",
+    "tag": "DialogContent",
+    "line": 90,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 13,
+    "routes": [
+      {
+        "path": "/comercial/minha-carteira",
+        "components": [
+          "RoleGuard",
+          "MinhaCarteiraVendedor"
+        ],
+        "size": 47
+      },
+      {
+        "path": "/comercial/pedidos-b2b",
+        "components": [
+          "RoleGuard",
+          "PedidosB2B"
+        ],
+        "size": 99
+      }
+    ],
+    "export": "ResponderCotacaoDialog",
+    "exports": [
+      "ResponderCotacaoDialog"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "quantidade",
+        "type": "number | string",
+        "optional": false
+      },
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(open: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "orderId",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "orderNumero",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "items",
+        "type": "QuoteItem[]",
+        "optional": false
+      },
+      {
+        "name": "onResponded",
+        "type": "() => void",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/configuracoes/AuditSenhaDialog.tsx",
+    "tag": "DialogContent",
+    "line": 76,
+    "className": "\"max-w-3xl max-h-[80vh] flex flex-col\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 14,
+    "routes": [],
+    "export": "AuditSenhaDialog",
+    "exports": [
+      "AuditSenhaDialog"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "executor",
+        "type": "{ nome: string; email: string } | null",
+        "optional": false
+      },
+      {
+        "name": "target",
+        "type": "{ nome: string; email: string } | null",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/components/entregas/PreviewDocumentoEntrega.tsx",
+    "tag": "DialogContent",
+    "line": 79,
+    "className": "\"max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 15,
+    "routes": [
+      {
+        "path": "/entregas",
+        "components": [
+          "RoleGuard",
+          "Entregas"
+        ],
+        "size": 105
+      }
+    ],
+    "export": "PreviewDocumentoEntrega",
+    "exports": [
+      "PreviewDocumentoEntrega"
+    ],
+    "props": [
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(open: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "payload",
+        "type": "DocumentoEntregaPayload | null",
+        "optional": false
+      },
+      {
+        "name": "branding",
+        "type": "DocumentoEntregaBranding",
+        "optional": false
+      },
+      {
+        "name": "onDownload",
+        "type": "() => void",
+        "optional": false
+      },
+      {
+        "name": "downloading",
+        "type": "boolean",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/entregas/RegistrarEntregaDialog.tsx",
+    "tag": "DialogContent",
+    "line": 417,
+    "className": "\"max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden mx-2 sm:mx-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 16,
+    "routes": [
+      {
+        "path": "/entregas",
+        "components": [
+          "RoleGuard",
+          "Entregas"
+        ],
+        "size": 105
+      }
+    ],
+    "export": "RegistrarEntregaDialog",
+    "exports": [
+      "RegistrarEntregaDialog"
+    ],
+    "props": [
+      {
+        "name": "estoque_produto_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "quantidade",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "grupoId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "itens",
+        "type": "{ item: any; quantidade: number }[]",
+        "optional": false
+      },
+      {
+        "name": "osId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "osTipo",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "tipo_entrega",
+        "type": "\"motorista\" | \"retirada\"",
+        "optional": false
+      },
+      {
+        "name": "motorista",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "veiculo",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "data_saida",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "motorista_telefone",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "motorista_documento",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "veiculo_placa",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "veiculo_tipo",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "hora_saida_prevista",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "data_chegada_prevista",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "hora_chegada_prevista",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "destinatario_nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "destinatario_telefone",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "destinatario_whatsapp",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "endereco_origem",
+        "type": "\"cadastro\" | \"personalizado\"",
+        "optional": false
+      },
+      {
+        "name": "endereco_logradouro",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "endereco_numero",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "endereco_complemento",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "endereco_bairro",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "endereco_cidade",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "endereco_uf",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "endereco_cep",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "endereco_referencia",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "observed",
+        "type": "DeliveryObservedSnapshot",
+        "optional": false
+      },
+      {
+        "name": "os",
+        "type": "{ id: string; type: string; updated_at: string | null; origem: string | null; partner_order_id: string | null } | null",
+        "optional": false
+      },
+      {
+        "name": "itens",
+        "type": "Record<string, { updated_at: string | null; status: string | null }>",
+        "optional": false
+      },
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(o: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "itensSelecionaveis",
+        "type": "any[]",
+        "optional": false
+      },
+      {
+        "name": "todasOS",
+        "type": "any[]",
+        "optional": false
+      },
+      {
+        "name": "osInicial",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "onSubmit",
+        "type": "(payload: RegistrarEntregaSubmit) => Promise<void> | void",
+        "optional": false
+      },
+      {
+        "name": "submitting",
+        "type": "boolean",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/entregas/RegistrarEntregaDialog.tsx",
+    "tag": "AlertDialogContent",
+    "line": 927,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 17,
+    "routes": [
+      {
+        "path": "/entregas",
+        "components": [
+          "RoleGuard",
+          "Entregas"
+        ],
+        "size": 105
+      }
+    ],
+    "export": "RegistrarEntregaDialog",
+    "exports": [
+      "RegistrarEntregaDialog"
+    ],
+    "props": [
+      {
+        "name": "estoque_produto_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "quantidade",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "grupoId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "itens",
+        "type": "{ item: any; quantidade: number }[]",
+        "optional": false
+      },
+      {
+        "name": "osId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "osTipo",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "tipo_entrega",
+        "type": "\"motorista\" | \"retirada\"",
+        "optional": false
+      },
+      {
+        "name": "motorista",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "veiculo",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "data_saida",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "motorista_telefone",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "motorista_documento",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "veiculo_placa",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "veiculo_tipo",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "hora_saida_prevista",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "data_chegada_prevista",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "hora_chegada_prevista",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "destinatario_nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "destinatario_telefone",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "destinatario_whatsapp",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "endereco_origem",
+        "type": "\"cadastro\" | \"personalizado\"",
+        "optional": false
+      },
+      {
+        "name": "endereco_logradouro",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "endereco_numero",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "endereco_complemento",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "endereco_bairro",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "endereco_cidade",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "endereco_uf",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "endereco_cep",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "endereco_referencia",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "observed",
+        "type": "DeliveryObservedSnapshot",
+        "optional": false
+      },
+      {
+        "name": "os",
+        "type": "{ id: string; type: string; updated_at: string | null; origem: string | null; partner_order_id: string | null } | null",
+        "optional": false
+      },
+      {
+        "name": "itens",
+        "type": "Record<string, { updated_at: string | null; status: string | null }>",
+        "optional": false
+      },
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(o: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "itensSelecionaveis",
+        "type": "any[]",
+        "optional": false
+      },
+      {
+        "name": "todasOS",
+        "type": "any[]",
+        "optional": false
+      },
+      {
+        "name": "osInicial",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "onSubmit",
+        "type": "(payload: RegistrarEntregaSubmit) => Promise<void> | void",
+        "optional": false
+      },
+      {
+        "name": "submitting",
+        "type": "boolean",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/estoque/ReservaDialog.tsx",
+    "tag": "DialogContent",
+    "line": 410,
+    "className": "\"max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 18,
+    "routes": [
+      {
+        "path": "/estoque",
+        "components": [
+          "RoleGuard",
+          "Estoque"
+        ],
+        "size": 74
+      }
+    ],
+    "export": "ReservaDialog",
+    "exports": [
+      "ReservaDialog"
+    ],
+    "props": [
+      {
+        "name": "cliente_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "os_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "os_tipo",
+        "type": "\"onfarm\" | \"padrao\" | \"b2b\"",
+        "optional": false
+      },
+      {
+        "name": "cliente_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "numero_os",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "titular_tipo",
+        "type": "\"cliente\" | \"parceiro\"",
+        "optional": true
+      },
+      {
+        "name": "partner_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "partner_order_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(v: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "item",
+        "type": "any",
+        "optional": false
+      },
+      {
+        "name": "preset",
+        "type": "ReservaPreset",
+        "optional": true
+      },
+      {
+        "name": "onReserved",
+        "type": "() => void",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/faturamento/BaseFaturamentoDialog.tsx",
+    "tag": "DialogContent",
+    "line": 129,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 19,
+    "routes": [
+      {
+        "path": "/ordens-servico",
+        "components": [
+          "RoleGuard",
+          "OrdensServico"
+        ],
+        "size": 69
+      }
+    ],
+    "export": "BaseFaturamentoDialog",
+    "exports": [
+      "BaseFaturamentoDialog"
+    ],
+    "props": [
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(open: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "osId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "osTipo",
+        "type": "'TRADICIONAL' | 'ON_FARM'",
+        "optional": false
+      },
+      {
+        "name": "initialData",
+        "type": "any",
+        "optional": true
+      },
+      {
+        "name": "onSuccess",
+        "type": "() => void",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/components/fazendas/TalhoesFazendaTab.tsx",
+    "tag": "DialogContent",
+    "line": 195,
+    "className": "\"max-w-lg w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 20,
+    "routes": [
+      {
+        "path": "/fazendas/:id",
+        "components": [
+          "RoleGuard",
+          "FazendaDetalhe"
+        ],
+        "size": 64
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "safra",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "data_previsao_colheita",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "culturas",
+        "type": "{ nome: string } | null",
+        "optional": true
+      },
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "fazenda_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "area_hectares",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "historico_pragas",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "observacoes",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "tipo_manejo_agua",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "ativo",
+        "type": "boolean",
+        "optional": true
+      },
+      {
+        "name": "safra_atual_id",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "safra_atual",
+        "type": "SafraAtual | null",
+        "optional": true
+      },
+      {
+        "name": "latitude",
+        "type": "number | null",
+        "optional": true
+      },
+      {
+        "name": "longitude",
+        "type": "number | null",
+        "optional": true
+      },
+      {
+        "name": "localizacao_referencia",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "fazendaId",
+        "type": "string",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/components/financeiro/BaixaDialog.tsx",
+    "tag": "DialogContent",
+    "line": 454,
+    "className": "\"max-w-lg max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 21,
+    "routes": [
+      {
+        "path": "/financeiro/receber",
+        "components": [
+          "RoleGuard",
+          "ContasReceber"
+        ],
+        "size": 76
+      },
+      {
+        "path": "/financeiro/pagar",
+        "components": [
+          "RoleGuard",
+          "ContasPagar"
+        ],
+        "size": 76
+      }
+    ],
+    "export": "BaixaDialog",
+    "exports": [
+      "BaixaDialog"
+    ],
+    "props": [
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onClose",
+        "type": "() => void",
+        "optional": false
+      },
+      {
+        "name": "kind",
+        "type": "Kind",
+        "optional": false
+      },
+      {
+        "name": "installment",
+        "type": "any | null",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/components/financeiro/ConfirmarEntregaFinanceiroDialog.tsx",
+    "tag": "DialogContent",
+    "line": 27,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 22,
+    "routes": [
+      {
+        "path": "/financeiro/entregas-nao-faturadas",
+        "components": [
+          "RoleGuard",
+          "FinEntregasNaoFaturadas"
+        ],
+        "size": 47
+      },
+      {
+        "path": "/entregas",
+        "components": [
+          "RoleGuard",
+          "Entregas"
+        ],
+        "size": 105
+      }
+    ],
+    "export": "ConfirmarEntregaFinanceiroDialog",
+    "exports": [
+      "ConfirmarEntregaFinanceiroDialog"
+    ],
+    "props": [
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onClose",
+        "type": "() => void",
+        "optional": false
+      },
+      {
+        "name": "entrega",
+        "type": "any | null",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/components/financeiro/NovaContaDialog.tsx",
+    "tag": "DialogContent",
+    "line": 250,
+    "className": "\"max-w-3xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 23,
+    "routes": [
+      {
+        "path": "/financeiro/receber",
+        "components": [
+          "RoleGuard",
+          "ContasReceber"
+        ],
+        "size": 76
+      },
+      {
+        "path": "/financeiro/pagar",
+        "components": [
+          "RoleGuard",
+          "ContasPagar"
+        ],
+        "size": 76
+      }
+    ],
+    "export": "NovaContaDialog",
+    "exports": [
+      "NovaContaDialog"
+    ],
+    "props": [
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onClose",
+        "type": "() => void",
+        "optional": false
+      },
+      {
+        "name": "kind",
+        "type": "Kind",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/components/fiscal/FiscalCatalogCombobox.tsx",
+    "tag": "Button",
+    "line": 123,
+    "className": "{cn(\"w-full min-w-0 justify-between font-normal\", multiline && \"h-auto min-h-10 whitespace-normal py-3\", addAction && \"w-auto justify-center\")}",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 24,
+    "routes": [
+      {
+        "path": "/configuracoes/fiscal/empresa",
+        "components": [
+          "RoleGuard",
+          "FiscalEmpresa"
+        ],
+        "size": 128
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "catalogType",
+        "type": "FiscalCatalogType",
+        "optional": false
+      },
+      {
+        "name": "value",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "onChange",
+        "type": "(code: string | null) => void",
+        "optional": false
+      },
+      {
+        "name": "onSelectEntry",
+        "type": "(entry: FiscalCatalogEntry | null) => void",
+        "optional": true
+      },
+      {
+        "name": "placeholder",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "searchPlaceholder",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "parentCode",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "optional": true
+      },
+      {
+        "name": "allowLegacyValue",
+        "type": "boolean",
+        "optional": true
+      },
+      {
+        "name": "preferredCodes",
+        "type": "string[]",
+        "optional": true
+      },
+      {
+        "name": "id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "aria-describedby",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "aria-invalid",
+        "type": "boolean",
+        "optional": true
+      },
+      {
+        "name": "className",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "multiline",
+        "type": "boolean",
+        "optional": true
+      },
+      {
+        "name": "addAction",
+        "type": "boolean",
+        "optional": true
+      },
+      {
+        "name": "resolvedEntries",
+        "type": "import(\"@/hooks/useFiscalCatalog\").FiscalCatalogResolvedEntry[]",
+        "optional": true
+      },
+      {
+        "name": "externalResolution",
+        "type": "boolean",
+        "optional": true
+      },
+      {
+        "name": "metadataFilter",
+        "type": "Record<string, string>",
+        "optional": true
+      },
+      {
+        "name": "codePrefix",
+        "type": "string",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/fiscal/NatureOperationCombobox.tsx",
+    "tag": "Button",
+    "line": 109,
+    "className": "\"h-auto min-h-10 w-full min-w-0 justify-between whitespace-normal py-2 font-normal\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 25,
+    "routes": [
+      {
+        "path": "/configuracoes/fiscal/empresa",
+        "components": [
+          "RoleGuard",
+          "FiscalEmpresa"
+        ],
+        "size": 128
+      },
+      {
+        "path": "/fiscal/documentos",
+        "components": [
+          "RoleGuard",
+          "FiscalDocumentos"
+        ],
+        "size": 130
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "value",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "customOptions",
+        "type": "string[]",
+        "optional": true
+      },
+      {
+        "name": "onChange",
+        "type": "(value: string | null) => void",
+        "optional": false
+      },
+      {
+        "name": "onCustomOptionsChange",
+        "type": "(values: string[]) => void",
+        "optional": true
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "optional": true
+      },
+      {
+        "name": "placeholder",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "allowManage",
+        "type": "boolean",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/fiscal/ProductDossierManagement.tsx",
+    "tag": "DialogContent",
+    "line": 21,
+    "className": "\"max-w-5xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 26,
+    "routes": [
+      {
+        "path": "/configuracoes/fiscal/produtos",
+        "components": [
+          "RoleGuard",
+          "FiscalProdutos"
+        ],
+        "size": 77
+      },
+      {
+        "path": "/clientes/:id",
+        "components": [
+          "RoleGuard",
+          "ClienteDetalhe"
+        ],
+        "size": 109
+      },
+      {
+        "path": "/parceiros/:id",
+        "components": [
+          "RoleGuard",
+          "ParceiroDetalhe"
+        ],
+        "size": 110
+      },
+      {
+        "path": "/configuracoes/fiscal/empresa",
+        "components": [
+          "RoleGuard",
+          "FiscalEmpresa"
+        ],
+        "size": 128
+      },
+      {
+        "path": "/fiscal/documentos",
+        "components": [
+          "RoleGuard",
+          "FiscalDocumentos"
+        ],
+        "size": 130
+      },
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ],
+    "export": "ProductDossierManagement",
+    "exports": [
+      "ProductDossierManagement",
+      "ProductDossierAction"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/components/ordens-servico/OSDetalhesDialog.tsx",
+    "tag": "DialogContent",
+    "line": 177,
+    "className": "\"max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0 sm:p-0\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 27,
+    "routes": [
+      {
+        "path": "/ordens-servico",
+        "components": [
+          "RoleGuard",
+          "OrdensServico"
+        ],
+        "size": 69
+      },
+      {
+        "path": "/clientes/:id",
+        "components": [
+          "RoleGuard",
+          "ClienteDetalhe"
+        ],
+        "size": 109
+      },
+      {
+        "path": "/parceiros/:id",
+        "components": [
+          "RoleGuard",
+          "ParceiroDetalhe"
+        ],
+        "size": 110
+      }
+    ],
+    "export": "OSDetalhesDialog",
+    "exports": [
+      "MANUAL_LOT_GENERATION_REVIEWED",
+      "MANUAL_CQ_REVIEWED",
+      "manualCQPhase",
+      "OSDetalhesDialog"
+    ],
+    "props": [
+      {
+        "name": "os",
+        "type": "any",
+        "optional": false
+      },
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(open: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "onChanged",
+        "type": "() => void",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/plataforma/AdminGestaoAcoes.tsx",
+    "tag": "DialogContent",
+    "line": 107,
+    "className": "\"max-h-[90dvh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto [&_button:not([role=checkbox])]:min-h-11\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 28,
+    "routes": [
+      {
+        "path": "/plataforma",
+        "components": [
+          "PlataformaHome"
+        ],
+        "size": 74
+      }
+    ],
+    "export": "AdminGestaoAcoes",
+    "exports": [
+      "AdminGestaoAcoes"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/components/plataforma/AdminGestaoAcoes.tsx",
+    "tag": "TabsList",
+    "line": 113,
+    "className": "\"grid h-auto w-full grid-cols-3 gap-1\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 29,
+    "routes": [
+      {
+        "path": "/plataforma",
+        "components": [
+          "PlataformaHome"
+        ],
+        "size": 74
+      }
+    ],
+    "export": "AdminGestaoAcoes",
+    "exports": [
+      "AdminGestaoAcoes"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/components/plataforma/PlatformCatalogB2BDialog.tsx",
+    "tag": "DialogContent",
+    "line": 78,
+    "className": "\"max-h-[90vh] max-w-md overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 30,
+    "routes": [],
+    "export": "PlatformCatalogB2BDialog",
+    "exports": [
+      "PlatformCatalogB2BDialog"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/components/plataforma/PlatformCatalogCompositionDialog.tsx",
+    "tag": "DialogContent",
+    "line": 142,
+    "className": "\"max-h-[90vh] w-[calc(100vw-1rem)] max-w-2xl overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 31,
+    "routes": [],
+    "export": "PlatformCatalogCompositionDialog",
+    "exports": [
+      "PlatformCatalogCompositionDialog"
+    ],
+    "props": [
+      {
+        "name": "key",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "value",
+        "type": "T",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/components/plataforma/PlatformCatalogEntityPanel.tsx",
+    "tag": "DialogContent",
+    "line": 136,
+    "className": "\"max-h-[90dvh] w-[calc(100vw-2rem)] max-w-xl overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 32,
+    "routes": [],
+    "export": "PlatformCatalogEntityPanel",
+    "exports": [
+      "PlatformCatalogEntityPanel"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/components/plataforma/PlatformCatalogFamilyDialog.tsx",
+    "tag": "DialogContent",
+    "line": 84,
+    "className": "\"max-h-[90vh] max-w-md overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 33,
+    "routes": [],
+    "export": "PlatformCatalogFamilyDialog",
+    "exports": [
+      "PlatformCatalogFamilyDialog"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/components/plataforma/PlatformCatalogLifecycleDialogs.tsx",
+    "tag": "DialogContent",
+    "line": 93,
+    "className": "\"max-h-[90vh] w-[calc(100%-2rem)] max-w-xl overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 34,
+    "routes": [],
+    "export": "PlatformCatalogCreateDialog",
+    "exports": [
+      "PlatformCatalogCreateDialog",
+      "PlatformCatalogStatusDialog"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "codigo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "volume",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "proporcao",
+        "type": "string",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/components/plataforma/PlatformCatalogLifecycleDialogs.tsx",
+    "tag": "DialogContent",
+    "line": 151,
+    "className": "\"max-h-[90vh] max-w-md overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 35,
+    "routes": [],
+    "export": "PlatformCatalogCreateDialog",
+    "exports": [
+      "PlatformCatalogCreateDialog",
+      "PlatformCatalogStatusDialog"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "codigo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "volume",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "proporcao",
+        "type": "string",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/components/plataforma/PlatformCatalogVolumesDialog.tsx",
+    "tag": "DialogContent",
+    "line": 35,
+    "className": "\"max-h-[90dvh] w-[calc(100vw-2rem)] max-w-2xl overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 36,
+    "routes": [],
+    "export": "PlatformCatalogVolumesDialog",
+    "exports": [
+      "PlatformCatalogVolumesDialog"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/components/protocolos/CatalogoVolumesDialog.tsx",
+    "tag": "DialogContent",
+    "line": 202,
+    "className": "\"max-w-5xl w-[96vw] max-h-[92vh] overflow-y-auto overflow-x-hidden\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 37,
+    "routes": [
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ],
+    "export": "CatalogoVolumesDialog",
+    "exports": [
+      "CatalogoVolumesDialog"
+    ],
+    "props": [
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(v: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "itemId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "itemTipo",
+        "type": "\"produto\" | \"microrganismo\"",
+        "optional": false
+      },
+      {
+        "name": "itemNome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "valorLitroBase",
+        "type": "number | null",
+        "optional": true
+      },
+      {
+        "name": "owned",
+        "type": "boolean",
+        "optional": true
+      },
+      {
+        "name": "parentUpdatedAt",
+        "type": "string | null",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/protocolos/MicroorganismTechnicalProfileDialog.tsx",
+    "tag": "DialogContent",
+    "line": 221,
+    "className": "\"max-w-3xl w-[95vw] max-h-[92vh] overflow-y-auto overflow-x-hidden [&_button]:min-h-11 [&_input]:min-h-11\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 38,
+    "routes": [
+      {
+        "path": "novo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "catalogo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "simulador",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "/portal-parceiro",
+        "components": [
+          "B2BRouteGuard",
+          "PortalParceiroLayout"
+        ],
+        "size": 176
+      },
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ],
+    "export": "MicroorganismTechnicalProfileDialog",
+    "exports": [
+      "MicroorganismTechnicalProfileDialog"
+    ],
+    "props": [
+      {
+        "name": "owner_organization_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome_cientifico",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "funcao_agronomica",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "descricao",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "observacoes",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "tipo",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(v: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "micro",
+        "type": "Microrganismo | null",
+        "optional": false
+      },
+      {
+        "name": "origem",
+        "type": "\"protocolos\" | \"app_mobile\"",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/protocolos/MicrorganismosTab.tsx",
+    "tag": "SelectTrigger",
+    "line": 362,
+    "className": "\"w-[140px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 39,
+    "routes": [
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ],
+    "export": "MicrorganismosTab",
+    "exports": [
+      "carregarMicrorganismosCatalogo",
+      "runExclusive",
+      "MicrorganismosTab"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome_cientifico",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "tipo",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "concentracao_ufc_ml",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "concentracao_label",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "dose_ml_ha",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "valor_dose_brl",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "valor_litro_brl",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "fornecedor",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "safra_referencia",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "funcao_agronomica",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "meio_cultivo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "producao_on_farm",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "observacoes",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "codigo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "descricao",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "preco_tabela",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "b2b_enabled",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "ativo",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "owner_organization_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "archived_at",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "updated_at",
+        "type": "string | null",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/protocolos/MicrorganismosTab.tsx",
+    "tag": "DialogContent",
+    "line": 414,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 40,
+    "routes": [
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ],
+    "export": "MicrorganismosTab",
+    "exports": [
+      "carregarMicrorganismosCatalogo",
+      "runExclusive",
+      "MicrorganismosTab"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome_cientifico",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "tipo",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "concentracao_ufc_ml",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "concentracao_label",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "dose_ml_ha",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "valor_dose_brl",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "valor_litro_brl",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "fornecedor",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "safra_referencia",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "funcao_agronomica",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "meio_cultivo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "producao_on_farm",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "observacoes",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "codigo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "descricao",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "preco_tabela",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "b2b_enabled",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "ativo",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "owner_organization_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "archived_at",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "updated_at",
+        "type": "string | null",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/protocolos/OwnedCatalogItemDialog.tsx",
+    "tag": "DialogContent",
+    "line": 181,
+    "className": "\"max-w-3xl max-h-[92vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 41,
+    "routes": [
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ],
+    "export": "OwnedCatalogItemDialog",
+    "exports": [
+      "OwnedCatalogItemDialog"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "tipo",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "descricao",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "nome_cientifico",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "familia_catalogo",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "classe_catalogo",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "modo_acao",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "funcao_completa",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "modo_aplicacao",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "updated_at",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "ordem",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "tipo_componente",
+        "type": "\"microrganismo\" | \"ingrediente_ativo\" | \"nutriente\" | \"outro\"",
+        "optional": false
+      },
+      {
+        "name": "microrganismo_id",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "componente_nome",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "quantidade",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "unidade",
+        "type": "\"mL/L\" | \"g/L\" | \"g/kg\" | \"%m/m\" | \"%m/v\" | \"%v/v\" | \"UFC/mL\" | \"UFC/g\"",
+        "optional": false
+      },
+      {
+        "name": "base",
+        "type": "\"por_volume_produto\" | \"por_massa_produto\"",
+        "optional": false
+      },
+      {
+        "name": "natureza",
+        "type": "\"teor_garantido\" | \"concentracao_declarada\"",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/components/protocolos/ProductTechnicalProfileDialog.tsx",
+    "tag": "DialogContent",
+    "line": 201,
+    "className": "\"max-w-3xl w-[95vw] max-h-[92vh] overflow-y-auto overflow-x-hidden [&_button]:min-h-11 [&_input]:min-h-11\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 42,
+    "routes": [
+      {
+        "path": "novo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "catalogo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "simulador",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "/portal-parceiro",
+        "components": [
+          "B2BRouteGuard",
+          "PortalParceiroLayout"
+        ],
+        "size": 176
+      },
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ],
+    "export": "ProductTechnicalProfileDialog",
+    "exports": [
+      "ProductTechnicalProfileDialog"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "codigo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "tipo",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "descricao",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "modo_acao",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "funcao_completa",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "b2b_enabled",
+        "type": "boolean",
+        "optional": true
+      },
+      {
+        "name": "owner_organization_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(v: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "produto",
+        "type": "Produto | null",
+        "optional": false
+      },
+      {
+        "name": "origem",
+        "type": "\"protocolos\" | \"app_mobile\"",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/protocolos/ProdutosTab.tsx",
+    "tag": "SelectTrigger",
+    "line": 713,
+    "className": "\"w-[140px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 43,
+    "routes": [
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ],
+    "export": "ProdutosTab",
+    "exports": [
+      "saveProdutoTenant",
+      "carregarCatalogoProdutos",
+      "ProdutosTab"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome_cientifico",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "concentracao_ufc_ml",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "valor_dose_brl",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "dose_ml_ha",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "codigo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "tipo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "produto_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "volume_ml",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "microrganismo_id",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "component_insumo_id",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "proporcao",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "e_volume_fixo",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "concentracao",
+        "type": "number | null",
+        "optional": true
+      },
+      {
+        "name": "unidade",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "microrganismos",
+        "type": "Microrganismo",
+        "optional": true
+      },
+      {
+        "name": "insumos",
+        "type": "{ nome: string }",
+        "optional": true
+      },
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "codigo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "tipo",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "dose_ml_ha",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "modo_aplicacao",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "valor_ha_brl",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "valor_dose_brl",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "valor_litro_brl",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "funcao_completa",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "versao_catalogo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "ativo",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "b2b_enabled",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "e_insumo",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "estoque_minimo",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "descricao",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "modo_acao",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "familia_catalogo",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "classe_catalogo",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "updated_at",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "owner_organization_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "archived_at",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "formulacoes",
+        "type": "Formulacao[]",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/protocolos/ProdutosTab.tsx",
+    "tag": "DialogContent",
+    "line": 747,
+    "className": "\"max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 44,
+    "routes": [
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ],
+    "export": "ProdutosTab",
+    "exports": [
+      "saveProdutoTenant",
+      "carregarCatalogoProdutos",
+      "ProdutosTab"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome_cientifico",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "concentracao_ufc_ml",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "valor_dose_brl",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "dose_ml_ha",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "codigo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "tipo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "produto_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "volume_ml",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "microrganismo_id",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "component_insumo_id",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "proporcao",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "e_volume_fixo",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "concentracao",
+        "type": "number | null",
+        "optional": true
+      },
+      {
+        "name": "unidade",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "microrganismos",
+        "type": "Microrganismo",
+        "optional": true
+      },
+      {
+        "name": "insumos",
+        "type": "{ nome: string }",
+        "optional": true
+      },
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "codigo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "tipo",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "dose_ml_ha",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "modo_aplicacao",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "valor_ha_brl",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "valor_dose_brl",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "valor_litro_brl",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "funcao_completa",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "versao_catalogo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "ativo",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "b2b_enabled",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "e_insumo",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "estoque_minimo",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "descricao",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "modo_acao",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "familia_catalogo",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "classe_catalogo",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "updated_at",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "owner_organization_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "archived_at",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "formulacoes",
+        "type": "Formulacao[]",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/protocolos/ProdutosTab.tsx",
+    "tag": "TabsList",
+    "line": 768,
+    "className": "\"flex w-full h-auto flex-wrap mb-4 [&_button]:flex-1 [&_button]:whitespace-normal [&_button]:min-w-20\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 45,
+    "routes": [
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ],
+    "export": "ProdutosTab",
+    "exports": [
+      "saveProdutoTenant",
+      "carregarCatalogoProdutos",
+      "ProdutosTab"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome_cientifico",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "concentracao_ufc_ml",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "valor_dose_brl",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "dose_ml_ha",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "codigo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "tipo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "produto_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "volume_ml",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "microrganismo_id",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "component_insumo_id",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "proporcao",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "e_volume_fixo",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "concentracao",
+        "type": "number | null",
+        "optional": true
+      },
+      {
+        "name": "unidade",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "microrganismos",
+        "type": "Microrganismo",
+        "optional": true
+      },
+      {
+        "name": "insumos",
+        "type": "{ nome: string }",
+        "optional": true
+      },
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "codigo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "tipo",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "dose_ml_ha",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "modo_aplicacao",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "valor_ha_brl",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "valor_dose_brl",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "valor_litro_brl",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "funcao_completa",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "versao_catalogo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "ativo",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "b2b_enabled",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "e_insumo",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "estoque_minimo",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "descricao",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "modo_acao",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "familia_catalogo",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "classe_catalogo",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "updated_at",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "owner_organization_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "archived_at",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "formulacoes",
+        "type": "Formulacao[]",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/protocolos/TenantProblemPanel.tsx",
+    "tag": "DialogContent",
+    "line": 16,
+    "className": "\"max-h-[90dvh] overflow-y-auto [&_input]:min-h-11 [&_button]:min-h-11\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 46,
+    "routes": [
+      {
+        "path": "novo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "catalogo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "simulador",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "/portal-parceiro",
+        "components": [
+          "B2BRouteGuard",
+          "PortalParceiroLayout"
+        ],
+        "size": 176
+      },
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ],
+    "export": "TenantProblemPanel",
+    "exports": [
+      "TenantProblemDialog",
+      "TenantProblemPanel"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/components/protocolos/TenantReferencePanel.tsx",
+    "tag": "DialogContent",
+    "line": 54,
+    "className": "\"max-h-[90dvh] overflow-y-auto [&_input]:min-h-11 [&_button]:min-h-11\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 47,
+    "routes": [
+      {
+        "path": "novo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "catalogo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "simulador",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "/portal-parceiro",
+        "components": [
+          "B2BRouteGuard",
+          "PortalParceiroLayout"
+        ],
+        "size": 176
+      },
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ],
+    "export": "TenantReferencePanel",
+    "exports": [
+      "TenantReferenceDialog",
+      "TenantReferencePanel"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "descricao",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "nome_cientifico",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "tipo",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "updated_at",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "owner_organization_id",
+        "type": "string | null",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/protocolos/catalog/BulkAlvosDialog.tsx",
+    "tag": "TabsList",
+    "line": 136,
+    "className": "\"grid grid-cols-3 w-full\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 48,
+    "routes": [
+      {
+        "path": "novo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "catalogo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "simulador",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "/portal-parceiro",
+        "components": [
+          "B2BRouteGuard",
+          "PortalParceiroLayout"
+        ],
+        "size": 176
+      },
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ],
+    "export": "BulkAlvosDialog",
+    "exports": [
+      "BulkAlvosDialog"
+    ],
+    "props": [
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(o: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "kind",
+        "type": "ParentKind",
+        "optional": false
+      },
+      {
+        "name": "parentId",
+        "type": "string",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/components/protocolos/catalog/SourceFormDialog.tsx",
+    "tag": "DialogContent",
+    "line": 109,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 49,
+    "routes": [
+      {
+        "path": "novo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "catalogo",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "simulador",
+        "components": [
+          "ParceiroNovoPedido"
+        ],
+        "size": 142
+      },
+      {
+        "path": "/portal-parceiro",
+        "components": [
+          "B2BRouteGuard",
+          "PortalParceiroLayout"
+        ],
+        "size": 176
+      },
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ],
+    "export": "SourceFormDialog",
+    "exports": [
+      "SourceFormDialog"
+    ],
+    "props": [
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(v: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "entidadeTipo",
+        "type": "CatalogSourceEntity",
+        "optional": false
+      },
+      {
+        "name": "entidadeId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "source",
+        "type": "CatalogSource | null",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/components/talhoes/SafrasTalhaoDialog.tsx",
+    "tag": "DialogContent",
+    "line": 156,
+    "className": "\"max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 50,
+    "routes": [
+      {
+        "path": "/fazendas/:id",
+        "components": [
+          "RoleGuard",
+          "FazendaDetalhe"
+        ],
+        "size": 64
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "talhao_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "cultura_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "safra",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "periodo_safra",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "data_plantio",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "data_previsao_colheita",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "data_colheita_real",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "produtividade",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "unidade_produtividade",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "observacoes",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "culturas",
+        "type": "{ nome: string } | null",
+        "optional": true
+      },
+      {
+        "name": "talhaoId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "talhaoNome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(v: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "onChanged",
+        "type": "() => void",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/visita/CameraDialog.tsx",
+    "tag": "DialogContent",
+    "line": 152,
+    "className": "\"sm:max-w-md p-0 overflow-hidden bg-black border-none h-[85vh] flex flex-col gap-0\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 51,
+    "routes": [
+      {
+        "path": "/visita-tecnica/nova",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      },
+      {
+        "path": "/visita-tecnica/:id",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      }
+    ],
+    "export": "CameraDialog",
+    "exports": [
+      "CameraDialog"
+    ],
+    "props": [
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(open: boolean) => void",
+        "optional": false
+      },
+      {
+        "name": "onCapture",
+        "type": "(blob: Blob) => void",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/components/visita/EvidenciasTabs.tsx",
+    "tag": "TabsList",
+    "line": 458,
+    "className": "\"grid grid-cols-4 w-full\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 52,
+    "routes": [
+      {
+        "path": "/visita-tecnica/nova",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      },
+      {
+        "path": "/visita-tecnica/:id",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      }
+    ],
+    "export": "EvidenciasTabs",
+    "exports": [
+      "EvidenciasTabs"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "arquivo_url",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "arquivo_path",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "tipo_midia",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "tipo_arquivo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "categoria_arquivo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "legenda",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "duracao_segundos",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "foto_principal",
+        "type": "boolean | null",
+        "optional": false
+      },
+      {
+        "name": "capturado_em",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "latitude",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "longitude",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "uploaded_at",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "registroId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "arquivos",
+        "type": "ArquivoRow[]",
+        "optional": false
+      },
+      {
+        "name": "notes",
+        "type": "QuickNote[]",
+        "optional": false
+      },
+      {
+        "name": "onNotesChange",
+        "type": "(notes: QuickNote[]) => void",
+        "optional": false
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/visita/PdfPreviewDialog.tsx",
+    "tag": "DialogContent",
+    "line": 76,
+    "className": "\"max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 53,
+    "routes": [
+      {
+        "path": "/visita-tecnica/nova",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      },
+      {
+        "path": "/visita-tecnica/:id",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      }
+    ],
+    "export": "PdfPreviewDialog",
+    "exports": [
+      "PdfPreviewDialog"
+    ],
+    "props": [
+      {
+        "name": "data",
+        "type": "VisitaPdfData | null",
+        "optional": true
+      },
+      {
+        "name": "getData",
+        "type": "() => Promise<VisitaPdfData | null>",
+        "optional": true
+      },
+      {
+        "name": "title",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "trigger",
+        "type": "React.ReactNode",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/visita/PlanoMonitoramentoEditor.tsx",
+    "tag": "DialogContent",
+    "line": 241,
+    "className": "\"sm:max-w-[425px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 54,
+    "routes": [
+      {
+        "path": "/visita-tecnica/nova",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      },
+      {
+        "path": "/visita-tecnica/:id",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      }
+    ],
+    "export": "PlanoMonitoramentoEditor",
+    "exports": [
+      "PlanoMonitoramentoEditor"
+    ],
+    "props": [
+      {
+        "name": "readOnly",
+        "type": "boolean",
+        "optional": true
+      },
+      {
+        "name": "registroId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "observacoesAtuais",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "dataProximaVisita",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "clienteId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "fazendaId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "talhaoId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "consultorId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "onUpdate",
+        "type": "() => void",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/components/visita/UploadQueuePanel.tsx",
+    "tag": "Button",
+    "line": 187,
+    "className": "\"h-7 text-[10px] flex-1 border-destructive/30 hover:bg-destructive/10 text-destructive whitespace-nowrap\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 55,
+    "routes": [
+      {
+        "path": "/visita-tecnica/nova",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      },
+      {
+        "path": "/visita-tecnica/:id",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      }
+    ],
+    "export": "UploadQueuePanel",
+    "exports": [
+      "UploadQueuePanel"
+    ],
+    "props": [
+      {
+        "name": "progress",
+        "type": "QueueProgress",
+        "optional": false
+      },
+      {
+        "name": "items",
+        "type": "QueueItem[]",
+        "optional": false
+      },
+      {
+        "name": "isPaused",
+        "type": "boolean",
+        "optional": true
+      },
+      {
+        "name": "onRetryFailed",
+        "type": "() => void",
+        "optional": true
+      },
+      {
+        "name": "onClearFinished",
+        "type": "() => void",
+        "optional": true
+      },
+      {
+        "name": "onTogglePause",
+        "type": "() => void",
+        "optional": true
+      },
+      {
+        "name": "onCancelItem",
+        "type": "(id: string) => void",
+        "optional": true
+      },
+      {
+        "name": "onCancelAll",
+        "type": "() => void",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/components/visita/UploadQueuePanel.tsx",
+    "tag": "Button",
+    "line": 199,
+    "className": "\"h-7 text-[10px] flex-1 border-muted-foreground/30 hover:bg-muted whitespace-nowrap\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 56,
+    "routes": [
+      {
+        "path": "/visita-tecnica/nova",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      },
+      {
+        "path": "/visita-tecnica/:id",
+        "components": [
+          "RoleGuard",
+          "VisitaTecnica"
+        ],
+        "size": 123
+      }
+    ],
+    "export": "UploadQueuePanel",
+    "exports": [
+      "UploadQueuePanel"
+    ],
+    "props": [
+      {
+        "name": "progress",
+        "type": "QueueProgress",
+        "optional": false
+      },
+      {
+        "name": "items",
+        "type": "QueueItem[]",
+        "optional": false
+      },
+      {
+        "name": "isPaused",
+        "type": "boolean",
+        "optional": true
+      },
+      {
+        "name": "onRetryFailed",
+        "type": "() => void",
+        "optional": true
+      },
+      {
+        "name": "onClearFinished",
+        "type": "() => void",
+        "optional": true
+      },
+      {
+        "name": "onTogglePause",
+        "type": "() => void",
+        "optional": true
+      },
+      {
+        "name": "onCancelItem",
+        "type": "(id: string) => void",
+        "optional": true
+      },
+      {
+        "name": "onCancelAll",
+        "type": "() => void",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/Aplicacoes.tsx",
+    "tag": "DialogContent",
+    "line": 144,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 57,
+    "routes": [
+      {
+        "path": "/aplicacoes",
+        "components": [
+          "RoleGuard",
+          "Aplicacoes"
+        ],
+        "size": 61
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/BIAgronomico.tsx",
+    "tag": "TabsList",
+    "line": 24,
+    "className": "\"w-max sm:w-auto flex min-w-full\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 58,
+    "routes": [
+      {
+        "path": "/bi-agronomico",
+        "components": [
+          "RoleGuard",
+          "BIAgronomico"
+        ],
+        "size": 22
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/ClienteDetalhe.tsx",
+    "tag": "SelectTrigger",
+    "line": 246,
+    "className": "\"h-8 w-[200px] text-xs\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 59,
+    "routes": [
+      {
+        "path": "/clientes/:id",
+        "components": [
+          "RoleGuard",
+          "ClienteDetalhe"
+        ],
+        "size": 109
+      },
+      {
+        "path": "/parceiros/:id",
+        "components": [
+          "RoleGuard",
+          "ParceiroDetalhe"
+        ],
+        "size": 110
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default",
+      "OSTable"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/ClienteDetalhe.tsx",
+    "tag": "SelectTrigger",
+    "line": 258,
+    "className": "\"h-8 w-[220px] text-xs\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 60,
+    "routes": [
+      {
+        "path": "/clientes/:id",
+        "components": [
+          "RoleGuard",
+          "ClienteDetalhe"
+        ],
+        "size": 109
+      },
+      {
+        "path": "/parceiros/:id",
+        "components": [
+          "RoleGuard",
+          "ParceiroDetalhe"
+        ],
+        "size": 110
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default",
+      "OSTable"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/CockpitLaboratorio.tsx",
+    "tag": "SelectTrigger",
+    "line": 663,
+    "className": "\"h-9 min-w-0 flex-1 basis-[145px] sm:flex-none sm:w-[150px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 61,
+    "routes": [
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "os_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "numero_os",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "origem",
+        "type": "\"manual\" | \"onfarm\"",
+        "optional": false
+      },
+      {
+        "name": "cliente",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "fazenda",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "talhao",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "produto",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "volume_solicitado",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "data_programada",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "prioridade",
+        "type": "\"alta\" | \"media\" | \"baixa\"",
+        "optional": false
+      },
+      {
+        "name": "lote_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "codigo_lote",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "lote_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "cq_resultado",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "entrega_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "aplicacao_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "stage",
+        "type": "KanbanStage",
+        "optional": false
+      },
+      {
+        "name": "os_status",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "proxima_acao",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "atrasado",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "cliente_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "fazenda_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "talhao_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "produto_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "microrganismo_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "microrganismo_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "responsavel_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "responsavel_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "status_esteira_oficial",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "bloqueios",
+        "type": "string[]",
+        "optional": false
+      },
+      {
+        "name": "pode_finalizar",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "titular_nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "titular_tipo",
+        "type": "\"cliente\" | \"parceiro\" | \"desconhecido\"",
+        "optional": false
+      },
+      {
+        "name": "partner_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "partner_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "partner_numero",
+        "type": "string",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/CockpitLaboratorio.tsx",
+    "tag": "SelectTrigger",
+    "line": 667,
+    "className": "\"h-9 min-w-0 flex-1 basis-[145px] text-xs sm:flex-none sm:w-[170px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 62,
+    "routes": [
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "os_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "numero_os",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "origem",
+        "type": "\"manual\" | \"onfarm\"",
+        "optional": false
+      },
+      {
+        "name": "cliente",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "fazenda",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "talhao",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "produto",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "volume_solicitado",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "data_programada",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "prioridade",
+        "type": "\"alta\" | \"media\" | \"baixa\"",
+        "optional": false
+      },
+      {
+        "name": "lote_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "codigo_lote",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "lote_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "cq_resultado",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "entrega_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "aplicacao_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "stage",
+        "type": "KanbanStage",
+        "optional": false
+      },
+      {
+        "name": "os_status",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "proxima_acao",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "atrasado",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "cliente_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "fazenda_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "talhao_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "produto_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "microrganismo_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "microrganismo_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "responsavel_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "responsavel_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "status_esteira_oficial",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "bloqueios",
+        "type": "string[]",
+        "optional": false
+      },
+      {
+        "name": "pode_finalizar",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "titular_nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "titular_tipo",
+        "type": "\"cliente\" | \"parceiro\" | \"desconhecido\"",
+        "optional": false
+      },
+      {
+        "name": "partner_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "partner_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "partner_numero",
+        "type": "string",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/CockpitLaboratorio.tsx",
+    "tag": "SelectTrigger",
+    "line": 671,
+    "className": "\"h-9 min-w-0 flex-1 basis-[145px] text-xs sm:flex-none sm:w-[180px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 63,
+    "routes": [
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "os_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "numero_os",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "origem",
+        "type": "\"manual\" | \"onfarm\"",
+        "optional": false
+      },
+      {
+        "name": "cliente",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "fazenda",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "talhao",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "produto",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "volume_solicitado",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "data_programada",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "prioridade",
+        "type": "\"alta\" | \"media\" | \"baixa\"",
+        "optional": false
+      },
+      {
+        "name": "lote_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "codigo_lote",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "lote_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "cq_resultado",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "entrega_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "aplicacao_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "stage",
+        "type": "KanbanStage",
+        "optional": false
+      },
+      {
+        "name": "os_status",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "proxima_acao",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "atrasado",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "cliente_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "fazenda_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "talhao_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "produto_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "microrganismo_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "microrganismo_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "responsavel_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "responsavel_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "status_esteira_oficial",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "bloqueios",
+        "type": "string[]",
+        "optional": false
+      },
+      {
+        "name": "pode_finalizar",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "titular_nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "titular_tipo",
+        "type": "\"cliente\" | \"parceiro\" | \"desconhecido\"",
+        "optional": false
+      },
+      {
+        "name": "partner_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "partner_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "partner_numero",
+        "type": "string",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/CockpitLaboratorio.tsx",
+    "tag": "SelectTrigger",
+    "line": 675,
+    "className": "\"h-9 min-w-0 flex-1 basis-[145px] text-xs truncate sm:flex-none sm:w-[150px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 64,
+    "routes": [
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "os_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "numero_os",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "origem",
+        "type": "\"manual\" | \"onfarm\"",
+        "optional": false
+      },
+      {
+        "name": "cliente",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "fazenda",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "talhao",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "produto",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "volume_solicitado",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "data_programada",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "prioridade",
+        "type": "\"alta\" | \"media\" | \"baixa\"",
+        "optional": false
+      },
+      {
+        "name": "lote_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "codigo_lote",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "lote_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "cq_resultado",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "entrega_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "aplicacao_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "stage",
+        "type": "KanbanStage",
+        "optional": false
+      },
+      {
+        "name": "os_status",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "proxima_acao",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "atrasado",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "cliente_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "fazenda_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "talhao_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "produto_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "microrganismo_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "microrganismo_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "responsavel_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "responsavel_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "status_esteira_oficial",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "bloqueios",
+        "type": "string[]",
+        "optional": false
+      },
+      {
+        "name": "pode_finalizar",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "titular_nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "titular_tipo",
+        "type": "\"cliente\" | \"parceiro\" | \"desconhecido\"",
+        "optional": false
+      },
+      {
+        "name": "partner_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "partner_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "partner_numero",
+        "type": "string",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/CockpitLaboratorio.tsx",
+    "tag": "SelectTrigger",
+    "line": 682,
+    "className": "\"h-9 min-w-0 flex-1 basis-[145px] text-xs truncate sm:flex-none sm:w-[150px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 65,
+    "routes": [
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "os_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "numero_os",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "origem",
+        "type": "\"manual\" | \"onfarm\"",
+        "optional": false
+      },
+      {
+        "name": "cliente",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "fazenda",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "talhao",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "produto",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "volume_solicitado",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "data_programada",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "prioridade",
+        "type": "\"alta\" | \"media\" | \"baixa\"",
+        "optional": false
+      },
+      {
+        "name": "lote_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "codigo_lote",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "lote_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "cq_resultado",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "entrega_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "aplicacao_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "stage",
+        "type": "KanbanStage",
+        "optional": false
+      },
+      {
+        "name": "os_status",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "proxima_acao",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "atrasado",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "cliente_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "fazenda_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "talhao_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "produto_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "microrganismo_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "microrganismo_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "responsavel_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "responsavel_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "status_esteira_oficial",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "bloqueios",
+        "type": "string[]",
+        "optional": false
+      },
+      {
+        "name": "pode_finalizar",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "titular_nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "titular_tipo",
+        "type": "\"cliente\" | \"parceiro\" | \"desconhecido\"",
+        "optional": false
+      },
+      {
+        "name": "partner_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "partner_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "partner_numero",
+        "type": "string",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/CockpitLaboratorio.tsx",
+    "tag": "SelectTrigger",
+    "line": 689,
+    "className": "\"h-9 min-w-0 flex-1 basis-[145px] text-xs truncate sm:flex-none sm:w-[150px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 66,
+    "routes": [
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "os_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "numero_os",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "origem",
+        "type": "\"manual\" | \"onfarm\"",
+        "optional": false
+      },
+      {
+        "name": "cliente",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "fazenda",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "talhao",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "produto",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "volume_solicitado",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "data_programada",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "prioridade",
+        "type": "\"alta\" | \"media\" | \"baixa\"",
+        "optional": false
+      },
+      {
+        "name": "lote_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "codigo_lote",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "lote_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "cq_resultado",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "entrega_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "aplicacao_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "stage",
+        "type": "KanbanStage",
+        "optional": false
+      },
+      {
+        "name": "os_status",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "proxima_acao",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "atrasado",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "cliente_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "fazenda_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "talhao_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "produto_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "microrganismo_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "microrganismo_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "responsavel_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "responsavel_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "status_esteira_oficial",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "bloqueios",
+        "type": "string[]",
+        "optional": false
+      },
+      {
+        "name": "pode_finalizar",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "titular_nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "titular_tipo",
+        "type": "\"cliente\" | \"parceiro\" | \"desconhecido\"",
+        "optional": false
+      },
+      {
+        "name": "partner_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "partner_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "partner_numero",
+        "type": "string",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/CockpitLaboratorio.tsx",
+    "tag": "TabsList",
+    "line": 747,
+    "className": "\"grid h-auto w-full grid-cols-2 gap-1 bg-muted/50 p-1 mb-4 sm:grid-cols-3\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 67,
+    "routes": [
+      {
+        "path": "/cockpit-laboratorio",
+        "components": [
+          "RoleGuard",
+          "CockpitLaboratorio"
+        ],
+        "size": 91
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "os_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "numero_os",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "origem",
+        "type": "\"manual\" | \"onfarm\"",
+        "optional": false
+      },
+      {
+        "name": "cliente",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "fazenda",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "talhao",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "produto",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "volume_solicitado",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "data_programada",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "prioridade",
+        "type": "\"alta\" | \"media\" | \"baixa\"",
+        "optional": false
+      },
+      {
+        "name": "lote_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "codigo_lote",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "lote_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "cq_resultado",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "entrega_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "aplicacao_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "stage",
+        "type": "KanbanStage",
+        "optional": false
+      },
+      {
+        "name": "os_status",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "proxima_acao",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "atrasado",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "cliente_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "fazenda_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "talhao_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "produto_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "microrganismo_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "microrganismo_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "responsavel_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "responsavel_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "status_esteira_oficial",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "bloqueios",
+        "type": "string[]",
+        "optional": false
+      },
+      {
+        "name": "pode_finalizar",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "titular_nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "titular_tipo",
+        "type": "\"cliente\" | \"parceiro\" | \"desconhecido\"",
+        "optional": false
+      },
+      {
+        "name": "partner_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "partner_nome",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "partner_numero",
+        "type": "string",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/Configuracoes.tsx",
+    "tag": "DialogContent",
+    "line": 839,
+    "className": "\"max-w-md flex flex-col max-h-[calc(100dvh-2rem)] gap-0 overflow-clip p-0 sm:p-0\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 68,
+    "routes": [
+      {
+        "path": "/configuracoes",
+        "components": [
+          "RoleGuard",
+          "Configuracoes"
+        ],
+        "size": 82
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "user_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "roles",
+        "type": "string[] | null",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/Configuracoes.tsx",
+    "tag": "Button",
+    "line": 852,
+    "className": "{`h-auto min-h-16 min-w-0 w-full flex-col items-start justify-start gap-1 whitespace-normal rounded-md border p-3 text-left transition-colors disabled:opacity-50 ${registrationKind === opcao.kind ? \"border-primary bg-primary/10\" : \"border-border hover:bg-accent\"}`}",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 69,
+    "routes": [
+      {
+        "path": "/configuracoes",
+        "components": [
+          "RoleGuard",
+          "Configuracoes"
+        ],
+        "size": 82
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "user_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "roles",
+        "type": "string[] | null",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/Configuracoes.tsx",
+    "tag": "SelectTrigger",
+    "line": 954,
+    "className": "\"w-full sm:w-[180px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 70,
+    "routes": [
+      {
+        "path": "/configuracoes",
+        "components": [
+          "RoleGuard",
+          "Configuracoes"
+        ],
+        "size": 82
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "user_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "roles",
+        "type": "string[] | null",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/Configuracoes.tsx",
+    "tag": "SelectTrigger",
+    "line": 961,
+    "className": "\"w-full sm:w-[140px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 71,
+    "routes": [
+      {
+        "path": "/configuracoes",
+        "components": [
+          "RoleGuard",
+          "Configuracoes"
+        ],
+        "size": 82
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "user_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "roles",
+        "type": "string[] | null",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/Configuracoes.tsx",
+    "tag": "Table",
+    "line": 1036,
+    "className": "\"min-w-[700px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 72,
+    "routes": [
+      {
+        "path": "/configuracoes",
+        "components": [
+          "RoleGuard",
+          "Configuracoes"
+        ],
+        "size": 82
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "user_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "roles",
+        "type": "string[] | null",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/ConsultorTecnico.tsx",
+    "tag": "DialogContent",
+    "line": 945,
+    "className": "\"max-w-4xl p-0 overflow-visible bg-transparent border-none shadow-none flex flex-col items-center justify-center h-[90vh] outline-none\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 73,
+    "routes": [
+      {
+        "path": "/consultor-tecnico",
+        "components": [
+          "RoleGuard",
+          "ConsultorTecnico"
+        ],
+        "size": 54
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/ControleQualidade.tsx",
+    "tag": "DialogContent",
+    "line": 256,
+    "className": "\"max-h-[85vh] max-w-2xl overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 74,
+    "routes": [
+      {
+        "path": "/controle-qualidade",
+        "components": [
+          "RoleGuard",
+          "ControleQualidade"
+        ],
+        "size": 18
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "codigo_lote",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "produto_id",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "microrganismo_id",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "programacao_id",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "data_producao",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "produtos",
+        "type": "{ nome: string } | null",
+        "optional": false
+      },
+      {
+        "name": "microrganismos",
+        "type": "{ nome: string; nome_cientifico: string | null } | null",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/pages/Entregas.tsx",
+    "tag": "DialogContent",
+    "line": 1175,
+    "className": "\"max-w-3xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 75,
+    "routes": [
+      {
+        "path": "/entregas",
+        "components": [
+          "RoleGuard",
+          "Entregas"
+        ],
+        "size": 105
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/EnvasePage.tsx",
+    "tag": "Table",
+    "line": 269,
+    "className": "\"min-w-[750px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 76,
+    "routes": [
+      {
+        "path": "/envase",
+        "components": [
+          "RoleGuard",
+          "EnvasePage"
+        ],
+        "size": 46
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "lote_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "tipo_embalagem",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "volume_por_unidade",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "quantidade",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "data_envase",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "operador",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "etiqueta_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "lotes",
+        "type": "{ codigo_lote: string; produto_id?: string | null; produtos?: { nome: string } | null } | null",
+        "optional": true
+      },
+      {
+        "name": "produto_etiquetas",
+        "type": "{ id: string; status: string; trace_token: string; codigo_etiqueta: string } | null",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/Estoque.tsx",
+    "tag": "DialogContent",
+    "line": 312,
+    "className": "\"max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 77,
+    "routes": [
+      {
+        "path": "/estoque",
+        "components": [
+          "RoleGuard",
+          "Estoque"
+        ],
+        "size": 74
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/Estoque.tsx",
+    "tag": "SelectTrigger",
+    "line": 332,
+    "className": "\"w-full sm:w-[220px] h-9\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 78,
+    "routes": [
+      {
+        "path": "/estoque",
+        "components": [
+          "RoleGuard",
+          "Estoque"
+        ],
+        "size": 74
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/Estoque.tsx",
+    "tag": "DialogContent",
+    "line": 425,
+    "className": "\"max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 79,
+    "routes": [
+      {
+        "path": "/estoque",
+        "components": [
+          "RoleGuard",
+          "Estoque"
+        ],
+        "size": 74
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/Fazendas.tsx",
+    "tag": "DialogContent",
+    "line": 269,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 80,
+    "routes": [
+      {
+        "path": "/fazendas",
+        "components": [
+          "RoleGuard",
+          "Fazendas"
+        ],
+        "size": 62
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome_fantasia",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "codigo_cliente",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "user_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "cliente_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "codigo_referencia",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "consultor_responsavel_id",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "municipio",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "estado",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "area_total",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "area_produtiva",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "latitude",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "longitude",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "tipo_exploracao",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "inscricao_estadual_produtor",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "car",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "nirf",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "endereco_acesso",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "ponto_referencia",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "responsavel_local_nome",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "responsavel_local_telefone",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "distancia_sede_km",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "ativo",
+        "type": "boolean",
+        "optional": true
+      },
+      {
+        "name": "clientes",
+        "type": "{ nome: string; nome_fantasia?: string; codigo_cliente?: string } | null",
+        "optional": true
+      },
+      {
+        "name": "profiles",
+        "type": "{ nome: string } | null",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/FluxoTecnico.tsx",
+    "tag": "SelectTrigger",
+    "line": 284,
+    "className": "\"w-[180px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 81,
+    "routes": [
+      {
+        "path": "/fluxo-tecnico",
+        "components": [
+          "RoleGuard",
+          "FluxoTecnico"
+        ],
+        "size": 51
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/MonitoramentoAlertas.tsx",
+    "tag": "DialogContent",
+    "line": 419,
+    "className": "\"sm:max-w-md max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 82,
+    "routes": [
+      {
+        "path": "/monitoramento-alertas",
+        "components": [
+          "RoleGuard",
+          "MonitoramentoAlertas"
+        ],
+        "size": 43
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/OrdensServico.tsx",
+    "tag": "DialogContent",
+    "line": 413,
+    "className": "\"max-w-lg max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 83,
+    "routes": [
+      {
+        "path": "/ordens-servico",
+        "components": [
+          "RoleGuard",
+          "OrdensServico"
+        ],
+        "size": 69
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "numero_os",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "origem",
+        "type": "OrigemOS",
+        "optional": false
+      },
+      {
+        "name": "volume_total_ml",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "area_hectares",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "data_programada",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "prioridade",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "registro_consultor_id",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "clientes",
+        "type": "{ id?: string; nome: string; codigo_cliente?: string } | null",
+        "optional": true
+      },
+      {
+        "name": "fazendas",
+        "type": "{ nome: string } | null",
+        "optional": true
+      },
+      {
+        "name": "talhoes",
+        "type": "{ nome: string } | null",
+        "optional": true
+      },
+      {
+        "name": "produtos",
+        "type": "{ nome: string } | null",
+        "optional": true
+      },
+      {
+        "name": "microrganismos",
+        "type": "{ nome: string; nome_cientifico?: string | null } | null",
+        "optional": true
+      },
+      {
+        "name": "tipo_item",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "codigo_cliente",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "cliente_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "fazenda_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "area_hectares",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "dose_ml_ha",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "familia_catalogo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "nome_cientifico",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "dose_ml_ha",
+        "type": "number | null",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/pages/Relatorios.tsx",
+    "tag": "Input",
+    "line": 825,
+    "className": "\"pl-8 h-9 text-sm w-full sm:w-[180px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 84,
+    "routes": [
+      {
+        "path": "/relatorios",
+        "components": [
+          "RoleGuard",
+          "Relatorios"
+        ],
+        "size": 44
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/Relatorios.tsx",
+    "tag": "Input",
+    "line": 837,
+    "className": "\"pl-8 h-9 text-sm w-full sm:w-[180px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 85,
+    "routes": [
+      {
+        "path": "/relatorios",
+        "components": [
+          "RoleGuard",
+          "Relatorios"
+        ],
+        "size": 44
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/Talhoes.tsx",
+    "tag": "DialogContent",
+    "line": 133,
+    "className": "\"max-w-lg w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 86,
+    "routes": [
+      {
+        "path": "/talhoes",
+        "components": [
+          "RoleGuard",
+          "Talhoes"
+        ],
+        "size": 57
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "clientes",
+        "type": "{ nome: string } | null",
+        "optional": true
+      },
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "fazenda_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "area_hectares",
+        "type": "number | null",
+        "optional": false
+      },
+      {
+        "name": "cultura_id",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "historico_pragas",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "observacoes",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "tipo_manejo_agua",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "ativo",
+        "type": "boolean",
+        "optional": true
+      },
+      {
+        "name": "fazendas",
+        "type": "{ nome: string; clientes?: { nome: string } | null } | null",
+        "optional": true
+      },
+      {
+        "name": "culturas",
+        "type": "{ nome: string } | null",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/app/MobileCatalogoTecnico.tsx",
+    "tag": "TabsList",
+    "line": 140,
+    "className": "\"grid grid-cols-3 w-full\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 87,
+    "routes": [
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "tipo",
+        "type": "\"produto\" | \"microrganismo\"",
+        "optional": false
+      },
+      {
+        "name": "nome",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "subtitulo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "codigo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "funcao",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "ficha_status",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "resumo",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "raw",
+        "type": "any",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/pages/app/MobileVisitaWizard.tsx",
+    "tag": "Button",
+    "line": 1089,
+    "className": "\"flex-1 max-w-[220px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 88,
+    "routes": [
+      {
+        "path": "/app/visita/novo",
+        "components": [
+          "MobileVisita"
+        ],
+        "size": 83
+      },
+      {
+        "path": "/app/visita/:id",
+        "components": [
+          "MobileVisita"
+        ],
+        "size": 83
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "ok",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "created",
+        "type": "boolean",
+        "optional": true
+      },
+      {
+        "name": "registro_id",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "client_uuid",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "version",
+        "type": "number",
+        "optional": true
+      },
+      {
+        "name": "pdf_status",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "error",
+        "type": "string",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/app/wizard/WizardRecomendacaoStep.tsx",
+    "tag": "DialogContent",
+    "line": 407,
+    "className": "\"max-w-md max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 89,
+    "routes": [
+      {
+        "path": "/app/visita/novo",
+        "components": [
+          "MobileVisita"
+        ],
+        "size": 83
+      },
+      {
+        "path": "/app/visita/:id",
+        "components": [
+          "MobileVisita"
+        ],
+        "size": 83
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "localRegistroId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "remoteRegistroId",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "locked",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "onDone",
+        "type": "() => void",
+        "optional": false
+      },
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "clientUuid",
+        "type": "string",
+        "optional": true
+      },
+      {
+        "name": "remoteId",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "isPending",
+        "type": "boolean",
+        "optional": false
+      },
+      {
+        "name": "payload",
+        "type": "Form",
+        "optional": false
+      },
+      {
+        "name": "versao",
+        "type": "number",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/pages/app/wizard/WizardRevisaoStep.tsx",
+    "tag": "AlertDialogContent",
+    "line": 240,
+    "className": "\"max-w-[calc(100%-2rem)] sm:max-w-lg\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 90,
+    "routes": [
+      {
+        "path": "/app/visita/novo",
+        "components": [
+          "MobileVisita"
+        ],
+        "size": 83
+      },
+      {
+        "path": "/app/visita/:id",
+        "components": [
+          "MobileVisita"
+        ],
+        "size": 83
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "remoteRegistroId",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "locked",
+        "type": "boolean",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/pages/auditoria/AgendaTab.tsx",
+    "tag": "Table",
+    "line": 32,
+    "className": "\"min-w-[720px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 91,
+    "routes": [
+      {
+        "path": "/auditoria",
+        "components": [
+          "RoleGuard",
+          "Auditoria"
+        ],
+        "size": 57
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/auditoria/ClientesTab.tsx",
+    "tag": "Table",
+    "line": 58,
+    "className": "\"min-w-[720px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 92,
+    "routes": [
+      {
+        "path": "/auditoria",
+        "components": [
+          "RoleGuard",
+          "Auditoria"
+        ],
+        "size": 57
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/auditoria/ComunicacaoTab.tsx",
+    "tag": "Table",
+    "line": 189,
+    "className": "\"min-w-[860px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 93,
+    "routes": [
+      {
+        "path": "/auditoria",
+        "components": [
+          "RoleGuard",
+          "Auditoria"
+        ],
+        "size": 57
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "key",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "origem",
+        "type": "Origem",
+        "optional": false
+      },
+      {
+        "name": "acao",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "provider",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "entity_id",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "actor_id",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "detail",
+        "type": "string",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/pages/auditoria/SenhasTab.tsx",
+    "tag": "Table",
+    "line": 69,
+    "className": "\"min-w-[560px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 94,
+    "routes": [
+      {
+        "path": "/auditoria",
+        "components": [
+          "RoleGuard",
+          "Auditoria"
+        ],
+        "size": 57
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "executor",
+        "type": "{ nome: string; email: string } | null",
+        "optional": false
+      },
+      {
+        "name": "target",
+        "type": "{ nome: string; email: string } | null",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/pages/auditoria/VisitasTab.tsx",
+    "tag": "Table",
+    "line": 67,
+    "className": "\"min-w-[640px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 95,
+    "routes": [
+      {
+        "path": "/auditoria",
+        "components": [
+          "RoleGuard",
+          "Auditoria"
+        ],
+        "size": 57
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/clientes/ParceirosB2BTab.tsx",
+    "tag": "SelectTrigger",
+    "line": 98,
+    "className": "\"w-full sm:w-[160px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 96,
+    "routes": [
+      {
+        "path": "/clientes",
+        "components": [
+          "RoleGuard",
+          "Clientes"
+        ],
+        "size": 88
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/clientes/ProdutoresTab.tsx",
+    "tag": "DialogContent",
+    "line": 362,
+    "className": "\"max-w-3xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 97,
+    "routes": [
+      {
+        "path": "/clientes",
+        "components": [
+          "RoleGuard",
+          "Clientes"
+        ],
+        "size": 88
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/comercial/CampanhasComerciais.tsx",
+    "tag": "DialogContent",
+    "line": 237,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 98,
+    "routes": [
+      {
+        "path": "/comercial/campanhas",
+        "components": [
+          "RoleGuard",
+          "CampanhasComerciais"
+        ],
+        "size": 48
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/comercial/CommercialPaymentPlansPage.tsx",
+    "tag": "DialogContent",
+    "line": 464,
+    "className": "\"max-w-4xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 99,
+    "routes": [
+      {
+        "path": "/comercial/condicoes-pagamento",
+        "components": [
+          "RoleGuard",
+          "CommercialPaymentPlansPage"
+        ],
+        "size": 62
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "preview",
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/comercial/PedidosB2B.tsx",
+    "tag": "DialogContent",
+    "line": 380,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 100,
+    "routes": [
+      {
+        "path": "/comercial/pedidos-b2b",
+        "components": [
+          "RoleGuard",
+          "PedidosB2B"
+        ],
+        "size": 99
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/configuracoes/FiscalProdutos.tsx",
+    "tag": "SelectTrigger",
+    "line": 496,
+    "className": "\"max-w-[220px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 101,
+    "routes": [
+      {
+        "path": "/configuracoes/fiscal/produtos",
+        "components": [
+          "RoleGuard",
+          "FiscalProdutos"
+        ],
+        "size": 77
+      },
+      {
+        "path": "/clientes/:id",
+        "components": [
+          "RoleGuard",
+          "ClienteDetalhe"
+        ],
+        "size": 109
+      },
+      {
+        "path": "/parceiros/:id",
+        "components": [
+          "RoleGuard",
+          "ParceiroDetalhe"
+        ],
+        "size": 110
+      },
+      {
+        "path": "/configuracoes/fiscal/empresa",
+        "components": [
+          "RoleGuard",
+          "FiscalEmpresa"
+        ],
+        "size": 128
+      },
+      {
+        "path": "/fiscal/documentos",
+        "components": [
+          "RoleGuard",
+          "FiscalDocumentos"
+        ],
+        "size": 130
+      },
+      {
+        "path": "/app/catalogo",
+        "components": [
+          "MobileCatalogoTecnico"
+        ],
+        "size": 177
+      },
+      {
+        "path": "/base-tecnica",
+        "components": [
+          "RoleGuard",
+          "Protocolos"
+        ],
+        "size": 209
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default",
+      "ProductEditDrawer",
+      "MicroorganismEditDrawer"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/dashboard/DashboardUnificado.tsx",
+    "tag": "TabsList",
+    "line": 52,
+    "className": "\"w-max min-w-full sm:w-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 102,
+    "routes": [
+      {
+        "path": "/dashboard/geral",
+        "components": [
+          "RoleGuard",
+          "DashboardUnificado"
+        ],
+        "size": 13
+      },
+      {
+        "path": "/dashboard/executivo",
+        "components": [
+          "RoleGuard",
+          "DashboardUnificado"
+        ],
+        "size": 13
+      },
+      {
+        "path": "/dashboard/operacional",
+        "components": [
+          "RoleGuard",
+          "DashboardUnificado"
+        ],
+        "size": 13
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/financeiro/EntregasNaoFaturadas.tsx",
+    "tag": "DialogContent",
+    "line": 180,
+    "className": "\"max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 103,
+    "routes": [
+      {
+        "path": "/financeiro/entregas-nao-faturadas",
+        "components": [
+          "RoleGuard",
+          "FinEntregasNaoFaturadas"
+        ],
+        "size": 47
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/financeiro/FluxoCaixa.tsx",
+    "tag": "DialogContent",
+    "line": 392,
+    "className": "\"max-w-3xl max-h-[80vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 104,
+    "routes": [
+      {
+        "path": "/financeiro/fluxo-caixa",
+        "components": [
+          "RoleGuard",
+          "FinFluxoCaixa"
+        ],
+        "size": 21
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "MSG_ERRO_FLUXO",
+      "MSG_ERRO_DETALHE",
+      "LIMITE_DETALHE",
+      "default",
+      "saldoRestante"
+    ],
+    "props": [
+      {
+        "name": "period_label",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "period_start",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "expected_inflows",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "expected_outflows",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "realized_inflows",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "realized_outflows",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "projected_balance",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "realized_balance",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "accumulated_projected_balance",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "accumulated_realized_balance",
+        "type": "number",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "file": "src/pages/financeiro/RecibosList.tsx",
+    "tag": "DialogContent",
+    "line": 350,
+    "className": "\"max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 105,
+    "routes": [
+      {
+        "path": "/financeiro/recibos",
+        "components": [
+          "RoleGuard",
+          "FinRecibos"
+        ],
+        "size": 48
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "organization_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "receipt_year",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "storage_bucket",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "receipt_number",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "payment_date",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "amount",
+        "type": "number",
+        "optional": false
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "customer_id",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "storage_path",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "authenticity_code",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "issued_at",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "receivable_id",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "payment_id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "cancel_reason",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "customer",
+        "type": "{ nome?: string; razao_social?: string } | null",
+        "optional": true
+      },
+      {
+        "name": "method",
+        "type": "{ name?: string } | null",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/financeiro/Recorrencias.tsx",
+    "tag": "DialogContent",
+    "line": 289,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 106,
+    "routes": [
+      {
+        "path": "/financeiro/recorrencias",
+        "components": [
+          "RoleGuard",
+          "FinRecorrencias"
+        ],
+        "size": 47
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/plataforma/EmpresaDetalhe.tsx",
+    "tag": "DialogContent",
+    "line": 281,
+    "className": "\"max-h-[90dvh] overflow-y-auto sm:max-w-2xl\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 107,
+    "routes": [
+      {
+        "path": "/plataforma",
+        "components": [
+          "PlataformaHome"
+        ],
+        "size": 74
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "organizationId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "onVoltar",
+        "type": "() => void",
+        "optional": false
+      },
+      {
+        "name": "onAbrirAdministradores",
+        "type": "(organizationId: string) => void",
+        "optional": false
+      },
+      {
+        "name": "onAbrirAssinaturas",
+        "type": "(organizationId: string) => void",
+        "optional": false
+      },
+      {
+        "name": "onAbrirHistorico",
+        "type": "(organizationId: string) => void",
+        "optional": false
+      },
+      {
+        "name": "iniciarEdicao",
+        "type": "boolean",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/plataforma/PlataformaHome.tsx",
+    "tag": "TabsList",
+    "line": 154,
+    "className": "\"h-auto w-full justify-start gap-1 overflow-x-auto overflow-y-hidden whitespace-nowrap p-1 [scrollbar-width:thin] [&>button]:min-h-10 [&>button]:shrink-0 [&>button]:px-3 [&>button:focus-visible]:ring-2 [&>button:focus-visible]:ring-ring\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 108,
+    "routes": [
+      {
+        "path": "/plataforma",
+        "components": [
+          "PlataformaHome"
+        ],
+        "size": 74
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/portal/PortalAcompanhamento.tsx",
+    "tag": "SelectTrigger",
+    "line": 154,
+    "className": "\"sm:w-[160px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 109,
+    "routes": [
+      {
+        "path": "/portal/acompanhamento",
+        "components": [
+          "PortalAcompanhamento"
+        ],
+        "size": 47
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "tipo",
+        "type": "\"OS\" | \"Produção\" | \"Entrega\"",
+        "optional": false
+      },
+      {
+        "name": "titulo",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "statusLabel",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "data",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "fazenda",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "produto",
+        "type": "string | null",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/portal/PortalAcompanhamento.tsx",
+    "tag": "SelectTrigger",
+    "line": 164,
+    "className": "\"sm:w-[180px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 110,
+    "routes": [
+      {
+        "path": "/portal/acompanhamento",
+        "components": [
+          "PortalAcompanhamento"
+        ],
+        "size": 47
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "tipo",
+        "type": "\"OS\" | \"Produção\" | \"Entrega\"",
+        "optional": false
+      },
+      {
+        "name": "titulo",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "statusLabel",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "data",
+        "type": "string | null",
+        "optional": false
+      },
+      {
+        "name": "fazenda",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "produto",
+        "type": "string | null",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/portal/PortalFazendaDetalhe.tsx",
+    "tag": "TabsList",
+    "line": 296,
+    "className": "\"grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 h-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 111,
+    "routes": [
+      {
+        "path": "/portal/fazendas/:id",
+        "components": [
+          "PortalFazendaDetalhe"
+        ],
+        "size": 37
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/portal/PortalLayout.tsx",
+    "tag": "Button",
+    "line": 157,
+    "className": "\"max-w-[220px] gap-2\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 112,
+    "routes": [],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/portal/PortalOrdensServico.tsx",
+    "tag": "DialogContent",
+    "line": 200,
+    "className": "\"max-w-2xl bg-slate-50 max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 113,
+    "routes": [
+      {
+        "path": "/portal/acompanhamento",
+        "components": [
+          "PortalAcompanhamento"
+        ],
+        "size": 47
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": [
+      {
+        "name": "embedded",
+        "type": "boolean",
+        "optional": true
+      },
+      {
+        "name": "highlightedOsId",
+        "type": "string | null",
+        "optional": true
+      },
+      {
+        "name": "highlightedOnfarmOsId",
+        "type": "string | null",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "file": "src/pages/portal/PortalTalhaoDetalhe.tsx",
+    "tag": "TabsList",
+    "line": 159,
+    "className": "\"grid w-full grid-cols-2 sm:grid-cols-4 h-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 114,
+    "routes": [
+      {
+        "path": "/portal/talhoes/:id",
+        "components": [
+          "PortalTalhaoDetalhe"
+        ],
+        "size": 37
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/portal-parceiro/FichasTecnicas.tsx",
+    "tag": "DialogContent",
+    "line": 172,
+    "className": "\"max-w-5xl w-[95vw]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 115,
+    "routes": [
+      {
+        "path": "fichas",
+        "components": [
+          "ParceiroFichasTecnicas"
+        ],
+        "size": 61
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  },
+  {
+    "file": "src/pages/portal-parceiro/PortalParceiroLayout.tsx",
+    "tag": "SelectTrigger",
+    "line": 181,
+    "className": "\"h-8 text-sm w-[200px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 116,
+    "routes": [
+      {
+        "path": "/portal-parceiro",
+        "components": [
+          "B2BRouteGuard",
+          "PortalParceiroLayout"
+        ],
+        "size": 176
+      }
+    ],
+    "export": "default",
+    "exports": [
+      "default"
+    ],
+    "props": []
+  }
+]
