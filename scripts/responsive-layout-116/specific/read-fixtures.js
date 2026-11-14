@@ -9,6 +9,9 @@ const order={...base,numero_os:'QA-116',origem:'manual',status:'programada',prio
 const receipt={...base,receipt_year:2026,receipt_number:'QA-116-2026',payment_date:'2026-11-14',amount:1234.56,status:'ISSUED',customer_id:id,storage_bucket:null,storage_path:null,authenticity_code:'SYNTHETIC',issued_at:'2026-11-14T00:00:00Z',payment_id:id,receivable_id:id,cancel_reason:null,customer:{nome:client.nome},method:{name:'Transferência'}};
 const fiscal={code:'5101',description:'Operação sintética de venda com descrição extensa para leitura do código e finalidade completos',parent_code:null,metadata:{},is_active:true,is_preferred:true,catalog_version:'synthetic'};
 function read(name,args,one){
+ if(name==='platform_read_global_cultures')return {items:[{id,nome:'Cultura sintética',ativo:true}],has_more:false};
+ if(name==='platform_read_global_culture_detail')return {id,nome:'Cultura sintética',descricao:'Descrição contextualizada',ativo:true,updated_at:'2026-11-14T00:00:00Z',desativada_em:null};
+ if(name==='envase')return [{...base,lote_id:id,data_envase:'2026-11-14'}];
  if(name==='get_cliente_ids_for_user')return [id];
  if(name==='user_clientes')return [{cliente_id:id,principal:true,is_active:true,revoked_at:null,valid_from:null,valid_until:null}];
  if(name==='clientes')return one?client:[client];if(name==='fazendas')return one?farm:[farm];if(name==='talhoes')return one?plot:[plot];if(name==='culturas')return [{id,nome:'Milho'}];

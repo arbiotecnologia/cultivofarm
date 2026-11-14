@@ -191,7 +191,7 @@
       "financeiro"
     ],
     "kind": "cashflow",
-    "expected": "Fluxo de Caixa",
+    "expected": "Títulos de",
     "trigger": "Fluxo Caixa > período com título > detalhe"
   },
   {

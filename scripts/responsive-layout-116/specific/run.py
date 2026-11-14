@@ -30,7 +30,9 @@ async def main():
       await page.set_viewport_size({'width':w,'height':h});await page.goto('http://localhost:8080'+d['route']+'?reviewRole='+role,wait_until='domcontentloaded');await page.wait_for_timeout(350)
       if d.get('tab'):await page.get_by_role('tab',name=d['tab'],exact=True).click()
       # Capture a specific page/filter before opening the known dialog.
-      if d['kind']=='stock':
+      if d['kind']=='cashflow':
+       await page.get_by_role('button',name='Ver títulos de').first.click()
+      if False and d['kind']=='stock':
        await page.locator('[data-review-occurrence="78"]').click();await page.get_by_role('option').last.scroll_into_view_if_needed();await page.keyboard.press('Escape')
       if d.get('open'):await page.get_by_role('button',name=d['open'],exact=d['kind'] in ['receipt','platform']).first.click()
       if d['kind']=='fiscal-combo':await page.get_by_role('combobox').first.click();await page.get_by_role('option').last.scroll_into_view_if_needed()
