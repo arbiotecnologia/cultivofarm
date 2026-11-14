@@ -1,7 +1,8 @@
 ## 14/11 03:47 — Cadastro compacto de dossiê
-- [ ] Cobertura única/editável sob demanda, anexos integrais por padrão e dados técnicos/MAPA agrupados.
-- [ ] Pendências compactas e checklist formal individual sob demanda, preservando drafts, revisão e escopo.
-- [ ] Testes focados e verificação desktop/mobile; sem SQL, dados reais ou publicação.
+- [x] Cobertura única/editável sob demanda, anexos integrais por padrão e dados técnicos/MAPA agrupados.
+- [x] Pendências compactas e checklist formal individual sob demanda, preservando drafts, revisão e escopo.
+- [x] 41 testes focados PASS; Chrome sintético 1280/390 sem overflow/erro e drafts preservados; build automático OK. Sem SQL, dados reais ou publicação.
+- [x] Evidências/limites em management/COMPACT-UI-20261114.md; sessão real/JWT/Storage/IAB não exercitados neste recorte.
 
 ## 14/11 03:31 — Visualização privada e limpeza QA autorizada
 - [x] Visualizador imagem/PDF integrado, tipo/hash verificados e URLs revogadas; 39 testes PASS, Chrome desktop/mobile PNG/download/fechar PASS sintéticos; build automático OK.
