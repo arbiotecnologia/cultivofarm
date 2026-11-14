@@ -18,7 +18,7 @@ async def main():
    if path=='/src/integrations/supabase/client.ts':return await r.fulfill(content_type='application/javascript; charset=utf-8',body=(OUT/'fixtures.js').read_text())
    if r.request.resource_type=='document':return await r.fulfill(content_type='text/html; charset=utf-8',body=ns['HTML'].replace("import App from '/src/App.tsx';ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));",BOOT.replace('DRIVER',json.dumps(current))))
    f=TMP/'modules'/path.lstrip('/').replace('/','__')
-   if f.exists() and path not in ['/src/components/visita/PdfPreviewDialog.tsx','/src/components/protocolos/ProdutosTab.tsx']:return await r.fulfill(content_type='application/javascript; charset=utf-8',body=f.read_text())
+   if f.exists() and path not in ['/src/components/visita/PdfPreviewDialog.tsx','/src/components/protocolos/ProdutosTab.tsx','/src/components/protocolos/CatalogoVolumesDialog.tsx']:return await r.fulfill(content_type='application/javascript; charset=utf-8',body=f.read_text())
    await r.continue_()
   await ctx.route('**/*',intercept)
   for index,d in enumerate(drivers):
@@ -64,6 +64,14 @@ async def main():
        assert await page.locator('[data-review-occurrence="40"]:visible').count()==0;assert await page.get_by_role('button',name='Novo Microrganismo').count()==0;rec['assertions'].append({'global_editor_absent':True});rec['classification']='ID40_N_A_GLOBAL_EDITOR_CLOSED'
       if d['kind']=='cockpit-na':
        assert await page.locator('[data-review-occurrence]').count()==0;rec['assertions'].append({'legacy_controls_absent':True});rec['classification']='N_A_RETIRED_WORKSPACE_CURRENT_ROUTE_PROVED'
+      if d['kind'] in ['history','volumes']:
+       row=container_placeholder=page.locator('[role=dialog]').last.locator('tbody tr').last
+       await row.scroll_into_view_if_needed(); assert await row.inner_text(); rec['assertions'].append({'last_read_row':await row.evaluate(MEASURE)})
+       if d['kind']=='history':assert 'Produtor sintético' in await row.inner_text()
+       else:
+        assert 'Embalagem sintética' in await row.inner_text() or await row.locator('input[value="Embalagem sintética de vinte litros"]').count()>0
+        scroll=page.locator('[role=dialog] .relative.w-full.overflow-auto').first
+        if await scroll.count():await scroll.evaluate('(e)=>e.scrollLeft=e.scrollWidth');rec['assertions'].append({'horizontal_scroll':True})
       tabs=page.get_by_role('tab')
       if await tabs.count() and d['kind'] not in ['client-form']:
        for t in [tabs.first,tabs.last]:

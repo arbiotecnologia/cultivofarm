@@ -14,6 +14,7 @@ function read(name,args,one){
  if(name==='tenant_product_dossier_management_context')return {product_id:id,can_edit:false,versions:[],microorganisms:[],dossier_microorganism_id:null};
  if(name==='tenant_product_dossier_upload_pending')return [];
  if(name==='microrganismos')return [{...base,nome:'Microrganismo sintético',nome_cientifico:'Bacillus sintético',tipo:'bacteria',codigo:'QA-116'}];
+ if(name==='catalogo_volumes')return [{...base,produto_id:id,item_tipo:'produto',volume_ml:20000,rotulo:'Embalagem sintética de vinte litros',preco_brl:200,ordem:1}];
  if(name==='microorganism_technical_profiles')return [];
  if(name==='organizations')return one?{id:org,nome:'Empresa sintética',razao_social:'Empresa sintética',nome_fantasia:'Empresa sintética',cnpj:'00000000000000',status:'active',email_corporativo:'empresa@example.invalid',created_at:base.created_at,updated_at:base.updated_at}:[];
  if(name==='tenant_catalog_active_families_v1')return [{value:'biologico',label:'Biológicos'},{value:'quimico',label:'Químicos'},{value:'fertilizante_adubo',label:'Fertilizantes/Adubos'}];
@@ -28,10 +29,10 @@ function read(name,args,one){
  if(name==='platform_read_global_cultures')return {items:[{id,nome:'Cultura sintética',ativo:true}],has_more:false};
  if(name==='platform_read_global_culture_detail')return {id,nome:'Cultura sintética',descricao:'Descrição contextualizada',ativo:true,updated_at:'2026-11-14T00:00:00Z',desativada_em:null};
  if(name==='tenant_product_list')return [{...base,owner_organization_id:org,codigo:'QA-116',nome:'Produto sintético contextualizado',ativo:true,tipo:'solo',familia_catalogo:'biologico',unidade:'L',unidade_conteudo:'L'}];
- if(name==='cliente_historico'||name==='clientes_audit_log')return [{...base,acao:'Cadastro revisado',created_at:base.updated_at,changes:{nome:{old:'Antigo',new:'Produtor sintético'}}}];
+ if(name==='cliente_historico'||name==='clientes_audit_log')return [{...base,action:'UPDATE',changed_at:base.updated_at,diff:{nome:'Produtor sintético'},old_data:{nome:'Antigo'}}];
  if(name==='seller_portfolio_capability_v1')return {contract:'seller_portfolio_capability_v1',version:2,ready:true,quote_respond:true,order_create:false,partners:[{partner_id:id,razao_social:'Parceiro contextualizado'}]};
  if(name==='seller_portfolio_orders_v1')return {contract:'seller_portfolio_orders_v1',orders:[{id,partner_id:id,numero:'QA-116',status:'aguardando_cotacao',items:[{id,quantidade:2,produto_id:id,produtos:{nome:'Produto sintético contextualizado'}}]}]};
- if(name==='solid_pack_offers_admin_v1')return {product_id:id,unidade_conteudo:'L',revision:1,offers:[]};
+ if(name==='solid_pack_offers_admin_v1')return {contract:'SOLID_PACK_ADMIN_V1',product_id:id,unidade_conteudo:'l',config_version:1,offers:[]};
  if(name==='rpc_get_comprovante_entrega_data')return {doc_tipo:'comprovante',titulo:'Comprovante de entrega sintético',definitivo:true,numero_documento:'QA-116',conteudo:{cliente:{nome:'Produtor sintético'},itens:[{produto_nome:'Produto sintético',quantidade:2,volume_total_ml:20000}],entrega:{id}}};
  if(name==='partner_order_items')return [{id,partner_order_id:id,produto_id:id,quantidade:2,produtos:{nome:'Produto sintético'},catalogo_volumes:{rotulo:'20 L'}}];
  if(name==='envase')return [{...base,lote_id:id,data_envase:'2026-11-14'}];
