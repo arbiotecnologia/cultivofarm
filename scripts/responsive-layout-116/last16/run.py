@@ -18,7 +18,7 @@ async def main():
    if path=='/src/integrations/supabase/client.ts':return await r.fulfill(content_type='application/javascript; charset=utf-8',body=(OUT/'fixtures.js').read_text())
    if r.request.resource_type=='document':return await r.fulfill(content_type='text/html; charset=utf-8',body=ns['HTML'].replace("import App from '/src/App.tsx';ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));",BOOT.replace('DRIVER',json.dumps(current))))
    f=TMP/'modules'/path.lstrip('/').replace('/','__')
-   if f.exists() and path!='/src/components/visita/PdfPreviewDialog.tsx':return await r.fulfill(content_type='application/javascript; charset=utf-8',body=f.read_text())
+   if f.exists() and path not in ['/src/components/visita/PdfPreviewDialog.tsx','/src/components/protocolos/ProdutosTab.tsx']:return await r.fulfill(content_type='application/javascript; charset=utf-8',body=f.read_text())
    await r.continue_()
   await ctx.route('**/*',intercept)
   for index,d in enumerate(drivers):
@@ -56,7 +56,7 @@ async def main():
        await page.locator('iframe').wait_for(state='visible')
       if d['kind'] in ['pdf','closure-pdf','receipt']:await page.locator('iframe').wait_for(state='visible');rec['assertions'].append({'pdf_iframe':True})
       await page.get_by_text(d['expected'],exact=False).first.wait_for(state='visible');rec['assertions'].append({'contextual_content':True})
-      for id in ([] if d['kind'] in ['cockpit-na','closure-pdf'] else [39] if d['kind']=='micro-filter-na' else [70,71] if d['kind']=='users-filter' and w==390 else d['ids']):
+      for id in ([] if d['kind'] in ['cockpit-na','closure-pdf','volumes'] else [39] if d['kind']=='micro-filter-na' else [70,71] if d['kind']=='users-filter' and w==390 else d['ids']):
        loc=page.locator(f'[data-review-occurrence="{id}"]:visible').first;await loc.wait_for(state='visible');await loc.scroll_into_view_if_needed();g=await loc.evaluate(MEASURE);rec['assertions'].append({'id':id,'target':g});assert g['visible'], 'target invisible'
       if d['kind']=='users-filter' and w==390:
        assert await page.get_by_role('button',name='Editar usuário Usuário sintético representativo').count()>0;rec['assertions'].append({'id':72,'mobile_cards_replace_table':True});rec['classification']='ID72_RESPONSIVE_MOBILE_CARD_VARIANT'

@@ -97,7 +97,14 @@
     "route": "/base-tecnica",
     "profiles": [
       "administrador",
-      "gestor"
+      "gestor",
+      "consultor_tecnico",
+      "gestor_comercial",
+      "operador_onfarm",
+      "administrativo",
+      "tecnico_agronomo",
+      "producao",
+      "financeiro"
     ],
     "kind": "volumes",
     "expected": "Volumes",
