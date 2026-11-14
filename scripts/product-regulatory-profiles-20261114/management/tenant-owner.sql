@@ -1,4 +1,7 @@
 BEGIN;
+DROP INDEX public.mrd_uq_micro_version;
+CREATE UNIQUE INDEX mrd_uq_micro_version ON public.microorganism_regulatory_dossiers(microorganism_id,version) WHERE product_id IS NULL;
+CREATE UNIQUE INDEX mrd_uq_product_version ON public.microorganism_regulatory_dossiers(product_id,version) WHERE product_id IS NOT NULL;
 -- Compatible delta: retain old RPC names, signatures, paths, legacy rows and pointers.
 CREATE OR REPLACE FUNCTION platform_private.product_dossier_read_scope(p_product uuid,p_micro uuid DEFAULT NULL)
 RETURNS uuid LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
@@ -124,9 +127,45 @@ DO $$ DECLARE b text; BEGIN
  b:=pg_get_functiondef('platform_private.product_dossier_facts(uuid)'::regprocedure);
  b:=regexp_replace(b,'SELECT \(auth.uid\(\) IS NULL.*?AS ok','SELECT platform_private.product_dossier_row_read(p_dossier_id) AS ok','s'); EXECUTE b;
 END $$;
+
+CREATE OR REPLACE FUNCTION platform_private.product_dossier_new_version(p_product_id uuid,p_dossier_id uuid,p_expected_updated_at timestamptz)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ DECLARE d public.microorganism_regulatory_dossiers; r public.microorganism_regulatory_dossiers; BEGIN
+ PERFORM platform_private.product_dossier_manage_scope(p_product_id);
+ PERFORM pg_advisory_xact_lock(hashtextextended('product-dossier:'||p_product_id,0));
+ SELECT z.* INTO d FROM public.product_regulatory_dossier_links l JOIN public.microorganism_regulatory_dossiers z ON z.id=l.dossier_id WHERE l.product_id=p_product_id AND z.id=p_dossier_id AND z.product_id=p_product_id AND z.deleted_at IS NULL FOR UPDATE OF z;
+ PERFORM platform_private.product_dossier_manage_scope(p_product_id,d.microorganism_id);
+ IF d.id IS NULL OR d.status NOT IN ('VALIDATED','BLOCKED') OR d.updated_at IS DISTINCT FROM p_expected_updated_at OR p_expected_updated_at IS NULL THEN RAISE EXCEPTION 'REGULATORY_VERSION_CONFLICT' USING ERRCODE='PT409'; END IF;
+ r:=jsonb_populate_record(d,jsonb_build_object('id',gen_random_uuid(),'version',(SELECT max(version)+1 FROM public.microorganism_regulatory_dossiers WHERE product_id=p_product_id),'status','DRAFT','technical_review_status','PENDING','regulatory_review_status','PENDING','fiscal_review_status','PENDING','published_at',NULL,'published_by',NULL,'published_ncm',NULL,'published_cest',NULL,'published_ncm_candidate_id',NULL,'blocked_reason',NULL,'effective_from',NULL,'effective_to',NULL,'created_by',auth.uid(),'updated_by',auth.uid(),'created_at',clock_timestamp(),'updated_at',clock_timestamp()));
+ INSERT INTO platform_private.product_dossier_write_permits VALUES(txid_current(),r.id);
+ INSERT INTO public.microorganism_regulatory_dossiers SELECT (r).*;
+ UPDATE public.product_regulatory_dossier_links SET dossier_id=r.id WHERE product_id=p_product_id;
+ INSERT INTO public.microorganism_regulatory_checklist(dossier_id,item_key,state) SELECT r.id,item_key,'PENDING' FROM public.microorganism_regulatory_checklist WHERE dossier_id=d.id;
+ DELETE FROM platform_private.product_dossier_write_permits WHERE txid=txid_current() AND dossier_id=r.id;
+ RETURN jsonb_build_object('product_id',p_product_id,'dossier_id',r.id,'updated_at',r.updated_at);
+END $$;
+DO $$ DECLARE b text; BEGIN
+ b:=pg_get_functiondef('platform_private.product_dossier_link_integrity()'::regprocedure);
+ IF position('NEW.dossier_id IS DISTINCT FROM OLD.dossier_id)' in b)=0 THEN RAISE EXCEPTION 'REGULATORY_LINK_DRIFT'; END IF;
+ b:=replace(b,'NEW.dossier_id IS DISTINCT FROM OLD.dossier_id)', 'NEW.dossier_id IS DISTINCT FROM OLD.dossier_id) AND NOT (NEW.product_id=OLD.product_id AND EXISTS(SELECT 1 FROM platform_private.product_dossier_write_permits WHERE txid=txid_current() AND dossier_id=NEW.dossier_id))'); EXECUTE b;
+END $$;
+CREATE OR REPLACE FUNCTION platform_private.product_dossier_version_detail(p_product_id uuid,p_dossier_id uuid)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$ DECLARE d public.microorganism_regulatory_dossiers; current_id uuid; BEGIN
+ PERFORM platform_private.product_dossier_read_scope(p_product_id);
+ SELECT * INTO d FROM public.microorganism_regulatory_dossiers WHERE id=p_dossier_id AND product_id=p_product_id AND deleted_at IS NULL;
+ IF d.id IS NULL THEN RAISE EXCEPTION 'REGULATORY_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ SELECT dossier_id INTO current_id FROM public.product_regulatory_dossier_links WHERE product_id=p_product_id;
+ IF current_id=d.id THEN RETURN platform_private.rpc_regulatory_product_dossier_detail(d.microorganism_id,p_product_id); END IF;
+ RETURN jsonb_build_object('product_id',p_product_id,'dossier',to_jsonb(d),'documents',coalesce((SELECT jsonb_agg(to_jsonb(x)) FROM public.microorganism_regulatory_documents x WHERE dossier_id=d.id AND deleted_at IS NULL),'[]'::jsonb),'checklist',coalesce((SELECT jsonb_agg(to_jsonb(x)) FROM public.microorganism_regulatory_checklist x WHERE dossier_id=d.id),'[]'::jsonb),'gate',jsonb_build_object('pendencies','[]'::jsonb),'historical',true);
+END $$;
+DO $$ DECLARE b text; BEGIN
+ b:=pg_get_functiondef('platform_private.rpc_regulatory_product_document_access(uuid,uuid,uuid)'::regprocedure);
+ b:=replace(b,'FROM public.product_regulatory_dossier_links l JOIN public.microorganism_regulatory_dossiers d ON d.id=l.dossier_id','FROM public.microorganism_regulatory_dossiers d');
+ b:=replace(b,'WHERE l.product_id=p_product_id','WHERE d.product_id=p_product_id'); EXECUTE b;
+END $$;
+
 -- Existing names preserved; tenant aliases are the new UI/Edge contract.
 DO $$ DECLARE f record; args text; alias text; BEGIN
- FOR f IN SELECT p.oid,p.proname,pg_get_function_arguments(p.oid) arguments,pg_get_function_identity_arguments(p.oid) ident,pg_get_function_result(p.oid) result FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='platform_private' AND (p.proname LIKE 'product_dossier_management_%' OR p.proname LIKE 'product_dossier_upload_%' OR p.proname IN ('product_dossier_set_coverage','product_dossier_create_covered')) LOOP
+ FOR f IN SELECT p.oid,p.proname,pg_get_function_arguments(p.oid) arguments,pg_get_function_identity_arguments(p.oid) ident,pg_get_function_result(p.oid) result FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='platform_private' AND (p.proname LIKE 'product_dossier_management_%' OR p.proname LIKE 'product_dossier_upload_%' OR p.proname IN ('product_dossier_set_coverage','product_dossier_create_covered','product_dossier_new_version','product_dossier_version_detail')) LOOP
  SELECT string_agg(split_part(btrim(x),' ',1),',') INTO args FROM unnest(string_to_array(f.ident,',')) x;
  alias:='tenant_'||f.proname;
  EXECUTE format('CREATE OR REPLACE FUNCTION public.%I(%s) RETURNS %s LANGUAGE sql SECURITY INVOKER SET search_path='''' AS $b$ SELECT platform_private.%I(%s) $b$',alias,f.arguments,f.result,f.proname,args);
