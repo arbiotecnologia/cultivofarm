@@ -1,3 +1,6 @@
+## 14/11 15:18 — Últimos 16 controles
+- [ ] Completar contextos/cadeias apenas dos IDs 3,6,7,9,13,15,26,37,38,42,53,54,87,88,89,90; não repetir 88 nem alterar #116.
+
 ## 14/11 15:02 — Fechamento concretos 00564ff4
 - [x] 61 cadeias rastreadas; filtros/ações retestados, staff mobile corrigido; 140 positivos novos, 273 testes PASS, build OK, matriz 88 completas locais/16 contexto pendente/11 N/A/1 staff isolado.
 - [ ] Contextos/cadeias dos 16 IDs e entrada staff por B2BRouteGuard permanecem pendentes conforme final/REPORT.md; requer prova/decisão própria, sem reabrir gates.
