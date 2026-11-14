@@ -8,5 +8,6 @@ chown lovable "$D"; RUN=(setpriv --reuid="$(id -u lovable)" --regid="$(id -g lov
 trap '"${RUN[@]}" pg_ctl -D "$D/data" stop -m fast >/dev/null; rm -rf "$D"' EXIT
 psql -h "$D" -p 55441 -U postgres -d postgres -v ON_ERROR_STOP=1 -f "$H/fixture.sql" >/tmp/regulatory-management-pg.log
 psql -h "$D" -p 55441 -U postgres -d postgres -v ON_ERROR_STOP=1 -f "$H/install.sql" >>/tmp/regulatory-management-pg.log
+psql -h "$D" -p 55441 -U postgres -d postgres -v ON_ERROR_STOP=1 -f "$H/../../../..//supabase/migrations/20261114014211_c1d6b4bb-7efe-47d6-96e0-472251c608af.sql" >>/tmp/regulatory-management-pg.log
 psql -h "$D" -p 55441 -U postgres -d postgres -v ON_ERROR_STOP=1 -f "$H/tests.sql" >>/tmp/regulatory-management-pg.log
 cat /tmp/regulatory-management-pg.log | tail -25
