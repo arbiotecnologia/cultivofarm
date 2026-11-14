@@ -1,28 +1,32 @@
-# Gestão supervisionada de dossiês por produto
+# Gestão de dossiês pela empresa proprietária — 14/11/2026
 
-## Aplicação efetiva
+## Aplicado
+Destino: `swzpzcwiasxmjutrmvkm`. Entradas: Base Técnica > Produtos e Fiscal > Perfis Fiscais > Produtos, ação **Gerenciar dossiê**, mesmo detalhe. A antiga aba da plataforma foi retirada da prévia. Wrappers antigos foram preservados para compatibilidade, mas agora respeitam o proprietário. Superadmin isolado é negado; edição pelo contrato catalog_tenant_actor/mutate (administrador/gestor próprios), leitura pelo contrato da empresa. Revisão/publicação mantêm alçadas anteriores e recebem verificação prévia de propriedade.
 
-Destino canônico: `swzpzcwiasxmjutrmvkm`. Gestão da plataforma recebeu a aba Dossiês por produto. Usa vínculos reais, escolha explícita de microrganismo, detalhe canônico por produto, edição com revisão observada, checklist, anexos e submissão para revisão. Não cria aprovação/publicação. Nenhum cadastro ou arquivo real do Bombarbio foi criado pelo agente.
+Cobertura explícita de vários microrganismos reais da empresa, versões individuais por produto, histórico, abrangência opcional do documento, cálculo de ROTULO por toda a cobertura. Rascunhos: dados/checklist/submissão; validados não editáveis. Legados não recebem produto automaticamente.
 
-Migrações instaladas pela ferramenta:
-- `20261114013656_c514c6e5-ee29-42bd-a363-18e9bbcc50fc.sql`: contratos supervisionados, produto individual, reservas/atestação documental e guards.
-- `20261114013721_7121ee78-8ad0-4a97-bb66-ddaf8d063a09.sql`: políticas negativas nas tabelas privadas.
-- `20261114014211_c1d6b4bb-7efe-47d6-96e0-472251c608af.sql`: descarte CANCELLING serializado com finalização, exclusão de confirmados e validação de datas.
+Upload privado fiscal-regulatorio (20 MiB, PDF/PNG/JPEG): reserva exata anterior aos bytes, verificação servidor de formato/hash/tamanho, atesto service-only, finalização autenticada idempotente. Reserva incompleta pode reenviar o mesmo arquivo/retomar/cancelar, sem declarar documento concluído; após falha a lista de reservas é relida. Abertura binária autorizada antes/depois dos bytes, sem URL assinada persistente, cache privado no-store. A abrangência documental é novamente validada na finalização.
 
-A tentativa inicial da terceira migração falhou com `42703: column "u.state='CANCELLED'" does not exist`; ausência do novo contrato foi verificada e a correção aplicada pela ferramenta. Nenhuma instalação parcial dessa tentativa foi alegada.
+## Migrações efetivamente aplicadas
+- 20261114023631_6b533f6a-83da-49a4-beb3-9181413c8017.sql — escopo proprietário, compatibilidade, cobertura e contenções.
+- 20261114023655_639c12da-77ef-415f-877a-aeebf44c8cc2.sql — gates de transições.
+- 20261114023749_db6580fa-6eb9-4117-b42a-f7562a404be1.sql — versões, documentos históricos e ROTULO.
+- 20261114023958_134db9bc-9934-4c15-a875-84010d0eb559.sql — fachadas storage INVOKER.
+- 20261114024308_ee567c0d-bc66-4c6a-9cad-836966e30d03.sql — cobertura na finalização, numeração por produto e fechamento antecipado de escritores legados.
+- 20261114024405_9770e7ad-7c11-48ce-b1aa-4074b17f2601.sql — numeração compatível dos legados.
+- 20261114024429_a837a610-4b72-49b2-bc76-2ded29d02917.sql — propriedade antes de revisão/publicação.
+Uma tentativa de 24405 falhou com 42883 por assinatura de função incorreta; corrigida usando assinatura encontrada no catálogo. Nenhuma alteração parcial dessa tentativa é considerada aplicada.
 
-Função `product-regulatory-document` implantada, verify_jwt=true; hash submetido final `0b6a81b64a770947120a69f2d3ee5ece2db30c7c952d34a98589864a2a3477c4`. OPTIONS respondeu 200 e GET sem sessão 401. Esses resultados não comprovam upload autenticado.
+Edge product-regulatory-document implantada: source SHA-256 reportado pela ferramenta `953813c148fa220dd640f104a3a3ff102802dab14d654e50a98cef5ca4dfaca5`; arquivo index.ts SHA-256 `03bb748966db3fd0d67ef0232261d47997997a3f568090982cf5add983047ef4`. POST sem sessão retornou 401. Não prova execução autenticada do código remoto.
 
 ## Testes executados
+- 21 Vitest PASS (11 gestão + 10 leitura): cobertura explícita, leitor próprio readonly, CAS, revogação em tela aberta, vazio, formato/limite/hash.
+- 26 verificações PostgreSQL descartáveis PASS: isolamento A/B, superadmin negado, criação única, cobertura, CAS, reserva/finalização/atestação, ROTULO parcial/completo, histórico/versão e permits. Runner: run-tenant-local.sh. Identidade e dependências são stubs sintéticos; executa deltas 23631/23655/23749. Não certifica JWT/RLS hosted, revisão/publicação completa ou as últimas deltas 23958/24308/24405/24429.
+- Deno 4/4 PASS e deno check PASS para função.
+- Compilação/typecheck automáticos: build OK, último sinal 02:45:14 UTC.
+- Inspeção hosted de ACL: wrappers tenant INVOKER, authenticated sem atesto/cancel final; bucket privado 20971520 bytes. Nenhum novo achado nas migrações; 497 anteriores permanecem (90 RLS sem política, 2 definer público, 404 definer authenticated, 1 proteção de senha desativada).
 
-- Vitest: 36/36 em productDossierManagement, productRegulatoryDossiers e regulator ioContencao (arquivo `regulatorioContencao.test.tsx`). Administração de empresa sem leitores da plataforma; seleção explícita; leitura canônica; edição/CAS/reconsulta; conflito preservando rascunho; limite 20 MiB, formato, hash/nome.
-- PostgreSQL 17 descartável: 24 checks PASS, incluindo múltiplos microrganismos/produtos, vínculo estrangeiro negado, criação idempotente, separação do legado, revisão observada, checklist, reserva/finalização únicas, atestação negada ao caller, pendência bloqueando submit, cancelamento versus finalização, bloqueio de publicado e zero permits residuais. Usa identidade sintética de fixture, não JWT hosted.
-- Deno: 4/4 para magic bytes PDF/PNG/JPEG, HTML disfarçado, limite 20 MiB, vazio e SHA-256 conhecido. `deno check` da função passou.
-- Compilação/typecheck automáticos: última entrada verificada `build OK`.
-- ACL hosted consultada: wrappers públicos INVOKER, anon sem EXECUTE; attest/cancel service-only sem EXECUTE authenticated. Linter da migração final não apontou novas ocorrências; 499 ocorrências anteriores permanecem fora deste ajuste.
+## Limitações específicas
+Sessão external_unmanaged: sem prova autenticada de navegador, upload/abertura privada reais ou revogação HTTP/JWT entre tenants. Playwright sem sessão exibiu página vazia e zero pageerror, não comprova o fluxo central. Nenhuma fixture hospedada foi criada; dados reais QA/Bombarbio não foram consultados/alterados neste recorte de validação. Concorrência Storage distribuída, cancelamento remoto e contratos completos de revisão/publicação ainda exigem homologação autenticada. SQL local preserva stubs explícitos; não confundir com provas de produção.
 
-## Limitações e próximos testes reais
-
-Sessão externa não gerenciada: não foi possível executar gestão autenticada nem upload/download real ou revogação JWT/Storage entre empresas. A navegação Playwright sem sessão em `/plataforma` apresentou tela vazia e zero pageerror; não certifica o fluxo nem seu estado signed-out. Testes React usam transporte simulado. Testes locais não certificam autorização hospedada, concorrência distribuída, limpeza Storage real ou continuidade após revogação.
-
-Anexos incompletos permanecem como reservas recuperáveis, não documentos concluídos; descarte sem confirmação permanece pendente. Revisão e publicação usam contratos anteriores, sem abertura nova. Frontend não publicado; emissão, cobrança, A1 e NFS-e não alterados.
+Frontend não publicado; fiscal, emissão, comunicação e cobrança não alterados. Usuário deve validar as duas entradas, criação/edição, upload/retomada/abertura, histórico e revogação em suas sessões autorizadas antes de publicar.
