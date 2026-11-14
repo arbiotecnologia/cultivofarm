@@ -1,3 +1,8 @@
+## 14/11 03:31 — Visualização privada e limpeza QA autorizada
+- [ ] Exibir imagem/PDF autorizado no detalhe compartilhado, verificar tipo/hash e revogar ao fechar/trocar contexto; testar abertura/download.
+- [ ] Remover objeto exato pela API Storage e somente documentos/reservas/checklist/link/rascunho QA e vínculo temporário BAC-11; conferir preservação produto/perfil/Bombarbio.
+- [ ] Registrar evidências, bloqueios administrativos e limites de sessão; sem publicação.
+
 ## 14/11 03:23 — Fiscal microrganismo → produto proprietário
 - [x] Retirar navegação legada e resumo legado; usar gestão/consulta canônica por produto nas entradas fiscais.
 - [x] Verificar filtros/RLS/Storage; duas migrações aplicadas, 75 Vitest e 37+9 checks PG sintéticos PASS, build/typecheck automático OK.
