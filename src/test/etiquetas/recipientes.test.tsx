@@ -20,4 +20,21 @@ describe('etiquetas por recipiente',()=>{
  it('geração usa apenas contrato novo e preserva falha',async()=>{t.rpc.mockResolvedValue({data:null,error:new Error('negado')});render(<EtiquetaProdutoActions envaseId={id}/>);fireEvent.click(screen.getByRole('button',{name:'Gerar etiquetas'}));fireEvent.click(screen.getByRole('button',{name:'Gerar e selecionar recipientes'}));await screen.findByText('negado');expect(t.rpc).toHaveBeenCalledWith('rpc_gerar_etiquetas_recipientes_v1',{p_payload:{envase_id:id,tipo_etiqueta:'principal',template_codigo:'etiqueta-op-100x150'}});});
  it('imprime somente depois do ACK e exige motivo',async()=>{render(<MemoryRouter initialEntries={[`/etiquetas/${id}/imprimir`]}><Routes><Route path='/etiquetas/:id/imprimir' element={<PrintPage/>}/></Routes></MemoryRouter>);await screen.findByText(/SYN-1 · Recipiente/);const button=screen.getByRole('button',{name:'Imprimir selecionados'});expect(button).toBeDisabled();fireEvent.change(screen.getByLabelText('Motivo da impressão ou reimpressão'),{target:{value:'Primeira impressão'}});t.rpc.mockResolvedValueOnce({error:new Error('negado')});fireEvent.click(button);await screen.findByText('negado');expect(window.print).not.toHaveBeenCalled();fireEvent.click(button);await waitFor(()=>expect(window.print).toHaveBeenCalledTimes(1));expect(t.rpc).toHaveBeenLastCalledWith('rpc_imprimir_etiquetas_recipientes_v1',{p_ids:[id],p_motivo:'Primeira impressão'});});
  it('troca de tenant remove conteúdo do snapshot',async()=>{const view=<MemoryRouter initialEntries={[`/etiquetas/${id}/imprimir`]}><Routes><Route path='/etiquetas/:id/imprimir' element={<PrintPage/>}/></Routes></MemoryRouter>;const h=render(view);await screen.findByText(/SYN-1 · Recipiente/);t.auth.profile.organization_id='FSF';t.from.mockImplementation(()=>({select:()=>({in:()=>new Promise(()=>{})})}));h.rerender(<MemoryRouter initialEntries={[`/etiquetas/${id}/imprimir`]}><Routes><Route path='/etiquetas/:id/imprimir' element={<PrintPage/>}/></Routes></MemoryRouter>);expect(screen.queryByText('Empresa sintética')).toBeNull();});
+ it('seleção de um recipiente não inclui os outros no writer',async()=>{
+  t.from.mockImplementation(()=>({select:()=>({in:()=>Promise.resolve({data:[label,{...label,id:id2,codigo_etiqueta:'SYN-2'}],error:null})})}));
+  render(<MemoryRouter initialEntries={[`/etiquetas/${id}/imprimir?ids=${id2}`]}><Routes><Route path='/etiquetas/:id/imprimir' element={<PrintPage/>}/></Routes></MemoryRouter>);
+  await screen.findByText(/SYN-2 · Recipiente/);fireEvent.click(screen.getByLabelText('Selecionar SYN-2'));
+  fireEvent.change(screen.getByLabelText('Motivo da impressão ou reimpressão'),{target:{value:'Impressão individual'}});
+  fireEvent.click(screen.getByRole('button',{name:'Imprimir selecionados'}));
+  await waitFor(()=>expect(t.rpc).toHaveBeenCalledWith('rpc_imprimir_etiquetas_recipientes_v1',{p_ids:[id],p_motivo:'Impressão individual'}));
+ });
+ it('correção preserva chave e intenção após falha e bloqueia alteração ambígua',async()=>{
+  render(<MemoryRouter initialEntries={[`/etiquetas/${id}/imprimir`]}><Routes><Route path='/etiquetas/:id/imprimir' element={<PrintPage/>}/></Routes></MemoryRouter>);
+  await screen.findByText(/SYN-1 · Recipiente/);fireEvent.click(screen.getByRole('button',{name:'Corrigir'}));
+  fireEvent.change(screen.getByLabelText('Observações'),{target:{value:'Novo texto'}});fireEvent.change(screen.getByLabelText('Motivo da correção'),{target:{value:'Texto corrigido'}});
+  t.rpc.mockResolvedValue({error:new Error('incerta')});fireEvent.click(screen.getByRole('button',{name:'Salvar correção'}));await screen.findByText('incerta');
+  const first=t.rpc.mock.calls[0];fireEvent.change(screen.getByLabelText('Observações'),{target:{value:'Outra intenção'}});fireEvent.click(screen.getByRole('button',{name:'Salvar correção'}));await screen.findByText(/Tentativa anterior não confirmada/);expect(t.rpc).toHaveBeenCalledTimes(1);
+  fireEvent.change(screen.getByLabelText('Observações'),{target:{value:'Novo texto'}});fireEvent.click(screen.getByRole('button',{name:'Salvar correção'}));await waitFor(()=>expect(t.rpc).toHaveBeenCalledTimes(2));expect(t.rpc.mock.calls[1]).toEqual(first);
+ });
+
 });

@@ -37,6 +37,7 @@
   body:has(#product-label-print) * { visibility: hidden; }
   #product-label-print, #product-label-print * { visibility: visible; }
   #product-label-print { position: absolute; top: 0; left: 0; padding: 0; margin: 0; }
+  body:has(#product-label-print) .label-preview-scroll { overflow: visible; }
   #product-label-print .label-pages { display: block; }
   #product-label-print .product-label { break-after: page; margin: 0; }
   #product-label-print .product-label:last-child { break-after: auto; }
