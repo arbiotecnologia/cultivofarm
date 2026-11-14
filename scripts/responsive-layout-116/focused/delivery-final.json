@@ -1,0 +1,2405 @@
+{
+  "records": [
+    {
+      "kind": "delivery",
+      "viewport": [
+        320,
+        568
+      ],
+      "tab": 0,
+      "artifact": "focused/delivery-final-delivery-320-tab0.png",
+      "metrics": [
+        {
+          "text": " Por OS (todos os vasilhames) Por lotes envasados",
+          "rect": {
+            "x": 41,
+            "y": 86.15625,
+            "width": 254,
+            "height": 48,
+            "top": 86.15625,
+            "right": 295,
+            "bottom": 134.15625,
+            "left": 41
+          },
+          "children": [
+            {
+              "text": " Por OS (todos os vasilhames)",
+              "rect": {
+                "x": 45,
+                "y": 90.15625,
+                "width": 236.9375,
+                "height": 40,
+                "top": 90.15625,
+                "right": 281.9375,
+                "bottom": 130.15625,
+                "left": 45
+              },
+              "sw": 237,
+              "cw": 237,
+              "sh": 40,
+              "ch": 40,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 57,
+                    "y": 103.15625,
+                    "width": 14,
+                    "height": 14,
+                    "top": 103.15625,
+                    "right": 71,
+                    "bottom": 117.15625,
+                    "left": 57
+                  }
+                }
+              ]
+            },
+            {
+              "text": " Por lotes envasados",
+              "rect": {
+                "x": 285.9375,
+                "y": 90.15625,
+                "width": 177.890625,
+                "height": 40,
+                "top": 90.15625,
+                "right": 463.828125,
+                "bottom": 130.15625,
+                "left": 285.9375
+              },
+              "sw": 178,
+              "cw": 178,
+              "sh": 40,
+              "ch": 40,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 297.9375,
+                    "y": 103.15625,
+                    "width": 14,
+                    "height": 14,
+                    "top": 103.15625,
+                    "right": 311.9375,
+                    "bottom": 117.15625,
+                    "left": 297.9375
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Entrega por motoristaRetirada no local (cliente/parceiro)",
+          "rect": {
+            "x": 54,
+            "y": 347.15625,
+            "width": 228,
+            "height": 104,
+            "top": 347.15625,
+            "right": 282,
+            "bottom": 451.15625,
+            "left": 54
+          },
+          "children": [
+            {
+              "text": "Entrega por motorista",
+              "rect": {
+                "x": 54,
+                "y": 347.15625,
+                "width": 228,
+                "height": 38,
+                "top": 347.15625,
+                "right": 282,
+                "bottom": 385.15625,
+                "left": 54
+              },
+              "sw": 226,
+              "cw": 226,
+              "sh": 36,
+              "ch": 36,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 63,
+                    "y": 358.15625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 358.15625,
+                    "right": 79,
+                    "bottom": 374.15625,
+                    "left": 63
+                  }
+                },
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 87,
+                    "y": 358.15625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 358.15625,
+                    "right": 103,
+                    "bottom": 374.15625,
+                    "left": 87
+                  }
+                },
+                {
+                  "text": "Entrega por motorista",
+                  "rect": {
+                    "x": 111,
+                    "y": 356.15625,
+                    "width": 145.59375,
+                    "height": 20,
+                    "top": 356.15625,
+                    "right": 256.59375,
+                    "bottom": 376.15625,
+                    "left": 111
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Retirada no local (cliente/parceiro)",
+              "rect": {
+                "x": 54,
+                "y": 393.15625,
+                "width": 228,
+                "height": 58,
+                "top": 393.15625,
+                "right": 282,
+                "bottom": 451.15625,
+                "left": 54
+              },
+              "sw": 226,
+              "cw": 226,
+              "sh": 56,
+              "ch": 56,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 63,
+                    "y": 414.15625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 414.15625,
+                    "right": 79,
+                    "bottom": 430.15625,
+                    "left": 63
+                  }
+                },
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 87,
+                    "y": 414.15625,
+                    "width": 11.828125,
+                    "height": 16,
+                    "top": 414.15625,
+                    "right": 98.828125,
+                    "bottom": 430.15625,
+                    "left": 87
+                  }
+                },
+                {
+                  "text": "Retirada no local (cliente/parceiro)",
+                  "rect": {
+                    "x": 106.828125,
+                    "y": 402.15625,
+                    "width": 166.171875,
+                    "height": 40,
+                    "top": 402.15625,
+                    "right": 273,
+                    "bottom": 442.15625,
+                    "left": 106.828125
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Usar endereço cadastradoEndereço diferente (só para esta entrega)",
+          "rect": {
+            "x": 54,
+            "y": 1423.15625,
+            "width": 228,
+            "height": 64,
+            "top": 1423.15625,
+            "right": 282,
+            "bottom": 1487.15625,
+            "left": 54
+          },
+          "children": [
+            {
+              "text": "Usar endereço cadastrado",
+              "rect": {
+                "x": 54,
+                "y": 1423.15625,
+                "width": 172.0625,
+                "height": 16,
+                "top": 1423.15625,
+                "right": 226.0625,
+                "bottom": 1439.15625,
+                "left": 54
+              },
+              "sw": 172,
+              "cw": 172,
+              "sh": 16,
+              "ch": 16,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 54,
+                    "y": 1423.15625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 1423.15625,
+                    "right": 70,
+                    "bottom": 1439.15625,
+                    "left": 54
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Endereço diferente (só para esta entrega)",
+              "rect": {
+                "x": 54,
+                "y": 1455.15625,
+                "width": 228,
+                "height": 32,
+                "top": 1455.15625,
+                "right": 282,
+                "bottom": 1487.15625,
+                "left": 54
+              },
+              "sw": 228,
+              "cw": 228,
+              "sh": 32,
+              "ch": 32,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 54,
+                    "y": 1463.15625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 1463.15625,
+                    "right": 70,
+                    "bottom": 1479.15625,
+                    "left": 54
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "delivery",
+      "viewport": [
+        320,
+        568
+      ],
+      "tab": 1,
+      "artifact": "focused/delivery-final-delivery-320-tab1.png",
+      "metrics": [
+        {
+          "text": " Por OS (todos os vasilhames) Por lotes envasados",
+          "rect": {
+            "x": 41,
+            "y": 86.15625,
+            "width": 254,
+            "height": 48,
+            "top": 86.15625,
+            "right": 295,
+            "bottom": 134.15625,
+            "left": 41
+          },
+          "children": [
+            {
+              "text": " Por OS (todos os vasilhames)",
+              "rect": {
+                "x": -124,
+                "y": 90.15625,
+                "width": 236.9375,
+                "height": 40,
+                "top": 90.15625,
+                "right": 112.9375,
+                "bottom": 130.15625,
+                "left": -124
+              },
+              "sw": 237,
+              "cw": 237,
+              "sh": 40,
+              "ch": 40,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": -112,
+                    "y": 103.15625,
+                    "width": 14,
+                    "height": 14,
+                    "top": 103.15625,
+                    "right": -98,
+                    "bottom": 117.15625,
+                    "left": -112
+                  }
+                }
+              ]
+            },
+            {
+              "text": " Por lotes envasados",
+              "rect": {
+                "x": 116.9375,
+                "y": 90.15625,
+                "width": 177.890625,
+                "height": 40,
+                "top": 90.15625,
+                "right": 294.828125,
+                "bottom": 130.15625,
+                "left": 116.9375
+              },
+              "sw": 178,
+              "cw": 178,
+              "sh": 40,
+              "ch": 40,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 128.9375,
+                    "y": 103.15625,
+                    "width": 14,
+                    "height": 14,
+                    "top": 103.15625,
+                    "right": 142.9375,
+                    "bottom": 117.15625,
+                    "left": 128.9375
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Entrega por motoristaRetirada no local (cliente/parceiro)",
+          "rect": {
+            "x": 54,
+            "y": 347.15625,
+            "width": 228,
+            "height": 104,
+            "top": 347.15625,
+            "right": 282,
+            "bottom": 451.15625,
+            "left": 54
+          },
+          "children": [
+            {
+              "text": "Entrega por motorista",
+              "rect": {
+                "x": 54,
+                "y": 347.15625,
+                "width": 228,
+                "height": 38,
+                "top": 347.15625,
+                "right": 282,
+                "bottom": 385.15625,
+                "left": 54
+              },
+              "sw": 226,
+              "cw": 226,
+              "sh": 36,
+              "ch": 36,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 63,
+                    "y": 358.15625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 358.15625,
+                    "right": 79,
+                    "bottom": 374.15625,
+                    "left": 63
+                  }
+                },
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 87,
+                    "y": 358.15625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 358.15625,
+                    "right": 103,
+                    "bottom": 374.15625,
+                    "left": 87
+                  }
+                },
+                {
+                  "text": "Entrega por motorista",
+                  "rect": {
+                    "x": 111,
+                    "y": 356.15625,
+                    "width": 145.59375,
+                    "height": 20,
+                    "top": 356.15625,
+                    "right": 256.59375,
+                    "bottom": 376.15625,
+                    "left": 111
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Retirada no local (cliente/parceiro)",
+              "rect": {
+                "x": 54,
+                "y": 393.15625,
+                "width": 228,
+                "height": 58,
+                "top": 393.15625,
+                "right": 282,
+                "bottom": 451.15625,
+                "left": 54
+              },
+              "sw": 226,
+              "cw": 226,
+              "sh": 56,
+              "ch": 56,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 63,
+                    "y": 414.15625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 414.15625,
+                    "right": 79,
+                    "bottom": 430.15625,
+                    "left": 63
+                  }
+                },
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 87,
+                    "y": 414.15625,
+                    "width": 11.828125,
+                    "height": 16,
+                    "top": 414.15625,
+                    "right": 98.828125,
+                    "bottom": 430.15625,
+                    "left": 87
+                  }
+                },
+                {
+                  "text": "Retirada no local (cliente/parceiro)",
+                  "rect": {
+                    "x": 106.828125,
+                    "y": 402.15625,
+                    "width": 166.171875,
+                    "height": 40,
+                    "top": 402.15625,
+                    "right": 273,
+                    "bottom": 442.15625,
+                    "left": 106.828125
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Usar endereço cadastradoEndereço diferente (só para esta entrega)",
+          "rect": {
+            "x": 54,
+            "y": 1423.15625,
+            "width": 228,
+            "height": 64,
+            "top": 1423.15625,
+            "right": 282,
+            "bottom": 1487.15625,
+            "left": 54
+          },
+          "children": [
+            {
+              "text": "Usar endereço cadastrado",
+              "rect": {
+                "x": 54,
+                "y": 1423.15625,
+                "width": 172.0625,
+                "height": 16,
+                "top": 1423.15625,
+                "right": 226.0625,
+                "bottom": 1439.15625,
+                "left": 54
+              },
+              "sw": 172,
+              "cw": 172,
+              "sh": 16,
+              "ch": 16,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 54,
+                    "y": 1423.15625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 1423.15625,
+                    "right": 70,
+                    "bottom": 1439.15625,
+                    "left": 54
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Endereço diferente (só para esta entrega)",
+              "rect": {
+                "x": 54,
+                "y": 1455.15625,
+                "width": 228,
+                "height": 32,
+                "top": 1455.15625,
+                "right": 282,
+                "bottom": 1487.15625,
+                "left": 54
+              },
+              "sw": 228,
+              "cw": 228,
+              "sh": 32,
+              "ch": 32,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 54,
+                    "y": 1463.15625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 1463.15625,
+                    "right": 70,
+                    "bottom": 1479.15625,
+                    "left": 54
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "delivery",
+      "viewport": [
+        390,
+        844
+      ],
+      "tab": 0,
+      "artifact": "focused/delivery-final-delivery-390-tab0.png",
+      "metrics": [
+        {
+          "text": " Por OS (todos os vasilhames) Por lotes envasados",
+          "rect": {
+            "x": 41,
+            "y": 99.953125,
+            "width": 324,
+            "height": 48,
+            "top": 99.953125,
+            "right": 365,
+            "bottom": 147.953125,
+            "left": 41
+          },
+          "children": [
+            {
+              "text": " Por OS (todos os vasilhames)",
+              "rect": {
+                "x": 45,
+                "y": 103.953125,
+                "width": 236.9375,
+                "height": 40,
+                "top": 103.953125,
+                "right": 281.9375,
+                "bottom": 143.953125,
+                "left": 45
+              },
+              "sw": 237,
+              "cw": 237,
+              "sh": 40,
+              "ch": 40,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 57,
+                    "y": 116.953125,
+                    "width": 14,
+                    "height": 14,
+                    "top": 116.953125,
+                    "right": 71,
+                    "bottom": 130.953125,
+                    "left": 57
+                  }
+                }
+              ]
+            },
+            {
+              "text": " Por lotes envasados",
+              "rect": {
+                "x": 285.9375,
+                "y": 103.953125,
+                "width": 177.890625,
+                "height": 40,
+                "top": 103.953125,
+                "right": 463.828125,
+                "bottom": 143.953125,
+                "left": 285.9375
+              },
+              "sw": 178,
+              "cw": 178,
+              "sh": 40,
+              "ch": 40,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 297.9375,
+                    "y": 116.953125,
+                    "width": 14,
+                    "height": 14,
+                    "top": 116.953125,
+                    "right": 311.9375,
+                    "bottom": 130.953125,
+                    "left": 297.9375
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Entrega por motoristaRetirada no local (cliente/parceiro)",
+          "rect": {
+            "x": 54,
+            "y": 344.453125,
+            "width": 298,
+            "height": 84,
+            "top": 344.453125,
+            "right": 352,
+            "bottom": 428.453125,
+            "left": 54
+          },
+          "children": [
+            {
+              "text": "Entrega por motorista",
+              "rect": {
+                "x": 54,
+                "y": 344.453125,
+                "width": 298,
+                "height": 38,
+                "top": 344.453125,
+                "right": 352,
+                "bottom": 382.453125,
+                "left": 54
+              },
+              "sw": 296,
+              "cw": 296,
+              "sh": 36,
+              "ch": 36,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 63,
+                    "y": 355.453125,
+                    "width": 16,
+                    "height": 16,
+                    "top": 355.453125,
+                    "right": 79,
+                    "bottom": 371.453125,
+                    "left": 63
+                  }
+                },
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 87,
+                    "y": 355.453125,
+                    "width": 16,
+                    "height": 16,
+                    "top": 355.453125,
+                    "right": 103,
+                    "bottom": 371.453125,
+                    "left": 87
+                  }
+                },
+                {
+                  "text": "Entrega por motorista",
+                  "rect": {
+                    "x": 111,
+                    "y": 353.453125,
+                    "width": 145.59375,
+                    "height": 20,
+                    "top": 353.453125,
+                    "right": 256.59375,
+                    "bottom": 373.453125,
+                    "left": 111
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Retirada no local (cliente/parceiro)",
+              "rect": {
+                "x": 54,
+                "y": 390.453125,
+                "width": 298,
+                "height": 38,
+                "top": 390.453125,
+                "right": 352,
+                "bottom": 428.453125,
+                "left": 54
+              },
+              "sw": 296,
+              "cw": 296,
+              "sh": 36,
+              "ch": 36,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 63,
+                    "y": 401.453125,
+                    "width": 16,
+                    "height": 16,
+                    "top": 401.453125,
+                    "right": 79,
+                    "bottom": 417.453125,
+                    "left": 63
+                  }
+                },
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 87,
+                    "y": 401.453125,
+                    "width": 16,
+                    "height": 16,
+                    "top": 401.453125,
+                    "right": 103,
+                    "bottom": 417.453125,
+                    "left": 87
+                  }
+                },
+                {
+                  "text": "Retirada no local (cliente/parceiro)",
+                  "rect": {
+                    "x": 111,
+                    "y": 399.453125,
+                    "width": 224.625,
+                    "height": 20,
+                    "top": 399.453125,
+                    "right": 335.625,
+                    "bottom": 419.453125,
+                    "left": 111
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Usar endereço cadastradoEndereço diferente (só para esta entrega)",
+          "rect": {
+            "x": 54,
+            "y": 1386.453125,
+            "width": 298,
+            "height": 48,
+            "top": 1386.453125,
+            "right": 352,
+            "bottom": 1434.453125,
+            "left": 54
+          },
+          "children": [
+            {
+              "text": "Usar endereço cadastrado",
+              "rect": {
+                "x": 54,
+                "y": 1386.453125,
+                "width": 172.0625,
+                "height": 16,
+                "top": 1386.453125,
+                "right": 226.0625,
+                "bottom": 1402.453125,
+                "left": 54
+              },
+              "sw": 172,
+              "cw": 172,
+              "sh": 16,
+              "ch": 16,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 54,
+                    "y": 1386.453125,
+                    "width": 16,
+                    "height": 16,
+                    "top": 1386.453125,
+                    "right": 70,
+                    "bottom": 1402.453125,
+                    "left": 54
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Endereço diferente (só para esta entrega)",
+              "rect": {
+                "x": 54,
+                "y": 1418.453125,
+                "width": 257.1875,
+                "height": 16,
+                "top": 1418.453125,
+                "right": 311.1875,
+                "bottom": 1434.453125,
+                "left": 54
+              },
+              "sw": 257,
+              "cw": 257,
+              "sh": 16,
+              "ch": 16,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 54,
+                    "y": 1418.453125,
+                    "width": 16,
+                    "height": 16,
+                    "top": 1418.453125,
+                    "right": 70,
+                    "bottom": 1434.453125,
+                    "left": 54
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "delivery",
+      "viewport": [
+        390,
+        844
+      ],
+      "tab": 1,
+      "artifact": "focused/delivery-final-delivery-390-tab1.png",
+      "metrics": [
+        {
+          "text": " Por OS (todos os vasilhames) Por lotes envasados",
+          "rect": {
+            "x": 41,
+            "y": 99.953125,
+            "width": 324,
+            "height": 48,
+            "top": 99.953125,
+            "right": 365,
+            "bottom": 147.953125,
+            "left": 41
+          },
+          "children": [
+            {
+              "text": " Por OS (todos os vasilhames)",
+              "rect": {
+                "x": -54,
+                "y": 103.953125,
+                "width": 236.9375,
+                "height": 40,
+                "top": 103.953125,
+                "right": 182.9375,
+                "bottom": 143.953125,
+                "left": -54
+              },
+              "sw": 237,
+              "cw": 237,
+              "sh": 40,
+              "ch": 40,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": -42,
+                    "y": 116.953125,
+                    "width": 14,
+                    "height": 14,
+                    "top": 116.953125,
+                    "right": -28,
+                    "bottom": 130.953125,
+                    "left": -42
+                  }
+                }
+              ]
+            },
+            {
+              "text": " Por lotes envasados",
+              "rect": {
+                "x": 186.9375,
+                "y": 103.953125,
+                "width": 177.890625,
+                "height": 40,
+                "top": 103.953125,
+                "right": 364.828125,
+                "bottom": 143.953125,
+                "left": 186.9375
+              },
+              "sw": 178,
+              "cw": 178,
+              "sh": 40,
+              "ch": 40,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 198.9375,
+                    "y": 116.953125,
+                    "width": 14,
+                    "height": 14,
+                    "top": 116.953125,
+                    "right": 212.9375,
+                    "bottom": 130.953125,
+                    "left": 198.9375
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Entrega por motoristaRetirada no local (cliente/parceiro)",
+          "rect": {
+            "x": 54,
+            "y": 340.953125,
+            "width": 298,
+            "height": 84,
+            "top": 340.953125,
+            "right": 352,
+            "bottom": 424.953125,
+            "left": 54
+          },
+          "children": [
+            {
+              "text": "Entrega por motorista",
+              "rect": {
+                "x": 54,
+                "y": 340.953125,
+                "width": 298,
+                "height": 38,
+                "top": 340.953125,
+                "right": 352,
+                "bottom": 378.953125,
+                "left": 54
+              },
+              "sw": 296,
+              "cw": 296,
+              "sh": 36,
+              "ch": 36,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 63,
+                    "y": 351.953125,
+                    "width": 16,
+                    "height": 16,
+                    "top": 351.953125,
+                    "right": 79,
+                    "bottom": 367.953125,
+                    "left": 63
+                  }
+                },
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 87,
+                    "y": 351.953125,
+                    "width": 16,
+                    "height": 16,
+                    "top": 351.953125,
+                    "right": 103,
+                    "bottom": 367.953125,
+                    "left": 87
+                  }
+                },
+                {
+                  "text": "Entrega por motorista",
+                  "rect": {
+                    "x": 111,
+                    "y": 349.953125,
+                    "width": 145.59375,
+                    "height": 20,
+                    "top": 349.953125,
+                    "right": 256.59375,
+                    "bottom": 369.953125,
+                    "left": 111
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Retirada no local (cliente/parceiro)",
+              "rect": {
+                "x": 54,
+                "y": 386.953125,
+                "width": 298,
+                "height": 38,
+                "top": 386.953125,
+                "right": 352,
+                "bottom": 424.953125,
+                "left": 54
+              },
+              "sw": 296,
+              "cw": 296,
+              "sh": 36,
+              "ch": 36,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 63,
+                    "y": 397.953125,
+                    "width": 16,
+                    "height": 16,
+                    "top": 397.953125,
+                    "right": 79,
+                    "bottom": 413.953125,
+                    "left": 63
+                  }
+                },
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 87,
+                    "y": 397.953125,
+                    "width": 16,
+                    "height": 16,
+                    "top": 397.953125,
+                    "right": 103,
+                    "bottom": 413.953125,
+                    "left": 87
+                  }
+                },
+                {
+                  "text": "Retirada no local (cliente/parceiro)",
+                  "rect": {
+                    "x": 111,
+                    "y": 395.953125,
+                    "width": 224.625,
+                    "height": 20,
+                    "top": 395.953125,
+                    "right": 335.625,
+                    "bottom": 415.953125,
+                    "left": 111
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Usar endereço cadastradoEndereço diferente (só para esta entrega)",
+          "rect": {
+            "x": 54,
+            "y": 1382.953125,
+            "width": 298,
+            "height": 48,
+            "top": 1382.953125,
+            "right": 352,
+            "bottom": 1430.953125,
+            "left": 54
+          },
+          "children": [
+            {
+              "text": "Usar endereço cadastrado",
+              "rect": {
+                "x": 54,
+                "y": 1382.953125,
+                "width": 172.0625,
+                "height": 16,
+                "top": 1382.953125,
+                "right": 226.0625,
+                "bottom": 1398.953125,
+                "left": 54
+              },
+              "sw": 172,
+              "cw": 172,
+              "sh": 16,
+              "ch": 16,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 54,
+                    "y": 1382.953125,
+                    "width": 16,
+                    "height": 16,
+                    "top": 1382.953125,
+                    "right": 70,
+                    "bottom": 1398.953125,
+                    "left": 54
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Endereço diferente (só para esta entrega)",
+              "rect": {
+                "x": 54,
+                "y": 1414.953125,
+                "width": 257.1875,
+                "height": 16,
+                "top": 1414.953125,
+                "right": 311.1875,
+                "bottom": 1430.953125,
+                "left": 54
+              },
+              "sw": 257,
+              "cw": 257,
+              "sh": 16,
+              "ch": 16,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 54,
+                    "y": 1414.953125,
+                    "width": 16,
+                    "height": 16,
+                    "top": 1414.953125,
+                    "right": 70,
+                    "bottom": 1430.953125,
+                    "left": 54
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "delivery",
+      "viewport": [
+        464,
+        522
+      ],
+      "tab": 0,
+      "artifact": "focused/delivery-final-delivery-464-tab0.png",
+      "metrics": [
+        {
+          "text": " Por OS (todos os vasilhames) Por lotes envasados",
+          "rect": {
+            "x": 41,
+            "y": 83.8515625,
+            "width": 398,
+            "height": 48,
+            "top": 83.8515625,
+            "right": 439,
+            "bottom": 131.8515625,
+            "left": 41
+          },
+          "children": [
+            {
+              "text": " Por OS (todos os vasilhames)",
+              "rect": {
+                "x": 45,
+                "y": 87.8515625,
+                "width": 236.9375,
+                "height": 40,
+                "top": 87.8515625,
+                "right": 281.9375,
+                "bottom": 127.8515625,
+                "left": 45
+              },
+              "sw": 237,
+              "cw": 237,
+              "sh": 40,
+              "ch": 40,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 57,
+                    "y": 100.8515625,
+                    "width": 14,
+                    "height": 14,
+                    "top": 100.8515625,
+                    "right": 71,
+                    "bottom": 114.8515625,
+                    "left": 57
+                  }
+                }
+              ]
+            },
+            {
+              "text": " Por lotes envasados",
+              "rect": {
+                "x": 285.9375,
+                "y": 87.8515625,
+                "width": 177.890625,
+                "height": 40,
+                "top": 87.8515625,
+                "right": 463.828125,
+                "bottom": 127.8515625,
+                "left": 285.9375
+              },
+              "sw": 178,
+              "cw": 178,
+              "sh": 40,
+              "ch": 40,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 297.9375,
+                    "y": 100.8515625,
+                    "width": 14,
+                    "height": 14,
+                    "top": 100.8515625,
+                    "right": 311.9375,
+                    "bottom": 114.8515625,
+                    "left": 297.9375
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Entrega por motoristaRetirada no local (cliente/parceiro)",
+          "rect": {
+            "x": 54,
+            "y": 311.8515625,
+            "width": 372,
+            "height": 84,
+            "top": 311.8515625,
+            "right": 426,
+            "bottom": 395.8515625,
+            "left": 54
+          },
+          "children": [
+            {
+              "text": "Entrega por motorista",
+              "rect": {
+                "x": 54,
+                "y": 311.8515625,
+                "width": 372,
+                "height": 38,
+                "top": 311.8515625,
+                "right": 426,
+                "bottom": 349.8515625,
+                "left": 54
+              },
+              "sw": 370,
+              "cw": 370,
+              "sh": 36,
+              "ch": 36,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 63,
+                    "y": 322.8515625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 322.8515625,
+                    "right": 79,
+                    "bottom": 338.8515625,
+                    "left": 63
+                  }
+                },
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 87,
+                    "y": 322.8515625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 322.8515625,
+                    "right": 103,
+                    "bottom": 338.8515625,
+                    "left": 87
+                  }
+                },
+                {
+                  "text": "Entrega por motorista",
+                  "rect": {
+                    "x": 111,
+                    "y": 320.8515625,
+                    "width": 145.59375,
+                    "height": 20,
+                    "top": 320.8515625,
+                    "right": 256.59375,
+                    "bottom": 340.8515625,
+                    "left": 111
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Retirada no local (cliente/parceiro)",
+              "rect": {
+                "x": 54,
+                "y": 357.8515625,
+                "width": 372,
+                "height": 38,
+                "top": 357.8515625,
+                "right": 426,
+                "bottom": 395.8515625,
+                "left": 54
+              },
+              "sw": 370,
+              "cw": 370,
+              "sh": 36,
+              "ch": 36,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 63,
+                    "y": 368.8515625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 368.8515625,
+                    "right": 79,
+                    "bottom": 384.8515625,
+                    "left": 63
+                  }
+                },
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 87,
+                    "y": 368.8515625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 368.8515625,
+                    "right": 103,
+                    "bottom": 384.8515625,
+                    "left": 87
+                  }
+                },
+                {
+                  "text": "Retirada no local (cliente/parceiro)",
+                  "rect": {
+                    "x": 111,
+                    "y": 366.8515625,
+                    "width": 224.625,
+                    "height": 20,
+                    "top": 366.8515625,
+                    "right": 335.625,
+                    "bottom": 386.8515625,
+                    "left": 111
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Usar endereço cadastradoEndereço diferente (só para esta entrega)",
+          "rect": {
+            "x": 54,
+            "y": 1353.8515625,
+            "width": 372,
+            "height": 48,
+            "top": 1353.8515625,
+            "right": 426,
+            "bottom": 1401.8515625,
+            "left": 54
+          },
+          "children": [
+            {
+              "text": "Usar endereço cadastrado",
+              "rect": {
+                "x": 54,
+                "y": 1353.8515625,
+                "width": 172.0625,
+                "height": 16,
+                "top": 1353.8515625,
+                "right": 226.0625,
+                "bottom": 1369.8515625,
+                "left": 54
+              },
+              "sw": 172,
+              "cw": 172,
+              "sh": 16,
+              "ch": 16,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 54,
+                    "y": 1353.8515625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 1353.8515625,
+                    "right": 70,
+                    "bottom": 1369.8515625,
+                    "left": 54
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Endereço diferente (só para esta entrega)",
+              "rect": {
+                "x": 54,
+                "y": 1385.8515625,
+                "width": 257.1875,
+                "height": 16,
+                "top": 1385.8515625,
+                "right": 311.1875,
+                "bottom": 1401.8515625,
+                "left": 54
+              },
+              "sw": 257,
+              "cw": 257,
+              "sh": 16,
+              "ch": 16,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 54,
+                    "y": 1385.8515625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 1385.8515625,
+                    "right": 70,
+                    "bottom": 1401.8515625,
+                    "left": 54
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "delivery",
+      "viewport": [
+        464,
+        522
+      ],
+      "tab": 1,
+      "artifact": "focused/delivery-final-delivery-464-tab1.png",
+      "metrics": [
+        {
+          "text": " Por OS (todos os vasilhames) Por lotes envasados",
+          "rect": {
+            "x": 41,
+            "y": 83.8515625,
+            "width": 398,
+            "height": 48,
+            "top": 83.8515625,
+            "right": 439,
+            "bottom": 131.8515625,
+            "left": 41
+          },
+          "children": [
+            {
+              "text": " Por OS (todos os vasilhames)",
+              "rect": {
+                "x": 20,
+                "y": 87.8515625,
+                "width": 236.9375,
+                "height": 40,
+                "top": 87.8515625,
+                "right": 256.9375,
+                "bottom": 127.8515625,
+                "left": 20
+              },
+              "sw": 237,
+              "cw": 237,
+              "sh": 40,
+              "ch": 40,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 32,
+                    "y": 100.8515625,
+                    "width": 14,
+                    "height": 14,
+                    "top": 100.8515625,
+                    "right": 46,
+                    "bottom": 114.8515625,
+                    "left": 32
+                  }
+                }
+              ]
+            },
+            {
+              "text": " Por lotes envasados",
+              "rect": {
+                "x": 260.9375,
+                "y": 87.8515625,
+                "width": 177.890625,
+                "height": 40,
+                "top": 87.8515625,
+                "right": 438.828125,
+                "bottom": 127.8515625,
+                "left": 260.9375
+              },
+              "sw": 178,
+              "cw": 178,
+              "sh": 40,
+              "ch": 40,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 272.9375,
+                    "y": 100.8515625,
+                    "width": 14,
+                    "height": 14,
+                    "top": 100.8515625,
+                    "right": 286.9375,
+                    "bottom": 114.8515625,
+                    "left": 272.9375
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Entrega por motoristaRetirada no local (cliente/parceiro)",
+          "rect": {
+            "x": 54,
+            "y": 324.8515625,
+            "width": 372,
+            "height": 84,
+            "top": 324.8515625,
+            "right": 426,
+            "bottom": 408.8515625,
+            "left": 54
+          },
+          "children": [
+            {
+              "text": "Entrega por motorista",
+              "rect": {
+                "x": 54,
+                "y": 324.8515625,
+                "width": 372,
+                "height": 38,
+                "top": 324.8515625,
+                "right": 426,
+                "bottom": 362.8515625,
+                "left": 54
+              },
+              "sw": 370,
+              "cw": 370,
+              "sh": 36,
+              "ch": 36,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 63,
+                    "y": 335.8515625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 335.8515625,
+                    "right": 79,
+                    "bottom": 351.8515625,
+                    "left": 63
+                  }
+                },
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 87,
+                    "y": 335.8515625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 335.8515625,
+                    "right": 103,
+                    "bottom": 351.8515625,
+                    "left": 87
+                  }
+                },
+                {
+                  "text": "Entrega por motorista",
+                  "rect": {
+                    "x": 111,
+                    "y": 333.8515625,
+                    "width": 145.59375,
+                    "height": 20,
+                    "top": 333.8515625,
+                    "right": 256.59375,
+                    "bottom": 353.8515625,
+                    "left": 111
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Retirada no local (cliente/parceiro)",
+              "rect": {
+                "x": 54,
+                "y": 370.8515625,
+                "width": 372,
+                "height": 38,
+                "top": 370.8515625,
+                "right": 426,
+                "bottom": 408.8515625,
+                "left": 54
+              },
+              "sw": 370,
+              "cw": 370,
+              "sh": 36,
+              "ch": 36,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 63,
+                    "y": 381.8515625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 381.8515625,
+                    "right": 79,
+                    "bottom": 397.8515625,
+                    "left": 63
+                  }
+                },
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 87,
+                    "y": 381.8515625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 381.8515625,
+                    "right": 103,
+                    "bottom": 397.8515625,
+                    "left": 87
+                  }
+                },
+                {
+                  "text": "Retirada no local (cliente/parceiro)",
+                  "rect": {
+                    "x": 111,
+                    "y": 379.8515625,
+                    "width": 224.625,
+                    "height": 20,
+                    "top": 379.8515625,
+                    "right": 335.625,
+                    "bottom": 399.8515625,
+                    "left": 111
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Usar endereço cadastradoEndereço diferente (só para esta entrega)",
+          "rect": {
+            "x": 54,
+            "y": 1366.8515625,
+            "width": 372,
+            "height": 48,
+            "top": 1366.8515625,
+            "right": 426,
+            "bottom": 1414.8515625,
+            "left": 54
+          },
+          "children": [
+            {
+              "text": "Usar endereço cadastrado",
+              "rect": {
+                "x": 54,
+                "y": 1366.8515625,
+                "width": 172.0625,
+                "height": 16,
+                "top": 1366.8515625,
+                "right": 226.0625,
+                "bottom": 1382.8515625,
+                "left": 54
+              },
+              "sw": 172,
+              "cw": 172,
+              "sh": 16,
+              "ch": 16,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 54,
+                    "y": 1366.8515625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 1366.8515625,
+                    "right": 70,
+                    "bottom": 1382.8515625,
+                    "left": 54
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Endereço diferente (só para esta entrega)",
+              "rect": {
+                "x": 54,
+                "y": 1398.8515625,
+                "width": 257.1875,
+                "height": 16,
+                "top": 1398.8515625,
+                "right": 311.1875,
+                "bottom": 1414.8515625,
+                "left": 54
+              },
+              "sw": 257,
+              "cw": 257,
+              "sh": 16,
+              "ch": 16,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 54,
+                    "y": 1398.8515625,
+                    "width": 16,
+                    "height": 16,
+                    "top": 1398.8515625,
+                    "right": 70,
+                    "bottom": 1414.8515625,
+                    "left": 54
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "delivery",
+      "viewport": [
+        1440,
+        900
+      ],
+      "tab": 0,
+      "artifact": "focused/delivery-final-delivery-1440-tab0.png",
+      "metrics": [
+        {
+          "text": " Por OS (todos os vasilhames) Por lotes envasados",
+          "rect": {
+            "x": 361,
+            "y": 110.75,
+            "width": 718,
+            "height": 48,
+            "top": 110.75,
+            "right": 1079,
+            "bottom": 158.75,
+            "left": 361
+          },
+          "children": [
+            {
+              "text": " Por OS (todos os vasilhames)",
+              "rect": {
+                "x": 365,
+                "y": 114.75,
+                "width": 236.9375,
+                "height": 40,
+                "top": 114.75,
+                "right": 601.9375,
+                "bottom": 154.75,
+                "left": 365
+              },
+              "sw": 237,
+              "cw": 237,
+              "sh": 40,
+              "ch": 40,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 377,
+                    "y": 127.75,
+                    "width": 14,
+                    "height": 14,
+                    "top": 127.75,
+                    "right": 391,
+                    "bottom": 141.75,
+                    "left": 377
+                  }
+                }
+              ]
+            },
+            {
+              "text": " Por lotes envasados",
+              "rect": {
+                "x": 605.9375,
+                "y": 114.75,
+                "width": 177.890625,
+                "height": 40,
+                "top": 114.75,
+                "right": 783.828125,
+                "bottom": 154.75,
+                "left": 605.9375
+              },
+              "sw": 178,
+              "cw": 178,
+              "sh": 40,
+              "ch": 40,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 617.9375,
+                    "y": 127.75,
+                    "width": 14,
+                    "height": 14,
+                    "top": 127.75,
+                    "right": 631.9375,
+                    "bottom": 141.75,
+                    "left": 617.9375
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Entrega por motoristaRetirada no local (cliente/parceiro)",
+          "rect": {
+            "x": 374,
+            "y": 319.25,
+            "width": 692,
+            "height": 38,
+            "top": 319.25,
+            "right": 1066,
+            "bottom": 357.25,
+            "left": 374
+          },
+          "children": [
+            {
+              "text": "Entrega por motorista",
+              "rect": {
+                "x": 374,
+                "y": 319.25,
+                "width": 342,
+                "height": 38,
+                "top": 319.25,
+                "right": 716,
+                "bottom": 357.25,
+                "left": 374
+              },
+              "sw": 340,
+              "cw": 340,
+              "sh": 36,
+              "ch": 36,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 383,
+                    "y": 330.25,
+                    "width": 16,
+                    "height": 16,
+                    "top": 330.25,
+                    "right": 399,
+                    "bottom": 346.25,
+                    "left": 383
+                  }
+                },
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 407,
+                    "y": 330.25,
+                    "width": 16,
+                    "height": 16,
+                    "top": 330.25,
+                    "right": 423,
+                    "bottom": 346.25,
+                    "left": 407
+                  }
+                },
+                {
+                  "text": "Entrega por motorista",
+                  "rect": {
+                    "x": 431,
+                    "y": 328.25,
+                    "width": 145.59375,
+                    "height": 20,
+                    "top": 328.25,
+                    "right": 576.59375,
+                    "bottom": 348.25,
+                    "left": 431
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Retirada no local (cliente/parceiro)",
+              "rect": {
+                "x": 724,
+                "y": 319.25,
+                "width": 342,
+                "height": 38,
+                "top": 319.25,
+                "right": 1066,
+                "bottom": 357.25,
+                "left": 724
+              },
+              "sw": 340,
+              "cw": 340,
+              "sh": 36,
+              "ch": 36,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 733,
+                    "y": 330.25,
+                    "width": 16,
+                    "height": 16,
+                    "top": 330.25,
+                    "right": 749,
+                    "bottom": 346.25,
+                    "left": 733
+                  }
+                },
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 757,
+                    "y": 330.25,
+                    "width": 16,
+                    "height": 16,
+                    "top": 330.25,
+                    "right": 773,
+                    "bottom": 346.25,
+                    "left": 757
+                  }
+                },
+                {
+                  "text": "Retirada no local (cliente/parceiro)",
+                  "rect": {
+                    "x": 781,
+                    "y": 328.25,
+                    "width": 224.625,
+                    "height": 20,
+                    "top": 328.25,
+                    "right": 1005.625,
+                    "bottom": 348.25,
+                    "left": 781
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Usar endereço cadastradoEndereço diferente (só para esta entrega)",
+          "rect": {
+            "x": 374,
+            "y": 1014.25,
+            "width": 692,
+            "height": 16,
+            "top": 1014.25,
+            "right": 1066,
+            "bottom": 1030.25,
+            "left": 374
+          },
+          "children": [
+            {
+              "text": "Usar endereço cadastrado",
+              "rect": {
+                "x": 374,
+                "y": 1014.25,
+                "width": 172.0625,
+                "height": 16,
+                "top": 1014.25,
+                "right": 546.0625,
+                "bottom": 1030.25,
+                "left": 374
+              },
+              "sw": 172,
+              "cw": 172,
+              "sh": 16,
+              "ch": 16,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 374,
+                    "y": 1014.25,
+                    "width": 16,
+                    "height": 16,
+                    "top": 1014.25,
+                    "right": 390,
+                    "bottom": 1030.25,
+                    "left": 374
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Endereço diferente (só para esta entrega)",
+              "rect": {
+                "x": 562.0625,
+                "y": 1014.25,
+                "width": 257.1875,
+                "height": 16,
+                "top": 1014.25,
+                "right": 819.25,
+                "bottom": 1030.25,
+                "left": 562.0625
+              },
+              "sw": 257,
+              "cw": 257,
+              "sh": 16,
+              "ch": 16,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 562.0625,
+                    "y": 1014.25,
+                    "width": 16,
+                    "height": 16,
+                    "top": 1014.25,
+                    "right": 578.0625,
+                    "bottom": 1030.25,
+                    "left": 562.0625
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "delivery",
+      "viewport": [
+        1440,
+        900
+      ],
+      "tab": 1,
+      "artifact": "focused/delivery-final-delivery-1440-tab1.png",
+      "metrics": [
+        {
+          "text": " Por OS (todos os vasilhames) Por lotes envasados",
+          "rect": {
+            "x": 361,
+            "y": 110.75,
+            "width": 718,
+            "height": 48,
+            "top": 110.75,
+            "right": 1079,
+            "bottom": 158.75,
+            "left": 361
+          },
+          "children": [
+            {
+              "text": " Por OS (todos os vasilhames)",
+              "rect": {
+                "x": 365,
+                "y": 114.75,
+                "width": 236.9375,
+                "height": 40,
+                "top": 114.75,
+                "right": 601.9375,
+                "bottom": 154.75,
+                "left": 365
+              },
+              "sw": 237,
+              "cw": 237,
+              "sh": 40,
+              "ch": 40,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 377,
+                    "y": 127.75,
+                    "width": 14,
+                    "height": 14,
+                    "top": 127.75,
+                    "right": 391,
+                    "bottom": 141.75,
+                    "left": 377
+                  }
+                }
+              ]
+            },
+            {
+              "text": " Por lotes envasados",
+              "rect": {
+                "x": 605.9375,
+                "y": 114.75,
+                "width": 177.890625,
+                "height": 40,
+                "top": 114.75,
+                "right": 783.828125,
+                "bottom": 154.75,
+                "left": 605.9375
+              },
+              "sw": 178,
+              "cw": 178,
+              "sh": 40,
+              "ch": 40,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 617.9375,
+                    "y": 127.75,
+                    "width": 14,
+                    "height": 14,
+                    "top": 127.75,
+                    "right": 631.9375,
+                    "bottom": 141.75,
+                    "left": 617.9375
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Entrega por motoristaRetirada no local (cliente/parceiro)",
+          "rect": {
+            "x": 374,
+            "y": 336.75,
+            "width": 692,
+            "height": 38,
+            "top": 336.75,
+            "right": 1066,
+            "bottom": 374.75,
+            "left": 374
+          },
+          "children": [
+            {
+              "text": "Entrega por motorista",
+              "rect": {
+                "x": 374,
+                "y": 336.75,
+                "width": 342,
+                "height": 38,
+                "top": 336.75,
+                "right": 716,
+                "bottom": 374.75,
+                "left": 374
+              },
+              "sw": 340,
+              "cw": 340,
+              "sh": 36,
+              "ch": 36,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 383,
+                    "y": 347.75,
+                    "width": 16,
+                    "height": 16,
+                    "top": 347.75,
+                    "right": 399,
+                    "bottom": 363.75,
+                    "left": 383
+                  }
+                },
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 407,
+                    "y": 347.75,
+                    "width": 16,
+                    "height": 16,
+                    "top": 347.75,
+                    "right": 423,
+                    "bottom": 363.75,
+                    "left": 407
+                  }
+                },
+                {
+                  "text": "Entrega por motorista",
+                  "rect": {
+                    "x": 431,
+                    "y": 345.75,
+                    "width": 145.59375,
+                    "height": 20,
+                    "top": 345.75,
+                    "right": 576.59375,
+                    "bottom": 365.75,
+                    "left": 431
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Retirada no local (cliente/parceiro)",
+              "rect": {
+                "x": 724,
+                "y": 336.75,
+                "width": 342,
+                "height": 38,
+                "top": 336.75,
+                "right": 1066,
+                "bottom": 374.75,
+                "left": 724
+              },
+              "sw": 340,
+              "cw": 340,
+              "sh": 36,
+              "ch": 36,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 733,
+                    "y": 347.75,
+                    "width": 16,
+                    "height": 16,
+                    "top": 347.75,
+                    "right": 749,
+                    "bottom": 363.75,
+                    "left": 733
+                  }
+                },
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 757,
+                    "y": 347.75,
+                    "width": 16,
+                    "height": 16,
+                    "top": 347.75,
+                    "right": 773,
+                    "bottom": 363.75,
+                    "left": 757
+                  }
+                },
+                {
+                  "text": "Retirada no local (cliente/parceiro)",
+                  "rect": {
+                    "x": 781,
+                    "y": 345.75,
+                    "width": 224.625,
+                    "height": 20,
+                    "top": 345.75,
+                    "right": 1005.625,
+                    "bottom": 365.75,
+                    "left": 781
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Usar endereço cadastradoEndereço diferente (só para esta entrega)",
+          "rect": {
+            "x": 374,
+            "y": 1031.75,
+            "width": 692,
+            "height": 16,
+            "top": 1031.75,
+            "right": 1066,
+            "bottom": 1047.75,
+            "left": 374
+          },
+          "children": [
+            {
+              "text": "Usar endereço cadastrado",
+              "rect": {
+                "x": 374,
+                "y": 1031.75,
+                "width": 172.0625,
+                "height": 16,
+                "top": 1031.75,
+                "right": 546.0625,
+                "bottom": 1047.75,
+                "left": 374
+              },
+              "sw": 172,
+              "cw": 172,
+              "sh": 16,
+              "ch": 16,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 374,
+                    "y": 1031.75,
+                    "width": 16,
+                    "height": 16,
+                    "top": 1031.75,
+                    "right": 390,
+                    "bottom": 1047.75,
+                    "left": 374
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Endereço diferente (só para esta entrega)",
+              "rect": {
+                "x": 562.0625,
+                "y": 1031.75,
+                "width": 257.1875,
+                "height": 16,
+                "top": 1031.75,
+                "right": 819.25,
+                "bottom": 1047.75,
+                "left": 562.0625
+              },
+              "sw": 257,
+              "cw": 257,
+              "sh": 16,
+              "ch": 16,
+              "children": [
+                {
+                  "text": "",
+                  "rect": {
+                    "x": 562.0625,
+                    "y": 1031.75,
+                    "width": 16,
+                    "height": 16,
+                    "top": 1031.75,
+                    "right": 578.0625,
+                    "bottom": 1047.75,
+                    "left": 562.0625
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": []
+}
