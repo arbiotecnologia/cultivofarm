@@ -1,8 +1,9 @@
 ## 14/11 — Dossiês por produto e perfil fiscal automático
-- [ ] Verificar schema, ownership, vínculos explícitos e inserções reais.
-- [ ] Implementar navegação e documentos privados por produto, preservando dossiês legados e estados distintos.
-- [ ] Garantir perfil fiscal DRAFT único na inserção e preencher ausências sem sobrescrever parametrizações.
-- [ ] Testar persistência, isolamento, navegação e parametrização; informar limites sem publicar frontend.
+- [x] Schema canônico, owner e inserções verificados; seis vínculos sem divergência.
+- [x] Navegação individual e documentos privados implementados; legado separado, sem progresso vazio.
+- [x] Três migrações aplicadas; 10 produtos/10 perfis ativos, zero ausências/duplicação; seis DRAFT vazios adicionados.
+- [x] 77 Vitest e 16 verificações PG locais PASS; relatório em scripts/product-regulatory-profiles-20261114/REPORT.md; frontend não publicado.
+- [ ] Conferência autenticada AR, documentos reais e criação/edição reais na UI: bloqueada por sessão externa indisponível e ausência de dossiês reais; não simular usuário.
 
 ## 12/11 04:13 — Auditoria E2E adicional após catálogo
 - [x] Três entradas/perfis auditados por regressões e bloqueios UI; primeira falha de famílias B2B reproduzida/corrigida, retestes 67/67 e 16/16. Relatório/matriz/hashes em scripts/order-three-origins-audit-20261112.

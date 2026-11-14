@@ -110,6 +110,11 @@ function errorMessage(err: unknown): string {
 
 
 export function RegulatorioMicrorganismosSecao() {
+  const access=useStorageAccessScope('regulatory-section');
+  return <RegulatorySection key={access.scope}/>;
+}
+
+function RegulatorySection() {
   const overview = useMicroorganismRegulatoryOverview();
   const [selected, setSelected] = useState<RegulatoryOverviewRow | null>(null);
 
@@ -124,7 +129,7 @@ export function RegulatorioMicrorganismosSecao() {
     return { total, validados, bloqueados, pendentes };
   }, [rows]);
 
-  if (overview.isLoading) {
+  if (!overview.ready || overview.isLoading) {
     return (
       <Card data-testid="regulatorio-micro-loading">
         <CardContent className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
