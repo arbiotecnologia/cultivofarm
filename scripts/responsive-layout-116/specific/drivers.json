@@ -566,5 +566,51 @@
     "open": "Nova Fazenda",
     "expected": "Nova Fazenda",
     "trigger": "Fazendas > Nova Fazenda"
+  },
+  {
+    "ids": [
+      19
+    ],
+    "file": "src/components/faturamento/BaseFaturamentoDialog.tsx",
+    "export": "BaseFaturamentoDialog",
+    "route": "/faturamento",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "financeiro"
+    ],
+    "kind": "billing-base",
+    "expected": "Configurar Base de Faturamento",
+    "trigger": "OS > base de faturamento (montagem por props, nenhuma gravação)"
+  },
+  {
+    "ids": [
+      26
+    ],
+    "file": "src/components/fiscal/ProductDossierManagement.tsx",
+    "export": "ProductDossierAction",
+    "route": "/base-tecnica",
+    "profiles": [
+      "administrador",
+      "gestor"
+    ],
+    "kind": "dossier-action",
+    "open": "Gerenciar dossiê",
+    "expected": "Dossiê do produto",
+    "trigger": "Catálogo > produto > Gerenciar dossiê"
+  },
+  {
+    "ids": [
+      108
+    ],
+    "file": "src/pages/plataforma/PlataformaHome.tsx",
+    "export": "default",
+    "route": "/plataforma",
+    "profiles": [
+      "superadmin"
+    ],
+    "kind": "platform-tabs",
+    "expected": "Planos",
+    "trigger": "Plataforma > primeira/última seção"
   }
 ]

@@ -9,6 +9,8 @@ const order={...base,numero_os:'QA-116',origem:'manual',status:'programada',prio
 const receipt={...base,receipt_year:2026,receipt_number:'QA-116-2026',payment_date:'2026-11-14',amount:1234.56,status:'ISSUED',customer_id:id,storage_bucket:null,storage_path:null,authenticity_code:'SYNTHETIC',issued_at:'2026-11-14T00:00:00Z',payment_id:id,receivable_id:id,cancel_reason:null,customer:{nome:client.nome},method:{name:'Transferência'}};
 const fiscal={code:'5101',description:'Operação sintética de venda com descrição extensa para leitura do código e finalidade completos',parent_code:null,metadata:{},is_active:true,is_preferred:true,catalog_version:'synthetic'};
 function read(name,args,one){
+ if(name==='tenant_product_dossier_management_context')return {product_id:id,can_edit:false,versions:[],microorganisms:[],dossier_microorganism_id:null};
+ if(name==='tenant_product_dossier_upload_pending')return [];
  if(name==='microrganismos')return [{...base,nome:'Microrganismo sintético',nome_cientifico:'Bacillus sintético',tipo:'bacteria',codigo:'QA-116'}];
  if(name==='microorganism_technical_profiles')return [];
  if(name==='organizations')return one?{id:org,nome:'Empresa sintética',razao_social:'Empresa sintética',nome_fantasia:'Empresa sintética',cnpj:'00000000000000',status:'active',email_corporativo:'empresa@example.invalid',created_at:base.created_at,updated_at:base.updated_at}:[];
