@@ -28,6 +28,8 @@ async def main():
      rec={'ids':d['ids'],'profile':role,'viewport':[w,h],'route':d['route'],'trigger':d['trigger'],'validation':'ISOLATED_ORIGINAL_WITH_CONTEXTUAL_READS','assertions':[],'artifacts':[]};errors.clear()
      try:
       await page.set_viewport_size({'width':w,'height':h});await page.goto('http://localhost:8080'+d['route']+'?reviewRole='+role,wait_until='domcontentloaded');await page.wait_for_timeout(350)
+      if d['kind']=='producer-farm':
+       title=page.locator('h1').first;g=await title.evaluate(MEASURE);assert not g['clipped'],'farm title clipped';rec['assertions'].append({'farm_title':g})
       if d.get('tab'):await page.get_by_role('tab',name=d['tab'],exact=True).click()
       # Capture a specific page/filter before opening the known dialog.
       if d['kind']=='cashflow':

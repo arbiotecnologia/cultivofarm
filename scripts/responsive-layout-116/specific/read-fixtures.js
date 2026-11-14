@@ -9,6 +9,7 @@ const order={...base,numero_os:'QA-116',origem:'manual',status:'programada',prio
 const receipt={...base,receipt_year:2026,receipt_number:'QA-116-2026',payment_date:'2026-11-14',amount:1234.56,status:'ISSUED',customer_id:id,storage_bucket:null,storage_path:null,authenticity_code:'SYNTHETIC',issued_at:'2026-11-14T00:00:00Z',payment_id:id,receivable_id:id,cancel_reason:null,customer:{nome:client.nome},method:{name:'Transferência'}};
 const fiscal={code:'5101',description:'Operação sintética de venda com descrição extensa para leitura do código e finalidade completos',parent_code:null,metadata:{},is_active:true,is_preferred:true,catalog_version:'synthetic'};
 function read(name,args,one){
+ if(name==='partner_accounts')return [{...base,razao_social:'Parceiro sintético contextualizado',codigo:'QA-116',partner_type:'revenda',desconto_padrao:0}];
  if(name==='entregas')return [{...base,status:'entregue',financial_status:'PENDING_BILLING',entregue_em:'2026-11-14',data_saida:'2026-11-14',quantidade_entregue:20,volume_entregue_ml:20000,clientes:{nome:client.nome},produtos:{id,nome:'Produto sintético',valor_litro_brl:10},lotes:{id,codigo_lote:'QA-116'}}];
  if(name==='produtos')return one?{...base,nome:'Produto sintético contextualizado',codigo:'QA-116',tipo:'biologico',dose_ml_ha:100,b2b_enabled:true}:[];
  if(name==='product_technical_profiles')return one?{...base,produto_id:id,status_validacao:'aprovado',resumo_curto:'Perfil sintético contextualizado',indicacoes_uso:'Cultura representativa'}:[];

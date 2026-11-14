@@ -436,5 +436,37 @@
     "open": "Marcar como sem cobrança",
     "expected": "Sem cobrança",
     "trigger": "Entrega pendente > Marcar sem cobrança (sem confirmar)"
+  },
+  {
+    "ids": [
+      96
+    ],
+    "file": "src/pages/clientes/ParceirosB2BTab.tsx",
+    "export": "default",
+    "route": "/clientes",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "gestor_comercial"
+    ],
+    "kind": "partner-filter",
+    "expected": "Parceiros",
+    "trigger": "Clientes > Parceiros B2B > filtros"
+  },
+  {
+    "ids": [
+      97
+    ],
+    "file": "src/pages/clientes/ProdutoresTab.tsx",
+    "export": "default",
+    "route": "/clientes",
+    "profiles": [
+      "administrador",
+      "gestor"
+    ],
+    "kind": "producer-form",
+    "open": "Novo Produtor",
+    "expected": "Novo Produtor",
+    "trigger": "Clientes > Produtores > Novo Produtor"
   }
 ]
