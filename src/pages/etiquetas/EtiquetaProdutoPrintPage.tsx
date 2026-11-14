@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { EtiquetaProdutoPrint } from "@/components/etiquetas/EtiquetaProdutoPrint";
@@ -8,16 +8,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Printer, Download, RefreshCw, Pencil } from "lucide-react";
-import { LABEL_TEMPLATES, assertMutationAck, isUuid, labelDetails, labelTemplate, type LabelData, type LabelTemplate } from "@/lib/etiquetas";
+import { LABEL_TEMPLATES, assertMutationAck, canPrintLabel, correctionReplacement, replaceLabelIds, isUuid, labelDetails, labelTemplate, type LabelData, type LabelTemplate } from "@/lib/etiquetas";
 import { createLabelsPdf } from "@/lib/etiquetasPdf";
+import { labelPrintPermit } from "@/lib/etiquetasPrintPermit";
 export default function EtiquetaProdutoPrintPage() {
   const { id } = useParams(); const [params] = useSearchParams();
   const raw = [id, ...(params.get("ids") || "").split(",")].filter(Boolean);
   const ids = [...new Set(raw)].filter(isUuid);
+  const initialSelected = params.has("selected") ? (params.get("selected") || "").split(",").filter(isUuid) : ids;
   const scope = useStorageAccessScope(`print:${ids.join(",")}`);
-  return scope.ready ? <PrintWorkspace key={scope.scope} ids={ids} scope={scope} /> : <p role="status" className="p-6">Entre com uma sessão autorizada para consultar as etiquetas.</p>;
+  return <div className="label-print-page">{scope.ready ? <PrintWorkspace key={scope.scope} ids={ids} initialSelected={initialSelected} scope={scope} /> : <p role="status" className="p-6">Entre com uma sessão autorizada para consultar as etiquetas.</p>}</div>;
 }
-function PrintWorkspace({ ids, scope }: { ids: string[]; scope: ReturnType<typeof useStorageAccessScope> }) {
+function PrintWorkspace({ ids, initialSelected, scope }: { ids: string[]; initialSelected: string[]; scope: ReturnType<typeof useStorageAccessScope> }) {
+  const navigate = useNavigate();
   const [labels, setLabels] = useState<LabelData[]>([]); const [selected, setSelected] = useState<string[]>([]);
   const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
   const [reason, setReason] = useState(""); const [mode, setMode] = useState("termica");
@@ -26,6 +29,13 @@ function PrintWorkspace({ ids, scope }: { ids: string[]; scope: ReturnType<typeo
   const lock = useRef(false); const sequence = useRef(0); const printRoot = useRef<HTMLDivElement>(null);
   const correctionKey = useRef(crypto.randomUUID());
   const correctionIntent = useRef<string | null>(null);
+  const permit = useRef<ReturnType<typeof labelPrintPermit> | null>(null);
+  useEffect(() => {
+    const root = printRoot.current;
+    if (!root) return;
+    const controller = labelPrintPermit(root, scope.capture()); permit.current = controller;
+    return () => { controller.dispose(); permit.current = null; };
+  }, []);
   const load = async () => {
     if (lock.current) return;
     const current = scope.capture(); const seq = ++sequence.current;
@@ -40,9 +50,9 @@ function PrintWorkspace({ ids, scope }: { ids: string[]; scope: ReturnType<typeo
         if (error) throw error;
         rows.push(...(data || []) as unknown as LabelData[]);
       }
-      if (rows.length !== ids.length || rows.some(l => !ids.includes(l.id))) throw new Error("Uma ou mais etiquetas não estão disponíveis nesta sessão.");
+      if (rows.length !== ids.length || new Set(rows.map(row => row.id)).size !== ids.length || rows.some(l => !ids.includes(l.id))) throw new Error("Uma ou mais etiquetas não estão disponíveis nesta sessão.");
       setLabels(ids.map(id => rows.find(row => row.id === id)).filter((row): row is LabelData => Boolean(row)));
-      setSelected(ids);
+      setSelected([...new Set(initialSelected)].filter(id => ids.includes(id)));
     } catch (e) { if (current()) setError(e instanceof Error ? e.message : "Consulta indisponível."); }
     finally { if (current() && seq === sequence.current) setLoading(false); }
   };
@@ -50,7 +60,7 @@ function PrintWorkspace({ ids, scope }: { ids: string[]; scope: ReturnType<typeo
   const chosen = labels.filter(l => selected.includes(l.id));
   const formats = new Set(chosen.map(labelTemplate));
   const print = async (pdfOutput: boolean) => {
-    if (lock.current || !scope.ready || !chosen.length || chosen.some(l => l.status === "cancelada" || l.status === "substituida") || reason.trim().length < 3) return;
+    if (lock.current || !scope.ready || !chosen.length || !chosen.every(canPrintLabel) || reason.trim().length < 3 || (!pdfOutput && mode === "termica" && formats.size > 1)) return;
     const current = scope.capture(); lock.current = true; setBusy(true); setError("");
     try {
       const root = printRoot.current; if (!root) throw new Error("Prévia indisponível.");
@@ -64,7 +74,7 @@ function PrintWorkspace({ ids, scope }: { ids: string[]; scope: ReturnType<typeo
       if (!current()) return;
       if (error) throw error; assertMutationAck(data);
       setLabels(old => old.map(l => selected.includes(l.id) ? { ...l, status: "impressa" } : l));
-      if (pdf) pdf.save("etiquetas-recipientes.pdf"); else window.print();
+      if (pdf) pdf.save("etiquetas-recipientes.pdf"); else permit.current?.print();
     } catch (e) { if (current()) setError(e instanceof Error ? e.message : "Impressão não confirmada. Consulte antes de repetir."); }
     finally { lock.current = false; if (current()) setBusy(false); }
   };
@@ -77,8 +87,13 @@ function PrintWorkspace({ ids, scope }: { ids: string[]; scope: ReturnType<typeo
       correctionIntent.current = intent;
       const { data, error } = await (supabase as any).rpc("rpc_corrigir_etiqueta_produto_v1", { p_etiqueta_id: editing.id, p_alteracoes: { observacoes: obs, template_codigo: template }, p_motivo: correctionReason.trim(), p_idempotency_key: correctionKey.current });
       if (!current()) return;
-      if (error) throw error; assertMutationAck(data); setEditing(null); correctionKey.current = crypto.randomUUID(); correctionIntent.current = null;
-      lock.current = false; await load();
+      if (error) throw error;
+      const replacement = correctionReplacement(data);
+      const nextIds = replaceLabelIds(ids, editing.id, replacement);
+      const nextSelection = replaceLabelIds(selected, editing.id, replacement);
+      const nextParams = new URLSearchParams({ ids: nextIds.join(","), selected: nextSelection.join(",") });
+      // Adopt the new immutable label by a fresh scoped read, including after reload.
+      navigate(`/etiquetas/${nextIds[0]}/imprimir?${nextParams}`, { replace: true });
     } catch (e) { if (current()) setError(e instanceof Error ? e.message : "Correção não confirmada; mantenha a mesma tentativa."); }
     finally { lock.current = false; if (current()) setBusy(false); }
   };
