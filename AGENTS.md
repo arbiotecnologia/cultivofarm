@@ -24,7 +24,7 @@
 - Fixtures need Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
-- Product dossiers reuse canonical readers and explicit same-owner links; platform management follows scripts/product-regulatory-profiles-20261114/management/AGENTS.md, while fiscal profiles originate as atomic blank DRAFTs — prevents inherited evidence, tenant write escalation and presumed taxation.
+- Product dossiers share one owner-tenant detail at catalog/fiscal entries; explicit per-version coverage and document subsets follow scripts/product-regulatory-profiles-20261114/management/AGENTS.md, while fiscal profiles start atomic blank DRAFTs — prevents global authority and inherited evidence.
 - Documentary catalog suggestions are draft-only, identity/tenant-fenced and selected per sourced field; server candidates stay outside automatic deploy paths with no client grants — prevents research UI from activating writes or publishing unsupported facts.
 - Mobile catalog and Base Técnica reuse the canonical product editor and section controls; own problem/link candidates use private storage and default-OFF server gates — prevents duplicate editors or global write expansion.
 - Homolog cancellation prerequisites allow a deny-only additive private foundation without writer hooks; later deltas require exact canonical body hashes, captured relation guards and isolated roundtrip before session fiscal adapters — prevents blind repinning and broad service grants.
