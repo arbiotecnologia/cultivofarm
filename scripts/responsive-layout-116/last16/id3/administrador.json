@@ -1,0 +1,202 @@
+[
+  {
+    "id": 3,
+    "profile": "administrador",
+    "viewport": [
+      390,
+      844
+    ],
+    "mode": "positive",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "GAP",
+    "error": "Locator.click: Timeout 6000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"combobox\", name=\"Parceiro da carteira\", exact=True)\n",
+    "text": "",
+    "reads": [],
+    "errors": [
+      "missing ) after argument list"
+    ],
+    "evidence": "last16/id3/administrador-390-positive.png"
+  },
+  {
+    "id": 3,
+    "profile": "administrador",
+    "viewport": [
+      390,
+      844
+    ],
+    "mode": "capability-denied",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "GAP",
+    "error": "Locator.wait_for: Timeout 6000ms exceeded.\nCall log:\n  - waiting for get_by_text(\"Registro de venda indisponível\", exact=True) to be visible\n",
+    "text": "",
+    "reads": [],
+    "errors": [
+      "missing ) after argument list"
+    ],
+    "evidence": "last16/id3/administrador-390-capability-denied.png"
+  },
+  {
+    "id": 3,
+    "profile": "administrador",
+    "viewport": [
+      390,
+      844
+    ],
+    "mode": "foreign-target",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "GAP",
+    "error": "Locator.wait_for: Timeout 6000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"alert\").filter(has_text=\"não pertence\") to be visible\n",
+    "text": "",
+    "reads": [],
+    "errors": [
+      "missing ) after argument list"
+    ],
+    "evidence": "last16/id3/administrador-390-foreign-target.png"
+  },
+  {
+    "id": 3,
+    "profile": "administrador",
+    "viewport": [
+      390,
+      844
+    ],
+    "mode": "no-volumes",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "GAP",
+    "error": "Locator.click: Timeout 6000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"combobox\", name=\"Parceiro da carteira\", exact=True)\n",
+    "text": "",
+    "reads": [],
+    "errors": [
+      "missing ) after argument list"
+    ],
+    "evidence": "last16/id3/administrador-390-no-volumes.png"
+  },
+  {
+    "id": 3,
+    "profile": "administrador",
+    "viewport": [
+      390,
+      844
+    ],
+    "mode": "packaging-invalid",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "GAP",
+    "error": "Locator.click: Timeout 6000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"combobox\", name=\"Parceiro da carteira\", exact=True)\n",
+    "text": "",
+    "reads": [],
+    "errors": [
+      "missing ) after argument list"
+    ],
+    "evidence": "last16/id3/administrador-390-packaging-invalid.png"
+  },
+  {
+    "id": 3,
+    "profile": "administrador",
+    "viewport": [
+      1440,
+      900
+    ],
+    "mode": "positive",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "GAP",
+    "error": "Locator.click: Timeout 6000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"combobox\", name=\"Parceiro da carteira\", exact=True)\n",
+    "text": "",
+    "reads": [],
+    "errors": [
+      "missing ) after argument list"
+    ],
+    "evidence": "last16/id3/administrador-1440-positive.png"
+  },
+  {
+    "id": 3,
+    "profile": "administrador",
+    "viewport": [
+      1440,
+      900
+    ],
+    "mode": "capability-denied",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "GAP",
+    "error": "Locator.wait_for: Timeout 6000ms exceeded.\nCall log:\n  - waiting for get_by_text(\"Registro de venda indisponível\", exact=True) to be visible\n",
+    "text": "",
+    "reads": [],
+    "errors": [
+      "missing ) after argument list"
+    ],
+    "evidence": "last16/id3/administrador-1440-capability-denied.png"
+  },
+  {
+    "id": 3,
+    "profile": "administrador",
+    "viewport": [
+      1440,
+      900
+    ],
+    "mode": "foreign-target",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "GAP",
+    "error": "Locator.wait_for: Timeout 6000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"alert\").filter(has_text=\"não pertence\") to be visible\n",
+    "text": "",
+    "reads": [],
+    "errors": [
+      "missing ) after argument list"
+    ],
+    "evidence": "last16/id3/administrador-1440-foreign-target.png"
+  },
+  {
+    "id": 3,
+    "profile": "administrador",
+    "viewport": [
+      1440,
+      900
+    ],
+    "mode": "no-volumes",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "GAP",
+    "error": "Locator.click: Timeout 6000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"combobox\", name=\"Parceiro da carteira\", exact=True)\n",
+    "text": "",
+    "reads": [],
+    "errors": [
+      "missing ) after argument list"
+    ],
+    "evidence": "last16/id3/administrador-1440-no-volumes.png"
+  },
+  {
+    "id": 3,
+    "profile": "administrador",
+    "viewport": [
+      1440,
+      900
+    ],
+    "mode": "packaging-invalid",
+    "route": "/comercial/pedidos-b2b/novo",
+    "type": "ORIGINAL_PARENT_GUARD_CHILD_UI_SYNTHETIC_READS",
+    "assertions": [],
+    "result": "GAP",
+    "error": "Locator.click: Timeout 6000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"combobox\", name=\"Parceiro da carteira\", exact=True)\n",
+    "text": "",
+    "reads": [],
+    "errors": [
+      "missing ) after argument list"
+    ],
+    "evidence": "last16/id3/administrador-1440-packaging-invalid.png"
+  }
+]
