@@ -1,0 +1,1046 @@
+[
+  {
+    "file": "src/components/aplicacao/AplicacaoFormDialog.tsx",
+    "tag": "DialogContent",
+    "line": 316,
+    "className": "\"max-w-3xl max-h-[92vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 1,
+    "routes": []
+  },
+  {
+    "file": "src/components/bi/modal/BIDrillDownModal.tsx",
+    "tag": "DialogContent",
+    "line": 97,
+    "className": "\"max-w-5xl max-h-[85vh] overflow-hidden flex flex-col\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 2,
+    "routes": []
+  },
+  {
+    "file": "src/components/catalogo/AddToCartDialog.tsx",
+    "tag": "SelectTrigger",
+    "line": 390,
+    "className": "\"h-8 text-xs w-full min-w-0\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 3,
+    "routes": []
+  },
+  {
+    "file": "src/components/clientes/ClienteFormTabs.tsx",
+    "tag": "Input",
+    "line": 279,
+    "className": "\"font-mono-data font-semibold max-w-[200px] bg-muted/40\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 4,
+    "routes": []
+  },
+  {
+    "file": "src/components/clientes/ClienteFormTabs.tsx",
+    "tag": "SelectTrigger",
+    "line": 554,
+    "className": "\"w-[100px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 5,
+    "routes": []
+  },
+  {
+    "file": "src/components/clientes/ClienteHistoricoDialog.tsx",
+    "tag": "DialogContent",
+    "line": 29,
+    "className": "\"max-w-4xl max-h-[80vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 6,
+    "routes": []
+  },
+  {
+    "file": "src/components/cockpit/GerarLoteDialog.tsx",
+    "tag": "DialogContent",
+    "line": 106,
+    "className": "\"max-w-lg max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 7,
+    "routes": []
+  },
+  {
+    "file": "src/components/cockpit/RegistrarCQDialog.tsx",
+    "tag": "DialogContent",
+    "line": 114,
+    "className": "\"max-w-lg max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 8,
+    "routes": []
+  },
+  {
+    "file": "src/components/cockpit/RegistrarEnvaseDialog.tsx",
+    "tag": "DialogContent",
+    "line": 258,
+    "className": "\"max-w-lg max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 9,
+    "routes": []
+  },
+  {
+    "file": "src/components/cockpit/ReservarEstoqueDialog.tsx",
+    "tag": "DialogContent",
+    "line": 185,
+    "className": "\"max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 10,
+    "routes": []
+  },
+  {
+    "file": "src/components/comercial/MatrizPrecosTab.tsx",
+    "tag": "DialogContent",
+    "line": 236,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 11,
+    "routes": []
+  },
+  {
+    "file": "src/components/comercial/ParceiroB2BFormDialog.tsx",
+    "tag": "DialogContent",
+    "line": 399,
+    "className": "\"max-w-4xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 12,
+    "routes": []
+  },
+  {
+    "file": "src/components/comercial/ResponderCotacaoDialog.tsx",
+    "tag": "DialogContent",
+    "line": 90,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 13,
+    "routes": []
+  },
+  {
+    "file": "src/components/configuracoes/AuditSenhaDialog.tsx",
+    "tag": "DialogContent",
+    "line": 76,
+    "className": "\"max-w-3xl max-h-[80vh] flex flex-col\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 14,
+    "routes": []
+  },
+  {
+    "file": "src/components/entregas/PreviewDocumentoEntrega.tsx",
+    "tag": "DialogContent",
+    "line": 79,
+    "className": "\"max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 15,
+    "routes": []
+  },
+  {
+    "file": "src/components/entregas/RegistrarEntregaDialog.tsx",
+    "tag": "DialogContent",
+    "line": 417,
+    "className": "\"max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden mx-2 sm:mx-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 16,
+    "routes": []
+  },
+  {
+    "file": "src/components/entregas/RegistrarEntregaDialog.tsx",
+    "tag": "AlertDialogContent",
+    "line": 927,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 17,
+    "routes": []
+  },
+  {
+    "file": "src/components/estoque/ReservaDialog.tsx",
+    "tag": "DialogContent",
+    "line": 410,
+    "className": "\"max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 18,
+    "routes": []
+  },
+  {
+    "file": "src/components/faturamento/BaseFaturamentoDialog.tsx",
+    "tag": "DialogContent",
+    "line": 129,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 19,
+    "routes": []
+  },
+  {
+    "file": "src/components/fazendas/TalhoesFazendaTab.tsx",
+    "tag": "DialogContent",
+    "line": 195,
+    "className": "\"max-w-lg w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 20,
+    "routes": []
+  },
+  {
+    "file": "src/components/financeiro/BaixaDialog.tsx",
+    "tag": "DialogContent",
+    "line": 454,
+    "className": "\"max-w-lg max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 21,
+    "routes": []
+  },
+  {
+    "file": "src/components/financeiro/ConfirmarEntregaFinanceiroDialog.tsx",
+    "tag": "DialogContent",
+    "line": 27,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 22,
+    "routes": []
+  },
+  {
+    "file": "src/components/financeiro/NovaContaDialog.tsx",
+    "tag": "DialogContent",
+    "line": 250,
+    "className": "\"max-w-3xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 23,
+    "routes": []
+  },
+  {
+    "file": "src/components/fiscal/FiscalCatalogCombobox.tsx",
+    "tag": "Button",
+    "line": 123,
+    "className": "{cn(\"w-full min-w-0 justify-between font-normal\", multiline && \"h-auto min-h-10 whitespace-normal py-3\", addAction && \"w-auto justify-center\")}",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 24,
+    "routes": []
+  },
+  {
+    "file": "src/components/fiscal/NatureOperationCombobox.tsx",
+    "tag": "Button",
+    "line": 109,
+    "className": "\"h-auto min-h-10 w-full min-w-0 justify-between whitespace-normal py-2 font-normal\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 25,
+    "routes": []
+  },
+  {
+    "file": "src/components/fiscal/ProductDossierManagement.tsx",
+    "tag": "DialogContent",
+    "line": 21,
+    "className": "\"max-w-5xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 26,
+    "routes": []
+  },
+  {
+    "file": "src/components/ordens-servico/OSDetalhesDialog.tsx",
+    "tag": "DialogContent",
+    "line": 177,
+    "className": "\"max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0 sm:p-0\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 27,
+    "routes": []
+  },
+  {
+    "file": "src/components/plataforma/AdminGestaoAcoes.tsx",
+    "tag": "DialogContent",
+    "line": 107,
+    "className": "\"max-h-[90dvh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto [&_button:not([role=checkbox])]:min-h-11\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 28,
+    "routes": []
+  },
+  {
+    "file": "src/components/plataforma/AdminGestaoAcoes.tsx",
+    "tag": "TabsList",
+    "line": 113,
+    "className": "\"grid h-auto w-full grid-cols-3 gap-1\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 29,
+    "routes": []
+  },
+  {
+    "file": "src/components/plataforma/PlatformCatalogB2BDialog.tsx",
+    "tag": "DialogContent",
+    "line": 78,
+    "className": "\"max-h-[90vh] max-w-md overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 30,
+    "routes": []
+  },
+  {
+    "file": "src/components/plataforma/PlatformCatalogCompositionDialog.tsx",
+    "tag": "DialogContent",
+    "line": 142,
+    "className": "\"max-h-[90vh] w-[calc(100vw-1rem)] max-w-2xl overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 31,
+    "routes": []
+  },
+  {
+    "file": "src/components/plataforma/PlatformCatalogEntityPanel.tsx",
+    "tag": "DialogContent",
+    "line": 136,
+    "className": "\"max-h-[90dvh] w-[calc(100vw-2rem)] max-w-xl overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 32,
+    "routes": []
+  },
+  {
+    "file": "src/components/plataforma/PlatformCatalogFamilyDialog.tsx",
+    "tag": "DialogContent",
+    "line": 84,
+    "className": "\"max-h-[90vh] max-w-md overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 33,
+    "routes": []
+  },
+  {
+    "file": "src/components/plataforma/PlatformCatalogLifecycleDialogs.tsx",
+    "tag": "DialogContent",
+    "line": 93,
+    "className": "\"max-h-[90vh] w-[calc(100%-2rem)] max-w-xl overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 34,
+    "routes": []
+  },
+  {
+    "file": "src/components/plataforma/PlatformCatalogLifecycleDialogs.tsx",
+    "tag": "DialogContent",
+    "line": 151,
+    "className": "\"max-h-[90vh] max-w-md overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 35,
+    "routes": []
+  },
+  {
+    "file": "src/components/plataforma/PlatformCatalogVolumesDialog.tsx",
+    "tag": "DialogContent",
+    "line": 35,
+    "className": "\"max-h-[90dvh] w-[calc(100vw-2rem)] max-w-2xl overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 36,
+    "routes": []
+  },
+  {
+    "file": "src/components/protocolos/CatalogoVolumesDialog.tsx",
+    "tag": "DialogContent",
+    "line": 202,
+    "className": "\"max-w-5xl w-[96vw] max-h-[92vh] overflow-y-auto overflow-x-hidden\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 37,
+    "routes": []
+  },
+  {
+    "file": "src/components/protocolos/MicroorganismTechnicalProfileDialog.tsx",
+    "tag": "DialogContent",
+    "line": 221,
+    "className": "\"max-w-3xl w-[95vw] max-h-[92vh] overflow-y-auto overflow-x-hidden [&_button]:min-h-11 [&_input]:min-h-11\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 38,
+    "routes": []
+  },
+  {
+    "file": "src/components/protocolos/MicrorganismosTab.tsx",
+    "tag": "SelectTrigger",
+    "line": 362,
+    "className": "\"w-[140px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 39,
+    "routes": []
+  },
+  {
+    "file": "src/components/protocolos/MicrorganismosTab.tsx",
+    "tag": "DialogContent",
+    "line": 414,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 40,
+    "routes": []
+  },
+  {
+    "file": "src/components/protocolos/OwnedCatalogItemDialog.tsx",
+    "tag": "DialogContent",
+    "line": 181,
+    "className": "\"max-w-3xl max-h-[92vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 41,
+    "routes": []
+  },
+  {
+    "file": "src/components/protocolos/ProductTechnicalProfileDialog.tsx",
+    "tag": "DialogContent",
+    "line": 201,
+    "className": "\"max-w-3xl w-[95vw] max-h-[92vh] overflow-y-auto overflow-x-hidden [&_button]:min-h-11 [&_input]:min-h-11\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 42,
+    "routes": []
+  },
+  {
+    "file": "src/components/protocolos/ProdutosTab.tsx",
+    "tag": "SelectTrigger",
+    "line": 713,
+    "className": "\"w-[140px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 43,
+    "routes": []
+  },
+  {
+    "file": "src/components/protocolos/ProdutosTab.tsx",
+    "tag": "DialogContent",
+    "line": 747,
+    "className": "\"max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 44,
+    "routes": []
+  },
+  {
+    "file": "src/components/protocolos/ProdutosTab.tsx",
+    "tag": "TabsList",
+    "line": 768,
+    "className": "\"flex w-full h-auto flex-wrap mb-4 [&_button]:flex-1 [&_button]:whitespace-normal [&_button]:min-w-20\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 45,
+    "routes": []
+  },
+  {
+    "file": "src/components/protocolos/TenantProblemPanel.tsx",
+    "tag": "DialogContent",
+    "line": 16,
+    "className": "\"max-h-[90dvh] overflow-y-auto [&_input]:min-h-11 [&_button]:min-h-11\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 46,
+    "routes": []
+  },
+  {
+    "file": "src/components/protocolos/TenantReferencePanel.tsx",
+    "tag": "DialogContent",
+    "line": 54,
+    "className": "\"max-h-[90dvh] overflow-y-auto [&_input]:min-h-11 [&_button]:min-h-11\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 47,
+    "routes": []
+  },
+  {
+    "file": "src/components/protocolos/catalog/BulkAlvosDialog.tsx",
+    "tag": "TabsList",
+    "line": 136,
+    "className": "\"grid grid-cols-3 w-full\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 48,
+    "routes": []
+  },
+  {
+    "file": "src/components/protocolos/catalog/SourceFormDialog.tsx",
+    "tag": "DialogContent",
+    "line": 109,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 49,
+    "routes": []
+  },
+  {
+    "file": "src/components/talhoes/SafrasTalhaoDialog.tsx",
+    "tag": "DialogContent",
+    "line": 156,
+    "className": "\"max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 50,
+    "routes": []
+  },
+  {
+    "file": "src/components/visita/CameraDialog.tsx",
+    "tag": "DialogContent",
+    "line": 152,
+    "className": "\"sm:max-w-md p-0 overflow-hidden bg-black border-none h-[85vh] flex flex-col gap-0\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 51,
+    "routes": []
+  },
+  {
+    "file": "src/components/visita/EvidenciasTabs.tsx",
+    "tag": "TabsList",
+    "line": 458,
+    "className": "\"grid grid-cols-4 w-full\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 52,
+    "routes": []
+  },
+  {
+    "file": "src/components/visita/PdfPreviewDialog.tsx",
+    "tag": "DialogContent",
+    "line": 76,
+    "className": "\"max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 53,
+    "routes": []
+  },
+  {
+    "file": "src/components/visita/PlanoMonitoramentoEditor.tsx",
+    "tag": "DialogContent",
+    "line": 241,
+    "className": "\"sm:max-w-[425px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 54,
+    "routes": []
+  },
+  {
+    "file": "src/components/visita/UploadQueuePanel.tsx",
+    "tag": "Button",
+    "line": 187,
+    "className": "\"h-7 text-[10px] flex-1 border-destructive/30 hover:bg-destructive/10 text-destructive whitespace-nowrap\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 55,
+    "routes": []
+  },
+  {
+    "file": "src/components/visita/UploadQueuePanel.tsx",
+    "tag": "Button",
+    "line": 199,
+    "className": "\"h-7 text-[10px] flex-1 border-muted-foreground/30 hover:bg-muted whitespace-nowrap\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 56,
+    "routes": []
+  },
+  {
+    "file": "src/pages/Aplicacoes.tsx",
+    "tag": "DialogContent",
+    "line": 144,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 57,
+    "routes": []
+  },
+  {
+    "file": "src/pages/BIAgronomico.tsx",
+    "tag": "TabsList",
+    "line": 24,
+    "className": "\"w-max sm:w-auto flex min-w-full\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 58,
+    "routes": []
+  },
+  {
+    "file": "src/pages/ClienteDetalhe.tsx",
+    "tag": "SelectTrigger",
+    "line": 246,
+    "className": "\"h-8 w-[200px] text-xs\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 59,
+    "routes": []
+  },
+  {
+    "file": "src/pages/ClienteDetalhe.tsx",
+    "tag": "SelectTrigger",
+    "line": 258,
+    "className": "\"h-8 w-[220px] text-xs\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 60,
+    "routes": []
+  },
+  {
+    "file": "src/pages/CockpitLaboratorio.tsx",
+    "tag": "SelectTrigger",
+    "line": 663,
+    "className": "\"h-9 min-w-0 flex-1 basis-[145px] sm:flex-none sm:w-[150px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 61,
+    "routes": []
+  },
+  {
+    "file": "src/pages/CockpitLaboratorio.tsx",
+    "tag": "SelectTrigger",
+    "line": 667,
+    "className": "\"h-9 min-w-0 flex-1 basis-[145px] text-xs sm:flex-none sm:w-[170px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 62,
+    "routes": []
+  },
+  {
+    "file": "src/pages/CockpitLaboratorio.tsx",
+    "tag": "SelectTrigger",
+    "line": 671,
+    "className": "\"h-9 min-w-0 flex-1 basis-[145px] text-xs sm:flex-none sm:w-[180px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 63,
+    "routes": []
+  },
+  {
+    "file": "src/pages/CockpitLaboratorio.tsx",
+    "tag": "SelectTrigger",
+    "line": 675,
+    "className": "\"h-9 min-w-0 flex-1 basis-[145px] text-xs truncate sm:flex-none sm:w-[150px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 64,
+    "routes": []
+  },
+  {
+    "file": "src/pages/CockpitLaboratorio.tsx",
+    "tag": "SelectTrigger",
+    "line": 682,
+    "className": "\"h-9 min-w-0 flex-1 basis-[145px] text-xs truncate sm:flex-none sm:w-[150px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 65,
+    "routes": []
+  },
+  {
+    "file": "src/pages/CockpitLaboratorio.tsx",
+    "tag": "SelectTrigger",
+    "line": 689,
+    "className": "\"h-9 min-w-0 flex-1 basis-[145px] text-xs truncate sm:flex-none sm:w-[150px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 66,
+    "routes": []
+  },
+  {
+    "file": "src/pages/CockpitLaboratorio.tsx",
+    "tag": "TabsList",
+    "line": 747,
+    "className": "\"grid h-auto w-full grid-cols-2 gap-1 bg-muted/50 p-1 mb-4 sm:grid-cols-3\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 67,
+    "routes": []
+  },
+  {
+    "file": "src/pages/Configuracoes.tsx",
+    "tag": "DialogContent",
+    "line": 839,
+    "className": "\"max-w-md flex flex-col max-h-[calc(100dvh-2rem)] gap-0 overflow-clip p-0 sm:p-0\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 68,
+    "routes": []
+  },
+  {
+    "file": "src/pages/Configuracoes.tsx",
+    "tag": "Button",
+    "line": 852,
+    "className": "{`h-auto min-h-16 min-w-0 w-full flex-col items-start justify-start gap-1 whitespace-normal rounded-md border p-3 text-left transition-colors disabled:opacity-50 ${registrationKind === opcao.kind ? \"border-primary bg-primary/10\" : \"border-border hover:bg-accent\"}`}",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 69,
+    "routes": []
+  },
+  {
+    "file": "src/pages/Configuracoes.tsx",
+    "tag": "SelectTrigger",
+    "line": 954,
+    "className": "\"w-full sm:w-[180px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 70,
+    "routes": []
+  },
+  {
+    "file": "src/pages/Configuracoes.tsx",
+    "tag": "SelectTrigger",
+    "line": 961,
+    "className": "\"w-full sm:w-[140px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 71,
+    "routes": []
+  },
+  {
+    "file": "src/pages/Configuracoes.tsx",
+    "tag": "Table",
+    "line": 1036,
+    "className": "\"min-w-[700px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 72,
+    "routes": []
+  },
+  {
+    "file": "src/pages/ConsultorTecnico.tsx",
+    "tag": "DialogContent",
+    "line": 945,
+    "className": "\"max-w-4xl p-0 overflow-visible bg-transparent border-none shadow-none flex flex-col items-center justify-center h-[90vh] outline-none\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 73,
+    "routes": []
+  },
+  {
+    "file": "src/pages/ControleQualidade.tsx",
+    "tag": "DialogContent",
+    "line": 256,
+    "className": "\"max-h-[85vh] max-w-2xl overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 74,
+    "routes": []
+  },
+  {
+    "file": "src/pages/Entregas.tsx",
+    "tag": "DialogContent",
+    "line": 1175,
+    "className": "\"max-w-3xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 75,
+    "routes": []
+  },
+  {
+    "file": "src/pages/EnvasePage.tsx",
+    "tag": "Table",
+    "line": 269,
+    "className": "\"min-w-[750px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 76,
+    "routes": []
+  },
+  {
+    "file": "src/pages/Estoque.tsx",
+    "tag": "DialogContent",
+    "line": 312,
+    "className": "\"max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 77,
+    "routes": []
+  },
+  {
+    "file": "src/pages/Estoque.tsx",
+    "tag": "SelectTrigger",
+    "line": 332,
+    "className": "\"w-full sm:w-[220px] h-9\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 78,
+    "routes": []
+  },
+  {
+    "file": "src/pages/Estoque.tsx",
+    "tag": "DialogContent",
+    "line": 425,
+    "className": "\"max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 79,
+    "routes": []
+  },
+  {
+    "file": "src/pages/Fazendas.tsx",
+    "tag": "DialogContent",
+    "line": 269,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 80,
+    "routes": []
+  },
+  {
+    "file": "src/pages/FluxoTecnico.tsx",
+    "tag": "SelectTrigger",
+    "line": 284,
+    "className": "\"w-[180px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 81,
+    "routes": []
+  },
+  {
+    "file": "src/pages/MonitoramentoAlertas.tsx",
+    "tag": "DialogContent",
+    "line": 419,
+    "className": "\"sm:max-w-md max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 82,
+    "routes": []
+  },
+  {
+    "file": "src/pages/OrdensServico.tsx",
+    "tag": "DialogContent",
+    "line": 413,
+    "className": "\"max-w-lg max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 83,
+    "routes": []
+  },
+  {
+    "file": "src/pages/Relatorios.tsx",
+    "tag": "Input",
+    "line": 825,
+    "className": "\"pl-8 h-9 text-sm w-full sm:w-[180px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 84,
+    "routes": []
+  },
+  {
+    "file": "src/pages/Relatorios.tsx",
+    "tag": "Input",
+    "line": 837,
+    "className": "\"pl-8 h-9 text-sm w-full sm:w-[180px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 85,
+    "routes": []
+  },
+  {
+    "file": "src/pages/Talhoes.tsx",
+    "tag": "DialogContent",
+    "line": 133,
+    "className": "\"max-w-lg w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 86,
+    "routes": []
+  },
+  {
+    "file": "src/pages/app/MobileCatalogoTecnico.tsx",
+    "tag": "TabsList",
+    "line": 140,
+    "className": "\"grid grid-cols-3 w-full\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 87,
+    "routes": []
+  },
+  {
+    "file": "src/pages/app/MobileVisitaWizard.tsx",
+    "tag": "Button",
+    "line": 1089,
+    "className": "\"flex-1 max-w-[220px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 88,
+    "routes": []
+  },
+  {
+    "file": "src/pages/app/wizard/WizardRecomendacaoStep.tsx",
+    "tag": "DialogContent",
+    "line": 407,
+    "className": "\"max-w-md max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 89,
+    "routes": []
+  },
+  {
+    "file": "src/pages/app/wizard/WizardRevisaoStep.tsx",
+    "tag": "AlertDialogContent",
+    "line": 240,
+    "className": "\"max-w-[calc(100%-2rem)] sm:max-w-lg\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 90,
+    "routes": []
+  },
+  {
+    "file": "src/pages/auditoria/AgendaTab.tsx",
+    "tag": "Table",
+    "line": 32,
+    "className": "\"min-w-[720px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 91,
+    "routes": []
+  },
+  {
+    "file": "src/pages/auditoria/ClientesTab.tsx",
+    "tag": "Table",
+    "line": 58,
+    "className": "\"min-w-[720px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 92,
+    "routes": []
+  },
+  {
+    "file": "src/pages/auditoria/ComunicacaoTab.tsx",
+    "tag": "Table",
+    "line": 189,
+    "className": "\"min-w-[860px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 93,
+    "routes": []
+  },
+  {
+    "file": "src/pages/auditoria/SenhasTab.tsx",
+    "tag": "Table",
+    "line": 69,
+    "className": "\"min-w-[560px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 94,
+    "routes": []
+  },
+  {
+    "file": "src/pages/auditoria/VisitasTab.tsx",
+    "tag": "Table",
+    "line": 67,
+    "className": "\"min-w-[640px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 95,
+    "routes": []
+  },
+  {
+    "file": "src/pages/clientes/ParceirosB2BTab.tsx",
+    "tag": "SelectTrigger",
+    "line": 98,
+    "className": "\"w-full sm:w-[160px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 96,
+    "routes": []
+  },
+  {
+    "file": "src/pages/clientes/ProdutoresTab.tsx",
+    "tag": "DialogContent",
+    "line": 362,
+    "className": "\"max-w-3xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 97,
+    "routes": []
+  },
+  {
+    "file": "src/pages/comercial/CampanhasComerciais.tsx",
+    "tag": "DialogContent",
+    "line": 237,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 98,
+    "routes": []
+  },
+  {
+    "file": "src/pages/comercial/CommercialPaymentPlansPage.tsx",
+    "tag": "DialogContent",
+    "line": 464,
+    "className": "\"max-w-4xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 99,
+    "routes": []
+  },
+  {
+    "file": "src/pages/comercial/PedidosB2B.tsx",
+    "tag": "DialogContent",
+    "line": 380,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 100,
+    "routes": []
+  },
+  {
+    "file": "src/pages/configuracoes/FiscalProdutos.tsx",
+    "tag": "SelectTrigger",
+    "line": 496,
+    "className": "\"max-w-[220px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 101,
+    "routes": []
+  },
+  {
+    "file": "src/pages/dashboard/DashboardUnificado.tsx",
+    "tag": "TabsList",
+    "line": 52,
+    "className": "\"w-max min-w-full sm:w-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 102,
+    "routes": []
+  },
+  {
+    "file": "src/pages/financeiro/EntregasNaoFaturadas.tsx",
+    "tag": "DialogContent",
+    "line": 180,
+    "className": "\"max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 103,
+    "routes": []
+  },
+  {
+    "file": "src/pages/financeiro/FluxoCaixa.tsx",
+    "tag": "DialogContent",
+    "line": 392,
+    "className": "\"max-w-3xl max-h-[80vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 104,
+    "routes": []
+  },
+  {
+    "file": "src/pages/financeiro/RecibosList.tsx",
+    "tag": "DialogContent",
+    "line": 350,
+    "className": "\"max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 105,
+    "routes": []
+  },
+  {
+    "file": "src/pages/financeiro/Recorrencias.tsx",
+    "tag": "DialogContent",
+    "line": 289,
+    "className": "\"max-w-2xl max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 106,
+    "routes": []
+  },
+  {
+    "file": "src/pages/plataforma/EmpresaDetalhe.tsx",
+    "tag": "DialogContent",
+    "line": 281,
+    "className": "\"max-h-[90dvh] overflow-y-auto sm:max-w-2xl\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 107,
+    "routes": []
+  },
+  {
+    "file": "src/pages/plataforma/PlataformaHome.tsx",
+    "tag": "TabsList",
+    "line": 154,
+    "className": "\"h-auto w-full justify-start gap-1 overflow-x-auto overflow-y-hidden whitespace-nowrap p-1 [scrollbar-width:thin] [&>button]:min-h-10 [&>button]:shrink-0 [&>button]:px-3 [&>button:focus-visible]:ring-2 [&>button:focus-visible]:ring-ring\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 108,
+    "routes": []
+  },
+  {
+    "file": "src/pages/portal/PortalAcompanhamento.tsx",
+    "tag": "SelectTrigger",
+    "line": 154,
+    "className": "\"sm:w-[160px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 109,
+    "routes": []
+  },
+  {
+    "file": "src/pages/portal/PortalAcompanhamento.tsx",
+    "tag": "SelectTrigger",
+    "line": 164,
+    "className": "\"sm:w-[180px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 110,
+    "routes": []
+  },
+  {
+    "file": "src/pages/portal/PortalFazendaDetalhe.tsx",
+    "tag": "TabsList",
+    "line": 296,
+    "className": "\"grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 h-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 111,
+    "routes": []
+  },
+  {
+    "file": "src/pages/portal/PortalLayout.tsx",
+    "tag": "Button",
+    "line": 157,
+    "className": "\"max-w-[220px] gap-2\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 112,
+    "routes": []
+  },
+  {
+    "file": "src/pages/portal/PortalOrdensServico.tsx",
+    "tag": "DialogContent",
+    "line": 200,
+    "className": "\"max-w-2xl bg-slate-50 max-h-[90vh] overflow-y-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 113,
+    "routes": []
+  },
+  {
+    "file": "src/pages/portal/PortalTalhaoDetalhe.tsx",
+    "tag": "TabsList",
+    "line": 159,
+    "className": "\"grid w-full grid-cols-2 sm:grid-cols-4 h-auto\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 114,
+    "routes": []
+  },
+  {
+    "file": "src/pages/portal-parceiro/FichasTecnicas.tsx",
+    "tag": "DialogContent",
+    "line": 172,
+    "className": "\"max-w-5xl w-[95vw]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 115,
+    "routes": []
+  },
+  {
+    "file": "src/pages/portal-parceiro/PortalParceiroLayout.tsx",
+    "tag": "SelectTrigger",
+    "line": 181,
+    "className": "\"h-8 text-sm w-[200px]\"",
+    "risk": "STATIC_CANDIDATE_NOT_REPRODUCED",
+    "id": 116,
+    "routes": []
+  }
+]
