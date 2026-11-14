@@ -1,8 +1,8 @@
 ## 14/11 03:23 — Fiscal microrganismo → produto proprietário
-- [ ] Retirar navegação legada e resumo legado; usar gestão/consulta canônica por produto nas entradas fiscais.
-- [ ] Verificar filtros/RLS/Storage e testes de troca de empresa/recuperação/permissões.
+- [x] Retirar navegação legada e resumo legado; usar gestão/consulta canônica por produto nas entradas fiscais.
+- [x] Verificar filtros/RLS/Storage; duas migrações aplicadas, 75 Vitest e 37+9 checks PG sintéticos PASS, build/typecheck automático OK.
 - [ ] Homologação real QA Fiscal 20261113/BAC-11, arquivo A/B e limpeza exata: bloqueada por sessão external_unmanaged; não manipular QA sem prova de fixture.
-- [ ] Registrar evidências e limites; não publicar.
+- [x] Registrar evidências/falhas/limites em management/REPORT.md; nenhum dado QA ou vínculo alterado, sem publicação.
 
 ## 14/11 02:46 — Atesto service-only e recuperação de reserva
 - [x] Corrigir quatro pontes de atesto/cancelamento sem USAGE geral; ACL hosted confirmada e 9 checks SET ROLE locais PASS.
