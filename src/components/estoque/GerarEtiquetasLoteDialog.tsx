@@ -22,9 +22,11 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Tags, AlertTriangle } from "lucide-react";
+import { EtiquetaProdutoActions } from "@/components/etiquetas/EtiquetaProdutoActions";
 
 export interface EmbalagemLoteOption {
   id: string;
+  lote_id?: string | null;
   codigo_embalagem: string;
   etiqueta_id?: string | null;
 }
@@ -69,6 +71,14 @@ export function traduzirErroEtiqueta(message: string): string {
 }
 
 export function GerarEtiquetasLoteDialog({ open, onOpenChange, embalagens, onDone }: Props) {
+  const lots = [...new Set(embalagens.map(e => e.lote_id).filter((id): id is string => Boolean(id)))];
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent aria-describedby={undefined}><DialogHeader><DialogTitle>Etiquetas por lote e recipiente</DialogTitle></DialogHeader>
+    {lots.length ? lots.map(id => <div key={id} className="border-b py-2"><p className="text-xs font-mono break-all mb-2">Lote {id}</p><EtiquetaProdutoActions loteId={id} onChanged={onDone} /></div>) : <p>Nenhum lote disponível nesta seleção.</p>}
+  </DialogContent></Dialog>;
+}
+
+/** Kept unmounted for historical component characterization; canonical entries use recipient roots. */
+function LegacyGerarEtiquetasLoteDialog({ open, onOpenChange, embalagens, onDone }: Props) {
   const { toast } = useToast();
   const [templates, setTemplates] = useState<EtiquetaTemplate[]>([]);
   const [templateCodigo, setTemplateCodigo] = useState<string>("");

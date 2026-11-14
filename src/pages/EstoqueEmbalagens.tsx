@@ -173,6 +173,7 @@ export default function EstoqueEmbalagens() {
         onOpenChange={setLoteEtiquetasOpen}
         embalagens={items.map((i) => ({
           id: i.id,
+          lote_id: i.lote_id,
           codigo_embalagem: i.codigo_embalagem,
           etiqueta_id: i.etiqueta_id,
         }))}
