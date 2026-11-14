@@ -99,7 +99,7 @@ export default function Auth() {
               />
           </div>
           <CardDescription>
-            {recovery ? "Recuperar senha" : isLogin ? "Entre na sua conta" : "Crie sua conta"}
+            {recovery ? "Definir ou recuperar senha" : isLogin ? "Entre na sua conta" : "Crie sua conta"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -171,7 +171,7 @@ export default function Auth() {
               setErrorMsg("");
               setSearchParams((params) => { params.set("recovery", "1"); return params; }, { replace: true });
             }}>
-            Esqueci minha senha
+            Primeiro acesso ou esqueci minha senha
           </Button>
           </>}
           {/* Registro público removido para segurança do sistema */}
