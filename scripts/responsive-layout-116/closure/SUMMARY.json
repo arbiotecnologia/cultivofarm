@@ -1,0 +1,19 @@
+{
+  "ids": 116,
+  "by_id": {
+    "COMPLETE_DECLARED_ACTION_PROFILE_GEOMETRY": 34,
+    "ASSERTED_PARTIAL_ACTION_PROFILE_COVERAGE": 71,
+    "N_A_CURRENT_CLOSED_OR_RETIRED_CONTEXTUAL_ASSERTION": 9,
+    "OPEN_GAP": 2
+  },
+  "new_trigger_scenarios": 66,
+  "new_trigger_pass": 62,
+  "new_trigger_na": 2,
+  "new_trigger_gaps": 2,
+  "previous_retests": 483,
+  "previous_asserted": 431,
+  "context_comparisons": 434,
+  "context_asserted": 402,
+  "explicit_action_profile_sets": 38,
+  "note": "Completeness is local geometry for declared action profile set only, not production/JWT/RLS or all variants."
+}
