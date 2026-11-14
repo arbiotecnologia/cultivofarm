@@ -46,8 +46,10 @@ async def main():
        await page.locator('iframe').wait_for(state='visible')
       if d['kind']=='pdf':await page.locator('iframe').wait_for(state='visible');rec['assertions'].append({'pdf_iframe':True})
       await page.get_by_text(d['expected'],exact=False).first.wait_for(state='visible');rec['assertions'].append({'contextual_content':True})
-      for id in ([] if d['kind']=='cockpit-na' else [39] if d['kind']=='micro-filter-na' else d['ids']):
+      for id in ([] if d['kind']=='cockpit-na' else [39] if d['kind']=='micro-filter-na' else [70,71] if d['kind']=='users-filter' and w==390 else d['ids']):
        loc=page.locator(f'[data-review-occurrence="{id}"]:visible').first;await loc.wait_for(state='visible');await loc.scroll_into_view_if_needed();g=await loc.evaluate(MEASURE);rec['assertions'].append({'id':id,'target':g});assert g['visible'], 'target invisible'
+      if d['kind']=='users-filter' and w==390:
+       assert await page.get_by_role('button',name='Editar usuário Usuário sintético representativo').count()>0;rec['assertions'].append({'id':72,'mobile_cards_replace_table':True});rec['classification']='ID72_RESPONSIVE_MOBILE_CARD_VARIANT'
       if d['kind']=='micro-filter-na':
        assert await page.locator('[data-review-occurrence="40"]:visible').count()==0;assert await page.get_by_role('button',name='Novo Microrganismo').count()==0;rec['assertions'].append({'global_editor_absent':True});rec['classification']='ID40_N_A_GLOBAL_EDITOR_CLOSED'
       if d['kind']=='cockpit-na':
