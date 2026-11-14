@@ -8,13 +8,13 @@ BOOT="""import {MemoryRouter,Routes,Route} from '/node_modules/.vite/deps/react-
 async def main():
  batch=int(sys.argv[1]);current=None
  async with async_playwright() as p:
-  b=await p.chromium.launch();c=await b.new_context(viewport={'width':390,'height':844});page=await c.new_page();page.set_default_timeout(2500)
+  b=await p.chromium.launch();c=await b.new_context(viewport={'width':390,'height':844});page=await c.new_page();page.set_default_timeout(2500);page.on('pageerror',lambda e:print('PAGEERROR',str(e),flush=True));page.on('console',lambda e:print('CONSOLE',e.text,flush=True) if e.type=='error' else None)
   async def intercept(r):
    if not r.request.url.startswith('http://localhost:8080'):return await r.abort()
    path=r.request.url.split('http://localhost:8080')[-1].split('?')[0]
    if path=='/src/App.tsx':
     import re
-    text=Path('/dev-server/src/App.tsx').read_text();start=text.index('export function RoleGuard(');end=text.index('\n}',start)+2;body=text[start:end];imports="import React from '/node_modules/.vite/deps/react.js?v=d55b057d';import {Navigate,useLocation} from '/node_modules/.vite/deps/react-router-dom.js?v=39152e0a';import {useAuth} from '/src/hooks/useAuth.tsx';import {useEntitlements} from '/src/hooks/useEntitlements.tsx';import {isPathEntitled} from '/src/lib/saas/featureRouteMap.ts';import ForaDoPlano from '/src/components/guards/ForaDoPlano.tsx';import {readActiveContext,resolveEffectiveRouteRole} from '/src/lib/navigation/portalRoleContext.ts';"
+    text=Path('/dev-server/src/App.tsx').read_text();start=text.index('export function RoleGuard(');end=text.index('\n}',start)+2;body=text[start:end];imports="import React from '/node_modules/.vite/deps/react.js?v=d55b057d';import {Navigate,useLocation} from '/node_modules/.vite/deps/react-router-dom.js?v=39152e0a';import {useAuth} from '/src/hooks/useAuth.tsx';import {useEntitlements} from '/src/hooks/useEntitlements.ts';import {isPathEntitled} from '/src/lib/saas/featureRouteMap.ts';import ForaDoPlano from '/src/components/guards/ForaDoPlano.tsx';import {readActiveContext,resolveEffectiveRouteRole} from '/src/lib/navigation/portalRoleContext.ts';"
     import subprocess
     code=subprocess.check_output(['bun','-e',"const src=await Bun.stdin.text();console.log((await Bun.Transpiler.prototype.transform.call(new Bun.Transpiler({loader:'tsx'}),src)))"],input=(imports+body).encode()).decode();return await r.fulfill(content_type='application/javascript',body=code)
    if path=='/src/hooks/useAuth.tsx':return await r.fulfill(content_type='application/javascript',body=ns['AUTH'])
