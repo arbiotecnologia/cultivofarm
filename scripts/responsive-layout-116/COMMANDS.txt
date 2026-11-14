@@ -15,3 +15,13 @@ bun run test -- src/test/etiquetas src/test/envase src/test/lotes/consulta.test.
 bun run test -- src/test/visita/monitoringAutosave.interaction.test.tsx src/test/visita/parentFence.interaction.test.tsx src/test/visita/wizardAnexos.contract.test.tsx src/test/aplicacoes/evidencias.test.ts --maxWorkers=2
 bun run test -- src/test/entregas/painelEvidencias.test.tsx src/test/envase --maxWorkers=2
 Build/typecheck performed by platform harness; no manual build invocation.
+
+Specific continuation (localhost only):
+mkdir -p /tmp/browser/responsive-116/modules
+node scripts/responsive-layout-116/harness/prepare.cjs
+for n in 0 1 2; do python3 scripts/responsive-layout-116/specific/run.py "$n" > "/tmp/browser/responsive-116/specific-$n.log" 2>&1 & done
+wait
+python3 scripts/responsive-layout-116/specific/routes.py
+python3 scripts/responsive-layout-116/specific/consolidate.py
+bun run test -- src/test/protocolos/fichas-cat09-cat10.test.ts src/test/comercial/pdfEmitterName.test.ts src/test/visita/pdfVisitaAuthenticated.test.ts src/test/catalogo/h3b-preco-canonico-fichas.test.ts --maxWorkers=2
+Checkpoint resumes existing records, including failures; to retest, preserve prior JSON then remove only the target scenarios. Failed executions in specific/initial-attempts are not release evidence.
