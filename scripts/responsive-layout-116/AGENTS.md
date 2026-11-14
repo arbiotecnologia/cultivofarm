@@ -1,0 +1,3 @@
+- Preserve the original 116 occurrence numbers and source checklist bytes; browser-only JSX markers may identify real mounted controls without changing application routes or authorization.
+- Use local browser transport/session fixtures only, block external requests and all writes; distinguish attempted routes, mounted occurrences, exercised controls and visually reviewed scenarios from static evidence.
+- Never certify missing data, closed capability gates, generic shared controls or synthetic identity as production/JWT evidence.
