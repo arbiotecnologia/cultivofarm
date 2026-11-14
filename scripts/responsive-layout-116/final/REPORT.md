@@ -2,7 +2,7 @@
 
 ## Reconciliação dos 116
 - **88** com geometria/conteúdo/último controle comprovados para o conjunto declarado de perfis de ação, qualificado pela cadeia estática de consumidor.
-- **16** com geometria comprovada, mas cadeia/contexto/capacidade ainda não integralmente resolvidos: **3, 6, 7, 9, 13, 26, 37, 38, 42, 53, 54, 87, 88, 89, 90, 115**.
+- **16** com geometria comprovada, mas cadeia/contexto/capacidade ainda não integralmente resolvidos: **3, 6, 7, 9, 13, 15, 26, 37, 38, 42, 53, 54, 87, 88, 89, 90**.
 - **11 N/A**: nove anteriores preservados; #48/#49 agora classificados por gates originais fechados `canEditFull=false`, não por “montou via props”.
 - **1 caso especial #116**: seletor staff corrigido e troca validada em montagem original isolada; o **B2BRouteGuard original nega entrada staff**. Não ampliar esse guard: a correção visual não representa liberação de navegação integral.
 
@@ -30,7 +30,7 @@ Total: **116**, numeração preservada. Completa aqui significa cobertura local 
 **Limite real encontrado:** rota externa `/portal-parceiro/*` passa por B2BRouteGuard, que exige escopo externo exclusivo parceiro. Staff não atravessa essa guarda no código atual. Não modificar permissão para fazer teste passar; geometria isolada identificada como tal no MATRIX.
 
 ## Testes e publicação
-Regressão de portal/navegação: **35/35 em quatro arquivos** (`final/regression.log/.exit`). Bateria ampliada: **238/238 em 16 arquivos** (`final/regression-expanded.log/.exit`). Último sinal automático consultado: build OK às **15:16:38Z**. Typecheck independente não executado, não certificado separadamente. Sem SQL, dados reais, mudanças de papéis, capacidades, gates ou publicação. Auditoria exclusivamente em scripts.
+Regressão de portal/navegação: **35/35 em quatro arquivos** (`final/regression.log/.exit`). Bateria ampliada: **238/238 em 16 arquivos** (`final/regression-expanded.log/.exit`). Último sinal automático consultado: build OK às **15:17:03Z**. Typecheck independente não executado, não certificado separadamente. Sem SQL, dados reais, mudanças de papéis, capacidades, gates ou publicação. Auditoria exclusivamente em scripts.
 
 ## Reprodução
 - `python3 scripts/responsive-layout-116/final/priority.py 0|1|2`
