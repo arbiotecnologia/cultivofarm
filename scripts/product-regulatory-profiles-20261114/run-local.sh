@@ -20,3 +20,5 @@ RUN=(setpriv --reuid="$(id -u lovable)" --regid="$(id -g lovable)" --init-groups
 trap '"${RUN[@]}" pg_ctl -D "$D/data" stop -m fast >/dev/null; rm -rf "$D"' EXIT
 psql -h "$D" -p 55439 -U postgres -d postgres -v ON_ERROR_STOP=1 -f "$H/local-tests.sql"
 psql -h "$D" -p 55439 -U postgres -d postgres -v ON_ERROR_STOP=1 -f "$H/document-tests.sql"
+psql -h "$D" -p 55439 -U postgres -d postgres -v ON_ERROR_STOP=1 -f "$H/../../supabase/migrations/20261114010356_048ffea3-6e06-41a9-989e-c0bcac603f4c.sql"
+psql -h "$D" -p 55439 -U postgres -d postgres -v ON_ERROR_STOP=1 -c "SELECT public.rpc_regulatory_product_dossier_detail('00000000-0000-4000-8000-000000000100','00000000-0000-4000-8000-000000000001')->'dossier'->>'id' = '00000000-0000-4000-8000-000000000120' AS private_wrapper_pass;"
