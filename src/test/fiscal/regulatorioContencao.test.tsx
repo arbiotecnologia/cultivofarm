@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GlobalCatalogWriteBlockedError } from "@/lib/catalogo/globalCatalogWriteContainment";
 
 const mocks = vi.hoisted(() => ({ rpc: vi.fn() }));
+vi.mock("@/hooks/useAuth", () => ({useAuth:()=>({user:{id:'00000000-0000-4000-8000-000000000001'},profile:{user_id:'00000000-0000-4000-8000-000000000001',organization_id:'00000000-0000-4000-8000-000000000002',ativo:true},roles:['administrador'],loading:false})}));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: mocks.rpc, from: vi.fn() } }));
 
 import {
@@ -93,6 +94,7 @@ async function openSheet() {
   const W = wrapper();
   render(<W><RegulatorioMicrorganismosSecao /></W>);
   fireEvent.click(await screen.findByRole("button", { name: "Abrir dossiê regulatório de Micro teste" }));
+  fireEvent.click(await screen.findByRole("button", {name:'Dossiê legado do microrganismo'}));
   return screen.findByTestId("regulatorio-dossie-sheet");
 }
 
@@ -103,7 +105,7 @@ describe("render do dossiê em modo consulta", () => {
     expect(await within(sheet).findByText(/Nenhum dossiê registrado/)).toBeTruthy();
     expect(within(sheet).getByText("Modo consulta")).toBeTruthy();
     expect(within(sheet).queryAllByRole("button").filter((b) => WRITE_LABELS.test(b.textContent ?? ""))).toHaveLength(0);
-    expect(mocks.rpc.mock.calls.every(([fn]) => String(fn).match(/overview|dossier_detail/))).toBe(true);
+    expect(mocks.rpc.mock.calls.every(([fn]) => ['rpc_microorganism_regulatory_overview','rpc_regulatory_dossier_detail','rpc_regulatory_microorganism_products'].includes(String(fn)))).toBe(true);
   });
   it("dossiê preenchido: fatos em consulta, sem campos editáveis nem botões de escrita", async () => {
     detail = filled;
@@ -111,7 +113,7 @@ describe("render do dossiê em modo consulta", () => {
     expect(await within(sheet).findByText("Cepa teste")).toBeTruthy();
     expect(within(sheet).queryAllByRole("textbox")).toHaveLength(0);
     expect(within(sheet).queryAllByRole("button").filter((b) => WRITE_LABELS.test(b.textContent ?? ""))).toHaveLength(0);
-    expect(mocks.rpc.mock.calls.every(([fn]) => String(fn).match(/overview|dossier_detail/))).toBe(true);
+    expect(mocks.rpc.mock.calls.every(([fn]) => ['rpc_microorganism_regulatory_overview','rpc_regulatory_dossier_detail','rpc_regulatory_microorganism_products'].includes(String(fn)))).toBe(true);
   });
   it("erro de permissão não aparece como ausência e oculta dados", async () => {
     mocks.rpc.mockImplementation(async (fn: string) =>
