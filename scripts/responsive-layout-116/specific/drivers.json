@@ -1,0 +1,699 @@
+[
+  {
+    "ids": [
+      4
+    ],
+    "file": "src/components/clientes/ClienteFormTabs.tsx",
+    "export": "ClienteFormTabs",
+    "route": "/clientes",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "gestor_comercial"
+    ],
+    "kind": "client-form",
+    "tab": "Geral",
+    "expected": "NOME COMPLETO",
+    "trigger": "Clientes > Novo cliente > Geral"
+  },
+  {
+    "ids": [
+      5
+    ],
+    "file": "src/components/clientes/ClienteFormTabs.tsx",
+    "export": "ClienteFormTabs",
+    "route": "/clientes",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "gestor_comercial"
+    ],
+    "kind": "client-form",
+    "tab": "Financeiro",
+    "expected": "Condição",
+    "trigger": "Clientes > Novo cliente > Financeiro"
+  },
+  {
+    "ids": [
+      14
+    ],
+    "file": "src/components/configuracoes/AuditSenhaDialog.tsx",
+    "export": "AuditSenhaDialog",
+    "route": "/configuracoes",
+    "profiles": [
+      "administrador"
+    ],
+    "kind": "audit",
+    "open": "Auditoria de Senhas",
+    "expected": "Responsável sintético",
+    "trigger": "Auditoria de Senhas (componente legado; entrada atual não encontrada)"
+  },
+  {
+    "ids": [
+      20
+    ],
+    "file": "src/components/fazendas/TalhoesFazendaTab.tsx",
+    "export": "default",
+    "route": "/fazendas/33333333-3333-4333-8333-333333333333",
+    "profiles": [
+      "administrador",
+      "gestor"
+    ],
+    "kind": "plots",
+    "open": "Novo Talhão",
+    "expected": "Nome",
+    "trigger": "Fazenda > Talhões > Novo Talhão"
+  },
+  {
+    "ids": [
+      24
+    ],
+    "file": "src/components/fiscal/FiscalCatalogCombobox.tsx",
+    "export": "default",
+    "route": "/configuracoes/fiscal/empresa",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "financeiro"
+    ],
+    "kind": "fiscal-combo",
+    "expected": "Operação sintética",
+    "trigger": "Empresa fiscal > seletor do catálogo oficial"
+  },
+  {
+    "ids": [
+      53
+    ],
+    "file": "src/components/visita/PdfPreviewDialog.tsx",
+    "export": "PdfPreviewDialog",
+    "route": "/visita-tecnica",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "consultor_tecnico",
+      "tecnico_agronomo",
+      "administrativo"
+    ],
+    "kind": "pdf",
+    "open": "Visualizar PDF",
+    "expected": "Pré-visualização do PDF",
+    "trigger": "Visita > Visualizar PDF"
+  },
+  {
+    "ids": [
+      54
+    ],
+    "file": "src/components/visita/PlanoMonitoramentoEditor.tsx",
+    "export": "PlanoMonitoramentoEditor",
+    "route": "/visita-tecnica",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "consultor_tecnico",
+      "tecnico_agronomo"
+    ],
+    "kind": "plan",
+    "open": "Editar Plano",
+    "expected": "Editar Plano de Monitoramento",
+    "trigger": "Visita rascunho/com participante > Editar Plano"
+  },
+  {
+    "ids": [
+      59,
+      60
+    ],
+    "file": "src/pages/ClienteDetalhe.tsx",
+    "export": "OSTable",
+    "route": "/clientes/33333333-3333-4333-8333-333333333333",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "gestor_comercial",
+      "consultor_tecnico",
+      "cliente_produtor",
+      "administrativo",
+      "tecnico_agronomo",
+      "financeiro"
+    ],
+    "kind": "os-table",
+    "expected": "Todos os status",
+    "trigger": "Cliente > carteira de OS > filtro e ordenação"
+  },
+  {
+    "ids": [
+      77,
+      78
+    ],
+    "file": "src/pages/Estoque.tsx",
+    "export": "default",
+    "route": "/estoque",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "administrativo",
+      "operador_onfarm",
+      "producao"
+    ],
+    "kind": "stock",
+    "open": "Entrada no Estoque",
+    "expected": "Nova Entrada",
+    "trigger": "Estoque > Entrada no Estoque"
+  },
+  {
+    "ids": [
+      79
+    ],
+    "file": "src/pages/Estoque.tsx",
+    "export": "default",
+    "route": "/estoque",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "administrativo",
+      "operador_onfarm",
+      "producao"
+    ],
+    "kind": "stock-cancel",
+    "open": "Cancelar reserva",
+    "expected": "Confirmar Cancelamento",
+    "trigger": "Estoque reservado > Cancelar reserva (sem confirmar)"
+  },
+  {
+    "ids": [
+      104
+    ],
+    "file": "src/pages/financeiro/FluxoCaixa.tsx",
+    "export": "default",
+    "route": "/financeiro/fluxo-caixa",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "financeiro"
+    ],
+    "kind": "cashflow",
+    "expected": "Títulos de",
+    "trigger": "Fluxo Caixa > período com título > detalhe"
+  },
+  {
+    "ids": [
+      105
+    ],
+    "file": "src/pages/financeiro/RecibosList.tsx",
+    "export": "default",
+    "route": "/financeiro/recibos",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "financeiro"
+    ],
+    "kind": "receipt",
+    "open": "Cancelar",
+    "expected": "Cancelar recibo",
+    "trigger": "Recibos > recibo emitido > Cancelar (sem confirmar)"
+  },
+  {
+    "ids": [
+      111
+    ],
+    "file": "src/pages/portal/PortalFazendaDetalhe.tsx",
+    "export": "default",
+    "route": "/portal/fazendas/33333333-3333-4333-8333-333333333333",
+    "profiles": [
+      "cliente_produtor",
+      "administrador",
+      "gestor"
+    ],
+    "kind": "producer-farm",
+    "expected": "Fazenda sintética",
+    "trigger": "Portal produtor > Fazenda vinculada > abas"
+  },
+  {
+    "ids": [
+      114
+    ],
+    "file": "src/pages/portal/PortalTalhaoDetalhe.tsx",
+    "export": "default",
+    "route": "/portal/talhoes/33333333-3333-4333-8333-333333333333",
+    "profiles": [
+      "cliente_produtor",
+      "administrador",
+      "gestor"
+    ],
+    "kind": "producer-plot",
+    "expected": "Talhão sintético",
+    "trigger": "Portal produtor > Fazenda > Talhão vinculado > abas"
+  },
+  {
+    "ids": [
+      3
+    ],
+    "file": "src/components/catalogo/AddToCartDialog.tsx",
+    "export": "AddToCartDialog",
+    "route": "/portal-parceiro/catalogo",
+    "profiles": [
+      "parceiro_b2b"
+    ],
+    "kind": "cart",
+    "expected": "Adicionar ao carrinho",
+    "trigger": "Catálogo > produto > adicionar (montagem isolada; canal exige gate próprio)"
+  },
+  {
+    "ids": [
+      38
+    ],
+    "file": "src/components/protocolos/MicroorganismTechnicalProfileDialog.tsx",
+    "export": "MicroorganismTechnicalProfileDialog",
+    "route": "/base-tecnica",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "consultor_tecnico",
+      "tecnico_agronomo",
+      "gestor_comercial"
+    ],
+    "kind": "micro-profile",
+    "expected": "Ficha",
+    "trigger": "Base Técnica > microrganismo > ficha técnica"
+  },
+  {
+    "ids": [
+      42
+    ],
+    "file": "src/components/protocolos/ProductTechnicalProfileDialog.tsx",
+    "export": "ProductTechnicalProfileDialog",
+    "route": "/base-tecnica",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "consultor_tecnico",
+      "tecnico_agronomo",
+      "gestor_comercial"
+    ],
+    "kind": "product-profile",
+    "expected": "Ficha",
+    "trigger": "Catálogo > produto > ficha técnica"
+  },
+  {
+    "ids": [
+      32
+    ],
+    "file": "src/components/plataforma/PlatformCatalogEntityPanel.tsx",
+    "export": "PlatformCatalogEntityPanel",
+    "route": "/plataforma/catalogo",
+    "profiles": [
+      "superadmin"
+    ],
+    "kind": "platform",
+    "open": "Nova cultura global",
+    "expected": "cultura",
+    "trigger": "Plataforma > catálogo > culturas > Nova cultura global"
+  },
+  {
+    "ids": [
+      74
+    ],
+    "file": "src/pages/ControleQualidade.tsx",
+    "export": "default",
+    "route": "/controle-qualidade",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "administrativo",
+      "operador_onfarm",
+      "producao"
+    ],
+    "kind": "cq",
+    "open": "Laudo",
+    "expected": "Laudo de análise técnica",
+    "trigger": "Controle de Qualidade > análise > Laudo"
+  },
+  {
+    "ids": [
+      89
+    ],
+    "file": "src/pages/app/wizard/WizardRecomendacaoStep.tsx",
+    "export": "default",
+    "route": "/app/visita/33333333-3333-4333-8333-333333333333",
+    "profiles": [
+      "administrador",
+      "consultor_tecnico",
+      "tecnico_agronomo",
+      "aplicador"
+    ],
+    "kind": "wizard-rec",
+    "open": "Nova",
+    "expected": "Nova recomendação",
+    "trigger": "Visita persistida > Recomendação > Nova"
+  },
+  {
+    "ids": [
+      90
+    ],
+    "file": "src/pages/app/wizard/WizardRevisaoStep.tsx",
+    "export": "default",
+    "route": "/app/visita/33333333-3333-4333-8333-333333333333",
+    "profiles": [
+      "administrador",
+      "consultor_tecnico",
+      "tecnico_agronomo",
+      "aplicador"
+    ],
+    "kind": "wizard-review",
+    "open": "Finalizar visita",
+    "expected": "Finalizar esta visita?",
+    "trigger": "Visita com cultura/checkin/diagnóstico > Revisão > Finalizar (sem confirmar)"
+  },
+  {
+    "ids": [
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      10
+    ],
+    "file": "src/pages/CockpitLaboratorio.tsx",
+    "export": "default",
+    "route": "/cockpit-laboratorio",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "administrativo",
+      "operador_onfarm",
+      "producao"
+    ],
+    "kind": "cockpit-na",
+    "expected": "Consulta disponível",
+    "trigger": "Rota monta CockpitConsulta; workspace/abas/reserva legado não montado"
+  },
+  {
+    "ids": [
+      115
+    ],
+    "file": "src/pages/portal-parceiro/FichasTecnicas.tsx",
+    "export": "default",
+    "route": "/portal-parceiro/fichas",
+    "profiles": [
+      "parceiro_b2b",
+      "parceiro_b2b_tecnico"
+    ],
+    "kind": "partner-sheets",
+    "expected": "Produto sintético",
+    "trigger": "Portal parceiro contextualizado > Fichas > Visualizar",
+    "open": "Visualizar"
+  },
+  {
+    "ids": [
+      99
+    ],
+    "file": "src/pages/comercial/CommercialPaymentPlansPage.tsx",
+    "export": "default",
+    "route": "/comercial/planos",
+    "profiles": [
+      "administrador",
+      "gestor_comercial"
+    ],
+    "kind": "plans",
+    "open": "Novo plano",
+    "expected": "Novo plano",
+    "trigger": "Planos comerciais > Novo plano (sem salvar)"
+  },
+  {
+    "ids": [
+      103
+    ],
+    "file": "src/pages/financeiro/EntregasNaoFaturadas.tsx",
+    "export": "default",
+    "route": "/financeiro/entregas-nao-faturadas",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "financeiro"
+    ],
+    "kind": "unbilled",
+    "open": "Marcar como sem cobrança",
+    "expected": "Sem cobrança",
+    "trigger": "Entrega pendente > Marcar sem cobrança (sem confirmar)"
+  },
+  {
+    "ids": [
+      96
+    ],
+    "file": "src/pages/clientes/ParceirosB2BTab.tsx",
+    "export": "default",
+    "route": "/clientes",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "gestor_comercial"
+    ],
+    "kind": "partner-filter",
+    "expected": "Ativos",
+    "trigger": "Clientes > Parceiros B2B > filtros"
+  },
+  {
+    "ids": [
+      97
+    ],
+    "file": "src/pages/clientes/ProdutoresTab.tsx",
+    "export": "default",
+    "route": "/clientes",
+    "profiles": [
+      "administrador",
+      "gestor"
+    ],
+    "kind": "producer-form",
+    "open": "Novo Produtor",
+    "expected": "Novo Produtor",
+    "trigger": "Clientes > Produtores > Novo Produtor"
+  },
+  {
+    "ids": [
+      43
+    ],
+    "file": "src/components/protocolos/ProdutosTab.tsx",
+    "export": "ProdutosTab",
+    "route": "/base-tecnica",
+    "profiles": [
+      "administrador",
+      "gestor"
+    ],
+    "kind": "products-filter",
+    "expected": "Produto sintético",
+    "trigger": "Catálogo Produtos > filtro de situação"
+  },
+  {
+    "ids": [
+      44,
+      45
+    ],
+    "file": "src/components/protocolos/ProdutosTab.tsx",
+    "export": "ProdutosTab",
+    "route": "/base-tecnica",
+    "profiles": [
+      "administrador",
+      "gestor"
+    ],
+    "kind": "product-editor",
+    "open": "Novo produto",
+    "expected": "Novo produto",
+    "trigger": "Produtos > Novo produto > primeira/última aba"
+  },
+  {
+    "ids": [
+      107
+    ],
+    "file": "src/pages/plataforma/EmpresaDetalhe.tsx",
+    "export": "default",
+    "route": "/plataforma",
+    "profiles": [
+      "superadmin"
+    ],
+    "kind": "org-editor",
+    "open": "Editar empresa",
+    "expected": "Editar empresa",
+    "trigger": "Plataforma > Empresa > Editar empresa"
+  },
+  {
+    "ids": [
+      57
+    ],
+    "file": "src/pages/Aplicacoes.tsx",
+    "export": "default",
+    "route": "/aplicacoes",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "aplicador",
+      "cliente_produtor",
+      "administrativo",
+      "financeiro"
+    ],
+    "kind": "application",
+    "expected": "Detalhes da Aplicação",
+    "trigger": "Aplicações > linha/cartão de aplicação > detalhes"
+  },
+  {
+    "ids": [
+      39,
+      40
+    ],
+    "file": "src/components/protocolos/MicrorganismosTab.tsx",
+    "export": "MicrorganismosTab",
+    "route": "/base-tecnica",
+    "profiles": [
+      "administrador",
+      "gestor"
+    ],
+    "kind": "micro-filter-na",
+    "expected": "Microrganismo sintético",
+    "trigger": "Base Técnica > Microrganismos; filtro ativo, editor global fechado"
+  },
+  {
+    "ids": [
+      80
+    ],
+    "file": "src/pages/Fazendas.tsx",
+    "export": "default",
+    "route": "/fazendas",
+    "profiles": [
+      "administrador",
+      "gestor"
+    ],
+    "kind": "farm-create",
+    "open": "Nova Fazenda",
+    "expected": "Nova Fazenda",
+    "trigger": "Fazendas > Nova Fazenda"
+  },
+  {
+    "ids": [
+      19
+    ],
+    "file": "src/components/faturamento/BaseFaturamentoDialog.tsx",
+    "export": "BaseFaturamentoDialog",
+    "route": "/faturamento",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "financeiro"
+    ],
+    "kind": "billing-base",
+    "expected": "Configurar Base de Faturamento",
+    "trigger": "OS > base de faturamento (montagem por props, nenhuma gravação)"
+  },
+  {
+    "ids": [
+      26
+    ],
+    "file": "src/components/fiscal/ProductDossierManagement.tsx",
+    "export": "ProductDossierAction",
+    "route": "/base-tecnica",
+    "profiles": [
+      "administrador",
+      "gestor"
+    ],
+    "kind": "dossier-action",
+    "open": "Gerenciar dossiê",
+    "expected": "Dossiê do produto",
+    "trigger": "Catálogo > produto > Gerenciar dossiê"
+  },
+  {
+    "ids": [
+      108
+    ],
+    "file": "src/pages/plataforma/PlataformaHome.tsx",
+    "export": "default",
+    "route": "/plataforma",
+    "profiles": [
+      "superadmin"
+    ],
+    "kind": "platform-tabs",
+    "expected": "Planos",
+    "trigger": "Plataforma > primeira/última seção"
+  },
+  {
+    "ids": [
+      83
+    ],
+    "file": "src/pages/OrdensServico.tsx",
+    "export": "default",
+    "route": "/ordens-servico",
+    "profiles": [
+      "administrador",
+      "gestor"
+    ],
+    "kind": "os-create",
+    "open": "Nova OS",
+    "expected": "Nova Ordem de Serviço",
+    "trigger": "Ordens de Serviço > Nova OS"
+  },
+  {
+    "ids": [
+      87
+    ],
+    "file": "src/pages/app/MobileCatalogoTecnico.tsx",
+    "export": "default",
+    "route": "/app/catalogo",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "consultor_tecnico",
+      "tecnico_agronomo"
+    ],
+    "kind": "mobile-catalog",
+    "expected": "Catálogo técnico",
+    "trigger": "Campo > Catálogo técnico > primeira/última aba"
+  },
+  {
+    "ids": [
+      110
+    ],
+    "file": "src/pages/portal/PortalAcompanhamento.tsx",
+    "export": "default",
+    "route": "/portal/acompanhamento",
+    "profiles": [
+      "cliente_produtor"
+    ],
+    "kind": "producer-progress",
+    "expected": "Acompanhamento",
+    "trigger": "Portal produtor > Acompanhamento > filtro de fazenda",
+    "tab": "Histórico"
+  },
+  {
+    "ids": [
+      70,
+      71,
+      72
+    ],
+    "file": "src/pages/Configuracoes.tsx",
+    "export": "default",
+    "route": "/configuracoes",
+    "profiles": [
+      "administrador"
+    ],
+    "kind": "users-filter",
+    "tab": "Usuários",
+    "expected": "Gestão de Usuários",
+    "trigger": "Configurações > Usuários > filtros e tabela"
+  },
+  {
+    "ids": [
+      82
+    ],
+    "file": "src/pages/MonitoramentoAlertas.tsx",
+    "export": "default",
+    "route": "/monitoramento-alertas",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "consultor_tecnico",
+      "tecnico_agronomo"
+    ],
+    "kind": "monitor-dialog",
+    "open": "Reprogramar",
+    "expected": "Reprogramar Monitoramento",
+    "trigger": "Monitoramento > alerta com origem > Reprogramar"
+  }
+]

@@ -229,7 +229,7 @@ export default function PortalFazendaDetalhe() {
         </Button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-2xl font-bold truncate">{fazenda.nome}</h1>
+            <h1 className="min-w-0 max-w-full text-2xl font-bold break-words">{fazenda.nome}</h1>
             {alertasCriticos > 0 && (
               <Badge variant="destructive">
                 <AlertTriangle className="h-3 w-3 mr-1" />

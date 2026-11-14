@@ -35,10 +35,38 @@ Falhas de infraestrutura preservadas: timeout de carregamento, script chamado `q
 - Build automático: `build-observed.log`, registros `build OK`. Typecheck independente não executado; não apresentado como prova separada.
 
 ## Acesso e reprodução
-Prévia: `/revisao-responsiva-116/index.html` (arquivo estático, não nova rota React). Compara antes/depois e oferece matriz. Página verificada mobile/desktop, oito imagens renderizadas. Scripts e comandos em `harness/` e `COMMANDS.txt`; scripts são copiados para `/tmp/browser/responsive-116` para execução. Antes/depois só é reproduzível alternando a revisão pelo histórico da plataforma, não executando “before” no código corrigido.
+Apresentação histórica movida para `presentation/index.html`, fora de `public/`; não é mais uma página servida pelo aplicativo. Abra-a localmente junto aos artefatos. Os links apontam para a matriz e relatório desta pasta. Scripts e comandos em `harness/` e `COMMANDS.txt`; scripts são copiados para `/tmp/browser/responsive-116` para execução. Antes/depois só é reproduzível alternando a revisão pelo histórico da plataforma, não executando “before” no código corrigido.
 
 Revisão base: `da80884ad25c78c0f9623df95f526888957fdb19`. Revisões posteriores são gerenciadas pela plataforma e registradas em `MATRIX.json`; nenhum commit manual. Rollback somente dos quatro ajustes de apresentação pelo histórico; nunca de guards/RPCs/dados.
 
 ## Checkpoint final consolidado
 {"ids": 116, "checkpoint_complete": 116, "isolated_scenarios": 1914, "mounted_isolated": 577, "navigation_profiles": 15, "navigation_scenarios": 30, "visual_approval": "ONLY corrected focused scenarios; all others are measurements or gaps"}
 Retestes refinados adicionais preservam arquivos `.initial.json`; não corrigem automaticamente ausência de controle. Metadados e imagens contêm apenas dados sintéticos. O refinamento de BI mostra título repartido com nome longo, sem sobreposição confirmada visualmente; não foi alterado como defeito de negócio.
+
+
+## Continuação específica — fechamento desta execução
+**Não é homologação integral dos 116.** Matriz compacta reconciliada em `MATRIX.json`; matriz anterior imutável em `specific/MATRIX-before-specific.json`.
+
+| Classificação por ID (sem dupla contagem) | Quantidade |
+|---|---:|
+| Com asserções contextualizadas novas, sem certificar todos os perfis | 44 |
+| Somente montagem/medidas anteriores, sem aprovação visual integral | 50 |
+| Controles fechados/retirados no contexto atual comprovado | 9 |
+| Lacunas abertas | 13 |
+| **Total** | **116** |
+
+252 cenários específicos: **250 passaram as asserções e 2 ficaram incompletos**, ambos ID110 (390/1440). Os cenários de ausência/N/A também entram nas 250 asserções; não são montagens positivas. Há 94 IDs com alguma evidência de montagem, não 94 aprovados. **Zero IDs certificados integralmente em todos os perfis elegíveis**: os perfis derivados da união de rotas não provam alçada de cada ação, e as variantes restantes continuam NOT_RUN.
+
+Drivers originais com leitura contextualizada: produto/carrinho, cadastro de cliente, plataforma, visitas/plano/wizard, estoque/reserva, filtros/tabelas, fazenda/talhão de produtor vinculado, ficha parceira, título/recibo, aplicação, base de faturamento e dossiê. Asserções verificam conteúdo esperado, alvo por ID, rótulos, primeira/última aba e último controle útil acessível; para detalhe sem formulário, última linha e fechamento. Não basta overflow da página. Algumas verificações são agrupadas por componente e não comprovam todas as variantes internas. Tabela ID72 é substituída por cartões no celular, comprovados; tabela montada no desktop.
+
+**Duas correções novas, apresentação apenas:** ID111, título da fazenda sem truncamento; ID115, título da ficha parceira com quebra, conteúdo flexível e ações preservadas. Retestes nos dois tamanhos por perfis listados; imagens mobile finais inspecionadas visualmente. Comparações em `specific/*before-fix.png`, `specific/specific-111-*.png` e `specific/specific-115-*.png`; resultados antigos preservados em `specific/initial-attempts/`. O iframe PDF é sintético: estas capturas não provam legibilidade dos bytes de um documento real nem transporte autenticado. Os quatro fluxos corrigidos anteriormente reutilizam `focused/` e capturas de entrega, sem nova alegação de cobertura.
+
+**N/A contextualizados:** IDs 10,61–67 pertencem ao workspace operacional do Cockpit não montado pela entrada atual de consulta; ID40 editor global de microrganismo permanece fechado (`TENANT_CAN_EDIT_GLOBAL_CATALOG=false`). Não foram reativados. Ver `specific/driver-10.json`, `specific/driver-39.json` e fontes originais. Não estender essa classificação para outras rotas hipotéticas.
+
+**Lacunas exatas:** 17 (confirmação interna de entrega), 52 (evidência/estado da visita), 68–69 (estados de configuração não exercitados), 73 (imagem ampliada da visita), 75 (comprovante de entrega), 88 (rodapé da visita completa), 100 (detalhe de pedido comercial), 101 (filtro fiscal), 110 (Histórico produtor: filtro de fazenda não montado), 112 (seletor produtor com múltiplos vínculos), 113 (laudo da OS no portal produtor), 116 (seletor de parceiro em contexto interno). Não são N/A: falta prova específica do estado/trigger. Nenhuma lacuna de fixture é motivo para abrir gates.
+
+**Navegação integral local:** reutilizados 15 perfis × 2 viewports anteriores, explicitamente com casos impedidos; acrescentados 10 ensaios com App/rotas/guards originais (produtor vinculado, catálogo parceiro contextualizado, Cockpit consulta, recibos e Financeiro impedido em Estoque). `specific/routes.json` verifica conteúdo/destino observado; não exercita todos os controles por rota nem certifica guard de backend. Montagens isoladas permanecem distintas. Nenhuma conta real foi usada.
+
+**Regressões finais:** 238/238 em 16 arquivos (`specific/regression-complete.log`, exit 0) e 39/39 em quatro arquivos focais (`specific/tests-final.log`, exit 0); não somar suítes históricas parcialmente sobrepostas. Build automático `build OK`, captura em `specific/build-final.log`; typecheck independente NOT_RUN. Revisão observada registrada na matriz; nenhum commit manual, deploy ou publicação.
+
+**Reprodução:** `specific/run.py` em três lotes com checkpoint; `specific/routes.py` para rotas e `specific/consolidate.py` para resumo. Preservam scripts e resultados malsucedidos. Dependem da preparação dos marcadores locais pelo harness, não de alteração nas fontes do aplicativo. Evidências estão exclusivamente em scripts, não embutidas no deploy futuro.

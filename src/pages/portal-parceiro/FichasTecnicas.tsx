@@ -169,18 +169,18 @@ export default function FichasTecnicas() {
           if (!v) setPreview(null);
         }}
       >
-        <DialogContent className="max-w-5xl w-[95vw]">
+        <DialogContent className="max-w-5xl w-[95vw] flex flex-col overflow-hidden">
           <DialogHeader>
-            <DialogTitle className="truncate">Ficha técnica — {visiblePreview?.nome}</DialogTitle>
+            <DialogTitle className="break-words whitespace-normal pr-6">Ficha técnica — {visiblePreview?.nome}</DialogTitle>
           </DialogHeader>
           {visiblePreview && (
             <iframe
               src={visiblePreview.blobUrl}
               title={visiblePreview.filename}
-              className="w-full h-[75vh] rounded-md border"
+              className="w-full min-h-0 flex-1 h-[60dvh] rounded-md border"
             />
           )}
-          <DialogFooter className="gap-2">
+          <DialogFooter className="shrink-0 gap-2">
             <Button variant="outline" onClick={() => setPreview(null)}>
               Fechar
             </Button>

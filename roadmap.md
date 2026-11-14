@@ -1,7 +1,13 @@
+## 14/11 14:24 — Lacunas responsivas específicas
+- [x] Calcular 66 IDs sem montagem da matriz; retirar apresentação de public e preservar em scripts.
+- [x] Drivers específicos: 252 cenários, 250 asserções PASS/2 gaps; 44 IDs contextualizados novos, 9 N/A contextualizados. Títulos fazenda/ficha corrigidos e retestados.
+- [x] Reconciliar 116: 44 contextualizados + 50 montagens antigas + 9 N/A + 13 lacunas; regressões 238/238 e 39/39, build OK; apresentação fora de public.
+- [ ] Prova integral pendente: IDs 17,52,68,69,73,75,88,100,101,110,112,113,116 e demais comparações por perfil/estado; fixtures/pré-requisitos específicos ainda não demonstrados. Não aprovado integralmente.
+
 ## 14/11 13:41 — Segunda revisão responsiva: 116 ocorrências
 - [x] Preservar 116 IDs e evidências existentes; quatro lotes com componentes originais/props e checkpoint incremental, matriz por perfil/viewport distinguindo montagem/navegação/lacunas.
 - [x] Corrigir clipping reproduzido em BulkAlvos/Evidencias/novo usuário/entrega; 40+8 cenários focais, 97/238/89/95 testes PASS, build automático OK; sem produção/publicação.
-- [ ] Homologação visual integral de todos os perfis/116 controles: conjunto principal processou 116 checkpoints (1914 cenários, 50 IDs montados); lacunas de fixture/capacidade/vínculo/estado permanecem, não certificadas. REPORT/MATRIX em scripts/responsive-layout-116; 15 perfis/30 navegações reais sintéticas e evidências na prévia.
+- [ ] Homologação visual integral de todos os perfis/116 controles: conjunto principal processou 116 checkpoints (1914 cenários, 50 IDs montados); lacunas de fixture/capacidade/vínculo/estado permanecem, não certificadas. REPORT/MATRIX em scripts/responsive-layout-116; 15 perfis/30 navegações reais sintéticas e evidências locais em scripts (apresentação retirada de public).
 
 ## 14/11 13:21 — Revisão responsiva de cadastro e controles compartilhados
 - [x] Sobreposição reproduzida; três tipos empilhados no corpo rolável, header/ação/fechamento acessíveis; vínculos/perfis/ações extensos ajustados sem funções/permissões.

@@ -1,0 +1,17 @@
+{
+  "ids": 116,
+  "by_id": {
+    "CONTEXTUAL_ASSERTED_NOT_ALL_PROFILES_CERTIFIED": 44,
+    "N_A_CURRENT_CLOSED_OR_RETIRED_CONTEXTUAL_ASSERTION": 9,
+    "OPEN_GAP": 13,
+    "PRIOR_MOUNT_GEOMETRY_ONLY": 50
+  },
+  "contextual_scenarios": 252,
+  "assertion_pass": 250,
+  "scenario_gaps": 2,
+  "old_route_profiles": 15,
+  "old_route_scenarios": 30,
+  "new_real_route_scenarios": 10,
+  "all_profiles_complete_ids": 0,
+  "note": "94 IDs have some mount evidence, 9 closed/retired IDs, 13 open gaps. Mount evidence is NOT full approval."
+}
