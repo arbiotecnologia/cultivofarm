@@ -1,8 +1,9 @@
 ## 14/11 02:29 — Gestão de dossiês pelo tenant proprietário
-- [ ] Substituir autoridade global por editor/leitor proprietário, mantendo leitores publicados compatíveis.
-- [ ] Cobertura múltipla explícita, versões e abrangência documental; navegação canônica nas duas entradas.
-- [ ] Aplicar delta e Edge canônicos; verificar banco, arquivos, UI sintética e permissões A/B sem dados reais.
-- [ ] Relatar provas executadas e limites de sessão externa, sem publicar frontend.
+- [x] Substituir autoridade global por editor/leitor proprietário, mantendo leitores publicados compatíveis.
+- [x] Cobertura múltipla explícita, versões e abrangência documental; navegação canônica nas duas entradas.
+- [x] Sete deltas e Edge canônicos aplicados; 21 Vitest, 26 checks PG sintéticos e 4 Deno PASS; ACL/bucket inspecionados.
+- [x] Relato atualizado em management/REPORT.md, sem publicação.
+- [ ] Homologação autenticada UI/Storage/JWT A/B e transições completas: BLOCKED por sessão externa não gerenciada; usuário validará no navegador.
 
 ## 14/11 01:27 — Gestão supervisionada de dossiês por produto
 - [x] Contrato canônico de identidade da plataforma, vínculos múltiplos e persistência revisados.
