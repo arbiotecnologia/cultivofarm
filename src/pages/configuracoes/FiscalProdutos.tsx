@@ -1,3 +1,4 @@
+import {ProductDossierAction} from '@/components/fiscal/ProductDossierManagement';
 import { TENANT_CAN_EDIT_GLOBAL_CATALOG } from "@/lib/catalogo/globalCatalogWriteContainment";
 /**
  * Fase Fiscal 3.21 — Perfis Fiscais unificados: produtos + microrganismos.
@@ -702,6 +703,7 @@ function renderRow(
               : <Badge>OK</Badge>}
         </td>
         <td className="p-2 text-right">
+          <ProductDossierAction productId={p.product_id} name={p.product_nome} code={p.product_codigo ?? null}/>
           <Button
             variant="outline" size="sm"
             onClick={() => onEditProduct(p)}

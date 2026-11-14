@@ -11176,6 +11176,7 @@ export type Database = {
         Row: {
           consulted_at: string | null
           content_sha256: string
+          covered_microorganism_ids: string[]
           deleted_at: string | null
           deleted_by: string | null
           doc_type: string
@@ -11196,6 +11197,7 @@ export type Database = {
         Insert: {
           consulted_at?: string | null
           content_sha256: string
+          covered_microorganism_ids?: string[]
           deleted_at?: string | null
           deleted_by?: string | null
           doc_type: string
@@ -11216,6 +11218,7 @@ export type Database = {
         Update: {
           consulted_at?: string | null
           content_sha256?: string
+          covered_microorganism_ids?: string[]
           deleted_at?: string | null
           deleted_by?: string | null
           doc_type?: string
@@ -11253,6 +11256,7 @@ export type Database = {
       microorganism_regulatory_dossiers: {
         Row: {
           blocked_reason: string | null
+          covered_microorganism_ids: string[]
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -11275,6 +11279,7 @@ export type Database = {
           mapa_status: string | null
           mapa_valid_until: string | null
           microorganism_id: string
+          notes: string | null
           product_id: string | null
           published_at: string | null
           published_by: string | null
@@ -11303,6 +11308,7 @@ export type Database = {
         }
         Insert: {
           blocked_reason?: string | null
+          covered_microorganism_ids?: string[]
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -11325,6 +11331,7 @@ export type Database = {
           mapa_status?: string | null
           mapa_valid_until?: string | null
           microorganism_id: string
+          notes?: string | null
           product_id?: string | null
           published_at?: string | null
           published_by?: string | null
@@ -11353,6 +11360,7 @@ export type Database = {
         }
         Update: {
           blocked_reason?: string | null
+          covered_microorganism_ids?: string[]
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -11375,6 +11383,7 @@ export type Database = {
           mapa_status?: string | null
           mapa_valid_until?: string | null
           microorganism_id?: string
+          notes?: string | null
           product_id?: string | null
           published_at?: string | null
           published_by?: string | null
@@ -27511,6 +27520,110 @@ export type Database = {
           p_reason: string
           p_values: Json
         }
+        Returns: Json
+      }
+      tenant_product_dossier_create_covered: {
+        Args: { p_microorganism_ids: string[]; p_product_id: string }
+        Returns: Json
+      }
+      tenant_product_dossier_management_checklist: {
+        Args: {
+          p_dossier_id: string
+          p_expected_updated_at: string
+          p_item_key: string
+          p_justification?: string
+          p_product_id: string
+          p_state: string
+        }
+        Returns: Json
+      }
+      tenant_product_dossier_management_context: {
+        Args: { p_product_id: string }
+        Returns: Json
+      }
+      tenant_product_dossier_management_create: {
+        Args: { p_microorganism_id: string; p_product_id: string }
+        Returns: Json
+      }
+      tenant_product_dossier_management_list: {
+        Args: { p_search?: string }
+        Returns: Json
+      }
+      tenant_product_dossier_management_save: {
+        Args: {
+          p_dossier_id: string
+          p_expected_updated_at: string
+          p_patch: Json
+          p_product_id: string
+        }
+        Returns: Json
+      }
+      tenant_product_dossier_management_submit: {
+        Args: {
+          p_dossier_id: string
+          p_expected_updated_at: string
+          p_product_id: string
+        }
+        Returns: Json
+      }
+      tenant_product_dossier_new_version: {
+        Args: {
+          p_dossier_id: string
+          p_expected_updated_at: string
+          p_product_id: string
+        }
+        Returns: Json
+      }
+      tenant_product_dossier_set_coverage: {
+        Args: {
+          p_dossier_id: string
+          p_expected_updated_at: string
+          p_microorganism_ids: string[]
+          p_product_id: string
+        }
+        Returns: Json
+      }
+      tenant_product_dossier_upload_access: {
+        Args: { p_upload_id: string }
+        Returns: Json
+      }
+      tenant_product_dossier_upload_attest: {
+        Args: {
+          p_mime: string
+          p_sha256: string
+          p_size: number
+          p_upload_id: string
+        }
+        Returns: undefined
+      }
+      tenant_product_dossier_upload_cancel: {
+        Args: { p_upload_id: string }
+        Returns: undefined
+      }
+      tenant_product_dossier_upload_cancel_begin: {
+        Args: { p_upload_id: string }
+        Returns: Json
+      }
+      tenant_product_dossier_upload_finalize: {
+        Args: { p_upload_id: string }
+        Returns: Json
+      }
+      tenant_product_dossier_upload_pending: {
+        Args: { p_product_id: string }
+        Returns: Json
+      }
+      tenant_product_dossier_upload_prepare: {
+        Args: {
+          p_dossier_id: string
+          p_expected_updated_at: string
+          p_intent: Json
+          p_product_id: string
+          p_upload_id: string
+        }
+        Returns: Json
+      }
+      tenant_product_dossier_version_detail: {
+        Args: { p_dossier_id: string; p_product_id: string }
         Returns: Json
       }
       tenant_product_list: {

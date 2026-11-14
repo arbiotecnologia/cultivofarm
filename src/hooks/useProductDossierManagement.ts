@@ -5,18 +5,18 @@ import {useStorageAccessScope} from '@/hooks/useStorageAccessScope';
 import {useScopedPortalQuery} from '@/hooks/useScopedPortalQuery';
 export const managementProductSchema=z.object({product_id:z.string().uuid(),nome:z.string(),codigo:z.string().nullable(),ativo:z.boolean(),organization_name:z.string(),owner_organization_id:z.string().uuid()});
 export type ManagementProduct=z.infer<typeof managementProductSchema>;
-const contextSchema=z.object({product_id:z.string().uuid(),microorganisms:z.array(z.object({id:z.string().uuid(),nome:z.string(),codigo:z.string().nullable()})),dossier_microorganism_id:z.string().uuid().nullable()});
+const contextSchema=z.object({can_edit:z.boolean().default(false),versions:z.array(z.object({id:z.string().uuid(),version:z.number(),status:z.string()})).default([]),product_id:z.string().uuid(),microorganisms:z.array(z.object({id:z.string().uuid(),nome:z.string(),codigo:z.string().nullable()})),dossier_microorganism_id:z.string().uuid().nullable()});
 const uploadSchema=z.object({id:z.string().uuid(),product_id:z.string().uuid(),dossier_id:z.string().uuid(),storage_path:z.string(),state:z.enum(['RESERVED','VERIFIED','COMMITTED','CANCELLED','CANCELLING'])});
-type Name=`platform_product_dossier_${'management_list'|'management_context'|'management_create'|'management_save'|'management_checklist'|'management_submit'|'upload_prepare'|'upload_pending'}`;
+type Name=`tenant_product_dossier_${'management_list'|'management_context'|'management_create'|'management_save'|'management_checklist'|'management_submit'|'upload_prepare'|'upload_pending'|'create_covered'|'set_coverage'|'new_version'|'version_detail'}`;
 export async function dossierManagementRpc(name:Name,args:Record<string,unknown>) {
  const client=supabase as unknown as {rpc:(name:Name,args:Record<string,unknown>)=>PromiseLike<{data:unknown;error:{code?:string}|null}>};
  const {data,error}=await client.rpc(name,args);
  if(error)throw new Error(error.code==='PT409'?'O registro mudou ou existe uma tentativa pendente. Atualize a consulta.':error.code==='42501'?'Acesso de gestão não autorizado.':'A ação não foi confirmada. Seu rascunho foi mantido.');
  return data;
 }
-export function useManagementProducts(search:string){return useScopedPortalQuery({queryKey:['product-dossier-management','products',search],queryFn:async()=>z.array(managementProductSchema).parse(await dossierManagementRpc('platform_product_dossier_management_list',{p_search:search}))});}
-export function useManagementContext(productId:string){return useScopedPortalQuery({queryKey:['product-dossier-management','context',productId],queryFn:async()=>{const c=contextSchema.parse(await dossierManagementRpc('platform_product_dossier_management_context',{p_product_id:productId}));if(c.product_id!==productId)throw new Error('target_mismatch');return c;}});}
-export function usePendingDossierUploads(productId:string){return useScopedPortalQuery({queryKey:['product-dossier-management','uploads',productId],queryFn:async()=>z.array(uploadSchema).parse(await dossierManagementRpc('platform_product_dossier_upload_pending',{p_product_id:productId}))});}
+export function useManagementProducts(search:string){return useScopedPortalQuery({queryKey:['product-dossier-management','products',search],queryFn:async()=>z.array(managementProductSchema).parse(await dossierManagementRpc('tenant_product_dossier_management_list',{p_search:search}))});}
+export function useManagementContext(productId:string){return useScopedPortalQuery({queryKey:['product-dossier-management','context',productId],queryFn:async()=>{const c=contextSchema.parse(await dossierManagementRpc('tenant_product_dossier_management_context',{p_product_id:productId}));if(c.product_id!==productId)throw new Error('target_mismatch');return c;}});}
+export function usePendingDossierUploads(productId:string,enabled=true){return useScopedPortalQuery({enabled,queryKey:['product-dossier-management','uploads',productId],queryFn:async()=>z.array(uploadSchema).parse(await dossierManagementRpc('tenant_product_dossier_upload_pending',{p_product_id:productId}))});}
 export async function regulatoryDocumentTransport(action:'upload'|'resume'|'cancel'|'open',body:unknown,uploadId?:string):Promise<unknown>{
  const result=await supabase.functions.invoke(`product-regulatory-document?action=${action}${uploadId?`&upload_id=${uploadId}`:''}`,{body:body as Blob|Record<string,unknown>});
  if(result.error)throw new Error('Operação não confirmada. Consulte a tentativa pendente antes de reenviar.');
@@ -34,3 +34,4 @@ export async function prepareDossierFile(file:File){
  const base=file.name.replace(/\.[^.]*$/,'').normalize('NFKD').replace(/[^A-Za-z0-9._-]/g,'_').slice(0,110)||'documento';
  return {sha256:hash,size_bytes:file.size,mime:file.type,filename:`${base}.${ext}`};
 }
+export function useDossierVersion(productId:string,dossierId:string){return useScopedPortalQuery({enabled:!!dossierId,queryKey:['fiscal','dossier-version',productId,dossierId],queryFn:async()=>{const {parseProductDossier}=await import('./useProductRegulatoryDossiers');return parseProductDossier(await dossierManagementRpc('tenant_product_dossier_version_detail',{p_product_id:productId,p_dossier_id:dossierId}),productId);}});}
