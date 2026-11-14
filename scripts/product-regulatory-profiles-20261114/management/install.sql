@@ -38,6 +38,8 @@ REVOKE ALL ON FUNCTION platform_private.product_dossier_write_guard() FROM PUBLI
 CREATE TRIGGER product_dossier_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.microorganism_regulatory_dossiers FOR EACH ROW EXECUTE FUNCTION platform_private.product_dossier_write_guard();
 CREATE TRIGGER product_dossier_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.microorganism_regulatory_documents FOR EACH ROW EXECUTE FUNCTION platform_private.product_dossier_write_guard();
 CREATE TRIGGER product_dossier_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.microorganism_regulatory_checklist FOR EACH ROW EXECUTE FUNCTION platform_private.product_dossier_write_guard();
+CREATE TRIGGER product_dossier_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.microorganism_regulatory_presentations FOR EACH ROW EXECUTE FUNCTION platform_private.product_dossier_write_guard();
+CREATE TRIGGER product_dossier_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.microorganism_ncm_candidates FOR EACH ROW EXECUTE FUNCTION platform_private.product_dossier_write_guard();
 CREATE OR REPLACE FUNCTION platform_private.product_dossier_manage_scope(p_product uuid,p_micro uuid DEFAULT NULL)
 RETURNS uuid LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
 DECLARE org uuid; BEGIN
@@ -165,6 +167,12 @@ RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ BEGIN
  UPDATE platform_private.product_dossier_uploads SET state='VERIFIED',updated_at=clock_timestamp() WHERE id=p_upload_id AND state IN ('RESERVED','VERIFIED') AND sha256=p_sha256 AND size_bytes=p_size AND mime=p_mime;
  IF NOT FOUND THEN RAISE EXCEPTION 'REGULATORY_UPLOAD_INTEGRITY' USING ERRCODE='22023'; END IF;
 END $$;
+CREATE OR REPLACE FUNCTION platform_private.product_dossier_upload_cancel(p_upload_id uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ BEGIN
+ PERFORM platform_private.require_service_role();
+ UPDATE platform_private.product_dossier_uploads SET state='CANCELLED',updated_at=clock_timestamp() WHERE id=p_upload_id AND state IN ('RESERVED','VERIFIED') AND NOT EXISTS(SELECT 1 FROM storage.objects o WHERE o.bucket_id='fiscal-regulatorio' AND o.name=storage_path);
+ IF NOT FOUND THEN RAISE EXCEPTION 'REGULATORY_UPLOAD_CLEANUP_PENDING' USING ERRCODE='55006'; END IF;
+END $$;
 CREATE OR REPLACE FUNCTION platform_private.product_dossier_upload_finalize(p_upload_id uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ DECLARE u platform_private.product_dossier_uploads; d public.microorganism_regulatory_dossiers; BEGIN
  SELECT * INTO u FROM platform_private.product_dossier_uploads WHERE id=p_upload_id;
@@ -258,5 +266,8 @@ GRANT EXECUTE ON FUNCTION platform_private.product_dossier_upload_pending(uuid) 
 CREATE OR REPLACE FUNCTION public.platform_product_dossier_upload_attest(p_upload_id uuid,p_sha256 text,p_size bigint,p_mime text) RETURNS void LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$ SELECT platform_private.product_dossier_upload_attest(p_upload_id,p_sha256,p_size,p_mime) $$;
 REVOKE ALL ON FUNCTION public.platform_product_dossier_upload_attest(uuid,text,bigint,text) FROM PUBLIC,anon,authenticated; GRANT EXECUTE ON FUNCTION public.platform_product_dossier_upload_attest(uuid,text,bigint,text) TO service_role;
 REVOKE ALL ON FUNCTION platform_private.product_dossier_upload_attest(uuid,text,bigint,text) FROM PUBLIC,anon,authenticated; GRANT EXECUTE ON FUNCTION platform_private.product_dossier_upload_attest(uuid,text,bigint,text) TO service_role;
+CREATE OR REPLACE FUNCTION public.platform_product_dossier_upload_cancel(p_upload_id uuid) RETURNS void LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$ SELECT platform_private.product_dossier_upload_cancel(p_upload_id) $$;
+REVOKE ALL ON FUNCTION public.platform_product_dossier_upload_cancel(uuid),platform_private.product_dossier_upload_cancel(uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.platform_product_dossier_upload_cancel(uuid),platform_private.product_dossier_upload_cancel(uuid) TO service_role;
 REVOKE ALL ON FUNCTION platform_private.product_dossier_manage_scope(uuid,uuid),platform_private.product_dossier_lock(uuid,uuid,timestamptz) FROM PUBLIC,anon,authenticated,service_role;
 COMMIT;

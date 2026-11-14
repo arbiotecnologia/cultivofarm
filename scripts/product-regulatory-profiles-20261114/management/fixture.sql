@@ -18,6 +18,8 @@ CREATE TABLE public.microorganism_regulatory_documents(id uuid PRIMARY KEY,dossi
 CREATE UNIQUE INDEX doc_hash ON public.microorganism_regulatory_documents(dossier_id,content_sha256);
 CREATE TABLE public.microorganism_regulatory_checklist(dossier_id uuid,item_key text,state text,justification text,decided_by uuid,decided_at timestamptz,PRIMARY KEY(dossier_id,item_key));
 CREATE TABLE storage.objects(bucket_id text,name text);
+CREATE TABLE public.microorganism_regulatory_presentations(dossier_id uuid);
+CREATE TABLE public.microorganism_ncm_candidates(dossier_id uuid);
 CREATE TABLE public.company_fiscal_settings(organization_id uuid,crt text);
 CREATE FUNCTION public.fn_regulatory_storage_path_ok(text) RETURNS boolean LANGUAGE sql AS $$ SELECT $1 LIKE 'dossiers/%' $$;
 CREATE FUNCTION public.fn_microorganism_regulatory_facts(p_microorganism_id uuid) RETURNS jsonb LANGUAGE sql AS $$ SELECT to_jsonb(d) FROM public.microorganism_regulatory_dossiers d WHERE microorganism_id = p_microorganism_id AND deleted_at IS NULL LIMIT 1 $$;
