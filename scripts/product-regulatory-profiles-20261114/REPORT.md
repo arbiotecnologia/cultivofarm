@@ -12,6 +12,7 @@ Bucket privado `fiscal-regulatorio` criado com limite de 20 MB; nenhum arquivo e
 ## Estado medido
 - Antes: 10 produtos, 6 sem perfil ativo, nenhum owner nulo; seis vínculos de composição, zero divergências entre empresa do vínculo/produto/microrganismo.
 - Depois: 10 produtos e 10 perfis ativos; zero produtos sem perfil e zero duplicações ativas.
+- Guard instalado relido: MD5 `9305626db821cd5fe5313ab22b627058`, ramo de permit confirmado; o pin anterior `b9394683f173bbb4df1f0c1a03678289` era o preflight, não o resultado instalado. Pontos públicos comprovados INVOKER e núcleos privados DEFINER; chamada local pós-movimentação manteve o dossiê esperado.
 - Não havia dossiês regulatórios registrados. Nenhum dossiê ou vínculo documental foi inventado/preenchido automaticamente.
 
 ## Fluxo
@@ -24,6 +25,7 @@ Documentos: leitor autenticado confere produto/dossiê/documento antes e depois 
 - PostgreSQL 17.11 descartável: 16 verificações PASS. Inserção/rollback atômicos, unicidade, reexecução idempotente, permit privado consumido, recusa direta, legado não herdado, cross-tenant negado, documentos específicos e motor canônico de pendências.
 - Schema reduzido e identidade/fatos sintéticos explicitamente declarados no teste; não representam JWT/RLS/Storage hospedados. Gate de pendências usa corpo canônico do repositório. Primeira tentativa falhou pela instalação local incompleta do PostgreSQL; execução final usou os binários completos locais.
 - Build automático da prévia: OK. Não foi executado build/typecheck manual, conforme a regra do ambiente.
+- Navegador público: tela de login confirmada após carregamento, sem erros de execução; não se confunde com o fluxo fiscal autenticado.
 
 ## Limitações
 - Sem sessão legítima disponível: ambiente de autenticação externo não gerenciado. Navegação autenticada AR, abertura de arquivo real e criação/edição reais pela UI NÃO EXECUTADAS; nenhum login simulado ou credencial solicitada.
