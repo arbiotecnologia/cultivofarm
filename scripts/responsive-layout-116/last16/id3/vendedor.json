@@ -54,6 +54,21 @@
     },
     "dialog_text": "Adicionar ao carrinho\n\nBioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integralSKU-QA-3\n\nÁREA-ALVO (HA)\nVOLUME TOTAL (L)\n\nDose referencial: 1 L/ha. Os vasilhames são sugeridos automaticamente — ajuste se necessário.\n\nCOMBINAR VASILHAMES\n\nMistura tamanhos diferentes para minimizar sobra (ex.: 20 L + 5 L). Alterar reaplica a sugestão.\n\nVASILHAMES\nSugerir conjunto ideal\nVOLUME\nRecipiente 5 L· R$ 10,00/L\nQTD\n3 × R$ 50,00\nR$ 150,00\nAdicionar vasilhame\nVolume total entregue\n15 L\nFaltante\n-25 L\nDose 100 mL\n150 Doses\nCobertura estimada\n15 ha\nTotal a pagar\nR$ 150,00\nCancelar\nAdicionar ao carrinho\nFechar",
     "result": "PASS_CART_UI_ROUNDTRIP",
+    "summary_name_box": {
+      "text": "Bioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integralProduto",
+      "rect": {
+        "x": 42,
+        "y": 224.75,
+        "width": 233.390625,
+        "height": 84,
+        "top": 224.75,
+        "right": 275.390625,
+        "bottom": 308.75,
+        "left": 42
+      },
+      "within": true,
+      "clipped": false
+    },
     "reads": [
       {
         "name": "get_my_entitlement_context",
@@ -326,6 +341,21 @@
       }
     ],
     "result": "PASS_ALTERNATIVE_WHOLE_PACKAGING_UI",
+    "summary_name_box": {
+      "text": "Bioinsumo sintético de catálogo com nome extenso para seleção de recipientes e leitura integralProduto",
+      "rect": {
+        "x": 42,
+        "y": 224.75,
+        "width": 233.390625,
+        "height": 84,
+        "top": 224.75,
+        "right": 275.390625,
+        "bottom": 308.75,
+        "left": 42
+      },
+      "within": true,
+      "clipped": false
+    },
     "reads": [
       {
         "name": "get_my_entitlement_context",

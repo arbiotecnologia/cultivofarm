@@ -57,8 +57,7 @@ async def main():
        combos=dialog.get_by_role('combobox');await combos.first.click();await page.get_by_role('option').filter(has_text='5 L').first.click()
        quantities=dialog.locator('input[type=number]');await quantities.last.fill('3')
        action=dialog.get_by_role('button',name='Adicionar ao carrinho',exact=True);assert await action.is_enabled();await action.scroll_into_view_if_needed();g=await action.evaluate(BOX);assert g['within'];rec['assertions'].append({'last_action':g})
-       title=dialog.locator('[id]').filter(has_text='Bioinsumo sintético').first
-       rec['description_box']=await dialog.locator('[id^=radix-]').filter(has_text='Bioinsumo sintético').last.evaluate(BOX) if False else await dialog.locator('p').first.evaluate(BOX);assert not rec['description_box']['clipped'],'product description clipped';rec['dialog_text']=await dialog.inner_text();await page.screenshot(path=str(O/f'{role}-{w}-{mode}-dialog.png'))
+       rec['description_box']=await dialog.locator('p').first.evaluate(BOX);assert not rec['description_box']['clipped'],'product description clipped';rec['dialog_text']=await dialog.inner_text();await page.screenshot(path=str(O/f'{role}-{w}-{mode}-dialog.png'))
        await action.click();await page.wait_for_timeout(200)
        assert await page.get_by_role('dialog').count()==0
        assert 'Bioinsumo sintético' in await page.locator('main').inner_text();assert '150,00' in await page.locator('main').inner_text();rec['result']='PASS_CART_UI_ROUNDTRIP';rec['assertions'].append({'local_cart_readback':True})
@@ -66,9 +65,11 @@ async def main():
       if w==390:await page.get_by_role('button',name='Continuar para condição de pagamento',exact=True).filter(visible=True).click();await page.get_by_role('dialog').wait_for()
       else:assert await page.locator('main input[type=number]').filter(visible=True).first.input_value()=='3'
       text=await page.locator('body').inner_text();assert ('3 × Recipiente 5 L' in text if w==390 and mode=='positive' else 'Embalagem 5 L SKU-QA-3' in text if mode=='whole-packaging' else 'Recipiente 5 L' in text)
+      if w==390:
+       summary=page.get_by_role('dialog');await summary.wait_for(state='visible');await page.wait_for_timeout(350);name=summary.locator('.font-medium').filter(has_text='Bioinsumo sintético').first;await name.scroll_into_view_if_needed();g=await name.evaluate(BOX);assert not g['clipped'];rec['summary_name_box']=g;await page.screenshot(path=str(O/f'{role}-{w}-{mode}-summary.png'),animations='disabled')
       rec['assertions'].append({'readback_quantity':3,'readback_presentation':'5 L','sku':'SKU-QA-3','visible_cart':True})
      assert not errors,str(errors);assert not await page.evaluate('window.reviewWrites.length'),'write attempted'
     except Exception as e:rec['result']='GAP';rec['error']=str(e)[:650];rec['text']=(await page.locator('body').inner_text())[:1700]
-    rec['reads']=await page.evaluate('window.reviewReads||[]');rec['errors']=errors.copy();shot=O/f'{role}-{w}-{mode}.png';await page.screenshot(path=str(shot));rec['evidence']=str(shot.relative_to(R));rows.append(rec);(O/f'{role}.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2));print(role,w,mode,rec['result'],rec.get('error','')[:150],flush=True)
+    rec['reads']=await page.evaluate('window.reviewReads||[]');rec['errors']=errors.copy();shot=O/f'{role}-{w}-{mode}.png';await page.wait_for_timeout(250);await page.screenshot(path=str(shot),animations='disabled');rec['evidence']=str(shot.relative_to(R));rows.append(rec);(O/f'{role}.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2));print(role,w,mode,rec['result'],rec.get('error','')[:150],flush=True)
   await b.close()
 asyncio.run(main())
