@@ -1,0 +1,20 @@
+{
+  "ids": 116,
+  "results": {
+    "COMPLETE_DECLARED_ACTION_PROFILE_GEOMETRY": 88,
+    "LOCAL_PORTAL_COMPLETE_INTERNAL_ENTRY_CHAIN_GAP": 1,
+    "COMPLETE_LOCAL_CONTEXTUAL_COMPONENT_AND_CHAIN": 14,
+    "N_A_CURRENT_RETIRED_WORKSPACE_PROVED": 1,
+    "N_A_CURRENT_CLOSED_OR_RETIRED_CONTEXTUAL_ASSERTION": 9,
+    "N_A_ORIGINAL_CONSUMER_GATE_CLOSED": 2,
+    "COMPLETE_LOCAL_STAFF_SELECTOR_GEOMETRY_ROUTE_GUARD_DENIES": 1
+  },
+  "last16": {
+    "ids": 16,
+    "contextual_scenarios": 246,
+    "remaining_ids": [
+      3
+    ],
+    "scope": "local synthetic; previous 88 and #116 not rerun"
+  }
+}

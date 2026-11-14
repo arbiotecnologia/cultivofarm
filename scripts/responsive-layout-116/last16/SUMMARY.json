@@ -1,0 +1,537 @@
+[
+  {
+    "id": 3,
+    "result": "LOCAL_PORTAL_COMPLETE_INTERNAL_ENTRY_CHAIN_GAP",
+    "routes": [
+      "novo",
+      "catalogo",
+      "simulador",
+      "/portal-parceiro/catalogo"
+    ],
+    "profiles": [
+      "parceiro_b2b"
+    ],
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        1440,
+        900
+      ]
+    ],
+    "scenario_files": [
+      "last16/context-3.json"
+    ],
+    "scenario_count": 2,
+    "reason": "Portal parceiro_b2b comprovado; entrada comercial administrador/gestor_comercial e vendedor exige capability/target próprio ainda sem ensaio de parent nesta rodada. Não equivale a indisponibilidade.",
+    "validation": "Original components, synthetic scoped reads; separate original guards; not hosted JWT/RLS/Storage or full E2E"
+  },
+  {
+    "id": 6,
+    "result": "COMPLETE_LOCAL_CONTEXTUAL_COMPONENT_AND_CHAIN",
+    "routes": [
+      "/clientes"
+    ],
+    "profiles": [
+      "administrador",
+      "gestor"
+    ],
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        1440,
+        900
+      ]
+    ],
+    "scenario_files": [
+      "last16/context-6.json"
+    ],
+    "scenario_count": 4,
+    "reason": null,
+    "validation": "Original components, synthetic scoped reads; separate original guards; not hosted JWT/RLS/Storage or full E2E"
+  },
+  {
+    "id": 7,
+    "result": "COMPLETE_LOCAL_CONTEXTUAL_COMPONENT_AND_CHAIN",
+    "routes": [
+      "/ordens-servico",
+      "/cockpit-laboratorio",
+      "/clientes/:id",
+      "/parceiros/:id"
+    ],
+    "profiles": [
+      "administrador",
+      "gestor",
+      "producao"
+    ],
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        1440,
+        900
+      ]
+    ],
+    "scenario_files": [
+      "last16/context-7.json"
+    ],
+    "scenario_count": 6,
+    "reason": null,
+    "validation": "Original components, synthetic scoped reads; separate original guards; not hosted JWT/RLS/Storage or full E2E"
+  },
+  {
+    "id": 9,
+    "result": "N_A_CURRENT_RETIRED_WORKSPACE_PROVED",
+    "routes": [
+      "/cockpit-laboratorio"
+    ],
+    "profiles": [
+      "administrador",
+      "administrativo",
+      "gestor",
+      "operador_onfarm",
+      "producao"
+    ],
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        1440,
+        900
+      ]
+    ],
+    "scenario_files": [
+      "last16/context-9.json"
+    ],
+    "scenario_count": 10,
+    "reason": "CockpitLaboratorio retorna CockpitConsulta (113-124); CockpitWorkspace só declarado (126), sem consumidor ativo. COCKPIT_READ_AVAILABLE=false, list query=true. 10 ensaios mostram consulta e ausência dos controles antigos.",
+    "validation": "Original components, synthetic scoped reads; separate original guards; not hosted JWT/RLS/Storage or full E2E"
+  },
+  {
+    "id": 13,
+    "result": "COMPLETE_LOCAL_CONTEXTUAL_COMPONENT_AND_CHAIN",
+    "routes": [
+      "/comercial/minha-carteira",
+      "/comercial/pedidos-b2b"
+    ],
+    "profiles": [
+      "administrador",
+      "gestor_comercial",
+      "vendedor"
+    ],
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        1440,
+        900
+      ]
+    ],
+    "scenario_files": [
+      "last16/context-13.json",
+      "last16/consumer-13.json"
+    ],
+    "scenario_count": 6,
+    "reason": null,
+    "validation": "Original components, synthetic scoped reads; separate original guards; not hosted JWT/RLS/Storage or full E2E"
+  },
+  {
+    "id": 15,
+    "result": "COMPLETE_LOCAL_CONTEXTUAL_COMPONENT_AND_CHAIN",
+    "routes": [
+      "/entregas"
+    ],
+    "profiles": [
+      "administrador",
+      "administrativo",
+      "aplicador",
+      "cliente_produtor",
+      "financeiro",
+      "gestor",
+      "operador_onfarm",
+      "producao"
+    ],
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        1440,
+        900
+      ]
+    ],
+    "scenario_files": [
+      "last16/context-15.json"
+    ],
+    "scenario_count": 16,
+    "reason": null,
+    "validation": "Original components, synthetic scoped reads; separate original guards; not hosted JWT/RLS/Storage or full E2E"
+  },
+  {
+    "id": 26,
+    "result": "COMPLETE_LOCAL_CONTEXTUAL_COMPONENT_AND_CHAIN",
+    "routes": [
+      "/configuracoes/fiscal/produtos",
+      "/clientes/:id",
+      "/parceiros/:id",
+      "/configuracoes/fiscal/empresa",
+      "/fiscal/documentos",
+      "/app/catalogo",
+      "/base-tecnica"
+    ],
+    "profiles": [
+      "administrador",
+      "administrativo",
+      "consultor_tecnico",
+      "financeiro",
+      "gestor",
+      "gestor_comercial",
+      "operador_onfarm",
+      "producao",
+      "tecnico_agronomo"
+    ],
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        1440,
+        900
+      ]
+    ],
+    "scenario_files": [
+      "last16/context-26.json"
+    ],
+    "scenario_count": 18,
+    "reason": null,
+    "validation": "Original components, synthetic scoped reads; separate original guards; not hosted JWT/RLS/Storage or full E2E"
+  },
+  {
+    "id": 37,
+    "result": "COMPLETE_LOCAL_CONTEXTUAL_COMPONENT_AND_CHAIN",
+    "routes": [
+      "/app/catalogo",
+      "/base-tecnica"
+    ],
+    "profiles": [
+      "administrador",
+      "administrativo",
+      "consultor_tecnico",
+      "financeiro",
+      "gestor",
+      "gestor_comercial",
+      "operador_onfarm",
+      "producao",
+      "tecnico_agronomo"
+    ],
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        1440,
+        900
+      ]
+    ],
+    "scenario_files": [
+      "last16/context-37.json"
+    ],
+    "scenario_count": 18,
+    "reason": null,
+    "validation": "Original components, synthetic scoped reads; separate original guards; not hosted JWT/RLS/Storage or full E2E"
+  },
+  {
+    "id": 38,
+    "result": "COMPLETE_LOCAL_CONTEXTUAL_COMPONENT_AND_CHAIN",
+    "routes": [
+      "novo",
+      "catalogo",
+      "simulador",
+      "/portal-parceiro",
+      "/app/catalogo",
+      "/base-tecnica"
+    ],
+    "profiles": [
+      "administrador",
+      "administrativo",
+      "aplicador",
+      "cliente_produtor",
+      "consultor_tecnico",
+      "financeiro",
+      "gestor",
+      "gestor_comercial",
+      "operador_onfarm",
+      "parceiro_b2b_tecnico",
+      "producao",
+      "tecnico_agronomo"
+    ],
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        1440,
+        900
+      ]
+    ],
+    "scenario_files": [
+      "last16/context-38.json",
+      "last16/consumer-38.json",
+      "last16/mobile-38.json"
+    ],
+    "scenario_count": 50,
+    "reason": "Portal scope=b2b abre drawers distintos (CatalogoCardsGrid:145-158), não estes diálogos. Catálogo móvel comprovado para sete contextos. Financeiro só Produtos (#42); ensaio financeiro #38 é montagem isolada, não alçada de aba.",
+    "validation": "Original components, synthetic scoped reads; separate original guards; not hosted JWT/RLS/Storage or full E2E"
+  },
+  {
+    "id": 42,
+    "result": "COMPLETE_LOCAL_CONTEXTUAL_COMPONENT_AND_CHAIN",
+    "routes": [
+      "novo",
+      "catalogo",
+      "simulador",
+      "/portal-parceiro",
+      "/app/catalogo",
+      "/base-tecnica"
+    ],
+    "profiles": [
+      "administrador",
+      "administrativo",
+      "aplicador",
+      "cliente_produtor",
+      "consultor_tecnico",
+      "financeiro",
+      "gestor",
+      "gestor_comercial",
+      "operador_onfarm",
+      "parceiro_b2b_tecnico",
+      "producao",
+      "tecnico_agronomo"
+    ],
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        1440,
+        900
+      ]
+    ],
+    "scenario_files": [
+      "last16/context-42.json",
+      "last16/consumer-42.json",
+      "last16/mobile-42.json"
+    ],
+    "scenario_count": 50,
+    "reason": "Portal scope=b2b abre drawers distintos (CatalogoCardsGrid:145-158), não estes diálogos. Catálogo móvel comprovado para sete contextos. Financeiro só Produtos (#42); ensaio financeiro #38 é montagem isolada, não alçada de aba.",
+    "validation": "Original components, synthetic scoped reads; separate original guards; not hosted JWT/RLS/Storage or full E2E"
+  },
+  {
+    "id": 53,
+    "result": "COMPLETE_LOCAL_CONTEXTUAL_COMPONENT_AND_CHAIN",
+    "routes": [
+      "/visita-tecnica/nova",
+      "/visita-tecnica/:id",
+      "/visita-tecnica"
+    ],
+    "profiles": [
+      "administrador",
+      "administrativo",
+      "consultor_tecnico",
+      "gestor",
+      "tecnico_agronomo"
+    ],
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        1440,
+        900
+      ]
+    ],
+    "scenario_files": [
+      "last16/context-53.json"
+    ],
+    "scenario_count": 10,
+    "reason": null,
+    "validation": "Original components, synthetic scoped reads; separate original guards; not hosted JWT/RLS/Storage or full E2E"
+  },
+  {
+    "id": 54,
+    "result": "COMPLETE_LOCAL_CONTEXTUAL_COMPONENT_AND_CHAIN",
+    "routes": [
+      "/visita-tecnica/nova",
+      "/visita-tecnica/:id",
+      "/visita-tecnica"
+    ],
+    "profiles": [
+      "administrador",
+      "consultor_tecnico",
+      "gestor",
+      "tecnico_agronomo"
+    ],
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        1440,
+        900
+      ]
+    ],
+    "scenario_files": [
+      "last16/context-54.json"
+    ],
+    "scenario_count": 8,
+    "reason": null,
+    "validation": "Original components, synthetic scoped reads; separate original guards; not hosted JWT/RLS/Storage or full E2E"
+  },
+  {
+    "id": 87,
+    "result": "COMPLETE_LOCAL_CONTEXTUAL_COMPONENT_AND_CHAIN",
+    "routes": [
+      "/app/catalogo"
+    ],
+    "profiles": [
+      "administrador",
+      "aplicador",
+      "consultor_tecnico",
+      "gestor",
+      "parceiro_b2b_tecnico",
+      "tecnico_agronomo"
+    ],
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        1440,
+        900
+      ]
+    ],
+    "scenario_files": [
+      "last16/context-87.json"
+    ],
+    "scenario_count": 12,
+    "reason": null,
+    "validation": "Original components, synthetic scoped reads; separate original guards; not hosted JWT/RLS/Storage or full E2E"
+  },
+  {
+    "id": 88,
+    "result": "COMPLETE_LOCAL_CONTEXTUAL_COMPONENT_AND_CHAIN",
+    "routes": [
+      "/app/visita/novo",
+      "/app/visita/:id"
+    ],
+    "profiles": [
+      "administrador",
+      "aplicador",
+      "consultor_tecnico",
+      "gestor",
+      "parceiro_b2b_tecnico",
+      "tecnico_agronomo"
+    ],
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        1440,
+        900
+      ]
+    ],
+    "scenario_files": [
+      "last16/context-88.json"
+    ],
+    "scenario_count": 12,
+    "reason": null,
+    "validation": "Original components, synthetic scoped reads; separate original guards; not hosted JWT/RLS/Storage or full E2E"
+  },
+  {
+    "id": 89,
+    "result": "COMPLETE_LOCAL_CONTEXTUAL_COMPONENT_AND_CHAIN",
+    "routes": [
+      "/app/visita/novo",
+      "/app/visita/:id",
+      "/app/visita/33333333-3333-4333-8333-333333333333"
+    ],
+    "profiles": [
+      "administrador",
+      "aplicador",
+      "consultor_tecnico",
+      "gestor",
+      "parceiro_b2b_tecnico",
+      "tecnico_agronomo"
+    ],
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        1440,
+        900
+      ]
+    ],
+    "scenario_files": [
+      "last16/context-89.json"
+    ],
+    "scenario_count": 12,
+    "reason": null,
+    "validation": "Original components, synthetic scoped reads; separate original guards; not hosted JWT/RLS/Storage or full E2E"
+  },
+  {
+    "id": 90,
+    "result": "COMPLETE_LOCAL_CONTEXTUAL_COMPONENT_AND_CHAIN",
+    "routes": [
+      "/app/visita/novo",
+      "/app/visita/:id",
+      "/app/visita/33333333-3333-4333-8333-333333333333"
+    ],
+    "profiles": [
+      "administrador",
+      "aplicador",
+      "consultor_tecnico",
+      "gestor",
+      "parceiro_b2b_tecnico",
+      "tecnico_agronomo"
+    ],
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        1440,
+        900
+      ]
+    ],
+    "scenario_files": [
+      "last16/context-90.json"
+    ],
+    "scenario_count": 12,
+    "reason": null,
+    "validation": "Original components, synthetic scoped reads; separate original guards; not hosted JWT/RLS/Storage or full E2E"
+  }
+]

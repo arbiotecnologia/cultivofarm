@@ -1,3 +1,7 @@
+## 14/11 15:18 — Últimos 16 controles
+- [x] 14 IDs contextualizados, #9 consumidor inacessível comprovado; PDF/Volumes corrigidos, 49 testes PASS; evidências last16, 88/#116 preservados.
+- [ ] #3: parent comercial/vendedor com capability e target ainda sem ensaio; portal parceiro positivo. Sinal final do harness aguarda log legível (I/O).
+
 ## 14/11 15:02 — Fechamento concretos 00564ff4
 - [x] 61 cadeias rastreadas; filtros/ações retestados, staff mobile corrigido; 140 positivos novos, 273 testes PASS, build OK, matriz 88 completas locais/16 contexto pendente/11 N/A/1 staff isolado.
 - [ ] Contextos/cadeias dos 16 IDs e entrada staff por B2BRouteGuard permanecem pendentes conforme final/REPORT.md; requer prova/decisão própria, sem reabrir gates.

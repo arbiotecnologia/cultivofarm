@@ -1,0 +1,302 @@
+[
+  {
+    "ids": [
+      6
+    ],
+    "file": "src/pages/clientes/ProdutoresTab.tsx",
+    "export": "default",
+    "route": "/clientes",
+    "profiles": [
+      "administrador",
+      "gestor"
+    ],
+    "kind": "history",
+    "expected": "Histórico de Alterações",
+    "trigger": "Clientes > Produtores > menu da linha > Histórico"
+  },
+  {
+    "ids": [
+      7
+    ],
+    "file": "src/components/ordens-servico/OSDetalhesDialog.tsx",
+    "export": "OSDetalhesDialog",
+    "route": "/ordens-servico",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "producao"
+    ],
+    "kind": "lot",
+    "expected": "Gerar Lote",
+    "trigger": "OS manual programada > detalhe > rastreabilidade positiva > Gerar lote"
+  },
+  {
+    "ids": [
+      13
+    ],
+    "file": "src/pages/comercial/MinhaCarteiraVendedor.tsx",
+    "export": "default",
+    "route": "/comercial/minha-carteira",
+    "profiles": [
+      "vendedor"
+    ],
+    "kind": "quote",
+    "expected": "Responder cotação QA-116",
+    "trigger": "Minha carteira > capability v2 quote_respond > cotação > Responder cotação"
+  },
+  {
+    "ids": [
+      15
+    ],
+    "file": "src/pages/Entregas.tsx",
+    "export": "default",
+    "route": "/entregas",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "operador_onfarm",
+      "cliente_produtor",
+      "administrativo",
+      "producao",
+      "aplicador",
+      "financeiro"
+    ],
+    "kind": "receipt",
+    "expected": "Comprovante de entrega sintético",
+    "trigger": "Entregas > entrega confirmada > documento > leitura p_reemissao=false"
+  },
+  {
+    "ids": [
+      26
+    ],
+    "file": "src/components/fiscal/ProductDossierManagement.tsx",
+    "export": "ProductDossierAction",
+    "route": "/base-tecnica",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "consultor_tecnico",
+      "gestor_comercial",
+      "operador_onfarm",
+      "administrativo",
+      "tecnico_agronomo",
+      "producao",
+      "financeiro"
+    ],
+    "kind": "dossier-action",
+    "open": "Gerenciar dossiê",
+    "expected": "Dossiê do produto",
+    "trigger": "Produto tenant > Gerenciar dossiê > contexto read-only suportado"
+  },
+  {
+    "ids": [
+      37
+    ],
+    "file": "src/components/protocolos/ProdutosTab.tsx",
+    "export": "ProdutosTab",
+    "route": "/base-tecnica",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "consultor_tecnico",
+      "gestor_comercial",
+      "operador_onfarm",
+      "administrativo",
+      "tecnico_agronomo",
+      "producao",
+      "financeiro"
+    ],
+    "kind": "volumes",
+    "expected": "Volumes",
+    "trigger": "Catálogo > produto próprio > Volumes"
+  },
+  {
+    "ids": [
+      38
+    ],
+    "file": "src/components/protocolos/MicroorganismTechnicalProfileDialog.tsx",
+    "export": "MicroorganismTechnicalProfileDialog",
+    "route": "/base-tecnica",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "consultor_tecnico",
+      "gestor_comercial",
+      "operador_onfarm",
+      "administrativo",
+      "tecnico_agronomo",
+      "producao",
+      "financeiro"
+    ],
+    "kind": "micro-profile",
+    "expected": "Ficha técnica",
+    "trigger": "Catálogo > microrganismo > ficha técnica (mesmo componente aberto por props)"
+  },
+  {
+    "ids": [
+      42
+    ],
+    "file": "src/components/protocolos/ProductTechnicalProfileDialog.tsx",
+    "export": "ProductTechnicalProfileDialog",
+    "route": "/base-tecnica",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "consultor_tecnico",
+      "gestor_comercial",
+      "operador_onfarm",
+      "administrativo",
+      "tecnico_agronomo",
+      "producao",
+      "financeiro"
+    ],
+    "kind": "product-profile",
+    "expected": "Perfil",
+    "trigger": "Catálogo > produto tenant > ficha técnica (mesmo componente aberto por props)"
+  },
+  {
+    "ids": [
+      53
+    ],
+    "file": "src/components/visita/EncerramentoCard.tsx",
+    "export": "EncerramentoCard",
+    "route": "/visita-tecnica/33333333-3333-4333-8333-333333333333",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "consultor_tecnico",
+      "administrativo",
+      "tecnico_agronomo"
+    ],
+    "kind": "closure-pdf",
+    "open": "Pré-visualizar PDF",
+    "expected": "Pré-visualização da Visita",
+    "trigger": "Visita existente não finalizada > Encerramento com pdfData > Pré-visualizar PDF"
+  },
+  {
+    "ids": [
+      54
+    ],
+    "file": "src/components/visita/PlanoMonitoramentoEditor.tsx",
+    "export": "PlanoMonitoramentoEditor",
+    "route": "/visita-tecnica/33333333-3333-4333-8333-333333333333",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "consultor_tecnico",
+      "tecnico_agronomo"
+    ],
+    "kind": "plan",
+    "open": "Editar Plano",
+    "expected": "Editar Plano de Monitoramento",
+    "trigger": "Visita rascunho > workspace can_edit=true > Editar Plano"
+  },
+  {
+    "ids": [
+      87
+    ],
+    "file": "src/pages/app/MobileCatalogoTecnico.tsx",
+    "export": "default",
+    "route": "/app/catalogo",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "consultor_tecnico",
+      "tecnico_agronomo",
+      "aplicador",
+      "parceiro_b2b_tecnico"
+    ],
+    "kind": "technical-catalog",
+    "expected": "Catálogo",
+    "trigger": "Guard técnico fresco > catálogo > primeira e última aba"
+  },
+  {
+    "ids": [
+      88
+    ],
+    "file": "src/pages/app/MobileVisitaWizard.tsx",
+    "export": "default",
+    "route": "/app/visita/33333333-3333-4333-8333-333333333333",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "consultor_tecnico",
+      "tecnico_agronomo",
+      "aplicador",
+      "parceiro_b2b_tecnico"
+    ],
+    "kind": "wizard-full",
+    "expected": "Identificação",
+    "trigger": "Guard técnico fresco > visita rascunho > Voltar"
+  },
+  {
+    "ids": [
+      89
+    ],
+    "file": "src/pages/app/wizard/WizardRecomendacaoStep.tsx",
+    "export": "default",
+    "route": "/app/visita/33333333-3333-4333-8333-333333333333",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "consultor_tecnico",
+      "tecnico_agronomo",
+      "aplicador",
+      "parceiro_b2b_tecnico"
+    ],
+    "kind": "wizard-rec",
+    "expected": "Nova recomendação",
+    "trigger": "Guard técnico fresco > visita > recomendação > nova recomendação"
+  },
+  {
+    "ids": [
+      90
+    ],
+    "file": "src/pages/app/wizard/WizardRevisaoStep.tsx",
+    "export": "default",
+    "route": "/app/visita/33333333-3333-4333-8333-333333333333",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "consultor_tecnico",
+      "tecnico_agronomo",
+      "aplicador",
+      "parceiro_b2b_tecnico"
+    ],
+    "kind": "wizard-review",
+    "expected": "Finalizar esta visita?",
+    "trigger": "Guard técnico fresco > visita > revisão > confirmação dependente de prerequisites"
+  },
+  {
+    "ids": [
+      3
+    ],
+    "file": "src/components/catalogo/AddToCartDialog.tsx",
+    "export": "AddToCartDialog",
+    "route": "/portal-parceiro/catalogo",
+    "profiles": [
+      "parceiro_b2b"
+    ],
+    "kind": "cart",
+    "expected": "Produto sintético",
+    "trigger": "B2BRouteGuard+parceiro canônico > catálogo/entrada > embalagem (sem enviar pedido)"
+  },
+  {
+    "ids": [
+      9
+    ],
+    "file": "src/pages/CockpitLaboratorio.tsx",
+    "export": "default",
+    "route": "/cockpit-laboratorio",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "operador_onfarm",
+      "administrativo",
+      "producao"
+    ],
+    "kind": "cockpit-na",
+    "expected": "Consulta disponível",
+    "trigger": "Rota atual monta CockpitConsulta, não CockpitWorkspace"
+  }
+]
