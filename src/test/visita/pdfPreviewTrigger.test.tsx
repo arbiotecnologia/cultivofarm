@@ -18,7 +18,7 @@ for (const custom of [false, true]) {
     await waitFor(() => expect(mocks.generate).toHaveBeenCalledTimes(1));
     expect(mocks.generate).toHaveBeenCalledWith(data);
     await screen.findByTitle('PDF Preview');
-    fireEvent.click(screen.getByRole('button', { name: 'Fechar', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: /^Fechar$/ }));
     await waitFor(() => expect(mocks.revoke).toHaveBeenCalledWith('blob:local-preview'));
   });
 }
