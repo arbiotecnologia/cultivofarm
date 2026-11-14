@@ -56,7 +56,10 @@ async def main():
       if await tabs.count() and d['kind'] not in ['client-form']:
        for t in [tabs.first,tabs.last]:await t.click();rec['assertions'].append({'tab':await t.inner_text(),'selected':await t.get_attribute('aria-selected')})
       container=page.locator('[role=dialog],[role=alertdialog]').last if await page.locator('[role=dialog],[role=alertdialog]').count() else page.locator('main').first
-      last=container.locator('input,textarea,button,[role=option]').filter(visible=True).filter(has_not=page.locator('.sr-only')).last
+      useful=container.locator('input,textarea,button,[role=option]').filter(visible=True).filter(has_not=page.locator('.sr-only'))
+      if d['kind']=='cashflow':
+       row=container.locator('tbody tr').last;await row.scroll_into_view_if_needed();rg=await row.evaluate(MEASURE);assert rg['visible'];rec['assertions'].append({'last_read_row':rg});last=container.get_by_role('button',name='Fechar',exact=True).last
+      else:last=useful.last if await useful.count() else container.get_by_role('button',name='Fechar',exact=True).last
       await last.scroll_into_view_if_needed();g=await last.evaluate(MEASURE);assert g['within'],'last control outside viewport';rec['assertions'].append({'last_control':g})
       labels=await container.locator('label,[role=tab],h2').evaluate_all('(xs)=>xs.filter(x=>x.getBoundingClientRect().height).filter(x=>x.scrollWidth>x.clientWidth+2||x.scrollHeight>x.clientHeight+2).map(x=>x.textContent)');rec['clipped_labels']=labels
       assert not errors,'page errors';assert not labels,'clipped labels: '+str(labels)
