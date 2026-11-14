@@ -214,7 +214,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
         {owned && !unitKnown && <p role="status">Unidade do produto não confirmada. Referências existentes em consulta; solicite ao administrador a configuração de kg, g, mL ou L. Peso e volume não são inferidos.</p>}
         {solid && packaging.data ? <SolidPresentations key={`${itemId}:${scopeKey}:${epoch}`} state={packaging.data} active={open && frozenScope.current === scopeKey} onLockChange={setPackLocked} /> : <div className="space-y-4 min-w-0">
           <div className="border rounded-md w-full">
-            <Table className="text-xs [&_th]:px-1.5 [&_td]:px-1.5 [&_th]:h-8 [&_td]:py-1.5">
+            <Table className="min-w-[640px] text-xs [&_th]:px-1.5 [&_td]:px-1.5 [&_th]:h-8 [&_td]:py-1.5">
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-[10px]">{ownedWritable ? "Vol (mL)" : "Apresentação"}</TableHead>
