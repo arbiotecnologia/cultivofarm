@@ -69,9 +69,7 @@ async def main():
       if d['kind'] in ['history','volumes']:
        row=container_placeholder=page.locator('[role=dialog]').last.locator('tbody tr').last
        await row.scroll_into_view_if_needed(); assert await row.inner_text(); rec['assertions'].append({'last_read_row':await row.evaluate(MEASURE)})
-       if d['kind']=='cart':
-       await page.get_by_placeholder('Ex.: 20',exact=True).fill('20'); assert await page.get_by_role('button',name='Adicionar ao carrinho',exact=True).is_enabled();rec['assertions'].append({'priced_volume_local_action_enabled':True})
-      if d['kind']=='history':assert 'Produtor sintético' in await row.inner_text()
+       if d['kind']=='history':assert 'Produtor sintético' in await row.inner_text()
        else:
         assert 'Embalagem sintética' in await row.inner_text() or await row.locator('input[value="Embalagem sintética de vinte litros"]').count()>0
         scroll=page.locator('[role=dialog] .relative.w-full.overflow-auto').first
