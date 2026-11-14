@@ -1,14 +1,15 @@
 import {cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
 import {beforeEach,afterEach,it,expect,vi} from 'vitest';
 import {webcrypto} from 'node:crypto';
+import {Blob as NodeBlob} from 'node:buffer';
 const m=vi.hoisted(()=>({invoke:vi.fn(),org:'tenant-a',epoch:0}));
 vi.mock('@/hooks/useAuth',()=>({useAuth:()=>({user:{id:'u'},profile:{user_id:'u',organization_id:m.org,ativo:true},roles:['administrador'],loading:false,authzEpoch:m.epoch})}));
 vi.mock('@/hooks/useProductDossierManagement',()=>({regulatoryDocumentTransport:m.invoke}));
 import {DossierDocumentViewer,verifyDossierBlob} from '@/components/fiscal/DossierDocumentViewer';
 const doc={id:'document',dossier_id:'dossier',title:'PNG sintético',doc_type:'LAUDO',issuer:null,valid_until:null,storage_bucket:'fiscal-regulatorio' as const,storage_path:'dossiers/test.png',content_sha256:'',covered_microorganism_ids:[]};
 const png=new Uint8Array([137,80,78,71,13,10,26,10,1,2,3]);
-async function blob(bytes:Uint8Array){const hash=Array.from(new Uint8Array(await webcrypto.subtle.digest('SHA-256',bytes)),v=>v.toString(16).padStart(2,'0')).join('');return {data:new Blob([bytes],{type:'application/octet-stream'}),hash};}
-beforeEach(()=>{m.org='tenant-a';m.epoch=0;m.invoke.mockReset();vi.stubGlobal('crypto',webcrypto);vi.stubGlobal('URL',Object.assign(URL,{createObjectURL:vi.fn(()=>'blob:verified'),revokeObjectURL:vi.fn()}));});
+async function blob(bytes:Uint8Array){const hash=Array.from(new Uint8Array(await webcrypto.subtle.digest('SHA-256',bytes)),v=>v.toString(16).padStart(2,'0')).join('');return {data:new Blob([new Uint8Array(bytes).buffer],{type:'application/octet-stream'}),hash};}
+beforeEach(()=>{m.org='tenant-a';m.epoch=0;m.invoke.mockReset();vi.stubGlobal('Blob',NodeBlob);vi.stubGlobal('crypto',webcrypto);vi.stubGlobal('URL',Object.assign(URL,{createObjectURL:vi.fn(()=>'blob:verified'),revokeObjectURL:vi.fn()}));});
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
 it('verifica PNG por bytes e hash, ignorando MIME genérico',async()=>{const b=await blob(png);expect((await verifyDossierBlob(b.data,b.hash)).type).toBe('image/png');});
 it('bloqueia HTML mesmo com hash correto e MIME de imagem',async()=>{const b=await blob(new TextEncoder().encode('<html>unsafe</html>'));await expect(verifyDossierBlob(b.data,b.hash)).rejects.toThrow('Formato');});
