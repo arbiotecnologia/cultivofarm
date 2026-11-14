@@ -122,3 +122,6 @@ verify_jwt = true
 # (publicação recriando função sem JWT no gateway).
 [functions.download-technical-attachment]
 verify_jwt = true
+
+[functions.product-regulatory-document]
+verify_jwt = true
