@@ -1,3 +1,8 @@
+## 14/11 13:41 — Segunda revisão responsiva: 116 ocorrências
+- [ ] Preservar checklist/numeração; mapear rotas, triggers, perfis e gates reais.
+- [ ] Executar cenários locais por ocorrência/perfil/viewport, diálogos e abas primeiro, com navegação/componentes reais e transporte sintético sem rede externa.
+- [ ] Corrigir somente defeitos reproduzidos, repetir casos/regressões e registrar matriz, capturas, comandos, lacunas e revisão em scripts/responsive-layout-116/; sem produção/publicação.
+
 ## 14/11 13:21 — Revisão responsiva de cadastro e controles compartilhados
 - [x] Sobreposição reproduzida; três tipos empilhados no corpo rolável, header/ação/fechamento acessíveis; vínculos/perfis/ações extensos ajustados sem funções/permissões.
 - [x] Inventário AST atual: 183 rotas/2035 fontes, compartilhados revisados e cortes reproduzidos corrigidos; 116 candidatos estáticos P1/P2 registrados, sem certificação visual das demais telas.
