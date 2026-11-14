@@ -41,7 +41,7 @@ export function assertMutationAck(data: unknown) {
 export function snapshotText(value: unknown): string {
   if (value == null) return "";
   if (Array.isArray(value)) return value.map(snapshotText).filter(Boolean).join("; ");
-  if (typeof value === "object") return Object.entries(value).map(([key, v]) => `${key.replaceAll("_", " ")}: ${snapshotText(v)}`).filter(v => !v.endsWith(": ")).join(" · ");
+  if (typeof value === "object") return Object.entries(value).map(([key, v]) => `${key.replace(/_/g, " ")}: ${snapshotText(v)}`).filter(v => !v.endsWith(": ")).join(" · ");
   return String(value);
 }
 export function snapshotCompany(label: LabelData) {
