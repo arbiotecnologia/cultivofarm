@@ -9,7 +9,8 @@ is_active boolean NOT NULL DEFAULT true,profile_status text NOT NULL DEFAULT 'DR
 accounting_validated_by uuid,created_by uuid,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now(),ibs_cbs_configuration jsonb NOT NULL DEFAULT '{}');
 CREATE UNIQUE INDEX ux_product_fiscal_profiles_active ON public.product_fiscal_profiles(product_id) WHERE is_active=true;
 CREATE FUNCTION platform_private.global_product_fiscal_before_write() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
-BEGIN RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END $$;
+BEGIN
+ RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END $$;
 CREATE TRIGGER a10_global_product_fiscal_authorize BEFORE INSERT OR UPDATE ON public.product_fiscal_profiles FOR EACH ROW EXECUTE FUNCTION platform_private.global_product_fiscal_before_write();
 INSERT INTO public.produtos VALUES('00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000010','Existing');
 -- Load exact candidate minus only hosted metadata pin, against explicitly synthetic guard.
