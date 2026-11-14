@@ -24,6 +24,7 @@
 - Fixtures need Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
+- Private dossier documents render inside the shared detail through the scoped authenticated opener with byte-signature/hash verification and revoked object URLs on close/context disposal — avoids popup/download-only failures without bearer links.
 - Product dossiers share one owner-tenant detail at catalog/fiscal entries; explicit per-version coverage and document subsets follow scripts/product-regulatory-profiles-20261114/management/AGENTS.md, while fiscal profiles start atomic blank DRAFTs — prevents global authority and inherited evidence.
 - Documentary catalog suggestions are draft-only, identity/tenant-fenced and selected per sourced field; server candidates stay outside automatic deploy paths with no client grants — prevents research UI from activating writes or publishing unsupported facts.
 - Mobile catalog and Base Técnica reuse the canonical product editor and section controls; own problem/link candidates use private storage and default-OFF server gates — prevents duplicate editors or global write expansion.
