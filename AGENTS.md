@@ -132,4 +132,3 @@
 
 - Tenant product CRUD uses only Catálogo → Produtos and scoped RPCs; legacy query/hash survive. Query-aware RBAC mounts only authorized tabs; fiscal links retain existing gates — prevents duplicate editors and redirected privilege expansion.
 
-- PDF preview generation belongs to the shared DialogTrigger, not only its default child; tenant product mobile cards reuse the desktop volume reader, whose wide table scrolls locally — prevents custom-trigger blank previews and mobile-only lost controls without changing authority.
