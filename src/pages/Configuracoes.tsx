@@ -836,7 +836,7 @@ export default function Configuracoes() {
                       <DialogTrigger asChild>
                         <Button><Plus className="h-4 w-4 mr-2" />Novo Usuário</Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-md flex flex-col max-h-[calc(100dvh-2rem)] gap-0 overflow-hidden p-0 sm:p-0">
+                      <DialogContent className="max-w-md flex flex-col max-h-[calc(100dvh-2rem)] gap-0 overflow-clip p-0 sm:p-0">
                         <DialogHeader className="shrink-0 border-b px-4 sm:px-6 pt-6 pb-4 pr-14">
                           <DialogTitle>Cadastrar Novo Usuário</DialogTitle>
                         </DialogHeader>
