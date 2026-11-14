@@ -1,0 +1,31 @@
+import {cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
+import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
+import {beforeEach,afterEach,describe,it,expect,vi} from 'vitest';
+import {webcrypto} from 'node:crypto';
+const m=vi.hoisted(()=>({rpc:vi.fn(),invoke:vi.fn(),roles:['superadmin'],created:false}));
+vi.mock('@/hooks/useAuth',()=>({useAuth:()=>({user:{id:'u'},session:{user:{id:'u'},expires_at:9999999999},profile:{id:'profile',user_id:'u',organization_id:'org',ativo:true,senha_provisoria:false},roles:m.roles,loading:false,error:null})}));
+vi.mock('@/integrations/supabase/client',()=>({supabase:{rpc:m.rpc,functions:{invoke:m.invoke}}}));
+import {ProductDossierManagement} from '@/components/fiscal/ProductDossierManagement';
+import {prepareDossierFile} from '@/hooks/useProductDossierManagement';
+const pid='00000000-0000-4000-8000-000000000020',mid='00000000-0000-4000-8000-000000000030',did='00000000-0000-4000-8000-000000000040';
+const detail={product_id:pid,dossier:{id:did,microorganism_id:mid,version:1,status:'DRAFT',updated_at:'2026-11-14T00:00:00Z',regulatory_category:null,mapa_status:null,mapa_registration_number:null,blocked_reason:null,notes:null},documents:[],checklist:[],gate:{pendencies:[{code:'LABEL',field:'documents',layer:'REGULATORY',message:'Rótulo pendente do produto QA.'}]}};
+function mount(){return render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><ProductDossierManagement/></QueryClientProvider>);}
+beforeEach(()=>{m.roles=['superadmin'];m.created=false;m.rpc.mockReset();m.invoke.mockReset();m.rpc.mockImplementation(async(name,args)=>{
+ if(name==='platform_product_dossier_management_list')return {data:[{product_id:pid,nome:'Produto sintético',codigo:'QA',ativo:true,organization_name:'Empresa QA',owner_organization_id:'00000000-0000-4000-8000-000000000010'}],error:null};
+ if(name==='platform_product_dossier_management_context')return {data:{product_id:pid,microorganisms:[{id:mid,nome:'Micro QA',codigo:'M1'},{id:'00000000-0000-4000-8000-000000000031',nome:'Micro QA 2',codigo:'M2'}],dossier_microorganism_id:m.created?mid:null},error:null};
+ if(name==='rpc_regulatory_product_dossier_detail')return {data:detail,error:null};
+ if(name==='platform_product_dossier_upload_pending')return {data:[],error:null};
+ if(name==='platform_product_dossier_management_save')return {data:{product_id:pid,dossier_id:did,updated_at:'2026-11-14T00:01:00Z'},error:null};
+ return {data:null,error:null};
+ });});
+afterEach(()=>{cleanup();vi.unstubAllGlobals();});
+describe('gestão supervisionada',()=>{
+ it('administrador da empresa não monta os leitores de gestão',()=>{m.roles=['administrador'];mount();expect(m.rpc).not.toHaveBeenCalled();expect(screen.getByRole('alert')).toBeTruthy();});
+ it('escolha explícita obrigatória mesmo com vínculos reais',async()=>{mount();fireEvent.click(await screen.findByRole('button',{name:'Gerir dossiê de Produto sintético'}));const button=await screen.findByRole('button',{name:'Criar rascunho'});expect((button as HTMLButtonElement).disabled).toBe(true);expect(m.rpc.mock.calls.some(([n])=>n==='platform_product_dossier_management_create')).toBe(false);});
+ it('dossiê existente usa o leitor canônico por produto',async()=>{m.created=true;mount();fireEvent.click(await screen.findByRole('button',{name:'Gerir dossiê de Produto sintético'}));expect(await screen.findByText('Rótulo pendente do produto QA.')).toBeTruthy();expect(m.rpc).toHaveBeenCalledWith('rpc_regulatory_product_dossier_detail',{p_product_id:pid,p_microorganism_id:mid});});
+ it('salvar leva a versão observada e relê as pendências',async()=>{m.created=true;mount();fireEvent.click(await screen.findByRole('button',{name:'Gerir dossiê de Produto sintético'}));fireEvent.change(await screen.findByLabelText('Observações'),{target:{value:'Anotação sintética'}});fireEvent.click(screen.getByRole('button',{name:'Salvar dados'}));await waitFor(()=>expect(m.rpc).toHaveBeenCalledWith('platform_product_dossier_management_save',{p_product_id:pid,p_dossier_id:did,p_expected_updated_at:'2026-11-14T00:00:00Z',p_patch:{notes:'Anotação sintética'}}));await waitFor(()=>expect(m.rpc.mock.calls.filter(([n])=>n==='rpc_regulatory_product_dossier_detail').length).toBeGreaterThan(1));});
+ it('conflito mantém dados digitados sem alegar sucesso',async()=>{m.created=true;const original=m.rpc.getMockImplementation();m.rpc.mockImplementation(async(n,a)=>n==='platform_product_dossier_management_save'?{data:null,error:{code:'PT409'}}:original?.(n,a));mount();fireEvent.click(await screen.findByRole('button',{name:'Gerir dossiê de Produto sintético'}));fireEvent.change(await screen.findByLabelText('Observações'),{target:{value:'Preservar rascunho'}});fireEvent.click(screen.getByRole('button',{name:'Salvar dados'}));expect(await screen.findByRole('alert')).toBeTruthy();expect((screen.getByLabelText('Observações') as HTMLTextAreaElement).value).toBe('Preservar rascunho');});
+ it('limite concreto de 20 MB bloqueia antes de hash',async()=>{await expect(prepareDossierFile({size:20971521,type:'application/pdf'} as File)).rejects.toThrow('20 MB');});
+ it('formato não permitido bloqueia antes de upload',async()=>{await expect(prepareDossierFile({size:5,type:'text/html'} as File)).rejects.toThrow('PDF, PNG ou JPEG');});
+ it('hash e nome do arquivo são determinísticos sem caminhos',async()=>{vi.stubGlobal('crypto',webcrypto);const b=new TextEncoder().encode('%PDF-QA');const file={name:'../laudo ação.pdf',type:'application/pdf',size:b.length,arrayBuffer:async()=>b.buffer} as File;const r=await prepareDossierFile(file);expect(r.sha256).toHaveLength(64);expect(r.filename).not.toMatch(/[\/]/);expect(r.mime).toBe('application/pdf');});
+});
