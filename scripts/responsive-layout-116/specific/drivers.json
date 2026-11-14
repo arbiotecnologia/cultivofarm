@@ -450,7 +450,7 @@
       "gestor_comercial"
     ],
     "kind": "partner-filter",
-    "expected": "Parceiros",
+    "expected": "Status",
     "trigger": "Clientes > Parceiros B2B > filtros"
   },
   {
