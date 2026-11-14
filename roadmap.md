@@ -1,6 +1,6 @@
 ## 14/11 04:15 — Revisão canônica das etiquetas
-- [ ] Corrigir template aninhado/versionado, campos úteis sem IDs, substituta e janela de impressão fechada por padrão.
-- [ ] Testar fixtures RPC nullable, quatro dimensões, seleção/deduplicação, correção, CQ/histórico e Ctrl+P; sem banco/deploy/publicação.
+- [x] Template aninhado/versionado corrigido, campos úteis sem IDs, substituta/seleção deduplicadas e janela de impressão fechada por padrão.
+- [x] 150 testes/12 arquivos PASS; Chrome sintético e PDFs com quatro medidas exatas/QR 4 de 4, Ctrl+P com PDF vazio, afterprint limpa permit; build automático OK. Sem banco/deploy/publicação; evidências em scripts/labels-frontend-integration-20261114/revision-0415/REPORT.md.
 
 ## 14/11 04:04 — Integração local de etiquetas
 - [x] RPCs existentes integradas nas entradas canônicas; quatro formatos, seleção, correção, impressão/PDF e QR autenticado/legado.
