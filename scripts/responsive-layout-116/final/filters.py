@@ -10,8 +10,9 @@ async def main():
   async def intercept(r):
    if not r.request.url.startswith('http://localhost:8080'):return await r.abort()
    path=r.request.url.split('http://localhost:8080')[-1].split('?')[0]
+   if path=='/__specific-read-fixtures.js':return await r.fulfill(content_type='application/javascript',body=(R/'specific/read-fixtures.js').read_text())
    if path=='/src/hooks/useAuth.tsx':return await r.fulfill(content_type='application/javascript',body=ns['AUTH'])
-   if path=='/src/integrations/supabase/client.ts':return await r.fulfill(content_type='application/javascript',body=ns['CLIENT'])
+   if path=='/src/integrations/supabase/client.ts':return await r.fulfill(content_type='application/javascript',body=(O/'fixtures.js').read_text())
    if r.request.resource_type=='document':return await r.fulfill(content_type='text/html',body=ns['ns']['HTML'].replace("import App from '/src/App.tsx';ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));",ns['BOOT'].replace('MANIFEST',json.dumps(current)).replace('ROLES',json.dumps(ns['ROLES']))))
    f=ns['BASE']/'modules'/path.lstrip('/').replace('/','__')
    if f.is_file():return await r.fulfill(content_type='application/javascript',body=f.read_text())
@@ -30,7 +31,7 @@ async def main():
      await page.set_viewport_size({'width':w,'height':h});await page.goto('http://localhost:8080/__isolated?reviewRole='+role);await page.wait_for_timeout(180)
      target=page.locator(f'[data-review-occurrence="{id}"]:visible').first
      if id in [84,85]:
-      await page.get_by_role('tab',name='Entr.',exact=True).click();await target.scroll_into_view_if_needed();await target.fill('Produto' if id==84 else 'Cliente');assert await target.input_value();await target.fill('');assert await target.input_value()=='';rec['assertions'].append('typed and cleared actual reserved-stock filter')
+      await page.get_by_role('tab',name='Entr.',exact=True).click();await target.scroll_into_view_if_needed();await target.fill('Produto' if id==84 else 'Cliente');assert await target.input_value();await target.fill('');assert await target.input_value()=='';await page.get_by_role('cell',name='Produto reservado sintético extenso',exact=True).wait_for();await page.get_by_role('cell',name='Cliente reservado sintético extenso',exact=True).wait_for();rec['assertions'].append('typed and cleared actual reserved-stock filter')
      if id==81:await page.get_by_role('tab',name='OS',exact=False).last.click()
      if id==109:await page.get_by_role('tab',name='Histórico',exact=True).click()
      if not await target.count():
