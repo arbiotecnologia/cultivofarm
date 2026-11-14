@@ -127,7 +127,7 @@ it.each(["financeiro", "consultor_tecnico", "parceiro_b2b", "parceiro_b2b_tecnic
   expect(getAccessLevel("financeiro", "/base-tecnica")).toBe("r");
   expect(isPathEntitled("/base-tecnica?tab=produtos", { status: "ready", features: new Set() })).toBe(false);
 });
-it("Financeiro conserva consulta via redirect e link fiscal, sem CRUD ou abas irmãs", async () => {
+it("Financeiro conserva consulta de Produtos via redirect e link fiscal, sem CRUD de produto ou abas técnicas", async () => {
   state.roles = ["financeiro"]; const qc = client();
   state.rows = [{ id: "p1", nome: "Produto financeiro", tipo: "solo", ativo: true, updated_at: stamp, owner_organization_id: "org-A" }];
   render(<QueryClientProvider client={qc}><MemoryRouter initialEntries={["/configuracoes/produtos?busca=solo&tab=culturas#p1"]}><Routes>
@@ -135,15 +135,17 @@ it("Financeiro conserva consulta via redirect e link fiscal, sem CRUD ou abas ir
     <Route path="/base-tecnica" element={<Protocolos />} />
   </Routes></MemoryRouter></QueryClientProvider>);
   await screen.findByText("Produto financeiro");
-  // A única aba principal continua Produtos; subabas são apenas filtros da mesma consulta autorizada.
-  expect(screen.getAllByRole("tab").filter(tab => ["Produtos", "Microrganismos", "Catálogo Técnico", "Culturas", "Problemas"].includes(tab.textContent ?? ""))).toHaveLength(1);
+  // Serviços has its own approved role matrix; it does not grant product CRUD or technical tabs.
+  expect(screen.getAllByRole("tab").filter(tab => ["Produtos", "Serviços", "Microrganismos", "Catálogo Técnico", "Culturas", "Problemas"].includes(tab.textContent ?? "")).map(tab => tab.textContent)).toEqual(["Produtos", "Serviços"]);
   expect(screen.getByRole("tab", { name: "Produtos" }).getAttribute("aria-selected")).toBe("true");
   for (const name of ["Novo produto", "Editar", "Arquivar", "Reativar"]) expect(screen.queryByRole("button", { name })).toBeNull();
   expect(screen.getByRole("link", { name: "Perfis fiscais" }).getAttribute("href")).toBe("/configuracoes/fiscal/produtos");
   expect(rpcCalls("tenant_product_list")).toHaveLength(1);
   for (const name of ["tenant_product_save", "tenant_product_set_archived", "tenant_catalog_root_save", "rpc_associate_microorganism_fiscal_product"]) expect(rpcCalls(name)).toHaveLength(0);
   const catalogue = navigation.find(item => item.id === "protocolos");
-  expect(searchNavItems(catalogue ? [catalogue] : [], "", "financeiro").map(item => item.id)).toEqual(["protocolos", "protocolos-produtos"]);
+  expect(searchNavItems(catalogue ? [catalogue] : [], "", "financeiro").map(item => item.id)).toEqual(["protocolos", "protocolos-produtos", "protocolos-servicos"]);
+  expect(getAccessLevel("financeiro", "/base-tecnica?tab=servicos")).toBe("rw");
+  expect(getAccessLevel("financeiro", "/base-tecnica?tab=produtos")).toBe("r");
   expect(getAccessLevel("financeiro", "/configuracoes/fiscal/produtos")).toBe("rw"); // Existing fiscal route only, not product CRUD.
 });
 it.each(["microrganismos", "catalogo-tecnico", "culturas", "problemas", "fichas", "desconhecida", "produtos&tab=culturas"])("Financeiro não monta aba %s por URL direta", async tab => {
