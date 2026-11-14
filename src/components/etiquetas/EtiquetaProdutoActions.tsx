@@ -15,7 +15,7 @@ export function EtiquetaProdutoActions(props: Props) {
 }
 function Actions({ readOnly = false, envaseId, loteId, etiquetaId, traceToken, status, onChanged, scope }: Props & { scope: ReturnType<typeof useStorageAccessScope> }) {
   const [open, setOpen] = useState(false);
-  const [tipo, setTipo] = useState("principal");
+  const [tipo, setTipo] = useState("interna");
   const [template, setTemplate] = useState<LabelTemplate>("etiqueta-op-100x150");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -42,7 +42,7 @@ function Actions({ readOnly = false, envaseId, loteId, etiquetaId, traceToken, s
     {etiquetaId && <><Button size="sm" variant="outline" onClick={view}><Eye className="h-3 w-3 mr-1" />Ver</Button><Button size="sm" variant="outline" onClick={view} disabled={status === "cancelada"}><Printer className="h-3 w-3 mr-1" />{status === "gerada" ? "Imprimir" : "Reimprimir"}</Button>{traceToken && <Button size="sm" variant="outline" onClick={async () => { try { await navigator.clipboard.writeText(buildRastreioUrl(traceToken)); toast.success("Link copiado"); } catch { toast.error("Não foi possível copiar o link"); } }}><LinkIcon className="h-3 w-3 mr-1" />Link</Button>}</>}
     <Dialog open={open} onOpenChange={value => { if (!loading) setOpen(value); }}><DialogContent aria-describedby={undefined}><DialogHeader><DialogTitle>Gerar etiquetas por recipiente</DialogTitle></DialogHeader>
       <label className="space-y-1">Tipo<Select value={tipo} onValueChange={setTipo}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["principal", "reduzida", "caixa", "transporte", "amostra", "interna"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></label>
-      <label className="space-y-1">Formato<Select value={template} onValueChange={v => setTemplate(v as LabelTemplate)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Object.entries(LABEL_TEMPLATES).map(([code, d]) => <SelectItem key={code} value={code}>{d.width}×{d.height} mm</SelectItem>)}</SelectContent></Select></label>
+      {tipo === "interna" ? <p className="text-sm">20 L · 100×150 mm; 5 L · 100×100 mm; 1 L · 80×50 mm</p> : <label className="space-y-1">Formato<Select value={template} onValueChange={v => setTemplate(v as LabelTemplate)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Object.entries(LABEL_TEMPLATES).map(([code, d]) => <SelectItem key={code} value={code}>{d.width}×{d.height} mm</SelectItem>)}</SelectContent></Select></label>}
       {error && <p role="alert" className="text-destructive">{error}</p>}<DialogFooter><Button disabled={loading || !scope.ready} onClick={gerar}>{loading ? "Gerando…" : "Gerar e selecionar recipientes"}</Button></DialogFooter>
     </DialogContent></Dialog>
   </div>;

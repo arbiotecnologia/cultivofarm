@@ -114,6 +114,7 @@ export function selectedCopies(labels: RecipientLabel[], copies: Record<string, 
 export function snapshotFields(label: RecipientLabel): [string, string][] {
   const s = label.snapshot;
   const compliance = record(s.conformidade);
+  const links = record(s.vinculos);
   const composition = Array.isArray(s.composicao) ? s.composicao.map(v => {
     if (typeof v === 'string') return v;
     const c = record(v); return [text(c.nome), text(c.quantidade), text(c.unidade)].filter(Boolean).join(' ');
@@ -121,9 +122,9 @@ export function snapshotFields(label: RecipientLabel): [string, string][] {
   return [
     ['Empresa', text(s.empresa_nome) || text(record(s.empresa).nome)],
     ['Produto', text(s.produto_nome)], ['Lote', text(s.lote_codigo)],
-    ['Cliente', text(s.cliente_nome) || text(record(s.cliente).nome)],
-    ['Propriedade', text(s.propriedade_nome) || text(s.fazenda_nome) || text(record(s.propriedade).nome)],
-    ['Pedido', text(s.pedido_codigo)], ['OS', text(s.os_codigo) || text(s.ordem_servico_codigo)],
+    ['Cliente', text(links.cliente_nome) || text(s.cliente_nome) || text(record(s.cliente).nome)],
+    ['Propriedade', text(links.fazenda_nome) || text(s.propriedade_nome) || text(s.fazenda_nome) || text(record(s.propriedade).nome)],
+    ['Pedido', text(links.pedido_codigo) || text(s.pedido_codigo)], ['OS', text(links.os_codigo) || text(links.codigo_os) || text(s.os_codigo) || text(s.ordem_servico_codigo)],
     ['Volume', s.volume != null ? [text(s.volume), text(s.unidade)].filter(Boolean).join(' ') : ''],
     ['Fabricação', text(s.fabricado_em)], ['Validade', text(s.validade_em)],
     ['Envase', text(record(s.envase).data_envase)], ['Toxicidade', text(s.toxicidade)],
