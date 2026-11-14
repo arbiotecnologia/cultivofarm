@@ -12,6 +12,12 @@ async def main():
   async def intercept(r):
    if not r.request.url.startswith('http://localhost:8080'):return await r.abort()
    path=r.request.url.split('http://localhost:8080')[-1].split('?')[0]
+   if path=='/src/App.tsx':
+    import re
+    text=Path('/dev-server/src/App.tsx').read_text();start=text.index('export function RoleGuard(');end=text.index('
+}',start)+2;body=text[start:end];imports="import React from '/node_modules/.vite/deps/react.js?v=d55b057d';import {Navigate,useLocation} from '/node_modules/.vite/deps/react-router-dom.js?v=39152e0a';import {useAuth} from '/src/hooks/useAuth.tsx';import {useEntitlements} from '/src/hooks/useEntitlements.ts';import {isPathEntitled} from '/src/lib/saas/featureRouteMap.ts';import ForaDoPlano from '/src/components/guards/ForaDoPlano.tsx';import {readActiveContext,resolveEffectiveRouteRole} from '/src/lib/navigation/portalRoleContext.ts';"
+    import subprocess
+    code=subprocess.check_output(['bun','-e',"const src=await Bun.stdin.text();console.log((await Bun.Transpiler.prototype.transform.call(new Bun.Transpiler({loader:'tsx'}),src)))"],input=(imports+body).encode()).decode();return await r.fulfill(content_type='application/javascript',body=code)
    if path=='/src/hooks/useAuth.tsx':return await r.fulfill(content_type='application/javascript',body=ns['AUTH'])
    if path=='/src/integrations/supabase/client.ts':return await r.fulfill(content_type='application/javascript',body=(O/'fixtures.js').read_text())
    if path=='/__specific-read-fixtures.js':return await r.fulfill(content_type='application/javascript',body=(R/'specific/read-fixtures.js').read_text())
@@ -24,7 +30,7 @@ async def main():
    for role in roles:
     for w,h in [(390,844),(1440,900)]:
      if any(x['profile']==role and x['viewport']==[w,h] for x in rows):continue
-     await page.set_viewport_size({'width':w,'height':h});await page.goto('http://localhost:8080'+case[1]+'?reviewRole='+role);await page.wait_for_timeout(500)
+     await page.set_viewport_size({'width':w,'height':h});await page.goto('http://localhost:8080'+case[1]+'?reviewRole='+role);await page.wait_for_timeout(900)
      passed=await page.locator('[data-original-guard-passed]').count();denied=await page.locator('[data-original-guard-denied]').count();controls={}
      if case[0]=='clients':
       controls={n:await page.get_by_role('tab',name=n,exact=True).count()>0 for n in ['Produtores','Parceiros B2B']};controls['Novo Produtor']=await page.get_by_role('button',name='Novo Produtor',exact=True).count()>0
