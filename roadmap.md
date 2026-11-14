@@ -1,3 +1,7 @@
+## 14/11 12:24 — Layout e cadastro técnico homologados
+- [ ] Integrar recipiente-v2 por volume e cadastro separado de validade/toxicidade nas entradas canônicas, sem remoto/publicação.
+- [ ] Testar formulários, negativas, lote misto, regressões, PDF/QR e medidas; registrar revisão, arquivos e limites.
+
 ## 14/11 04:15 — Revisão canônica das etiquetas
 - [x] Template aninhado/versionado corrigido, campos úteis sem IDs, substituta/seleção deduplicadas e janela de impressão fechada por padrão.
 - [x] 150 testes/12 arquivos PASS; Chrome sintético e PDFs com quatro medidas exatas/QR 4 de 4, Ctrl+P com PDF vazio, afterprint limpa permit; build automático OK. Sem banco/deploy/publicação; evidências em scripts/labels-frontend-integration-20261114/revision-0415/REPORT.md.
