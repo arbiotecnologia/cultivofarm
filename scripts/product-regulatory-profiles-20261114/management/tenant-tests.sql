@@ -39,5 +39,15 @@ DO $$ DECLARE p uuid:='00000000-0000-4000-8000-000000000020'; p2 uuid:='00000000
  IF platform_private.product_regulatory_storage_read_allowed((SELECT storage_path FROM public.microorganism_regulatory_documents WHERE id=u)) THEN RAISE EXCEPTION 'global storage'; END IF; RAISE NOTICE 'PASS superadmin storage denied';
  PERFORM set_config('test.actor','00000000-0000-4000-8000-000000000002',true);
  IF NOT platform_private.product_regulatory_storage_read_allowed((SELECT storage_path FROM public.microorganism_regulatory_documents WHERE id=u)) THEN RAISE EXCEPTION 'own storage'; END IF; RAISE NOTICE 'PASS own document access';
+ INSERT INTO platform_private.product_dossier_write_permits(txid,dossier_id) VALUES(txid_current(),d);
+ UPDATE public.microorganism_regulatory_dossiers SET status='VALIDATED' WHERE id=d;
+ DELETE FROM platform_private.product_dossier_write_permits WHERE txid=txid_current() AND dossier_id=d;
+ SELECT updated_at INTO ts FROM public.microorganism_regulatory_dossiers WHERE id=d;
+ BEGIN PERFORM public.tenant_product_dossier_management_save(p,d,ts,'{}'); RAISE EXCEPTION 'published edit'; EXCEPTION WHEN SQLSTATE '55006' THEN RAISE NOTICE 'PASS validated dossier immutable'; END;
+ a:=public.tenant_product_dossier_new_version(p,d,ts);
+ IF (SELECT count(*) FROM public.microorganism_regulatory_dossiers WHERE product_id=p)<>2 THEN RAISE EXCEPTION 'new version missing'; END IF; RAISE NOTICE 'PASS successor version created';
+ IF (SELECT status FROM public.microorganism_regulatory_dossiers WHERE id=d)<>'VALIDATED' THEN RAISE EXCEPTION 'history altered'; END IF; RAISE NOTICE 'PASS predecessor status preserved';
+ IF cardinality(platform_private.product_dossier_coverage((SELECT dossier_id FROM public.product_regulatory_dossier_links WHERE product_id=p)))<>2 THEN RAISE EXCEPTION 'coverage lost'; END IF; RAISE NOTICE 'PASS successor coverage preserved';
+ IF (SELECT count(*) FROM public.microorganism_regulatory_documents WHERE dossier_id=d)<>2 THEN RAISE EXCEPTION 'old documents lost'; END IF; RAISE NOTICE 'PASS documents stay with predecessor';
  IF EXISTS(SELECT 1 FROM platform_private.product_dossier_write_permits) THEN RAISE EXCEPTION 'permit leaked'; END IF; RAISE NOTICE 'PASS no residual permits';
 END $$;
