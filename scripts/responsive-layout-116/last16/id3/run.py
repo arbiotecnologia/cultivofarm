@@ -41,7 +41,7 @@ async def main():
       assert await page.get_by_role('button',name='Adicionar ao pedido',exact=True).count()==0
       rec['result']='PASS_CAPABILITY_DENIED'
      elif mode=='foreign-target':
-      await page.get_by_role('alert').filter(has_text='não pertence').wait_for();assert await page.get_by_role('button',name='Adicionar ao pedido',exact=True).count()==0;rec['result']='PASS_UNASSIGNED_TARGET_DENIED'
+      await page.get_by_role('alert').filter(has_text='não está na sua carteira' if role=='vendedor' else 'não pertence').wait_for();assert await page.get_by_role('button',name='Adicionar ao pedido',exact=True).count()==0;rec['result']='PASS_UNASSIGNED_TARGET_DENIED'
      else:
       if role=='vendedor':await page.get_by_role('link',name='Lançar pedido',exact=True).click()
       else:
@@ -56,7 +56,7 @@ async def main():
        quantities=dialog.locator('input[type=number]');await quantities.last.fill('3')
        action=dialog.get_by_role('button',name='Adicionar ao carrinho',exact=True);assert await action.is_enabled();await action.scroll_into_view_if_needed();g=await action.evaluate(BOX);assert g['within'];rec['assertions'].append({'last_action':g})
        title=dialog.locator('[id]').filter(has_text='Bioinsumo sintético').first
-       rec['description_box']=await dialog.locator('[id^=radix-]').filter(has_text='Bioinsumo sintético').last.evaluate(BOX) if False else await dialog.locator('p').first.evaluate(BOX);rec['dialog_text']=await dialog.inner_text();await page.screenshot(path=str(O/f'{role}-{w}-{mode}-dialog.png'))
+       rec['description_box']=await dialog.locator('[id^=radix-]').filter(has_text='Bioinsumo sintético').last.evaluate(BOX) if False else await dialog.locator('p').first.evaluate(BOX);assert not rec['description_box']['clipped'],'product description clipped';rec['dialog_text']=await dialog.inner_text();await page.screenshot(path=str(O/f'{role}-{w}-{mode}-dialog.png'))
        await action.click();await page.wait_for_timeout(200)
        assert await page.get_by_role('dialog').count()==0
        assert 'Bioinsumo sintético' in await page.locator('main').inner_text();assert '150,00' in await page.locator('main').inner_text();rec['result']='PASS_CART_UI_ROUNDTRIP';rec['assertions'].append({'local_cart_readback':True})
