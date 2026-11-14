@@ -1,0 +1,4358 @@
+[
+  {
+    "route": "/configuracoes",
+    "profile": "administrador",
+    "viewport": [
+      390,
+      844
+    ],
+    "level": true,
+    "url": "http://localhost:8080/configuracoes?reviewRole=administrador",
+    "expected": [
+      68,
+      69,
+      70,
+      71,
+      72
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_configuracoes-administrador-390-entry.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEMAIL\nNOME\nTELEFONE\nCPF/CNPJ\nPERFIL DE ACESSO\nAdministrador da empresa\nSalvar Alterações"
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_configuracoes-administrador-390-tab-1.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEMAIL\nNOME\nTELEFONE\nCPF/CNPJ\nPERFIL DE ACESSO\nAdministrador da empresa\nSalvar Alterações"
+      },
+      {
+        "name": "tab-2",
+        "artifact": "survey/_configuracoes-administrador-390-tab-2.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nPerfil da empresa\n\nDados institucionais registrados no cadastro da empresa.\n\nRazão social\n—\nNome fantasia\n—\nCNPJ\n—\nE-mail corporativo\n—\nTelefone\n—\nEndereço\n—\nCidade / UF\n—\nCEP\n—\nFuso horário\n—\nIdioma\n—\nRegime tributário\n—\nEmail da empresa\nEnvio bloqueado\nRascunho\n\nNão foi possível concluir a operação. Recarregue para verificar o estado.\n\nHOST SMTP\nPORTA\n\nO ambiente atual aceita envio pela porta 465 com TLS. Portas 25 e 587 indisponíveis. Salvar rascunho não testa a conexão.\n\nCRIPTOGRAFIA\nTLS implícito\nTLS implícito\nSTARTTLS obrigatório\nUSUÁRIO SMTP\nEMAIL REMETENTE\nNOME DO REMETENTE\nREPLY-TO (OPCIONAL)\nCREDENCIAL SMTP\nSalvar rascunho\nRecarregar\nTestar conexão\nConfirmo o teste para meu email confirmado\nEnviar teste"
+      },
+      {
+        "name": "tab-3",
+        "artifact": "survey/_configuracoes-administrador-390-tab-3.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nMeu Plano\n\nSua conta não está vinculada a uma empresa — não há plano para exibir."
+      },
+      {
+        "name": "tab-4",
+        "artifact": "survey/_configuracoes-administrador-390-tab-4.png",
+        "mounted": [
+          {
+            "id": "70",
+            "tag": "BUTTON",
+            "role": "combobox",
+            "text": "Todos os perfis",
+            "rect": {
+              "x": 25,
+              "y": 545,
+              "right": 365,
+              "bottom": 593,
+              "w": 340,
+              "h": 48
+            },
+            "scroll": {
+              "w": 338,
+              "h": 46,
+              "cw": 338,
+              "ch": 46
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "71",
+            "tag": "BUTTON",
+            "role": "combobox",
+            "text": "Todos",
+            "rect": {
+              "x": 25,
+              "y": 605,
+              "right": 365,
+              "bottom": 653,
+              "w": 340,
+              "h": 48
+            },
+            "scroll": {
+              "w": 338,
+              "h": 46,
+              "cw": 338,
+              "ch": 46
+            },
+            "clipped": [],
+            "controls": []
+          }
+        ],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nGestão de Usuários\n\nGerencie os perfis de acesso dos usuários do sistema\n\nAuditoria de Senhas\nNovo Usuário\nTodos os perfis\nTodos\nHomologação sintética com nome representativo muito extenso para revisão de conteúdo completo\nqa@example.invalid\nAtivo\nPERFIL\nConsultor Técnico\nTIPO DE ACESSO\nInterno\nVÍNCULO\nVínculo indisponível no momento\nIDENTIFICAÇÃO\n—\nTELEFONE\n—\nCARGO\n—\nEditar\n\nExibindo 1–1 de 1 usuários\n\nAnterior\nPágina 1 de 1\nPróxima"
+      },
+      {
+        "name": "tab-5",
+        "artifact": "survey/_configuracoes-administrador-390-tab-5.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nCatálogos\n\nGerencie listas e sugestões pré-definidas exibidas nos formulários do sistema.\n\nObjetivos de Visita Técnica\nSugestões exibidas no campo \"Objetivo da visita\" do formulário, por cultura ou genéricas.\nParâmetros de referência do CQ\nFaixas esperadas (pH, concentração, aparência, odor, contaminação) por microrganismo/produto — exibidas como comparativo informativo no registro do CQ."
+      },
+      {
+        "name": "tab-6",
+        "artifact": "survey/_configuracoes-administrador-390-tab-6.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nSLA de Pedidos B2B\n\nPrazos máximos por fase do pedido. Quando uma fase ultrapassa o limite, um alerta é gerado automaticamente na Central de Alertas (verificação a cada 30 minutos).\n\nFase\tPrazo (horas)\tAtivo\t"
+      },
+      {
+        "name": "tab-7",
+        "artifact": "survey/_configuracoes-administrador-390-tab-7.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nConfigurações financeiras\n\nAjustes gerais do módulo financeiro\n\nComprovantes\nEXIGIR COMPROVANTE EM RECEBIMENTOS\n\nBloqueia a baixa de contas a receber sem anexo.\n\nEXIGIR COMPROVANTE EM PAGAMENTOS\n\nBloqueia a baixa de contas a pagar sem anexo."
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_cliente_ids_for_user",
+        "args": {
+          "_user_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "tenant_admin_list_users",
+        "args": {
+          "p_search": null,
+          "p_role": null,
+          "p_active": null,
+          "p_offset": 0,
+          "p_limit": 25
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "seller_portfolio_capability_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "user_clientes",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "tenant_admin_user_links",
+        "args": {
+          "p_user_ids": [
+            "33333333-3333-4333-8333-333333333333"
+          ]
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "h15_actor_organization",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "saas_modules",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "saas_features",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlements",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "partner_order_sla_config",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "financial_settings",
+        "args": null,
+        "one": true,
+        "write": false
+      }
+    ],
+    "writes": [
+      "tenant-email-settings"
+    ]
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "administrador",
+    "viewport": [
+      1440,
+      900
+    ],
+    "level": true,
+    "url": "http://localhost:8080/configuracoes?reviewRole=administrador&tab=financeiro",
+    "expected": [
+      68,
+      69,
+      70,
+      71,
+      72
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_configuracoes-administrador-1440-entry.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nConfigurações financeiras\n\nAjustes gerais do módulo financeiro\n\nComprovantes\nExigir comprovante em recebimentos\n\nBloqueia a baixa de contas a receber sem anexo.\n\nExigir comprovante em pagamentos\n\nBloqueia a baixa de contas a pagar sem anexo."
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_configuracoes-administrador-1440-tab-1.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEmail\nNome\nTelefone\nCPF/CNPJ\nPerfil de Acesso\nAdministrador da empresa\nSalvar Alterações"
+      },
+      {
+        "name": "tab-2",
+        "artifact": "survey/_configuracoes-administrador-1440-tab-2.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nPerfil da empresa\n\nDados institucionais registrados no cadastro da empresa.\n\nRazão social\n—\nNome fantasia\n—\nCNPJ\n—\nE-mail corporativo\n—\nTelefone\n—\nEndereço\n—\nCidade / UF\n—\nCEP\n—\nFuso horário\n—\nIdioma\n—\nRegime tributário\n—\nEmail da empresa\nEnvio bloqueado\nRascunho\n\nNão foi possível concluir a operação. Recarregue para verificar o estado.\n\nHost SMTP\nPorta\n\nO ambiente atual aceita envio pela porta 465 com TLS. Portas 25 e 587 indisponíveis. Salvar rascunho não testa a conexão.\n\nCriptografia\nTLS implícito\nTLS implícito\nSTARTTLS obrigatório\nUsuário SMTP\nEmail remetente\nNome do remetente\nReply-to (opcional)\nCredencial SMTP\nSalvar rascunho\nRecarregar\nTestar conexão\nConfirmo o teste para meu email confirmado\nEnviar teste"
+      },
+      {
+        "name": "tab-3",
+        "artifact": "survey/_configuracoes-administrador-1440-tab-3.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nMeu Plano\n\nSua conta não está vinculada a uma empresa — não há plano para exibir."
+      },
+      {
+        "name": "tab-4",
+        "artifact": "survey/_configuracoes-administrador-1440-tab-4.png",
+        "mounted": [
+          {
+            "id": "70",
+            "tag": "BUTTON",
+            "role": "combobox",
+            "text": "Todos os perfis",
+            "rect": {
+              "x": 1059,
+              "y": 345,
+              "right": 1239,
+              "bottom": 385,
+              "w": 180,
+              "h": 40
+            },
+            "scroll": {
+              "w": 178,
+              "h": 38,
+              "cw": 178,
+              "ch": 38
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "71",
+            "tag": "BUTTON",
+            "role": "combobox",
+            "text": "Todos",
+            "rect": {
+              "x": 1251,
+              "y": 345,
+              "right": 1391,
+              "bottom": 385,
+              "w": 140,
+              "h": 40
+            },
+            "scroll": {
+              "w": 138,
+              "h": 38,
+              "cw": 138,
+              "ch": 38
+            },
+            "clipped": [],
+            "controls": []
+          },
+          {
+            "id": "72",
+            "tag": "TABLE",
+            "role": null,
+            "text": "NomeEmailPerfilVínculoStatusAçõesHomologação sintética com nome representativo muito extenso para revisão de conteúdo completoqa@example.invalidConsultor TécnicoVínculo indisponível no momentoAtivo",
+            "rect": {
+              "x": 305,
+              "y": 401,
+              "right": 1391,
+              "bottom": 521.5,
+              "w": 1086,
+              "h": 120.5
+            },
+            "scroll": {
+              "w": 1086,
+              "h": 121,
+              "cw": 1086,
+              "ch": 121
+            },
+            "clipped": [],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": "",
+                "disabled": false
+              }
+            ]
+          }
+        ],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nGestão de Usuários\n\nGerencie os perfis de acesso dos usuários do sistema\n\nAuditoria de Senhas\nNovo Usuário\nTodos os perfis\nTodos\nNome\tEmail\tPerfil\tVínculo\tStatus\tAções\nHomologação sintética com nome representativo muito extenso para revisão de conteúdo completo\tqa@example.invalid\tConsultor Técnico\tVínculo indisponível no momento\t\nAtivo\n\t\n\nExibindo 1–1 de 1 usuários\n\nAnterior\nPágina 1 de 1\nPróxima"
+      },
+      {
+        "name": "tab-5",
+        "artifact": "survey/_configuracoes-administrador-1440-tab-5.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nCatálogos\n\nGerencie listas e sugestões pré-definidas exibidas nos formulários do sistema.\n\nObjetivos de Visita Técnica\nSugestões exibidas no campo \"Objetivo da visita\" do formulário, por cultura ou genéricas.\nParâmetros de referência do CQ\nFaixas esperadas (pH, concentração, aparência, odor, contaminação) por microrganismo/produto — exibidas como comparativo informativo no registro do CQ."
+      },
+      {
+        "name": "tab-6",
+        "artifact": "survey/_configuracoes-administrador-1440-tab-6.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nSLA de Pedidos B2B\n\nPrazos máximos por fase do pedido. Quando uma fase ultrapassa o limite, um alerta é gerado automaticamente na Central de Alertas (verificação a cada 30 minutos).\n\nFase\tPrazo (horas)\tAtivo\t"
+      },
+      {
+        "name": "tab-7",
+        "artifact": "survey/_configuracoes-administrador-1440-tab-7.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nPerfil da empresa\nMeu Plano\nUsuários\nCatálogos\nSLA B2B\nFinanceiro\nConfigurações financeiras\n\nAjustes gerais do módulo financeiro\n\nComprovantes\nExigir comprovante em recebimentos\n\nBloqueia a baixa de contas a receber sem anexo.\n\nExigir comprovante em pagamentos\n\nBloqueia a baixa de contas a pagar sem anexo."
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_cliente_ids_for_user",
+        "args": {
+          "_user_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "tenant_admin_list_users",
+        "args": {
+          "p_search": null,
+          "p_role": null,
+          "p_active": null,
+          "p_offset": 0,
+          "p_limit": 25
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "seller_portfolio_capability_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "user_clientes",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "tenant_admin_user_links",
+        "args": {
+          "p_user_ids": [
+            "33333333-3333-4333-8333-333333333333"
+          ]
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "h15_actor_organization",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "saas_modules",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "saas_features",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlements",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "partner_order_sla_config",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "financial_settings",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": [
+      "tenant-email-settings",
+      "tenant-email-settings"
+    ]
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "gestor",
+    "viewport": [
+      390,
+      844
+    ],
+    "level": true,
+    "url": "http://localhost:8080/configuracoes?reviewRole=gestor",
+    "expected": [
+      68,
+      69,
+      70,
+      71,
+      72
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_configuracoes-gestor-390-entry.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSG\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nCatálogos\nSLA B2B\nFinanceiro\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEMAIL\nNOME\nTELEFONE\nCPF/CNPJ\nPERFIL DE ACESSO\nGestor\nSalvar Alterações"
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_configuracoes-gestor-390-tab-1.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSG\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nCatálogos\nSLA B2B\nFinanceiro\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEMAIL\nNOME\nTELEFONE\nCPF/CNPJ\nPERFIL DE ACESSO\nGestor\nSalvar Alterações"
+      },
+      {
+        "name": "tab-2",
+        "artifact": "survey/_configuracoes-gestor-390-tab-2.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSG\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nCatálogos\nSLA B2B\nFinanceiro\nCatálogos\n\nGerencie listas e sugestões pré-definidas exibidas nos formulários do sistema.\n\nObjetivos de Visita Técnica\nSugestões exibidas no campo \"Objetivo da visita\" do formulário, por cultura ou genéricas.\nParâmetros de referência do CQ\nFaixas esperadas (pH, concentração, aparência, odor, contaminação) por microrganismo/produto — exibidas como comparativo informativo no registro do CQ."
+      },
+      {
+        "name": "tab-3",
+        "artifact": "survey/_configuracoes-gestor-390-tab-3.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSG\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nCatálogos\nSLA B2B\nFinanceiro\nSLA de Pedidos B2B\n\nPrazos máximos por fase do pedido. Quando uma fase ultrapassa o limite, um alerta é gerado automaticamente na Central de Alertas (verificação a cada 30 minutos).\n\nFase\tPrazo (horas)\tAtivo\t"
+      },
+      {
+        "name": "tab-4",
+        "artifact": "survey/_configuracoes-gestor-390-tab-4.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSG\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nCatálogos\nSLA B2B\nFinanceiro\nConfigurações financeiras\n\nAjustes gerais do módulo financeiro\n\nComprovantes\nEXIGIR COMPROVANTE EM RECEBIMENTOS\n\nBloqueia a baixa de contas a receber sem anexo.\n\nEXIGIR COMPROVANTE EM PAGAMENTOS\n\nBloqueia a baixa de contas a pagar sem anexo."
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_cliente_ids_for_user",
+        "args": {
+          "_user_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "seller_portfolio_capability_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "user_clientes",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "partner_order_sla_config",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "financial_settings",
+        "args": null,
+        "one": true,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "gestor",
+    "viewport": [
+      1440,
+      900
+    ],
+    "level": true,
+    "url": "http://localhost:8080/configuracoes?reviewRole=gestor&tab=financeiro",
+    "expected": [
+      68,
+      69,
+      70,
+      71,
+      72
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_configuracoes-gestor-1440-entry.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSG\nSessão sintética gestor\nGestor\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nCatálogos\nSLA B2B\nFinanceiro\nConfigurações financeiras\n\nAjustes gerais do módulo financeiro\n\nComprovantes\nExigir comprovante em recebimentos\n\nBloqueia a baixa de contas a receber sem anexo.\n\nExigir comprovante em pagamentos\n\nBloqueia a baixa de contas a pagar sem anexo."
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_configuracoes-gestor-1440-tab-1.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSG\nSessão sintética gestor\nGestor\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nCatálogos\nSLA B2B\nFinanceiro\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEmail\nNome\nTelefone\nCPF/CNPJ\nPerfil de Acesso\nGestor\nSalvar Alterações"
+      },
+      {
+        "name": "tab-2",
+        "artifact": "survey/_configuracoes-gestor-1440-tab-2.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSG\nSessão sintética gestor\nGestor\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nCatálogos\nSLA B2B\nFinanceiro\nCatálogos\n\nGerencie listas e sugestões pré-definidas exibidas nos formulários do sistema.\n\nObjetivos de Visita Técnica\nSugestões exibidas no campo \"Objetivo da visita\" do formulário, por cultura ou genéricas.\nParâmetros de referência do CQ\nFaixas esperadas (pH, concentração, aparência, odor, contaminação) por microrganismo/produto — exibidas como comparativo informativo no registro do CQ."
+      },
+      {
+        "name": "tab-3",
+        "artifact": "survey/_configuracoes-gestor-1440-tab-3.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSG\nSessão sintética gestor\nGestor\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nCatálogos\nSLA B2B\nFinanceiro\nSLA de Pedidos B2B\n\nPrazos máximos por fase do pedido. Quando uma fase ultrapassa o limite, um alerta é gerado automaticamente na Central de Alertas (verificação a cada 30 minutos).\n\nFase\tPrazo (horas)\tAtivo\t"
+      },
+      {
+        "name": "tab-4",
+        "artifact": "survey/_configuracoes-gestor-1440-tab-4.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSG\nSessão sintética gestor\nGestor\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nCatálogos\nSLA B2B\nFinanceiro\nConfigurações financeiras\n\nAjustes gerais do módulo financeiro\n\nComprovantes\nExigir comprovante em recebimentos\n\nBloqueia a baixa de contas a receber sem anexo.\n\nExigir comprovante em pagamentos\n\nBloqueia a baixa de contas a pagar sem anexo."
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_cliente_ids_for_user",
+        "args": {
+          "_user_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "seller_portfolio_capability_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "user_clientes",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "partner_order_sla_config",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "financial_settings",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "consultor_tecnico",
+    "viewport": [
+      390,
+      844
+    ],
+    "level": true,
+    "url": "http://localhost:8080/configuracoes?reviewRole=consultor_tecnico",
+    "expected": [
+      68,
+      69,
+      70,
+      71,
+      72
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_configuracoes-consultor_tecnico-390-entry.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSC\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEMAIL\nNOME\nTELEFONE\nCPF/CNPJ\nPERFIL DE ACESSO\nConsultor Técnico\nSalvar Alterações"
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_configuracoes-consultor_tecnico-390-tab-1.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSC\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEMAIL\nNOME\nTELEFONE\nCPF/CNPJ\nPERFIL DE ACESSO\nConsultor Técnico\nSalvar Alterações"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "seller_portfolio_capability_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "consultor_tecnico",
+    "viewport": [
+      1440,
+      900
+    ],
+    "level": true,
+    "url": "http://localhost:8080/configuracoes?reviewRole=consultor_tecnico",
+    "expected": [
+      68,
+      69,
+      70,
+      71,
+      72
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_configuracoes-consultor_tecnico-1440-entry.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nEquipe Técnica\nFluxo Técnico\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSC\nSessão sintética consultor_tecnico\nConsultor Técnico\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEmail\nNome\nTelefone\nCPF/CNPJ\nPerfil de Acesso\nConsultor Técnico\nSalvar Alterações"
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_configuracoes-consultor_tecnico-1440-tab-1.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nEquipe Técnica\nFluxo Técnico\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSC\nSessão sintética consultor_tecnico\nConsultor Técnico\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEmail\nNome\nTelefone\nCPF/CNPJ\nPerfil de Acesso\nConsultor Técnico\nSalvar Alterações"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "seller_portfolio_capability_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "aplicador",
+    "viewport": [
+      390,
+      844
+    ],
+    "level": true,
+    "url": "http://localhost:8080/configuracoes?reviewRole=aplicador",
+    "expected": [
+      68,
+      69,
+      70,
+      71,
+      72
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_configuracoes-aplicador-390-entry.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEMAIL\nNOME\nTELEFONE\nCPF/CNPJ\nPERFIL DE ACESSO\nAplicador\nSalvar Alterações"
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_configuracoes-aplicador-390-tab-1.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEMAIL\nNOME\nTELEFONE\nCPF/CNPJ\nPERFIL DE ACESSO\nAplicador\nSalvar Alterações"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "seller_portfolio_capability_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "aplicador",
+    "viewport": [
+      1440,
+      900
+    ],
+    "level": true,
+    "url": "http://localhost:8080/configuracoes?reviewRole=aplicador",
+    "expected": [
+      68,
+      69,
+      70,
+      71,
+      72
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_configuracoes-aplicador-1440-entry.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética aplicador\nAplicador\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEmail\nNome\nTelefone\nCPF/CNPJ\nPerfil de Acesso\nAplicador\nSalvar Alterações"
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_configuracoes-aplicador-1440-tab-1.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética aplicador\nAplicador\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEmail\nNome\nTelefone\nCPF/CNPJ\nPerfil de Acesso\nAplicador\nSalvar Alterações"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "seller_portfolio_capability_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "operador_onfarm",
+    "viewport": [
+      390,
+      844
+    ],
+    "level": true,
+    "url": "http://localhost:8080/configuracoes?reviewRole=operador_onfarm",
+    "expected": [
+      68,
+      69,
+      70,
+      71,
+      72
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_configuracoes-operador_onfarm-390-entry.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSO\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEMAIL\nNOME\nTELEFONE\nCPF/CNPJ\nPERFIL DE ACESSO\nOperador de Produção\nSalvar Alterações"
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_configuracoes-operador_onfarm-390-tab-1.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSO\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEMAIL\nNOME\nTELEFONE\nCPF/CNPJ\nPERFIL DE ACESSO\nOperador de Produção\nSalvar Alterações"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "internal_actor_context_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "seller_portfolio_capability_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "operador_onfarm",
+    "viewport": [
+      1440,
+      900
+    ],
+    "level": true,
+    "url": "http://localhost:8080/configuracoes?reviewRole=operador_onfarm",
+    "expected": [
+      68,
+      69,
+      70,
+      71,
+      72
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_configuracoes-operador_onfarm-1440-entry.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCAMPO E ASSISTÊNCIA TÉCNICA\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSO\nSessão sintética operador_onfarm\nOperador de Produção\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEmail\nNome\nTelefone\nCPF/CNPJ\nPerfil de Acesso\nOperador de Produção\nSalvar Alterações"
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_configuracoes-operador_onfarm-1440-tab-1.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCAMPO E ASSISTÊNCIA TÉCNICA\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSO\nSessão sintética operador_onfarm\nOperador de Produção\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEmail\nNome\nTelefone\nCPF/CNPJ\nPerfil de Acesso\nOperador de Produção\nSalvar Alterações"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "internal_actor_context_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "seller_portfolio_capability_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "cliente_produtor",
+    "viewport": [
+      390,
+      844
+    ],
+    "level": true,
+    "url": "http://localhost:8080/portal",
+    "expected": [
+      68,
+      69,
+      70,
+      71,
+      72
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_configuracoes-cliente_produtor-390-entry.png",
+        "mounted": [],
+        "body": "Portal do Produtor\nSC\nNenhum cliente vinculado\n\nSua conta não está vinculada a nenhum cliente. Contate o administrador para concluir a configuração do acesso.\n\nSair"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_cliente_ids_for_user",
+        "args": {
+          "_user_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_cliente_ids_for_user",
+        "args": {
+          "_user_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "user_clientes",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "user_clientes",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_cliente_ids_for_user",
+        "args": {
+          "_user_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "user_clientes",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "cliente_produtor",
+    "viewport": [
+      1440,
+      900
+    ],
+    "level": true,
+    "url": "http://localhost:8080/portal",
+    "expected": [
+      68,
+      69,
+      70,
+      71,
+      72
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_configuracoes-cliente_produtor-1440-entry.png",
+        "mounted": [],
+        "body": "Portal do Produtor\nSC\nSessão sintética cliente_produtor\nProdutor\nNenhum cliente vinculado\n\nSua conta não está vinculada a nenhum cliente. Contate o administrador para concluir a configuração do acesso.\n\nSair"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_cliente_ids_for_user",
+        "args": {
+          "_user_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_cliente_ids_for_user",
+        "args": {
+          "_user_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "user_clientes",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "user_clientes",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_cliente_ids_for_user",
+        "args": {
+          "_user_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "user_clientes",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "administrativo",
+    "viewport": [
+      390,
+      844
+    ],
+    "level": true,
+    "url": "http://localhost:8080/configuracoes?reviewRole=administrativo",
+    "expected": [
+      68,
+      69,
+      70,
+      71,
+      72
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_configuracoes-administrativo-390-entry.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nSLA B2B\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEMAIL\nNOME\nTELEFONE\nCPF/CNPJ\nPERFIL DE ACESSO\nAdministrativo\nSalvar Alterações"
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_configuracoes-administrativo-390-tab-1.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nSLA B2B\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEMAIL\nNOME\nTELEFONE\nCPF/CNPJ\nPERFIL DE ACESSO\nAdministrativo\nSalvar Alterações"
+      },
+      {
+        "name": "tab-2",
+        "artifact": "survey/_configuracoes-administrativo-390-tab-2.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nSLA B2B\nSLA de Pedidos B2B\n\nPrazos máximos por fase do pedido. Quando uma fase ultrapassa o limite, um alerta é gerado automaticamente na Central de Alertas (verificação a cada 30 minutos).\n\nFase\tPrazo (horas)\tAtivo\t\n\nApenas administrador e gestor podem alterar os prazos."
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "seller_portfolio_capability_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "partner_order_sla_config",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "administrativo",
+    "viewport": [
+      1440,
+      900
+    ],
+    "level": true,
+    "url": "http://localhost:8080/configuracoes?reviewRole=administrativo&tab=sla-b2b",
+    "expected": [
+      68,
+      69,
+      70,
+      71,
+      72
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_configuracoes-administrativo-1440-entry.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrativo\nAdministrativo\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nSLA B2B\nSLA de Pedidos B2B\n\nPrazos máximos por fase do pedido. Quando uma fase ultrapassa o limite, um alerta é gerado automaticamente na Central de Alertas (verificação a cada 30 minutos).\n\nFase\tPrazo (horas)\tAtivo\t\n\nApenas administrador e gestor podem alterar os prazos."
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_configuracoes-administrativo-1440-tab-1.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrativo\nAdministrativo\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nSLA B2B\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEmail\nNome\nTelefone\nCPF/CNPJ\nPerfil de Acesso\nAdministrativo\nSalvar Alterações"
+      },
+      {
+        "name": "tab-2",
+        "artifact": "survey/_configuracoes-administrativo-1440-tab-2.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrativo\nAdministrativo\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nSLA B2B\nSLA de Pedidos B2B\n\nPrazos máximos por fase do pedido. Quando uma fase ultrapassa o limite, um alerta é gerado automaticamente na Central de Alertas (verificação a cada 30 minutos).\n\nFase\tPrazo (horas)\tAtivo\t\n\nApenas administrador e gestor podem alterar os prazos."
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "seller_portfolio_capability_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "partner_order_sla_config",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "tecnico_agronomo",
+    "viewport": [
+      390,
+      844
+    ],
+    "level": true,
+    "url": "http://localhost:8080/configuracoes?reviewRole=tecnico_agronomo",
+    "expected": [
+      68,
+      69,
+      70,
+      71,
+      72
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_configuracoes-tecnico_agronomo-390-entry.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nST\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEMAIL\nNOME\nTELEFONE\nCPF/CNPJ\nPERFIL DE ACESSO\nTécnico Agrônomo\nSalvar Alterações"
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_configuracoes-tecnico_agronomo-390-tab-1.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nST\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEMAIL\nNOME\nTELEFONE\nCPF/CNPJ\nPERFIL DE ACESSO\nTécnico Agrônomo\nSalvar Alterações"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "seller_portfolio_capability_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "tecnico_agronomo",
+    "viewport": [
+      1440,
+      900
+    ],
+    "level": true,
+    "url": "http://localhost:8080/configuracoes?reviewRole=tecnico_agronomo",
+    "expected": [
+      68,
+      69,
+      70,
+      71,
+      72
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_configuracoes-tecnico_agronomo-1440-entry.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nEquipe Técnica\nFluxo Técnico\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nST\nSessão sintética tecnico_agronomo\nTécnico Agrônomo\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEmail\nNome\nTelefone\nCPF/CNPJ\nPerfil de Acesso\nTécnico Agrônomo\nSalvar Alterações"
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_configuracoes-tecnico_agronomo-1440-tab-1.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nEquipe Técnica\nFluxo Técnico\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nST\nSessão sintética tecnico_agronomo\nTécnico Agrônomo\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEmail\nNome\nTelefone\nCPF/CNPJ\nPerfil de Acesso\nTécnico Agrônomo\nSalvar Alterações"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "seller_portfolio_capability_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "producao",
+    "viewport": [
+      390,
+      844
+    ],
+    "level": true,
+    "url": "http://localhost:8080/configuracoes?reviewRole=producao",
+    "expected": [
+      68,
+      69,
+      70,
+      71,
+      72
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_configuracoes-producao-390-entry.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSP\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nSLA B2B\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEMAIL\nNOME\nTELEFONE\nCPF/CNPJ\nPERFIL DE ACESSO\nProdução\nSalvar Alterações"
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_configuracoes-producao-390-tab-1.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSP\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nSLA B2B\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEMAIL\nNOME\nTELEFONE\nCPF/CNPJ\nPERFIL DE ACESSO\nProdução\nSalvar Alterações"
+      },
+      {
+        "name": "tab-2",
+        "artifact": "survey/_configuracoes-producao-390-tab-2.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSP\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nSLA B2B\nSLA de Pedidos B2B\n\nPrazos máximos por fase do pedido. Quando uma fase ultrapassa o limite, um alerta é gerado automaticamente na Central de Alertas (verificação a cada 30 minutos).\n\nFase\tPrazo (horas)\tAtivo\t\n\nApenas administrador e gestor podem alterar os prazos."
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "seller_portfolio_capability_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "partner_order_sla_config",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "producao",
+    "viewport": [
+      1440,
+      900
+    ],
+    "level": true,
+    "url": "http://localhost:8080/configuracoes?reviewRole=producao&tab=sla-b2b",
+    "expected": [
+      68,
+      69,
+      70,
+      71,
+      72
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_configuracoes-producao-1440-entry.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCAMPO E ASSISTÊNCIA TÉCNICA\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSP\nSessão sintética producao\nProdução\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nSLA B2B\nSLA de Pedidos B2B\n\nPrazos máximos por fase do pedido. Quando uma fase ultrapassa o limite, um alerta é gerado automaticamente na Central de Alertas (verificação a cada 30 minutos).\n\nFase\tPrazo (horas)\tAtivo\t\n\nApenas administrador e gestor podem alterar os prazos."
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_configuracoes-producao-1440-tab-1.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCAMPO E ASSISTÊNCIA TÉCNICA\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSP\nSessão sintética producao\nProdução\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nSLA B2B\nMeu Perfil\n\nAtualize suas informações pessoais\n\nEmail\nNome\nTelefone\nCPF/CNPJ\nPerfil de Acesso\nProdução\nSalvar Alterações"
+      },
+      {
+        "name": "tab-2",
+        "artifact": "survey/_configuracoes-producao-1440-tab-2.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCAMPO E ASSISTÊNCIA TÉCNICA\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSP\nSessão sintética producao\nProdução\nConfigurações\n\nGerenciamento do sistema e usuários\n\nBaixar manual (PDF)\nMeu perfil pessoal\nSLA B2B\nSLA de Pedidos B2B\n\nPrazos máximos por fase do pedido. Quando uma fase ultrapassa o limite, um alerta é gerado automaticamente na Central de Alertas (verificação a cada 30 minutos).\n\nFase\tPrazo (horas)\tAtivo\t\n\nApenas administrador e gestor podem alterar os prazos."
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "seller_portfolio_capability_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "partner_order_sla_config",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "financeiro",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "gestor_comercial",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "vendedor",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "parceiro_b2b",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "parceiro_b2b_tecnico",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/configuracoes",
+    "profile": "superadmin",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/plataforma",
+    "profile": "superadmin",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/plataforma?reviewRole=superadmin"
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "administrador",
+    "viewport": [
+      390,
+      844
+    ],
+    "level": true,
+    "url": "http://localhost:8080/bi-agronomico?reviewRole=administrador",
+    "expected": [
+      58
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_bi-agronomico-administrador-390-entry.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_cliente_ids_for_user",
+        "args": {
+          "_user_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "user_clientes",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "administrador",
+    "viewport": [
+      1440,
+      900
+    ],
+    "level": true,
+    "url": "http://localhost:8080/bi-agronomico?reviewRole=administrador",
+    "expected": [
+      58
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_bi-agronomico-administrador-1440-entry.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_cliente_ids_for_user",
+        "args": {
+          "_user_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "user_clientes",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "gestor",
+    "viewport": [
+      390,
+      844
+    ],
+    "level": true,
+    "url": "http://localhost:8080/bi-agronomico?reviewRole=gestor",
+    "expected": [
+      58
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_bi-agronomico-gestor-390-entry.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSG\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_cliente_ids_for_user",
+        "args": {
+          "_user_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "user_clientes",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "gestor",
+    "viewport": [
+      1440,
+      900
+    ],
+    "level": true,
+    "url": "http://localhost:8080/bi-agronomico?reviewRole=gestor",
+    "expected": [
+      58
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_bi-agronomico-gestor-1440-entry.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSG\nSessão sintética gestor\nGestor\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_cliente_ids_for_user",
+        "args": {
+          "_user_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "user_clientes",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "consultor_tecnico",
+    "viewport": [
+      390,
+      844
+    ],
+    "level": true,
+    "url": "http://localhost:8080/bi-agronomico?reviewRole=consultor_tecnico",
+    "expected": [
+      58
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_bi-agronomico-consultor_tecnico-390-entry.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSC\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "consultor_tecnico",
+    "viewport": [
+      1440,
+      900
+    ],
+    "level": true,
+    "url": "http://localhost:8080/bi-agronomico?reviewRole=consultor_tecnico",
+    "expected": [
+      58
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_bi-agronomico-consultor_tecnico-1440-entry.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nEquipe Técnica\nFluxo Técnico\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSC\nSessão sintética consultor_tecnico\nConsultor Técnico\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "aplicador",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "operador_onfarm",
+    "viewport": [
+      390,
+      844
+    ],
+    "level": true,
+    "url": "http://localhost:8080/bi-agronomico?reviewRole=operador_onfarm",
+    "expected": [
+      58
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_bi-agronomico-operador_onfarm-390-entry.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSO\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "internal_actor_context_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "operador_onfarm",
+    "viewport": [
+      1440,
+      900
+    ],
+    "level": true,
+    "url": "http://localhost:8080/bi-agronomico?reviewRole=operador_onfarm",
+    "expected": [
+      58
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_bi-agronomico-operador_onfarm-1440-entry.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCAMPO E ASSISTÊNCIA TÉCNICA\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSO\nSessão sintética operador_onfarm\nOperador de Produção\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "internal_actor_context_v1",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "cliente_produtor",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/portal"
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "administrativo",
+    "viewport": [
+      390,
+      844
+    ],
+    "level": true,
+    "url": "http://localhost:8080/bi-agronomico?reviewRole=administrativo",
+    "expected": [
+      58
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_bi-agronomico-administrativo-390-entry.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "administrativo",
+    "viewport": [
+      1440,
+      900
+    ],
+    "level": true,
+    "url": "http://localhost:8080/bi-agronomico?reviewRole=administrativo",
+    "expected": [
+      58
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_bi-agronomico-administrativo-1440-entry.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrativo\nAdministrativo\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "tecnico_agronomo",
+    "viewport": [
+      390,
+      844
+    ],
+    "level": true,
+    "url": "http://localhost:8080/bi-agronomico?reviewRole=tecnico_agronomo",
+    "expected": [
+      58
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_bi-agronomico-tecnico_agronomo-390-entry.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nST\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "tecnico_agronomo",
+    "viewport": [
+      1440,
+      900
+    ],
+    "level": true,
+    "url": "http://localhost:8080/bi-agronomico?reviewRole=tecnico_agronomo",
+    "expected": [
+      58
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_bi-agronomico-tecnico_agronomo-1440-entry.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nEquipe Técnica\nFluxo Técnico\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nST\nSessão sintética tecnico_agronomo\nTécnico Agrônomo\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "producao",
+    "viewport": [
+      390,
+      844
+    ],
+    "level": true,
+    "url": "http://localhost:8080/bi-agronomico?reviewRole=producao",
+    "expected": [
+      58
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_bi-agronomico-producao-390-entry.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSP\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "producao",
+    "viewport": [
+      1440,
+      900
+    ],
+    "level": true,
+    "url": "http://localhost:8080/bi-agronomico?reviewRole=producao",
+    "expected": [
+      58
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_bi-agronomico-producao-1440-entry.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nCAMPO E ASSISTÊNCIA TÉCNICA\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nADMINISTRAÇÃO\nConfigurações\nToggle Sidebar\nCultivo Farm\nSP\nSessão sintética producao\nProdução\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "financeiro",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "gestor_comercial",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "vendedor",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "parceiro_b2b",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "parceiro_b2b_tecnico",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/bi-agronomico",
+    "profile": "superadmin",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/dashboard/geral",
+    "profile": "administrador",
+    "viewport": [
+      390,
+      844
+    ],
+    "level": true,
+    "url": "http://localhost:8080/dashboard/geral?reviewRole=administrador",
+    "expected": [
+      102
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_dashboard_geral-administrador-390-entry.png",
+        "mounted": [
+          {
+            "id": "102",
+            "tag": "DIV",
+            "role": "tablist",
+            "text": " Visão Geral Visão Executiva Visão Operacional",
+            "rect": {
+              "x": 12,
+              "y": 80,
+              "right": 378,
+              "bottom": 120,
+              "w": 366,
+              "h": 40
+            },
+            "scroll": {
+              "w": 444,
+              "h": 40,
+              "cw": 366,
+              "ch": 40
+            },
+            "clipped": [],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "text": " Visão Geral",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": " Visão Executiva",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": " Visão Operacional",
+                "disabled": false
+              }
+            ]
+          }
+        ],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nVisão Geral\nVisão Executiva\nVisão Operacional\nVisão Geral\n\nPeríodo: últimos 30 dias · Indicadores de posição atual marcados como “Agora”.\n\nSaúde Operacional\n—\nsem dados\n\nAgora\n\nAlertas\n0\nVer alertas →\n\nAgora\n\nReceita recebida\n—\nAbrir financeiro →\n\nÚltimos 30 dias\n\nClientes ativos\n0\nVer clientes →\n\nAgora\n\nPrioridades imediatas\n\nSem prioridades críticas.\n\nFluxo do dia (Hoje)\n\nCheck-ins hoje\n\n0\n\nVisitas hoje\n\n0\n\nOS abertas\n\n0\n\nRecom. pendentes\n\n0\n\nSituação do Laboratório\n(Agora)\nAbrir Cockpit Laboratório\nOS aguardando\n0\nLotes em produção\n0\nCQ pendente\n0\nEnvases pendentes\n0\nInsumos críticos\n0\nEntregas pendentes\n0\nAcesso rápido\nVer Visão Executiva\nVer Visão Operacional\nBI Agronômico\nBI Operacional\nRelatórios"
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_dashboard_geral-administrador-390-tab-1.png",
+        "mounted": [
+          {
+            "id": "102",
+            "tag": "DIV",
+            "role": "tablist",
+            "text": " Visão Geral Visão Executiva Visão Operacional",
+            "rect": {
+              "x": 12,
+              "y": 80,
+              "right": 378,
+              "bottom": 120,
+              "w": 366,
+              "h": 40
+            },
+            "scroll": {
+              "w": 444,
+              "h": 40,
+              "cw": 366,
+              "ch": 40
+            },
+            "clipped": [],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "text": " Visão Geral",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": " Visão Executiva",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": " Visão Operacional",
+                "disabled": false
+              }
+            ]
+          }
+        ],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nVisão Geral\nVisão Executiva\nVisão Operacional\nVisão Geral\n\nPeríodo: últimos 30 dias · Indicadores de posição atual marcados como “Agora”.\n\nSaúde Operacional\n—\nsem dados\n\nAgora\n\nAlertas\n0\nVer alertas →\n\nAgora\n\nReceita recebida\n—\nAbrir financeiro →\n\nÚltimos 30 dias\n\nClientes ativos\n0\nVer clientes →\n\nAgora\n\nPrioridades imediatas\n\nSem prioridades críticas.\n\nFluxo do dia (Hoje)\n\nCheck-ins hoje\n\n0\n\nVisitas hoje\n\n0\n\nOS abertas\n\n0\n\nRecom. pendentes\n\n0\n\nSituação do Laboratório\n(Agora)\nAbrir Cockpit Laboratório\nOS aguardando\n0\nLotes em produção\n0\nCQ pendente\n0\nEnvases pendentes\n0\nInsumos críticos\n0\nEntregas pendentes\n0\nAcesso rápido\nVer Visão Executiva\nVer Visão Operacional\nBI Agronômico\nBI Operacional\nRelatórios"
+      },
+      {
+        "name": "tab-2",
+        "artifact": "survey/_dashboard_geral-administrador-390-tab-2.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSA\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_cliente_ids_for_user",
+        "args": {
+          "_user_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "rpc_executivo_resumo_geral",
+        "args": {
+          "p_filtros": {
+            "periodo": "30_dias"
+          }
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "rpc_dashboard_geral_lab_resumo",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "user_clientes",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/dashboard/geral",
+    "profile": "administrador",
+    "viewport": [
+      1440,
+      900
+    ],
+    "level": true,
+    "url": "http://localhost:8080/dashboard/executivo?reviewRole=administrador",
+    "expected": [
+      102
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_dashboard_geral-administrador-1440-entry.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nPortal do Produtor\nCOMERCIAL E RELACIONAMENTO\nVISÃO COMERCIAL\nDashboard Consolidado\nIndicadores\nAlertas Comerciais\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCampanhas\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSA\nSessão sintética administrador\nAdministrador da empresa\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_cliente_ids_for_user",
+        "args": {
+          "_user_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "rpc_executivo_resumo_geral",
+        "args": {
+          "p_filtros": {
+            "periodo": "30_dias"
+          }
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "rpc_dashboard_geral_lab_resumo",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "user_clientes",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/dashboard/geral",
+    "profile": "gestor",
+    "viewport": [
+      390,
+      844
+    ],
+    "level": true,
+    "url": "http://localhost:8080/dashboard/geral?reviewRole=gestor",
+    "expected": [
+      102
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_dashboard_geral-gestor-390-entry.png",
+        "mounted": [
+          {
+            "id": "102",
+            "tag": "DIV",
+            "role": "tablist",
+            "text": " Visão Geral Visão Executiva Visão Operacional",
+            "rect": {
+              "x": 12,
+              "y": 80,
+              "right": 378,
+              "bottom": 120,
+              "w": 366,
+              "h": 40
+            },
+            "scroll": {
+              "w": 444,
+              "h": 40,
+              "cw": 366,
+              "ch": 40
+            },
+            "clipped": [],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "text": " Visão Geral",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": " Visão Executiva",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": " Visão Operacional",
+                "disabled": false
+              }
+            ]
+          }
+        ],
+        "body": "Toggle Sidebar\nCultivo Farm\nSG\nVisão Geral\nVisão Executiva\nVisão Operacional\nVisão Geral\n\nPeríodo: últimos 30 dias · Indicadores de posição atual marcados como “Agora”.\n\nSaúde Operacional\n—\nsem dados\n\nAgora\n\nAlertas\n0\nVer alertas →\n\nAgora\n\nReceita recebida\n—\nAbrir financeiro →\n\nÚltimos 30 dias\n\nClientes ativos\n0\nVer clientes →\n\nAgora\n\nPrioridades imediatas\n\nSem prioridades críticas.\n\nFluxo do dia (Hoje)\n\nCheck-ins hoje\n\n0\n\nVisitas hoje\n\n0\n\nOS abertas\n\n0\n\nRecom. pendentes\n\n0\n\nSituação do Laboratório\n(Agora)\nAbrir Cockpit Laboratório\nOS aguardando\n0\nLotes em produção\n0\nCQ pendente\n0\nEnvases pendentes\n0\nInsumos críticos\n0\nEntregas pendentes\n0\nAcesso rápido\nVer Visão Executiva\nVer Visão Operacional\nBI Agronômico\nBI Operacional\nRelatórios"
+      },
+      {
+        "name": "tab-1",
+        "artifact": "survey/_dashboard_geral-gestor-390-tab-1.png",
+        "mounted": [
+          {
+            "id": "102",
+            "tag": "DIV",
+            "role": "tablist",
+            "text": " Visão Geral Visão Executiva Visão Operacional",
+            "rect": {
+              "x": 12,
+              "y": 80,
+              "right": 378,
+              "bottom": 120,
+              "w": 366,
+              "h": 40
+            },
+            "scroll": {
+              "w": 444,
+              "h": 40,
+              "cw": 366,
+              "ch": 40
+            },
+            "clipped": [],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "text": " Visão Geral",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": " Visão Executiva",
+                "disabled": false
+              },
+              {
+                "tag": "BUTTON",
+                "text": " Visão Operacional",
+                "disabled": false
+              }
+            ]
+          }
+        ],
+        "body": "Toggle Sidebar\nCultivo Farm\nSG\nVisão Geral\nVisão Executiva\nVisão Operacional\nVisão Geral\n\nPeríodo: últimos 30 dias · Indicadores de posição atual marcados como “Agora”.\n\nSaúde Operacional\n—\nsem dados\n\nAgora\n\nAlertas\n0\nVer alertas →\n\nAgora\n\nReceita recebida\n—\nAbrir financeiro →\n\nÚltimos 30 dias\n\nClientes ativos\n0\nVer clientes →\n\nAgora\n\nPrioridades imediatas\n\nSem prioridades críticas.\n\nFluxo do dia (Hoje)\n\nCheck-ins hoje\n\n0\n\nVisitas hoje\n\n0\n\nOS abertas\n\n0\n\nRecom. pendentes\n\n0\n\nSituação do Laboratório\n(Agora)\nAbrir Cockpit Laboratório\nOS aguardando\n0\nLotes em produção\n0\nCQ pendente\n0\nEnvases pendentes\n0\nInsumos críticos\n0\nEntregas pendentes\n0\nAcesso rápido\nVer Visão Executiva\nVer Visão Operacional\nBI Agronômico\nBI Operacional\nRelatórios"
+      },
+      {
+        "name": "tab-2",
+        "artifact": "survey/_dashboard_geral-gestor-390-tab-2.png",
+        "mounted": [],
+        "body": "Toggle Sidebar\nCultivo Farm\nSG\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_cliente_ids_for_user",
+        "args": {
+          "_user_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "rpc_executivo_resumo_geral",
+        "args": {
+          "p_filtros": {
+            "periodo": "30_dias"
+          }
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "rpc_dashboard_geral_lab_resumo",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "user_clientes",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/dashboard/geral",
+    "profile": "gestor",
+    "viewport": [
+      1440,
+      900
+    ],
+    "level": true,
+    "url": "http://localhost:8080/dashboard/executivo?reviewRole=gestor",
+    "expected": [
+      102
+    ],
+    "states": [
+      {
+        "name": "entry",
+        "artifact": "survey/_dashboard_geral-gestor-1440-entry.png",
+        "mounted": [],
+        "body": "Cultivo Farm\nDASHBOARD\nDashboard\nVisão Geral\nVisão Operacional\nCOMERCIAL E RELACIONAMENTO\nCLIENTES E PROPRIEDADES\nClientes\nFazendas\nDEMANDAS E VENDAS\nSolicitações\nCAMPO E ASSISTÊNCIA TÉCNICA\nAplicações\nEquipe Técnica\nFluxo Técnico\nPRODUÇÃO\nFLUXO DE PRODUÇÃO\nEntregas\nFINANCEIRO\nVISÃO GERAL\nFinanceiro\nDRE Gerencial\nRelatórios Financeiros\nMOVIMENTAÇÕES\nEntregas sem Fatura\nRecibos\nRecorrências\nCADASTROS FINANCEIROS\nCategorias\nCentros de Custo\nContas Bancárias\nFormas de Pagamento\nFINANCEIRO B2B\nVISÃO E DESEMPENHO\nVisão Geral B2B\nDashboard B2B\nAging\nPrevisão Receita\nRentabilidade\nAlertas Financeiros\nGOVERNANÇA\nGovernança\nCentral Governança\nRegras Governança\nINTELIGÊNCIA E CONTROLE\nCONTROLE\nAlertas\nAuditorias\nADMINISTRAÇÃO\nConfigurações\nFISCAL\nConfiguração Fiscal\nPerfis Fiscais — Produtos\nPerfis Fiscais — Serviços\nPerfis Fiscais — Clientes\nToggle Sidebar\nCultivo Farm\nSG\nSessão sintética gestor\nGestor\nRegularização comercial pendente\n\nSua assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados.\n\nVoltar ao início"
+      }
+    ],
+    "errors": [],
+    "calls": [
+      {
+        "name": "configuracoes_sistema",
+        "args": null,
+        "one": true,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_entitlement_context",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_cliente_ids_for_user",
+        "args": {
+          "_user_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "notificacoes_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "get_my_available_portal_contexts",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "rpc_executivo_resumo_geral",
+        "args": {
+          "p_filtros": {
+            "periodo": "30_dias"
+          }
+        },
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "rpc_dashboard_geral_lab_resumo",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "org_onboarding_state",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "user_clientes",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      },
+      {
+        "name": "alertas_operacionais",
+        "args": null,
+        "one": false,
+        "write": false
+      }
+    ],
+    "writes": []
+  },
+  {
+    "route": "/dashboard/geral",
+    "profile": "consultor_tecnico",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/dashboard/geral",
+    "profile": "aplicador",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/dashboard/geral",
+    "profile": "operador_onfarm",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/dashboard/geral",
+    "profile": "cliente_produtor",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/portal"
+  },
+  {
+    "route": "/dashboard/geral",
+    "profile": "administrativo",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/dashboard/geral",
+    "profile": "tecnico_agronomo",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/dashboard/geral",
+    "profile": "producao",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/dashboard/geral",
+    "profile": "financeiro",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/dashboard/geral",
+    "profile": "gestor_comercial",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/dashboard/geral",
+    "profile": "vendedor",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/dashboard/geral",
+    "profile": "parceiro_b2b",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/dashboard/geral",
+    "profile": "parceiro_b2b_tecnico",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  },
+  {
+    "route": "/dashboard/geral",
+    "profile": "superadmin",
+    "level": false,
+    "status": "ROLE_STATIC_DENIED",
+    "url": "http://localhost:8080/sem-permissao"
+  }
+]
