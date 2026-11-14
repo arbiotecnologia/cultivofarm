@@ -35,7 +35,7 @@ export function PageHeader({ title, description, action }: PageHeaderProps) {
         <h1 className="text-xl sm:text-2xl font-bold text-foreground break-words leading-tight">{title}</h1>
         <p className="text-sm text-muted-foreground break-words">{description}</p>
       </div>
-      {action && <div className="min-w-0 max-w-full w-full lg:w-auto flex justify-end flex-wrap gap-1.5 [&>button]:max-w-full [&>button]:h-auto [&>button]:min-h-11 [&>button]:whitespace-normal">{action}</div>}
+      {action && <div className="min-w-0 max-w-full w-full lg:w-auto flex justify-end flex-wrap gap-1.5 [&>button]:max-w-full [&>button]:h-auto [&>button]:min-h-11 [&>button]:whitespace-normal [&>a]:max-w-full [&>a]:h-auto [&>a]:min-h-11 [&>a]:whitespace-normal">{action}</div>}
     </div>
   );
 }

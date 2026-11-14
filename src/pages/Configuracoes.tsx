@@ -825,7 +825,7 @@ export default function Configuracoes() {
                     <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" />Gestão de Usuários</CardTitle>
                     <CardDescription>Gerencie os perfis de acesso dos usuários do sistema</CardDescription>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex min-w-0 max-w-full flex-wrap gap-2 [&_a]:max-w-full [&_a]:h-auto [&_a]:min-h-12 [&_a]:whitespace-normal [&_button]:max-w-full [&_button]:h-auto [&_button]:min-h-12 [&_button]:whitespace-normal">
                     <Button variant="outline" asChild>
                       <Link to="/auditoria?tab=senhas">
                         <History className="h-4 w-4 mr-2" />
