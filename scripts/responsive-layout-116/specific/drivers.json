@@ -548,7 +548,7 @@
       "gestor"
     ],
     "kind": "micro-filter-na",
-    "expected": "Microrganismos",
+    "expected": "Microrganismo sintético",
     "trigger": "Base Técnica > Microrganismos; filtro ativo, editor global fechado"
   },
   {
