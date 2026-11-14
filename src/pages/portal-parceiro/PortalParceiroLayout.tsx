@@ -175,15 +175,15 @@ export default function PortalParceiroLayout() {
         leadingSlot={<SidebarTrigger className="h-10 w-10 shrink-0" />}
         contextSlot={
           isStaff ? (
-            <div className="hidden sm:flex items-center gap-2 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 min-w-0">
               <span className="text-xs text-muted-foreground whitespace-nowrap">Ver como</span>
               <Select value={simulatedId ?? ""} onValueChange={(v) => setSimulatedId(v)}>
-                <SelectTrigger className="h-8 text-sm w-[200px]">
+                <SelectTrigger aria-label="Ver como parceiro" className="h-8 text-xs sm:text-sm w-32 sm:w-[200px] min-w-0 [&>span]:truncate" title={partner?.razao_social}>
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
                 <SelectContent>
                   {allPartners.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
+                    <SelectItem key={p.id} value={p.id} className="max-w-[min(28rem,calc(100vw-2rem))] [&>span:last-child]:whitespace-normal [&>span:last-child]:break-words">
                       {p.razao_social}
                     </SelectItem>
                   ))}
