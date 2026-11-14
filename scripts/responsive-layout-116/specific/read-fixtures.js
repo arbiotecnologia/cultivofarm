@@ -9,6 +9,8 @@ const order={...base,numero_os:'QA-116',origem:'manual',status:'programada',prio
 const receipt={...base,receipt_year:2026,receipt_number:'QA-116-2026',payment_date:'2026-11-14',amount:1234.56,status:'ISSUED',customer_id:id,storage_bucket:null,storage_path:null,authenticity_code:'SYNTHETIC',issued_at:'2026-11-14T00:00:00Z',payment_id:id,receivable_id:id,cancel_reason:null,customer:{nome:client.nome},method:{name:'Transferência'}};
 const fiscal={code:'5101',description:'Operação sintética de venda com descrição extensa para leitura do código e finalidade completos',parent_code:null,metadata:{},is_active:true,is_preferred:true,catalog_version:'synthetic'};
 function read(name,args,one){
+ if(name==='get_partner_catalog_tecnico_secure')return [{catalog_contract:'C1B_DUAL_TENANT_V1',item_id:id,item_tipo:'produto',nome:'Produto sintético contextualizado',codigo:'QA-116',familia_catalogo:'biologico',ficha_aprovada:true,ficha_status:'aprovado',ficha_conteudo:{nome:'Produto sintético',modo_acao:'Leitura técnica sintética'},descricao_curta:'Descrição representativa',unidade_preco_principal:'L',valor_litro_brl:null}];
+ if(name==='rpc_cockpit_listar_esteira_v1')return {items:[{os_id:id,origem_os:'manual',numero_os:'QA-116',produto_nome:'Produto sintético',cliente_nome:client.nome,status_os:'programada',volume_solicitado_l:20}],total_count:1};
  if(name==='platform_read_global_cultures')return {items:[{id,nome:'Cultura sintética',ativo:true}],has_more:false};
  if(name==='platform_read_global_culture_detail')return {id,nome:'Cultura sintética',descricao:'Descrição contextualizada',ativo:true,updated_at:'2026-11-14T00:00:00Z',desativada_em:null};
  if(name==='envase')return [{...base,lote_id:id,data_envase:'2026-11-14'}];

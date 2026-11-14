@@ -40,8 +40,10 @@ async def main():
        await page.locator('input').first.fill('20')
       if d['kind']=='pdf':await page.locator('iframe').wait_for(state='visible');rec['assertions'].append({'pdf_iframe':True})
       await page.get_by_text(d['expected'],exact=False).first.wait_for(state='visible');rec['assertions'].append({'contextual_content':True})
-      for id in d['ids']:
+      for id in ([] if d['kind']=='cockpit-na' else d['ids']):
        loc=page.locator(f'[data-review-occurrence="{id}"]:visible').first;await loc.wait_for(state='visible');await loc.scroll_into_view_if_needed();g=await loc.evaluate(MEASURE);rec['assertions'].append({'id':id,'target':g});assert g['visible'], 'target invisible'
+      if d['kind']=='cockpit-na':
+       assert await page.locator('[data-review-occurrence]').count()==0;rec['assertions'].append({'legacy_controls_absent':True});rec['classification']='N_A_RETIRED_WORKSPACE_CURRENT_ROUTE_PROVED'
       tabs=page.get_by_role('tab')
       if await tabs.count() and d['kind'] not in ['client-form']:
        for t in [tabs.first,tabs.last]:await t.click();rec['assertions'].append({'tab':await t.inner_text(),'selected':await t.get_attribute('aria-selected')})

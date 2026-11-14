@@ -362,5 +362,45 @@
     "open": "Finalizar visita",
     "expected": "Finalizar esta visita?",
     "trigger": "Visita com cultura/checkin/diagnóstico > Revisão > Finalizar (sem confirmar)"
+  },
+  {
+    "ids": [
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      10
+    ],
+    "file": "src/pages/CockpitLaboratorio.tsx",
+    "export": "default",
+    "route": "/cockpit-laboratorio",
+    "profiles": [
+      "administrador",
+      "gestor",
+      "administrativo",
+      "operador_onfarm",
+      "producao"
+    ],
+    "kind": "cockpit-na",
+    "expected": "Consulta disponível",
+    "trigger": "Rota monta CockpitConsulta; workspace/abas/reserva legado não montado"
+  },
+  {
+    "ids": [
+      115
+    ],
+    "file": "src/pages/portal-parceiro/FichasTecnicas.tsx",
+    "export": "default",
+    "route": "/portal-parceiro/fichas",
+    "profiles": [
+      "parceiro_b2b",
+      "parceiro_b2b_tecnico"
+    ],
+    "kind": "partner-sheets",
+    "expected": "Produto sintético",
+    "trigger": "Portal parceiro contextualizado > Fichas > Visualizar"
   }
 ]
