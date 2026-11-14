@@ -1,0 +1,6 @@
+import {assertEquals,assertRejects} from 'https://deno.land/std@0.224.0/assert/mod.ts';
+import {MAX_BYTES,documentMime,readBounded,digest} from './core.ts';
+Deno.test('PDF real magic, PNG, JPEG and disguised HTML',()=>{assertEquals(documentMime(new TextEncoder().encode('%PDF-1.7')),'application/pdf');assertEquals(documentMime(new Uint8Array([137,80,78,71,13,10,26,10])),'image/png');assertEquals(documentMime(new Uint8Array([255,216,255])),'image/jpeg');assertEquals(documentMime(new TextEncoder().encode('<html>')),null);});
+Deno.test('20 MB hard bound before reading all bytes',async()=>{assertEquals(MAX_BYTES,20971520);await assertRejects(()=>readBounded(new ReadableStream({start(c){c.enqueue(new Uint8Array(MAX_BYTES+1));c.close();}})),Error,'limit');});
+Deno.test('empty denied',async()=>{await assertRejects(()=>readBounded(new ReadableStream({start(c){c.close();}})),Error,'empty');});
+Deno.test('incremental read and known SHA256',async()=>{const bytes=await readBounded(new ReadableStream({start(c){c.enqueue(new TextEncoder().encode('a'));c.enqueue(new TextEncoder().encode('bc'));c.close();}}));assertEquals(await digest(bytes),'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');});
