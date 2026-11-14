@@ -33,6 +33,7 @@ function read(name,args,one){
  if(name==='seller_portfolio_orders_v1')return {contract:'seller_portfolio_orders_v1',orders:[{id,partner_id:id,numero:'QA-116',status:'aguardando_cotacao',items:[{id,quantidade:2,produto_id:id,produtos:{nome:'Produto sintético contextualizado'}}]}]};
  if(name==='solid_pack_offers_admin_v1')return {product_id:id,unidade_conteudo:'L',revision:1,offers:[]};
  if(name==='rpc_get_comprovante_entrega_data')return {doc_tipo:'comprovante',titulo:'Comprovante de entrega sintético',definitivo:true,numero_documento:'QA-116',conteudo:{cliente:{nome:'Produtor sintético'},itens:[{produto_nome:'Produto sintético',quantidade:2,volume_total_ml:20000}],entrega:{id}}};
+ if(name==='partner_order_items')return [{id,partner_order_id:id,produto_id:id,quantidade:2,produtos:{nome:'Produto sintético'},catalogo_volumes:{rotulo:'20 L'}}];
  if(name==='envase')return [{...base,lote_id:id,data_envase:'2026-11-14'}];
  if(name==='registros_consultor'&&!one)return [];
  if(name==='registros_consultor')return {...base,status:'rascunho',version:7,cultura_id:id,clientes:{nome:client.nome},fazendas:{nome:farm.nome},talhoes:{nome:plot.nome},culturas:{nome:'Milho'}};
