@@ -31,7 +31,7 @@ Deno.serve(async req=>{
  if(!r.ok) throw new Error('unavailable'); const bytes=await readBounded(r.body); const sha=await digest(bytes);
  const after=await call('rpc_regulatory_product_document_access',args);
  if(sha!==before.sha256||before.path!==after.path||before.sha256!==after.sha256||before.dossier_id!==after.dossier_id) throw new Error('integrity');
- return new Response(bytes,{headers:{...headers,'Content-Type':documentMime(bytes)??'application/octet-stream','X-Content-Type-Options':'nosniff'}});
+ return new Response(new Uint8Array(bytes).buffer,{headers:{...headers,'Content-Type':documentMime(bytes)??'application/octet-stream','X-Content-Type-Options':'nosniff'}});
  }
  const id=url.searchParams.get('upload_id'); if(!id||!uuid.test(id)) return json(400,{error:'invalid_request'});
  const snap=()=>call('platform_product_dossier_upload_access',{p_upload_id:id});
