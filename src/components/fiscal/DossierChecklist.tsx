@@ -13,7 +13,7 @@ export function DossierChecklist({items, disabled, onDirty, onSave}: {
   onDirty: (key: string, dirty: boolean) => void;
   onSave: (key: string, state: string, reason: string) => Promise<boolean>;
 }) {
-  return <details className="border-t pt-3"><summary className="cursor-pointer font-medium">Checklist formal · {items.length} itens</summary>
+  return <details id="dossier-checklist" className="border-t pt-3 scroll-mt-4"><summary className="cursor-pointer font-medium">Checklist formal · {items.length} itens</summary>
     <p className="py-2 text-sm text-muted-foreground">Dados cadastrados e documentos anexados não confirmam a revisão formal.</p>
     {dossierSubjects.map(subject => {
       const rows = items.filter(item => dossierSubject(item.item_key) === subject);
