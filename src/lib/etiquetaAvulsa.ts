@@ -17,8 +17,8 @@ export function validLabelDate(value: string) {
 const date = field(10).refine(validLabelDate, 'Informe uma data real em DD/MM/AAAA.');
 export const looseLabelSchema = z.object({
   origin: z.enum(['manual', 'producao']), productionKey: field().optional(),
-  company: field().min(1, 'Empresa não confirmada.'), product: field().min(1, 'Informe o produto.'),
-  composition: field(300), lot: field(60).min(1, 'Informe a referência do lote.'),
+  company: field().refine(v => !!v, 'Empresa não confirmada.'), product: field().refine(v => !!v, 'Informe o produto.'),
+  composition: field(300), lot: field(60).refine(v => !!v, 'Informe a referência do lote.'),
   manufactured: date, bottled: date, expiry: date,
   client: field(), farm: field(), order: field(60), conservation: field(200), notes: field(300),
   volume: z.string().regex(/^\d+(?:[,.]\d{1,3})?$/, 'Informe volume numérico, até três casas decimais.').transform(v => Number(v.replace(',', '.'))).refine(v => Number.isFinite(v) && v > 0 && v <= 1000000, 'Volume deve ser positivo.'),
