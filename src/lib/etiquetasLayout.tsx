@@ -19,7 +19,7 @@ export function labelLayout(label: RecipientLabel, format: LabelFormat): LabelLa
     const blocks: TextBlock[] = []; const rules: number[] = [];
     const size = height === 50 ? 's' : height === 100 ? 'm' : 'l';
     const S = { s: { pad: 2.2, company: 7, product: 10.5, volume: 10, key: 5.6, value: 6, footer: 5, gap: .5, section: 1, maxGap: 1.2, keyCol: 17 },
-      m: { pad: 3.5, company: 10, product: 16, volume: 14, key: 7, value: 8.5, footer: 6.5, gap: .9, section: 1.8, maxGap: 2.4, keyCol: 25 },
+      m: { pad: 3.2, company: 10, product: 15, volume: 13, key: 7, value: 8.2, footer: 6.2, gap: .7, section: 1.5, maxGap: 2.4, keyCol: 25 },
       l: { pad: 4, company: 11, product: 20, volume: 17, key: 8, value: 10, footer: 7.5, gap: 1.2, section: 2.5, maxGap: 3.2, keyCol: 28 } }[size];
     const pad = S.pad; const inner = width - pad * 2;
     const wrap = (value: string, available: number, pt: number, bold = false) => { pdf.setFont('helvetica', bold ? 'bold' : 'normal'); pdf.setFontSize(pt); return pdf.splitTextToSize(value, available) as string[]; };
@@ -28,7 +28,7 @@ export function labelLayout(label: RecipientLabel, format: LabelFormat): LabelLa
     const image = validatedLabelLogo(label.snapshot.provisional_logo);
     let y = pad;
     // Header: logo box + company, same hierarchy as the official recipient label.
-    const logo = image ? { x: pad, y: pad, width: size === 's' ? 10 : size === 'm' ? 20 : 24, height: size === 's' ? 4.2 : size === 'm' ? 9 : 11 } : undefined;
+    const logo = image ? { x: pad, y: pad, width: size === 's' ? 10 : size === 'm' ? 20 : 24, height: size === 's' ? 4.2 : size === 'm' ? 8 : 11 } : undefined;
     const companyX = logo ? pad + logo.width + (size === 's' ? 1.5 : 2.5) : pad;
     const companyLines = wrap(v.company, width - pad - companyX, S.company, true);
     const companyH = companyLines.length * stepOf(S.company);

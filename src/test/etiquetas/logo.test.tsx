@@ -52,7 +52,7 @@ describe('Logomarca local da etiqueta', () => {
     expect(revoke).toHaveBeenCalledWith('blob:test');
     for(const format of ['100x150','100x100','80x50'] as const){
       const l=createLooseLabels({...EMPTY_LOOSE_LABEL,company:'A',product:'Produto',lot:'LT-1',volume:'1',format},logo,'tenant-A')[0];if(!l)throw new Error('missing');
-      const layout=labelLayout(l,format);expect(layout.logo?.height).toBe(format==='80x50'?4.2:format==='100x100'?9:11);
+      const layout=labelLayout(l,format);expect(layout.logo?.height).toBe(format==='80x50'?4.2:format==='100x100'?8:11);
       expect(layout.blocks[1]?.y).toBeGreaterThanOrEqual(3+(layout.logo?.height??0));
     }
     const full={...EMPTY_LOOSE_LABEL,company:'AR Bio',product:'Bacillus subtilis',lot:'LT-2026-0001',volume:'20',manufactured:'01/11/2026',bottled:'02/11/2026',client:'Fazenda Exemplo',farm:'Talhão 1',order:'PED-1',format:'80x50' as const};
