@@ -1,3 +1,7 @@
+## 16/11 — Logomarca da etiqueta avulsa
+- [ ] Adicionar três estados e upload local validado, sem marca global ou Storage.
+- [ ] Auditar regressões, três formatos, PDF/print e isolamento; atualizar relatório e rollback.
+
 ## 16/11 — Etiqueta avulsa no Fluxo de Produção
 - [x] Integrar formulário Manual/Produção na consulta existente, usando somente leitores autorizados e sem persistência operacional.
 - [x] Reutilizar cena/print/PDF, validar conteúdo, datas e numeração, sem QR ou dados regulatórios presumidos.

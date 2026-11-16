@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { RecipientLabel, OperationalFormat } from './etiquetasRecipientes';
+import { validatedLabelLogo, type PreparedLabelLogo } from './etiquetaLogo';
 
 const field = (max = 120) => z.string().trim().max(max).refine(v => !/[\u0000-\u001f<>]/.test(v), 'Texto contém caracteres não permitidos.');
 export function maskLabelDate(value: string) {
@@ -35,11 +36,12 @@ export const looseLabelSchema = z.object({
 });
 export type LooseLabelDraft = z.input<typeof looseLabelSchema>;
 export const EMPTY_LOOSE_LABEL: LooseLabelDraft = { origin: 'manual', company: '', product: '', composition: '', lot: '', manufactured: '', bottled: '', expiry: '', client: '', farm: '', order: '', conservation: '', notes: '', volume: '', unit: 'L', quantity: 1, first: 1, total: 1, format: '100x150', approved: false };
-export function createLooseLabels(draft: LooseLabelDraft): RecipientLabel[] {
+export function createLooseLabels(draft: LooseLabelDraft, logo?: PreparedLabelLogo, scope?: string): RecipientLabel[] {
   const v = looseLabelSchema.parse(draft);
+  validatedLabelLogo(logo, scope);
   return Array.from({ length: v.quantity }, (_, index) => ({
     id: '', trace_token: '', codigo_etiqueta: 'AVULSA', status: 'provisoria', tipo_etiqueta: 'avulsa',
-    snapshot: { operational_provisional: true, provisional_data: v, provisional_format: v.format,
+    snapshot: { operational_provisional: true, provisional_data: v, provisional_format: v.format, provisional_logo: logo,
       empresa: { nome: v.company }, produto_nome: v.product, lote_codigo: v.lot,
       recipiente: { seq: v.first + index, total: v.total },
     },

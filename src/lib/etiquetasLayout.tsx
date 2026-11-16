@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import { QRCodeSVG } from 'qrcode.react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { looseLabelSchema, provisionalFormat } from './etiquetaAvulsa';
+import { validatedLabelLogo } from './etiquetaLogo';
 import { LABEL_FORMATS, type LabelFormat, type RecipientLabel, snapshotFields, snapshotTemplate, secureTraceUrl, safeSnapshotLogo, validateRecipientV2, outputFormat, record, text, approvedDate } from './etiquetasRecipientes';
 
 interface TextBlock { lines: string[]; x: number; y: number; size: number; step: number; bold: boolean }
@@ -16,14 +17,17 @@ export function labelLayout(label: RecipientLabel, format: LabelFormat): LabelLa
     const { width, height } = LABEL_FORMATS[format];
     const pdf = new jsPDF({ unit: 'mm', format: [width, height] });
     const blocks: TextBlock[] = []; let y = 3;
-    const add = (value: string, size: number, bold = false) => {
+    const add = (value: string, size: number, bold = false, x = 3, available = width - 6) => {
       pdf.setFont('helvetica', bold ? 'bold' : 'normal'); pdf.setFontSize(size);
-      const lines = pdf.splitTextToSize(value, width - 6) as string[];
+      const lines = pdf.splitTextToSize(value, available) as string[];
       const step = size * .352778 * 1.2;
-      blocks.push({ lines, x: 3, y, size, step, bold }); y += lines.length * step + 1;
+      blocks.push({ lines, x, y, size, step, bold }); y += lines.length * step + 1;
     };
     const compact = height === 50;
-    add(v.company, compact ? 8 : 11, true);
+    const image = validatedLabelLogo(label.snapshot.provisional_logo);
+    const logo = image ? { x: 3, y: 3, width: compact ? 12 : 22, height: compact ? 5 : 10 } : undefined;
+    add(v.company, compact ? 8 : 11, true, logo ? 5 + logo.width : 3, width - 6 - (logo ? logo.width + 2 : 0));
+    if (logo) y = Math.max(y, 3 + logo.height + 1);
     add(v.product, compact ? 12 : 20, true);
     add(`${v.volume.toLocaleString('pt-BR')} ${v.unit}`, compact ? 11 : 18, true);
     const r = record(label.snapshot.recipiente);
@@ -41,7 +45,7 @@ export function labelLayout(label: RecipientLabel, format: LabelFormat): LabelLa
     add(details, compact ? 6 : 9);
     add('ETIQUETA OPERACIONAL PROVISÓRIA — NÃO SUBSTITUI ROTULAGEM LEGAL OBRIGATÓRIA.', compact ? 6 : 8, true);
     if (y > height - 2) throw new Error(`Conteúdo excede ${format} mm. Escolha um formato maior; nenhum texto será cortado.`);
-    return { lines: blocks.flatMap(b => b.lines), fontSize: 9, lineHeight: 4, qr: 0, qrX: 0, qrY: 0, width, height, blocks, rules: [] };
+    return { lines: blocks.flatMap(b => b.lines), fontSize: 9, lineHeight: 4, qr: 0, qrX: 0, qrY: 0, width, height, blocks, rules: [], logo };
   }
   const { width, height } = LABEL_FORMATS[format];
   const pdf = new jsPDF({ unit: 'mm', format: [width, height] });
@@ -107,7 +111,7 @@ export function labelLayout(label: RecipientLabel, format: LabelFormat): LabelLa
 }
 export function LabelScene({ label, format, origin, logoOverride }: { label: RecipientLabel; format: LabelFormat; origin: string; logoOverride?: string }) {
   const layout = labelLayout(label, format);
-  const logo = logoOverride ?? safeSnapshotLogo(label);
+  const logo = provisionalFormat(label) ? validatedLabelLogo(label.snapshot.provisional_logo)?.dataUrl : logoOverride ?? safeSnapshotLogo(label);
   return <svg xmlns="http://www.w3.org/2000/svg" width={`${layout.width}mm`} height={`${layout.height}mm`} viewBox={`0 0 ${layout.width} ${layout.height}`} className="recipient-label-scene" role="img" aria-label={`Etiqueta ${label.codigo_etiqueta}`}>
     <rect width={layout.width} height={layout.height} className="label-paper" />
     <rect x=".2" y=".2" width={layout.width - .4} height={layout.height - .4} fill="none" className="label-rule" strokeWidth=".25" />
@@ -142,7 +146,7 @@ export async function createRecipientLabelsPdf(labels: RecipientLabel[], format:
       if (x + layout.width > 205) { x = 5; y += rowHeight; rowHeight = 0; }
       if (y + layout.height > 292) { pdf.addPage('a4','portrait'); x = 5; y = 5; rowHeight = 0; }
     }
-    const logo = safeSnapshotLogo(label);
+    const logo = provisionalFormat(label) ? validatedLabelLogo(label.snapshot.provisional_logo)?.dataUrl : safeSnapshotLogo(label);
     const logoOverride = logo ? await bitmap(logo) : undefined;
     let svg = renderToStaticMarkup(<LabelScene label={label} format={formats[index] ?? format} origin={origin} logoOverride={logoOverride} />);
     // Standalone SVG exports carry the same semantic ink/paper roles as the CSS scene.
