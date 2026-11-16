@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { QRCodeSVG } from 'qrcode.react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { looseLabelSchema, provisionalFormat } from './etiquetaAvulsa';
+import { looseLabelSchema, provisionalFormat, resolvedExtraTexts } from './etiquetaAvulsa';
 import { validatedLabelLogo } from './etiquetaLogo';
 import { LABEL_FORMATS, type LabelFormat, type RecipientLabel, snapshotFields, snapshotTemplate, secureTraceUrl, safeSnapshotLogo, validateRecipientV2, outputFormat, record, text, approvedDate } from './etiquetasRecipientes';
 

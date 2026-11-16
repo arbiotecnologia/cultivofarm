@@ -24,7 +24,7 @@ const norm = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').t
 export function forbiddenClaim(value: string) {
   const t = norm(value);
   if (/(DISPENSA|ISENT[OA] DE ROTUL|EM CONFORMIDADE|CONFORME LEGISLA|ROTULO OFICIAL|ETIQUETA OFICIAL|REGISTRAD[OA] NO MAPA|APROVAD[OA] PELO MAPA|HOMOLOGAD)/.test(t)) return true;
-  return /(^|[^O] |^)SUBSTITUI/.test(t.replace(/NAO SUBSTITUI/g, ''));
+  return /SUBSTITUI/.test(t.replace(/NAO SUBSTITUI/g, ''));
 }
 export function resolvedExtraTexts(v: { origin: 'manual' | 'producao'; productionKey?: string; showOrigin?: boolean; originText?: string; showLegal?: boolean; legalText?: string }) {
   return {
