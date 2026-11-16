@@ -7,7 +7,7 @@ function png(width = 800, height = 240) {
   const b = new Uint8Array(33); b.set([137,80,78,71,13,10,26,10]); b.set([73,72,68,82],12); const v = new DataView(b.buffer); v.setUint32(16,width); v.setUint32(20,height); return b;
 }
 function webp() { const b = new Uint8Array(30); const v = new DataView(b.buffer); const s = (text: string, offset: number) => b.set([...text].map(c => c.charCodeAt(0)),offset); s('RIFF',0);s('WEBP',8);s('VP8X',12);v.setUint32(4,22,true);b[24]=31;b[25]=3;b[27]=239;return b; }
-function jpeg() { const b = new Uint8Array(20); b.set([255,216,255,192,0,17,8,0,240,3,32]); return b; }
+function jpeg() { const b = new Uint8Array(21); b.set([255,216,255,192,0,17,8,0,240,3,32]); return b; }
 afterEach(() => vi.unstubAllGlobals());
 describe('Logomarca local da etiqueta', () => {
   it.each([[png(),'image/png'],[jpeg(),'image/jpeg'],[webp(),'image/webp']] as const)('confere assinatura e dimensões %s', (bytes,type) => expect(inspectLogoBytes(bytes,type)).toMatchObject({width:800,height:240,type}));
