@@ -1,6 +1,7 @@
 ## 16/11 — Logomarca da etiqueta avulsa
-- [ ] Adicionar três estados e upload local validado, sem marca global ou Storage.
-- [ ] Auditar regressões, três formatos, PDF/print e isolamento; atualizar relatório e rollback.
+- [x] Três estados/upload local limitado, capability escopada e grayscale no mesmo motor; empresa com fallback textual explícito sem leitor de logo autorizado.
+- [x] 132/132 testes, build/typecheck automático OK e 18 PDFs nos três formatos/viewports; print vazio preexistente corrigido. Evidências /tmp/browser/label-logo e relatório/rollback atualizados.
+- [ ] Sessão/JWT/RLS A/B e diálogo/impressora física: não disponíveis neste ambiente; leitor oficial de logo tenant não identificado, sem inventar URL ou autorizar backend.
 
 ## 16/11 — Etiqueta avulsa no Fluxo de Produção
 - [x] Integrar formulário Manual/Produção na consulta existente, usando somente leitores autorizados e sem persistência operacional.
