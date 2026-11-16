@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { GerarEtiquetaAvulsa } from '@/components/etiquetas/GerarEtiquetaAvulsa';
 
 interface ListItem { os_id: string; origem_os: string; numero_os?: string | null; produto_nome?: string | null; microrganismo_nome?: string | null; cliente_nome?: string | null; titular_nome?: string | null; fazenda_nome?: string | null; talhao_nome?: string | null; responsavel_nome?: string | null; status_os?: string | null; status_esteira_oficial?: string | null; volume_solicitado_l?: number | null }
 interface ListResponse { items: ListItem[]; total_count: number }
@@ -36,7 +37,7 @@ export function CockpitConsulta() {
   const data = query.available && !query.isError ? query.data : undefined;
   const change = (setter: (value: string) => void) => (value: string) => { setter(value); setPage(0); };
   return <div className="space-y-6 pb-8">
-    <PageHeader title="Cockpit Operacional" description="" />
+    <PageHeader title="Cockpit Operacional" description="" action={<GerarEtiquetaAvulsa />} />
     <p role="status" className="border-l-4 border-primary pl-4 text-sm">Consulta disponível; operações do laboratório temporariamente indisponíveis.</p>
     <div className="flex flex-wrap items-center gap-3">
       <Input aria-label="Buscar OS" placeholder="Buscar OS" value={search} onChange={event => change(setSearch)(event.target.value)} className="w-full sm:w-64" />

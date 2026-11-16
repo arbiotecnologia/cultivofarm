@@ -1,12 +1,48 @@
 import { jsPDF } from 'jspdf';
 import { QRCodeSVG } from 'qrcode.react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { looseLabelSchema, provisionalFormat } from './etiquetaAvulsa';
 import { LABEL_FORMATS, type LabelFormat, type RecipientLabel, snapshotFields, snapshotTemplate, secureTraceUrl, safeSnapshotLogo, validateRecipientV2, outputFormat, record, text, approvedDate } from './etiquetasRecipientes';
 
 interface TextBlock { lines: string[]; x: number; y: number; size: number; step: number; bold: boolean }
 export interface LabelLayout { lines: string[]; fontSize: number; lineHeight: number; qr: number; qrX: number; qrY: number; width: number; height: number; blocks: TextBlock[]; rules: number[]; logo?: { x: number; y: number; width: number; height: number }; toxicityY?: number }
 export function labelLayout(label: RecipientLabel, format: LabelFormat): LabelLayout {
   snapshotTemplate(label);
+  const provisional = provisionalFormat(label);
+  if (provisional) {
+    if (format !== provisional) throw new Error('Formato divergente da etiqueta provisória.');
+    const raw = label.snapshot.provisional_data as Record<string, unknown>;
+    const v = looseLabelSchema.parse({ ...raw, volume: String(raw.volume) });
+    const { width, height } = LABEL_FORMATS[format];
+    const pdf = new jsPDF({ unit: 'mm', format: [width, height] });
+    const blocks: TextBlock[] = []; let y = 3;
+    const add = (value: string, size: number, bold = false) => {
+      pdf.setFont('helvetica', bold ? 'bold' : 'normal'); pdf.setFontSize(size);
+      const lines = pdf.splitTextToSize(value, width - 6) as string[];
+      const step = size * .352778 * 1.2;
+      blocks.push({ lines, x: 3, y, size, step, bold }); y += lines.length * step + 1;
+    };
+    const compact = height === 50;
+    add(v.company, compact ? 8 : 11, true);
+    add(v.product, compact ? 12 : 20, true);
+    add(`${v.volume.toLocaleString('pt-BR')} ${v.unit}`, compact ? 11 : 18, true);
+    const r = record(label.snapshot.recipiente);
+    if (!Number.isInteger(r.seq) || Number(r.seq) < v.first || Number(r.seq) >= v.first + v.quantity || r.total !== v.total) throw new Error('Sequência provisória inválida.');
+    const details = [
+      `Lote (referência): ${v.lot}`,
+      v.manufactured && `Fabricação: ${v.manufactured}`, v.bottled && `Envase: ${v.bottled}`,
+      v.expiry ? `Validade: ${v.expiry}` : 'Validade: não informada',
+      v.client && `Cliente: ${v.client}`, v.farm && `Fazenda: ${v.farm}`,
+      v.order && `Pedido (referência): ${v.order}`, v.composition && `Identificação/composição: ${v.composition}`,
+      v.conservation && `Conservação: ${v.conservation}`, v.notes && `Observações/alertas: ${v.notes}`,
+      `Recipiente ${String(r.seq).padStart(2, '0')}/${String(r.total).padStart(2, '0')}`,
+      v.origin === 'manual' ? 'AVULSA · NÃO VINCULADA À PRODUÇÃO' : `AVULSA · PRODUÇÃO ${v.productionKey}`,
+    ].filter(Boolean).join('\n');
+    add(details, compact ? 6 : 9);
+    add('ETIQUETA OPERACIONAL PROVISÓRIA — NÃO SUBSTITUI ROTULAGEM LEGAL OBRIGATÓRIA.', compact ? 6 : 8, true);
+    if (y > height - 2) throw new Error(`Conteúdo excede ${format} mm. Escolha um formato maior; nenhum texto será cortado.`);
+    return { lines: blocks.flatMap(b => b.lines), fontSize: 9, lineHeight: 4, qr: 0, qrX: 0, qrY: 0, width, height, blocks, rules: [] };
+  }
   const { width, height } = LABEL_FORMATS[format];
   const pdf = new jsPDF({ unit: 'mm', format: [width, height] });
   const operational = label.tipo_etiqueta === 'interna' || label.snapshot.layout_versao === 'recipiente-v2';
@@ -78,7 +114,7 @@ export function LabelScene({ label, format, origin, logoOverride }: { label: Rec
     {layout.rules.map((y,i) => <line key={i} x1="0" y1={y} x2={layout.width} y2={y} className="label-rule" strokeWidth=".25" />)}
     {layout.logo && logo && <image href={logo} {...layout.logo} preserveAspectRatio="xMidYMid meet" />}
     {layout.blocks.map((b,i) => <text key={i} x={b.x} y={b.y} fontFamily="Arial, Helvetica, sans-serif" fontSize={b.size * .352778} fontWeight={b.bold ? 700 : 400} className="label-text" dominantBaseline="text-before-edge">{b.lines.map((line,j) => <tspan key={j} x={b.x} y={b.y + j * b.step}>{line}</tspan>)}</text>)}
-    <svg x={layout.qrX} y={layout.qrY} width={layout.qr} height={layout.qr} viewBox="0 0 400 400" className="recipient-label-qr"><QRCodeSVG value={secureTraceUrl(label.trace_token, origin)} size={400} level="M" marginSize={4} /></svg>
+    {layout.qr > 0 && <svg x={layout.qrX} y={layout.qrY} width={layout.qr} height={layout.qr} viewBox="0 0 400 400" className="recipient-label-qr"><QRCodeSVG value={secureTraceUrl(label.trace_token, origin)} size={400} level="M" marginSize={4} /></svg>}
   </svg>;
 }
 async function bitmap(source: string, width?: number, height?: number): Promise<string> {
@@ -91,8 +127,8 @@ async function bitmap(source: string, width?: number, height?: number): Promise<
 }
 export async function createRecipientLabelsPdf(labels: RecipientLabel[], format: LabelFormat, media: 'termica' | 'convencional', origin: string) {
   if (!labels.length) throw new Error('Selecione etiquetas para a saída.');
-  labels.forEach(label => { if (label.snapshot.layout_versao !== 'recipiente-v2') throw new Error('Etiqueta legada: regularização para recipiente-v2 obrigatória antes da saída de recipientes.'); });
-  const formats = labels.map(label => outputFormat(label, format));
+  labels.forEach(label => { if (!provisionalFormat(label) && label.snapshot.layout_versao !== 'recipiente-v2') throw new Error('Etiqueta legada: regularização para recipiente-v2 obrigatória antes da saída de recipientes.'); });
+  const formats = labels.map(label => provisionalFormat(label) ?? outputFormat(label, format));
   const layouts = labels.map((label,i) => labelLayout(label, formats[i] ?? format));
   const first = layouts[0]; if (!first) throw new Error('Seleção inválida.');
   const pdf = new jsPDF({ unit: 'mm', format: media === 'termica' ? [first.width, first.height] : 'a4', orientation: media === 'termica' && first.width > first.height ? 'landscape' : 'portrait', compress: true });
