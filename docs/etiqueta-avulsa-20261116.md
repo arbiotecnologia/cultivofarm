@@ -29,7 +29,7 @@
 
 ## Verificação
 - 117/117 testes em nove arquivos: avulsa, recipiente-v2, recipientes/RPC, revisão canônica, cadastro técnico, rastreio, cancelamento contido, geração por lote e consulta-only.
-- Typecheck/build automáticos: `build OK` em 16/11 11:41:24 UTC (checagem final será registrada no fechamento).
+- Typecheck/build automáticos finais: `build OK` em 16/11 11:46:28 UTC. Erros intermediários de inferência Zod corrigidos e teste avulsa reexecutado: 15/15 PASS às 11:46:35 UTC.
 - Chromium, formulário e cena originais, com **Auth e transporte exclusivamente sintéticos interceptados no navegador** e egress externo bloqueado: 390×844, 464×522, 1440×900; modos Manual/Produção, fonte imutável, validade vazia, botão/fechamento, PDF e print autorizados. Nenhum erro de página; apenas leitores nome/lista.
 - Três PDFs com três recipientes cada: 100×150 mm exatos. Print CSS Chromium: três páginas por viewport, aproximadamente 99,82×149,94 mm (arredondamento CSS do Chromium).
 - Evidências temporárias: `/tmp/browser/loose-label/result.json`, script/capturas/PDFs; stdout Vitest `/tmp/loose-label-tests.log`.
