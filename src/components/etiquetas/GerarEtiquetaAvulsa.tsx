@@ -106,12 +106,12 @@ function LooseLabelForm({ close }: { close: () => void }) {
       try { const errors = JSON.parse(message); return { labels: [], error: errors.map((e: { message: string }) => e.message).join(' ') }; } catch { return { labels: [], error: message }; }
     }
   }, [draft, company.name, logo, logoMode, scope.scope]);
-  const originChange = (origin: 'manual' | 'producao') => { setSource(null); setSearch(''); setPage(0); setDraft({ ...EMPTY_LOOSE_LABEL, origin, originText: defaultOriginText(origin) }); };
+  const originChange = (origin: 'manual' | 'producao') => { setSource(null); setSearch(''); setPage(0); setDraft({ ...EMPTY_LOOSE_LABEL, origin }); };
   const choose = (key: string) => {
     const row = query.available && !query.isError ? query.data?.items.find(v => `${v.origem_os}:${v.os_id}` === key) : undefined;
     if (!row || !scope.ready) return;
     setSource(row);
-    setDraft({ ...EMPTY_LOOSE_LABEL, origin: 'producao', productionKey: row.numero_os, product: row.produto_nome || row.microrganismo_nome || '', composition: row.microrganismo_nome || '', lot: row.codigo_lote || '', client: row.cliente_nome || row.titular_nome || '', farm: row.fazenda_nome || '', originText: defaultOriginText('producao', row.numero_os) });
+    setDraft({ ...EMPTY_LOOSE_LABEL, origin: 'producao', productionKey: row.numero_os, product: row.produto_nome || row.microrganismo_nome || '', composition: row.microrganismo_nome || '', lot: row.codigo_lote || '', client: row.cliente_nome || row.titular_nome || '', farm: row.fazenda_nome || '' });
   };
   const currentSource = source && query.data?.items.find(row => row.os_id === source.os_id && row.origem_os === source.origem_os);
   const sourceUnchanged = !!source && !!currentSource && JSON.stringify(currentSource) === JSON.stringify(source);

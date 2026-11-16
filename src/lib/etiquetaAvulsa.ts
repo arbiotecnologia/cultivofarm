@@ -58,7 +58,7 @@ export const looseLabelSchema = z.object({
   if (v.expiry && [v.manufactured, v.bottled].some(d => d && iso(v.expiry) < iso(d))) ctx.addIssue({ code: 'custom', path: ['expiry'], message: 'Validade não pode anteceder fabricação ou envase.' });
 });
 export type LooseLabelDraft = z.input<typeof looseLabelSchema>;
-export const EMPTY_LOOSE_LABEL: LooseLabelDraft = { origin: 'manual', company: '', product: '', composition: '', toxicity: '', lot: '', manufactured: '', bottled: '', expiry: '', client: '', farm: '', order: '', conservation: '', notes: '', volume: '', unit: 'L', quantity: 1, first: 1, total: 1, format: '100x150', approved: false, showOrigin: true, originText: defaultOriginText('manual'), showLegal: true, legalText: DEFAULT_LEGAL_TEXT };
+export const EMPTY_LOOSE_LABEL: LooseLabelDraft = { origin: 'manual', company: '', product: '', composition: '', toxicity: '', lot: '', manufactured: '', bottled: '', expiry: '', client: '', farm: '', order: '', conservation: '', notes: '', volume: '', unit: 'L', quantity: 1, first: 1, total: 1, format: '100x150', approved: false, showOrigin: true, showLegal: true };
 export function createLooseLabels(draft: LooseLabelDraft, logo?: PreparedLabelLogo, scope?: string): RecipientLabel[] {
   const v = looseLabelSchema.parse(draft);
   validatedLabelLogo(logo, scope);
