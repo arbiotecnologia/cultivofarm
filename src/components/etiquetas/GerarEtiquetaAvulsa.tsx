@@ -125,17 +125,18 @@ function LooseLabelForm({ close }: { close: () => void }) {
     if (lock.current || !canOutput) return;
     lock.current = true; setBusy(true); const valid = scope.capture();
     const capturedScope = scope.scope;
+    const capturedLogoGeneration = logoGeneration.current;
     try {
       if (!valid()) return;
       const labels = createLooseLabels(effective, logoMode === 'custom' ? logo : undefined, scope.scope); labels.forEach(label => labelLayout(label, draft.format));
       if (pdf) {
         const document = await createRecipientLabelsPdf(labels, draft.format, 'termica', window.location.origin);
-        if (valid() && current.current === capturedScope) document.save('etiquetas-avulsas.pdf');
+        if (valid() && current.current === capturedScope && logoGeneration.current === capturedLogoGeneration) document.save('etiquetas-avulsas.pdf');
       } else if (valid() && printRoot.current) {
         await Promise.all(Array.from(printRoot.current.querySelectorAll('image')).map(async element => {
           const image = new Image(); image.src = element.getAttribute('href') ?? ''; await image.decode();
         }));
-        if (!valid() || current.current !== capturedScope) return;
+        if (!valid() || current.current !== capturedScope || logoGeneration.current !== capturedLogoGeneration) return;
         printRoot.current.dataset.authorized = 'true';
         window.print();
         printRoot.current.dataset.authorized = 'false';
