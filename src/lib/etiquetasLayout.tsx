@@ -28,7 +28,7 @@ export function labelLayout(label: RecipientLabel, format: LabelFormat): LabelLa
     const image = validatedLabelLogo(label.snapshot.provisional_logo);
     let y = pad;
     // Header: logo box + company, same hierarchy as the official recipient label.
-    const logo = image ? { x: pad, y: pad, width: size === 's' ? 13 : size === 'm' ? 20 : 24, height: size === 's' ? 6 : size === 'm' ? 9 : 11 } : undefined;
+    const logo = image ? { x: pad, y: pad, width: size === 's' ? 10 : size === 'm' ? 20 : 24, height: size === 's' ? 4.2 : size === 'm' ? 9 : 11 } : undefined;
     const companyX = logo ? pad + logo.width + (size === 's' ? 1.5 : 2.5) : pad;
     const companyLines = wrap(v.company, width - pad - companyX, S.company, true);
     const companyH = companyLines.length * stepOf(S.company);
