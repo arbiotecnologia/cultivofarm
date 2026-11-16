@@ -102,3 +102,20 @@ Remover a seção/opções/upload e parâmetros de logo em `GerarEtiquetaAvulsa`
 - Testes `src/test/etiquetas`: 11 arquivos, 143/143. Bloqueio de ambiente (não PASS): `liveSourcePostgres.test.ts` e `tenantFencePostgres.test.ts` — `initdb` não executa no sandbox.
 - PDFs Chromium 390/1440 px: 40 gerados (com/sem logo, manual/produção, curto/longo); 80×50 com textos longos bloqueada corretamente. Tamanhos: 226,772×141,732 / 283,465² / 283,465×425,197 pt. Rasterização confere toxicidade, régua técnica e ausência de sobreposição.
 - Rollback: remover `toxicity` do schema/formulário/linha do layout e reverter `cols`/escala `m` em `labelLayout`.
+
+## Textos adicionais configuráveis (16/11/2026)
+
+- Seção "Textos adicionais da etiqueta" com dois controles independentes: "Exibir identificação de origem" (até 80 caracteres) e "Exibir aviso de rotulagem" (até 160). Ambos vêm ligados e preenchidos com os textos anteriores; campo de edição só aparece quando ligado; botão "Restaurar padrão".
+- Estado (`showOrigin`, `originText`, `showLegal`, `legalText`) está no schema `looseLabelSchema` e no snapshot provisório; o renderizador compartilhado (`labelLayout` → prévia/print/PDF) omite o bloco desligado sem reservar altura nem traço divisório.
+- Origem padrão segue o modo: Manual "AVULSA · NÃO VINCULADA À PRODUÇÃO"; Produção "AVULSA · PRODUÇÃO <OS>". Produção não aceita texto "não vinculada".
+- Validações: texto vazio com opção ligada bloqueia; caracteres de marcação recusados; textos que afirmem rótulo/etiqueta oficial, conformidade, registro/aprovação MAPA, homologação, dispensa/isenção ou substituição da rotulagem são recusados. Status `provisoria`, `operational_provisional`, ausência de QR/rastreio e aviso do cabeçalho do formulário permanecem. Não foi encontrada regra técnica no código que obrigue o aviso impresso; ao ocultá-lo, o formulário informa uso apenas interno.
+- Overflow: texto longo nunca é truncado; se não couber, mantém o bloqueio "Conteúdo excede…".
+
+### Evidências
+- `src/test/etiquetas/avulsaTextosAdicionais.test.tsx`: 30 testes (3 formatos × 2 modos × 4 combinações, altura liberada, texto editado, longo, validações, produção, alegações proibidas/status).
+- Etiquetas + cockpit: 248/250; 2 falhas só por ambiente (`liveSourcePostgres.test.ts`, `tenantFencePostgres.test.ts`: `subprocess.CalledProcessError: Command '['setpriv', ..., 'initdb', ...]' returned non-zero exit status 1.`) — não marcadas como PASS.
+- Typecheck 0 erros; build OK.
+- Chromium (módulos reais via Vite, sem sessão, egress externo bloqueado): 24 PDFs (3 formatos × 2 modos × 4 combinações), todos 100×150/100×100/80×50 mm; rasterização 80×50 ligado/desligado conferida visualmente (blocos ausentes, sem lacuna). Logomarca não incluída nesta rodada de PDF (coberta pelos testes de layout existentes); diálogo nativo de impressão e impressora física não testados; sem JWT/RLS real.
+
+### Rollback
+Reverter `src/lib/etiquetaAvulsa.ts` (campos/validações extras), bloco de rodapé em `src/lib/etiquetasLayout.tsx`, a seção no `GerarEtiquetaAvulsa.tsx` e remover o teste novo. Sem banco, Storage, rotas ou migrações.

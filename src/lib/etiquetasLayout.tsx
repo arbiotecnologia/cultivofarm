@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { QRCodeSVG } from 'qrcode.react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { looseLabelSchema, provisionalFormat } from './etiquetaAvulsa';
+import { looseLabelSchema, provisionalFormat, resolvedExtraTexts } from './etiquetaAvulsa';
 import { validatedLabelLogo } from './etiquetaLogo';
 import { LABEL_FORMATS, type LabelFormat, type RecipientLabel, snapshotFields, snapshotTemplate, secureTraceUrl, safeSnapshotLogo, validateRecipientV2, outputFormat, record, text, approvedDate } from './etiquetasRecipientes';
 
@@ -76,11 +76,12 @@ export function labelLayout(label: RecipientLabel, format: LabelFormat): LabelLa
     tech.forEach(row => { const c = cell(row, pad, inner, S.keyCol); measured.push({ cells: [c], h: c.h }); });
     // Footer anchored at the bottom: recipient, origin and legal notice.
     const recipient = `RECIPIENTE ${String(r.seq).padStart(2, '0')}/${String(r.total).padStart(2, '0')}`;
-    const originText = v.origin === 'manual' ? 'AVULSA · NÃO VINCULADA À PRODUÇÃO' : `AVULSA · PRODUÇÃO ${v.productionKey}`;
+    const extra = resolvedExtraTexts(v);
     const recipientLines = wrap(recipient, inner, S.value + 1, true);
-    const originLines = wrap(originText, inner, S.key, true);
-    const legalLines = wrap('ETIQUETA OPERACIONAL PROVISÓRIA — NÃO SUBSTITUI ROTULAGEM LEGAL OBRIGATÓRIA.', inner, S.footer, true);
-    const footerH = recipientLines.length * stepOf(S.value + 1) + S.gap + originLines.length * stepOf(S.key) + S.section * .8 + legalLines.length * stepOf(S.footer);
+    const originLines = extra.origin ? wrap(extra.origin, inner, S.key, true) : [];
+    const legalLines = extra.legal ? wrap(extra.legal, inner, S.footer, true) : [];
+    // Blocos desativados não reservam altura: sem lacuna vazia.
+    const footerH = recipientLines.length * stepOf(S.value + 1) + (originLines.length ? S.gap + originLines.length * stepOf(S.key) : 0) + (legalLines.length ? S.section * .8 + legalLines.length * stepOf(S.footer) : 0);
     const footerTop = height - pad - footerH;
     const bodyH = measured.reduce((sum, m) => sum + m.h, 0) + S.gap * Math.max(0, measured.length - 1) + (techStart > 0 ? S.gap * 2 : 0);
     const free = footerTop - S.section - y - bodyH;
@@ -89,9 +90,9 @@ export function labelLayout(label: RecipientLabel, format: LabelFormat): LabelLa
     y += Math.max(0, Math.min(S.section, free - (gap - S.gap) * Math.max(0, measured.length - 1)) / 2);
     measured.forEach((m, i) => { if (i === techStart && i > 0) { rules.push(y - gap / 2 + S.gap); y += S.gap * 2; } m.cells.forEach(c => { push(c.k, c.x, y + (S.value - S.key) * .352778 * .5, S.key, true); push(c.val, c.x + c.kc, y, S.value, false); }); y += m.h + gap; });
     let f = footerTop; rules.push(f - S.section * .5);
-    f += push(recipientLines, pad, f, S.value + 1, true) + S.gap;
-    f += push(originLines, pad, f, S.key, true) + S.section * .4; rules.push(f); f += S.section * .4;
-    f += push(legalLines, pad, f, S.footer, true);
+    f += push(recipientLines, pad, f, S.value + 1, true);
+    if (originLines.length) { f += S.gap; f += push(originLines, pad, f, S.key, true); }
+    if (legalLines.length) { f += S.section * .4; rules.push(f); f += S.section * .4; f += push(legalLines, pad, f, S.footer, true); }
     if (f > height - pad + .01) throw new Error(`Conteúdo excede ${format} mm. Escolha um formato maior; nenhum texto será cortado.`);
     return { lines: blocks.flatMap(b => b.lines), fontSize: S.value, lineHeight: stepOf(S.value), qr: 0, qrX: 0, qrY: 0, width, height, blocks, rules, logo };
   }
