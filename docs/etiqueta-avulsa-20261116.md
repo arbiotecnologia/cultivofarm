@@ -28,7 +28,7 @@
 - Modelos 100×150, 100×100 e 80×50 mm selecionáveis nesta variante; texto que excede o modelo bloqueia a emissão, sem truncamento. PDF conserva dimensões por página. QR omitido porque esta emissão não possui URI canônica real.
 
 ## Verificação
-- 83/83 testes em cinco arquivos: avulsa, recipiente-v2, recipientes/RPC, revisão canônica e consulta-only.
+- 117/117 testes em nove arquivos: avulsa, recipiente-v2, recipientes/RPC, revisão canônica, cadastro técnico, rastreio, cancelamento contido, geração por lote e consulta-only.
 - Typecheck/build automáticos: `build OK` em 16/11 11:41:24 UTC (checagem final será registrada no fechamento).
 - Chromium, formulário e cena originais, com **Auth e transporte exclusivamente sintéticos interceptados no navegador** e egress externo bloqueado: 390×844, 464×522, 1440×900; modos Manual/Produção, fonte imutável, validade vazia, botão/fechamento, PDF e print autorizados. Nenhum erro de página; apenas leitores nome/lista.
 - Três PDFs com três recipientes cada: 100×150 mm exatos. Print CSS Chromium: três páginas por viewport, aproximadamente 99,82×149,94 mm (arredondamento CSS do Chromium).

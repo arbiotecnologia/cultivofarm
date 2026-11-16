@@ -27,7 +27,9 @@ export function parseLabelProductions(raw: unknown): { items: LabelProduction[];
   const items = envelope.items.map(value => {
     const row = record(value);
     if (!isUuid(row.os_id) || !['manual', 'onfarm'].includes(text(row.origem_os)) || !text(row.numero_os)) throw new Error('Produção sem referência válida.');
-    return sourceSchema.parse(row);
+    const parsed = sourceSchema.parse(row);
+    if (!parsed.os_id || !parsed.origem_os || !parsed.numero_os) throw new Error('Produção sem referência válida.');
+    return { ...parsed, os_id: parsed.os_id, origem_os: parsed.origem_os, numero_os: parsed.numero_os };
   }).filter(row => ['em_producao', 'aguardando_cq', 'aprovado_cq', 'envase', 'estoque_reserva', 'entrega', 'pronto_retirada', 'finalizada', 'concluida'].includes(row.status_esteira_oficial || row.status_os || '') && !['aberta', 'cancelada'].includes(row.status_os ?? '') && !!(row.produto_nome || row.microrganismo_nome));
   return { items, total: Number(envelope.total_count) };
 }
