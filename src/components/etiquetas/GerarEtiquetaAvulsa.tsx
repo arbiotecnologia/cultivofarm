@@ -16,16 +16,19 @@ import { createLooseLabels, EMPTY_LOOSE_LABEL, maskLabelDate, type LooseLabelDra
 import { LabelScene, labelLayout, createRecipientLabelsPdf } from '@/lib/etiquetasLayout';
 import { LABEL_FORMATS, isUuid, record, text } from '@/lib/etiquetasRecipientes';
 import './etiquetas.css';
+import { z } from 'zod';
 
 export interface LabelProduction { os_id: string; origem_os: string; numero_os: string; produto_nome?: string | null; microrganismo_nome?: string | null; codigo_lote?: string | null; cliente_nome?: string | null; titular_nome?: string | null; fazenda_nome?: string | null; status_os?: string | null; status_esteira_oficial?: string | null }
+const sourceText = z.string().max(300).nullable().optional();
+const sourceSchema = z.object({ os_id: z.string().uuid(), origem_os: z.enum(['manual', 'onfarm']), numero_os: z.string().min(1).max(120), produto_nome: sourceText, microrganismo_nome: sourceText, codigo_lote: sourceText, cliente_nome: sourceText, titular_nome: sourceText, fazenda_nome: sourceText, status_os: sourceText, status_esteira_oficial: sourceText });
 export function parseLabelProductions(raw: unknown): { items: LabelProduction[]; total: number } {
   const envelope = record(raw);
   if (!Array.isArray(envelope.items) || !Number.isSafeInteger(envelope.total_count) || Number(envelope.total_count) < 0) throw new Error('Consulta de produção inválida.');
   const items = envelope.items.map(value => {
     const row = record(value);
     if (!isUuid(row.os_id) || !['manual', 'onfarm'].includes(text(row.origem_os)) || !text(row.numero_os)) throw new Error('Produção sem referência válida.');
-    return row as unknown as LabelProduction;
-  }).filter(row => !['aberta', 'cancelada'].includes(row.status_os ?? '') && !!(row.produto_nome || row.microrganismo_nome));
+    return sourceSchema.parse(row);
+  }).filter(row => ['em_producao', 'aguardando_cq', 'aprovado_cq', 'envase', 'estoque_reserva', 'entrega', 'pronto_retirada', 'finalizada', 'concluida'].includes(row.status_esteira_oficial || row.status_os || '') && !['aberta', 'cancelada'].includes(row.status_os ?? '') && !!(row.produto_nome || row.microrganismo_nome));
   return { items, total: Number(envelope.total_count) };
 }
 export function canGenerateLooseLabel(roles: readonly string[]) { return roles.some(role => ['administrador', 'gestor', 'producao'].includes(role)); }
@@ -90,7 +93,9 @@ function LooseLabelForm({ close }: { close: () => void }) {
     setSource(row);
     setDraft({ ...EMPTY_LOOSE_LABEL, origin: 'producao', productionKey: row.numero_os, product: row.produto_nome || row.microrganismo_nome || '', composition: row.microrganismo_nome || '', lot: row.codigo_lote || '', client: row.cliente_nome || row.titular_nome || '', farm: row.fazenda_nome || '' });
   };
-  const canOutput = scope.ready && canGenerateLooseLabel(roles) && !!preview.labels.length && (draft.origin === 'manual' || (!!source && query.available && !query.isError && !query.isFetching));
+  const currentSource = source && query.data?.items.find(row => row.os_id === source.os_id && row.origem_os === source.origem_os);
+  const sourceUnchanged = !!source && !!currentSource && JSON.stringify(currentSource) === JSON.stringify(source);
+  const canOutput = scope.ready && canGenerateLooseLabel(roles) && !!preview.labels.length && (draft.origin === 'manual' || (sourceUnchanged && query.available && !query.isError && !query.isFetching));
   useEffect(() => {
     const clear = () => { if (printRoot.current) printRoot.current.dataset.authorized = 'false'; };
     const key = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'p') { event.preventDefault(); clear(); } };
@@ -113,7 +118,7 @@ function LooseLabelForm({ close }: { close: () => void }) {
         printRoot.current.dataset.authorized = 'false';
       }
     } catch (error) { if (valid()) toast.error(error instanceof Error ? error.message : 'Não foi possível gerar a saída.'); }
-    finally { lock.current = false; setBusy(false); }
+    finally { if (printRoot.current) printRoot.current.dataset.authorized = 'false'; lock.current = false; setBusy(false); }
   };
   const suggestions = query.available && !query.isError ? query.data?.items ?? [] : [];
   const size = LABEL_FORMATS[draft.format];
@@ -135,6 +140,7 @@ function LooseLabelForm({ close }: { close: () => void }) {
       <div className="space-y-2"><Label>Dimensões da etiqueta</Label><Select value={draft.format} onValueChange={format => setDraft(v => ({ ...v, format: format as LooseLabelDraft['format'] }))}><SelectTrigger aria-label="Dimensões da etiqueta"><SelectValue /></SelectTrigger><SelectContent>{['100x150', '100x100', '80x50'].map(format => <SelectItem key={format} value={format}>{format.replace('x', ' × ')} mm</SelectItem>)}</SelectContent></Select></div>
       <div className="flex gap-3 items-start"><Checkbox id="avulsa-approved" checked={draft.approved} onCheckedChange={value => setDraft(v => ({ ...v, approved: value === true }))} /><Label htmlFor="avulsa-approved" className="leading-relaxed">Confirmo que identificação/composição, conservação e alertas informados possuem aprovação técnica. Esta confirmação não aprova rotulagem legal.</Label></div>
       {preview.error && <p role="alert" className="text-sm text-destructive">{preview.error}</p>}
+      {source && !sourceUnchanged && !query.isFetching && <p role="alert" className="text-destructive">Produção alterada ou indisponível. Selecione novamente antes de emitir.</p>}
       <section aria-label="Prévia da etiqueta" className="space-y-3"><h3 className="font-semibold">Prévia · {size.width} × {size.height} mm</h3><p className="text-sm text-muted-foreground">{draft.origin === 'manual' ? 'Avulsa — não vinculada à produção.' : 'Dados disponíveis da produção; complemento manual somente nos campos sem informação.'} Sem rastreio QR: não há URI real de consulta para esta etiqueta. Histórico e reimpressões não são registrados.</p>
         {preview.labels[0] && <div className="loose-label-preview"><div className="loose-label-paper"><LabelScene label={preview.labels[0]} format={draft.format} origin={window.location.origin} /></div></div>}
       </section>
