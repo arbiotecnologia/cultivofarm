@@ -38,7 +38,19 @@
 .label-paper { fill: var(--label-paper); }
 .label-text { fill: var(--label-ink); }
 .label-rule { stroke: var(--label-ink); }
+.loose-label-paper, #loose-label-print { --label-paper: #fff; --label-ink: #000; }
+.loose-label-preview { max-width: 100%; overflow: auto; }
+.loose-label-paper .recipient-label-scene { width: 100%; max-width: 378px; height: auto; }
+#loose-label-print { display: none; }
 @media print {
+  body:has(#loose-label-print) > * { display: none !important; }
+  body:has(#loose-label-print) > [data-radix-portal],
+  body:has(#loose-label-print) > [role="dialog"] { display: block !important; }
+  body:has(#loose-label-print) [role="dialog"] { position: static !important; transform: none !important; display: block !important; max-height: none !important; max-width: none !important; width: auto !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; }
+  body:has(#loose-label-print) [role="dialog"] > * { display: none !important; }
+  body:has(#loose-label-print) #loose-label-print[data-authorized="true"] { display: block !important; }
+  .loose-label-sheet { break-after: page; break-inside: avoid; margin: 0; }
+  .loose-label-sheet:last-child { break-after: auto; }
   body:has(.label-print-page) * { visibility: hidden !important; }
   body:has(.label-print-page) .product-label { display: none !important; }
   body:has(.label-print-page) #product-label-print[data-print-authorized="true"],

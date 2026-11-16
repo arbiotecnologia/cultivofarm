@@ -1,3 +1,9 @@
+## 16/11 — Etiqueta avulsa no Fluxo de Produção
+- [x] Integrar formulário Manual/Produção na consulta existente, usando somente leitores autorizados e sem persistência operacional.
+- [x] Reutilizar cena/print/PDF, validar conteúdo, datas e numeração, sem QR ou dados regulatórios presumidos.
+- [x] 117/117 testes em nove arquivos e Chromium sintético nos três viewports; PDFs de três páginas/100×150 mm. Relatório/rollback em docs/etiqueta-avulsa-20261116.md, sem SQL/deploy/publicação.
+- [ ] Homologação de sessão real/JWT/RLS e impressora física: acesso externo não gerenciável; não certificada por testes sintéticos.
+
 ## 14/11 14:41 — Fechamento das lacunas responsivas
 - [x] Retestar prioridades e corrigir título BI; regressões 238+19 PASS, build automático OK; MATRIX reconciliada 34 completas locais/71 parciais/9 N/A/2 gaps.
 - [ ] Pendências explícitas: IDs/perfis de ação não totalmente resolvidos e comparações listadas em scripts/responsive-layout-116/closure/REPORT.md; revisão não integralmente certificada.
