@@ -61,9 +61,9 @@ export function labelLayout(label: RecipientLabel, format: LabelFormat): LabelLa
     const general = rows.filter(([key]) => !technical.has(key)); const tech = rows.filter(([key]) => technical.has(key));
     // 80×50: dados gerais em duas colunas para liberar altura ao bloco técnico; demais formatos em uma coluna.
     const cols = size === 's' ? 2 : 1; const colW = (inner + (cols - 1) * 1.5) / cols - (cols - 1) * 1.5;
-    const keyCol = cols === 2 ? 13 : S.keyCol;
+    const keyCol = cols === 2 ? 15 : S.keyCol;
     const cell = ([key, value]: [string, string], x: number, w: number, kc: number) => {
-      const k = wrap(key.toUpperCase(), kc - .8, S.key, true); const val = wrap(value, w - kc, S.value);
+      const k = wrap(key.toUpperCase(), kc - .5, S.key, true); const val = wrap(value, w - kc, S.value);
       return { x, kc, k, val, h: Math.max(k.length * stepOf(S.key), val.length * stepOf(S.value)) };
     };
     type Line = { cells: ReturnType<typeof cell>[]; h: number };
