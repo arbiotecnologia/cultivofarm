@@ -1,3 +1,8 @@
+## 16/11 — Etiqueta avulsa no Fluxo de Produção
+- [ ] Integrar formulário Manual/Produção na consulta existente, usando somente leitores autorizados e sem persistência operacional.
+- [ ] Reutilizar cena/print/PDF, validar conteúdo, datas e numeração, sem QR ou dados regulatórios presumidos.
+- [ ] Executar testes focados e conferência visual; documentar limitações e rollback, sem publicação.
+
 ## 14/11 14:41 — Fechamento das lacunas responsivas
 - [x] Retestar prioridades e corrigir título BI; regressões 238+19 PASS, build automático OK; MATRIX reconciliada 34 completas locais/71 parciais/9 N/A/2 gaps.
 - [ ] Pendências explícitas: IDs/perfis de ação não totalmente resolvidos e comparações listadas em scripts/responsive-layout-116/closure/REPORT.md; revisão não integralmente certificada.
