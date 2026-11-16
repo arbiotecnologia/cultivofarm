@@ -26,9 +26,9 @@ export function forbiddenClaim(value: string) {
   if (/(DISPENSA|ISENT[OA] DE ROTUL|EM CONFORMIDADE|CONFORME LEGISLA|ROTULO OFICIAL|ETIQUETA OFICIAL|REGISTRAD[OA] NO MAPA|APROVAD[OA] PELO MAPA|HOMOLOGAD)/.test(t)) return true;
   return /SUBSTITUI/.test(t.replace(/NAO SUBSTITUI/g, ''));
 }
-export function resolvedExtraTexts(v: { origin: 'manual' | 'producao'; productionKey?: string; showOrigin?: boolean; originText?: string; showLegal?: boolean; legalText?: string }) {
+export function resolvedExtraTexts(v: { origin?: 'manual' | 'producao'; productionKey?: string; showOrigin?: boolean; originText?: string; showLegal?: boolean; legalText?: string }) {
   return {
-    origin: v.showOrigin === false ? '' : (v.originText ?? defaultOriginText(v.origin, v.productionKey)).trim(),
+    origin: v.showOrigin === false ? '' : (v.originText ?? defaultOriginText(v.origin ?? 'manual', v.productionKey)).trim(),
     legal: v.showLegal === false ? '' : (v.legalText ?? DEFAULT_LEGAL_TEXT).trim(),
   };
 }
