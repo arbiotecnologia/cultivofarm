@@ -1,5 +1,40 @@
 # Etiqueta avulsa — implementação local, 16/11/2026
 
+## Melhoria de logomarca e auditoria técnica — 11:49–11:56 UTC
+
+### Estado e implementação
+- Histórico confirmado em Git somente leitura: criação em `067bb21d9`, ajustes em `5ea5a5515`/`df70f5691`; os três arquivos funcionais estavam sem divergência entre `df70f5691` e HEAD inicial `98a4b9c39`. Nenhuma revisão foi restaurada ou publicada.
+- Três opções: usar logomarca da empresa, enviar específica e sem logomarca. **Empresa usa fallback textual explícito**: `tenant_display_name_v1` fornece somente nome; `usePortalBranding` é de cliente/parceiro e inclui fallback global, portanto não é fonte segura da empresa operadora. Não foi inventada URL ou aberta consulta extra.
+- Arquivo local PNG/JPEG/WebP: assinatura/tipo correspondentes, máximo 2 MB, 4096 px por lado e 16 MP; dimensões conferidas antes e após decode, timeout 10 s. Corrompidos, SVG, tipo divergente, URL arbitrária e WebP animado recusados. Imagem reencodificada para PNG em tons de cinza, até 1200 px, removendo metadados/conteúdo ativo; transparência preservada. Orientação de resolução ≥600 px.
+- Objeto validado e congelado em memória com capability WeakSet e escopo; clones/objetos forjados/tenant B recusados. Blob URL revogado em `finally`; imagem descartada ao trocar opção/fechar/remontar por contexto. Nenhuma base64 em banco, Storage ou logs.
+- Mesma `LabelScene` para prévia, PDF e print; caixa 22×10 mm, compacta 12×5 mm, aspect ratio `meet`. Nome continua presente. Fluxo oficial não recebe capability provisória. PDF aguarda decode; impressão aguarda as imagens antes de autorização. Mudança de logo durante saída invalida a conclusão.
+
+### Arquivos alterados nesta melhoria
+- Novo `src/lib/etiquetaLogo.ts` (validação, decode limitado, conversão, capabilities).
+- `src/lib/etiquetaAvulsa.ts` (logo opcional transitória/escopada).
+- `src/lib/etiquetasLayout.tsx` (caixa e imagem somente da variante provisória).
+- `src/components/etiquetas/GerarEtiquetaAvulsa.tsx` (opções/upload/fences/readiness e espera da impressão).
+- `src/components/etiquetas/etiquetas.css` (visibilidade autorizada na impressão).
+- Novo `src/test/etiquetas/logo.test.tsx`, esta documentação, `AGENTS.md` e `roadmap.md`.
+
+### Evidências executadas e erros corrigidos
+- **132/132 Vitest em 10 arquivos**, incluindo 15 novos testes de logo, regras avulsas, gates oficiais, produção cancelada, fontes e autorização por perfil. Reteste final 11:55:48 UTC; logs `/tmp/browser/label-logo/vitest-final.log`.
+- Typecheck/build automático final: `build OK` em 11:54:50 UTC. Não foram executados builds manuais adicionais.
+- Chromium com **componentes reais locais**, Auth/transporte interceptados exclusivamente no navegador e toda saída externa bloqueada: 390×844, 464×522, 1440×900; upload/decode real dos três MIME em cada viewport, corrupção negada, fallback/sem/custom, mudança de opção, reset ao reabrir, Manual/Produção e campo de fonte preservado. Zero erros de página/rolagem horizontal no diálogo. Resultado: `/tmp/browser/label-logo/results.json`; script `audit_logo.py` e capturas na mesma pasta.
+- **9 PDFs de exportação + 9 PDFs de print CSS**, nos três formatos/viewport: uma página por arquivo, 100×150/100×100/80×50 mm exatos na exportação; print Chromium ±0,2 mm por arredondamento CSS. Inspeção pypdf/Pillow verificou imagens e pixels em tons de cinza, logo presente em todos e texto na impressão. Resultado `/tmp/browser/label-logo/pdf-inspection.json`.
+- **Regressão preexistente descoberta:** `src/index.css` oculta `body *` ao imprimir; o estilo avulso anterior só restaurava `display`, produzindo impressão vazia. Corrigida com `visibility: visible` exclusivamente no subtree autorizado; negativas sem autorização continuam fechadas. A primeira inspeção demonstrou PDFs print sem texto/imagem; após correção, 9/9 prints com texto e logo.
+- Erro de fixture JPEG com comprimento truncado corrigido no teste (não no parser). Harness PDF tinha erro de nome/tempo `afterprint`; ajustado e reexecutado. Logs/evidências finais não substituem essas tentativas por falso PASS.
+
+### Não executado / pendências
+- Sem sessão Supabase real gerenciável: não houve comprovação de JWT/RLS A/B no backend, leitura hosted de políticas ou teste autenticado real. Nenhuma operação de banco foi realizada; o ref canônico não foi contornado. Isolamento de capability A/B foi testado automaticamente, mas **não é prova RLS**.
+- Não existe leitor aprovado de logo da empresa identificado para esta entrada: opção empresa permanece textual. Integração futura exige contrato scoped previamente revisado; não há necessidade de Storage para o upload atual.
+- Chromium headless não oferece diálogo nativo de impressora; botão/handler/espera/impressão CSS e PDF foram exercitados com `window.print` instrumentado no teste. Diálogo do sistema e impressora física permanecem pendentes.
+- Repetição/remontagem e mudanças de opção testadas; revogação hosted durante conversão, fontes reais de empresas diferentes e E2E autenticado pelo fluxo de login não foram executados. Não há alegação de auditoria 100% ou homologação produtiva.
+- Nenhuma migração, escrita operacional, configuração de empresa, Storage, deploy ou publicação.
+
+### Rollback da melhoria
+Remover a seção/opções/upload e parâmetros de logo em `GerarEtiquetaAvulsa`; remover import/campo de logo em `etiquetaAvulsa`; remover somente a caixa/fonte provisória em `etiquetasLayout`; retirar `etiquetaLogo.ts` e seu teste. **Preservar a correção de visibilidade print**, os gates oficiais e o funcionamento Manual/Produção. Sem rollback de banco/dados.
+
 ## Entrada e auditoria
 - A ação está no Cockpit Operacional existente (`/cockpit-laboratorio`), integrante do Fluxo de Produção; não há nova rota ou módulo.
 - A página efetivamente montada é `CockpitConsulta`, não o antigo `CockpitWorkspace`. O workspace e operações de fabricação continuam contidos.

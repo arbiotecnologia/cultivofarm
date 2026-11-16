@@ -17,6 +17,7 @@ import { LabelScene, labelLayout, createRecipientLabelsPdf } from '@/lib/etiquet
 import { LABEL_FORMATS, isUuid, record, text } from '@/lib/etiquetasRecipientes';
 import './etiquetas.css';
 import { z } from 'zod';
+import { prepareLabelLogo, type PreparedLabelLogo } from '@/lib/etiquetaLogo';
 
 export interface LabelProduction { os_id: string; origem_os: string; numero_os: string; produto_nome?: string | null; microrganismo_nome?: string | null; codigo_lote?: string | null; cliente_nome?: string | null; titular_nome?: string | null; fazenda_nome?: string | null; status_os?: string | null; status_esteira_oficial?: string | null }
 const sourceText = z.string().max(300).nullable().optional();
@@ -67,6 +68,22 @@ function LooseLabelForm({ close }: { close: () => void }) {
   const [search, setSearch] = useState(''); const [page, setPage] = useState(0);
   const [source, setSource] = useState<LabelProduction | null>(null);
   const [busy, setBusy] = useState(false); const lock = useRef(false);
+  const [logoMode, setLogoMode] = useState<'empresa' | 'custom' | 'none'>('empresa');
+  const [logo, setLogo] = useState<PreparedLabelLogo>();
+  const [logoLoading, setLogoLoading] = useState(false);
+  const [logoError, setLogoError] = useState('');
+  const logoGeneration = useRef(0);
+  useEffect(() => () => { logoGeneration.current++; }, []);
+  const changeLogoMode = (mode: 'empresa' | 'custom' | 'none') => { logoGeneration.current++; setLogoMode(mode); setLogo(undefined); setLogoError(''); setLogoLoading(false); };
+  const uploadLogo = async (file?: File) => {
+    const generation = ++logoGeneration.current; const valid = scope.capture();
+    setLogo(undefined); setLogoError('');
+    if (!file) { setLogoLoading(false); return; }
+    setLogoLoading(true);
+    try { const result = await prepareLabelLogo(file, scope.scope); if (valid() && generation === logoGeneration.current) setLogo(result); }
+    catch (error) { if (valid() && generation === logoGeneration.current) setLogoError(error instanceof Error ? error.message : 'Imagem inválida.'); }
+    finally { if (valid() && generation === logoGeneration.current) setLogoLoading(false); }
+  };
   const printRoot = useRef<HTMLDivElement>(null);
   const current = useRef(scope.scope); current.current = scope.scope;
   const query = useCockpitQuery({
@@ -80,14 +97,14 @@ function LooseLabelForm({ close }: { close: () => void }) {
   const effective = { ...draft, company: company.name ?? '' };
   const preview = useMemo(() => {
     try {
-      const labels = createLooseLabels(effective);
+      const labels = createLooseLabels(effective, logoMode === 'custom' ? logo : undefined, scope.scope);
       labels.forEach(label => labelLayout(label, draft.format));
       return { labels, error: '' };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Revise os campos obrigatórios.';
       try { const errors = JSON.parse(message); return { labels: [], error: errors.map((e: { message: string }) => e.message).join(' ') }; } catch { return { labels: [], error: message }; }
     }
-  }, [draft, company.name]);
+  }, [draft, company.name, logo, logoMode, scope.scope]);
   const originChange = (origin: 'manual' | 'producao') => { setSource(null); setSearch(''); setPage(0); setDraft({ ...EMPTY_LOOSE_LABEL, origin }); };
   const choose = (key: string) => {
     const row = query.available && !query.isError ? query.data?.items.find(v => `${v.origem_os}:${v.os_id}` === key) : undefined;
@@ -97,7 +114,7 @@ function LooseLabelForm({ close }: { close: () => void }) {
   };
   const currentSource = source && query.data?.items.find(row => row.os_id === source.os_id && row.origem_os === source.origem_os);
   const sourceUnchanged = !!source && !!currentSource && JSON.stringify(currentSource) === JSON.stringify(source);
-  const canOutput = scope.ready && canGenerateLooseLabel(roles) && !!preview.labels.length && (draft.origin === 'manual' || (sourceUnchanged && query.available && !query.isError && !query.isFetching));
+  const canOutput = scope.ready && canGenerateLooseLabel(roles) && !logoLoading && !logoError && (logoMode !== 'custom' || !!logo) && !!preview.labels.length && (draft.origin === 'manual' || (sourceUnchanged && query.available && !query.isError && !query.isFetching));
   useEffect(() => {
     const clear = () => { if (printRoot.current) printRoot.current.dataset.authorized = 'false'; };
     const key = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'p') { event.preventDefault(); clear(); } };
@@ -108,13 +125,18 @@ function LooseLabelForm({ close }: { close: () => void }) {
     if (lock.current || !canOutput) return;
     lock.current = true; setBusy(true); const valid = scope.capture();
     const capturedScope = scope.scope;
+    const capturedLogoGeneration = logoGeneration.current;
     try {
       if (!valid()) return;
-      const labels = createLooseLabels(effective); labels.forEach(label => labelLayout(label, draft.format));
+      const labels = createLooseLabels(effective, logoMode === 'custom' ? logo : undefined, scope.scope); labels.forEach(label => labelLayout(label, draft.format));
       if (pdf) {
         const document = await createRecipientLabelsPdf(labels, draft.format, 'termica', window.location.origin);
-        if (valid() && current.current === capturedScope) document.save('etiquetas-avulsas.pdf');
+        if (valid() && current.current === capturedScope && logoGeneration.current === capturedLogoGeneration) document.save('etiquetas-avulsas.pdf');
       } else if (valid() && printRoot.current) {
+        await Promise.all(Array.from(printRoot.current.querySelectorAll('image')).map(async element => {
+          const image = new Image(); image.src = element.getAttribute('href') ?? ''; await image.decode();
+        }));
+        if (!valid() || current.current !== capturedScope || logoGeneration.current !== capturedLogoGeneration) return;
         printRoot.current.dataset.authorized = 'true';
         window.print();
         printRoot.current.dataset.authorized = 'false';
@@ -128,6 +150,12 @@ function LooseLabelForm({ close }: { close: () => void }) {
     <DialogHeader className="shrink-0 p-5 pr-12 border-b"><DialogTitle>Gerar etiqueta avulsa</DialogTitle><DialogDescription id="avulsa-description">Etiqueta operacional provisória; não substitui rotulagem legal obrigatória. Nenhum lote, estoque, pedido ou produção será criado ou alterado.</DialogDescription></DialogHeader>
     <div className="min-h-0 overflow-y-auto p-5 space-y-5">
       <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="avulsa-origin">Origem</Label><Select value={draft.origin} onValueChange={value => originChange(value as 'manual' | 'producao')}><SelectTrigger id="avulsa-origin"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="manual">Manual / Avulsa</SelectItem><SelectItem value="producao">A partir da Produção</SelectItem></SelectContent></Select></div><div className="space-y-2"><Label htmlFor="avulsa-company">Empresa</Label><Input id="avulsa-company" value={company.name ?? ''} readOnly placeholder="Empresa autorizada da sessão" /><p className="text-xs text-muted-foreground">Nome confirmado da empresa atual; não editável.</p></div></div>
+      <section className="space-y-3" aria-label="Logomarca da etiqueta"><Label htmlFor="avulsa-logo-mode">Logomarca da etiqueta</Label>
+        <Select value={logoMode} onValueChange={mode => changeLogoMode(mode as 'empresa' | 'custom' | 'none')}><SelectTrigger id="avulsa-logo-mode"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="empresa">Usar logomarca da empresa</SelectItem><SelectItem value="custom">Enviar logomarca específica</SelectItem><SelectItem value="none">Sem logomarca</SelectItem></SelectContent></Select>
+        {logoMode === 'empresa' && <p role="status" className="text-sm text-muted-foreground">Fallback textual: nome da empresa. O leitor autorizado atual fornece apenas o nome, não a imagem do tenant; nenhuma marca global será usada.</p>}
+        {logoMode === 'none' && <p className="text-sm text-muted-foreground">Sem imagem; o nome da empresa permanece na etiqueta.</p>}
+        {logoMode === 'custom' && <><Label htmlFor="avulsa-logo-file">Imagem do documento atual</Label><Input id="avulsa-logo-file" type="file" accept="image/png,image/jpeg,image/webp" onChange={e => { void uploadLogo(e.target.files?.[0]); e.target.value = ''; }} /><p className="text-xs text-muted-foreground">PNG, JPEG ou WebP; até 2 MB, 4096 px por lado e 16 megapixels. Recomenda-se 600 px ou mais e PNG/WebP com transparência. Convertida para tons de cinza, sem deformação; não é salva na empresa ou no Storage.</p>{logoLoading && <p role="status">Validando logomarca…</p>}{logo && <p role="status" className="text-sm">Logomarca pronta: {logo.width} × {logo.height} px.{Math.max(logo.width, logo.height) < 600 ? ' Resolução baixa; recomenda-se 600 px ou mais.' : ''}</p>}{logoError && <p role="alert" className="text-destructive">{logoError}</p>}</>}
+      </section>
       {draft.origin === 'producao' && <div className="space-y-3 border-l-2 border-primary pl-3"><Label htmlFor="avulsa-search">Buscar produção da empresa</Label><Input id="avulsa-search" value={search} maxLength={120} placeholder="Ex.: OS-2026-0001 ou Bacillus subtilis" onChange={e => { setSearch(e.target.value); setPage(0); setSource(null); setDraft(v => ({ ...v, productionKey: undefined })); }} />
         <Select value={source ? `${source.origem_os}:${source.os_id}` : ''} onValueChange={choose} disabled={!query.available || query.isFetching || query.isError}><SelectTrigger aria-label="Selecionar produção"><SelectValue placeholder="Selecione uma produção acessível" /></SelectTrigger><SelectContent>{suggestions.map(row => <SelectItem key={`${row.origem_os}:${row.os_id}`} value={`${row.origem_os}:${row.os_id}`}>{row.numero_os} · {row.produto_nome || row.microrganismo_nome} · {row.status_esteira_oficial || row.status_os}</SelectItem>)}</SelectContent></Select>
         {query.isError || !query.available ? <p role="alert">Consulta de produção indisponível. Nenhum acesso alternativo será utilizado.</p> : query.isFetching ? <p role="status">Consultando produções…</p> : !suggestions.length ? <p role="status">Nenhuma produção disponível nesta página.</p> : null}
