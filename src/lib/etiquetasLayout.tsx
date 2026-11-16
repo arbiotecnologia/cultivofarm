@@ -19,7 +19,7 @@ export function labelLayout(label: RecipientLabel, format: LabelFormat): LabelLa
     const blocks: TextBlock[] = []; const rules: number[] = [];
     const size = height === 50 ? 's' : height === 100 ? 'm' : 'l';
     const S = { s: { pad: 2.2, company: 7, product: 10.5, volume: 10, key: 5.6, value: 6, footer: 5, gap: .5, section: 1, maxGap: 1.2, keyCol: 17 },
-      m: { pad: 3.5, company: 10, product: 16, volume: 14, key: 7, value: 8.5, footer: 6.5, gap: .9, section: 1.8, maxGap: 2.4, keyCol: 25 },
+      m: { pad: 3.2, company: 10, product: 15, volume: 13, key: 7, value: 8.2, footer: 6.2, gap: .7, section: 1.5, maxGap: 2.4, keyCol: 25 },
       l: { pad: 4, company: 11, product: 20, volume: 17, key: 8, value: 10, footer: 7.5, gap: 1.2, section: 2.5, maxGap: 3.2, keyCol: 28 } }[size];
     const pad = S.pad; const inner = width - pad * 2;
     const wrap = (value: string, available: number, pt: number, bold = false) => { pdf.setFont('helvetica', bold ? 'bold' : 'normal'); pdf.setFontSize(pt); return pdf.splitTextToSize(value, available) as string[]; };
@@ -28,7 +28,7 @@ export function labelLayout(label: RecipientLabel, format: LabelFormat): LabelLa
     const image = validatedLabelLogo(label.snapshot.provisional_logo);
     let y = pad;
     // Header: logo box + company, same hierarchy as the official recipient label.
-    const logo = image ? { x: pad, y: pad, width: size === 's' ? 10 : size === 'm' ? 20 : 24, height: size === 's' ? 4.2 : size === 'm' ? 9 : 11 } : undefined;
+    const logo = image ? { x: pad, y: pad, width: size === 's' ? 10 : size === 'm' ? 20 : 24, height: size === 's' ? 4.2 : size === 'm' ? 8 : 11 } : undefined;
     const companyX = logo ? pad + logo.width + (size === 's' ? 1.5 : 2.5) : pad;
     const companyLines = wrap(v.company, width - pad - companyX, S.company, true);
     const companyH = companyLines.length * stepOf(S.company);
@@ -54,14 +54,26 @@ export function labelLayout(label: RecipientLabel, format: LabelFormat): LabelLa
     if (!Number.isInteger(r.seq) || Number(r.seq) < v.first || Number(r.seq) >= v.first + v.quantity || r.total !== v.total) throw new Error('Sequência provisória inválida.');
     const rows: [string, string][] = ([
       ['Lote (ref.)', v.lot], ['Fabricação', v.manufactured], ['Envase', v.bottled], ['Validade', v.expiry || 'não informada'],
-      ['Cliente', v.client], ['Fazenda', v.farm], ['Pedido (ref.)', v.order], ['Composição', v.composition],
+      ['Cliente', v.client], ['Fazenda', v.farm], ['Pedido (ref.)', v.order], ['Composição', v.composition], ['Toxicidade', v.toxicity || 'não informada — consultar ficha técnica'],
       ['Conservação', v.conservation], ['Observações', v.notes],
     ] as [string, string][]).filter(([, value]) => !!value);
-    const valueX = pad + S.keyCol; const valueW = width - pad - valueX;
-    const measured = rows.map(([key, value]) => {
-      const k = wrap(key.toUpperCase(), S.keyCol - 1, S.key, true); const val = wrap(value, valueW, S.value);
-      return { k, val, h: Math.max(k.length * stepOf(S.key), val.length * stepOf(S.value)) };
-    });
+    const technical = new Set(['Composição', 'Toxicidade', 'Conservação', 'Observações']);
+    const general = rows.filter(([key]) => !technical.has(key)); const tech = rows.filter(([key]) => technical.has(key));
+    // 80×50: dados gerais em duas colunas para liberar altura ao bloco técnico; demais formatos em uma coluna.
+    const cols = size === 's' ? 2 : 1; const colW = (inner + (cols - 1) * 1.5) / cols - (cols - 1) * 1.5;
+    const keyCol = cols === 2 ? 15 : S.keyCol;
+    const cell = ([key, value]: [string, string], x: number, w: number, kc: number) => {
+      const k = wrap(key.toUpperCase(), kc - .5, S.key, true); const val = wrap(value, w - kc, S.value);
+      return { x, kc, k, val, h: Math.max(k.length * stepOf(S.key), val.length * stepOf(S.value)) };
+    };
+    type Line = { cells: ReturnType<typeof cell>[]; h: number };
+    const measured: Line[] = [];
+    for (let i = 0; i < general.length; i += cols) {
+      const cells = general.slice(i, i + cols).map((row, c) => cell(row, pad + c * (colW + 1.5), colW, keyCol));
+      measured.push({ cells, h: Math.max(...cells.map(c => c.h)) });
+    }
+    const techStart = tech.length && measured.length ? measured.length : -1;
+    tech.forEach(row => { const c = cell(row, pad, inner, S.keyCol); measured.push({ cells: [c], h: c.h }); });
     // Footer anchored at the bottom: recipient, origin and legal notice.
     const recipient = `RECIPIENTE ${String(r.seq).padStart(2, '0')}/${String(r.total).padStart(2, '0')}`;
     const originText = v.origin === 'manual' ? 'AVULSA · NÃO VINCULADA À PRODUÇÃO' : `AVULSA · PRODUÇÃO ${v.productionKey}`;
@@ -70,12 +82,12 @@ export function labelLayout(label: RecipientLabel, format: LabelFormat): LabelLa
     const legalLines = wrap('ETIQUETA OPERACIONAL PROVISÓRIA — NÃO SUBSTITUI ROTULAGEM LEGAL OBRIGATÓRIA.', inner, S.footer, true);
     const footerH = recipientLines.length * stepOf(S.value + 1) + S.gap + originLines.length * stepOf(S.key) + S.section * .8 + legalLines.length * stepOf(S.footer);
     const footerTop = height - pad - footerH;
-    const bodyH = measured.reduce((sum, m) => sum + m.h, 0) + S.gap * Math.max(0, measured.length - 1);
+    const bodyH = measured.reduce((sum, m) => sum + m.h, 0) + S.gap * Math.max(0, measured.length - 1) + (techStart > 0 ? S.gap * 2 : 0);
     const free = footerTop - S.section - y - bodyH;
     if (free < 0) throw new Error(`Conteúdo excede ${format} mm. Escolha um formato maior; nenhum texto será cortado.`);
     const gap = S.gap + Math.min(S.maxGap - S.gap, measured.length > 1 ? free / (measured.length - 1) : 0);
     y += Math.max(0, Math.min(S.section, free - (gap - S.gap) * Math.max(0, measured.length - 1)) / 2);
-    measured.forEach(m => { push(m.k, pad, y + (S.value - S.key) * .352778 * .5, S.key, true); push(m.val, valueX, y, S.value, false); y += m.h + gap; });
+    measured.forEach((m, i) => { if (i === techStart && i > 0) { rules.push(y - gap / 2 + S.gap); y += S.gap * 2; } m.cells.forEach(c => { push(c.k, c.x, y + (S.value - S.key) * .352778 * .5, S.key, true); push(c.val, c.x + c.kc, y, S.value, false); }); y += m.h + gap; });
     let f = footerTop; rules.push(f - S.section * .5);
     f += push(recipientLines, pad, f, S.value + 1, true) + S.gap;
     f += push(originLines, pad, f, S.key, true) + S.section * .4; rules.push(f); f += S.section * .4;
