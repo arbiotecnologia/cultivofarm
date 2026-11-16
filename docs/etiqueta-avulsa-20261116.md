@@ -84,3 +84,11 @@ Remover a seção/opções/upload e parâmetros de logo em `GerarEtiquetaAvulsa`
 - Chromium 390 e 1440 px: 20 PDFs térmicos gerados com 100×150/100×100/80×50 mm e 1 página; 80×50 com textos longos bloqueado corretamente. Evidências em `/tmp/browser/spacing/`.
 - Pendências: impressora térmica física e diálogo nativo não homologados; sem sessão real/JWT/RLS.
 - Rollback: reverter o ramo provisório de `labelLayout` e os três arquivos de teste.
+
+## Validação pré-publicação — 16/11/2026 (base eeb9ab619)
+
+- Regressão encontrada e corrigida: com logo personalizada, a 80×50 com dados curtos era bloqueada ("Conteúdo excede") porque a caixa do logo (6 mm) aumentava o cabeçalho. Caixa compacta reduzida para 10×4,2 mm, proporção preservada; teste adicionado em `logo.test.tsx` (manual e produção).
+- Typecheck `tsgo -b --noEmit`: exit 0, 0 erros. `vite build`: sucesso.
+- Testes `src/test/etiquetas`: 10 arquivos, 127/127 PASS.
+- `src/test/cockpit-laboratorio`: 2 FALHAS de infraestrutura (não PASS): `liveSourcePostgres.test.ts` "executes actual candidate bodies without granting reader access" e `tenantFencePostgres.test.ts` "filters tenants before counting and denies unsupported roles and revoked links" — `subprocess.CalledProcessError: Command '['setpriv', '--reuid=1000', '--regid=1000', '--clear-groups', 'initdb', ...]' returned non-zero exit status 1.`
+- PDFs Chromium (390/1440 px), manual × produção, sem e com logo PNG personalizada: 100×150 (283,465×425,197 pt), 100×100 (283,465² pt), 80×50 (226,772×141,732 pt), 1 página; rasterização `pdftoppm` confirma logo completa em cinza, conteúdo completo e sem sobreposição. 80×50 com textos longos bloqueada corretamente. Evidências: `/tmp/browser/spacing/`.
