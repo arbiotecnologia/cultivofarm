@@ -49,6 +49,8 @@
   body:has(#loose-label-print) [role="dialog"] { position: static !important; transform: none !important; display: block !important; max-height: none !important; max-width: none !important; width: auto !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; }
   body:has(#loose-label-print) [role="dialog"] > * { display: none !important; }
   body:has(#loose-label-print) #loose-label-print[data-authorized="true"] { display: block !important; }
+  body:has(#loose-label-print) #loose-label-print[data-authorized="true"],
+  body:has(#loose-label-print) #loose-label-print[data-authorized="true"] * { visibility: visible !important; }
   .loose-label-sheet { break-after: page; break-inside: avoid; margin: 0; }
   .loose-label-sheet:last-child { break-after: auto; }
   body:has(.label-print-page) * { visibility: hidden !important; }
