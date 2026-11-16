@@ -76,7 +76,7 @@ export function labelLayout(label: RecipientLabel, format: LabelFormat): LabelLa
     if (free < 0) throw new Error(`Conteúdo excede ${format} mm. Escolha um formato maior; nenhum texto será cortado.`);
     const gap = S.gap + Math.min(S.maxGap - S.gap, measured.length > 1 ? free / (measured.length - 1) : 0);
     y += Math.max(0, Math.min(S.section, free - (gap - S.gap) * Math.max(0, measured.length - 1)) / 2);
-    measured.forEach((m, i) => { if (i === techStart && i > 0) { y += S.gap - gap / 2; rules.push(y); y += S.gap + gap / 2 - gap / 2; } push(m.k, pad, y + (S.value - S.key) * .352778 * .5, S.key, true); push(m.val, valueX, y, S.value, false); y += m.h + gap; });
+    measured.forEach((m, i) => { if (i === techStart && i > 0) { rules.push(y - gap / 2 + S.gap); y += S.gap * 2; } push(m.k, pad, y + (S.value - S.key) * .352778 * .5, S.key, true); push(m.val, valueX, y, S.value, false); y += m.h + gap; });
     let f = footerTop; rules.push(f - S.section * .5);
     f += push(recipientLines, pad, f, S.value + 1, true) + S.gap;
     f += push(originLines, pad, f, S.key, true) + S.section * .4; rules.push(f); f += S.section * .4;
