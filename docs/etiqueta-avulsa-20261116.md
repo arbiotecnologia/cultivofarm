@@ -74,3 +74,13 @@ Remover a seção/opções/upload e parâmetros de logo em `GerarEtiquetaAvulsa`
 - PDF/print são provisórios e locais; não oferecem histórico, revogação física ou certificação legal. Confirmar em impressora real com escala 100%, margens/cabeçalhos desativados.
 - Busca depende da disponibilidade/isolamento do RPC instalado; esta implementação não certifica suas políticas por teste sintético.
 - Rollback frontend: remover o import/ação de `GerarEtiquetaAvulsa` em `CockpitConsulta`, retirar o ramo provisório/import de `etiquetasLayout` e os estilos `loose-label-*`, então retirar os novos arquivos/testes. Não há rollback de dados/banco necessário. Preservar o fluxo oficial e seus gates.
+## Refinamento de espaçamento — 16/11/2026
+
+- Arquivo alterado: `src/lib/etiquetasLayout.tsx` (somente ramo provisório de `labelLayout`; etiquetas oficiais intactas).
+- Layout em seções com réguas: cabeçalho (logo + empresa centralizados verticalmente) · produto em destaque + volume (no 80×50 volume à direita) · grade rótulo/valor em duas colunas · rodapé ancorado (recipiente NN/total, origem, aviso legal).
+- Escala própria por formato (100×150, 100×100, 80×50); espaço livre distribuído entre linhas com teto, sem esticar. Excesso continua bloqueado com o erro existente "Conteúdo excede …", nunca corte.
+- Mesmo `labelLayout`/`LabelScene` para prévia, PDF e impressão.
+- Testes: `src/test/etiquetas/avulsaSpacing.test.tsx` (novo, 13 casos: curto/longo × manual/produção × 3 formatos, sem sobreposição, limites, conteúdo completo, produto com maior fonte, sem logo); `avulsa.test.tsx` e `logo.test.tsx` ajustados ao novo layout. Etiquetas+cockpit: 202/204; as 2 falhas são baterias PostgreSQL descartáveis (`initdb` indisponível no sandbox), não relacionadas.
+- Chromium 390 e 1440 px: 20 PDFs térmicos gerados com 100×150/100×100/80×50 mm e 1 página; 80×50 com textos longos bloqueado corretamente. Evidências em `/tmp/browser/spacing/`.
+- Pendências: impressora térmica física e diálogo nativo não homologados; sem sessão real/JWT/RLS.
+- Rollback: reverter o ramo provisório de `labelLayout` e os três arquivos de teste.

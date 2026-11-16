@@ -16,36 +16,72 @@ export function labelLayout(label: RecipientLabel, format: LabelFormat): LabelLa
     const v = looseLabelSchema.parse({ ...raw, volume: String(raw.volume) });
     const { width, height } = LABEL_FORMATS[format];
     const pdf = new jsPDF({ unit: 'mm', format: [width, height] });
-    const blocks: TextBlock[] = []; let y = 3;
-    const add = (value: string, size: number, bold = false, x = 3, available = width - 6) => {
-      pdf.setFont('helvetica', bold ? 'bold' : 'normal'); pdf.setFontSize(size);
-      const lines = pdf.splitTextToSize(value, available) as string[];
-      const step = size * .352778 * 1.2;
-      blocks.push({ lines, x, y, size, step, bold }); y += lines.length * step + 1;
-    };
-    const compact = height === 50;
+    const blocks: TextBlock[] = []; const rules: number[] = [];
+    const size = height === 50 ? 's' : height === 100 ? 'm' : 'l';
+    const S = { s: { pad: 2.2, company: 7, product: 10.5, volume: 10, key: 5.6, value: 6, footer: 5, gap: .5, section: 1, maxGap: 1.2, keyCol: 17 },
+      m: { pad: 3.5, company: 10, product: 16, volume: 14, key: 7, value: 8.5, footer: 6.5, gap: .9, section: 1.8, maxGap: 2.4, keyCol: 25 },
+      l: { pad: 4, company: 11, product: 20, volume: 17, key: 8, value: 10, footer: 7.5, gap: 1.2, section: 2.5, maxGap: 3.2, keyCol: 28 } }[size];
+    const pad = S.pad; const inner = width - pad * 2;
+    const wrap = (value: string, available: number, pt: number, bold = false) => { pdf.setFont('helvetica', bold ? 'bold' : 'normal'); pdf.setFontSize(pt); return pdf.splitTextToSize(value, available) as string[]; };
+    const stepOf = (pt: number, lh = 1.22) => pt * .352778 * lh;
+    const push = (lines: string[], x: number, top: number, pt: number, bold: boolean, lh?: number) => { const step = stepOf(pt, lh); blocks.push({ lines, x, y: top, size: pt, step, bold }); return lines.length * step; };
     const image = validatedLabelLogo(label.snapshot.provisional_logo);
-    const logo = image ? { x: 3, y: 3, width: compact ? 12 : 22, height: compact ? 5 : 10 } : undefined;
-    add(v.company, compact ? 8 : 11, true, logo ? 5 + logo.width : 3, width - 6 - (logo ? logo.width + 2 : 0));
-    if (logo) y = Math.max(y, 3 + logo.height + 1);
-    add(v.product, compact ? 12 : 20, true);
-    add(`${v.volume.toLocaleString('pt-BR')} ${v.unit}`, compact ? 11 : 18, true);
+    let y = pad;
+    // Header: logo box + company, same hierarchy as the official recipient label.
+    const logo = image ? { x: pad, y: pad, width: size === 's' ? 13 : size === 'm' ? 20 : 24, height: size === 's' ? 6 : size === 'm' ? 9 : 11 } : undefined;
+    const companyX = logo ? pad + logo.width + (size === 's' ? 1.5 : 2.5) : pad;
+    const companyLines = wrap(v.company, width - pad - companyX, S.company, true);
+    const companyH = companyLines.length * stepOf(S.company);
+    const headerH = Math.max(companyH, logo?.height ?? 0);
+    push(companyLines, companyX, y + (headerH - companyH) / 2, S.company, true);
+    y += headerH + S.section * .6; rules.push(y); y += S.section * .8;
+    // Product highlight + volume.
+    const volumeText = `${v.volume.toLocaleString('pt-BR')} ${v.unit}`;
+    if (size === 's') {
+      const volLines = wrap(volumeText, 20, S.volume, true);
+      const prodLines = wrap(v.product, inner - 22, S.product, true);
+      const ph = push(prodLines, pad, y, S.product, true, 1.12);
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(S.volume);
+      const vw = Math.max(...volLines.map(l => pdf.getTextWidth(l)));
+      const vh = push(volLines, width - pad - vw, y, S.volume, true, 1.12);
+      y += Math.max(ph, vh);
+    } else {
+      y += push(wrap(v.product, inner, S.product, true), pad, y, S.product, true, 1.12) + S.gap;
+      y += push(wrap(volumeText, inner, S.volume, true), pad, y, S.volume, true, 1.12);
+    }
+    y += S.section * .6; rules.push(y); y += S.section * .8;
     const r = record(label.snapshot.recipiente);
     if (!Number.isInteger(r.seq) || Number(r.seq) < v.first || Number(r.seq) >= v.first + v.quantity || r.total !== v.total) throw new Error('Sequência provisória inválida.');
-    const details = [
-      `Lote (referência): ${v.lot}`,
-      v.manufactured && `Fabricação: ${v.manufactured}`, v.bottled && `Envase: ${v.bottled}`,
-      v.expiry ? `Validade: ${v.expiry}` : 'Validade: não informada',
-      v.client && `Cliente: ${v.client}`, v.farm && `Fazenda: ${v.farm}`,
-      v.order && `Pedido (referência): ${v.order}`, v.composition && `Identificação/composição: ${v.composition}`,
-      v.conservation && `Conservação: ${v.conservation}`, v.notes && `Observações/alertas: ${v.notes}`,
-      `Recipiente ${String(r.seq).padStart(2, '0')}/${String(r.total).padStart(2, '0')}`,
-      v.origin === 'manual' ? 'AVULSA · NÃO VINCULADA À PRODUÇÃO' : `AVULSA · PRODUÇÃO ${v.productionKey}`,
-    ].filter(Boolean).join('\n');
-    add(details, compact ? 6 : 9);
-    add('ETIQUETA OPERACIONAL PROVISÓRIA — NÃO SUBSTITUI ROTULAGEM LEGAL OBRIGATÓRIA.', compact ? 6 : 8, true);
-    if (y > height - 2) throw new Error(`Conteúdo excede ${format} mm. Escolha um formato maior; nenhum texto será cortado.`);
-    return { lines: blocks.flatMap(b => b.lines), fontSize: 9, lineHeight: 4, qr: 0, qrX: 0, qrY: 0, width, height, blocks, rules: [], logo };
+    const rows: [string, string][] = ([
+      ['Lote (ref.)', v.lot], ['Fabricação', v.manufactured], ['Envase', v.bottled], ['Validade', v.expiry || 'não informada'],
+      ['Cliente', v.client], ['Fazenda', v.farm], ['Pedido (ref.)', v.order], ['Composição', v.composition],
+      ['Conservação', v.conservation], ['Observações', v.notes],
+    ] as [string, string][]).filter(([, value]) => !!value);
+    const valueX = pad + S.keyCol; const valueW = width - pad - valueX;
+    const measured = rows.map(([key, value]) => {
+      const k = wrap(key.toUpperCase(), S.keyCol - 1, S.key, true); const val = wrap(value, valueW, S.value);
+      return { k, val, h: Math.max(k.length * stepOf(S.key), val.length * stepOf(S.value)) };
+    });
+    // Footer anchored at the bottom: recipient, origin and legal notice.
+    const recipient = `RECIPIENTE ${String(r.seq).padStart(2, '0')}/${String(r.total).padStart(2, '0')}`;
+    const originText = v.origin === 'manual' ? 'AVULSA · NÃO VINCULADA À PRODUÇÃO' : `AVULSA · PRODUÇÃO ${v.productionKey}`;
+    const recipientLines = wrap(recipient, inner, S.value + 1, true);
+    const originLines = wrap(originText, inner, S.key, true);
+    const legalLines = wrap('ETIQUETA OPERACIONAL PROVISÓRIA — NÃO SUBSTITUI ROTULAGEM LEGAL OBRIGATÓRIA.', inner, S.footer, true);
+    const footerH = recipientLines.length * stepOf(S.value + 1) + S.gap + originLines.length * stepOf(S.key) + S.section * .8 + legalLines.length * stepOf(S.footer);
+    const footerTop = height - pad - footerH;
+    const bodyH = measured.reduce((sum, m) => sum + m.h, 0) + S.gap * Math.max(0, measured.length - 1);
+    const free = footerTop - S.section - y - bodyH;
+    if (free < 0) throw new Error(`Conteúdo excede ${format} mm. Escolha um formato maior; nenhum texto será cortado.`);
+    const gap = S.gap + Math.min(S.maxGap - S.gap, measured.length > 1 ? free / (measured.length - 1) : 0);
+    y += Math.max(0, Math.min(S.section, free - (gap - S.gap) * Math.max(0, measured.length - 1)) / 2);
+    measured.forEach(m => { push(m.k, pad, y + (S.value - S.key) * .352778 * .5, S.key, true); push(m.val, valueX, y, S.value, false); y += m.h + gap; });
+    let f = footerTop; rules.push(f - S.section * .5);
+    f += push(recipientLines, pad, f, S.value + 1, true) + S.gap;
+    f += push(originLines, pad, f, S.key, true) + S.section * .4; rules.push(f); f += S.section * .4;
+    f += push(legalLines, pad, f, S.footer, true);
+    if (f > height - pad + .01) throw new Error(`Conteúdo excede ${format} mm. Escolha um formato maior; nenhum texto será cortado.`);
+    return { lines: blocks.flatMap(b => b.lines), fontSize: S.value, lineHeight: stepOf(S.value), qr: 0, qrX: 0, qrY: 0, width, height, blocks, rules, logo };
   }
   const { width, height } = LABEL_FORMATS[format];
   const pdf = new jsPDF({ unit: 'mm', format: [width, height] });
