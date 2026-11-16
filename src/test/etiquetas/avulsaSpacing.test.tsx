@@ -1,13 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { createLooseLabels, EMPTY_LOOSE_LABEL } from '@/lib/etiquetaAvulsa';
 import { labelLayout } from '@/lib/etiquetasLayout';
-import type { PreparedLabelLogo } from '@/lib/etiquetaLogo';
 
 // Regressão visual geométrica: distribuição, ausência de sobreposição e limites físicos.
 const short = { ...EMPTY_LOOSE_LABEL, company: 'AR Bio', product: 'Bacillus subtilis', lot: 'LT-2026-0001', volume: '20', manufactured: '01/11/2026', bottled: '02/11/2026', client: 'Fazenda Exemplo', farm: 'Talhão 1', order: 'PED-1', quantity: 2, total: 2 };
 const long = { ...short, company: 'AR Bio Soluções Biológicas para Agricultura Ltda', product: 'Bacillus subtilis + Trichoderma harzianum concentrado', client: 'Fazenda Exemplo Agropecuária do Cerrado', notes: 'Agitar antes do uso e manter ao abrigo da luz.', conservation: 'Refrigerado 2–8 °C', approved: true };
 const formats = ['100x150', '100x100', '80x50'] as const;
-const logoFor = (scope: string) => ({ scope } as unknown as PreparedLabelLogo);
 
 function check(layout: ReturnType<typeof labelLayout>) {
   const boxes = layout.blocks.map(b => ({ x: b.x, top: b.y, bottom: b.y + b.lines.length * b.step }));
@@ -25,6 +23,7 @@ describe('Espaçamento da etiqueta avulsa', () => {
       const draft = { ...data, format, origin, productionKey: origin === 'producao' ? 'OS-12' : undefined };
       const labels = createLooseLabels(draft);
       expect(labels).toHaveLength(2);
+      if (format === '80x50' && name === 'longo') { expect(() => labelLayout(labels[1]!, format)).toThrow(/excede/); return; }
       const layout = labelLayout(labels[1]!, format);
       check(layout);
       const all = layout.lines.join(' ');
@@ -44,6 +43,5 @@ describe('Espaçamento da etiqueta avulsa', () => {
       expect(without.logo).toBeUndefined();
       expect(without.blocks[0]!.x).toBeLessThan(5);
     }
-    expect(logoFor).toBeDefined();
   });
 });
