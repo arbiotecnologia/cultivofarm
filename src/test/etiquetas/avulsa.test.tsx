@@ -16,7 +16,7 @@ describe('Etiqueta avulsa operacional', () => {
   });
   it('não inventa validade e bloqueia datas inexistentes', () => {
     const label = createLooseLabels(draft)[0]; if (!label) throw new Error('missing');
-    expect(labelLayout(label, '100x150').lines).toContain('Validade: não informada');
+    expect(labelLayout(label, '100x150').lines).toEqual(expect.arrayContaining(['VALIDADE', 'não informada']));
     expect(validLabelDate('31/02/2026')).toBe(false);
     expect(validLabelDate('29/02/2024')).toBe(true);
     expect(maskLabelDate('16112026')).toBe('16/11/2026');
@@ -36,7 +36,7 @@ describe('Etiqueta avulsa operacional', () => {
   it('nega sequência acima de 500', () => expect(() => createLooseLabels({ ...draft, quantity: 501, total: 501 })).toThrow());
   it('nega envase anterior à fabricação', () => expect(() => createLooseLabels({ ...draft, manufactured: '16/11/2026', bottled: '15/11/2026' })).toThrow());
   it('não corta conteúdo excedente', () => {
-    const label = createLooseLabels({ ...draft, format: '80x50', notes: 'Texto aprovado extenso '.repeat(12), approved: true })[0];
+    const label = createLooseLabels({ ...draft, format: '80x50', notes: 'Texto aprovado extenso '.repeat(13), composition: 'Composição aprovada extensa '.repeat(10), conservation: 'Conservar refrigerado '.repeat(9), approved: true })[0];
     if (!label) throw new Error('missing');
     expect(() => labelLayout(label, '80x50')).toThrow(/excede/);
   });
