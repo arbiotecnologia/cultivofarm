@@ -9,7 +9,7 @@ Nada aqui roda em produção. Senhas/JWTs ficam só com o operador; evidência l
 4. Edges no HML: `create-user` (patch do pacote) e `tenant-user-admin` (`scripts/user-edit-access-email-links-20261117/edge`). Gate do frontend permanece OFF em produção.
 5. Fixtures sintéticos (somente por writers canônicos, prefixo `QA-FIN-<data>`; registrar cada ID em `qa-ids.json`):
    - Empresa X: parceiros A e B; Empresa Y: parceiro C (ou reutilizar fixtures HML sintéticos já existentes, nunca contas de clientes/funcionários).
-   - Usuários via admin QA de cada empresa no Cadastro/Editar Usuário: Financeiro A, Financeiro B, Financeiro C, Gestor A, Técnico A. Senha definida pelo próprio operador; sem convites/emails (comunicação OFF).
+   - Usuários: no HML o provisionamento de produção não existe (captura 17/11). Criar Técnico/Gestor pelo cadastro HML existente e obter Financeiro A/B/C **somente** pela transição canônica 02c em Editar Usuário (Técnico → Financeiro com vínculo/versão). Nunca usar `admin_provision_user_profile_v1` legado para o papel financeiro. Senha definida pelo próprio operador; sem convites/emails (comunicação OFF).
    - Títulos/pedidos: apenas os existentes sintéticos do HML; não emitir NF, cobrança ou baixa.
 6. `HML_ANON_KEY=… QA_FIN_A=… QA_FIN_B=… QA_FIN_C=… QA_GESTOR_A=… QA_TECNICO_A=… QA_PARTNER_A=… QA_PARTNER_B=… QA_PARTNER_C=… python3 hml/qa/jwt_suite.py` → `evidence-hml-jwt.json`, código 0.
 7. Transições (Editar Usuário, admin QA da empresa X): Técnico A → Financeiro A; Financeiro B → Gestor B; tentativa com parceiro de outra empresa (deve negar); versão de vínculo desatualizada (PT409). Após cada uma: JWT antigo do alvo deve ser negado; repetir passo 6 com `QA_FIN_REVOKED` = sessão antiga.
@@ -18,3 +18,8 @@ Nada aqui roda em produção. Senhas/JWTs ficam só com o operador; evidência l
 
 ## Crédito
 No HML o crédito fica **fechado por construção** (cadeia B4 ausente). A prova do crédito real exige a cadeia B4 no HML via pacote próprio revisado ou prova em produção após instalação controlada; até lá o crédito não é liberado.
+
+## Achados da captura HML 17/11 (parte 1) — fora do escopo do Financeiro, reportar ao proprietário
+- `admin_provision_user_profile_v1` HML (9a2e228a) é INVOKER com EXECUTE para PUBLIC/anon/authenticated; proteção depende só das políticas (C6 pendente).
+- ACL com TRUNCATE (`D`) para anon/authenticated em `user_roles`, `partner_order_messages`; para authenticated em `partner_users`, `partner_order_financial_links`, `partner_order_payment_schedule`, `financial_audit_log`, `accounts_receivable_installments`, `receivable_payments`. Contradiz o estado “04 aplicado na homologação”; RLS não cobre TRUNCATE.
+- `fn_b2b_credit_exposure` HML legado sem gate de ator, mas EXECUTE só postgres/service_role (sem exposição a sessões).

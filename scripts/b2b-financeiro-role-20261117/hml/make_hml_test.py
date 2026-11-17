@@ -44,5 +44,24 @@ t = t[:i] + '''    check("rollback_exposicao_legada_intacta", "SELECT md5(pg_get
 ''' + t[j:]
 sub('(H / "evidence-local.json")', '(HM / "evidence-hml-local.json")')
 sub('B2BFIN_PORT", "55631"', 'B2BFIN_PORT", "55641"')
+# HML: provisionamento de produção ausente (external_provisioning_scope/b2b_finish_provisioning/require_service_role)
+# e admin_provision_user_profile_v1 legado 9a2e228a — carregar o corpo HML e testar só o que o HML tem.
+for n in ['"platform_private.external_provisioning_scope", ', '"admin_provision_user_profile_v1", ', '"b2b_finish_provisioning",', '"platform_private.require_service_role", ']:
+    if t.count(n) < 1: sys.exit("ANCHOR load " + n)
+    t = t.replace(n, "", 1)
+sub('    run("ALTER TABLE public.partner_orders ADD COLUMN total numeric(12,2);"', '    run((HM / "captured" / "admin_provision_user_profile_v1.sql").read_text() + ";")  # corpo HML 9a2e228a\n    run("ALTER TABLE public.partner_orders ADD COLUMN total numeric(12,2);"')
+i = t.index('    check("finish_mapeia_papel_financeiro"'); j = t.index("\n", i) + 1; t = t[:i] + t[j:]
+i = t.index("    # Provisionamento canônico"); j = t.index("    # Reversão")
+t = t[:i] + """    # HML: provisionamento legado intacto; papel financeiro sem vínculo nunca ganha capacidade
+    check("hml_provisao_legada_intacta", "SELECT md5(pg_get_functiondef('public.admin_provision_user_profile_v1(uuid,text,text,app_role[],uuid[],uuid,uuid,text,text,text,text,text,text)'::regprocedure));", "9a2e228a68f369f32fe323c6c2a7f1b8")
+    run(f"INSERT INTO profiles(user_id,organization_id) VALUES('{NEW1}','{ORG_A}')")
+    check("hml_provisao_legada_recusa_vinculo_financeiro", f"SELECT public.admin_provision_user_profile_v1('{NEW1}','n@x.io','N',ARRAY['parceiro_b2b_financeiro']::app_role[],ARRAY[]::uuid[],NULL,'{P1}','financeiro');", error="unexpected_partner_link")
+    run(f"SELECT public.admin_provision_user_profile_v1('{NEW1}','n@x.io','N',ARRAY['parceiro_b2b_financeiro']::app_role[],ARRAY[]::uuid[],NULL,NULL,NULL);")
+    check("hml_papel_sem_vinculo_sem_capacidade", cap(NEW1), "false")
+    check("hml_papel_sem_vinculo_sem_obrigacoes", own(NEW1, P1), error="own_finance_forbidden")
+    check("papel_vinculo_invalido_rejeitado", f"INSERT INTO partner_users(partner_id,user_id,papel,tenant_id) VALUES('{P1}','{NEW2}','diretor','{ORG_A}');", error="partner_users_papel_check")
+""" + t[j:]
+for n in ['"platform_private.external_provisioning_scope", ', '"admin_provision_user_profile_v1", ', '"b2b_finish_provisioning", ']:
+    t = t.replace(n, '', 1)
 (H / "test_hml_pg.py").write_text('# GERADO por hml/make_hml_test.py; não editar.\n' + t)
 print("OK")

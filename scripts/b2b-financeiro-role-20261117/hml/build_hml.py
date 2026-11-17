@@ -20,12 +20,19 @@ def ref(t, n, tag): return sub(t, PROD, HML, n, tag)
 def cut_fn(t, header, tag):
     i = t.find(header)
     if i < 0 or t.count(header) != 1: sys.exit(f"ANCHOR cut {tag}")
-    j = t.index("END $function$;\n", i) + len("END $function$;\n")
+    j = t.index("$function$;\n", t.index("AS $function$", i) + 13) + len("$function$;\n")
     return t[:i] + f"-- HML: {tag} omitido (cadeia de crédito B4 ausente no HML; crédito fechado).\n" + t[j:]
 # 02b
 t = (R / "02b-install.sql.review").read_text()
 t = ref(t, t.count(PROD), "02b")
-for h, tag in [("CREATE OR REPLACE FUNCTION platform_private.b2b_credit_balances_core(", "balances_core"),
+PROV = {"platform_private.external_provisioning_scope", "admin_provision_user_profile_v1", "b2b_finish_provisioning"}
+# HML (captura 17/11): external_provisioning_scope/b2b_finish_provisioning/require_service_role ausentes e
+# admin_provision_user_profile_v1 é versão anterior (9a2e228a, INVOKER) — provisionamento de produção NÃO se aplica:
+# deltas omitidos, corpo HML pinado e intacto. Financeiro no HML só nasce pela transição canônica 02c.
+for h, tag in [("CREATE OR REPLACE FUNCTION platform_private.external_provisioning_scope(", "external_provisioning_scope"),
+               ("CREATE OR REPLACE FUNCTION public.admin_provision_user_profile_v1(", "admin_provision_user_profile_v1"),
+               ("CREATE OR REPLACE FUNCTION public.b2b_finish_provisioning(", "b2b_finish_provisioning"),
+               ("CREATE OR REPLACE FUNCTION platform_private.b2b_credit_balances_core(", "balances_core"),
                ("CREATE OR REPLACE FUNCTION platform_private.b2b_credit_balances(", "balances"),
                ("CREATE OR REPLACE FUNCTION platform_private.b2b_credit_exposure_core(", "exposure_core"),
                ("CREATE OR REPLACE FUNCTION public.fn_b2b_credit_exposure(", "fn_b2b_credit_exposure")]:
@@ -43,15 +50,19 @@ END $function$;
 """ + t[j:]
 t = sub(t, "REVOKE ALL ON FUNCTION platform_private.b2b_credit_exposure_core(uuid,numeric,uuid) FROM PUBLIC, anon, authenticated, service_role;\n", "", tag="rv1")
 t = sub(t, "REVOKE ALL ON FUNCTION platform_private.b2b_credit_balances_core(uuid,uuid,uuid) FROM PUBLIC, anon, authenticated, service_role;\n", "", tag="rv2")
-if re.search(r"credit_exposure_core|credit_balances", t): sys.exit("LEFTOVER credit in 02b-hml")
+if re.search(r"credit_exposure_core|credit_balances|FUNCTION platform_private.external_provisioning_scope|FUNCTION public.admin_provision_user_profile_v1|FUNCTION public.b2b_finish_provisioning", t): sys.exit("LEFTOVER in 02b-hml")
 (H / "02b-install-hml.sql.review").write_text("-- VARIANTE HML gerada por hml/build_hml.py; não editar.\n" + t)
 # 01-pre: pinos de produção sem a cadeia de crédito + pino HML da exposição legada + ausência da cadeia B4.
 pre = (R / "01-pre.template.sql").read_text()
-pins = {k: v for k, v in PINS.items() if k not in CREDIT_FN and k not in CREDIT_CHAIN and k in json.loads((R / "01-pre.sql.readonly").read_text().split("pins jsonb := '",1)[1].split("';",1)[0])}
+pins = {k: v for k, v in PINS.items() if k not in CREDIT_FN and k not in CREDIT_CHAIN and k not in PROV and k in json.loads((R / "01-pre.sql.readonly").read_text().split("pins jsonb := '",1)[1].split("';",1)[0])}
 pins.update(HML_PINS)
 pre = pre.replace("@@PINS@@", json.dumps(pins, sort_keys=True))
 pre = ref(pre, 2, "pre")
-pre = sub(pre, "  IF pg_get_constraintdef(", """  IF to_regprocedure('platform_private.b2b_credit_balances(uuid,uuid)') IS NOT NULL THEN
+pre = sub(pre, "  IF pg_get_constraintdef(", """  IF to_regprocedure('platform_private.external_provisioning_scope(uuid,public.app_role[],uuid,uuid[],uuid)') IS NOT NULL
+     OR to_regprocedure('public.b2b_finish_provisioning(uuid,uuid,uuid)') IS NOT NULL THEN
+    RAISE EXCEPTION 'B2B_FIN_PRE_HML_PROVISIONING_CHANGED: recapturar';
+  END IF;
+  IF to_regprocedure('platform_private.b2b_credit_balances(uuid,uuid)') IS NOT NULL THEN
     RAISE EXCEPTION 'B2B_FIN_PRE_HML_CREDIT_CHAIN_PRESENT: HML mudou; recapturar e gerar pacote de crédito revisado';
   END IF;
   IF pg_get_constraintdef(""", tag="pre-abs")
@@ -71,7 +82,9 @@ post = sub(post, "  AND (SELECT count(*) FROM pg_policies", f"""  AND md5(pg_get
 # 04 rollback: sem restaurar/remover cadeia de crédito
 rb = (R / "04-rollback.sql.review").read_text()
 rb = ref(rb, rb.count(PROD), "rb")
-for h, tag in [("CREATE OR REPLACE FUNCTION public.fn_b2b_credit_exposure(", "fn"), ("CREATE OR REPLACE FUNCTION platform_private.b2b_credit_balances(", "bal")]:
+for h, tag in [("CREATE OR REPLACE FUNCTION public.fn_b2b_credit_exposure(", "fn"), ("CREATE OR REPLACE FUNCTION platform_private.b2b_credit_balances(", "bal"),
+               ("CREATE OR REPLACE FUNCTION platform_private.external_provisioning_scope(", "eps"), ("CREATE OR REPLACE FUNCTION public.admin_provision_user_profile_v1(", "prov"),
+               ("CREATE OR REPLACE FUNCTION public.b2b_finish_provisioning(", "fin")]:
     i = rb.find(h)
     if i < 0: sys.exit("ANCHOR rb " + tag)
     j = rb.index("$function$;\n", rb.index("AS $function$", i) + 13) + 12

@@ -36,9 +36,9 @@ def svc(sql):
 def own(uid, partner): return act(uid, f"SELECT string_agg(r->>'numero',',' ORDER BY r->>'numero') FROM jsonb_array_elements(public.rpc_portal_partner_financial('{partner}',true)->'rows') r;")
 def cap(uid, key="allowed"): return act(uid, f"SELECT public.b2b_finance_capability_v1()->>'{key}';")
 LOAD = ["platform_private.platform_actor_access_ready", "platform_private.has_role", "has_role", "platform_private.h15_actor_organization",
-        "h15_actor_organization", "is_platform_superadmin", "platform_private.require_service_role", "is_valid_b2b_partner_user",
+        "h15_actor_organization", "is_platform_superadmin", "is_valid_b2b_partner_user",
         "platform_private.b2b_own_obligations_owner", "platform_private.b2b_own_obligations", "rpc_portal_partner_financial",
-        "platform_private.external_provisioning_scope", "admin_provision_user_profile_v1", "b2b_finish_provisioning",
+        
         "rpc_partner_message_counters",
         "platform_private.b2b_credit_config_block"]
 CHAIN = []
@@ -51,6 +51,7 @@ try:
     for n in CHAIN:  # cadeia LIVE: md5 pinado e ACL LIVE (só postgres)
         assert hashlib.md5((H / "captured" / f"{n}.sql").read_text().encode()).hexdigest() == PINS[n][1], ("DRIFT", n)
         run(f"DO $$ DECLARE f regprocedure; BEGIN FOR f IN SELECT p.oid FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname='{n}' LOOP EXECUTE 'REVOKE ALL ON FUNCTION '||f||' FROM PUBLIC'; END LOOP; END $$;")
+    run((HM / "captured" / "admin_provision_user_profile_v1.sql").read_text() + ";")  # corpo HML 9a2e228a
     run("ALTER TABLE public.partner_orders ADD COLUMN total numeric(12,2);" + (HM / "captured" / "fn_b2b_credit_exposure.sql").read_text() + ";")  # corpo HML 213ac31f  # ACL LIVE: só postgres
     run("REVOKE ALL ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) TO authenticated;"
         "GRANT EXECUTE ON FUNCTION public.rpc_partner_message_counters(uuid) TO authenticated;")
@@ -67,7 +68,6 @@ try:
     check("install_sem_enum_aborta", "SET app.expected_ref='vrlcdwmlytukrjezrrnf';\n" + (HM / "02b-install-hml.sql.review").read_text(), error="B2B_FIN_INSTALL_ENUM_MISSING")
     run((HM / "02a-install-enum-hml.sql.review").read_text())
     run("SET app.expected_ref='vrlcdwmlytukrjezrrnf';\n" + (HM / "02b-install-hml.sql.review").read_text())
-    check("finish_mapeia_papel_financeiro", "SELECT pg_get_functiondef('public.b2b_finish_provisioning(uuid,uuid,uuid)'::regprocedure) LIKE '%WHEN ''parceiro_b2b_financeiro''=ANY(rs) THEN ''financeiro''%';", "t")
     check("post_pass", (HM / "03-post-hml.sql.readonly").read_text(), "POST_PASS")
     # Dados
     run(f"""INSERT INTO organizations(id) VALUES('{ORG_A}'),('{ORG_B}');
@@ -167,37 +167,21 @@ INSERT INTO partner_order_messages(order_id,status) VALUES('30000000-0000-0000-0
     check("papel_removido_retira_acesso", cap(F1), "false")
     run(f"INSERT INTO user_roles VALUES('{F1}','parceiro_b2b_financeiro')")
     check("papel_restaurado_volta", own(F1, P1), "PED-P1")
-    # Provisionamento canônico
-    def scope(actor, roles, partner):
-        pa = f"'{partner}'" if partner else "NULL"
-        return act(actor, f"SELECT (platform_private.external_provisioning_scope('{actor}',ARRAY[{roles}]::app_role[],{pa},ARRAY[]::uuid[],NULL)->>'organization_id');")
-    run("GRANT EXECUTE ON FUNCTION platform_private.external_provisioning_scope(uuid,app_role[],uuid,uuid[],uuid) TO authenticated;")
-    check("cadastro_financeiro_escopo_ok", scope(ADM, "'parceiro_b2b_financeiro'", P1), ORG_A)
-    check("cadastro_financeiro_exclusivo", scope(ADM, "'parceiro_b2b_financeiro','parceiro_b2b_tecnico'", P1), error="c2_finance_role_exclusive")
-    check("cadastro_financeiro_com_gestor_negado", scope(ADM, "'parceiro_b2b_financeiro','parceiro_b2b'", P1), error="c2_finance_role_exclusive")
-    check("cadastro_financeiro_exige_parceiro", scope(ADM, "'parceiro_b2b_financeiro'", None), error="c2_partner_required")
-    check("cadastro_admin_outro_tenant_negado", scope(ADMB, "'parceiro_b2b_financeiro'", P1), error="external_provisioning_forbidden")
-    check("cadastro_nao_admin_negado", scope(G1, "'parceiro_b2b_financeiro'", P1), error="external_provisioning_forbidden")
-    check("cadastro_tecnico_regressao", scope(ADM, "'parceiro_b2b_tecnico'", P1), ORG_A)
-    run(f"INSERT INTO profiles(user_id,organization_id) VALUES('{NEW1}','{ORG_A}'),('{NEW2}','{ORG_A}')")
-    prov = lambda u, roles, papel: svc(f"SELECT public.admin_provision_user_profile_v1('{u}','n@x.io','N',ARRAY[{roles}]::app_role[],ARRAY[]::uuid[],NULL,'{P1}',{papel});")
-    check("provisao_papel_divergente_negada", prov(NEW1, "'parceiro_b2b_financeiro'", "'tecnico'"), error="invalid_partner_link")
-    check("provisao_tecnico_com_papel_financeiro_negada", prov(NEW1, "'parceiro_b2b_tecnico'", "'financeiro'"), error="invalid_partner_link")
-    check("provisao_papel_nulo_negada", prov(NEW1, "'parceiro_b2b_financeiro'", "NULL"), error="invalid_partner_link")
-    check("provisao_sem_service_role_negada", act(ADM, f"SELECT public.admin_provision_user_profile_v1('{NEW1}','n@x.io','N',ARRAY['parceiro_b2b_financeiro']::app_role[],ARRAY[]::uuid[],NULL,'{P1}','financeiro');"), error="platform_forbidden")
-    run(prov(NEW1, "'parceiro_b2b_financeiro'", "'financeiro'"))
-    check("provisao_financeiro_grava_vinculo", f"SELECT papel||':'||partner_id||':'||tenant_id FROM partner_users WHERE user_id='{NEW1}';", f"financeiro:{P1}:{ORG_A}")
-    check("provisionado_le_proprio", own(NEW1, P1), "PED-P1")
-    run(prov(NEW2, "'parceiro_b2b'", "'gestor'"))
-    check("provisao_gestor_regressao", f"SELECT papel FROM partner_users WHERE user_id='{NEW2}';", "gestor")
-    check("papel_vinculo_invalido_rejeitado", f"UPDATE partner_users SET papel='diretor' WHERE user_id='{NEW1}';", error="partner_users_papel_check")
+    # HML: provisionamento legado intacto; papel financeiro sem vínculo nunca ganha capacidade
+    check("hml_provisao_legada_intacta", "SELECT md5(pg_get_functiondef('public.admin_provision_user_profile_v1(uuid,text,text,app_role[],uuid[],uuid,uuid,text,text,text,text,text,text)'::regprocedure));", "9a2e228a68f369f32fe323c6c2a7f1b8")
+    run(f"INSERT INTO profiles(user_id,organization_id) VALUES('{NEW1}','{ORG_A}')")
+    check("hml_provisao_legada_recusa_vinculo_financeiro", f"SELECT public.admin_provision_user_profile_v1('{NEW1}','n@x.io','N',ARRAY['parceiro_b2b_financeiro']::app_role[],ARRAY[]::uuid[],NULL,'{P1}','financeiro');", error="unexpected_partner_link")
+    run(f"SELECT public.admin_provision_user_profile_v1('{NEW1}','n@x.io','N',ARRAY['parceiro_b2b_financeiro']::app_role[],ARRAY[]::uuid[],NULL,NULL,NULL);")
+    check("hml_papel_sem_vinculo_sem_capacidade", cap(NEW1), "false")
+    check("hml_papel_sem_vinculo_sem_obrigacoes", own(NEW1, P1), error="own_finance_forbidden")
+    check("papel_vinculo_invalido_rejeitado", f"INSERT INTO partner_users(partner_id,user_id,papel,tenant_id) VALUES('{P1}','{NEW2}','diretor','{ORG_A}');", error="partner_users_papel_check")
     # Reversão
     rb = (HM / "04-rollback-hml.sql.review").read_text()
     check("rollback_recusa_papel_ativo", "SET app.expected_ref='vrlcdwmlytukrjezrrnf';\n" + rb, error="B2B_FIN_ROLLBACK_ACTIVE_ROLE")
     run("DELETE FROM user_roles WHERE role='parceiro_b2b_financeiro'; DELETE FROM partner_users WHERE papel='financeiro';")
     run("SET app.expected_ref='vrlcdwmlytukrjezrrnf';\n" + rb)
     pins = json.loads((H / "pins.json").read_text())
-    for n in ["platform_private.b2b_own_obligations_owner", "platform_private.external_provisioning_scope", "admin_provision_user_profile_v1", "b2b_finish_provisioning", "rpc_partner_message_counters"]:
+    for n in ["platform_private.b2b_own_obligations_owner", "rpc_partner_message_counters"]:
         sch, _, fn = n.rpartition(".")
         check(f"rollback_restaura_{fn}", f"SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname='{sch or 'public'}' AND p.proname='{fn}';", pins[n][1])
     check("rollback_remove_capacidade", "SELECT to_regprocedure('public.b2b_finance_capability_v1()') IS NULL;", "t")

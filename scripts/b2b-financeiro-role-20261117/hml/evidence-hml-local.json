@@ -1,5 +1,5 @@
 {
- "total": 97,
+ "total": 83,
  "results": [
   {
    "name": "pre_ref_divergente_falha",
@@ -15,10 +15,6 @@
   },
   {
    "name": "install_sem_enum_aborta",
-   "status": "PASS"
-  },
-  {
-   "name": "finish_mapeia_papel_financeiro",
    "status": "PASS"
   },
   {
@@ -294,59 +290,19 @@
    "status": "PASS"
   },
   {
-   "name": "cadastro_financeiro_escopo_ok",
+   "name": "hml_provisao_legada_intacta",
    "status": "PASS"
   },
   {
-   "name": "cadastro_financeiro_exclusivo",
+   "name": "hml_provisao_legada_recusa_vinculo_financeiro",
    "status": "PASS"
   },
   {
-   "name": "cadastro_financeiro_com_gestor_negado",
+   "name": "hml_papel_sem_vinculo_sem_capacidade",
    "status": "PASS"
   },
   {
-   "name": "cadastro_financeiro_exige_parceiro",
-   "status": "PASS"
-  },
-  {
-   "name": "cadastro_admin_outro_tenant_negado",
-   "status": "PASS"
-  },
-  {
-   "name": "cadastro_nao_admin_negado",
-   "status": "PASS"
-  },
-  {
-   "name": "cadastro_tecnico_regressao",
-   "status": "PASS"
-  },
-  {
-   "name": "provisao_papel_divergente_negada",
-   "status": "PASS"
-  },
-  {
-   "name": "provisao_tecnico_com_papel_financeiro_negada",
-   "status": "PASS"
-  },
-  {
-   "name": "provisao_papel_nulo_negada",
-   "status": "PASS"
-  },
-  {
-   "name": "provisao_sem_service_role_negada",
-   "status": "PASS"
-  },
-  {
-   "name": "provisao_financeiro_grava_vinculo",
-   "status": "PASS"
-  },
-  {
-   "name": "provisionado_le_proprio",
-   "status": "PASS"
-  },
-  {
-   "name": "provisao_gestor_regressao",
+   "name": "hml_papel_sem_vinculo_sem_obrigacoes",
    "status": "PASS"
   },
   {
@@ -359,18 +315,6 @@
   },
   {
    "name": "rollback_restaura_b2b_own_obligations_owner",
-   "status": "PASS"
-  },
-  {
-   "name": "rollback_restaura_external_provisioning_scope",
-   "status": "PASS"
-  },
-  {
-   "name": "rollback_restaura_admin_provision_user_profile_v1",
-   "status": "PASS"
-  },
-  {
-   "name": "rollback_restaura_b2b_finish_provisioning",
    "status": "PASS"
   },
   {

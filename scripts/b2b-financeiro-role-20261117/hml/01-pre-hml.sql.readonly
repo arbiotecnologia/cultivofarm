@@ -2,7 +2,7 @@
 -- PRE somente leitura do perfil Financeiro B2B. Falha fechada se ref/estado divergir.
 DO $$
 DECLARE k text; v text;
-  pins jsonb := '{"admin_provision_user_profile_v1": ["admin_provision_user_profile_v1", "39ddbeec70147af43391d0da59a7412e"], "b2b_finish_provisioning": ["b2b_finish_provisioning", "b2e92f75d7f4f5c91ae26014c80773a3"], "fn_b2b_credit_exposure": ["fn_b2b_credit_exposure", "213ac31f3a30816ead75365b0d1fed18"], "platform_private.b2b_own_obligations_owner": ["platform_private.b2b_own_obligations_owner", "29d950dbb0a1790c8c500a2125102d1f"], "platform_private.external_provisioning_scope": ["platform_private.external_provisioning_scope", "8e95317dfc59ead452a55a09c8176ced"], "rpc_partner_message_counters": ["rpc_partner_message_counters", "5b049aa45efddf8aff1b92b14a759a46"]}';
+  pins jsonb := '{"admin_provision_user_profile_v1": ["admin_provision_user_profile_v1", "9a2e228a68f369f32fe323c6c2a7f1b8"], "fn_b2b_credit_exposure": ["fn_b2b_credit_exposure", "213ac31f3a30816ead75365b0d1fed18"], "platform_private.b2b_own_obligations_owner": ["platform_private.b2b_own_obligations_owner", "29d950dbb0a1790c8c500a2125102d1f"], "rpc_partner_message_counters": ["rpc_partner_message_counters", "5b049aa45efddf8aff1b92b14a759a46"]}';
 BEGIN
   IF current_setting('app.expected_ref', true) IS DISTINCT FROM 'vrlcdwmlytukrjezrrnf' THEN
     RAISE EXCEPTION 'B2B_FIN_PRE_REF_UNPROVEN: execute SET app.expected_ref=''vrlcdwmlytukrjezrrnf'' após conferir o projeto';
@@ -18,6 +18,10 @@ BEGIN
       RAISE EXCEPTION 'B2B_FIN_PRE_DRIFT:%', k;
     END IF;
   END LOOP;
+  IF to_regprocedure('platform_private.external_provisioning_scope(uuid,public.app_role[],uuid,uuid[],uuid)') IS NOT NULL
+     OR to_regprocedure('public.b2b_finish_provisioning(uuid,uuid,uuid)') IS NOT NULL THEN
+    RAISE EXCEPTION 'B2B_FIN_PRE_HML_PROVISIONING_CHANGED: recapturar';
+  END IF;
   IF to_regprocedure('platform_private.b2b_credit_balances(uuid,uuid)') IS NOT NULL THEN
     RAISE EXCEPTION 'B2B_FIN_PRE_HML_CREDIT_CHAIN_PRESENT: HML mudou; recapturar e gerar pacote de crédito revisado';
   END IF;
