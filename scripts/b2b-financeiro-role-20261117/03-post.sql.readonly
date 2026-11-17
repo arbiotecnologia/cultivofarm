@@ -1,0 +1,10 @@
+-- POST somente leitura.
+SELECT CASE WHEN
+  to_regprocedure('public.b2b_finance_capability_v1()') IS NOT NULL
+  AND NOT has_function_privilege('anon','public.b2b_finance_capability_v1()','EXECUTE')
+  AND NOT has_function_privilege('authenticated','platform_private.b2b_finance_actor_partner()','EXECUTE')
+  AND pg_get_functiondef('platform_private.b2b_own_obligations_owner(uuid)'::regprocedure) LIKE '%b2b_finance_actor_partner()%'
+  AND pg_get_functiondef('platform_private.b2b_own_obligations_owner(uuid)'::regprocedure) LIKE '%is_valid_b2b_partner_user(u,p_partner_id)%'
+  AND pg_get_functiondef('public.is_valid_b2b_partner_user(uuid,uuid)'::regprocedure) NOT LIKE '%financeiro%'
+  AND (SELECT count(*) FROM pg_policies WHERE policyname='b2b_finance_role_direct_closed' AND permissive='RESTRICTIVE')=2
+ THEN 'POST_PASS' ELSE 'POST_FAIL' END AS status;

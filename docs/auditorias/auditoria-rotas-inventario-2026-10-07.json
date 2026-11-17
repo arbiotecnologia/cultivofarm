@@ -1518,6 +1518,30 @@
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
+      "path": "/portal-financeiro-b2b",
+      "line": 517,
+      "index": false,
+      "components": [
+        "PortalFinanceiroB2B"
+      ],
+      "ancestors": [],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "parceiro_b2b_financeiro"
+      ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts",
+        "src/components/guards/B2BFinanceRouteGuard.tsx"
+      ],
+      "classification": 8,
+      "navigationJustification": "exclusive B2B finance home (getHomeForRole); in-page tabs; server capability guard b2b_finance_capability_v1",
+      "desktopMobileJustification": "Single responsive read-only page for desktop and mobile; no field mobile tabs. Auth usability remains unverified.",
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
       "path": "/portal-parceiro",
       "line": 517,
       "index": false,

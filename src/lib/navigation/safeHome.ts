@@ -35,6 +35,7 @@ export const ROLE_PRIORITY: readonly string[] = [
   "aplicador",
   "parceiro_b2b_tecnico",
   "parceiro_b2b",
+  "parceiro_b2b_financeiro",
   "cliente_produtor",
 ];
 

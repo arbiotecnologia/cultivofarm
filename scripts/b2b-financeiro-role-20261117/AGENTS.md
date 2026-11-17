@@ -1,0 +1,5 @@
+- Pacote somente revisão: nunca aplicar em banco hospedado, implantar Edge ou publicar daqui; o auditor instala 01-pre→02a→02b após PRE_PASS no ref swzpzcwiasxmjutrmvkm — evita autorização não revisada.
+- `parceiro_b2b_financeiro` é exclusivo (nenhum outro papel) e exige `partner_users.papel='financeiro'`; nunca adicioná-lo a `is_valid_b2b_partner_user`, `c2_order_actor_scope`, `assert_b2b_partner_scope` ou writers — impede herdar poderes do gestor/técnico.
+- Leitura financeira reusa `rpc_portal_partner_financial` (C2_OWN_OBLIGATIONS_V1); o parceiro do financeiro vem de `b2b_finance_actor_partner()` derivado do servidor, nunca do argumento — evita acesso cruzado.
+- Crédito fica BLOCKED (`credit_read=false`) enquanto a calculadora canônica depender de `c2_order_actor_scope`; não duplicar o cálculo nem abrir o escopo de pedido — evita números divergentes ou abertura de writers.
+- `02b-install.sql.review` e `04-rollback.sql.review` são gerados por `build.py` a partir de `captured/` com md5 pinados; nunca editar à mão — drift aborta.

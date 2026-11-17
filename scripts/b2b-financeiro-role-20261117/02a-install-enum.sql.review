@@ -1,0 +1,2 @@
+-- Transação própria: o valor de enum precisa estar confirmado antes de 02b.
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'parceiro_b2b_financeiro';

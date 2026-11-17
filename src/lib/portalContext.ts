@@ -32,6 +32,7 @@ const ROLE_PRIORITY: AppRole[] = [
   "cliente_produtor",
   "parceiro_b2b",
   "parceiro_b2b_tecnico",
+  "parceiro_b2b_financeiro",
   "tecnico_agronomo",
   "consultor_tecnico",
   "aplicador",

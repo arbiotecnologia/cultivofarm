@@ -8,9 +8,9 @@
 export const RPC_VINCULOS_USUARIOS = "tenant_admin_user_links";
 export const VINCULOS_MAX_IDS = 100;
 
-export type TipoAcesso = "internal" | "b2b" | "b2b_tecnico" | "producer" | "misto";
+export type TipoAcesso = "internal" | "b2b" | "b2b_tecnico" | "b2b_financeiro" | "producer" | "misto";
 
-const EXTERNOS = ["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"];
+const EXTERNOS = ["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico", "parceiro_b2b_financeiro"];
 
 /** Tipo de acesso explícito a partir dos papéis atuais (não autoriza nada). */
 export function tipoAcessoDoUsuario(roles: string[] | null | undefined): TipoAcesso {
@@ -20,6 +20,7 @@ export function tipoAcessoDoUsuario(roles: string[] | null | undefined): TipoAce
   if (externos.length > 1 || r.length > externos.length) return "misto";
   if (externos[0] === "parceiro_b2b") return "b2b";
   if (externos[0] === "parceiro_b2b_tecnico") return "b2b_tecnico";
+  if (externos[0] === "parceiro_b2b_financeiro") return "b2b_financeiro";
   return "producer";
 }
 
@@ -27,6 +28,7 @@ export const ROTULO_TIPO_ACESSO: Record<TipoAcesso, string> = {
   internal: "Interno",
   b2b: "Parceiro B2B — Gestor",
   b2b_tecnico: "Parceiro B2B — Técnico (indisponível)",
+  b2b_financeiro: "Parceiro B2B — Financeiro",
   producer: "Cliente Produtor",
   misto: "Perfis combinados",
 };

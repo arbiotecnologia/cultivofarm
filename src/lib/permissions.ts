@@ -15,6 +15,7 @@ export type AppRole =
   | "vendedor"
   | "parceiro_b2b"
   | "parceiro_b2b_tecnico"
+  | "parceiro_b2b_financeiro"
   // Papel de plataforma SaaS. NÃO é administrador operacional e NÃO aparece
   // em `ACTIVE_ROLES` nem em `ACCESS_MAP`: não recebe nenhum módulo
   // operacional. Enquanto o painel SaaS definitivo (Fase S4) não existir, a
@@ -278,6 +279,8 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
   "/portal-parceiro/meus-produtores/:clienteId": { parceiro_b2b_tecnico: "rw", administrador: "rw", gestor_comercial: "rw" },
   "/portal-parceiro/tecnicos-produtores": { parceiro_b2b: "rw", administrador: "rw", gestor_comercial: "rw" },
   "/portal-parceiro/usuarios-clientes": { administrador: "rw", gestor_comercial: "rw" },
+  // Financeiro B2B externo: portal próprio somente leitura (autoridade real na RPC do servidor).
+  "/portal-financeiro-b2b": { parceiro_b2b_financeiro: "r" },
 
 
   "/financeiro/b2b": { administrador: "rw", gestor: "rw", financeiro: "rw", gestor_comercial: "r", administrativo: "r" },
@@ -330,6 +333,8 @@ export function getHomeForRole(role: string | null): string {
       return "/portal-parceiro/pedidos";
     case "parceiro_b2b_tecnico":
       return "/portal-parceiro/dashboard";
+    case "parceiro_b2b_financeiro":
+      return "/portal-financeiro-b2b";
     case "consultor_tecnico":
     case "tecnico_agronomo":
     case "aplicador":
@@ -415,6 +420,7 @@ export const ROLE_LABELS: Record<string, string> = {
   vendedor: "Vendedor",
   parceiro_b2b: "Parceiro B2B (Gestor)",
   parceiro_b2b_tecnico: "Parceiro B2B (Técnico)",
+  parceiro_b2b_financeiro: "Parceiro B2B (Financeiro)",
   superadmin: "Superadmin de Plataforma",
 };
 
@@ -434,6 +440,7 @@ export const ROLE_VARIANTS: Record<string, "default" | "secondary" | "outline" |
   vendedor: "secondary",
   parceiro_b2b: "outline",
   parceiro_b2b_tecnico: "secondary",
+  parceiro_b2b_financeiro: "outline",
   superadmin: "destructive",
 };
 

@@ -1,0 +1,29 @@
+-- PRE somente leitura do perfil Financeiro B2B. Falha fechada se ref/estado divergir.
+DO $$
+DECLARE k text; v text;
+  pins jsonb := '@@PINS@@';
+BEGIN
+  IF current_setting('app.expected_ref', true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN
+    RAISE EXCEPTION 'B2B_FIN_PRE_REF_UNPROVEN: execute SET app.expected_ref=''swzpzcwiasxmjutrmvkm'' após conferir o projeto';
+  END IF;
+  IF to_regprocedure('platform_private.b2b_finance_actor_partner()') IS NOT NULL
+     OR to_regprocedure('public.b2b_finance_capability_v1()') IS NOT NULL THEN
+    RAISE EXCEPTION 'B2B_FIN_PRE_ALREADY_PRESENT';
+  END IF;
+  FOR k, v IN SELECT key, value->>1 FROM jsonb_each(pins) LOOP
+    IF NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+       WHERE p.prokind='f' AND (n.nspname||'.'||p.proname = k OR (n.nspname='public' AND p.proname=k))
+         AND CASE WHEN p.prokind='f' THEN md5(pg_get_functiondef(p.oid)) END = v) THEN
+      RAISE EXCEPTION 'B2B_FIN_PRE_DRIFT:%', k;
+    END IF;
+  END LOOP;
+  IF pg_get_constraintdef((SELECT oid FROM pg_constraint WHERE conname='partner_users_papel_check' AND conrelid='public.partner_users'::regclass))
+     IS DISTINCT FROM 'CHECK ((papel = ANY (ARRAY[''gestor''::text, ''tecnico''::text])))' THEN
+    RAISE EXCEPTION 'B2B_FIN_PRE_DRIFT:partner_users_papel_check';
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.partner_users WHERE papel NOT IN ('gestor','tecnico')) THEN
+    RAISE EXCEPTION 'B2B_FIN_PRE_UNEXPECTED_PAPEL';
+  END IF;
+END $$;
+SELECT 'PRE_PASS' AS status,
+  EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON t.oid=e.enumtypid WHERE t.typname='app_role' AND e.enumlabel='parceiro_b2b_financeiro') AS enum_present;

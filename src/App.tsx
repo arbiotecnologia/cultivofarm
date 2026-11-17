@@ -166,6 +166,7 @@ import ParceiroTecnicosProdutores from "@/pages/portal-parceiro/TecnicosProdutor
 import ParceiroUsuariosClientesB2B from "@/pages/portal-parceiro/UsuariosClientesB2B";
 import ParceiroSolicitacoes from "@/pages/portal-parceiro/Solicitacoes";
 import PortalParceiroPerfil from "@/pages/portal-parceiro/PortalParceiroPerfil";
+import PortalFinanceiroB2B from "@/pages/portal-financeiro-b2b/PortalFinanceiroB2B";
 import ComercialSolicitacoesB2B from "@/pages/comercial/SolicitacoesB2B";
 // PortalMeusPedidos removido do fluxo do produtor (Fase 2 - reformulação B2B). Componente preservado para uso interno futuro.
 import CampanhasComerciais from "@/pages/comercial/CampanhasComerciais";
@@ -514,6 +515,8 @@ const App = () => (
               </Route>
 
               {/* Portal Parceiro B2B */}
+              {/* Financeiro B2B externo: guarda própria com capacidade do servidor; nunca monta o layout do gestor. */}
+              <Route path="/portal-financeiro-b2b" element={<PortalFinanceiroB2B />} />
               <Route path="/portal-parceiro" element={<B2BRouteGuard><PortalParceiroLayout /></B2BRouteGuard>}>
                <Route element={<EntitlementOutlet />}>
                 <Route index element={<Navigate to="/portal-parceiro/dashboard" replace />} />

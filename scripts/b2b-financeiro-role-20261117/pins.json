@@ -1,0 +1,58 @@
+{
+ "admin_provision_user_profile_v1": [
+  "admin_provision_user_profile_v1",
+  "39ddbeec70147af43391d0da59a7412e"
+ ],
+ "b2b_finish_provisioning": [
+  "b2b_finish_provisioning",
+  "b2e92f75d7f4f5c91ae26014c80773a3"
+ ],
+ "h15_actor_organization": [
+  "h15_actor_organization",
+  "55edafec08bcc84a00f1526c14334a2c"
+ ],
+ "has_role": [
+  "has_role",
+  "4d90e93d521a4819d9085f28d742030f"
+ ],
+ "is_platform_superadmin": [
+  "is_platform_superadmin",
+  "3dfe79d976821244d9b7a7f893d765f2"
+ ],
+ "is_valid_b2b_partner_user": [
+  "is_valid_b2b_partner_user",
+  "0bb0dea04be8ca84c66db7ca6329876c"
+ ],
+ "platform_private.b2b_own_obligations": [
+  "platform_private.b2b_own_obligations",
+  "74cbea88f6f0ebe10dd8c1df3bdcb0ff"
+ ],
+ "platform_private.b2b_own_obligations_owner": [
+  "platform_private.b2b_own_obligations_owner",
+  "29d950dbb0a1790c8c500a2125102d1f"
+ ],
+ "platform_private.external_provisioning_scope": [
+  "platform_private.external_provisioning_scope",
+  "8e95317dfc59ead452a55a09c8176ced"
+ ],
+ "platform_private.h15_actor_organization": [
+  "platform_private.h15_actor_organization",
+  "64e10608403238a41a9baf92857ca881"
+ ],
+ "platform_private.has_role": [
+  "platform_private.has_role",
+  "c5af5b55de6d79da9b73a33948746ae2"
+ ],
+ "platform_private.platform_actor_access_ready": [
+  "platform_private.platform_actor_access_ready",
+  "47681a678f22fbedd183345395851790"
+ ],
+ "platform_private.require_service_role": [
+  "platform_private.require_service_role",
+  "e70c34d474c739580520c58d806e33f5"
+ ],
+ "rpc_portal_partner_financial": [
+  "rpc_portal_partner_financial",
+  "d9d53c802ca11c59d235c7d32d6e8eee"
+ ]
+}

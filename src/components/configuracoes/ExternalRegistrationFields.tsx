@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { EXTERNAL_ROLES, EXTERNAL_LABELS } from "@/lib/configuracoes/externalUserDraft";
+import { EXTERNAL_LABELS, needsPartnerLink, registrationRoles } from "@/lib/configuracoes/externalUserDraft";
 type Props = { roles: string[]; partnerId: string; clients: string[]; primary: string | null; disabled?: boolean;
   onRoles: (roles: string[]) => void; onPartner: (id: string) => void;
   onClients: (ids: string[], primary: string | null) => void; onVerified: (ids: string[]) => void; partnerOnly?: boolean; companyLabel?: string };
@@ -17,7 +17,7 @@ export function ExternalRegistrationFields(props: Props) {
   const fence = useStorageAccessScope("tenant-user-registration");
   const [search, setSearch] = useState(""); const [page, setPage] = useState(0);
   const latest = useRef(props); latest.current = props;
-  const partner = props.partnerOnly || props.roles.some(r => r === "parceiro_b2b" || r === "parceiro_b2b_tecnico");
+  const partner = props.partnerOnly || needsPartnerLink(props.roles);
   const producer = !props.partnerOnly && props.roles.includes("cliente_produtor");
   const options = useQuery({ queryKey: ["c2-registration-options", fence.scope, search, page, partner, producer], enabled: fence.ready,
     retry: false, queryFn: async ({ signal }) => {
@@ -50,10 +50,10 @@ export function ExternalRegistrationFields(props: Props) {
   if (!fence.ready) return <p role="alert">Sessão indisponível para consultar vínculos.</p>;
   return <fieldset disabled={props.disabled} className="min-w-0 space-y-3 [overflow-wrap:anywhere] [&_label]:min-w-0 [&_label]:max-w-full [&_button[role=checkbox]]:shrink-0" aria-label="Perfis e vínculos externos">
     <div><span className="text-sm">Empresa do cadastro</span><p>{props.companyLabel || profile?.organization_id}</p></div>
-    {!props.partnerOnly && <div className="flex flex-wrap gap-3">{EXTERNAL_ROLES.map(r => <label key={r} className="flex items-center gap-2"><Checkbox checked={props.roles.includes(r)} onCheckedChange={v => {
+    {!props.partnerOnly && <div className="flex flex-wrap gap-3">{registrationRoles().map(r => <label key={r} className="flex items-center gap-2"><Checkbox checked={props.roles.includes(r)} onCheckedChange={v => {
       const next = v === true ? [...props.roles, r] : props.roles.filter(x => x !== r); props.onRoles(next);
       if (!next.includes("cliente_produtor")) props.onClients([], null);
-      if (!next.some(x => x === "parceiro_b2b" || x === "parceiro_b2b_tecnico")) props.onPartner("");
+      if (!needsPartnerLink(next)) props.onPartner("");
     }} />{EXTERNAL_LABELS[r]}</label>)}</div>}
     <label className="block">Buscar vínculos<Input value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} /></label>
     {options.isFetching ? <p role="status">Carregando vínculos…</p> : options.isError ? <div role="alert">Não foi possível consultar os vínculos.<Button variant="outline" onClick={() => void options.refetch()}>Tentar novamente</Button></div> : <>

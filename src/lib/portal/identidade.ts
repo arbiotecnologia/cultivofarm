@@ -47,6 +47,7 @@ const ROLE_LABEL_OVERRIDES: Record<string, string> = {
   cliente_produtor: "Produtor",
   parceiro_b2b: "Gestor B2B",
   parceiro_b2b_tecnico: "Técnico B2B",
+  parceiro_b2b_financeiro: "Financeiro B2B",
 };
 
 export function getRoleLabel(role?: string | null): string {

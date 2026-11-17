@@ -1,0 +1,322 @@
+{
+ "total": 79,
+ "results": [
+  {
+   "name": "pre_ref_divergente_falha",
+   "status": "PASS"
+  },
+  {
+   "name": "pre_drift_aborta",
+   "status": "PASS"
+  },
+  {
+   "name": "pre_pass",
+   "status": "PASS"
+  },
+  {
+   "name": "install_sem_enum_aborta",
+   "status": "PASS"
+  },
+  {
+   "name": "finish_mapeia_papel_financeiro",
+   "status": "PASS"
+  },
+  {
+   "name": "post_pass",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_capacidade_propria",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_capacidade_sem_escrita_credito_bloqueado",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_le_obrigacoes_proprias",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_parcelas_proprias",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_p2_mesma_empresa_isolado",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_outro_tenant_isolado",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_nega_parceiro_irmao",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_irmao_nega_p1",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_nega_outro_tenant",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_outro_tenant_nega_p1",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_partner_null_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "contrato_legado_exige_flag",
+   "status": "PASS"
+  },
+  {
+   "name": "tecnico_sem_capacidade",
+   "status": "PASS"
+  },
+  {
+   "name": "tecnico_obrigacoes_negadas",
+   "status": "PASS"
+  },
+  {
+   "name": "misto_financeiro_tecnico_sem_capacidade",
+   "status": "PASS"
+  },
+  {
+   "name": "misto_financeiro_tecnico_obrigacoes_negadas",
+   "status": "PASS"
+  },
+  {
+   "name": "revogado_sem_capacidade",
+   "status": "PASS"
+  },
+  {
+   "name": "revogado_obrigacoes_negadas",
+   "status": "PASS"
+  },
+  {
+   "name": "perfil_inativo_sem_capacidade",
+   "status": "PASS"
+  },
+  {
+   "name": "perfil_inativo_obrigacoes_negadas",
+   "status": "PASS"
+  },
+  {
+   "name": "sem_vinculo_sem_capacidade",
+   "status": "PASS"
+  },
+  {
+   "name": "sem_vinculo_obrigacoes_negadas",
+   "status": "PASS"
+  },
+  {
+   "name": "vigencia_futura_sem_capacidade",
+   "status": "PASS"
+  },
+  {
+   "name": "vigencia_futura_obrigacoes_negadas",
+   "status": "PASS"
+  },
+  {
+   "name": "papel_vinculo_divergente_sem_capacidade",
+   "status": "PASS"
+  },
+  {
+   "name": "papel_vinculo_divergente_obrigacoes_negadas",
+   "status": "PASS"
+  },
+  {
+   "name": "misto_nao_vale_como_tecnico",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_nao_vale_validador_b2b",
+   "status": "PASS"
+  },
+  {
+   "name": "gestor_regressao_le_proprio",
+   "status": "PASS"
+  },
+  {
+   "name": "gestor_regressao_nega_irmao",
+   "status": "PASS"
+  },
+  {
+   "name": "gestor_nao_e_ator_financeiro",
+   "status": "PASS"
+  },
+  {
+   "name": "gestor_regressao_pedidos_diretos",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_pedidos_diretos_zero",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_titulos_diretos_zero",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_links_diretos_fechados",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_conta_parceiro_direta_fechada",
+   "status": "PASS"
+  },
+  {
+   "name": "tecnico_links_preservados",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_nao_cria_pedido",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_nao_baixa_titulo",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_nao_altera_limite_vinculo",
+   "status": "PASS"
+  },
+  {
+   "name": "helper_privado_sem_execute",
+   "status": "PASS"
+  },
+  {
+   "name": "anon_sem_capacidade",
+   "status": "PASS"
+  },
+  {
+   "name": "sem_entitlement_capacidade",
+   "status": "PASS"
+  },
+  {
+   "name": "sem_entitlement_leitura_negada",
+   "status": "PASS"
+  },
+  {
+   "name": "token_anterior_a_epoca_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "token_novo_apos_epoca_aceito",
+   "status": "PASS"
+  },
+  {
+   "name": "revogacao_retira_acesso",
+   "status": "PASS"
+  },
+  {
+   "name": "empresa_inativa_retira_acesso",
+   "status": "PASS"
+  },
+  {
+   "name": "parceiro_inativo_retira_acesso",
+   "status": "PASS"
+  },
+  {
+   "name": "papel_removido_retira_acesso",
+   "status": "PASS"
+  },
+  {
+   "name": "papel_restaurado_volta",
+   "status": "PASS"
+  },
+  {
+   "name": "cadastro_financeiro_escopo_ok",
+   "status": "PASS"
+  },
+  {
+   "name": "cadastro_financeiro_exclusivo",
+   "status": "PASS"
+  },
+  {
+   "name": "cadastro_financeiro_com_gestor_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "cadastro_financeiro_exige_parceiro",
+   "status": "PASS"
+  },
+  {
+   "name": "cadastro_admin_outro_tenant_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "cadastro_nao_admin_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "cadastro_tecnico_regressao",
+   "status": "PASS"
+  },
+  {
+   "name": "provisao_papel_divergente_negada",
+   "status": "PASS"
+  },
+  {
+   "name": "provisao_tecnico_com_papel_financeiro_negada",
+   "status": "PASS"
+  },
+  {
+   "name": "provisao_papel_nulo_negada",
+   "status": "PASS"
+  },
+  {
+   "name": "provisao_sem_service_role_negada",
+   "status": "PASS"
+  },
+  {
+   "name": "provisao_financeiro_grava_vinculo",
+   "status": "PASS"
+  },
+  {
+   "name": "provisionado_le_proprio",
+   "status": "PASS"
+  },
+  {
+   "name": "provisao_gestor_regressao",
+   "status": "PASS"
+  },
+  {
+   "name": "papel_vinculo_invalido_rejeitado",
+   "status": "PASS"
+  },
+  {
+   "name": "rollback_recusa_papel_ativo",
+   "status": "PASS"
+  },
+  {
+   "name": "rollback_restaura_b2b_own_obligations_owner",
+   "status": "PASS"
+  },
+  {
+   "name": "rollback_restaura_external_provisioning_scope",
+   "status": "PASS"
+  },
+  {
+   "name": "rollback_restaura_admin_provision_user_profile_v1",
+   "status": "PASS"
+  },
+  {
+   "name": "rollback_restaura_b2b_finish_provisioning",
+   "status": "PASS"
+  },
+  {
+   "name": "rollback_remove_capacidade",
+   "status": "PASS"
+  },
+  {
+   "name": "rollback_gestor_preservado",
+   "status": "PASS"
+  }
+ ],
+ "note": "PostgreSQL descartável; auth sintética; não prova JWT/RLS hospedados"
+}
