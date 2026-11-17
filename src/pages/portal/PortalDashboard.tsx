@@ -8,6 +8,7 @@ import { MapPin, Grid3X3, AlertTriangle, ClipboardList, Truck, Sprout, Stethosco
 import { PageHeader } from "@/components/ResponsiveHelpers";
 import { cn } from "@/lib/utils";
 import { useActiveTenantName } from "@/hooks/useActiveTenantName";
+import { MinhasCampanhas } from "@/components/portal/MinhasCampanhas";
 
 export default function PortalDashboard() {
   const { label: tenantLabel } = useActiveTenantName();
@@ -133,6 +134,7 @@ export default function PortalDashboard() {
           </Badge>
         </CardContent>
       </Card>
+      <MinhasCampanhas />
     </div>
   );
 }

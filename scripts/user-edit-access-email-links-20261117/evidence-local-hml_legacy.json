@@ -4,8 +4,8 @@
   "encerrar/substituir o vínculo mais antigo de consultor com outros vigentes (gatilho legado reelege vínculo encerrado)",
   "consultor multi -> produtor com principal diferente (exige gatilho statement com filtro de vigência)"
  ],
- "passed": 198,
- "total": 198,
+ "passed": 211,
+ "total": 211,
  "results": [
   {
    "name": "HML legado: md5 do gatilho = variante documentada",
@@ -948,6 +948,71 @@
    "detail": ""
   },
   {
+   "name": "RPC minhas campanhas instala",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "RPC minhas campanhas idempotente",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "RPC: produtor recebe só campanhas vigentes do seu cliente",
+   "pass": true,
+   "detail": "{'items': [{'id': '4963ba6a-0a84-4e80-9951-ec208a259998', 'nome': 'campanha', 'data_fim': '2026-11-17', 'descricao': None, 'data_inicio': '2026-11-17'}, {'id': 'fd019e2e-7fde-4d6b-8bef-36ec931b9abc', 'nome': 'campanha', 'data_fim': '2026-11-17', 'descricao': None, 'data_inicio': '2026-11-14'}, {'id': '397a7cfc-79b5-40e2-96dc-5afa8a8d6360', 'nome': 'campanha', 'data_fim': '2026-12-17', 'descricao': None, 'data_inicio': '2026-11-16'}], 'limit': 20, 'total': 3, 'offset': 0}"
+  },
+  {
+   "name": "RPC: só campos de leitura (sem destinatários/autoria)",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "RPC: paginação estável sem repetição",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "RPC: limite > 20 rejeitado",
+   "pass": true,
+   "detail": "ERROR:  invalid_page\nCONTEXT:  PL/pgSQL function public.producer_my_campaigns_v1(integer,integer) line 6 at RAISE"
+  },
+  {
+   "name": "RPC: offset negativo rejeitado",
+   "pass": true,
+   "detail": "ERROR:  invalid_page\nCONTEXT:  PL/pgSQL function public.producer_my_campaigns_v1(integer,integer) line 6 at RAISE"
+  },
+  {
+   "name": "RPC: perfil cumulativo admin+produtor vê pelo SELECT todas, mas a RPC só as suas",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "RPC: administrador/gestor comercial puros recebem zero",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "RPC: consultor, técnico, parceiro e outra empresa recebem zero",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "RPC: JWT antigo recebe zero",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "RPC: anon sem EXECUTE",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "rollback da RPC executa",
+   "pass": true,
+   "detail": ""
+  },
+  {
    "name": "rollback do aditivo executa e restaura rev.6",
    "pass": true,
    "detail": ""
@@ -1007,22 +1072,22 @@
    "active_links": [
     {
      "principal": false,
-     "cliente_id": "60e4d9a0-a171-411c-ae94-07c17d10b797",
-     "access_level": "read"
-    },
-    {
-     "principal": false,
-     "cliente_id": "6394dd2e-aa9c-428d-953c-8244bf5deac6",
+     "cliente_id": "0d6b9787-461f-4349-9c91-66e5b093251f",
      "access_level": "read"
     },
     {
      "principal": true,
-     "cliente_id": "d2dccdef-b906-4e10-9737-757a893f6cd0",
+     "cliente_id": "2a3e39f3-04cb-47e7-9045-3863450532c1",
+     "access_level": "read"
+    },
+    {
+     "principal": false,
+     "cliente_id": "2ce28e23-098e-4269-b08b-1e5ea4cef15b",
      "access_level": "read"
     }
    ],
    "partner_users_open": 0,
-   "profile_cliente_id": "d2dccdef-b906-4e10-9737-757a893f6cd0"
+   "profile_cliente_id": "2a3e39f3-04cb-47e7-9045-3863450532c1"
   },
   "produtor_secundario_antes": {
    "roles": [
@@ -1031,18 +1096,18 @@
    "open_links": 2,
    "active_links": [
     {
-     "principal": false,
-     "cliente_id": "6394dd2e-aa9c-428d-953c-8244bf5deac6",
+     "principal": true,
+     "cliente_id": "2a3e39f3-04cb-47e7-9045-3863450532c1",
      "access_level": "execute"
     },
     {
-     "principal": true,
-     "cliente_id": "d2dccdef-b906-4e10-9737-757a893f6cd0",
+     "principal": false,
+     "cliente_id": "2ce28e23-098e-4269-b08b-1e5ea4cef15b",
      "access_level": "execute"
     }
    ],
    "partner_users_open": 0,
-   "profile_cliente_id": "d2dccdef-b906-4e10-9737-757a893f6cd0"
+   "profile_cliente_id": "2a3e39f3-04cb-47e7-9045-3863450532c1"
   },
   "produtor_secundario_depois_interno": {
    "roles": [
@@ -1070,17 +1135,17 @@
    "active_links": [
     {
      "principal": false,
-     "cliente_id": "60e4d9a0-a171-411c-ae94-07c17d10b797",
+     "cliente_id": "0d6b9787-461f-4349-9c91-66e5b093251f",
      "access_level": "execute"
     },
     {
      "principal": true,
-     "cliente_id": "6394dd2e-aa9c-428d-953c-8244bf5deac6",
+     "cliente_id": "2ce28e23-098e-4269-b08b-1e5ea4cef15b",
      "access_level": "execute"
     }
    ],
    "partner_users_open": 1,
-   "profile_cliente_id": "6394dd2e-aa9c-428d-953c-8244bf5deac6"
+   "profile_cliente_id": "2ce28e23-098e-4269-b08b-1e5ea4cef15b"
   },
   "produtor_b2b_depois": {
    "roles": [

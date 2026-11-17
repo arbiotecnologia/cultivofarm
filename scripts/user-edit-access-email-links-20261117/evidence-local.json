@@ -1,8 +1,8 @@
 {
  "topology": "prod",
  "unsupported_in_topology": [],
- "passed": 200,
- "total": 200,
+ "passed": 213,
+ "total": 213,
  "results": [
   {
    "name": "PRE recusa o pacote da outra topologia (sem mutação)",
@@ -955,6 +955,71 @@
    "detail": ""
   },
   {
+   "name": "RPC minhas campanhas instala",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "RPC minhas campanhas idempotente",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "RPC: produtor recebe só campanhas vigentes do seu cliente",
+   "pass": true,
+   "detail": "{'items': [{'id': '6dfbe167-e5c0-4cad-bf89-d31bc0152cc8', 'nome': 'campanha', 'data_fim': '2026-11-17', 'descricao': None, 'data_inicio': '2026-11-14'}, {'id': 'd49ae55f-9f9f-4470-bccd-f5abc2c39e24', 'nome': 'campanha', 'data_fim': '2026-11-17', 'descricao': None, 'data_inicio': '2026-11-17'}, {'id': '1a23e983-3efa-4e74-97c7-1b5dc7a90727', 'nome': 'campanha', 'data_fim': '2026-12-17', 'descricao': None, 'data_inicio': '2026-11-16'}], 'limit': 20, 'total': 3, 'offset': 0}"
+  },
+  {
+   "name": "RPC: só campos de leitura (sem destinatários/autoria)",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "RPC: paginação estável sem repetição",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "RPC: limite > 20 rejeitado",
+   "pass": true,
+   "detail": "ERROR:  invalid_page\nCONTEXT:  PL/pgSQL function public.producer_my_campaigns_v1(integer,integer) line 6 at RAISE"
+  },
+  {
+   "name": "RPC: offset negativo rejeitado",
+   "pass": true,
+   "detail": "ERROR:  invalid_page\nCONTEXT:  PL/pgSQL function public.producer_my_campaigns_v1(integer,integer) line 6 at RAISE"
+  },
+  {
+   "name": "RPC: perfil cumulativo admin+produtor vê pelo SELECT todas, mas a RPC só as suas",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "RPC: administrador/gestor comercial puros recebem zero",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "RPC: consultor, técnico, parceiro e outra empresa recebem zero",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "RPC: JWT antigo recebe zero",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "RPC: anon sem EXECUTE",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "rollback da RPC executa",
+   "pass": true,
+   "detail": ""
+  },
+  {
    "name": "rollback do aditivo executa e restaura rev.6",
    "pass": true,
    "detail": ""
@@ -1014,22 +1079,22 @@
    "active_links": [
     {
      "principal": false,
-     "cliente_id": "40c26278-218d-473c-a77b-628f00fab85a",
+     "cliente_id": "01835981-3f3c-49e2-bcd1-35bb380ffb04",
      "access_level": "read"
     },
     {
      "principal": true,
-     "cliente_id": "b90ba61c-9928-4790-b30e-8993c2db57eb",
+     "cliente_id": "0b8d3b78-85f0-4952-b955-6c7492a9e0fc",
      "access_level": "read"
     },
     {
      "principal": false,
-     "cliente_id": "e0aab5d6-b3a6-4232-838e-568691c2c583",
+     "cliente_id": "c02f1f46-460f-4786-9422-0381ce93bf53",
      "access_level": "read"
     }
    ],
    "partner_users_open": 0,
-   "profile_cliente_id": "b90ba61c-9928-4790-b30e-8993c2db57eb"
+   "profile_cliente_id": "0b8d3b78-85f0-4952-b955-6c7492a9e0fc"
   },
   "consultor_multi_depois_produtor": {
    "roles": [
@@ -1039,12 +1104,12 @@
    "active_links": [
     {
      "principal": true,
-     "cliente_id": "40c26278-218d-473c-a77b-628f00fab85a",
+     "cliente_id": "c02f1f46-460f-4786-9422-0381ce93bf53",
      "access_level": "read"
     }
    ],
    "partner_users_open": 0,
-   "profile_cliente_id": "40c26278-218d-473c-a77b-628f00fab85a"
+   "profile_cliente_id": "c02f1f46-460f-4786-9422-0381ce93bf53"
   },
   "produtor_secundario_antes": {
    "roles": [
@@ -1053,18 +1118,18 @@
    "open_links": 2,
    "active_links": [
     {
-     "principal": false,
-     "cliente_id": "40c26278-218d-473c-a77b-628f00fab85a",
+     "principal": true,
+     "cliente_id": "0b8d3b78-85f0-4952-b955-6c7492a9e0fc",
      "access_level": "execute"
     },
     {
-     "principal": true,
-     "cliente_id": "b90ba61c-9928-4790-b30e-8993c2db57eb",
+     "principal": false,
+     "cliente_id": "c02f1f46-460f-4786-9422-0381ce93bf53",
      "access_level": "execute"
     }
    ],
    "partner_users_open": 0,
-   "profile_cliente_id": "b90ba61c-9928-4790-b30e-8993c2db57eb"
+   "profile_cliente_id": "0b8d3b78-85f0-4952-b955-6c7492a9e0fc"
   },
   "produtor_secundario_depois_interno": {
    "roles": [
@@ -1091,18 +1156,18 @@
    "open_links": 2,
    "active_links": [
     {
-     "principal": true,
-     "cliente_id": "40c26278-218d-473c-a77b-628f00fab85a",
+     "principal": false,
+     "cliente_id": "01835981-3f3c-49e2-bcd1-35bb380ffb04",
      "access_level": "execute"
     },
     {
-     "principal": false,
-     "cliente_id": "e0aab5d6-b3a6-4232-838e-568691c2c583",
+     "principal": true,
+     "cliente_id": "c02f1f46-460f-4786-9422-0381ce93bf53",
      "access_level": "execute"
     }
    ],
    "partner_users_open": 1,
-   "profile_cliente_id": "40c26278-218d-473c-a77b-628f00fab85a"
+   "profile_cliente_id": "c02f1f46-460f-4786-9422-0381ce93bf53"
   },
   "produtor_b2b_depois": {
    "roles": [
@@ -1120,18 +1185,18 @@
    "open_links": 2,
    "active_links": [
     {
-     "principal": true,
-     "cliente_id": "40c26278-218d-473c-a77b-628f00fab85a",
+     "principal": false,
+     "cliente_id": "01835981-3f3c-49e2-bcd1-35bb380ffb04",
      "access_level": "read"
     },
     {
-     "principal": false,
-     "cliente_id": "e0aab5d6-b3a6-4232-838e-568691c2c583",
+     "principal": true,
+     "cliente_id": "c02f1f46-460f-4786-9422-0381ce93bf53",
      "access_level": "read"
     }
    ],
    "partner_users_open": 0,
-   "profile_cliente_id": "40c26278-218d-473c-a77b-628f00fab85a"
+   "profile_cliente_id": "c02f1f46-460f-4786-9422-0381ce93bf53"
   }
  },
  "findings": []

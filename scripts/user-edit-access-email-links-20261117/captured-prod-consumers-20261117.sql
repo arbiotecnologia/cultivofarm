@@ -78,7 +78,7 @@ CREATE TABLE public.accounts_receivable (id uuid PRIMARY KEY DEFAULT gen_random_
 ALTER TABLE public.accounts_receivable ENABLE ROW LEVEL SECURITY;
 CREATE POLICY ar_producer_read ON public.accounts_receivable FOR SELECT TO authenticated USING ((platform_private.has_role(( SELECT auth.uid() AS uid), 'cliente_produtor'::app_role) AND (customer_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))) AND (partner_id IS NULL) AND (origin_type IS DISTINCT FROM 'B2B_ORDER'::text)));
 -- Estrutura capturada 17/11/2026: data_inicio/data_fim date NOT NULL (defaults SÓ do harness, para fixtures antigas).
-CREATE TABLE public.commercial_campaigns (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), ativa boolean, tipo_publico text,
+CREATE TABLE public.commercial_campaigns (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), ativa boolean, tipo_publico text, nome text NOT NULL DEFAULT 'campanha', descricao text, created_by uuid,
   data_inicio date NOT NULL DEFAULT (current_date - 1), data_fim date NOT NULL DEFAULT (current_date + 30));
 CREATE TABLE public.commercial_campaign_clientes (campaign_id uuid, cliente_id uuid, created_at timestamptz DEFAULT now());
 -- Capturado 17/11/2026 (pg_policies): única policy de destinatários — reproduz o defeito de HML (produtor vê zero).

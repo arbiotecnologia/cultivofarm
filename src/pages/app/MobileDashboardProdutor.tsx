@@ -16,6 +16,7 @@ import {
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
 import { LogoDisplay } from "@/components/LogoDisplay";
+import { MinhasCampanhas } from "@/components/portal/MinhasCampanhas";
 
 export default function MobileDashboardProdutor() {
   const { profile } = useAuth();
@@ -151,6 +152,8 @@ export default function MobileDashboardProdutor() {
           </Card>
         ))}
       </div>
+
+      <MinhasCampanhas compact />
 
       {/* Menu */}
       <div>
