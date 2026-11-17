@@ -1,5 +1,5 @@
 {
- "total": 113,
+ "total": 116,
  "results": [
   {
    "name": "pre_ref_divergente_falha",
@@ -107,6 +107,18 @@
   },
   {
    "name": "nucleo_balancos_org_forjada_negada",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_origem_nao_autorizada_falha_fechado",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_residual_invalido_falha_fechado",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_devedor_ambiguo_falha_fechado",
    "status": "PASS"
   },
   {

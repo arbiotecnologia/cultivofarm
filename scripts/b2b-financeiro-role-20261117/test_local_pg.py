@@ -10,6 +10,7 @@ PRIV = ["setpriv", "--reuid=1000", "--regid=1000", "--clear-groups"] if os.getui
 PORT = os.environ.get("B2BFIN_PORT", "55631")
 PSQL = ["psql", "-X", "-h", str(TMP), "-p", PORT, "-U", "postgres", "-qAt", "-v", "ON_ERROR_STOP=1", "-d", "postgres"]
 results = []
+PINS = json.loads((H / "pins.json").read_text())
 def U(n): return f"10000000-0000-0000-0000-{n:012d}"
 ORG_A, ORG_B = "00000000-0000-0000-0000-0000000000a1", "00000000-0000-0000-0000-0000000000b1"
 P1, P2, PB = "20000000-0000-0000-0000-000000000001", "20000000-0000-0000-0000-000000000002", "20000000-0000-0000-0000-000000000003"
@@ -38,13 +39,18 @@ LOAD = ["platform_private.platform_actor_access_ready", "platform_private.has_ro
         "platform_private.b2b_own_obligations_owner", "platform_private.b2b_own_obligations", "rpc_portal_partner_financial",
         "platform_private.external_provisioning_scope", "admin_provision_user_profile_v1", "b2b_finish_provisioning",
         "fn_b2b_credit_exposure", "rpc_partner_message_counters",
-        "platform_private.b2b_credit_config_block", "platform_private.b2b_credit_balances"]
+        "platform_private.b2b_credit_config_block", "platform_private.b2b_credit_balances",
+        "fn_authz_uid_scope_ok", "is_financial_staff", "platform_private.b2b_integration_actor", "platform_private.b2b_debtor_partner", "platform_private.b2b_receivable_partner_scope", "platform_private.b2b_allocation_money_row", "platform_private.b2b_legacy_money_row", "platform_private.b2b_proven_money_row_internal", "platform_private.b2b_order_residual"]
+CHAIN = ["fn_authz_uid_scope_ok", "is_financial_staff", "platform_private.b2b_integration_actor", "platform_private.b2b_debtor_partner", "platform_private.b2b_receivable_partner_scope", "platform_private.b2b_allocation_money_row", "platform_private.b2b_legacy_money_row", "platform_private.b2b_proven_money_row_internal", "platform_private.b2b_order_residual"]
 data = TMP / "data"
 try:
     subprocess.run(PRIV + ["initdb", "-D", str(data), "-U", "postgres", "-A", "trust"], check=True, capture_output=True)
     subprocess.run(PRIV + ["pg_ctl", "-D", str(data), "-l", str(TMP / "log"), "-o", f"-k {TMP} -h \"\" -p {PORT}", "start", "-w"], check=True, capture_output=True)
     run((H / "fixture.sql").read_text())
     for n in LOAD: run((H / "captured" / f"{n}.sql").read_text() + ";")
+    for n in CHAIN:  # cadeia LIVE: md5 pinado e ACL LIVE (só postgres)
+        assert hashlib.md5((H / "captured" / f"{n}.sql").read_text().encode()).hexdigest() == PINS[n][1], ("DRIFT", n)
+        run(f"DO $$ DECLARE f regprocedure; BEGIN FOR f IN SELECT p.oid FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname='{n}' LOOP EXECUTE 'REVOKE ALL ON FUNCTION '||f||' FROM PUBLIC'; END LOOP; END $$;")
     run("REVOKE ALL ON FUNCTION platform_private.b2b_credit_balances(uuid,uuid) FROM PUBLIC; REVOKE ALL ON FUNCTION platform_private.b2b_credit_config_block(uuid) FROM PUBLIC;")  # ACL LIVE: só postgres
     run("REVOKE ALL ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) TO authenticated;"
         "GRANT EXECUTE ON FUNCTION public.rpc_partner_message_counters(uuid) TO authenticated;")
@@ -83,7 +89,17 @@ INSERT INTO accounts_receivable(id,total_amount,partner_id,origin_type,origin_id
  ('40000000-0000-0000-0000-000000000003',3000,'{PB}','B2B_ORDER','30000000-0000-0000-0000-000000000003','{ORG_B}');
 INSERT INTO partner_order_financial_links(partner_order_id,receivable_id,partner_id) SELECT origin_id,id,partner_id FROM accounts_receivable;
 INSERT INTO accounts_receivable_installments(receivable_id,installment_number,due_date,original_amount,received_amount,status,organization_id)
- SELECT id,1,current_date+30,total_amount,0,'OPEN',organization_id FROM accounts_receivable;""")
+ SELECT id,1,current_date+30,total_amount,0,'OPEN',organization_id FROM accounts_receivable;
+UPDATE partner_orders po SET final_amount_with_interest=a.total_amount FROM accounts_receivable a WHERE a.origin_id=po.id;
+INSERT INTO platform_private.b2b_authorized_documents(id,organization_id,partner_id,order_id,kind,source_digest,state)
+ SELECT gen_random_uuid(),organization_id,partner_id,origin_id,'NFE','dg-'||id,'AUTHORIZED' FROM accounts_receivable;
+UPDATE accounts_receivable a SET b2b_document_id=d.id FROM platform_private.b2b_authorized_documents d WHERE d.order_id=a.origin_id;
+INSERT INTO platform_private.b2b_document_allocations(document_id,organization_id,order_id,partner_id,receivable_id,source_digest,principal,financed_interest,items,item_money,rows)
+ SELECT a.b2b_document_id,a.organization_id,a.origin_id,a.partner_id,a.id,'dg-'||a.id,a.total_amount,0,'[]','[]',
+  jsonb_build_array(jsonb_build_object('installment_number',1,'amount',i.original_amount,'principal_amount',i.original_amount,'interest_amount',0,'due_date',i.due_date))
+ FROM accounts_receivable a JOIN accounts_receivable_installments i ON i.receivable_id=a.id;
+INSERT INTO partner_orders(id,partner_id,numero,status,final_amount_with_interest) VALUES('30000000-0000-0000-0000-000000000011','{P1}','PED-P1-PEND','pendente',500);
+INSERT INTO platform_private.b4_order_condition_snapshots(order_id,organization_id,partner_id,financed_total) VALUES('30000000-0000-0000-0000-000000000011','{ORG_A}','{P1}',500);""")
     # Positivos
     check("financeiro_capacidade_propria", cap(F1) + "SELECT public.b2b_finance_capability_v1()->>'partner_id';", f"true\n{P1}")
     check("financeiro_capacidade_sem_escrita_credito_bloqueado", act(F1, "SELECT (c->>'writes')||(c->>'credit_read')||(c->>'export') FROM public.b2b_finance_capability_v1() c;"), "falsetruetrue")
@@ -91,27 +107,39 @@ INSERT INTO accounts_receivable_installments(receivable_id,installment_number,du
 INSERT INTO partner_order_messages(order_id,status) VALUES('30000000-0000-0000-0000-000000000001','nao_lida'),('30000000-0000-0000-0000-000000000002','nao_lida');""")
     cred = lambda uid, k: act(uid, f"SELECT public.b2b_finance_credit_v1()->>'{k}';")
     check("credito_proprio_limite", cred(F1, "credit_limit"), "10000.00")
-    check("credito_proprio_utilizado", cred(F1, "exposicao_atual"), "1000.00")
-    check("credito_proprio_disponivel", cred(F1, "credito_disponivel"), "9000.00")
-    check("credito_proprio_percentual", cred(F1, "percentual_utilizado"), "10.00")
+    check("credito_proprio_utilizado", cred(F1, "exposicao_atual"), "1500.00")
+    check("credito_proprio_disponivel", cred(F1, "credito_disponivel"), "8500.00")
+    check("credito_proprio_percentual", cred(F1, "percentual_utilizado"), "15.00")
     check("credito_irmao_isolado", cred(F2, "credito_disponivel"), "3000.00")
     check("credito_outro_tenant_isolado", cred(FB, "credito_disponivel"), "4000.00")
     check("credito_sem_parametros_de_politica", act(F1, "SELECT public.b2b_finance_credit_v1() ?| ARRAY['credit_limit_action','block_if_overdue','overdue_tolerance_days','novo_pedido'];"), "f")
-    check("credito_igual_calculo_canonico_gestor", act(G1, f"SELECT (public.fn_b2b_credit_exposure('{P1}',0,NULL)->>'credito_disponivel');"), "9000.00")
-    check("financeiro_nao_usa_calculadora_de_pedido", act(F1, f"SELECT public.fn_b2b_credit_exposure('{P1}',0,NULL);"), error="B2B_ACTOR_DENIED")
-    check("financeiro_nao_usa_calculadora_irmao", act(F1, f"SELECT public.fn_b2b_credit_exposure('{P2}',0,NULL);"), error="B2B_ACTOR_DENIED")
+    check("credito_igual_calculo_canonico_gestor", act(G1, f"SELECT (public.fn_b2b_credit_exposure('{P1}',0,NULL)->>'credito_disponivel');"), "8500.00")
+    check("financeiro_nao_usa_calculadora_de_pedido", act(F1, f"SELECT public.fn_b2b_credit_exposure('{P1}',0,NULL);"), error="C2_SEAM_FORBIDDEN")
+    check("financeiro_nao_usa_calculadora_irmao", act(F1, f"SELECT public.fn_b2b_credit_exposure('{P2}',0,NULL);"), error="C2_SEAM_FORBIDDEN")
     check("nucleo_credito_sem_execute", act(F1, f"SELECT platform_private.b2b_credit_exposure_core('{P2}',0,NULL);"), error="permission denied")
     check("contadores_mensagens_fechados_financeiro", act(F1, "SELECT public.rpc_partner_message_counters(NULL);"), error="permission_denied")
     check("contadores_mensagens_fechados_irmao_explicito", act(F1, f"SELECT public.rpc_partner_message_counters('{P2}');"), error="permission_denied")
     check("contadores_gestor_regressao", act(G1, "SELECT public.rpc_partner_message_counters(NULL)->>'nao_lidas';"), "1")
     check("balancos_acl_live_preservada", "SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid='platform_private.b2b_credit_balances(uuid,uuid)'::regprocedure;", "{postgres=X/postgres}")
-    check("tecnico_credito_canonico_preservado", act(T1, f"SELECT public.fn_b2b_credit_exposure('{P1}',0,NULL)->>'credito_disponivel';"), "9000.00")
+    check("tecnico_credito_canonico_preservado", act(T1, f"SELECT public.fn_b2b_credit_exposure('{P1}',0,NULL)->>'credito_disponivel';"), "8500.00")
     check("financeiro_balancos_wrapper_negado", act(F1, f"SELECT platform_private.b2b_credit_balances('{P1}',NULL);"), error="permission denied")
     check("nucleo_balancos_sem_execute", act(F1, f"SELECT platform_private.b2b_credit_balances_core('{P1}',NULL,'{ORG_A}');"), error="permission denied")
     check("nucleo_balancos_org_forjada_negada", f"SELECT platform_private.b2b_credit_balances_core('{P1}',NULL,'{ORG_B}');", error="B2B_TENANT_DENIED")
+    # Cadeia LIVE: origem monetária adulterada falha fechado para o Financeiro (sem fallback).
+    run("UPDATE platform_private.b2b_authorized_documents SET state='CANCELLED' WHERE partner_id='"+P1+"'")
+    check("credito_origem_nao_autorizada_falha_fechado", cred(F1, "credit_limit"), error="B2B_ALLOCATION_ORIGIN_INVALID")
+    run("UPDATE platform_private.b2b_authorized_documents SET state='AUTHORIZED' WHERE partner_id='"+P1+"'")
+    run("UPDATE platform_private.b4_order_condition_snapshots SET financed_total=-1")
+    check("credito_residual_invalido_falha_fechado", cred(F1, "credit_limit"), error="CREDIT_ORDER_AMOUNT_UNPROVEN")
+    run("UPDATE platform_private.b4_order_condition_snapshots SET financed_total=500")
+    run("UPDATE partner_accounts SET client_id='50000000-0000-0000-0000-000000000001' WHERE id IN ('"+P1+"','"+P2+"'); UPDATE accounts_receivable SET customer_id='50000000-0000-0000-0000-000000000001' WHERE partner_id='"+P1+"'")
+    check("credito_devedor_ambiguo_falha_fechado", cred(F1, "credit_limit"), error="CREDIT_PARTNER_LINK_AMBIGUOUS")
+    run("UPDATE partner_accounts SET client_id=NULL; UPDATE accounts_receivable SET customer_id=NULL")
     run(f"UPDATE accounts_receivable SET status='CANCELED' WHERE partner_id='{P1}'")
-    check("credito_ignora_titulo_cancelado", cred(F1, "exposicao_atual"), "0.00")
+    run("UPDATE partner_orders SET status='cancelado' WHERE id='30000000-0000-0000-0000-000000000001'")
+    check("credito_ignora_titulo_cancelado", cred(F1, "exposicao_atual"), "500.00")
     run(f"UPDATE accounts_receivable SET status='OPEN' WHERE partner_id='{P1}'")
+    run("UPDATE partner_orders SET status='aprovado' WHERE id='30000000-0000-0000-0000-000000000001'")
     run(f"UPDATE partner_financial_settings SET active=false WHERE partner_id='{P2}'")
     check("credito_config_incompleta_falha_fechado", cred(F2, "credit_limit"), error="CREDIT_SETTINGS_INCOMPLETE")
     run(f"UPDATE partner_financial_settings SET active=true WHERE partner_id='{P2}'")
@@ -136,7 +164,7 @@ INSERT INTO partner_order_messages(order_id,status) VALUES('30000000-0000-0000-0
     check("gestor_regressao_le_proprio", own(G1, P1), "PED-P1")
     check("gestor_regressao_nega_irmao", own(G1, P2), error="own_finance_forbidden")
     check("gestor_nao_e_ator_financeiro", cap(G1, "reason"), "not_finance_actor")
-    check("gestor_regressao_pedidos_diretos", act(G1, "SELECT count(*) FROM partner_orders;"), "1")
+    check("gestor_regressao_pedidos_diretos", act(G1, "SELECT count(*) FROM partner_orders WHERE partner_id <> '" + P1 + "';"), "0")
     # Leituras/escritas diretas
     check("financeiro_pedidos_diretos_zero", act(F1, "SELECT count(*) FROM partner_orders;"), "0")
     check("financeiro_titulos_diretos_zero", act(F1, "SELECT count(*) FROM accounts_receivable;"), "0")

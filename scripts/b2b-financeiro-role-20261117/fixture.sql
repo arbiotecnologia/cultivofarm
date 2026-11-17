@@ -44,18 +44,26 @@ CREATE FUNCTION public.get_user_partner_id() RETURNS uuid LANGUAGE sql STABLE SE
     THEN (array_agg(pu.partner_id) FILTER (WHERE pu.revoked_at IS NULL))[1] END
   FROM public.partner_users pu LEFT JOIN public.partner_accounts pa ON pa.id = pu.partner_id WHERE pu.user_id = auth.uid(); $$;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
--- Crédito: b2b_credit_balances e b2b_credit_config_block são corpos LIVE (captured/). SEAMS DECLARADAS (não LIVE):
--- b2b_integration_actor (substitui c2_order_actor_scope pelo validador canônico de gestor/técnico), prova de origem
--- monetária, devedor do título e residual de pedido.
+-- Crédito (rev.3b): TODA a cadeia é LIVE de captured/ (balances, config_block, integration_actor, receivable_partner_scope,
+-- debtor_partner, proven_money_row_internal, allocation_money_row, legacy_money_row, order_residual).
+-- ÚNICA SEAM DECLARADA: platform_private.c2_order_actor_scope (autoridade de pedido do gestor/técnico; NÃO está no caminho
+-- do Financeiro, que usa b2b_credit_balances_core). A seam aceita apenas o validador canônico; não é prova do corpo LIVE.
 CREATE TABLE public.partner_financial_settings(partner_id uuid PRIMARY KEY, credit_limit numeric, overdue_tolerance_days int, block_if_overdue boolean, credit_limit_action text, active boolean DEFAULT true);
-ALTER TABLE public.accounts_receivable ADD COLUMN customer_id uuid;
+ALTER TABLE public.accounts_receivable ADD COLUMN customer_id uuid, ADD COLUMN b2b_document_id uuid;
+ALTER TABLE public.accounts_receivable_installments ADD COLUMN discount_amount numeric(14,2) DEFAULT 0, ADD COLUMN interest_amount numeric(14,2) DEFAULT 0, ADD COLUMN penalty_amount numeric(14,2) DEFAULT 0;
+ALTER TABLE public.partner_orders ADD COLUMN final_amount_with_interest numeric(14,2), ADD COLUMN receivable_generated boolean DEFAULT false, ADD COLUMN internal_economic_snapshot jsonb, ADD COLUMN payment_terms_id uuid;
 CREATE TABLE platform_private.b2b_financial_forecasts(order_id uuid, state text, residual_amount numeric, organization_id uuid, partner_id uuid);
-CREATE FUNCTION platform_private.b2b_integration_actor(p_partner uuid, p_internal boolean DEFAULT false) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
-BEGIN IF NOT public.is_valid_b2b_partner_user(auth.uid(),p_partner) THEN RAISE EXCEPTION 'B2B_ACTOR_DENIED' USING ERRCODE='42501'; END IF;
- RETURN (SELECT commercial_owner_organization_id FROM public.partner_accounts WHERE id=p_partner); END $$;
-CREATE FUNCTION platform_private.b2b_receivable_partner_scope(p uuid) RETURNS uuid LANGUAGE sql SECURITY DEFINER SET search_path TO '' AS $$ SELECT partner_id FROM public.accounts_receivable WHERE id=p $$;
-CREATE FUNCTION platform_private.b2b_proven_money_row_internal(p_id uuid, p_org uuid) RETURNS jsonb LANGUAGE sql SECURITY DEFINER SET search_path TO '' AS $$
- SELECT jsonb_build_object('original_amount',original_amount,'interest_amount',0,'financed_interest_amount',0,'penalty_amount',0,'discount_amount',0,'received_amount',received_amount)
- FROM public.accounts_receivable_installments WHERE id=p_id AND organization_id=p_org $$;
-CREATE FUNCTION platform_private.b2b_order_residual(o uuid) RETURNS numeric LANGUAGE sql AS $$ SELECT 0::numeric $$;
+-- Tabelas privadas: colunas LIVE (captura 17/11, information read-only).
+CREATE TABLE platform_private.b4_order_condition_snapshots(order_id uuid, organization_id uuid, partner_id uuid, actor_id uuid, plan_id uuid, choice jsonb, condition jsonb, request_hash text, rows jsonb, principal numeric, financed_interest numeric, financed_total numeric, quote boolean, payment_terms_id uuid, cart_hash text, payment_method_name text, estimated boolean, due_basis text, estimated_reference_date date, condition_version integer, condition_method text, created_at timestamptz);
+CREATE TABLE platform_private.b2b_document_allocations(document_id uuid NOT NULL, organization_id uuid NOT NULL, order_id uuid NOT NULL, partner_id uuid NOT NULL, receivable_id uuid NOT NULL, source_digest text NOT NULL, principal numeric NOT NULL, financed_interest numeric NOT NULL, items jsonb NOT NULL, item_money jsonb NOT NULL, rows jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE platform_private.b2b_allocation_reversals(document_id uuid NOT NULL, replacement_document_id uuid, source_digest text NOT NULL, created_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE platform_private.b2b_authorized_documents(id uuid, organization_id uuid, partner_id uuid, order_id uuid, kind text, issue_date date, event_key text, source_digest text, items jsonb, state text);
+CREATE TABLE platform_private.b2b_fiscal_service_permits(transaction_id bigint NOT NULL, invoice_id uuid NOT NULL, document_id uuid NOT NULL, organization_id uuid NOT NULL, order_id uuid NOT NULL, partner_id uuid NOT NULL, created_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE platform_private.price_schedule_snapshots(receivable_id uuid NOT NULL, organization_id uuid NOT NULL, customer_id uuid NOT NULL, rows jsonb NOT NULL);
+CREATE TABLE public.receivable_payments(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), installment_id uuid, amount_received numeric(14,2), discount_amount numeric(14,2), interest_amount numeric(14,2), penalty_amount numeric(14,2), is_reversal boolean DEFAULT false, reversed_payment_id uuid, organization_id uuid);
+CREATE TABLE public.partner_order_payment_schedule(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), partner_order_id uuid, payment_terms_id uuid, installment_number int, due_date date, amount numeric(14,2), principal_amount numeric(14,2), interest_amount numeric(14,2), status text, receivable_installment_id uuid, created_at timestamptz DEFAULT now());
+CREATE TABLE public.financial_audit_log(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), entity_type text, entity_id uuid, action text, old_data jsonb, new_data jsonb, performed_by uuid, performed_at timestamptz DEFAULT now(), reason text);
+CREATE FUNCTION platform_private.c2_order_actor_scope(_uid uuid, _partner uuid) RETURNS void LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $$
+BEGIN IF NOT public.is_valid_b2b_partner_user(_uid,_partner) THEN RAISE EXCEPTION 'C2_SEAM_FORBIDDEN' USING ERRCODE='42501'; END IF; END $$;
+REVOKE ALL ON FUNCTION platform_private.c2_order_actor_scope(uuid,uuid) FROM PUBLIC;
 CREATE TABLE public.partner_order_messages(id uuid DEFAULT gen_random_uuid(), order_id uuid, status text);

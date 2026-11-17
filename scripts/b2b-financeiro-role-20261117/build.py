@@ -178,7 +178,8 @@ END $$;
 tpl = (H / "02b-install.template.sql").read_text()
 res = tpl.replace("-- @@CAPTURED_DELTAS@@\n", "\n".join(out))
 (H / "02b-install.sql.review").write_text(res)
-pins = json.dumps({k: v for k, v in PINS.items() if k in DELTA or k == "platform_private.b2b_credit_config_block"})
+CREDIT_CHAIN = ["platform_private.b2b_credit_config_block", "fn_authz_uid_scope_ok", "is_financial_staff", "platform_private.b2b_integration_actor", "platform_private.b2b_debtor_partner", "platform_private.b2b_receivable_partner_scope", "platform_private.b2b_allocation_money_row", "platform_private.b2b_legacy_money_row", "platform_private.b2b_proven_money_row_internal", "platform_private.b2b_order_residual"]  # PRE aborta se a cadeia transitiva do crédito mudar
+pins = json.dumps({k: v for k, v in PINS.items() if k in DELTA or k in CREDIT_CHAIN})
 pre = (H / "01-pre.template.sql").read_text().replace("@@PINS@@", pins)
 (H / "01-pre.sql.readonly").write_text(pre)
 rb = (H / "04-rollback.template.sql").read_text().replace("-- @@CAPTURED_ORIGINALS@@\n", "".join(body(n).rstrip() + ";\n" for n in DELTA) + "DROP FUNCTION platform_private.b2b_credit_exposure_core(uuid,numeric,uuid);\nDROP FUNCTION platform_private.b2b_credit_balances_core(uuid,uuid,uuid);\n")
