@@ -1,0 +1,205 @@
+-- VARIANTE HML gerada por hml/build_hml.py; não editar.
+-- B2B_FINANCE_ROLE_V1 02c — transição canônica de acesso (Editar Usuário). Gerado por build.py; não editar.
+-- Requer 02b aplicado e o pacote user-edit-access-email-links-20261117 instalado (corpos pinados abaixo).
+BEGIN;
+SET LOCAL lock_timeout='3s';
+DO $$ DECLARE k text; v text; pins jsonb := '{"platform_private.user_admin_change_access_type_core": ["platform_private.user_admin_change_access_type_core", "c2d7f9dfd17fe919ed9fcbb9ea8e6a57"], "tenant_admin_user_access_exec_v1": ["tenant_admin_user_access_exec_v1", "aa74b1d3705cdd76a9c621bc2593f85d"]}';
+BEGIN
+  IF current_setting('app.expected_ref', true) IS DISTINCT FROM 'vrlcdwmlytukrjezrrnf' THEN RAISE EXCEPTION 'B2B_FIN_02C_REF_UNPROVEN'; END IF;
+  IF to_regprocedure('public.b2b_finance_capability_v1()') IS NULL THEN RAISE EXCEPTION 'B2B_FIN_02C_REQUIRES_02B'; END IF;
+  FOR k, v IN SELECT key, value->>1 FROM jsonb_each(pins) LOOP
+    IF NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+       WHERE p.prokind='f' AND (n.nspname||'.'||p.proname = k OR (n.nspname='public' AND p.proname=k)) AND md5(pg_get_functiondef(p.oid)) = v) THEN
+      RAISE EXCEPTION 'B2B_FIN_02C_DRIFT:%', k; END IF;
+  END LOOP;
+END $$;
+DROP FUNCTION platform_private.user_admin_change_access_type_core(uuid,bigint,uuid,text,public.app_role[],public.app_role[],uuid,uuid,text);
+CREATE OR REPLACE FUNCTION platform_private.user_admin_change_access_type_core(p_actor uuid, p_actor_iat bigint, p_user_id uuid, p_target text, p_roles app_role[], p_remove_roles app_role[], p_cliente_id uuid, p_idempotency_key uuid, p_reason text, p_partner_id uuid, p_expected_link_version integer)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE
+  v_org uuid; v_hash text; v_prev jsonb; v_before jsonb; v_after jsonb; v_ended int := 0;
+  c_internal constant public.app_role[] := ARRAY['administrador','gestor','administrativo','financeiro','gestor_comercial',
+    'producao','aplicador','operador_onfarm','consultor_tecnico','tecnico_agronomo','vendedor']::public.app_role[];
+  c_external constant public.app_role[] := ARRAY['cliente_produtor','parceiro_b2b','parceiro_b2b_tecnico','parceiro_b2b_financeiro']::public.app_role[];
+  c_fin constant public.app_role[] := ARRAY['parceiro_b2b_financeiro']::public.app_role[];
+  v_link_n int := 0; v_link_ver int; v_link_partner uuid;
+  c_b2b constant public.app_role[] := ARRAY['parceiro_b2b','parceiro_b2b_tecnico']::public.app_role[];
+  c_consult constant public.app_role[] := ARRAY['consultor_tecnico','tecnico_agronomo']::public.app_role[];
+  v_allowed public.app_role[]; v_current public.app_role[]; v_incompat public.app_role[];
+  v_remove public.app_role[] := ARRAY(SELECT DISTINCT unnest(COALESCE(p_remove_roles, '{}'::public.app_role[])));
+  v_add public.app_role[] := ARRAY(SELECT DISTINCT unnest(COALESCE(p_roles, '{}'::public.app_role[])));
+  v_final public.app_role[]; v_end_all boolean := false;
+BEGIN
+  v_org := platform_private.user_admin_actor_ctx(p_actor, p_actor_iat, p_user_id);
+  IF p_target IS NULL OR p_target NOT IN ('internal','b2b','producer','b2b_finance') THEN RAISE EXCEPTION 'invalid_access_type' USING ERRCODE='22023'; END IF;
+  IF p_reason IS NULL OR length(btrim(p_reason)) < 5 OR length(p_reason) > 500 THEN RAISE EXCEPTION 'reason_required' USING ERRCODE='22023'; END IF;
+  IF array_position(v_add, NULL) IS NOT NULL OR array_position(v_remove, NULL) IS NOT NULL THEN RAISE EXCEPTION 'invalid_roles' USING ERRCODE='22023'; END IF;
+  v_hash := md5(concat_ws('|', p_user_id, p_target, array_to_string(ARRAY(SELECT unnest(v_add) ORDER BY 1), ','),
+                          array_to_string(ARRAY(SELECT unnest(v_remove) ORDER BY 1), ','), p_cliente_id, btrim(p_reason), p_partner_id, p_expected_link_version));
+  v_prev := platform_private.user_admin_replay_actor(p_actor, p_idempotency_key, 'access_type', v_hash);
+  IF v_prev IS NOT NULL THEN RETURN v_prev; END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtextextended('user_admin:' || p_user_id::text, 0));
+  v_org := platform_private.user_admin_actor_ctx(p_actor, p_actor_iat, p_user_id); -- revalidação após a espera
+  PERFORM platform_private.user_admin_scope_proof(p_user_id, v_org);
+
+  CASE p_target
+    WHEN 'internal' THEN IF NOT (v_add <@ c_internal) THEN RAISE EXCEPTION 'internal_roles_required' USING ERRCODE='22023'; END IF;
+    WHEN 'b2b' THEN IF NOT (v_add <@ c_b2b) THEN RAISE EXCEPTION 'b2b_roles_required' USING ERRCODE='22023'; END IF;
+    WHEN 'b2b_finance' THEN IF NOT (v_add <@ c_fin) THEN RAISE EXCEPTION 'b2b_finance_roles_required' USING ERRCODE='22023'; END IF;
+    ELSE IF cardinality(v_add) > 0 THEN RAISE EXCEPTION 'internal_roles_not_allowed' USING ERRCODE='22023'; END IF;
+  END CASE;
+
+  v_current := ARRAY(SELECT role FROM public.user_roles WHERE user_id = p_user_id ORDER BY role);
+  -- Promoção a administrador: idêntica ao caminho canônico (só usuário já interno); nunca junto com
+  -- a retirada de papéis externos nem para usuário com papel externo.
+  IF 'administrador' = ANY(v_add) AND (p_target <> 'internal' OR v_current && c_external) THEN
+    RAISE EXCEPTION 'admin_grant_requires_internal_user' USING ERRCODE='42501';
+  END IF;
+  v_allowed := CASE p_target WHEN 'internal' THEN c_internal WHEN 'b2b' THEN c_b2b WHEN 'b2b_finance' THEN c_fin ELSE ARRAY['cliente_produtor']::public.app_role[] END;
+  v_incompat := ARRAY(SELECT r FROM unnest(v_current) r WHERE NOT (r = ANY(v_allowed)) ORDER BY r);
+  IF EXISTS (SELECT 1 FROM unnest(v_remove) r WHERE NOT (r = ANY(v_incompat))) THEN RAISE EXCEPTION 'invalid_remove_roles' USING ERRCODE='22023'; END IF;
+  IF EXISTS (SELECT 1 FROM unnest(v_incompat) r WHERE NOT (r = ANY(v_remove))) THEN
+    RAISE EXCEPTION 'incompatible_roles' USING ERRCODE='PT409',
+      DETAIL = array_to_string(ARRAY(SELECT r::text FROM unnest(v_incompat) r WHERE NOT (r = ANY(v_remove))), ',');
+  END IF;
+  v_final := ARRAY(SELECT DISTINCT r FROM unnest(v_current || v_add || CASE WHEN p_target = 'producer' THEN ARRAY['cliente_produtor']::public.app_role[] ELSE '{}'::public.app_role[] END) r
+                   WHERE NOT (r = ANY(v_remove)) ORDER BY 1);
+  IF p_target = 'internal' AND NOT (v_final && c_internal) THEN RAISE EXCEPTION 'internal_roles_required' USING ERRCODE='22023'; END IF;
+  IF p_target = 'b2b' AND NOT (v_final && c_b2b) THEN RAISE EXCEPTION 'b2b_roles_required' USING ERRCODE='22023'; END IF;
+  -- B2B_FINANCE_ROLE_V1: exclusivo, vínculo único com CAS observado (revalidado após o lock).
+  IF p_target = 'b2b_finance' AND v_final IS DISTINCT FROM c_fin THEN RAISE EXCEPTION 'b2b_finance_role_exclusive' USING ERRCODE='22023'; END IF;
+  IF p_target <> 'b2b_finance' AND p_partner_id IS NOT NULL THEN RAISE EXCEPTION 'partner_not_allowed' USING ERRCODE='22023'; END IF;
+  IF p_target = 'b2b_finance' OR 'parceiro_b2b_financeiro' = ANY(v_current) THEN
+    SELECT count(*), max(pu.version), (array_agg(pu.partner_id))[1] INTO v_link_n, v_link_ver, v_link_partner
+      FROM public.partner_users pu WHERE pu.user_id = p_user_id AND pu.revoked_at IS NULL;
+    IF v_link_n > 1 THEN RAISE EXCEPTION 'partner_link_ambiguous' USING ERRCODE='PT409'; END IF;
+    IF v_link_ver IS DISTINCT FROM p_expected_link_version THEN RAISE EXCEPTION 'partner_link_conflict' USING ERRCODE='PT409'; END IF;
+    IF v_link_n = 1 AND NOT EXISTS (SELECT 1 FROM public.partner_users pu WHERE pu.user_id = p_user_id AND pu.revoked_at IS NULL AND pu.tenant_id = v_org) THEN
+      RAISE EXCEPTION 'partner_link_foreign' USING ERRCODE='42501'; END IF;
+  ELSIF p_expected_link_version IS NOT NULL THEN RAISE EXCEPTION 'link_version_not_allowed' USING ERRCODE='22023';
+  END IF;
+  IF p_target = 'b2b_finance' THEN
+    IF v_link_n = 0 AND p_partner_id IS NULL THEN RAISE EXCEPTION 'partner_required' USING ERRCODE='22023'; END IF;
+    IF v_link_n = 1 AND p_partner_id IS NOT NULL AND p_partner_id IS DISTINCT FROM v_link_partner THEN RAISE EXCEPTION 'partner_link_change_unsupported' USING ERRCODE='22023'; END IF;
+    IF NOT EXISTS (SELECT 1 FROM public.partner_accounts pa WHERE pa.id = COALESCE(v_link_partner, p_partner_id)
+        AND pa.commercial_owner_organization_id = v_org AND pa.ativo AND pa.deleted_at IS NULL) THEN
+      RAISE EXCEPTION 'partner_link_required' USING ERRCODE='22023'; END IF;
+  END IF;
+  IF p_target = 'b2b' AND NOT EXISTS (SELECT 1 FROM public.partner_users pu JOIN public.partner_accounts pa ON pa.id = pu.partner_id
+                    WHERE pu.user_id = p_user_id AND pu.revoked_at IS NULL AND pu.tenant_id = v_org
+                      AND pa.commercial_owner_organization_id = v_org AND pa.ativo AND pa.deleted_at IS NULL) THEN
+    RAISE EXCEPTION 'partner_link_required' USING ERRCODE='22023';
+  END IF;
+  IF p_target = 'producer' THEN
+    IF 'cliente_produtor' = ANY(v_current) THEN RAISE EXCEPTION 'no_change' USING ERRCODE='22023'; END IF; -- secundários: caminho canônico
+    IF p_cliente_id IS NULL OR NOT EXISTS (SELECT 1 FROM public.clientes WHERE id = p_cliente_id AND organization_id = v_org) THEN
+      RAISE EXCEPTION 'cliente_required' USING ERRCODE='22023';
+    END IF;
+  ELSIF p_cliente_id IS NOT NULL THEN RAISE EXCEPTION 'cliente_not_allowed' USING ERRCODE='22023';
+  END IF;
+  IF v_final = v_current THEN RAISE EXCEPTION 'no_change' USING ERRCODE='22023'; END IF;
+
+  v_before := platform_private.user_admin_scope_snapshot(p_user_id, v_org);
+
+  -- 1) Escopo de cliente SEM usar principal: produtor/B2B → só o cliente escolhido (ou nenhum);
+  --    saída de produtor → todos encerrados; interno sem consultor final → todos encerrados.
+  v_end_all := p_target IN ('producer','b2b','b2b_finance') OR 'cliente_produtor' = ANY(v_remove)
+               OR (p_target = 'internal' AND NOT (v_final && c_consult));
+  IF v_end_all THEN
+    v_ended := platform_private.user_admin_end_tenant_links(p_user_id, v_org, p_actor, CASE WHEN p_target = 'producer' THEN p_cliente_id END);
+  END IF;
+  IF p_target = 'producer' THEN
+    -- Nenhum outro principal sobrevive ao passo anterior: sem violação de uq_user_clientes_principal.
+    BEGIN
+      INSERT INTO public.user_clientes(user_id, cliente_id, principal, is_active, access_level, assigned_by, valid_from)
+      VALUES (p_user_id, p_cliente_id, true, true, 'read', p_actor, now())
+      ON CONFLICT (user_id, cliente_id) DO UPDATE SET principal = true, is_active = true, access_level = 'read',
+        revoked_at = NULL, revoked_by = NULL, valid_until = NULL, valid_from = LEAST(public.user_clientes.valid_from, now()), assigned_by = p_actor;
+    EXCEPTION WHEN unique_violation THEN
+      -- Gatilho de principal que reelege vínculo encerrado (variante legada por linha) + índice uq_user_clientes_principal:
+      -- não há como trocar o principal sem alterar o gatilho global ⇒ aborta a transição inteira, sem mutação.
+      RAISE EXCEPTION 'principal_sync_incompatible' USING ERRCODE='PT409';
+    END;
+  END IF;
+  -- 2) Papéis: adiciona só o explícito (+ cliente_produtor no destino produtor) e remove o confirmado.
+  INSERT INTO public.user_roles(user_id, role)
+  SELECT p_user_id, r FROM unnest(v_final) r WHERE NOT (r = ANY(v_current))
+  ON CONFLICT (user_id, role) DO NOTHING;
+  IF p_target = 'b2b_finance' THEN
+    IF v_link_n = 0 THEN
+      INSERT INTO public.partner_users(partner_id, user_id, papel, tenant_id) VALUES (p_partner_id, p_user_id, 'financeiro', v_org);
+    ELSE
+      UPDATE public.partner_users SET papel = 'financeiro' WHERE user_id = p_user_id AND revoked_at IS NULL AND tenant_id = v_org AND papel <> 'financeiro';
+    END IF;
+  ELSIF p_target = 'b2b' AND 'parceiro_b2b_financeiro' = ANY(v_remove) THEN
+    UPDATE public.partner_users SET papel = CASE WHEN 'parceiro_b2b' = ANY(v_final) THEN 'gestor' ELSE 'tecnico' END
+     WHERE user_id = p_user_id AND revoked_at IS NULL AND tenant_id = v_org;
+  END IF;
+  IF v_remove && (c_b2b || c_fin) AND NOT (v_final && (c_b2b || c_fin)) THEN
+    UPDATE public.partner_users SET revoked_at = now(), revoked_by = p_actor, revoke_reason = 'access_type_change'
+     WHERE user_id = p_user_id AND revoked_at IS NULL AND tenant_id = v_org;
+  END IF;
+  DELETE FROM public.user_roles WHERE user_id = p_user_id AND role = ANY(v_remove);
+  PERFORM platform_private.user_admin_scope_settle(p_user_id, v_org, p_cliente_id,
+    CASE WHEN p_target = 'producer' THEN 'producer' WHEN v_end_all THEN 'none' ELSE 'consultor' END);
+  -- 3) JWTs anteriores do alvo perdem autoridade.
+  PERFORM platform_private.user_authz_bump(p_user_id);
+
+  v_after := jsonb_build_object('ok', true, 'user_id', p_user_id, 'access_type', p_target,
+    'roles', COALESCE((SELECT jsonb_agg(role ORDER BY role) FROM public.user_roles WHERE user_id = p_user_id), '[]'),
+    'removed_roles', to_jsonb(ARRAY(SELECT unnest(v_remove) ORDER BY 1)), 'ended_links', v_ended, 'sessions_invalidated', true,
+    'scope', platform_private.user_admin_scope_snapshot(p_user_id, v_org));
+  INSERT INTO platform_private.user_admin_change_audit(idempotency_key, actor_id, organization_id, target_id, kind, request_hash, before_state, after_state, reason)
+  VALUES (p_idempotency_key, p_actor, v_org, p_user_id, 'access_type', v_hash, v_before, v_after, btrim(p_reason));
+  RETURN v_after;
+END $function$;
+
+CREATE OR REPLACE FUNCTION public.tenant_admin_user_access_exec_v1(p_actor uuid, p_actor_iat bigint, p_op text, p_args jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE a jsonb := COALESCE(p_args, '{}'::jsonb);
+  roles_of constant text := 'SELECT ARRAY(SELECT jsonb_array_elements_text(COALESCE($1, ''[]''::jsonb))::public.app_role)';
+  v_roles public.app_role[]; v_rm public.app_role[];
+BEGIN
+  IF auth.uid() IS NOT NULL THEN RAISE EXCEPTION 'service_context_required' USING ERRCODE='42501'; END IF;
+  IF jsonb_typeof(a) <> 'object' THEN RAISE EXCEPTION 'invalid_args' USING ERRCODE='22023'; END IF;
+  IF p_op = 'change_access_type' THEN
+    IF EXISTS (SELECT 1 FROM jsonb_object_keys(a) k WHERE k NOT IN ('user_id','target','roles','remove_roles','cliente_id','idempotency_key','reason','partner_id','expected_link_version')) THEN
+      RAISE EXCEPTION 'invalid_args' USING ERRCODE='22023'; END IF;
+    EXECUTE roles_of INTO v_roles USING a->'roles'; EXECUTE roles_of INTO v_rm USING a->'remove_roles';
+    RETURN platform_private.user_admin_change_access_type_core(p_actor, p_actor_iat, (a->>'user_id')::uuid, a->>'target', v_roles, v_rm,
+      NULLIF(a->>'cliente_id','')::uuid, (a->>'idempotency_key')::uuid, a->>'reason',
+      NULLIF(a->>'partner_id','')::uuid, (a->>'expected_link_version')::integer);
+  ELSIF p_op = 'consultor_link' THEN
+    IF EXISTS (SELECT 1 FROM jsonb_object_keys(a) k WHERE k NOT IN ('user_id','action','cliente_id','replace_cliente_id','access_level','valid_from','valid_until','idempotency_key','reason')) THEN
+      RAISE EXCEPTION 'invalid_args' USING ERRCODE='22023'; END IF;
+    RETURN platform_private.user_admin_consultor_link_core(p_actor, p_actor_iat, (a->>'user_id')::uuid, a->>'action', (a->>'cliente_id')::uuid,
+      NULLIF(a->>'replace_cliente_id','')::uuid, NULLIF(a->>'access_level','')::public.access_level_tecnico,
+      NULLIF(a->>'valid_from','')::timestamptz, NULLIF(a->>'valid_until','')::timestamptz, (a->>'idempotency_key')::uuid, a->>'reason');
+  END IF;
+  RAISE EXCEPTION 'invalid_op' USING ERRCODE='22023';
+END $function$;
+-- Leitura da versão observada do vínculo (CAS do painel): só administrador do tenant do alvo; nenhum vínculo de outro tenant.
+CREATE FUNCTION public.tenant_admin_partner_link_v1(p_user_id uuid)
+ RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO ''
+AS $function$
+DECLARE org uuid := public.h15_actor_organization(); n int; r record;
+BEGIN
+ IF auth.uid() IS NULL OR org IS NULL OR NOT platform_private.is_tenant_admin_for_user(p_user_id) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
+ SELECT count(*) INTO n FROM public.partner_users WHERE user_id=p_user_id AND revoked_at IS NULL;
+ SELECT pu.partner_id, pu.papel, pu.version INTO r FROM public.partner_users pu WHERE pu.user_id=p_user_id AND pu.revoked_at IS NULL AND pu.tenant_id=org LIMIT 1;
+ RETURN jsonb_build_object('contract','PARTNER_LINK_V1','ambiguous', n>1, 'foreign', n=1 AND r.partner_id IS NULL,
+  'link', CASE WHEN n=1 AND r.partner_id IS NOT NULL THEN jsonb_build_object('partner_id',r.partner_id,'papel',r.papel,'version',r.version) END);
+END $function$;
+REVOKE ALL ON FUNCTION public.tenant_admin_partner_link_v1(uuid) FROM PUBLIC, anon, service_role;
+GRANT EXECUTE ON FUNCTION public.tenant_admin_partner_link_v1(uuid) TO authenticated;
+REVOKE ALL ON FUNCTION platform_private.user_admin_change_access_type_core(uuid,bigint,uuid,text,public.app_role[],public.app_role[],uuid,uuid,text,uuid,integer) FROM PUBLIC, anon, authenticated, service_role;
+COMMIT;
