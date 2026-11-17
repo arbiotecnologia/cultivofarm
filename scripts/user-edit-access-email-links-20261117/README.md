@@ -129,3 +129,19 @@ Ver `candidate.sql.review`. Resumo:
 - Revisão/aplicação pelo auditor; homologação com JWT reais A/B (incluindo token antigo após troca) e Auth real
   com SMTP canônico (entrega hoje OFF: o titular não receberá o e-mail de confirmação até a homologação).
 - Gate `USER_ADMIN_REFINEMENT_INSTALLED` permanece `false`.
+
+---
+# Isolamento entre empresas (revisão complementar de fee087c4)
+- `platform_private.user_admin_scope_proof`: escrita (tipo de acesso e vínculo do consultor) é rejeitada com
+  `PT409 scope_unprovable`, antes de qualquer mutação, se o alvo tiver `user_clientes` ativo para cliente fora do
+  tenant do servidor (ou cliente inexistente) ou `partner_users` ativo de outro tenant. Saneamento desses legados fica
+  com o auditor (não há escrita cruzada por esta tela).
+- `tenant_admin_consultor_links_v1`: itens só com `clientes.organization_id = tenant`; histórico só com
+  `audit.organization_id = tenant` e cliente do tenant.
+- `replace`: valida o cliente substituído no tenant (lado antigo e novo).
+- Encerramentos e snapshots de transição filtrados por cliente/partner do tenant (defesa em profundidade).
+- Pedidos de e-mail: status/cancelamento/titular/aceite/recusa/sync limitados à organização atual; novo pedido expira
+  pendências de organização anterior; worker expira pedido cuja organização não é a atual do titular; duplicidade em
+  outra empresa responde `email_unavailable` neutro. Replay idempotente vinculado à organização atual do ator.
+- PostgreSQL descartável: **92/92** (inclui usuário A com vínculo ativo ao cliente B, histórico e pedido da
+  organização anterior, partner_users de outro tenant, ator que trocou de empresa). Sintético; não é prova hosted.

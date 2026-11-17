@@ -1,6 +1,6 @@
 {
- "passed": 73,
- "total": 73,
+ "passed": 92,
+ "total": 92,
  "results": [
   {
    "name": "self escalation negado",
@@ -35,22 +35,22 @@
   {
    "name": "superadmin não atribuível",
    "pass": true,
-   "detail": "es_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 27 at RAISE"
+   "detail": "es_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 28 at RAISE"
   },
   {
    "name": "B2B sem vínculo de parceiro",
    "pass": true,
-   "detail": "nk_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 47 at RAISE"
+   "detail": "nk_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 48 at RAISE"
   },
   {
    "name": "produtor com cliente de outro tenant",
    "pass": true,
-   "detail": "te_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 50 at RAISE"
+   "detail": "te_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 51 at RAISE"
   },
   {
    "name": "papel incompatível sem confirmação é rejeitado",
    "pass": true,
-   "detail": " financeiro\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 39 at RAISE"
+   "detail": " financeiro\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 40 at RAISE"
   },
   {
    "name": "rejeição sem mutação",
@@ -60,7 +60,7 @@
   {
    "name": "remover papel compatível é rejeitado",
    "pass": true,
-   "detail": "emove_roles\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 36 at RAISE"
+   "detail": "emove_roles\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 37 at RAISE"
   },
   {
    "name": "interno: papéis existentes preservados + novo",
@@ -85,7 +85,7 @@
   {
    "name": "mesma chave, payload diferente",
    "pass": true,
-   "detail": " line 8 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 17 at assignment"
+   "detail": " line 9 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 17 at assignment"
   },
   {
    "name": "user_id preservado",
@@ -160,7 +160,7 @@
   {
    "name": "B2B→interno sem confirmar remoção",
    "pass": true,
-   "detail": "b2b_tecnico\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 39 at RAISE"
+   "detail": "b2b_tecnico\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 40 at RAISE"
   },
   {
    "name": "B2B→interno revoga partner_users",
@@ -215,7 +215,7 @@
   {
    "name": "segunda pendência bloqueada",
    "pass": true,
-   "detail": "ERROR:  email_change_pending\nCONTEXT:  PL/pgSQL function public.tenant_admin_email_change_request_v1(uuid,text,uuid) line 24 at RAISE"
+   "detail": "ERROR:  email_change_pending\nCONTEXT:  PL/pgSQL function public.tenant_admin_email_change_request_v1(uuid,text,uuid) line 27 at RAISE"
   },
   {
    "name": "e-mail atual preservado antes da confirmação",
@@ -240,7 +240,7 @@
   {
    "name": "admin não aceita pelo titular",
    "pass": true,
-   "detail": "ERROR:  forbidden\nCONTEXT:  PL/pgSQL function public.user_email_change_accept_v1(uuid) line 6 at RAISE"
+   "detail": "ERROR:  forbidden\nCONTEXT:  PL/pgSQL function public.user_email_change_accept_v1(uuid) line 8 at RAISE"
   },
   {
    "name": "aceite devolve endereço canônico",
@@ -310,7 +310,7 @@
   {
    "name": "vínculo duplicado",
    "pass": true,
-   "detail": "lic.tenant_admin_consultor_link_v1(uuid,text,uuid,uuid,public.access_level_tecnico,timestamp with time zone,timestamp with time zone,uuid,text) line 36 at RAISE"
+   "detail": "lic.tenant_admin_consultor_link_v1(uuid,text,uuid,uuid,public.access_level_tecnico,timestamp with time zone,timestamp with time zone,uuid,text) line 40 at RAISE"
   },
   {
    "name": "cliente de outro tenant",
@@ -355,10 +355,105 @@
   {
    "name": "listagem cross-tenant",
    "pass": true,
-   "detail": "ne 7 at RAISE\nSQL statement \"SELECT platform_private.user_admin_ctx(p_user_id)\"\nPL/pgSQL function public.tenant_admin_consultor_links_v1(uuid) line 3 at PERFORM"
+   "detail": "XT:  PL/pgSQL function platform_private.user_admin_ctx(uuid) line 7 at RAISE\nPL/pgSQL function public.tenant_admin_consultor_links_v1(uuid) line 4 at assignment"
   },
   {
    "name": "vínculo futuro não concede acesso",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "listagem não revela ID/nome de cliente de outra empresa",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "histórico de organização anterior não aparece",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "transição com vínculo cruzado rejeitada",
+   "pass": true,
+   "detail": "(p_user_id, v_org)\"\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 22 at PERFORM"
+  },
+  {
+   "name": "transição com vínculo cruzado (remoção) rejeitada",
+   "pass": true,
+   "detail": "(p_user_id, v_org)\"\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 22 at PERFORM"
+  },
+  {
+   "name": "rejeição atômica: papéis e vínculos intactos",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "vínculo novo com legado cruzado rejeitado",
+   "pass": true,
+   "detail": "c.tenant_admin_consultor_link_v1(uuid,text,uuid,uuid,public.access_level_tecnico,timestamp with time zone,timestamp with time zone,uuid,text) line 24 at PERFORM"
+  },
+  {
+   "name": "replace valida o cliente substituído (outro tenant)",
+   "pass": true,
+   "detail": "lic.tenant_admin_consultor_link_v1(uuid,text,uuid,uuid,public.access_level_tecnico,timestamp with time zone,timestamp with time zone,uuid,text) line 22 at RAISE"
+  },
+  {
+   "name": "replace cruzado não encerrou o vínculo B",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "admin B não lista usuário de A",
+   "pass": true,
+   "detail": "XT:  PL/pgSQL function platform_private.user_admin_ctx(uuid) line 7 at RAISE\nPL/pgSQL function public.tenant_admin_consultor_links_v1(uuid) line 4 at assignment"
+  },
+  {
+   "name": "partner_users de outro tenant bloqueia transição",
+   "pass": true,
+   "detail": "(p_user_id, v_org)\"\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 22 at PERFORM"
+  },
+  {
+   "name": "partner_users de B intactos",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "status não mostra pedido da organização anterior",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "titular não vê pedido da organização anterior",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "titular não aceita pedido da organização anterior",
+   "pass": true,
+   "detail": "ERROR:  forbidden\nCONTEXT:  PL/pgSQL function public.user_email_change_accept_v1(uuid) line 8 at RAISE"
+  },
+  {
+   "name": "sync do titular ignora pedido anterior",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "novo pedido expira o da organização anterior",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "worker não sincroniza pedido de organização anterior",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "pedido duplicado em outra empresa é neutro",
+   "pass": true,
+   "detail": "ERROR:  email_unavailable\nCONTEXT:  PL/pgSQL function public.tenant_admin_email_change_request_v1(uuid,text,uuid) line 30 at RAISE"
+  },
+  {
+   "name": "replay não atravessa troca de empresa do ator",
    "pass": true,
    "detail": ""
   },
