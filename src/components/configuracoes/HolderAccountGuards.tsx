@@ -48,7 +48,17 @@ export function HolderAccountGuardsInner({ userId }: { userId: string }) {
       if (server !== canonical.data) throw new Error("request_not_pending");
       // Fluxo oficial do Auth com a sessão do titular; a confirmação chega no(s) e-mail(s) pelo Auth.
       const { error } = await supabase.auth.updateUser({ email: server }, { emailRedirectTo: `${window.location.origin}/auth` });
-      if (error) throw new Error(error.message);
+      if (error) {
+        // Saída segura: o servidor só libera se comprovar que o Auth não tem troca pendente para o endereço.
+        const rel = await rpc(RPC.myEmailRelease, { p_op_id: pending.op_id }).catch(() => ({ data: null, error: { message: "release_failed" } }));
+        const released = !rel.error && (rel.data as { released?: boolean } | null)?.released === true;
+        setPending({ ...pending, accepted: !released });
+        setMsg(released
+          ? "Não foi possível enviar a confirmação. Nada foi alterado; você pode tentar de novo ou recusar."
+          : "Não foi possível comprovar se a confirmação foi enviada. Verifique sua caixa de entrada; o pedido segue aguardando confirmação e não pode ser recusado.");
+        return;
+      }
+      setPending({ ...pending, accepted: true });
       setMsg("Enviamos a confirmação pelo serviço de autenticação. A troca só vale depois que você confirmar pelo link recebido.");
     } catch (e) { setMsg(friendlyError((e as Error).message)); } finally { setBusy(false); }
   };
@@ -62,9 +72,10 @@ export function HolderAccountGuardsInner({ userId }: { userId: string }) {
     <div role="region" aria-label="Alteração de e-mail pendente" className="fixed bottom-4 inset-x-4 sm:left-auto sm:w-96 z-50 border rounded-md bg-card text-card-foreground p-3 shadow-lg space-y-2">
       <p className="text-sm">A administração da sua empresa solicitou alterar seu e-mail de acesso para <strong className="break-all">{canonical.data}</strong>.</p>
       <p className="text-xs text-muted-foreground">Seu e-mail atual continua válido até você confirmar pelo link oficial.</p>
+      {pending.accepted && <p className="text-xs text-muted-foreground">Você já aceitou. Confirme pelo link recebido; esta solicitação não pode mais ser recusada ou cancelada porque o link oficial não pode ser invalidado por aqui.</p>}
       <div className="flex flex-wrap gap-2">
         <Button type="button" size="sm" disabled={busy} onClick={accept}>{busy ? "Aguarde…" : "Aceitar e enviar confirmação"}</Button>
-        <Button type="button" size="sm" variant="outline" disabled={busy} onClick={decline}>Recusar</Button>
+        {!pending.accepted && <Button type="button" size="sm" variant="outline" disabled={busy} onClick={decline}>Recusar</Button>}
       </div>
       {msg && <p role="status" className="text-xs">{msg}</p>}
     </div>

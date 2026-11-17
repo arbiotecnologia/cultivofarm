@@ -18,6 +18,7 @@ export const RPC = {
   myEmailPending: "user_email_change_my_pending_v1",
   myEmailAccept: "user_email_change_accept_v1",
   myEmailDecline: "user_email_change_decline_v1",
+  myEmailRelease: "user_email_change_release_v1",
   myEmailSync: "user_email_change_sync_self_v1",
 } as const;
 /** Pedido de e-mail é registrado por RPC; nenhum link é gerado pelo administrador. */
@@ -82,6 +83,7 @@ const ERRORS: Record<string, string> = {
   idempotency_conflict: "Esta solicitação já foi usada com outros dados. Recarregue e tente novamente.",
   email_unavailable: "Este e-mail não está disponível.",
   email_change_pending: "Já existe uma alteração de e-mail pendente.",
+  email_change_accepted_locked: "O titular já aceitou e o link oficial pode ter sido enviado. Não é possível cancelar com segurança; a troca fica aguardando confirmação.",
   email_unchanged: "O novo e-mail é igual ao atual.",
   invalid_email: "Informe um e-mail válido.",
   link_already_active: "Este cliente já está vinculado.",

@@ -145,3 +145,31 @@ Ver `candidate.sql.review`. Resumo:
   outra empresa responde `email_unavailable` neutro. Replay idempotente vinculado à organização atual do ator.
 - PostgreSQL descartável: **92/92** (inclui usuário A com vínculo ativo ao cliente B, histórico e pedido da
   organização anterior, partner_users de outro tenant, ator que trocou de empresa). Sintético; não é prova hosted.
+
+## Serialização pós-aceite do e-mail (seção 7 do candidato)
+
+Problema: após `holder_accepted_at`, o titular pode ter recebido um link oficial do Auth. Cancelar,
+recusar ou expirar localmente não invalida esse token; um clique tardio mudaria `auth.users.email`
+sem sincronizar `profiles`. Não há mecanismo oficial garantido para revogar esse link a partir daqui.
+
+Decisão:
+- Aceite trava o pedido (serializado por advisory lock + `FOR UPDATE`): admin cancel e recusa do
+  titular retornam `email_change_accepted_locked` (PT409); nenhuma expiração local (prazo, novo
+  pedido, troca de empresa) fecha pedido travado. Novo pedido para o alvo é bloqueado (neutro).
+- O pedido permanece reconciliável: `sync_self`/worker/`request`/`cancel`/`decline` reconciliam via
+  `platform_private.user_email_change_reconcile`, que só escreve `profiles.email` do próprio
+  `target_id` quando o Auth já mostra o endereço canônico; auditoria fica na organização do pedido.
+- Saída segura em erro de envio: `user_email_change_release_v1` (titular) libera a trava só se o
+  servidor comprovar que o Auth não tem troca pendente (`email_change`) nem confirmada para o
+  endereço; envio ambíguo que chegou a gravar a pendência continua travado.
+- UI: admin vê "aceito — não pode ser cancelada"; titular não vê "Recusar" após aceite; erro de
+  envio chama a liberação e só reabre "Recusar" se o servidor liberar.
+
+Rollback: remove os pontos de entrada, mas MANTÉM `user_email_change_sync_self_v1`, o worker e o
+reconciliador, porque links já aceitos podem ser confirmados depois. Dados e auditoria preservados.
+
+Evidência local (PostgreSQL 17 descartável, Auth/caixa de e-mail falsos, sem envio real): 110/110 —
+inclui cancelamento antes do aceite, cancelamento/recusa negados após aceite e entre aceite e envio,
+liberação negada com envio ambíguo, prazo vencido sem expirar, confirmação tardia sincronizando,
+liberação após falha comprovada e cancelamento depois, troca de empresa sem sobrescrita por outro
+tenant e sincronização restrita ao titular. Não prova JWT/Auth/RLS hospedados.

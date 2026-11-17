@@ -530,6 +530,246 @@ BEGIN
                                            ELSE 'auth_pending_mismatch' END);
 END $$;
 
+-- ---------------------------------------------------------------------
+-- (7) Serialização pós-aceite. Depois de holder_accepted_at o titular pode ter recebido um link
+-- oficial do Auth que NÃO conseguimos invalidar daqui. Logo: o pedido fica TRAVADO (status pending,
+-- reconciliável até a confirmação, sem expiração local), cancelamento/recusa são negados no servidor
+-- e só há uma saída: o titular libera quando o servidor comprova que o Auth não tem troca pendente
+-- para o endereço canônico (erro de envio). Confirmação tardia continua sincronizando profiles.
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION platform_private.user_email_change_reconcile(p_op_id uuid)
+RETURNS text LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE r record; v_auth text;
+BEGIN
+  SELECT * INTO r FROM platform_private.user_email_change_requests WHERE id = p_op_id FOR UPDATE;
+  IF NOT FOUND THEN RETURN 'missing'; END IF;
+  IF r.status <> 'pending' THEN RETURN r.status; END IF;
+  SELECT lower(email) INTO v_auth FROM auth.users WHERE id = r.target_id;
+  IF v_auth IS DISTINCT FROM lower(r.new_email) THEN RETURN 'pending'; END IF;
+  -- Só o próprio target_id; o e-mail de identidade é o que o Auth já confirmou para ele.
+  UPDATE public.profiles SET email = r.new_email WHERE user_id = r.target_id AND email IS DISTINCT FROM r.new_email;
+  UPDATE platform_private.user_email_change_requests SET status = 'confirmed', closed_at = now() WHERE id = r.id;
+  INSERT INTO platform_private.user_admin_change_audit(idempotency_key, actor_id, organization_id, target_id, kind, request_hash, before_state, after_state)
+  VALUES (r.id, r.target_id, r.organization_id, r.target_id, 'email_confirmed', md5(r.id::text),
+          jsonb_build_object('email', r.old_email), jsonb_build_object('email', r.new_email))
+  ON CONFLICT (actor_id, idempotency_key) DO NOTHING;
+  RETURN 'confirmed';
+END $$;
+REVOKE ALL ON FUNCTION platform_private.user_email_change_reconcile(uuid) FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION public.tenant_admin_email_change_request_v1(p_user_id uuid, p_new_email text, p_idempotency_key uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE v_actor uuid := auth.uid(); v_org uuid; v_old text; v_new text := lower(btrim(p_new_email)); v_hash text; v_prev jsonb; v_id uuid; v_after jsonb; x record;
+BEGIN
+  v_org := platform_private.user_admin_ctx(p_user_id);
+  IF v_new IS NULL OR length(v_new) > 254 OR v_new !~ '^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$' THEN
+    RAISE EXCEPTION 'invalid_email' USING ERRCODE='22023';
+  END IF;
+  v_hash := md5(p_user_id::text || '|' || v_new);
+  v_prev := platform_private.user_admin_replay(p_idempotency_key, 'email_request', v_hash);
+  IF v_prev IS NOT NULL THEN RETURN v_prev; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('user_admin:' || p_user_id::text, 0));
+  v_org := platform_private.user_admin_ctx(p_user_id);
+  -- Reconcilia pedidos travados do alvo (qualquer organização) antes de decidir.
+  FOR x IN SELECT id FROM platform_private.user_email_change_requests
+            WHERE target_id = p_user_id AND status = 'pending' AND holder_accepted_at IS NOT NULL LOOP
+    PERFORM platform_private.user_email_change_reconcile(x.id);
+  END LOOP;
+  SELECT email INTO v_old FROM auth.users WHERE id = p_user_id;
+  IF v_old IS NULL THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
+  IF lower(v_old) = v_new THEN RAISE EXCEPTION 'email_unchanged' USING ERRCODE='22023'; END IF;
+  IF EXISTS (SELECT 1 FROM auth.users WHERE lower(email) = v_new AND id <> p_user_id)
+     OR EXISTS (SELECT 1 FROM public.profiles WHERE lower(email) = v_new AND user_id <> p_user_id) THEN
+    RAISE EXCEPTION 'email_unavailable' USING ERRCODE='PT409';
+  END IF;
+  -- Expiração local só para pedidos NÃO aceitos (sem link oficial possível).
+  UPDATE platform_private.user_email_change_requests SET status = 'expired', closed_at = now()
+   WHERE status = 'pending' AND holder_accepted_at IS NULL AND expires_at < now();
+  UPDATE platform_private.user_email_change_requests SET status = 'expired', closed_at = now()
+   WHERE status = 'pending' AND holder_accepted_at IS NULL AND target_id = p_user_id AND organization_id <> v_org;
+  -- Travado (mesma ou outra organização) bloqueia novo pedido; mensagem neutra.
+  IF EXISTS (SELECT 1 FROM platform_private.user_email_change_requests WHERE status = 'pending' AND target_id = p_user_id
+              AND (organization_id = v_org OR holder_accepted_at IS NOT NULL)) THEN
+    RAISE EXCEPTION 'email_change_pending' USING ERRCODE='PT409';
+  END IF;
+  IF EXISTS (SELECT 1 FROM platform_private.user_email_change_requests WHERE status = 'pending' AND lower(new_email) = v_new) THEN
+    RAISE EXCEPTION 'email_unavailable' USING ERRCODE='PT409';
+  END IF;
+  INSERT INTO platform_private.user_email_change_requests(organization_id, target_id, old_email, new_email, requested_by)
+  VALUES (v_org, p_user_id, v_old, v_new, v_actor) RETURNING id INTO v_id;
+  v_after := jsonb_build_object('ok', true, 'op_id', v_id, 'status', 'pending', 'new_email', v_new);
+  INSERT INTO platform_private.user_admin_change_audit(idempotency_key, actor_id, organization_id, target_id, kind, request_hash, before_state, after_state)
+  VALUES (p_idempotency_key, v_actor, v_org, p_user_id, 'email_request', v_hash, jsonb_build_object('email', v_old), v_after);
+  RETURN v_after;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.tenant_admin_email_change_status_v1(p_user_id uuid)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE r record;
+BEGIN
+  PERFORM platform_private.user_admin_ctx(p_user_id);
+  SELECT id, new_email, status, created_at, expires_at, holder_accepted_at INTO r FROM platform_private.user_email_change_requests
+   WHERE target_id = p_user_id AND organization_id = (SELECT organization_id FROM public.profiles WHERE user_id = auth.uid())
+   ORDER BY created_at DESC LIMIT 1;
+  IF NOT FOUND THEN RETURN jsonb_build_object('status', 'none'); END IF;
+  RETURN jsonb_build_object('op_id', r.id, 'new_email', r.new_email,
+    'status', CASE WHEN r.status = 'pending' AND r.holder_accepted_at IS NOT NULL THEN 'accepted_awaiting_auth'
+                   WHEN r.status = 'pending' AND r.expires_at < now() THEN 'expired' ELSE r.status END,
+    'cancellable', r.status = 'pending' AND r.holder_accepted_at IS NULL,
+    'created_at', r.created_at, 'expires_at', r.expires_at);
+END $$;
+
+CREATE OR REPLACE FUNCTION public.tenant_admin_email_change_cancel_v1(p_user_id uuid, p_idempotency_key uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE v_org uuid; v_prev jsonb; v_id uuid; v_after jsonb; r record;
+BEGIN
+  v_org := platform_private.user_admin_ctx(p_user_id);
+  v_prev := platform_private.user_admin_replay(p_idempotency_key, 'email_cancel', md5(p_user_id::text));
+  IF v_prev IS NOT NULL THEN RETURN v_prev; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('user_admin:' || p_user_id::text, 0));
+  SELECT * INTO r FROM platform_private.user_email_change_requests
+   WHERE target_id = p_user_id AND status = 'pending' AND organization_id = v_org FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'no_pending_request' USING ERRCODE='PT409'; END IF;
+  IF r.holder_accepted_at IS NOT NULL THEN
+    IF platform_private.user_email_change_reconcile(r.id) = 'confirmed' THEN RAISE EXCEPTION 'request_not_pending' USING ERRCODE='PT409'; END IF;
+    RAISE EXCEPTION 'email_change_accepted_locked' USING ERRCODE='PT409';
+  END IF;
+  UPDATE platform_private.user_email_change_requests SET status = 'cancelled', closed_at = now(), closed_by = auth.uid() WHERE id = r.id RETURNING id INTO v_id;
+  v_after := jsonb_build_object('ok', true, 'op_id', v_id, 'status', 'cancelled');
+  INSERT INTO platform_private.user_admin_change_audit(idempotency_key, actor_id, organization_id, target_id, kind, request_hash, after_state)
+  VALUES (p_idempotency_key, auth.uid(), v_org, p_user_id, 'email_cancel', md5(p_user_id::text), v_after);
+  RETURN v_after;
+END $$;
+
+CREATE OR REPLACE FUNCTION platform_private.user_email_change_sync_v1(p_op_id uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE r record; v_st text;
+BEGIN
+  SELECT * INTO r FROM platform_private.user_email_change_requests WHERE id = p_op_id FOR UPDATE;
+  IF NOT FOUND OR r.status <> 'pending' THEN RETURN jsonb_build_object('ok', false, 'status', COALESCE(r.status, 'missing')); END IF;
+  IF r.holder_accepted_at IS NULL AND NOT EXISTS (SELECT 1 FROM public.profiles WHERE user_id = r.target_id AND organization_id = r.organization_id) THEN
+    UPDATE platform_private.user_email_change_requests SET status = 'expired', closed_at = now() WHERE id = p_op_id;
+    RETURN jsonb_build_object('ok', false, 'status', 'expired');
+  END IF;
+  v_st := platform_private.user_email_change_reconcile(p_op_id);
+  RETURN jsonb_build_object('ok', v_st = 'confirmed', 'status', CASE WHEN v_st = 'pending' THEN 'awaiting_holder' ELSE v_st END);
+END $$;
+REVOKE ALL ON FUNCTION platform_private.user_email_change_sync_v1(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION platform_private.user_email_change_sync_v1(uuid) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.user_email_change_my_pending_v1() RETURNS jsonb
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE r record;
+BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'not_authenticated' USING ERRCODE='28000'; END IF;
+  SELECT id, new_email, expires_at, holder_accepted_at INTO r FROM platform_private.user_email_change_requests
+   WHERE target_id = auth.uid() AND status = 'pending'
+     AND ((organization_id = (SELECT organization_id FROM public.profiles WHERE user_id = auth.uid()) AND expires_at >= now())
+          OR holder_accepted_at IS NOT NULL)
+   ORDER BY (holder_accepted_at IS NOT NULL) DESC, created_at DESC LIMIT 1;
+  IF NOT FOUND THEN RETURN jsonb_build_object('status', 'none'); END IF;
+  RETURN jsonb_build_object('status', 'pending', 'op_id', r.id, 'new_email', r.new_email, 'expires_at', r.expires_at,
+                            'accepted', r.holder_accepted_at IS NOT NULL);
+END $$;
+
+CREATE OR REPLACE FUNCTION public.user_email_change_accept_v1(p_op_id uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE r record;
+BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'not_authenticated' USING ERRCODE='28000'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('user_admin:' || auth.uid()::text, 0));
+  SELECT * INTO r FROM platform_private.user_email_change_requests WHERE id = p_op_id FOR UPDATE;
+  IF NOT FOUND OR r.target_id <> auth.uid() THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
+  -- Aceite já registrado: idempotente (mesmo após troca de empresa; o link pode estar emitido).
+  IF r.status = 'pending' AND r.holder_accepted_at IS NOT NULL THEN
+    RETURN jsonb_build_object('ok', true, 'op_id', r.id, 'new_email', r.new_email, 'replayed', true);
+  END IF;
+  IF r.organization_id IS DISTINCT FROM (SELECT organization_id FROM public.profiles WHERE user_id = auth.uid()) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE='42501';
+  END IF;
+  IF r.status <> 'pending' OR r.expires_at < now() THEN RAISE EXCEPTION 'request_not_pending' USING ERRCODE='PT409'; END IF;
+  IF EXISTS (SELECT 1 FROM auth.users WHERE lower(email) = lower(r.new_email) AND id <> r.target_id) THEN
+    RAISE EXCEPTION 'email_unavailable' USING ERRCODE='PT409';
+  END IF;
+  UPDATE platform_private.user_email_change_requests SET holder_accepted_at = now() WHERE id = p_op_id;
+  RETURN jsonb_build_object('ok', true, 'op_id', r.id, 'new_email', r.new_email);
+END $$;
+
+CREATE OR REPLACE FUNCTION public.user_email_change_decline_v1(p_op_id uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE r record;
+BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('user_admin:' || auth.uid()::text, 0));
+  SELECT * INTO r FROM platform_private.user_email_change_requests WHERE id = p_op_id FOR UPDATE;
+  IF NOT FOUND OR r.target_id <> auth.uid()
+     OR (r.holder_accepted_at IS NULL AND r.organization_id IS DISTINCT FROM (SELECT organization_id FROM public.profiles WHERE user_id = auth.uid())) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE='42501';
+  END IF;
+  IF r.status <> 'pending' THEN RETURN jsonb_build_object('ok', true, 'status', r.status, 'replayed', true); END IF;
+  IF r.holder_accepted_at IS NOT NULL THEN
+    IF platform_private.user_email_change_reconcile(r.id) = 'confirmed' THEN RETURN jsonb_build_object('ok', true, 'status', 'confirmed'); END IF;
+    RAISE EXCEPTION 'email_change_accepted_locked' USING ERRCODE='PT409';
+  END IF;
+  UPDATE platform_private.user_email_change_requests SET status = 'cancelled', closed_at = now(), closed_by = auth.uid() WHERE id = p_op_id;
+  RETURN jsonb_build_object('ok', true, 'status', 'cancelled');
+END $$;
+
+-- Saída segura após erro de envio: só libera se o Auth comprovadamente NÃO tem troca pendente
+-- (email_change) nem confirmada para o endereço canônico. Resposta ambígua do provedor que chegou a
+-- emitir o link mantém o pedido travado e reconciliável.
+CREATE OR REPLACE FUNCTION public.user_email_change_release_v1(p_op_id uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE r record; v_auth text; v_pending text;
+BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'not_authenticated' USING ERRCODE='28000'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('user_admin:' || auth.uid()::text, 0));
+  SELECT * INTO r FROM platform_private.user_email_change_requests WHERE id = p_op_id FOR UPDATE;
+  IF NOT FOUND OR r.target_id <> auth.uid() THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
+  IF r.status <> 'pending' THEN RETURN jsonb_build_object('ok', true, 'status', r.status, 'replayed', true); END IF;
+  IF r.holder_accepted_at IS NULL THEN RETURN jsonb_build_object('ok', true, 'status', 'pending', 'released', false); END IF;
+  SELECT lower(email), lower(email_change) INTO v_auth, v_pending FROM auth.users WHERE id = auth.uid();
+  IF v_auth = lower(r.new_email) THEN
+    RETURN jsonb_build_object('ok', true, 'status', platform_private.user_email_change_reconcile(r.id));
+  END IF;
+  IF v_pending = lower(r.new_email) THEN RAISE EXCEPTION 'email_change_accepted_locked' USING ERRCODE='PT409'; END IF;
+  UPDATE platform_private.user_email_change_requests SET holder_accepted_at = NULL WHERE id = r.id;
+  INSERT INTO platform_private.user_admin_change_audit(idempotency_key, actor_id, organization_id, target_id, kind, request_hash, after_state)
+  VALUES (gen_random_uuid(), auth.uid(), r.organization_id, r.target_id, 'email_cancel', md5(r.id::text || '|release'),
+          jsonb_build_object('op_id', r.id, 'released_after_dispatch_failure', true));
+  RETURN jsonb_build_object('ok', true, 'status', 'pending', 'released', true);
+END $$;
+
+CREATE OR REPLACE FUNCTION public.user_email_change_sync_self_v1() RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE r record; v_auth text; v_pending text; v_st text;
+BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'not_authenticated' USING ERRCODE='28000'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('user_admin:' || auth.uid()::text, 0));
+  -- Pedido travado tem prioridade e é reconciliado mesmo após troca de empresa/prazo (link tardio).
+  SELECT * INTO r FROM platform_private.user_email_change_requests
+   WHERE target_id = auth.uid() AND status = 'pending' AND holder_accepted_at IS NOT NULL
+   ORDER BY holder_accepted_at DESC LIMIT 1 FOR UPDATE;
+  IF NOT FOUND THEN
+    SELECT * INTO r FROM platform_private.user_email_change_requests
+     WHERE target_id = auth.uid() AND organization_id = (SELECT organization_id FROM public.profiles WHERE user_id = auth.uid())
+       AND status IN ('pending','confirmed') ORDER BY created_at DESC LIMIT 1 FOR UPDATE;
+  END IF;
+  IF NOT FOUND THEN RETURN jsonb_build_object('status', 'none'); END IF;
+  IF r.status = 'confirmed' THEN RETURN jsonb_build_object('status', 'confirmed', 'replayed', true); END IF;
+  v_st := platform_private.user_email_change_reconcile(r.id);
+  IF v_st = 'confirmed' THEN RETURN jsonb_build_object('status', 'confirmed'); END IF;
+  IF r.holder_accepted_at IS NULL AND r.expires_at < now() THEN
+    UPDATE platform_private.user_email_change_requests SET status = 'expired', closed_at = now() WHERE id = r.id;
+    RETURN jsonb_build_object('status', 'expired');
+  END IF;
+  SELECT lower(email_change) INTO v_pending FROM auth.users WHERE id = auth.uid();
+  RETURN jsonb_build_object('status', CASE WHEN v_pending IS NULL THEN 'awaiting_holder'
+                                           WHEN v_pending = lower(r.new_email) THEN 'awaiting_auth_confirmation'
+                                           ELSE 'auth_pending_mismatch' END,
+                            'locked', r.holder_accepted_at IS NOT NULL);
+END $$;
+
 -- ACL: somente authenticated; PUBLIC/anon revogados.
 DO $$ DECLARE f text; BEGIN
   FOREACH f IN ARRAY ARRAY[
@@ -538,6 +778,7 @@ DO $$ DECLARE f text; BEGIN
     'public.user_email_change_my_pending_v1()',
     'public.user_email_change_accept_v1(uuid)',
     'public.user_email_change_decline_v1(uuid)',
+    'public.user_email_change_release_v1(uuid)',
     'public.user_email_change_sync_self_v1()',
     'public.tenant_admin_email_change_request_v1(uuid,text,uuid)',
     'public.tenant_admin_email_change_status_v1(uuid)',

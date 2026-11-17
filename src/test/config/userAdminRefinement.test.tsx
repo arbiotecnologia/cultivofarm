@@ -49,6 +49,13 @@ describe("painel", () => {
     expect(screen.getByText(/Atual: old@ex.test/)).toBeTruthy();
     expect(screen.getByText(/O e-mail atual continua válido/)).toBeTruthy();
   });
+  it("após aceite do titular o admin não vê Cancelar e é avisado do link oficial", async () => {
+    rpc.mockImplementation(async (n: string) => n === "tenant_admin_email_change_status_v1" ? { data: { status: "accepted_awaiting_auth", new_email: "novo@ex.test", cancellable: false }, error: null } : { data: null, error: null });
+    wrap(<UserAdminRefinementPanel target={{ user_id: T, email: "old@ex.test", roles: ["financeiro"] }} actorId={A} currentType="internal" onChanged={() => {}} />);
+    await waitFor(() => expect(screen.getByText(/Pendente: novo@ex.test/)).toBeTruthy());
+    expect(screen.getByText(/não pode ser cancelada/)).toBeTruthy();
+    expect(screen.queryByText("Cancelar solicitação")).toBeNull();
+  });
   it("admin só registra o pedido (sem Edge/links) e não afirma troca", async () => {
     rpc.mockResolvedValue({ data: { status: "none" }, error: null });
     rpc.mockImplementation(async (n: string) => n === "tenant_admin_email_change_request_v1" ? { data: { ok: true, status: "pending" }, error: null } : { data: { status: "none" }, error: null });

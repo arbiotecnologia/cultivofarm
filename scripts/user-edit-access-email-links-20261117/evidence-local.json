@@ -1,6 +1,6 @@
 {
- "passed": 92,
- "total": 92,
+ "passed": 110,
+ "total": 110,
  "results": [
   {
    "name": "self escalation negado",
@@ -190,7 +190,7 @@
   {
    "name": "e-mail duplicado",
    "pass": true,
-   "detail": "ERROR:  email_unavailable\nCONTEXT:  PL/pgSQL function public.tenant_admin_email_change_request_v1(uuid,text,uuid) line 19 at RAISE"
+   "detail": "ERROR:  email_unavailable\nCONTEXT:  PL/pgSQL function public.tenant_admin_email_change_request_v1(uuid,text,uuid) line 23 at RAISE"
   },
   {
    "name": "e-mail inválido",
@@ -215,7 +215,7 @@
   {
    "name": "segunda pendência bloqueada",
    "pass": true,
-   "detail": "ERROR:  email_change_pending\nCONTEXT:  PL/pgSQL function public.tenant_admin_email_change_request_v1(uuid,text,uuid) line 27 at RAISE"
+   "detail": "ERROR:  email_change_pending\nCONTEXT:  PL/pgSQL function public.tenant_admin_email_change_request_v1(uuid,text,uuid) line 33 at RAISE"
   },
   {
    "name": "e-mail atual preservado antes da confirmação",
@@ -240,7 +240,7 @@
   {
    "name": "admin não aceita pelo titular",
    "pass": true,
-   "detail": "ERROR:  forbidden\nCONTEXT:  PL/pgSQL function public.user_email_change_accept_v1(uuid) line 8 at RAISE"
+   "detail": "ERROR:  forbidden\nCONTEXT:  PL/pgSQL function public.user_email_change_accept_v1(uuid) line 7 at RAISE"
   },
   {
    "name": "aceite devolve endereço canônico",
@@ -286,6 +286,96 @@
    "name": "recusa pelo titular",
    "pass": true,
    "detail": ""
+  },
+  {
+   "name": "status admin após aceite: aguardando Auth, não cancelável",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "admin não cancela após aceite",
+   "pass": true,
+   "detail": "ERROR:  email_change_accepted_locked\nCONTEXT:  PL/pgSQL function public.tenant_admin_email_change_cancel_v1(uuid,uuid) line 13 at RAISE"
+  },
+  {
+   "name": "titular não recusa após aceite",
+   "pass": true,
+   "detail": "ERROR:  email_change_accepted_locked\nCONTEXT:  PL/pgSQL function public.user_email_change_decline_v1(uuid) line 14 at RAISE"
+  },
+  {
+   "name": "liberação negada com troca pendente no Auth (envio ambíguo)",
+   "pass": true,
+   "detail": "ERROR:  email_change_accepted_locked\nCONTEXT:  PL/pgSQL function public.user_email_change_release_v1(uuid) line 14 at RAISE"
+  },
+  {
+   "name": "novo pedido bloqueado enquanto travado",
+   "pass": true,
+   "detail": "ERROR:  email_change_pending\nCONTEXT:  PL/pgSQL function public.tenant_admin_email_change_request_v1(uuid,text,uuid) line 33 at RAISE"
+  },
+  {
+   "name": "prazo vencido não expira pedido travado",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "titular ainda vê pedido travado após prazo",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "confirmação tardia sincroniza profiles",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "cancelamento negado entre aceite e envio",
+   "pass": true,
+   "detail": "ERROR:  email_change_accepted_locked\nCONTEXT:  PL/pgSQL function public.tenant_admin_email_change_cancel_v1(uuid,uuid) line 13 at RAISE"
+  },
+  {
+   "name": "liberação após falha de envio comprovada",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "cancelamento permitido após liberação",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "nenhum link emitido para pedido liberado",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "admin da nova empresa não vê pedido travado anterior",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "admin da nova empresa não sobrescreve pedido travado",
+   "pass": true,
+   "detail": "ERROR:  email_change_pending\nCONTEXT:  PL/pgSQL function public.tenant_admin_email_change_request_v1(uuid,text,uuid) line 33 at RAISE"
+  },
+  {
+   "name": "admin anterior não cancela após troca de empresa",
+   "pass": true,
+   "detail": "gSQL function platform_private.user_admin_ctx(uuid) line 7 at RAISE\nPL/pgSQL function public.tenant_admin_email_change_cancel_v1(uuid,uuid) line 4 at assignment"
+  },
+  {
+   "name": "pedido travado não expirado na troca de empresa",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "confirmação tardia após troca: só o titular é sincronizado",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "liberação negada a outro usuário",
+   "pass": true,
+   "detail": "ERROR:  forbidden\nCONTEXT:  PL/pgSQL function public.user_email_change_release_v1(uuid) line 7 at RAISE"
   },
   {
    "name": "busca paginada só do tenant",
@@ -430,7 +520,7 @@
   {
    "name": "titular não aceita pedido da organização anterior",
    "pass": true,
-   "detail": "ERROR:  forbidden\nCONTEXT:  PL/pgSQL function public.user_email_change_accept_v1(uuid) line 8 at RAISE"
+   "detail": "ERROR:  forbidden\nCONTEXT:  PL/pgSQL function public.user_email_change_accept_v1(uuid) line 13 at RAISE"
   },
   {
    "name": "sync do titular ignora pedido anterior",
@@ -450,7 +540,7 @@
   {
    "name": "pedido duplicado em outra empresa é neutro",
    "pass": true,
-   "detail": "ERROR:  email_unavailable\nCONTEXT:  PL/pgSQL function public.tenant_admin_email_change_request_v1(uuid,text,uuid) line 30 at RAISE"
+   "detail": "ERROR:  email_unavailable\nCONTEXT:  PL/pgSQL function public.tenant_admin_email_change_request_v1(uuid,text,uuid) line 36 at RAISE"
   },
   {
    "name": "replay não atravessa troca de empresa do ator",

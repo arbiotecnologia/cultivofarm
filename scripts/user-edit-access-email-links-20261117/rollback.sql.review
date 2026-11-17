@@ -10,9 +10,11 @@ DROP FUNCTION IF EXISTS public.tenant_admin_consultor_link_v1(uuid,text,uuid,uui
 DROP FUNCTION IF EXISTS public.user_email_change_my_pending_v1();
 DROP FUNCTION IF EXISTS public.user_email_change_accept_v1(uuid);
 DROP FUNCTION IF EXISTS public.user_email_change_decline_v1(uuid);
-DROP FUNCTION IF EXISTS public.user_email_change_sync_self_v1();
+DROP FUNCTION IF EXISTS public.user_email_change_release_v1(uuid);
+-- MANTER public.user_email_change_sync_self_v1(), platform_private.user_email_change_sync_v1(uuid) e
+-- platform_private.user_email_change_reconcile(uuid): pedidos aceitos podem ter link oficial do Auth ainda
+-- válido; removê-los deixaria auth.users.email divergente de profiles após confirmação tardia.
 DROP FUNCTION IF EXISTS public.my_session_authz_state_v1();
-REVOKE ALL ON FUNCTION platform_private.user_email_change_sync_v1(uuid) FROM service_role;
 -- platform_actor_access_ready: MANTER a versão com user_authz_epoch (deny-only). Restaurar o corpo
 -- capturado (md5 048249c0c2106c3761e26eacb8d0de84) reabriria autoridade de JWTs anteriores a
 -- mudanças já executadas; só fazer isso após todos os tokens antigos expirarem e com decisão do auditor.

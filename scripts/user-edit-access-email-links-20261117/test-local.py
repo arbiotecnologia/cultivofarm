@@ -146,6 +146,50 @@ try:
     check("cancelamento pelo admin", r["status"] == "cancelled")
     r = json.loads(last(psql(f"SELECT public.tenant_admin_email_change_request_v1('{T}','quarto@ex.test','{k()}')", A)))
     check("recusa pelo titular", json.loads(last(psql(f"SELECT public.user_email_change_decline_v1('{r['op_id']}')", T)))["status"] == "cancelled")
+    # Serialização pós-aceite: link oficial emitido não é "cancelado" localmente.
+    def mkuser(nm, o):
+        u = str(uuid.uuid4()); psql(f"INSERT INTO auth.users VALUES ('{u}','{nm}@ex.test'); INSERT INTO public.profiles(user_id,nome,email,organization_id) VALUES ('{u}','{nm}','{nm}@ex.test','{o}')"); return u
+    pe = lambda u: psql(f"SELECT email FROM public.profiles WHERE user_id='{u}'").stdout.strip()
+    rs = lambda op: psql(f"SELECT status||':'||(holder_accepted_at IS NOT NULL) FROM platform_private.user_email_change_requests WHERE id='{op}'").stdout.strip()
+    H1 = mkuser("h1", OA)
+    op1 = json.loads(last(psql(f"SELECT public.tenant_admin_email_change_request_v1('{H1}','h1novo@ex.test','{k()}')", A)))["op_id"]
+    psql(f"SELECT public.user_email_change_accept_v1('{op1}')", H1)
+    tk = auth_update_user(H1, "h1novo@ex.test")
+    check("status admin após aceite: aguardando Auth, não cancelável", (lambda j: j["status"] == "accepted_awaiting_auth" and j["cancellable"] is False)(json.loads(last(psql(f"SELECT public.tenant_admin_email_change_status_v1('{H1}')", A)))))
+    denied("admin não cancela após aceite", f"SELECT public.tenant_admin_email_change_cancel_v1('{H1}','{k()}')", A, "email_change_accepted_locked")
+    denied("titular não recusa após aceite", f"SELECT public.user_email_change_decline_v1('{op1}')", H1, "email_change_accepted_locked")
+    denied("liberação negada com troca pendente no Auth (envio ambíguo)", f"SELECT public.user_email_change_release_v1('{op1}')", H1, "email_change_accepted_locked")
+    psql(f"UPDATE platform_private.user_email_change_requests SET expires_at = now() - interval '1 hour' WHERE id='{op1}'")
+    denied("novo pedido bloqueado enquanto travado", f"SELECT public.tenant_admin_email_change_request_v1('{H1}','h1outro@ex.test','{k()}')", A, "email_change_pending")
+    sx = json.loads(last(psql("SELECT public.user_email_change_sync_self_v1()", H1)))
+    check("prazo vencido não expira pedido travado", sx["status"] == "awaiting_auth_confirmation" and sx["locked"] is True and rs(op1) == "pending:true" and pe(H1) == "h1@ex.test")
+    check("titular ainda vê pedido travado após prazo", json.loads(last(psql("SELECT public.user_email_change_my_pending_v1()", H1))).get("accepted") is True)
+    auth_confirm(tk)   # clique tardio no link da caixa falsa
+    check("confirmação tardia sincroniza profiles", json.loads(last(psql("SELECT public.user_email_change_sync_self_v1()", H1)))["status"] == "confirmed" and pe(H1) == "h1novo@ex.test" and rs(op1) == "confirmed:true")
+    # Erro de envio: aceite sem troca pendente no Auth → saída segura, depois cancelável.
+    H2 = mkuser("h2", OA)
+    op2 = json.loads(last(psql(f"SELECT public.tenant_admin_email_change_request_v1('{H2}','h2novo@ex.test','{k()}')", A)))["op_id"]
+    psql(f"SELECT public.user_email_change_accept_v1('{op2}')", H2)
+    denied("cancelamento negado entre aceite e envio", f"SELECT public.tenant_admin_email_change_cancel_v1('{H2}','{k()}')", A, "email_change_accepted_locked")
+    rl = json.loads(last(psql(f"SELECT public.user_email_change_release_v1('{op2}')", H2)))
+    check("liberação após falha de envio comprovada", rl.get("released") is True and rs(op2) == "pending:false")
+    check("cancelamento permitido após liberação", json.loads(last(psql(f"SELECT public.tenant_admin_email_change_cancel_v1('{H2}','{k()}')", A)))["status"] == "cancelled" and pe(H2) == "h2@ex.test")
+    check("nenhum link emitido para pedido liberado", not any(m["uid"] == H2 for m in OUTBOX))
+    # Entre empresas: aceito em A, titular movido para B, confirmação tardia.
+    H3 = mkuser("h3", OA); NB = mkuser("nb", OB)
+    op3 = json.loads(last(psql(f"SELECT public.tenant_admin_email_change_request_v1('{H3}','h3novo@ex.test','{k()}')", A)))["op_id"]
+    psql(f"SELECT public.user_email_change_accept_v1('{op3}')", H3); tk3 = auth_update_user(H3, "h3novo@ex.test")
+    psql(f"UPDATE public.profiles SET organization_id='{OB}' WHERE user_id='{H3}'")
+    stb = last(psql(f"SELECT public.tenant_admin_email_change_status_v1('{H3}')", B))
+    check("admin da nova empresa não vê pedido travado anterior", json.loads(stb)["status"] == "none" and "h3novo" not in stb)
+    denied("admin da nova empresa não sobrescreve pedido travado", f"SELECT public.tenant_admin_email_change_request_v1('{H3}','h3b@ex.test','{k()}')", B, "email_change_pending")
+    denied("admin anterior não cancela após troca de empresa", f"SELECT public.tenant_admin_email_change_cancel_v1('{H3}','{k()}')", A, "forbidden")
+    check("pedido travado não expirado na troca de empresa", rs(op3) == "pending:true")
+    auth_confirm(tk3)
+    ws3 = json.loads(last(psql(f"SET ROLE service_role; SELECT platform_private.user_email_change_sync_v1('{op3}')")))
+    check("confirmação tardia após troca: só o titular é sincronizado", ws3["status"] == "confirmed" and pe(H3) == "h3novo@ex.test" and pe(NB) == "nb@ex.test"
+          and psql(f"SELECT organization_id FROM platform_private.user_admin_change_audit WHERE kind='email_confirmed' AND target_id='{H3}'").stdout.strip() == OA)
+    denied("liberação negada a outro usuário", f"SELECT public.user_email_change_release_v1('{op3}')", NB, "forbidden")
     # Fase 4 — vínculos do consultor
     s = json.loads(psql("SELECT public.tenant_admin_search_clientes_v1('fazenda',0,1)", A).stdout.strip().splitlines()[-1])
     check("busca paginada só do tenant", s["total"] == 2 and len(s["items"]) == 1)

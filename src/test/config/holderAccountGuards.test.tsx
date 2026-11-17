@@ -52,4 +52,25 @@ describe("HolderAccountGuards", () => {
     fireEvent.click(await screen.findByText("Recusar"));
     await waitFor(() => expect(screen.queryByText(/novo@ex.test/)).toBeNull());
   });
+  it("aceito: sem botão Recusar e aviso de que não pode cancelar", async () => {
+    server({ user_email_change_my_pending_v1: { data: { status: "pending", op_id: OP, new_email: "novo@ex.test", accepted: true }, error: null } });
+    render(<HolderAccountGuardsInner userId="u1" />);
+    await screen.findByText(/não pode mais ser recusada/);
+    expect(screen.queryByText("Recusar")).toBeNull();
+  });
+  it("erro de envio com liberação comprovada pelo servidor reabre Recusar", async () => {
+    server({ user_email_change_release_v1: { data: { ok: true, released: true }, error: null } }); updateUser.mockResolvedValue({ error: { message: "smtp" } });
+    render(<HolderAccountGuardsInner userId="u1" />);
+    fireEvent.click(await screen.findByText("Aceitar e enviar confirmação"));
+    await screen.findByText(/Não foi possível enviar a confirmação/);
+    expect(rpc.mock.calls.map((c) => c[0])).toContain("user_email_change_release_v1");
+    expect(screen.getByText("Recusar")).toBeTruthy();
+  });
+  it("erro ambíguo (servidor não libera) mantém travado e sem Recusar", async () => {
+    server({ user_email_change_release_v1: { data: null, error: { message: "email_change_accepted_locked" } } }); updateUser.mockResolvedValue({ error: { message: "timeout" } });
+    render(<HolderAccountGuardsInner userId="u1" />);
+    fireEvent.click(await screen.findByText("Aceitar e enviar confirmação"));
+    await screen.findByText(/não pode ser recusado/);
+    expect(screen.queryByText("Recusar")).toBeNull();
+  });
 });

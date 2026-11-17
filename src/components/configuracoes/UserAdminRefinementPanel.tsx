@@ -128,7 +128,7 @@ function EmailSection({ target, onChanged }: Props) {
   const [msg, setMsg] = useState<string | null>(null);
   const status = useQuery({
     queryKey: ["tenant-admin-email-change", target.user_id],
-    queryFn: async () => { const { data, error } = await rpc(RPC.emailStatus, { p_user_id: target.user_id }); if (error) throw new Error(error.message); return data as { status: string; new_email?: string; expires_at?: string } },
+    queryFn: async () => { const { data, error } = await rpc(RPC.emailStatus, { p_user_id: target.user_id }); if (error) throw new Error(error.message); return data as { status: string; new_email?: string; expires_at?: string; cancellable?: boolean } },
     retry: false,
   });
   const request = useMutation({
@@ -146,7 +146,8 @@ function EmailSection({ target, onChanged }: Props) {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["tenant-admin-email-change", target.user_id] }); onChanged(); },
     onError: (e: Error) => setMsg(friendlyError(e.message)),
   });
-  const pending = status.data?.status === "pending";
+  const locked = status.data?.status === "accepted_awaiting_auth";
+  const pending = status.data?.status === "pending" || locked;
   return (
     <section className="space-y-2 border rounded-md p-3" aria-label="Alterar e-mail">
       <h4 className="font-semibold text-sm">E-mail</h4>
@@ -155,8 +156,10 @@ function EmailSection({ target, onChanged }: Props) {
       {status.isError && <p role="alert" className="text-xs text-destructive">{friendlyError((status.error as Error).message)}</p>}
       {pending ? <div className="space-y-2">
         <Badge variant="outline" className="whitespace-normal break-all">Pendente: {status.data?.new_email}</Badge>
-        <p className="text-xs text-muted-foreground">Aguardando o titular aceitar e confirmar. O e-mail atual continua válido.</p>
-        <Button type="button" variant="outline" size="sm" disabled={cancel.isPending} onClick={() => cancel.mutate()}>Cancelar solicitação</Button>
+        {locked
+          ? <p className="text-xs text-muted-foreground">O titular aceitou e o link oficial de confirmação pode já ter sido enviado. Como esse link não pode ser invalidado daqui, a solicitação não pode ser cancelada e segue aguardando confirmação. O e-mail atual continua válido até lá.</p>
+          : <p className="text-xs text-muted-foreground">Aguardando o titular aceitar e confirmar. O e-mail atual continua válido.</p>}
+        {!locked && status.data?.cancellable !== false && <Button type="button" variant="outline" size="sm" disabled={cancel.isPending} onClick={() => cancel.mutate()}>Cancelar solicitação</Button>}
       </div> : <div className="space-y-2">
         <Label htmlFor="new-email">Novo e-mail</Label>
         <Input id="new-email" type="email" value={email} maxLength={254} onChange={(e) => setEmail(e.target.value)} />
