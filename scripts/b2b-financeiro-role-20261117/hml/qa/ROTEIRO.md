@@ -38,3 +38,10 @@ No HML o crédito fica **fechado por construção** (cadeia B4 ausente). A prova
 4. Navegador desktop/mobile e CSV: prova separada abaixo; a suíte nunca a substitui.
 Critérios: negação só com 401/403 + 42501 + mensagem exata; obrigações validadas pelo envelope estrito e IDs sentinela exatos; vazio = BLOCKED_NO_ROWS; escrita aceita = FAIL + `leaks[]` para limpeza pelo root. Revogado vira usuário interno `aplicador` sintético (registrar no encerramento).
 Não verificado: endpoint `tenant-user-admin` não está no repositório (implantado à parte) — se responder 404 o script para; formato de `b2b_finance_credit_v1` no ensaio a confirmar no PG descartável.
+
+## C9 + fila de QA (17/11)
+- Gatilhos HML reais carregados na bateria (pins `c9_pin_*`): `test_hml_access_transition_pg.py` 49/49; `test_hml_pg.py` 83/83. 02c-HML agora pina os dois gatilhos HML; com corpos de produção aborta `B2B_FIN_02C_DRIFT` (testado).
+- Diferença real: `partner_users_derive_tenant` HML não rejeita parceiro sem empresa dona (vínculo nasce com tenant NULL). 02c nega Financeiro nesse caso (`partner_link_required` / `scope_unprovable`) sem efeito — testado.
+- Demais rotinas da transição (C9): md5 HML = produção.
+- create-user HML v2 só aceita papéis internos: `provision_fixtures.py` cria interno `aplicador`, transiciona para `b2b_finance` (cria vínculo) e, para gestor/técnico, segue `b2b_finance → b2b` pelo contrato canônico. Nenhum provisionador paralelo.
+- Bloqueio de fixture: HML tem um único parceiro sintético e zero pedidos/títulos. A/B/C exigem que o root cadastre `QA-FIN-A/B/C` pelo cadastro comercial canônico; sem isso o script para. Títulos: `BLOCKED_NO_ROWS` (ver `../LIMITES-PROVA.md`).

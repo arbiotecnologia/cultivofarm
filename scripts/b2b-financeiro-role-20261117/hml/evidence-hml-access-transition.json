@@ -1,5 +1,5 @@
 {
- "total": 42,
+ "total": 49,
  "results": [
   {
    "name": "live_pin_user_admin_change_access_type_core",
@@ -15,6 +15,18 @@
   },
   {
    "name": "02c_ref_divergente",
+   "status": "PASS"
+  },
+  {
+   "name": "02c_drift_com_gatilhos_de_producao",
+   "status": "PASS"
+  },
+  {
+   "name": "c9_pin_touch_related_profiles",
+   "status": "PASS"
+  },
+  {
+   "name": "c9_pin_partner_users_derive_tenant",
    "status": "PASS"
   },
   {
@@ -127,6 +139,22 @@
   },
   {
    "name": "leitor_vinculo_anon_sem_execute",
+   "status": "PASS"
+  },
+  {
+   "name": "fin_parceiro_sem_dono_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "c9_vinculo_tenant_nulo_hml",
+   "status": "PASS"
+  },
+  {
+   "name": "fin_vinculo_tenant_nulo_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "fin_vinculo_tenant_nulo_sem_efeito",
    "status": "PASS"
   },
   {

@@ -56,7 +56,11 @@ for k in "ABC":
     lk = link(ADM[k], uid); toks[f"QA_FIN_{k}"] = tok
     P[k].update(finance_user=uid, link_id=lk["id"], titles=titles.get(k, []), order_payload={**order, "partner_id": P[k]["id"]}, credit_limit=lim.get(P[k]["id"]))
 for label, roles in [("GESTOR_A", ["parceiro_b2b"]), ("TECNICO_A", ["parceiro_b2b_tecnico"])]:
-    email, pw, uid = make(label, ADM["A"]); transition(ADM["A"], uid, "b2b", roles, ["aplicador"], P["A"]["id"]); toks[f"QA_{label}"] = signin(email, pw)[0]
+    # create-user HML v2 rejeita papéis B2B (tenant_role_unavailable) e o alvo `b2b` exige vínculo existente:
+    # único caminho canônico que cria vínculo é b2b_finance; depois fin→b2b converte papel+vínculo (testado: fin_para_gestor).
+    email, pw, uid = make(label, ADM["A"]); transition(ADM["A"], uid, "b2b_finance", ["parceiro_b2b_financeiro"], ["aplicador"], P["A"]["id"])
+    transition(ADM["A"], uid, "b2b", roles, ["parceiro_b2b_financeiro"]); tok = signin(email, pw)[0]
+    s, c = call(tok, "POST", "/rest/v1/rpc/b2b_finance_capability_v1", {}); need(s == 200 and c.get("allowed") is False, f"{label} ainda financeiro"); toks[f"QA_{label}"] = tok
 email, pw, uid = make("FIN_REV", ADM["A"]); transition(ADM["A"], uid, "b2b_finance", ["parceiro_b2b_financeiro"], ["aplicador"], P["A"]["id"])
 old, _ = signin(email, pw); transition(ADM["A"], uid, "internal", ["aplicador"], ["parceiro_b2b_financeiro"]); toks["QA_FIN_REVOKED"] = old
 json.dump({"ref": REF, "synthetic": True, "partners": P, "users": users}, open("fixture-manifest.json", "w"), indent=1)

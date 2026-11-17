@@ -55,7 +55,7 @@ if re.search(r"credit_exposure_core|credit_balances|FUNCTION platform_private.ex
 # 01-pre: pinos de produção sem a cadeia de crédito + pino HML da exposição legada + ausência da cadeia B4.
 pre = (R / "01-pre.template.sql").read_text()
 pins = {k: v for k, v in PINS.items() if k not in CREDIT_FN and k not in CREDIT_CHAIN and k not in PROV and k in json.loads((R / "01-pre.sql.readonly").read_text().split("pins jsonb := '",1)[1].split("';",1)[0])}
-pins.update(HML_PINS)
+pins.update({k: v for k, v in HML_PINS.items() if k not in ("cf_user_guards_v1.touch_related_profiles", "partner_users_derive_tenant")})  # gatilhos: só no PRE do 02c
 pre = pre.replace("@@PINS@@", json.dumps(pins, sort_keys=True))
 pre = ref(pre, 2, "pre")
 pre = sub(pre, "  IF pg_get_constraintdef(", """  IF to_regprocedure('platform_private.external_provisioning_scope(uuid,public.app_role[],uuid,uuid[],uuid)') IS NOT NULL
@@ -98,4 +98,9 @@ for src, dst in [("02a-install-enum.sql.review", "02a-install-enum-hml.sql.revie
                  ("04c-rollback-access-transition.sql.review", "04c-rollback-access-transition-hml.sql.review")]:
     s = (R / src).read_text(); n = s.count(PROD)
     (H / dst).write_text("-- VARIANTE HML gerada por hml/build_hml.py; não editar.\n" + (ref(s, n, dst) if n else s))
+# 02c-HML: gatilhos de partner_users acionados pela transição divergem da produção (C9) → pins HML exatos.
+c = (H / "02c-install-access-transition-hml.sql.review").read_text()
+head, rest = c.split("pins jsonb := '", 1); js, tail = rest.split("';", 1); pj = json.loads(js)
+for k in ("cf_user_guards_v1.touch_related_profiles", "partner_users_derive_tenant"): pj[k] = HML_PINS[k]
+(H / "02c-install-access-transition-hml.sql.review").write_text(head + "pins jsonb := '" + json.dumps(pj, sort_keys=True) + "';" + tail)
 print("HML OK")

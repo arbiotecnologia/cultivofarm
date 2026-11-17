@@ -46,6 +46,12 @@ try:
     check("02c_exige_02b", p.returncode != 0 and "B2B_FIN_02C_REQUIRES_02B" in p.stderr, p.stderr[-200:])
     psql("CREATE FUNCTION public.b2b_finance_capability_v1() RETURNS jsonb LANGUAGE sql AS $$ SELECT '{}'::jsonb $$")  # marcador declarado do 02b
     p = psql("SET app.expected_ref='errado';\n" + c02, ok=False); check("02c_ref_divergente", p.returncode != 0 and "REF_UNPROVEN" in p.stderr)
+    HP = json.loads((HM / "hml-pins.json").read_text())
+    p = psql("SET app.expected_ref='vrlcdwmlytukrjezrrnf';\n" + c02, ok=False)
+    check("02c_drift_com_gatilhos_de_producao", p.returncode != 0 and "B2B_FIN_02C_DRIFT" in p.stderr, p.stderr[-200:])
+    for n in ("cf_user_guards_v1.touch_related_profiles", "partner_users_derive_tenant"):  # corpos HML reais (C9)
+        load(HM / "captured" / "c9" / f"{n}.sql"); sch, _, fn = n.rpartition(".")
+        check(f"c9_pin_{fn}", q(f"SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname='{sch or 'public'}' AND p.proname='{fn}'") == HP[n][1])
     psql("SET app.expected_ref='vrlcdwmlytukrjezrrnf';\n" + c02)
     check("02c_sem_execute_cliente", q("SELECT has_function_privilege('authenticated','platform_private.user_admin_change_access_type_core(uuid,bigint,uuid,text,public.app_role[],public.app_role[],uuid,uuid,text,uuid,integer)','EXECUTE')::text || has_function_privilege('service_role','platform_private.user_admin_change_access_type_core(uuid,bigint,uuid,text,public.app_role[],public.app_role[],uuid,uuid,text,uuid,integer)','EXECUTE')::text") == "falsefalse")
     check("02c_exec_acl_preservada", q("SELECT has_function_privilege('authenticated','public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb)','EXECUTE')") == "f")
@@ -121,6 +127,16 @@ try:
     r = jwt(B, f"SELECT public.tenant_admin_partner_link_v1('{U['outro']}')"); check("leitor_vinculo_admin_outro_tenant_negado", r.returncode != 0 and "forbidden" in r.stderr, r.stderr[-200:])
     r = jwt(U["outro"], f"SELECT public.tenant_admin_partner_link_v1('{U['outro']}')"); check("leitor_vinculo_nao_admin_negado", r.returncode != 0 and "forbidden" in r.stderr, r.stderr[-200:])
     check("leitor_vinculo_anon_sem_execute", q("SELECT has_function_privilege('anon','public.tenant_admin_partner_link_v1(uuid)','EXECUTE')") == "f")
+    # C9: derive_tenant HML não rejeita parceiro sem dono → vínculo nasce com tenant NULL; 02c deve negar.
+    PN = str(uuid.uuid4()); UN = str(uuid.uuid4())
+    psql(f"INSERT INTO public.partner_accounts VALUES ('{PN}',true,null,null)")
+    denied("fin_parceiro_sem_dono_negado", AT(U["prodA"], "b2b_finance", [F], ["cliente_produtor"], partner=PN, ver=None), A, "partner_link_required")
+    psql(f"INSERT INTO auth.users VALUES ('{UN}','un@ex.test'); INSERT INTO public.profiles(user_id,nome,email,organization_id) VALUES ('{UN}','un','un@ex.test','{OA}'); "
+         f"INSERT INTO public.user_roles(user_id,role) VALUES ('{UN}','parceiro_b2b'); INSERT INTO public.partner_users(partner_id,user_id,papel) VALUES ('{PN}','{UN}','gestor')")
+    check("c9_vinculo_tenant_nulo_hml", q(f"SELECT tenant_id IS NULL FROM public.partner_users WHERE user_id='{UN}'") == "t")
+    p = psql(AT(UN, "b2b_finance", [F], ["parceiro_b2b"], ver=ver(UN)), A, ok=False)  # scope_proof (anterior) ou partner_link_foreign
+    check("fin_vinculo_tenant_nulo_negado", p.returncode != 0 and ("scope_unprovable" in p.stderr or "partner_link_foreign" in p.stderr), p.stderr[:300])
+    check("fin_vinculo_tenant_nulo_sem_efeito", roles(UN) == "parceiro_b2b" and link(UN) == f"{PN}:gestor")
     # Negativos gerais
     denied("partner_id_fora_do_alvo_fin_negado", AT(U["outro"], "b2b", ["parceiro_b2b_tecnico"], partner=PA), A, "partner_not_allowed")
     denied("versao_fora_de_fin_negada", AT(U["outro"], "b2b", ["parceiro_b2b_tecnico"], ver=1), A, "link_version_not_allowed")

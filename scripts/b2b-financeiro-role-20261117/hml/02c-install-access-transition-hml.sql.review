@@ -3,7 +3,7 @@
 -- Requer 02b aplicado e o pacote user-edit-access-email-links-20261117 instalado (corpos pinados abaixo).
 BEGIN;
 SET LOCAL lock_timeout='3s';
-DO $$ DECLARE k text; v text; pins jsonb := '{"platform_private.user_admin_change_access_type_core": ["platform_private.user_admin_change_access_type_core", "c2d7f9dfd17fe919ed9fcbb9ea8e6a57"], "tenant_admin_user_access_exec_v1": ["tenant_admin_user_access_exec_v1", "aa74b1d3705cdd76a9c621bc2593f85d"]}';
+DO $$ DECLARE k text; v text; pins jsonb := '{"cf_user_guards_v1.touch_related_profiles": ["cf_user_guards_v1.touch_related_profiles", "7700e70682c0f5aa137ff7087c1a9ba5"], "partner_users_derive_tenant": ["partner_users_derive_tenant", "84266976f19951ec5825f9b9e684fab2"], "platform_private.user_admin_change_access_type_core": ["platform_private.user_admin_change_access_type_core", "c2d7f9dfd17fe919ed9fcbb9ea8e6a57"], "tenant_admin_user_access_exec_v1": ["tenant_admin_user_access_exec_v1", "aa74b1d3705cdd76a9c621bc2593f85d"]}';
 BEGIN
   IF current_setting('app.expected_ref', true) IS DISTINCT FROM 'vrlcdwmlytukrjezrrnf' THEN RAISE EXCEPTION 'B2B_FIN_02C_REF_UNPROVEN'; END IF;
   IF to_regprocedure('public.b2b_finance_capability_v1()') IS NULL THEN RAISE EXCEPTION 'B2B_FIN_02C_REQUIRES_02B'; END IF;
