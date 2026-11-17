@@ -1,0 +1,65 @@
+--- base.index.ts	2026-11-17 22:32:08.555284803 +0000
++++ candidate.index.ts	2026-11-17 22:32:26.796285455 +0000
+@@ -6,7 +6,8 @@
+     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+ };
+ 
+-Deno.serve(async (req) => {
++// HML rev.1: verificação de administrador/tenant no contexto do CHAMADOR (JWT), não do service_role.
++export const handler = async (req: Request, mk: typeof createClient = createClient): Promise<Response> => {
+   if (req.method === "OPTIONS") {
+     return new Response(null, { headers: corsHeaders });
+   }
+@@ -20,7 +21,7 @@
+       });
+     }
+ 
+-    const anonClient = createClient(
++    const anonClient = mk(
+       Deno.env.get("SUPABASE_URL")!,
+       Deno.env.get("SUPABASE_ANON_KEY")!,
+       { global: { headers: { Authorization: authHeader } } }
+@@ -37,17 +38,18 @@
+ 
+     const callerId = claimsData.claims.sub;
+ 
+-    const adminClient = createClient(
++    const adminClient = mk(
+       Deno.env.get("SUPABASE_URL")!,
+       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+     );
+ 
+-    const { data: isAdmin } = await adminClient.rpc("has_role", {
++    // has_role/h15 dependem de auth.uid()/JWT do chamador; sob service_role perdem o contexto (403 falso no HML).
++    const { data: isAdmin, error: isAdminError } = await anonClient.rpc("has_role", {
+       _user_id: callerId,
+       _role: "administrador",
+     });
+ 
+-    if (!isAdmin) {
++    if (isAdminError || isAdmin !== true) {
+       return new Response(JSON.stringify({ error: "Apenas administradores podem criar usuários" }), {
+         status: 403,
+         headers: { ...corsHeaders, "Content-Type": "application/json" },
+@@ -65,6 +67,13 @@
+         headers: { ...corsHeaders, "Content-Type": "application/json" },
+       });
+     }
++    const { data: callerOrg, error: callerOrgError } = await anonClient.rpc("h15_actor_organization");
++    if (callerOrgError || !callerOrg || callerOrg !== actorProfile.organization_id) {
++      return new Response(JSON.stringify({ error: "tenant_scope_required" }), {
++        status: 403,
++        headers: { ...corsHeaders, "Content-Type": "application/json" },
++      });
++    }
+     const actorOrganizationId = actorProfile.organization_id;
+ 
+     const body = await req.json();
+@@ -214,4 +223,6 @@
+       headers: { ...corsHeaders, "Content-Type": "application/json" },
+     });
+   }
+-});
++};
++
++if (import.meta.main) Deno.serve((req) => handler(req));

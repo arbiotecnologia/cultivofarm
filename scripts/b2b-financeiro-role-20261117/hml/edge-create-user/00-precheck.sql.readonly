@@ -1,0 +1,8 @@
+-- HML (vrlcdwmlytukrjezrrnf), somente leitura: o patch exige que o CHAMADOR autenticado execute has_role e h15_actor_organization.
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;
+SELECT p.oid::regprocedure::text sig, md5(pg_get_functiondef(p.oid)) md5, p.proacl::text acl,
+       has_function_privilege('authenticated', p.oid, 'EXECUTE') auth_exec, has_function_privilege('service_role', p.oid, 'EXECUTE') svc_exec
+FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+WHERE (n.nspname,p.proname) IN (('public','has_role'),('public','h15_actor_organization'),('platform_private','has_role'),('platform_private','platform_actor_access_ready'));
+-- Esperado: public.has_role e public.h15_actor_organization com auth_exec=true. Se svc_exec=false em has_role, confirma a causa do 403.
+ROLLBACK;

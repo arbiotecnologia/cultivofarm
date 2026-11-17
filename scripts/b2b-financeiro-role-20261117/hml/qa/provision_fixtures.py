@@ -47,7 +47,7 @@ lim = {r["partner_id"]: r["credit_limit"] for r in (j or [])} if s == 200 else {
 order = json.load(open(E["ORDER_PAYLOAD_JSON"])); titles = json.load(open(E["TITLES_JSON"])) if E.get("TITLES_JSON") else {}
 toks, users = {}, {}
 def make(label, admin):
-    email = f"qa-fin-{label.lower()}-{secrets.token_hex(4)}@qa-fin.invalid"; pw = secrets.token_urlsafe(24) + "9a"
+    email = f"qa-fin-{label.lower()}-{secrets.token_hex(4)}@" + E.get("QA_EMAIL_DOMAIN", "qa-fin.invalid"); pw = secrets.token_urlsafe(24) + "9a"
     s, j = call(admin, "POST", "/functions/v1/create-user", {"email": email, "password": pw, "nome": f"QA FIN {label}", "roles": ["aplicador"], "idempotency_key": str(uuid.uuid4())})
     need(s in (200, 201), f"create-user {label} {s}"); tok, uid = signin(email, pw); users[label] = {"user_id": uid, "email_domain": "qa-fin.invalid"}; return email, pw, uid
 for k in "ABC":
