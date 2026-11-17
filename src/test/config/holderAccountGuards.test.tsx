@@ -20,7 +20,7 @@ function server(over: Record<string, unknown> = {}) {
 beforeEach(() => { rpc.mockReset(); updateUser.mockReset(); refreshSession.mockReset(); invoke.mockReset(); invoke.mockResolvedValue({ data: { status: "confirmed" }, error: null }); });
 
 describe("HolderAccountGuards", () => {
-  it("fechado pelo gate", () => { server(); const { container } = render(<HolderAccountGuards />); expect(container.innerHTML).toBe(""); expect(rpc).not.toHaveBeenCalled(); });
+  it("gate ligado: wrapper monta o titular da sessão e consulta só o próprio estado", async () => { server(); render(<HolderAccountGuards />); await screen.findByText(/novo@ex.test/); expect(rpc.mock.calls[0][0]).toBe("my_session_authz_state_v1"); });
   it("sincroniza no retorno e mostra o pedido do titular", async () => {
     server(); render(<HolderAccountGuardsInner userId="u1" />);
     await screen.findByText(/novo@ex.test/);

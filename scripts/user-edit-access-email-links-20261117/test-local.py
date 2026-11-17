@@ -432,7 +432,7 @@ try:
     TA = mkuser("tagro", OA); psql(f"INSERT INTO public.user_roles(user_id,role) VALUES ('{TA}','tecnico_agronomo')"); psql(LX(TA, "add", C1), A)
     check("campanha: técnico agrônomo com vínculo vigente não vê", seen(TA) == "-")
     PX = mkprod("pcamp", (C1,))
-    check("campanha: produtor com vínculo vigente vê a do seu cliente", seen(PX) == CAMP)
+    check("campanha (só rev.6, defeito HML): produtor com vínculo vigente vê zero", seen(PX) == "-")
     GC = mkuser("gcom", OA); psql(f"INSERT INTO public.user_roles(user_id,role) VALUES ('{GC}','gestor_comercial')")
     check("campanha: gestor comercial (autorização explícita) preservado", CAMP in seen(GC) and CAMPB in seen(GC))
     check("campanha: administrador preservado", CAMP in seen(A))
@@ -447,10 +447,52 @@ try:
     psql(LX(PX, "add", C1), A)
     check("campanha: ex-produtor agora consultor vinculado ao mesmo cliente não vê", seen(PX) == "-")
     psql(AT(CP, "producer", rm=arr("consultor_tecnico"), cli=f"'{C1}'", reason="consultor vira produtor"), A)
-    check("campanha: mudança consultor→produtor passa a ver (JWT renovado)", seen(CP) == CAMP)
+    check("campanha (só rev.6): consultor→produtor ainda zero sem aditivo", seen(CP) == "-")
     check("campanha: JWT antigo após a mudança não vê", seen(CP, iat=T0) == "-")
     PE = mkprod("pend", (C1,)); psql(f"UPDATE public.user_clientes SET revoked_at = now(), is_active = false WHERE user_id = '{PE}'")
     check("campanha: produtor com vínculo encerrado não vê", seen(PE) == "-")
+    # ===================== campanhas vigentes do próprio produtor (aditivo pós-rev.6) =====================
+    CSQL = os.path.join(HERE, "campanhas-produtor-vigentes.sql"); CRB = os.path.join(HERE, "campanhas-produtor-vigentes.rollback.sql")
+    SP = "SET search_path = \"$user\", public; "
+    MD5 = "SELECT md5(pg_get_expr(polqual, polrelid)) FROM pg_policy WHERE polrelid='public.commercial_campaigns'::regclass AND polname='campanhas_cliente_select'"
+    rev6 = last(psql(SP + MD5)); body = open(CSQL).read()
+    alter = body[body.index("CREATE OR REPLACE FUNCTION platform_private.campaign_visible"):body.index(");", body.index("ALTER POLICY campanhas_cliente_select")) + 2]
+    new_md5 = last(psql("BEGIN; " + alter + " " + SP + MD5 + "; ROLLBACK;"))
+    check("aditivo: pins de PRE/POST/rollback coincidem com rev.6 e versão nova", f"'{rev6}'" in body and f"'{new_md5}'" in body and f"'{rev6}'" in open(CRB).read(), f"rev6={rev6} new={new_md5}")
+    check("HML reproduzido: produtor com vínculo vigente vê zero antes do aditivo", seen(CP) == "-")
+    p = load(CSQL); check("aditivo executa após candidate", p.returncode == 0, p.stderr[-300:])
+    p = load(CSQL); check("aditivo idempotente (reexecução)", p.returncode == 0, p.stderr[-300:])
+    check("aditivo: produtor (consultor→produtor) vê campanha vigente do seu cliente", seen(CP) == CAMP)
+    check("aditivo: JWT antigo continua sem ver", seen(CP, iat=T0) == "-")
+    for u, nm in ((TA, "técnico agrônomo"), (MIX, "produtor+consultor"), (PBX, "produtor de outra empresa (vínculo cruzado)"), (PX, "ex-produtor consultor"), (PE, "vínculo encerrado")):
+        check(f"aditivo: {nm} continua sem ver", seen(u) == "-")
+    check("aditivo: admin/gestor comercial/parceiro preservados", CAMP in seen(A) and CAMP in seen(GC) and CAMPB in seen(GC) and seen(BP) == CAMPB)
+    check("aditivo: destinatários continuam ilegíveis ao produtor", last(psql("SELECT count(*) FROM public.commercial_campaign_clientes", CP)) == "0")
+    check("aditivo: helper sem EXECUTE para anon", last(psql("SELECT has_function_privilege('anon','platform_private.campaign_visible_to_own_producer_v1(uuid)','EXECUTE')")) == "f")
+    check("aditivo: helper não revela campanha alheia (false)", last(psql(f"SELECT platform_private.campaign_visible_to_own_producer_v1('{CAMPB}')", CP)) == "f")
+    TODAY = "(now() AT TIME ZONE 'America/Sao_Paulo')::date"
+    win = {}
+    for nm, ini, fim, extra in (("limite inclusivo (hoje..hoje)", TODAY, TODAY, ""), ("passada", f"{TODAY}-10", f"{TODAY}-1", ""),
+                                ("futura", f"{TODAY}+1", f"{TODAY}+10", ""), ("inativa", TODAY, f"{TODAY}+5", "inativa"),
+                                ("tipo b2b", TODAY, f"{TODAY}+5", "b2b"), ("tipo ambos", f"{TODAY}-3", TODAY, "ambos")):
+        i = str(uuid.uuid4()); win[nm] = i
+        psql(f"INSERT INTO public.commercial_campaigns(id,ativa,tipo_publico,data_inicio,data_fim) VALUES ('{i}',{'false' if extra=='inativa' else 'true'},'{extra if extra in ('b2b','ambos') else 'comercial'}',{ini},{fim}); INSERT INTO public.commercial_campaign_clientes(campaign_id,cliente_id) VALUES ('{i}','{C1}')")
+    v = seen(CP).split(",")
+    for nm, exp in (("limite inclusivo (hoje..hoje)", True), ("passada", False), ("futura", False), ("inativa", False), ("tipo b2b", False), ("tipo ambos", True)):
+        check(f"vigência: {nm} {'visível' if exp else 'oculta'}", (win[nm] in v) == exp)
+    OTHER = str(uuid.uuid4()); psql(f"INSERT INTO public.commercial_campaigns(id,ativa,tipo_publico) VALUES ('{OTHER}',true,'comercial'); INSERT INTO public.commercial_campaign_clientes(campaign_id,cliente_id) VALUES ('{OTHER}','{C2}')")
+    check("cliente diverso no mesmo tenant: campanha oculta", OTHER not in seen(CP).split(","))
+    psql(f"UPDATE public.clientes SET status_cliente='inativo' WHERE id='{C1}'"); check("cliente inativo: nenhuma campanha", seen(CP) == "-")
+    psql(f"UPDATE public.clientes SET status_cliente='ativo' WHERE id='{C1}'")
+    psql(f"UPDATE public.user_clientes SET valid_until = now() - interval '1 minute' WHERE user_id='{CP}' AND cliente_id='{C1}'"); check("vínculo expirado: nenhuma campanha", seen(CP) == "-")
+    psql(f"UPDATE public.user_clientes SET valid_until = NULL, valid_from = now() + interval '1 day' WHERE user_id='{CP}' AND cliente_id='{C1}'"); check("vínculo futuro: nenhuma campanha", seen(CP) == "-")
+    psql(f"UPDATE public.user_clientes SET valid_from = now() - interval '1 day' WHERE user_id='{CP}' AND cliente_id='{C1}'"); check("vínculo restaurado volta a ver", CAMP in seen(CP))
+    psql(f"UPDATE public.profiles SET ativo=false WHERE user_id='{CP}'"); check("perfil inativo: nenhuma campanha", seen(CP) == "-")
+    psql(f"UPDATE public.profiles SET ativo=true WHERE user_id='{CP}'")
+    rbc = load(CRB); check("rollback do aditivo executa e restaura rev.6", rbc.returncode == 0 and last(psql(SP + MD5)) == rev6, rbc.stderr[-200:])
+    check("após rollback do aditivo: helper removido e consultor sem campanha", last(psql("SELECT to_regprocedure('platform_private.campaign_visible_to_own_producer_v1(uuid)') IS NULL")) == "t" and seen(TA) == "-")
+    p = load(CSQL); check("aditivo reaplicável após rollback", p.returncode == 0, p.stderr[-300:])
+    load(CRB)
     # ===================== rev.6 — ator inativo / empresa inativa / senha provisória =====================
     for nm, fix in (("perfil inativo", "UPDATE public.profiles SET ativo = false WHERE user_id = '{u}'"),
                     ("senha provisória", "UPDATE public.profiles SET senha_provisoria = true WHERE user_id = '{u}'")):
@@ -464,7 +506,7 @@ try:
     # ===================== rev.6 — rollback não reabre o vazamento =====================
     rb = load(os.path.join(HERE, "rollback.sql.review"))
     check("rollback executa", rb.returncode == 0, rb.stderr[-200:])
-    check("após rollback: consultor continua sem campanha e produtor mantém", seen(TA) == "-" and seen(CP) == CAMP)
+    check("após rollback: consultor continua sem campanha (produtor sem aditivo: negação segura)", seen(TA) == "-" and seen(CP) == "-")
     check("após rollback: núcleo de escrita inalcançável", psql("SELECT to_regprocedure('public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb)') IS NULL").stdout.strip() == "t")
 finally:
     subprocess.run(AS+["pg_ctl", "-D", data, "-m", "fast", "stop"], capture_output=True); shutil.rmtree(tmp, ignore_errors=True)

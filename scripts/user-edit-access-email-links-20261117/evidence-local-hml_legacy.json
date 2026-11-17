@@ -4,8 +4,8 @@
   "encerrar/substituir o vínculo mais antigo de consultor com outros vigentes (gatilho legado reelege vínculo encerrado)",
   "consultor multi -> produtor com principal diferente (exige gatilho statement com filtro de vigência)"
  ],
- "passed": 168,
- "total": 168,
+ "passed": 198,
+ "total": 198,
  "results": [
   {
    "name": "HML legado: md5 do gatilho = variante documentada",
@@ -758,7 +758,7 @@
    "detail": ""
   },
   {
-   "name": "campanha: produtor com vínculo vigente vê a do seu cliente",
+   "name": "campanha (só rev.6, defeito HML): produtor com vínculo vigente vê zero",
    "pass": true,
    "detail": ""
   },
@@ -798,7 +798,7 @@
    "detail": ""
   },
   {
-   "name": "campanha: mudança consultor→produtor passa a ver (JWT renovado)",
+   "name": "campanha (só rev.6): consultor→produtor ainda zero sem aditivo",
    "pass": true,
    "detail": ""
   },
@@ -809,6 +809,156 @@
   },
   {
    "name": "campanha: produtor com vínculo encerrado não vê",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "aditivo: pins de PRE/POST/rollback coincidem com rev.6 e versão nova",
+   "pass": true,
+   "detail": "rev6=f1de982fb663a9759dd03ec9445057b4 new=01f77b975427c8ddca65f31362b801e6"
+  },
+  {
+   "name": "HML reproduzido: produtor com vínculo vigente vê zero antes do aditivo",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "aditivo executa após candidate",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "aditivo idempotente (reexecução)",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "aditivo: produtor (consultor→produtor) vê campanha vigente do seu cliente",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "aditivo: JWT antigo continua sem ver",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "aditivo: técnico agrônomo continua sem ver",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "aditivo: produtor+consultor continua sem ver",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "aditivo: produtor de outra empresa (vínculo cruzado) continua sem ver",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "aditivo: ex-produtor consultor continua sem ver",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "aditivo: vínculo encerrado continua sem ver",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "aditivo: admin/gestor comercial/parceiro preservados",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "aditivo: destinatários continuam ilegíveis ao produtor",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "aditivo: helper sem EXECUTE para anon",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "aditivo: helper não revela campanha alheia (false)",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "vigência: limite inclusivo (hoje..hoje) visível",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "vigência: passada oculta",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "vigência: futura oculta",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "vigência: inativa oculta",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "vigência: tipo b2b oculta",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "vigência: tipo ambos visível",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "cliente diverso no mesmo tenant: campanha oculta",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "cliente inativo: nenhuma campanha",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "vínculo expirado: nenhuma campanha",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "vínculo futuro: nenhuma campanha",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "vínculo restaurado volta a ver",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "perfil inativo: nenhuma campanha",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "rollback do aditivo executa e restaura rev.6",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "após rollback do aditivo: helper removido e consultor sem campanha",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "aditivo reaplicável após rollback",
    "pass": true,
    "detail": ""
   },
@@ -838,7 +988,7 @@
    "detail": ""
   },
   {
-   "name": "após rollback: consultor continua sem campanha e produtor mantém",
+   "name": "após rollback: consultor continua sem campanha (produtor sem aditivo: negação segura)",
    "pass": true,
    "detail": ""
   },
@@ -856,23 +1006,23 @@
    "open_links": 3,
    "active_links": [
     {
+     "principal": false,
+     "cliente_id": "60e4d9a0-a171-411c-ae94-07c17d10b797",
+     "access_level": "read"
+    },
+    {
+     "principal": false,
+     "cliente_id": "6394dd2e-aa9c-428d-953c-8244bf5deac6",
+     "access_level": "read"
+    },
+    {
      "principal": true,
-     "cliente_id": "4809faf8-5cc2-4715-88d9-8ec0aa768688",
-     "access_level": "read"
-    },
-    {
-     "principal": false,
-     "cliente_id": "6841fccd-4f8d-467d-b958-94940d3d10d3",
-     "access_level": "read"
-    },
-    {
-     "principal": false,
-     "cliente_id": "fb06e9ef-0895-42be-bf4e-07b0283e0882",
+     "cliente_id": "d2dccdef-b906-4e10-9737-757a893f6cd0",
      "access_level": "read"
     }
    ],
    "partner_users_open": 0,
-   "profile_cliente_id": "4809faf8-5cc2-4715-88d9-8ec0aa768688"
+   "profile_cliente_id": "d2dccdef-b906-4e10-9737-757a893f6cd0"
   },
   "produtor_secundario_antes": {
    "roles": [
@@ -881,18 +1031,18 @@
    "open_links": 2,
    "active_links": [
     {
-     "principal": true,
-     "cliente_id": "4809faf8-5cc2-4715-88d9-8ec0aa768688",
+     "principal": false,
+     "cliente_id": "6394dd2e-aa9c-428d-953c-8244bf5deac6",
      "access_level": "execute"
     },
     {
-     "principal": false,
-     "cliente_id": "6841fccd-4f8d-467d-b958-94940d3d10d3",
+     "principal": true,
+     "cliente_id": "d2dccdef-b906-4e10-9737-757a893f6cd0",
      "access_level": "execute"
     }
    ],
    "partner_users_open": 0,
-   "profile_cliente_id": "4809faf8-5cc2-4715-88d9-8ec0aa768688"
+   "profile_cliente_id": "d2dccdef-b906-4e10-9737-757a893f6cd0"
   },
   "produtor_secundario_depois_interno": {
    "roles": [
@@ -919,18 +1069,18 @@
    "open_links": 2,
    "active_links": [
     {
-     "principal": true,
-     "cliente_id": "6841fccd-4f8d-467d-b958-94940d3d10d3",
+     "principal": false,
+     "cliente_id": "60e4d9a0-a171-411c-ae94-07c17d10b797",
      "access_level": "execute"
     },
     {
-     "principal": false,
-     "cliente_id": "fb06e9ef-0895-42be-bf4e-07b0283e0882",
+     "principal": true,
+     "cliente_id": "6394dd2e-aa9c-428d-953c-8244bf5deac6",
      "access_level": "execute"
     }
    ],
    "partner_users_open": 1,
-   "profile_cliente_id": "6841fccd-4f8d-467d-b958-94940d3d10d3"
+   "profile_cliente_id": "6394dd2e-aa9c-428d-953c-8244bf5deac6"
   },
   "produtor_b2b_depois": {
    "roles": [

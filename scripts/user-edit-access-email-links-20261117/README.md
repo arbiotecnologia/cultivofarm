@@ -299,3 +299,9 @@ Ordem por ambiente: sonda → SQL → Edges (gate OFF) → postflight JWT real �
 JWT A/B reais: admin A × alvo de B; consultor puro/produtor/gestor comercial/parceiro lendo campanhas; mudança de papel com
 sessão antiga e renovada; produtor→interno/B2B; B2B técnico sem gestor; admin só para interno; ator inativo/empresa inativa;
 e-mail com Auth/SMTP de HML. Na variante legado, os itens bloqueados acima devem retornar o erro, nunca sucesso.
+
+## Aditivo pós-homologação — campanhas vigentes do próprio produtor (17/11/2026)
+- Defeito em HML (JWT real, c6052055): `commercial_campaign_clientes` só tem `camp_clientes_admin_all`; o EXISTS da policy rev.6 vê zero destinatários.
+- Aplicar `campanhas-produtor-vigentes.sql` APÓS o candidato (prod e HML; mesmo md5 de política nas duas topologias). Rollback: `campanhas-produtor-vigentes.rollback.sql` (restaura exatamente a rev.6 segura de 9d3e83af e remove o helper).
+- Helper `platform_private.campaign_visible_to_own_producer_v1(uuid)` (DEFINER, `search_path=''`, identidade só por `auth.uid()`, EXECUTE só `authenticated`, retorna boolean). Policy: ativa, comercial/ambos, `data_inicio <= hoje <= data_fim` (data civil America/Sao_Paulo, inclusiva), papel produtor sem papel técnico, cliente `ativo` e perfil ativo da mesma empresa, vínculo vigente sem revogação, campanha atribuída ao cliente. Nenhuma outra policy alterada; destinatários continuam ilegíveis.
+- Local (PostgreSQL descartável, policy de destinatários capturada): prod 200/200, HML statement 200/200, HML legado 198/198. Não é prova JWT hosted.

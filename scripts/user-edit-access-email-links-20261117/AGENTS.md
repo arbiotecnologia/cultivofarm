@@ -4,3 +4,4 @@
 - `principal` nunca distingue acesso técnico de produtor; transições encerram todos os vínculos incompatíveis. Testes carregam os gatilhos de produção verbatim e o candidato pina seus md5 — HML difere.
 - Pacote HML só por `hml/build_hml.py` (difere apenas no PRE `$pre5$`); topologias não testadas abortam — nunca afrouxar o PRE de produção nem alterar gatilhos globais.
 - Leitura comercial nunca por vínculo de consultor; rollback nunca restaura `campanhas_cliente_select` antiga.
+- Campanhas do produtor: aditivo separado após o candidato; leitura só via helper DEFINER booleano, nunca SELECT em destinatários; rollback volta à rev.6 — evita expor destinatários.

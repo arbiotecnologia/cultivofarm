@@ -13,7 +13,7 @@ const A = "11111111-1111-4111-8111-111111111111", T = "22222222-2222-4222-8222-2
 const base = { actorId: A, targetId: T, from: "internal", to: "producer" as const, internalRoles: [], clienteId: C, reason: "mudança aprovada" };
 const wrap = (ui: React.ReactNode) => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>{ui}</QueryClientProvider>);
 
-describe("gate", () => { it("UI fechada até instalação revisada", () => expect(USER_ADMIN_REFINEMENT_INSTALLED).toBe(false)); });
+describe("gate", () => { it("UI liberada para o candidato a publicação (autorizado pelo proprietário)", () => expect(USER_ADMIN_REFINEMENT_INSTALLED).toBe(true)); });
 
 describe("validateTransition", () => {
   it("bloqueia autoalteração", () => expect(validateTransition({ ...base, targetId: A })).toMatch(/próprio/));

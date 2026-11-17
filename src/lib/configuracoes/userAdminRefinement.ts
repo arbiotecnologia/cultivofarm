@@ -5,7 +5,7 @@
  */
 import { z } from "zod";
 
-export const USER_ADMIN_REFINEMENT_INSTALLED = false;
+export const USER_ADMIN_REFINEMENT_INSTALLED = true;
 
 /**
  * Escritas de tipo de acesso e vínculos passam pelo Edge (JWT do ator verificado → núcleo service-only):
