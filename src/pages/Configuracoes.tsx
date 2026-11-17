@@ -1137,7 +1137,7 @@ export default function Configuracoes() {
                 }
               }
             }}>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md max-h-[90dvh] overflow-y-auto overscroll-contain">
                 <DialogHeader>
                   <DialogTitle>Editar Usuário</DialogTitle>
                 </DialogHeader>

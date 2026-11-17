@@ -1,0 +1,25 @@
+-- CANDIDATO NÃO APLICADO. Esqueleto para revisão; o auditor deve fixar pins/metadados antes de qualquer execução.
+-- Preflight: select current_setting('request.jwt.claims', true); confirmar ref swzpzcwiasxmjutrmvkm.
+create or replace function public.tenant_admin_consultor_link_v1(
+  p_user_id uuid, p_cliente_id uuid, p_action text, p_access_level public.access_level_tecnico,
+  p_valid_from timestamptz, p_valid_until timestamptz, p_idempotency_key uuid)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare v_actor uuid := auth.uid(); v_org uuid;
+begin
+  if v_actor is null then raise exception 'not_authenticated' using errcode='28000'; end if;
+  if p_user_id = v_actor then raise exception 'self_change_denied' using errcode='42501'; end if;
+  select organization_id into v_org from profiles where user_id = v_actor and ativo;
+  if v_org is null or not public.has_role(v_actor,'administrador') then raise exception 'forbidden' using errcode='42501'; end if;
+  if not exists (select 1 from profiles where user_id=p_user_id and organization_id=v_org) then raise exception 'forbidden' using errcode='42501'; end if;
+  if not exists (select 1 from user_roles where user_id=p_user_id and role in ('consultor_tecnico','tecnico_agronomo')) then raise exception 'not_consultant' using errcode='22023'; end if;
+  if not exists (select 1 from clientes where id=p_cliente_id and organization_id=v_org) then raise exception 'forbidden' using errcode='42501'; end if;
+  if p_valid_until is not null and p_valid_until <= coalesce(p_valid_from, now()) then raise exception 'invalid_period' using errcode='22023'; end if;
+  -- add: insert ... on conflict (user_id, cliente_id) where revoked_at is null do nothing (idempotente)
+  -- end: update user_clientes set revoked_at=now(), revoked_by=v_actor, is_active=false where ... and revoked_at is null
+  -- auditoria: insert em tabela de auditoria existente com p_idempotency_key
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.tenant_admin_consultor_link_v1(uuid,uuid,text,public.access_level_tecnico,timestamptz,timestamptz,uuid) from public, anon;
+grant execute on function public.tenant_admin_consultor_link_v1(uuid,uuid,text,public.access_level_tecnico,timestamptz,timestamptz,uuid) to authenticated;
+-- Rollback: drop function public.tenant_admin_consultor_link_v1(uuid,uuid,text,public.access_level_tecnico,timestamptz,timestamptz,uuid);
+-- tenant_admin_change_access_type_v1 e fluxo de e-mail: ver README; dependem de decisão do revisor.
