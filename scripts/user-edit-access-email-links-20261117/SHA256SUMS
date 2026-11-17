@@ -1,4 +1,4 @@
-c8083d41bc50d17ab9ca3cabe7feda906429a54224beb34bb84f2cb2016092b2  scripts/user-edit-access-email-links-20261117/candidate.sql.review
-b90584f2c0676b455c754cc0b8bf2dc14e0cb79c92c7ea164ffc40df9e9d15f5  scripts/user-edit-access-email-links-20261117/rollback.sql.review
-68cdca225d67a5c390ff3c00972ad88b6f0fe00bd4f8c4a8a7155f4765d40eab  scripts/user-edit-access-email-links-20261117/harness-stubs.sql
-203848cdce8d41f231e70e1c37da9f04e4a7706cda9165546f320048447bd5bf  scripts/user-edit-access-email-links-20261117/test-local.py
+0a8d9bf2b5ff4b83f19133ef12471a39b1aaec60f45d4deb32d64bd5df840996  scripts/user-edit-access-email-links-20261117/candidate.sql.review
+2c3fb768f1e2e35f55ed05c611841efd3b110d61adef5c47937724468e5c19f8  scripts/user-edit-access-email-links-20261117/rollback.sql.review
+6d9ffd916a4c00acc49c24ddc07bd75529cc4b5f93bdfe7206bda04a19c26588  scripts/user-edit-access-email-links-20261117/harness-stubs.sql
+d20fc63b8d348ade7a59931a348ac11377a345ad4f58c1b27d6533e2a345fa48  scripts/user-edit-access-email-links-20261117/test-local.py

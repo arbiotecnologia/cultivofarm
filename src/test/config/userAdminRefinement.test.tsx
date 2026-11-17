@@ -49,14 +49,15 @@ describe("painel", () => {
     expect(screen.getByText(/Atual: old@ex.test/)).toBeTruthy();
     expect(screen.getByText(/O e-mail atual continua válido/)).toBeTruthy();
   });
-  it("entrega OFF informa solicitação pendente sem afirmar troca", async () => {
+  it("admin só registra o pedido (sem Edge/links) e não afirma troca", async () => {
     rpc.mockResolvedValue({ data: { status: "none" }, error: null });
-    invoke.mockResolvedValue({ data: { code: "delivery_not_ready", status: "pending" }, error: { message: "503" } });
+    rpc.mockImplementation(async (n: string) => n === "tenant_admin_email_change_request_v1" ? { data: { ok: true, status: "pending" }, error: null } : { data: { status: "none" }, error: null });
     wrap(<UserAdminRefinementPanel target={{ user_id: T, email: "old@ex.test", roles: [] }} actorId={A} currentType="internal" onChanged={() => {}} />);
     fireEvent.change(await screen.findByLabelText("Novo e-mail"), { target: { value: "novo@ex.test" } });
     fireEvent.click(screen.getByText("Solicitar alteração"));
-    await waitFor(() => expect(screen.getByText(/envio de confirmação está desativado/)).toBeTruthy());
-    expect(invoke.mock.calls[0][1].body.new_email).toBe("novo@ex.test");
+    await waitFor(() => expect(screen.getByText(/O titular verá o pedido/)).toBeTruthy());
+    expect(invoke).not.toHaveBeenCalled();
+    expect(rpc.mock.calls.find((c) => c[0] === "tenant_admin_email_change_request_v1")![1]).toMatchObject({ p_user_id: T, p_new_email: "novo@ex.test" });
   });
   it("consultor: lista vínculos, erro de servidor e encerramento", async () => {
     rpc.mockImplementation(async (n: string) => {
@@ -77,5 +78,18 @@ describe("painel", () => {
     rpc.mockResolvedValue({ data: { status: "none" }, error: null });
     wrap(<UserAdminRefinementPanel target={{ user_id: T, email: null, roles: ["cliente_produtor"] }} actorId={A} currentType="producer" onChanged={() => {}} />);
     expect(screen.queryByLabelText("Clientes do consultor")).toBeNull();
+  });
+});
+
+describe("fase 2b/3b — papéis combinados e titular", () => {
+  it("incompatíveis exigem confirmação explícita", async () => {
+    const { incompatibleRoles } = await import("@/lib/configuracoes/userAdminRefinement");
+    expect(incompatibleRoles(["parceiro_b2b", "parceiro_b2b_tecnico"], "b2b")).toEqual([]);
+    expect(incompatibleRoles(["financeiro", "gestor"], "producer")).toEqual(["financeiro", "gestor"]);
+    expect(validateTransition({ ...base, currentRoles: ["financeiro"], removeRoles: [] })).toMatch(/incompatíveis/);
+    expect(validateTransition({ ...base, currentRoles: ["financeiro"], removeRoles: ["financeiro"] })).toBeNull();
+  });
+  it("interno preserva perfis existentes (sem exigir novo)", () => {
+    expect(validateTransition({ ...base, from: "b2b", to: "internal" as never, clienteId: null, currentRoles: ["parceiro_b2b", "gestor"], removeRoles: ["parceiro_b2b"] })).toBeNull();
   });
 });

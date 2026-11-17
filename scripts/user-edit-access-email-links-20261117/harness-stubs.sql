@@ -3,12 +3,14 @@ CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service
 CREATE SCHEMA auth; CREATE SCHEMA platform_private; CREATE SCHEMA cf_user_guards_v1;
 GRANT USAGE ON SCHEMA public, auth TO anon, authenticated, service_role;
 GRANT USAGE ON SCHEMA platform_private TO service_role;
-CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
-GRANT EXECUTE ON FUNCTION auth.uid() TO PUBLIC;
-CREATE TABLE auth.users (id uuid PRIMARY KEY, email text);
+CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$ SELECT COALESCE(NULLIF(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$;
+CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT NULLIF(auth.jwt()->>'sub', '')::uuid $$;
+GRANT EXECUTE ON FUNCTION auth.uid(), auth.jwt() TO PUBLIC;
+CREATE TABLE auth.users (id uuid PRIMARY KEY, email text, email_change text);
 CREATE TYPE public.app_role AS ENUM ('superadmin','administrador','gestor','administrativo','financeiro','gestor_comercial','producao','aplicador','operador_onfarm','consultor_tecnico','tecnico_agronomo','vendedor','cliente_produtor','parceiro_b2b','parceiro_b2b_tecnico');
 CREATE TYPE public.access_level_tecnico AS ENUM ('read','execute','manage');
-CREATE TABLE public.profiles (id uuid DEFAULT gen_random_uuid(), user_id uuid PRIMARY KEY, nome text, email text, ativo boolean DEFAULT true, organization_id uuid);
+CREATE TABLE public.profiles (id uuid DEFAULT gen_random_uuid(), user_id uuid PRIMARY KEY, nome text, email text, ativo boolean DEFAULT true, organization_id uuid, senha_provisoria boolean DEFAULT false);
+CREATE TABLE public.platform_org_admin_invites (user_id uuid, access_operation_status text, access_valid_after timestamptz);
 CREATE TABLE public.user_roles (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, role public.app_role NOT NULL, UNIQUE (user_id, role));
 CREATE TABLE public.clientes (id uuid PRIMARY KEY, nome text, razao_social text, organization_id uuid);
 -- Capturado (estrutura) de produção:
@@ -18,9 +20,26 @@ CREATE TABLE public.user_clientes (id uuid PRIMARY KEY DEFAULT gen_random_uuid()
 CREATE UNIQUE INDEX uq_user_clientes_principal ON public.user_clientes (user_id) WHERE principal = true;
 CREATE TABLE public.partner_accounts (id uuid PRIMARY KEY, ativo boolean DEFAULT true, deleted_at timestamptz, commercial_owner_organization_id uuid);
 CREATE TABLE public.partner_users (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), partner_id uuid, user_id uuid, papel text, revoked_at timestamptz, revoked_by uuid, revoke_reason text, tenant_id uuid);
--- Capturado (corpo) de produção, com platform_actor_access_ready simplificado:
-CREATE FUNCTION platform_private.has_role(_user_id uuid, _role public.app_role) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $$
- SELECT EXISTS(SELECT 1 FROM public.user_roles r JOIN public.profiles p ON p.user_id=r.user_id WHERE r.user_id=_user_id AND r.role=_role AND p.ativo IS TRUE) $$;
+-- Capturados (corpo) de produção 17/11/2026, verbatim:
+CREATE OR REPLACE FUNCTION platform_private.platform_actor_access_ready(p_user uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+ SELECT EXISTS(SELECT 1 FROM public.profiles p WHERE p.user_id=p_user AND p.ativo IS TRUE AND p.senha_provisoria IS FALSE)
+ AND NOT EXISTS(SELECT 1 FROM public.platform_org_admin_invites i WHERE i.user_id=p_user AND (i.access_operation_status='processing' OR (i.access_valid_after IS NOT NULL AND auth.uid()=p_user AND to_timestamp(COALESCE((auth.jwt()->>'iat')::bigint,0))<=i.access_valid_after)));
+$function$
+;
+CREATE OR REPLACE FUNCTION platform_private.has_role(_user_id uuid, _role public.app_role)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+ SELECT EXISTS(SELECT 1 FROM public.user_roles r JOIN public.profiles p ON p.user_id=r.user_id WHERE r.user_id=_user_id AND r.role=_role AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p.user_id));
+$function$
+;
 CREATE FUNCTION public.has_role(_user_id uuid, _role public.app_role) RETURNS boolean LANGUAGE sql STABLE SET search_path TO '' AS $$ SELECT platform_private.has_role(_user_id,_role) $$;
 CREATE FUNCTION public.is_platform_superadmin(_u uuid) RETURNS boolean LANGUAGE sql STABLE SET search_path TO '' AS $$ SELECT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=_u AND role='superadmin') $$;
 CREATE FUNCTION platform_private.is_same_tenant_user(p uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $$
@@ -48,3 +67,4 @@ CREATE FUNCTION public.enforce_cliente_id_for_produtor() RETURNS trigger LANGUAG
 BEGIN IF NEW.role='cliente_produtor' AND NOT EXISTS (SELECT 1 FROM public.user_clientes WHERE user_id=NEW.user_id) THEN RAISE EXCEPTION 'produtor_sem_cliente' USING ERRCODE='check_violation'; END IF; RETURN NEW; END $$;
 CREATE TRIGGER trg_user_roles_enforce_cliente BEFORE INSERT OR UPDATE ON public.user_roles FOR EACH ROW EXECUTE FUNCTION public.enforce_cliente_id_for_produtor();
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT USAGE ON SCHEMA platform_private TO authenticated; -- espelha produção: public.has_role (INVOKER) chama platform_private.has_role

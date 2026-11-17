@@ -1,12 +1,19 @@
--- Rollback deny-first: remove apenas os novos pontos de entrada; dados e auditoria preservados.
+-- Rollback: fecha os novos pontos de entrada; dados, pedidos, épocas e auditoria preservados.
 BEGIN;
-DROP FUNCTION IF EXISTS public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text);
+DROP FUNCTION IF EXISTS public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text);
 DROP FUNCTION IF EXISTS public.tenant_admin_email_change_request_v1(uuid,text,uuid);
 DROP FUNCTION IF EXISTS public.tenant_admin_email_change_status_v1(uuid);
 DROP FUNCTION IF EXISTS public.tenant_admin_email_change_cancel_v1(uuid,uuid);
 DROP FUNCTION IF EXISTS public.tenant_admin_search_clientes_v1(text,int,int);
 DROP FUNCTION IF EXISTS public.tenant_admin_consultor_links_v1(uuid);
 DROP FUNCTION IF EXISTS public.tenant_admin_consultor_link_v1(uuid,text,uuid,uuid,public.access_level_tecnico,timestamptz,timestamptz,uuid,text);
+DROP FUNCTION IF EXISTS public.user_email_change_my_pending_v1();
+DROP FUNCTION IF EXISTS public.user_email_change_accept_v1(uuid);
+DROP FUNCTION IF EXISTS public.user_email_change_decline_v1(uuid);
+DROP FUNCTION IF EXISTS public.user_email_change_sync_self_v1();
+DROP FUNCTION IF EXISTS public.my_session_authz_state_v1();
 REVOKE ALL ON FUNCTION platform_private.user_email_change_sync_v1(uuid) FROM service_role;
--- Tabelas platform_private.user_admin_change_audit / user_email_change_requests mantidas (histórico).
+-- platform_actor_access_ready: MANTER a versão com user_authz_epoch (deny-only). Restaurar o corpo
+-- capturado (md5 048249c0c2106c3761e26eacb8d0de84) reabriria autoridade de JWTs anteriores a
+-- mudanças já executadas; só fazer isso após todos os tokens antigos expirarem e com decisão do auditor.
 COMMIT;

@@ -6,6 +6,7 @@ import { PwaUpdateNotifier } from "@/pwa/PwaUpdateNotifier";
 import { PwaUpdateControl } from "@/pwa/PwaUpdateControl";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { HolderAccountGuards } from "@/components/configuracoes/HolderAccountGuards";
 import { useEntitlements } from "@/hooks/useEntitlements";
 import { isPathEntitled } from "@/lib/saas/featureRouteMap";
 import ForaDoPlano from "@/components/guards/ForaDoPlano";
@@ -429,6 +430,7 @@ const App = () => (
           <AuthProvider>
             <PwaUpdateNotifier />
             <PwaUpdateControl />
+            <HolderAccountGuards />
             <CatalogFilterPreferencesProvider>
             <Routes>
               <Route path="/auth" element={<AuthRoute />} />

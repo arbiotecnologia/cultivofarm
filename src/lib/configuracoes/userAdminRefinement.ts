@@ -14,8 +14,14 @@ export const RPC = {
   searchClientes: "tenant_admin_search_clientes_v1",
   consultorLinks: "tenant_admin_consultor_links_v1",
   consultorLink: "tenant_admin_consultor_link_v1",
+  mySessionState: "my_session_authz_state_v1",
+  myEmailPending: "user_email_change_my_pending_v1",
+  myEmailAccept: "user_email_change_accept_v1",
+  myEmailDecline: "user_email_change_decline_v1",
+  myEmailSync: "user_email_change_sync_self_v1",
 } as const;
-export const EDGE_EMAIL_CHANGE = "tenant-user-email-change";
+/** Pedido de e-mail é registrado por RPC; nenhum link é gerado pelo administrador. */
+export const RPC_EMAIL_REQUEST = "tenant_admin_email_change_request_v1";
 export const PAGE_SIZE = 20;
 
 export type AccessTarget = "internal" | "b2b" | "producer";
@@ -28,13 +34,23 @@ export const emailSchema = z.string().trim().toLowerCase().max(254)
 export const reasonSchema = z.string().trim().min(5, "Informe o motivo (mín. 5 caracteres).").max(500, "Motivo muito longo.");
 
 /** Validação local da transição (o servidor revalida tudo). */
+const INTERNAL = ["administrador","gestor","administrativo","financeiro","gestor_comercial","producao","aplicador","operador_onfarm","consultor_tecnico","tecnico_agronomo","vendedor"];
+const ALLOWED: Record<AccessTarget, string[]> = { internal: INTERNAL, b2b: ["parceiro_b2b", "parceiro_b2b_tecnico"], producer: ["cliente_produtor"] };
+/** Papéis atuais que não convivem com o destino (espelho da regra do servidor). Compatíveis são preservados. */
+export function incompatibleRoles(current: string[], to: AccessTarget): string[] {
+  return current.filter((r) => !ALLOWED[to].includes(r)).sort();
+}
+
 export function validateTransition(i: {
   actorId: string; targetId: string; from: string; to: AccessTarget;
   internalRoles: string[]; clienteId: string | null; reason: string;
+  currentRoles?: string[]; removeRoles?: string[];
 }): string | null {
+  const pend = incompatibleRoles(i.currentRoles ?? [], i.to).filter((r) => !(i.removeRoles ?? []).includes(r));
+  if (pend.length) return "Confirme a remoção dos perfis incompatíveis ou mantenha o tipo atual.";
   if (i.actorId === i.targetId) return "Você não pode alterar o próprio tipo de acesso.";
   if (i.from === i.to) return "Selecione um tipo de acesso diferente do atual.";
-  if (i.to === "internal" && i.internalRoles.length === 0) return "Selecione ao menos um perfil interno.";
+  if (i.to === "internal" && i.internalRoles.length === 0 && !(i.currentRoles ?? []).some((r) => INTERNAL.includes(r) && !(i.removeRoles ?? []).includes(r))) return "Selecione ao menos um perfil interno.";
   if (i.internalRoles.includes("superadmin")) return "Perfil não atribuível.";
   if (i.to === "producer" && !i.clienteId) return "Selecione o cliente/produtor.";
   const r = reasonSchema.safeParse(i.reason);
@@ -72,6 +88,11 @@ const ERRORS: Record<string, string> = {
   link_not_active: "O vínculo já foi encerrado ou alterado. Recarregue a lista.",
   invalid_period: "Período de vigência inválido.",
   not_internal_consultant: "Somente consultores internos podem receber vínculos aqui.",
+  incompatible_roles: "Há perfis incompatíveis com o novo tipo. Confirme a remoção deles; nada foi alterado.",
+  invalid_remove_roles: "Só é possível remover perfis incompatíveis com o novo tipo.",
+  internal_roles_not_allowed: "Perfis internos não se aplicam a este tipo de acesso.",
+  no_change: "Nenhuma alteração a aplicar.",
+  request_not_pending: "Este pedido não está mais pendente.",
   delivery_not_ready: "Solicitação registrada, mas o envio de confirmação está desativado. O e-mail atual continua válido.",
 };
 export function friendlyError(message: string | undefined | null): string {

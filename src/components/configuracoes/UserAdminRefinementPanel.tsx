@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  ACCESS_TARGET_LABEL, EDGE_EMAIL_CHANGE, PAGE_SIZE, RPC, emailSchema, friendlyError, isConsultor,
+  ACCESS_TARGET_LABEL, PAGE_SIZE, RPC, RPC_EMAIL_REQUEST, emailSchema, friendlyError, incompatibleRoles, isConsultor,
   parseClientesPage, parseConsultorLinks, validatePeriod, validateTransition, type AccessTarget, type ClienteOption,
 } from "@/lib/configuracoes/userAdminRefinement";
 
@@ -66,19 +66,22 @@ function AccessTypeSection({ target, actorId, currentType, onChanged }: Props) {
   const [to, setTo] = useState<AccessTarget | "">(""); const [roles, setRoles] = useState<string[]>([]);
   const [cliente, setCliente] = useState<ClienteOption | null>(null); const [reason, setReason] = useState("");
   const [key, setKey] = useState(newKey); const [err, setErr] = useState<string | null>(null);
+  const [remove, setRemove] = useState<string[]>([]);
   const self = actorId === target.user_id;
+  const incompat = to ? incompatibleRoles(target.roles, to) : [];
   const m = useMutation({
     mutationFn: async () => {
       const { error } = await rpc(RPC.changeAccessType, { p_user_id: target.user_id, p_target: to, p_internal_roles: to === "internal" ? roles : null,
-        p_cliente_id: to === "producer" ? cliente?.id ?? null : null, p_idempotency_key: key, p_reason: reason });
+        p_remove_roles: remove.filter((r) => incompat.includes(r)), p_cliente_id: to === "producer" ? cliente?.id ?? null : null, p_idempotency_key: key, p_reason: reason });
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => { setKey(newKey()); setTo(""); setReason(""); setErr(null); onChanged(); },
+    onSuccess: () => { setKey(newKey()); setTo(""); setReason(""); setRemove([]); setErr(null); onChanged(); },
     onError: (e: Error) => setErr(friendlyError(e.message)),
   });
   const submit = () => {
     if (!to) return;
-    const v = validateTransition({ actorId, targetId: target.user_id, from: currentType, to, internalRoles: roles, clienteId: cliente?.id ?? null, reason });
+    const v = validateTransition({ actorId, targetId: target.user_id, from: currentType, to, internalRoles: roles, clienteId: cliente?.id ?? null, reason,
+      currentRoles: target.roles, removeRoles: remove });
     if (v) { setErr(v); return; }
     if (!m.isPending) m.mutate();
   };
@@ -86,7 +89,7 @@ function AccessTypeSection({ target, actorId, currentType, onChanged }: Props) {
     <section className="space-y-2 border rounded-md p-3" aria-label="Alterar tipo de acesso">
       <h4 className="font-semibold text-sm">Alterar tipo de acesso</h4>
       {self ? <p className="text-xs text-muted-foreground">Você não pode alterar o próprio tipo de acesso.</p> : <>
-        <Select value={to} onValueChange={(v) => { setTo(v as AccessTarget); setErr(null); }}>
+        <Select value={to} onValueChange={(v) => { setTo(v as AccessTarget); setRemove([]); setErr(null); }}>
           <SelectTrigger aria-label="Novo tipo de acesso"><SelectValue placeholder="Selecione o novo tipo" /></SelectTrigger>
           <SelectContent>{(Object.keys(ACCESS_TARGET_LABEL) as AccessTarget[]).map((t) => <SelectItem key={t} value={t}>{ACCESS_TARGET_LABEL[t]}</SelectItem>)}</SelectContent>
         </Select>
@@ -100,10 +103,16 @@ function AccessTypeSection({ target, actorId, currentType, onChanged }: Props) {
           <ClientePicker onPick={setCliente} />
         </div>}
         {to === "b2b" && <p className="text-xs text-muted-foreground">Exige vínculo ativo com um parceiro B2B desta empresa (cadastrado no ciclo de vida do parceiro).</p>}
+        {to && incompat.length > 0 && <div className="border border-destructive/40 rounded-md p-2 space-y-1" aria-label="Perfis incompatíveis">
+          <p className="text-xs">Estes perfis não convivem com {ACCESS_TARGET_LABEL[to]}. Marque para confirmar a remoção; sem confirmação nada é alterado.</p>
+          {incompat.map((r) => <label key={r} className="flex items-center gap-2 text-sm">
+            <Checkbox checked={remove.includes(r)} onCheckedChange={(c) => setRemove(c === true ? [...remove, r] : remove.filter((x) => x !== r))} />Remover {r}
+          </label>)}
+        </div>}
         {to && <>
           <Label htmlFor="access-reason">Motivo</Label>
           <Input id="access-reason" value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
-          <p className="text-xs text-muted-foreground">Os perfis e vínculos do tipo anterior serão encerrados (com histórico). O acesso é revalidado no servidor imediatamente.</p>
+          <p className="text-xs text-muted-foreground">Perfis compatíveis são mantidos. Vínculos dos perfis removidos são encerrados com histórico. As sessões abertas do usuário perdem a autoridade e precisam ser renovadas.</p>
           <Button type="button" className="w-full h-auto min-h-10 whitespace-normal" disabled={m.isPending} onClick={submit}>
             {m.isPending ? "Aplicando…" : `Confirmar mudança para ${ACCESS_TARGET_LABEL[to]}`}
           </Button>
@@ -125,13 +134,11 @@ function EmailSection({ target, onChanged }: Props) {
   const request = useMutation({
     mutationFn: async () => {
       const parsed = emailSchema.safeParse(email); if (!parsed.success) throw new Error("invalid_email");
-      const { data, error } = await supabase.functions.invoke(EDGE_EMAIL_CHANGE, { body: { user_id: target.user_id, new_email: parsed.data, idempotency_key: key } });
-      const code = (data as { code?: string } | null)?.code;
-      if (code === "delivery_not_ready") return "delivery_not_ready";
-      if (error) throw new Error(code ?? error.message);
+      const { error } = await rpc(RPC_EMAIL_REQUEST, { p_user_id: target.user_id, p_new_email: parsed.data, p_idempotency_key: key });
+      if (error) throw new Error(error.message);
       return "sent";
     },
-    onSuccess: (r) => { setKey(newKey()); setEmail(""); setMsg(r === "sent" ? "Solicitação enviada. A troca só vale após o titular confirmar." : friendlyError(r)); qc.invalidateQueries({ queryKey: ["tenant-admin-email-change", target.user_id] }); },
+    onSuccess: (r) => { setKey(newKey()); setEmail(""); setMsg(r === "sent" ? "Pedido registrado. O titular verá o pedido ao entrar e confirmará pelo próprio e-mail; até lá o atual continua válido." : friendlyError(r)); qc.invalidateQueries({ queryKey: ["tenant-admin-email-change", target.user_id] }); },
     onError: (e: Error) => setMsg(friendlyError(e.message)),
   });
   const cancel = useMutation({
@@ -148,7 +155,7 @@ function EmailSection({ target, onChanged }: Props) {
       {status.isError && <p role="alert" className="text-xs text-destructive">{friendlyError((status.error as Error).message)}</p>}
       {pending ? <div className="space-y-2">
         <Badge variant="outline" className="whitespace-normal break-all">Pendente: {status.data?.new_email}</Badge>
-        <p className="text-xs text-muted-foreground">Aguardando confirmação do titular. O e-mail atual continua válido.</p>
+        <p className="text-xs text-muted-foreground">Aguardando o titular aceitar e confirmar. O e-mail atual continua válido.</p>
         <Button type="button" variant="outline" size="sm" disabled={cancel.isPending} onClick={() => cancel.mutate()}>Cancelar solicitação</Button>
       </div> : <div className="space-y-2">
         <Label htmlFor="new-email">Novo e-mail</Label>

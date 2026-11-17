@@ -9,12 +9,27 @@ AS = ["runuser","-u","nobody","--"] if os.geteuid()==0 else []
 if AS: os.chmod(tmp, 0o777)
 run(*AS, "initdb", "-D", data, "-U", "postgres", "--auth=trust")
 run(*AS, "pg_ctl", "-D", data, "-o", f"-p {port} -k {tmp} -c listen_addresses=''", "-l", os.path.join(tmp, "log"), "-w", "start")
-def psql(sql, user=None, ok=True):
-    pre = "SET ROLE authenticated; " if user else ""
-    if user: pre = f"SELECT set_config('request.jwt.claim.sub','{user}',false); " + pre
+import time
+T0 = int(time.time()) - 5          # iat de um JWT "antigo" (emitido antes das mudanças)
+FRESH = lambda: int(time.time()) + 3600   # iat de um JWT renovado (sintético)
+def psql(sql, user=None, ok=True, iat=None):
+    pre = ""
+    if user:
+        claims = json.dumps({"sub": user, "iat": iat if iat is not None else FRESH(), "role": "authenticated"})
+        pre = f"SELECT set_config('request.jwt.claims','{claims}',false); SET ROLE authenticated; "
     p = subprocess.run(["psql", "-h", tmp, "-p", port, "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-qAtX", "-c", pre + sql], capture_output=True, text=True)
     if ok and p.returncode: raise RuntimeError(p.stderr)
     return p
+last = lambda p: p.stdout.strip().splitlines()[-1]
+# Transporte de e-mail FAKE/local + Auth sintético (GoTrue simulado): updateUser grava email_change e
+# "envia" token para a caixa local; o titular confirma pelo token. Nenhum e-mail real, nenhum link admin.
+OUTBOX = []
+def auth_update_user(uid, email):
+    psql(f"UPDATE auth.users SET email_change=lower('{email}') WHERE id='{uid}'")
+    tok = str(uuid.uuid4()); OUTBOX.append({"to": email.lower(), "token": tok, "uid": uid}); return tok
+def auth_confirm(tok):
+    m = next(m for m in OUTBOX if m["token"] == tok)
+    psql(f"UPDATE auth.users SET email=email_change, email_change=NULL WHERE id='{m['uid']}' AND email_change='{m['to']}'")
 results = []
 def check(name, cond, detail=""):
     results.append({"name": name, "pass": bool(cond), "detail": detail}); print(("PASS " if cond else "FAIL ") + name, detail if not cond else "")
@@ -38,51 +53,99 @@ try:
     psql("; ".join(seed))
     k = lambda: str(uuid.uuid4())
     A, B = U["adminA"], U["adminB"]
-    # Fase 2 — tipo de acesso
-    denied("self escalation negado", f"SELECT public.tenant_admin_change_access_type_v1('{A}','internal',ARRAY['gestor']::app_role[],null,'{k()}','autoalteração')", A, "self_change_denied")
-    denied("admin outro tenant negado", f"SELECT public.tenant_admin_change_access_type_v1('{U['intA']}','internal',ARRAY['gestor']::app_role[],null,'{k()}','cross tenant')", B, "forbidden")
-    denied("não admin negado", f"SELECT public.tenant_admin_change_access_type_v1('{U['intA']}','internal',ARRAY['administrador']::app_role[],null,'{k()}','escalada')", U["consA"], "forbidden")
-    denied("alvo superadmin negado", f"SELECT public.tenant_admin_change_access_type_v1('{U['superX']}','internal',ARRAY['gestor']::app_role[],null,'{k()}','superadmin')", A, "forbidden")
-    denied("anon sem EXECUTE", f"SET ROLE anon; SELECT public.tenant_admin_change_access_type_v1('{U['intA']}','internal',ARRAY['gestor']::app_role[],null,'{k()}','anon')", None, "permission denied")
-    denied("motivo obrigatório", f"SELECT public.tenant_admin_change_access_type_v1('{U['intA']}','internal',ARRAY['gestor']::app_role[],null,'{k()}','')", A, "reason_required")
-    denied("superadmin não atribuível", f"SELECT public.tenant_admin_change_access_type_v1('{U['intA']}','internal',ARRAY['superadmin']::app_role[],null,'{k()}','tentativa')", A, "internal_roles_required")
-    denied("B2B sem vínculo de parceiro", f"SELECT public.tenant_admin_change_access_type_v1('{U['intA']}','b2b',null,null,'{k()}','sem parceiro')", A, "partner_link_required")
-    denied("produtor com cliente de outro tenant", f"SELECT public.tenant_admin_change_access_type_v1('{U['intA']}','producer',null,'{CB}','{k()}','cliente B')", A, "cliente_required")
-    key = k(); sql = f"SELECT public.tenant_admin_change_access_type_v1('{U['intA']}','producer',null,'{C2}','{key}','vira produtor')"
-    r1 = json.loads(psql(sql, A).stdout.strip().splitlines()[-1]); r2 = json.loads(psql(sql, A).stdout.strip().splitlines()[-1])
-    check("interno→produtor", r1["roles"] == ["cliente_produtor"]); check("replay idempotente", r2.get("replayed") is True)
-    denied("mesma chave, payload diferente", f"SELECT public.tenant_admin_change_access_type_v1('{U['intA']}','producer',null,'{C1}','{key}','vira produtor')", A, "idempotency_conflict")
-    uid = psql(f"SELECT user_id FROM public.profiles WHERE user_id='{U['intA']}'").stdout.strip(); check("user_id preservado", uid == U["intA"])
-    check("papel financeiro residual removido (sessão existente perde acesso)", psql(f"SELECT public.has_role('{U['intA']}','financeiro')").stdout.strip() == "f")
-    r = json.loads(psql(f"SELECT public.tenant_admin_change_access_type_v1('{U['prodA']}','internal',ARRAY['consultor_tecnico']::app_role[],null,'{k()}','vira consultor')", A).stdout.strip().splitlines()[-1])
-    check("produtor→interno consultor", r["roles"] == ["consultor_tecnico"])
-    check("vínculo preservado sem principal", psql(f"SELECT count(*)||':'||bool_or(principal) FROM public.user_clientes WHERE user_id='{U['prodA']}' AND revoked_at IS NULL").stdout.strip() == "1:false")
-    r = json.loads(psql(f"SELECT public.tenant_admin_change_access_type_v1('{U['b2bA']}','internal',ARRAY['gestor']::app_role[],null,'{k()}','sai do B2B')", A).stdout.strip().splitlines()[-1])
+    AT = lambda u, t, add="null", rm="null", cli="null", key=None, reason="motivo válido": f"SELECT public.tenant_admin_change_access_type_v1('{u}','{t}',{add},{rm},{cli},'{key or k()}','{reason}')"
+    arr = lambda *r: "ARRAY[" + ",".join(f"'{x}'" for x in r) + "]::app_role[]"
+    roles = lambda u: psql(f"SELECT string_agg(role::text, ',' ORDER BY role) FROM public.user_roles WHERE user_id='{u}'").stdout.strip()
+    # Fase 2 — negações
+    denied("self escalation negado", AT(A, "internal", arr("gestor")), A, "self_change_denied")
+    denied("admin outro tenant negado", AT(U["intA"], "internal", arr("gestor")), B, "forbidden")
+    denied("não admin negado", AT(U["intA"], "internal", arr("administrador")), U["consA"], "forbidden")
+    denied("alvo superadmin negado", AT(U["superX"], "internal", arr("gestor")), A, "forbidden")
+    denied("anon sem EXECUTE", "SET ROLE anon; " + AT(U["intA"], "internal", arr("gestor")), None, "permission denied")
+    denied("motivo obrigatório", AT(U["intA"], "internal", arr("gestor"), reason=""), A, "reason_required")
+    denied("superadmin não atribuível", AT(U["intA"], "internal", arr("superadmin")), A, "internal_roles_required")
+    denied("B2B sem vínculo de parceiro", AT(U["intA"], "b2b", rm=arr("financeiro")), A, "partner_link_required")
+    denied("produtor com cliente de outro tenant", AT(U["intA"], "producer", rm=arr("financeiro"), cli=f"'{CB}'"), A, "cliente_required")
+    before = roles(U["intA"])
+    denied("papel incompatível sem confirmação é rejeitado", AT(U["intA"], "producer", cli=f"'{C2}'"), A, "incompatible_roles")
+    check("rejeição sem mutação", roles(U["intA"]) == before and psql(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{U['intA']}'").stdout.strip() == "0")
+    denied("remover papel compatível é rejeitado", AT(U["consA"], "internal", arr("gestor"), rm=arr("consultor_tecnico")), A, "invalid_remove_roles")
+    # Papéis combinados preservados
+    psql(AT(U["consA"], "internal", arr("gestor")), A)
+    check("interno: papéis existentes preservados + novo", roles(U["consA"]) == "gestor,consultor_tecnico")
+    psql(f"INSERT INTO public.user_roles(user_id,role) VALUES ('{U['b2bA']}','parceiro_b2b_tecnico')")
+    p = psql(AT(U["b2bA"], "b2b"), A, ok=False)
+    check("B2B gestor+técnico preservado (sem mudança = no_change)", p.returncode != 0 and "no_change" in p.stderr and roles(U["b2bA"]) == "parceiro_b2b,parceiro_b2b_tecnico")
+    # Transições explícitas
+    key = k(); sql = AT(U["intA"], "producer", rm=arr("financeiro"), cli=f"'{C2}'", key=key, reason="vira produtor")
+    r1 = json.loads(last(psql(sql, A))); r2 = json.loads(last(psql(sql, A)))
+    check("interno→produtor com remoção confirmada", r1["roles"] == ["cliente_produtor"] and r1["removed_roles"] == ["financeiro"])
+    check("replay idempotente", r2.get("replayed") is True)
+    denied("mesma chave, payload diferente", AT(U["intA"], "producer", rm=arr("financeiro"), cli=f"'{C1}'", key=key, reason="vira produtor"), A, "idempotency_conflict")
+    check("user_id preservado", psql(f"SELECT user_id FROM public.profiles WHERE user_id='{U['intA']}'").stdout.strip() == U["intA"])
+    # Sessão antiga (JWT emitido antes da mudança) perde TODA autoridade baseada em papel
+    check("JWT antigo: has_role novo papel negado", last(psql(f"SELECT public.has_role('{U['intA']}','cliente_produtor')", U["intA"], iat=T0)) == "f")
+    check("JWT antigo: papel removido negado", last(psql(f"SELECT public.has_role('{U['intA']}','financeiro')", U["intA"], iat=T0)) == "f")
+    check("JWT antigo: diagnóstico stale=true", json.loads(last(psql("SELECT public.my_session_authz_state_v1()", U["intA"], iat=T0)))["stale"] is True)
+    check("JWT renovado: novo papel vale", last(psql(f"SELECT public.has_role('{U['intA']}','cliente_produtor')", U["intA"])) == "t")
+    check("JWT renovado: papel removido continua negado", last(psql(f"SELECT public.has_role('{U['intA']}','financeiro')", U["intA"])) == "f")
+    check("outros usuários não são afetados pela época do alvo", last(psql(f"SELECT public.has_role('{B}','administrador')", B, iat=T0)) == "t")
+    # Admin rebaixado: JWT antigo não mantém autoridade administrativa
+    A2 = str(uuid.uuid4()); psql(f"INSERT INTO auth.users VALUES ('{A2}','a2@ex.test'); INSERT INTO public.profiles(user_id,nome,email,organization_id) VALUES ('{A2}','a2','a2@ex.test','{OA}'); INSERT INTO public.user_roles(user_id,role) VALUES ('{A2}','administrador')")
+    psql(f"SELECT public.tenant_admin_change_access_type_v1('{A2}','producer',null,{arr('administrador')},'{C3}','{k()}','rebaixado')", A)
+    denied("admin rebaixado com JWT antigo não executa RPC admin", AT(U["consA"], "internal", arr("aplicador")), A2, "forbidden")
+    p = psql(AT(U["consA"], "internal", arr("aplicador")), A2, ok=False, iat=T0)
+    check("admin rebaixado com JWT antigo (iat antigo) negado", p.returncode != 0 and "forbidden" in p.stderr)
+    check("admin rebaixado: busca de clientes negada", psql("SELECT public.tenant_admin_search_clientes_v1('',0,5)", A2, ok=False, iat=T0).returncode != 0)
+    r = json.loads(last(psql(AT(U["prodA"], "internal", arr("consultor_tecnico"), rm=arr("cliente_produtor"), reason="vira consultor"), A)))
+    check("produtor→consultor: vínculo de produtor encerrado", r["roles"] == ["consultor_tecnico"] and psql(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{U['prodA']}' AND revoked_at IS NULL").stdout.strip() == "0")
+    check("JWT antigo do ex-produtor: acesso ao cliente revogado negado", last(psql(f"SELECT public.has_active_user_cliente_access('{U['prodA']}','{C1}')", U["prodA"], iat=T0)) == "f")
+    check("JWT antigo do ex-produtor: has_role produtor negado", last(psql(f"SELECT public.has_role('{U['prodA']}','cliente_produtor')", U["prodA"], iat=T0)) == "f")
+    check("produtor→consultor: vínculo preservado como histórico", psql(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{U['prodA']}'").stdout.strip() == "1")
+    denied("B2B→interno sem confirmar remoção", AT(U["b2bA"], "internal", arr("gestor")), A, "incompatible_roles")
+    r = json.loads(last(psql(AT(U["b2bA"], "internal", arr("gestor"), rm=arr("parceiro_b2b", "parceiro_b2b_tecnico"), reason="sai do B2B"), A)))
     check("B2B→interno revoga partner_users", psql(f"SELECT count(*) FROM public.partner_users WHERE user_id='{U['b2bA']}' AND revoked_at IS NULL").stdout.strip() == "0" and r["roles"] == ["gestor"])
     check("partner_users preservado (histórico)", psql(f"SELECT count(*) FROM public.partner_users WHERE user_id='{U['b2bA']}'").stdout.strip() == "1")
     psql(f"INSERT INTO public.partner_users(partner_id,user_id,papel,tenant_id) VALUES ('{PA}','{U['b2bA']}','gestor','{OA}')")
-    r = json.loads(psql(f"SELECT public.tenant_admin_change_access_type_v1('{U['b2bA']}','b2b',null,null,'{k()}','volta B2B')", A).stdout.strip().splitlines()[-1])
+    r = json.loads(last(psql(AT(U["b2bA"], "b2b", rm=arr("gestor"), reason="volta B2B"), A)))
     check("interno→B2B com vínculo ativo", r["roles"] == ["parceiro_b2b"])
-    check("auditoria append-only", psql(f"UPDATE platform_private.user_admin_change_audit SET reason='x'", ok=False).returncode != 0)
+    check("auditoria append-only", psql("UPDATE platform_private.user_admin_change_audit SET reason='x'", ok=False).returncode != 0)
     check("auditoria não legível por authenticated", psql("SELECT count(*) FROM platform_private.user_admin_change_audit", A, ok=False).returncode != 0)
     # Fase 3 — e-mail
     T = U["consA"]
     denied("e-mail duplicado", f"SELECT public.tenant_admin_email_change_request_v1('{T}','INTA@ex.test','{k()}')", A, "email_unavailable")
     denied("e-mail inválido", f"SELECT public.tenant_admin_email_change_request_v1('{T}','x@','{k()}')", A, "invalid_email")
     denied("e-mail outro tenant", f"SELECT public.tenant_admin_email_change_request_v1('{T}','novo@ex.test','{k()}')", B, "forbidden")
-    r = json.loads(psql(f"SELECT public.tenant_admin_email_change_request_v1('{T}','Novo@Ex.test','{k()}')", A).stdout.strip().splitlines()[-1])
+    r = json.loads(last(psql(f"SELECT public.tenant_admin_email_change_request_v1('{T}','Novo@Ex.test','{k()}')", A)))
     check("solicitação pendente", r["status"] == "pending"); op = r["op_id"]
+    check("admin não gerou link nem e-mail", OUTBOX == [])
     denied("segunda pendência bloqueada", f"SELECT public.tenant_admin_email_change_request_v1('{T}','outro@ex.test','{k()}')", A, "email_change_pending")
     check("e-mail atual preservado antes da confirmação", psql(f"SELECT email FROM public.profiles WHERE user_id='{T}'").stdout.strip() == "consA@ex.test")
-    denied("sync negado a authenticated", f"SELECT platform_private.user_email_change_sync_v1('{op}')", A, "permission denied")
-    r = json.loads(psql(f"SET ROLE service_role; SELECT platform_private.user_email_change_sync_v1('{op}')").stdout.strip().splitlines()[-1])
-    check("sync aguarda titular", r["status"] == "awaiting_holder")
-    psql(f"UPDATE auth.users SET email='novo@ex.test' WHERE id='{T}'")  # simula confirmação pelo titular no Auth
-    r = json.loads(psql(f"SET ROLE service_role; SELECT platform_private.user_email_change_sync_v1('{op}')").stdout.strip().splitlines()[-1])
-    check("sync após confirmação", r["status"] == "confirmed" and psql(f"SELECT email FROM public.profiles WHERE user_id='{T}'").stdout.strip() == "novo@ex.test")
-    r = json.loads(psql(f"SELECT public.tenant_admin_email_change_request_v1('{T}','terceiro@ex.test','{k()}')", A).stdout.strip().splitlines()[-1])
-    r = json.loads(psql(f"SELECT public.tenant_admin_email_change_cancel_v1('{T}','{k()}')", A).stdout.strip().splitlines()[-1])
-    check("cancelamento", r["status"] == "cancelled")
+    denied("sync worker negado a authenticated", f"SELECT platform_private.user_email_change_sync_v1('{op}')", A, "permission denied")
+    mp = json.loads(last(psql("SELECT public.user_email_change_my_pending_v1()", T)))
+    check("titular vê o pedido ligado a auth.uid", mp["status"] == "pending" and mp["new_email"] == "novo@ex.test")
+    check("outro usuário não vê o pedido", json.loads(last(psql("SELECT public.user_email_change_my_pending_v1()", U["intA"])))["status"] == "none")
+    denied("admin não aceita pelo titular", f"SELECT public.user_email_change_accept_v1('{op}')", A, "forbidden")
+    acc = json.loads(last(psql(f"SELECT public.user_email_change_accept_v1('{op}')", T)))
+    check("aceite devolve endereço canônico", acc["new_email"] == "novo@ex.test")
+    check("antes do updateUser: aguardando titular", json.loads(last(psql("SELECT public.user_email_change_sync_self_v1()", T)))["status"] == "awaiting_holder")
+    tok = auth_update_user(T, acc["new_email"])   # supabase.auth.updateUser({email}) com a sessão do titular (Auth sintético)
+    check("Auth (fake) enviou confirmação ao novo endereço local", len(OUTBOX) == 1 and OUTBOX[0]["to"] == "novo@ex.test")
+    check("sem confirmação: perfil não muda", json.loads(last(psql("SELECT public.user_email_change_sync_self_v1()", T)))["status"] == "awaiting_auth_confirmation"
+          and psql(f"SELECT email FROM public.profiles WHERE user_id='{T}'").stdout.strip() == "consA@ex.test")
+    auth_confirm(tok)                              # titular abre o link oficial do Auth
+    s1 = json.loads(last(psql("SELECT public.user_email_change_sync_self_v1()", T)))
+    s2 = json.loads(last(psql("SELECT public.user_email_change_sync_self_v1()", T)))
+    check("sync no retorno após confirmação do Auth", s1["status"] == "confirmed" and psql(f"SELECT email FROM public.profiles WHERE user_id='{T}'").stdout.strip() == "novo@ex.test")
+    check("sync idempotente", s2.get("replayed") is True and psql(f"SELECT count(*) FROM platform_private.user_admin_change_audit WHERE kind='email_confirmed' AND target_id='{T}'").stdout.strip() == "1")
+    r = json.loads(last(psql(f"SELECT public.tenant_admin_email_change_request_v1('{T}','terceiro@ex.test','{k()}')", A)))
+    tok2 = auth_update_user(T, "diferente@ex.test"); auth_confirm(tok2)
+    check("endereço diferente do canônico nunca sincroniza", json.loads(last(psql("SELECT public.user_email_change_sync_self_v1()", T)))["status"] in ("awaiting_holder",)
+          and psql(f"SELECT email FROM public.profiles WHERE user_id='{T}'").stdout.strip() == "novo@ex.test")
+    r = json.loads(last(psql(f"SELECT public.tenant_admin_email_change_cancel_v1('{T}','{k()}')", A)))
+    check("cancelamento pelo admin", r["status"] == "cancelled")
+    r = json.loads(last(psql(f"SELECT public.tenant_admin_email_change_request_v1('{T}','quarto@ex.test','{k()}')", A)))
+    check("recusa pelo titular", json.loads(last(psql(f"SELECT public.user_email_change_decline_v1('{r['op_id']}')", T)))["status"] == "cancelled")
     # Fase 4 — vínculos do consultor
     s = json.loads(psql("SELECT public.tenant_admin_search_clientes_v1('fazenda',0,1)", A).stdout.strip().splitlines()[-1])
     check("busca paginada só do tenant", s["total"] == 2 and len(s["items"]) == 1)

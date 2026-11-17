@@ -91,3 +91,41 @@ Ver `candidate.sql.review`. Resumo:
 ## Riscos
 - `user_roles` tem gatilhos `a00_cf_user_gate`/`z99_cf_require_admin`: compatíveis no harness, mas devem ser revalidados hosted.
 - Remoção de papéis internos ao virar externo é intencional; perfis combinados legítimos exigem a fase multiperfil.
+
+---
+# Fechamento das lacunas de fee087c4 (17/11/2026, 14h UTC)
+
+## Confirmação de e-mail pelo titular (sem links administrativos)
+- Admin: só `tenant_admin_email_change_request_v1` (duplicidade, pendência única por titular/endereço, auditoria).
+- Titular (`HolderAccountGuards`, montado no `AuthProvider`, atrás do gate): ao entrar, `user_email_change_sync_self_v1`
+  → `user_email_change_my_pending_v1`; "Aceitar" chama `user_email_change_accept_v1` e então
+  `supabase.auth.updateUser({ email: <endereço devolvido pelo servidor> })`. Endereço divergente do servidor aborta.
+- Sincronização idempotente só quando `auth.users.email` já é o canônico (Auth confirmou). Endereço diferente
+  confirmado no Auth nunca é sincronizado; o pedido segue pendente/expira. Worker service-only mantido como alternativa.
+- Edge anterior descartado (ver `edge-tenant-user-email-change.md`).
+
+## Papéis combinados
+- Compatíveis com o destino são preservados (ex.: `parceiro_b2b`+`parceiro_b2b_tecnico`; internos existentes ao
+  adicionar outro interno). Incompatíveis só saem se listados em `p_remove_roles`; senão `PT409 incompatible_roles`
+  (DETAIL com a lista) e nenhuma mutação. Remover papel compatível → `invalid_remove_roles`. Nova assinatura com `p_remove_roles`.
+- A UI lista os incompatíveis com caixas de confirmação explícita.
+
+## Sessões antigas
+- Mecanismo suportado já existente: `platform_actor_access_ready` nega autoridade quando `iat` do JWT ≤ marco.
+  Candidato acrescenta `platform_private.user_authz_epoch` (PRE com md5 `048249c0…` do corpo capturado).
+  `platform_private.has_role` consulta essa função, portanto TODAS as políticas/RPCs baseadas em papel negam o JWT
+  antigo do alvo até a renovação; produção não tem políticas/funções que leiam papéis do JWT (consulta: 0/0).
+- `my_session_authz_state_v1` informa `stale`; o titular renova com `refreshSession()` (o servidor já nega antes).
+- Limite: `has_active_user_cliente_access` não consulta papel; vínculos são lidos ao vivo (revogado nega já) e os
+  fluxos técnicos o chamam atrás de `has_role` em `can_user_access_cliente`.
+
+## Testes
+- PostgreSQL 15 descartável: **73/73** (`evidence-local.json`), com transporte de e-mail fake (caixa em memória) e
+  Auth sintético (updateUser grava `email_change`; confirmação por token aplica `email`). Corpos `has_role` e
+  `platform_actor_access_ready` carregados verbatim; PRE md5 passou. NÃO é prova de JWT/Auth/RLS hosted.
+- Vitest: `userAdminRefinement` 23/23, `holderAccountGuards` 6/6, `authProviderTopology` 3/3.
+
+## Pendências
+- Revisão/aplicação pelo auditor; homologação com JWT reais A/B (incluindo token antigo após troca) e Auth real
+  com SMTP canônico (entrega hoje OFF: o titular não receberá o e-mail de confirmação até a homologação).
+- Gate `USER_ADMIN_REFINEMENT_INSTALLED` permanece `false`.

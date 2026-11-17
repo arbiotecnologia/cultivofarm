@@ -1,26 +1,26 @@
 {
- "passed": 47,
- "total": 47,
+ "passed": 73,
+ "total": 73,
  "results": [
   {
    "name": "self escalation negado",
    "pass": true,
-   "detail": "ser_admin_ctx(uuid) line 6 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text) line 9 at assignment"
+   "detail": " line 6 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 12 at assignment"
   },
   {
    "name": "admin outro tenant negado",
    "pass": true,
-   "detail": "ser_admin_ctx(uuid) line 7 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text) line 9 at assignment"
+   "detail": " line 7 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 12 at assignment"
   },
   {
    "name": "não admin negado",
    "pass": true,
-   "detail": "ser_admin_ctx(uuid) line 7 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text) line 9 at assignment"
+   "detail": " line 7 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 12 at assignment"
   },
   {
    "name": "alvo superadmin negado",
    "pass": true,
-   "detail": "ser_admin_ctx(uuid) line 7 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text) line 9 at assignment"
+   "detail": " line 7 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 12 at assignment"
   },
   {
    "name": "anon sem EXECUTE",
@@ -30,25 +30,50 @@
   {
    "name": "motivo obrigatório",
    "pass": true,
-   "detail": "ERROR:  reason_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text) line 11 at RAISE"
+   "detail": "on_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 14 at RAISE"
   },
   {
    "name": "superadmin não atribuível",
    "pass": true,
-   "detail": "ROR:  internal_roles_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text) line 32 at RAISE"
+   "detail": "es_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 27 at RAISE"
   },
   {
    "name": "B2B sem vínculo de parceiro",
    "pass": true,
-   "detail": "ERROR:  partner_link_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text) line 51 at RAISE"
+   "detail": "nk_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 47 at RAISE"
   },
   {
    "name": "produtor com cliente de outro tenant",
    "pass": true,
-   "detail": "ERROR:  cliente_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text) line 60 at RAISE"
+   "detail": "te_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 50 at RAISE"
   },
   {
-   "name": "interno→produtor",
+   "name": "papel incompatível sem confirmação é rejeitado",
+   "pass": true,
+   "detail": " financeiro\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 39 at RAISE"
+  },
+  {
+   "name": "rejeição sem mutação",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "remover papel compatível é rejeitado",
+   "pass": true,
+   "detail": "emove_roles\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 36 at RAISE"
+  },
+  {
+   "name": "interno: papéis existentes preservados + novo",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "B2B gestor+técnico preservado (sem mudança = no_change)",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "interno→produtor com remoção confirmada",
    "pass": true,
    "detail": ""
   },
@@ -60,7 +85,7 @@
   {
    "name": "mesma chave, payload diferente",
    "pass": true,
-   "detail": "ay(uuid,text,text) line 8 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text) line 13 at assignment"
+   "detail": " line 8 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 17 at assignment"
   },
   {
    "name": "user_id preservado",
@@ -68,19 +93,74 @@
    "detail": ""
   },
   {
-   "name": "papel financeiro residual removido (sessão existente perde acesso)",
+   "name": "JWT antigo: has_role novo papel negado",
    "pass": true,
    "detail": ""
   },
   {
-   "name": "produtor→interno consultor",
+   "name": "JWT antigo: papel removido negado",
    "pass": true,
    "detail": ""
   },
   {
-   "name": "vínculo preservado sem principal",
+   "name": "JWT antigo: diagnóstico stale=true",
    "pass": true,
    "detail": ""
+  },
+  {
+   "name": "JWT renovado: novo papel vale",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "JWT renovado: papel removido continua negado",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "outros usuários não são afetados pela época do alvo",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "admin rebaixado com JWT antigo não executa RPC admin",
+   "pass": true,
+   "detail": " line 7 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 12 at assignment"
+  },
+  {
+   "name": "admin rebaixado com JWT antigo (iat antigo) negado",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "admin rebaixado: busca de clientes negada",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "produtor→consultor: vínculo de produtor encerrado",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "JWT antigo do ex-produtor: acesso ao cliente revogado negado",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "JWT antigo do ex-produtor: has_role produtor negado",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "produtor→consultor: vínculo preservado como histórico",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "B2B→interno sem confirmar remoção",
+   "pass": true,
+   "detail": "b2b_tecnico\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 39 at RAISE"
   },
   {
    "name": "B2B→interno revoga partner_users",
@@ -128,6 +208,11 @@
    "detail": ""
   },
   {
+   "name": "admin não gerou link nem e-mail",
+   "pass": true,
+   "detail": ""
+  },
+  {
    "name": "segunda pendência bloqueada",
    "pass": true,
    "detail": "ERROR:  email_change_pending\nCONTEXT:  PL/pgSQL function public.tenant_admin_email_change_request_v1(uuid,text,uuid) line 24 at RAISE"
@@ -138,22 +223,67 @@
    "detail": ""
   },
   {
-   "name": "sync negado a authenticated",
+   "name": "sync worker negado a authenticated",
    "pass": true,
-   "detail": "chema platform_private\nLINE 1: ...435af9d01',false); SET ROLE authenticated; SELECT platform_p...\n                                                             ^"
+   "detail": "ERROR:  permission denied for function user_email_change_sync_v1"
   },
   {
-   "name": "sync aguarda titular",
-   "pass": true,
-   "detail": ""
-  },
-  {
-   "name": "sync após confirmação",
+   "name": "titular vê o pedido ligado a auth.uid",
    "pass": true,
    "detail": ""
   },
   {
-   "name": "cancelamento",
+   "name": "outro usuário não vê o pedido",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "admin não aceita pelo titular",
+   "pass": true,
+   "detail": "ERROR:  forbidden\nCONTEXT:  PL/pgSQL function public.user_email_change_accept_v1(uuid) line 6 at RAISE"
+  },
+  {
+   "name": "aceite devolve endereço canônico",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "antes do updateUser: aguardando titular",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "Auth (fake) enviou confirmação ao novo endereço local",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "sem confirmação: perfil não muda",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "sync no retorno após confirmação do Auth",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "sync idempotente",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "endereço diferente do canônico nunca sincroniza",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "cancelamento pelo admin",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "recusa pelo titular",
    "pass": true,
    "detail": ""
   },
