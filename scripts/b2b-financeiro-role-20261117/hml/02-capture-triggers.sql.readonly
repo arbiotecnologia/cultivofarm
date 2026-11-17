@@ -1,0 +1,13 @@
+-- HML CAPTURA 2 (somente leitura) — vrlcdwmlytukrjezrrnf. Devolver C9 sem editar.
+-- Motivo: partner_users_derive_tenant (HML 84266976 ≠ prod def221f8) e cf_user_guards_v1.touch_related_profiles
+-- (HML 7700e706 ≠ prod e5911c38) rodam dentro da transição 02c; a bateria precisa dos corpos HML reais.
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;
+SELECT 'C9' k, p.oid::regprocedure::text sig, md5(pg_get_functiondef(p.oid)) hml_md5, pg_get_functiondef(p.oid) def
+FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+WHERE (n.nspname,p.proname) IN (('public','partner_users_derive_tenant'),('cf_user_guards_v1','touch_related_profiles'),
+  ('platform_private','user_admin_actor_ctx'),('platform_private','user_admin_scope_proof'),('platform_private','user_admin_scope_settle'),
+  ('platform_private','user_admin_scope_snapshot'),('platform_private','user_admin_end_tenant_links'),('platform_private','user_admin_replay_actor'),
+  ('platform_private','user_authz_bump'),('platform_private','is_tenant_admin_for_user'),('platform_private','b2b_coherent_self_partner'),
+  ('platform_private','b2b_direct_partner_row_allowed'))
+ORDER BY 2;
+ROLLBACK;

@@ -23,3 +23,10 @@ No HML o crédito fica **fechado por construção** (cadeia B4 ausente). A prova
 - `admin_provision_user_profile_v1` HML (9a2e228a) é INVOKER com EXECUTE para PUBLIC/anon/authenticated; proteção depende só das políticas (C6 pendente).
 - ACL com TRUNCATE (`D`) para anon/authenticated em `user_roles`, `partner_order_messages`; para authenticated em `partner_users`, `partner_order_financial_links`, `partner_order_payment_schedule`, `financial_audit_log`, `accounts_receivable_installments`, `receivable_payments`. Contradiz o estado “04 aplicado na homologação”; RLS não cobre TRUNCATE.
 - `fn_b2b_credit_exposure` HML legado sem gate de ator, mas EXECUTE só postgres/service_role (sem exposição a sessões).
+
+## Captura parte 2 (C6–C8) — análise
+- `parceiro_b2b_financeiro` ausente do enum HML → 02a-hml necessário (commit isolado antes de 02b).
+- Leituras diretas que um Financeiro com vínculo alcançaria no HML sem o pacote: `pofl_partner_select_own` (só vínculo, sem papel) e `partner_accounts_self_select` (`b2b_coherent_self_partner`). Ambas fechadas pelas políticas RESTRICTIVE `b2b_finance_role_direct_closed` do 02b; a suíte JWT verifica as duas tabelas.
+- Demais leituras exigem `parceiro_b2b` ou papéis internos (`financeiro` interno ≠ papel externo) → não alcançáveis pelo Financeiro B2B.
+- HML difere da produção (fora do escopo, reportar): falta `b2b_phase1_tenant_guard` RESTRICTIVE em `partner_order_financial_links` e `financial_rpc_only_*` em parcelas.
+- Gatilhos de `partner_users` que a transição 02c aciona divergem da produção: `partner_users_derive_tenant` (HML 84266976 / prod def221f8) e `cf_user_guards_v1.touch_related_profiles` (HML 7700e706 / prod e5911c38). **Bloqueio**: rodar `hml/02-capture-triggers.sql.readonly` (C9) antes de instalar 02c no HML; a bateria de transição será refeita com esses corpos reais.
