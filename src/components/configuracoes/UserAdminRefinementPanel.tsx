@@ -33,7 +33,7 @@ const INTERNAL_ROLES: { value: string; label: string }[] = [
 ];
 
 export interface RefinementTarget { user_id: string; email: string | null; roles: string[] }
-interface Props { target: RefinementTarget; actorId: string; currentType: string; onChanged: () => void; externalEditorMounted?: boolean }
+interface Props { target: RefinementTarget; actorId: string; currentType: string; onChanged: () => void }
 
 function ClientePicker({ onPick, disabled }: { onPick: (c: ClienteOption) => void; disabled?: boolean }) {
   const [q, setQ] = useState(""); const [page, setPage] = useState(0);
@@ -248,7 +248,7 @@ export function UserAdminRefinementPanel(props: Props) {
   return (
     <div className="space-y-3">
       <AccessTypeSection {...props} />
-      {props.actorId !== props.target.user_id && !props.externalEditorMounted && <EmailSection {...props} />}
+      {props.actorId !== props.target.user_id && <EmailSection {...props} />}
       {isConsultor(props.target.roles) && props.currentType === "internal" && props.actorId !== props.target.user_id && <ConsultorLinksSection {...props} />}
     </div>
   );

@@ -7,6 +7,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (...a: unkno
 
 import { USER_ADMIN_REFINEMENT_INSTALLED, validateTransition, validatePeriod, isValidCivilDate, friendlyError, parseClientesPage, parseConsultorLinks, emailSchema } from "@/lib/configuracoes/userAdminRefinement";
 import { UserAdminRefinementPanel } from "@/components/configuracoes/UserAdminRefinementPanel";
+import { ExternalCommonUserEditBoundary } from "@/components/configuracoes/ExternalCommonUserEditForm";
 
 const A = "11111111-1111-4111-8111-111111111111", T = "22222222-2222-4222-8222-222222222222", C = "33333333-3333-4333-8333-333333333333";
 const base = { actorId: A, targetId: T, from: "internal", to: "producer" as const, internalRoles: [], clienteId: C, reason: "mudança aprovada" };
@@ -132,8 +133,24 @@ describe("rev.5 — gatilhos reais: Edge, B2B explícito, administrador e editor
     expect(screen.queryByText("Administrador")).toBeNull();
     expect(screen.getByText(/só pode ser concedido depois/)).toBeTruthy();
   });
-  it("com o editor externo montado, o painel não abre um segundo editor de e-mail", () => {
-    wrap(<UserAdminRefinementPanel target={{ user_id: T, email: "x@ex.test", roles: ["cliente_produtor"] }} actorId={A} currentType="producer" externalEditorMounted onChanged={() => {}} />);
+});
+
+describe("e-mail: exatamente uma ação por tipo, inclusive com o editor de dados comuns montado", () => {
+  beforeEach(() => { rpc.mockReset(); invoke.mockReset(); rpc.mockResolvedValue({ data: { status: "none" }, error: null }); });
+  const cases = [["internal", ["financeiro"]], ["b2b", ["parceiro_b2b_gestor"]], ["producer", ["cliente_produtor"]]] as const;
+  for (const [tipo, roles] of cases) {
+    it(`${tipo}: uma única ação de solicitar troca`, async () => {
+      const target = { user_id: T, email: "x@ex.test", roles: [...roles], nome: "X", cliente_id: null };
+      wrap(<>
+        <UserAdminRefinementPanel target={{ user_id: T, email: "x@ex.test", roles: [...roles] }} actorId={A} currentType={tipo} onChanged={() => {}} />
+        {tipo !== "internal" && <ExternalCommonUserEditBoundary target={target as never} scope="s" actorId={A} organizationId={T}
+          ready expectedVersion={"a".repeat(64)} snapshotReady snapshotError={false} isCurrent={() => true} onSuccess={() => {}} onError={() => {}} />}
+      </>);
+      expect(screen.getAllByLabelText("Alterar e-mail")).toHaveLength(1);
+    });
+  }
+  it("titular continua sem ação sobre o próprio e-mail", () => {
+    wrap(<UserAdminRefinementPanel target={{ user_id: A, email: "a@ex.test", roles: ["cliente_produtor"] }} actorId={A} currentType="producer" onChanged={() => {}} />);
     expect(screen.queryByLabelText("Alterar e-mail")).toBeNull();
   });
 });
