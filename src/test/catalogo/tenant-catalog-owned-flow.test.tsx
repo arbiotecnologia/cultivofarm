@@ -83,7 +83,9 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: query, rpc:
 
 import { ProdutosTab } from "@/components/protocolos/ProdutosTab";
 import { MicrorganismosTab } from "@/components/protocolos/MicrorganismosTab";
-import { CulturasTab } from "@/pages/Protocolos";
+// A aba Culturas passou a montar TenantReferencePanel (61ed3992f, coberto em catalogReferences.realClient.test.tsx);
+// estes cenários seguem exercitando o fluxo próprio legado e seus fences de escrita, sem alterar asserções.
+import { LegacyCulturasTab as CulturasTab } from "@/pages/Protocolos";
 
 function requireRow(node: HTMLElement) { const row = node.closest("tr"); if (!row) throw new Error("Linha não encontrada"); return row; }
 function app(Component = CulturasTab) {

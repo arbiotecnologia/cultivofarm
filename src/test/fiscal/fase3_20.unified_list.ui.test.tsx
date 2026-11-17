@@ -120,7 +120,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   Object.assign(fiscalFence, { ready: true, canWrite: true, canWriteOwnedProduct: false, scope: "A/T" }); ownedGate.on = false;
   mockUseProductFiscalProfile.mockReturnValue({ data: null, isLoading: false, isFetching: false, isError: false, refetch: vi.fn() });
-  mockUseAuth.mockReturnValue({ role: "administrador" });
+  mockUseAuth.mockReturnValue({ role: "administrador", roles: ["administrador"] });
   mockUseProductFiscalList.mockReturnValue({
     data: { items: [PRODUCT_A], total: 1 },
     isLoading: false, isError: false, error: null,
@@ -185,7 +185,7 @@ describe("FiscalProdutos — perfil fiscal próprio de microrganismos (Fase 3.21
     expect(screen.queryByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" })).toBeNull();
   });
   test("Superadmin platform tab has no product fiscal writer (no global bypass)", () => {
-    mockUseAuth.mockReturnValue({ role: "superadmin" }); ownedGate.on = true;
+    mockUseAuth.mockReturnValue({ role: "superadmin", roles: ["superadmin"] }); ownedGate.on = true;
     renderWithProviders(<FiscalProdutos platformGlobal />);
     expect(screen.queryByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" })).toBeNull();
   });
@@ -230,7 +230,7 @@ describe("FiscalProdutos — perfil fiscal próprio de microrganismos (Fase 3.21
   });
 
   test("usuário somente leitura vê apenas botão 'Ver', sem ação de criar/vincular", () => {
-    mockUseAuth.mockReturnValue({ role: "gestor" });
+    mockUseAuth.mockReturnValue({ role: "gestor", roles: ["gestor"] });
     renderWithProviders(<FiscalProdutos />);
     expect(screen.queryByTestId("btn-editar-perfil-micro")).not.toBeInTheDocument();
     expect(screen.queryByTestId("btn-vinculo-opcional")).not.toBeInTheDocument();

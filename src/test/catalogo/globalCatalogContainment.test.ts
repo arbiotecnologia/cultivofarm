@@ -25,7 +25,6 @@ describe("contenção de escrita do catálogo global", () => {
   });
 
   it.each([
-    "src/hooks/useMicroorganismProfile.ts",
     "src/hooks/useCatalogSources.ts",
     "src/hooks/useCatalogTargetsCrops.ts",
     "src/hooks/useCatalogoAlvos.ts",
@@ -44,11 +43,13 @@ describe("contenção de escrita do catálogo global", () => {
     }
   });
 
-  it("ficha própria usa gate de ator e RPC, nunca DML global", () => {
-    const s = read("src/hooks/useProductProfile.ts");
-    expect(s.indexOf("if (!editor.canEdit || !current())")).toBeLessThan(s.indexOf("const ack = await saveTenantCatalogRoot"));
+  // Ficha de microrganismo migrou para o catálogo por empresa (a9740d97c), com o mesmo contrato da ficha de produto.
+  it.each([["src/hooks/useProductProfile.ts", "product_technical_profiles"], ["src/hooks/useMicroorganismProfile.ts", "microorganism_technical_profiles"]])("ficha própria %s usa gate de ator e RPC, nunca DML global", (f, table) => {
+    const s = read(f);
+    expect(s.indexOf("if (!editor.canEdit || !current()")).toBeGreaterThan(-1);
+    expect(s.indexOf("if (!editor.canEdit || !current()")).toBeLessThan(s.indexOf("const ack = await saveTenantCatalogRoot"));
     expect(s).not.toMatch(/\.(insert|update|delete|upsert)\(/);
-    expect(s).toContain('"product_technical_profiles"');
+    expect(s).toContain(`"${table}"`);
   });
 
   it("fichas não oferecem edição e micro removeu caminho B2B-only", () => {

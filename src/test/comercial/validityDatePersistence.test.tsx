@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PlanAssignment } from "@/hooks/useCommercialConditions";
 import { isValidCivilDate } from "@/lib/civil-date-input";
 
@@ -92,6 +92,9 @@ describe("Vigência final da atribuição", () => {
 });
 
 describe("Fim da vigência do novo plano", () => {
+  // validatePlan recusa fim de vigência no passado; fixa o relógio na data da fixture (2026-11-11) para não expirar.
+  beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-11-11T12:00:00-03:00")); });
+  afterEach(() => { vi.useRealTimers(); });
   function openNew() {
     render(wrap(<CommercialPaymentPlansPage />));
     fireEvent.click(screen.getByRole("button", { name: /novo plano/i }));

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { useScopedPortalQuery } from "./useScopedPortalQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { PRODUCT_FAMILY_TABS } from "@/lib/catalogo/productFamilies";
+import { READ_CATALOG_FAMILIES, READ_FAMILY_LABEL } from "@/lib/catalogo/catalogFamilyRead";
 import { useAuth } from "./useAuth";
 const families = z.array(z.object({ value: z.enum(["biologico","quimico","fertilizante_adubo"]), label: z.string().min(1).max(80) }).strict()).max(3);
 export function useActiveCatalogFamilies() {
@@ -13,5 +13,5 @@ export function useActiveCatalogFamilies() {
     if (error) throw error;
     return families.parse(data).flatMap(f => f.value && f.label ? [{ value: f.value, label: f.label }] : []);
   } });
-  return { ...query, options: [{value:"todos",label:"Todas as famílias"},...(query.isSuccess ? query.data ?? [] : PRODUCT_FAMILY_TABS.filter(t => t.value !== "todos" && t.value !== "sem_classificacao")),{value:"sem_classificacao",label:"Sem classificação"}] };
+  return { ...query, options: [{value:"todos",label:"Todas as famílias"},...(query.isSuccess ? query.data ?? [] : READ_CATALOG_FAMILIES.map(value => ({ value, label: READ_FAMILY_LABEL[value] }))),{value:"sem_classificacao",label:"Sem classificação"}] };
 }

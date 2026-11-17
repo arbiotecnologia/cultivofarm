@@ -17,7 +17,8 @@ describe("cancelamento candidato inativo", () => {
     await screen.findByLabelText("Motivo");
     fireEvent.change(screen.getByLabelText("Motivo"), { target: { value: "decisão comercial" } });
     fireEvent.click(screen.getByRole("button"));
-    await waitFor(() => expect(confirmed).toHaveBeenCalledTimes(1));
+    // Sob a suíte integral (2 workers) a cadeia capacidade→despacho→ACK pode passar de 1 s; só a espera cresce.
+    await waitFor(() => expect(confirmed).toHaveBeenCalledTimes(1), { timeout: 5_000 });
     expect(rpc.mock.calls[0]).toEqual(["rpc_b2b_cancel_residual_capability_v1", { p_order: props.orderId }]);
     expect(rpc.mock.calls[1][1]).toEqual({ p_order: props.orderId, p_expected_version: 8, p_reason: "decisão comercial" });
   });

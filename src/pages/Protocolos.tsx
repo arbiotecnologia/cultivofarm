@@ -44,7 +44,8 @@ import { TENANT_OWNED_CATALOG_ENABLED } from "@/lib/catalogo/tenantCatalogOwners
 export function CulturasTab() {
   return <TenantReferencePanel root="culturas" />;
 }
-function LegacyCulturasTab() {
+/** Fluxo legado de cultura própria (substituído na aba por TenantReferencePanel em 61ed3992f); exportado só para regressão dos fences de escrita. */
+export function LegacyCulturasTab() {
   const [showArchived, setShowArchived] = useState(false);
   const [ownedOffset, setOwnedOffset] = useState(0);
   const [search, setSearch] = useState("");

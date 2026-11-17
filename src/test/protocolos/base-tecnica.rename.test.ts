@@ -50,6 +50,7 @@ describe("Base Técnica Agronômica — renomeação de interface", () => {
     expect(item?.route).toBe("/base-tecnica");
     expect(item?.children?.map((c) => c.route)).toEqual([
       "/base-tecnica?tab=produtos",
+      "/base-tecnica?tab=servicos",
       "/base-tecnica?tab=microrganismos",
       "/base-tecnica?tab=catalogo-tecnico",
       "/base-tecnica?tab=culturas",

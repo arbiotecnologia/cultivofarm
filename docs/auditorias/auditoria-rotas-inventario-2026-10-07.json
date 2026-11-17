@@ -3,7 +3,7 @@
   "routes": [
     {
       "path": "/auth",
-      "line": 432,
+      "line": 436,
       "index": false,
       "components": [
         "AuthRoute"
@@ -41,7 +41,7 @@
     },
     {
       "path": "/reset-password",
-      "line": 433,
+      "line": 437,
       "index": false,
       "components": [
         "ResetPassword"
@@ -71,7 +71,7 @@
     },
     {
       "path": "/selecionar-portal",
-      "line": 434,
+      "line": 438,
       "index": false,
       "components": [
         "AuthenticatedShell",
@@ -104,7 +104,7 @@
     },
     {
       "path": "/acesso-pendente",
-      "line": 435,
+      "line": 439,
       "index": false,
       "components": [
         "AuthenticatedShell",
@@ -136,7 +136,7 @@
     },
     {
       "path": "/sem-permissao",
-      "line": 436,
+      "line": 440,
       "index": false,
       "components": [
         "AuthenticatedShell",
@@ -167,6 +167,7 @@
         "src/components/guards/VisitaRouteGuard.tsx",
         "src/features/comunicacao/RouteGuard.tsx",
         "src/lib/navigation/safeHome.ts",
+        "src/pages/Protocolos.tsx",
         "src/pages/app/MobileLayout.tsx"
       ],
       "classification": 8,
@@ -175,8 +176,37 @@
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
+      "path": "/diagnostico/elegibilidade-fiscal",
+      "line": 441,
+      "index": false,
+      "components": [
+        "AuthenticatedShell",
+        "DiagnosticoElegibilidade"
+      ],
+      "ancestors": [],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "financeiro"
+      ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
+      "navigation": [],
+      "references": [],
+      "classification": 2,
+      "navigationJustification": "system/internal route; never automatically expose",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
       "path": "/plataforma",
-      "line": 439,
+      "line": 444,
       "index": false,
       "components": [
         "PlataformaHome"
@@ -208,7 +238,7 @@
     },
     {
       "path": "/configuracoes/catalogo-ia",
-      "line": 440,
+      "line": 445,
       "index": false,
       "components": [
         "ConfigCatalogoIA"
@@ -242,7 +272,7 @@
     },
     {
       "path": "/validar-entrega/:token",
-      "line": 442,
+      "line": 447,
       "index": false,
       "components": [
         "ValidarEntrega"
@@ -270,7 +300,7 @@
     },
     {
       "path": "/rastrear-produto/:token",
-      "line": 443,
+      "line": 448,
       "index": false,
       "components": [
         "RastrearProduto"
@@ -298,7 +328,7 @@
     },
     {
       "path": "/app/login",
-      "line": 446,
+      "line": 451,
       "index": false,
       "components": [
         "MobileLogin"
@@ -329,7 +359,7 @@
     },
     {
       "path": "/app",
-      "line": 450,
+      "line": 455,
       "index": false,
       "components": [
         "MobileDashboard"
@@ -372,7 +402,7 @@
     },
     {
       "path": "/app/perfil",
-      "line": 451,
+      "line": 456,
       "index": false,
       "components": [
         "MobilePerfil"
@@ -405,7 +435,7 @@
     },
     {
       "path": "/app/notificacoes",
-      "line": 452,
+      "line": 457,
       "index": false,
       "components": [
         "MobileNotificacoes"
@@ -438,7 +468,7 @@
     },
     {
       "path": "/app/fazendas",
-      "line": 457,
+      "line": 462,
       "index": false,
       "components": [
         "MobileFazendas"
@@ -474,7 +504,7 @@
     },
     {
       "path": "/app/registrar",
-      "line": 458,
+      "line": 463,
       "index": false,
       "components": [
         "MobileRegistrarOcorrencia"
@@ -508,7 +538,7 @@
     },
     {
       "path": "/app/atendimentos",
-      "line": 460,
+      "line": 465,
       "index": false,
       "components": [
         "MobileAtendimentos"
@@ -545,7 +575,7 @@
     },
     {
       "path": "/app/registros",
-      "line": 462,
+      "line": 467,
       "index": false,
       "components": [
         "Navigate"
@@ -576,7 +606,7 @@
     },
     {
       "path": "/app/solicitacoes",
-      "line": 463,
+      "line": 468,
       "index": false,
       "components": [
         "Navigate"
@@ -607,7 +637,7 @@
     },
     {
       "path": "/app/ordens",
-      "line": 464,
+      "line": 469,
       "index": false,
       "components": [
         "MobileOrdens"
@@ -640,7 +670,7 @@
     },
     {
       "path": "/app/checkin/:solicitacaoId",
-      "line": 465,
+      "line": 470,
       "index": false,
       "components": [
         "MobileCheckin"
@@ -671,7 +701,7 @@
     },
     {
       "path": "/app/checkin",
-      "line": 466,
+      "line": 471,
       "index": false,
       "components": [
         "MobileCheckin"
@@ -703,7 +733,7 @@
     },
     {
       "path": "/app/visita/novo",
-      "line": 467,
+      "line": 472,
       "index": false,
       "components": [
         "MobileVisita"
@@ -735,7 +765,7 @@
     },
     {
       "path": "/app/visita/:id",
-      "line": 468,
+      "line": 473,
       "index": false,
       "components": [
         "MobileVisita"
@@ -766,7 +796,7 @@
     },
     {
       "path": "/app/talhao/:id",
-      "line": 469,
+      "line": 474,
       "index": false,
       "components": [
         "MobileTalhaoHistorico"
@@ -797,7 +827,7 @@
     },
     {
       "path": "/app/catalogo",
-      "line": 470,
+      "line": 475,
       "index": false,
       "components": [
         "MobileCatalogoTecnico"
@@ -831,7 +861,7 @@
     },
     {
       "path": "/app/recomendacoes",
-      "line": 476,
+      "line": 481,
       "index": false,
       "components": [
         "MobileRecomendacoesProdutor"
@@ -863,7 +893,7 @@
     },
     {
       "path": "/app/entregas",
-      "line": 477,
+      "line": 482,
       "index": false,
       "components": [
         "MobileEntregas"
@@ -895,7 +925,7 @@
     },
     {
       "path": "/app/aplicacoes",
-      "line": 478,
+      "line": 483,
       "index": false,
       "components": [
         "MobileAplicacoes"
@@ -923,7 +953,7 @@
     },
     {
       "path": "/app/aplicacoes/lista",
-      "line": 479,
+      "line": 484,
       "index": false,
       "components": [
         "MobileListaAplicacoes"
@@ -952,7 +982,7 @@
     },
     {
       "path": "/app/solicitar",
-      "line": 480,
+      "line": 485,
       "index": false,
       "components": [
         "MobileSolicitar"
@@ -981,7 +1011,7 @@
     },
     {
       "path": "/portal",
-      "line": 487,
+      "line": 492,
       "index": false,
       "components": [
         "PortalDashboard"
@@ -1016,7 +1046,7 @@
     },
     {
       "path": "/portal/fazendas",
-      "line": 488,
+      "line": 493,
       "index": false,
       "components": [
         "PortalFazendas"
@@ -1045,7 +1075,7 @@
     },
     {
       "path": "/portal/fazendas/:id",
-      "line": 489,
+      "line": 494,
       "index": false,
       "components": [
         "PortalFazendaDetalhe"
@@ -1069,7 +1099,7 @@
     },
     {
       "path": "/portal/talhoes",
-      "line": 490,
+      "line": 495,
       "index": false,
       "components": [
         "Navigate"
@@ -1093,7 +1123,7 @@
     },
     {
       "path": "/portal/talhoes/:id",
-      "line": 491,
+      "line": 496,
       "index": false,
       "components": [
         "PortalTalhaoDetalhe"
@@ -1117,7 +1147,7 @@
     },
     {
       "path": "/portal/agenda",
-      "line": 492,
+      "line": 497,
       "index": false,
       "components": [
         "PortalAgenda"
@@ -1145,7 +1175,7 @@
     },
     {
       "path": "/portal/registros",
-      "line": 493,
+      "line": 498,
       "index": false,
       "components": [
         "PortalRegistros"
@@ -1174,7 +1204,7 @@
     },
     {
       "path": "/portal/registros/:id",
-      "line": 494,
+      "line": 499,
       "index": false,
       "components": [
         "PortalRegistroDetalhe"
@@ -1198,7 +1228,7 @@
     },
     {
       "path": "/portal/recomendacoes",
-      "line": 495,
+      "line": 500,
       "index": false,
       "components": [
         "PortalRecomendacoes"
@@ -1227,7 +1257,7 @@
     },
     {
       "path": "/portal/fila-aprovacao",
-      "line": 496,
+      "line": 501,
       "index": false,
       "components": [
         "PortalFilaAprovacao"
@@ -1251,7 +1281,7 @@
     },
     {
       "path": "/portal/acompanhamento",
-      "line": 497,
+      "line": 502,
       "index": false,
       "components": [
         "PortalAcompanhamento"
@@ -1279,7 +1309,7 @@
     },
     {
       "path": "/portal/ordens-servico",
-      "line": 499,
+      "line": 504,
       "index": false,
       "components": [
         "Navigate"
@@ -1305,7 +1335,7 @@
     },
     {
       "path": "/portal/producao",
-      "line": 500,
+      "line": 505,
       "index": false,
       "components": [
         "Navigate"
@@ -1329,7 +1359,7 @@
     },
     {
       "path": "/portal/entregas",
-      "line": 501,
+      "line": 506,
       "index": false,
       "components": [
         "Navigate"
@@ -1353,7 +1383,7 @@
     },
     {
       "path": "/portal/aplicacoes",
-      "line": 503,
+      "line": 508,
       "index": false,
       "components": [
         "PortalAplicacoes"
@@ -1381,7 +1411,7 @@
     },
     {
       "path": "/portal/solicitar",
-      "line": 504,
+      "line": 509,
       "index": false,
       "components": [
         "PortalSolicitacao"
@@ -1409,7 +1439,7 @@
     },
     {
       "path": "/portal/perfil",
-      "line": 505,
+      "line": 510,
       "index": false,
       "components": [
         "PortalPerfil"
@@ -1437,7 +1467,7 @@
     },
     {
       "path": "/portal/financeiro",
-      "line": 506,
+      "line": 511,
       "index": false,
       "components": [
         "PortalFinanceiro"
@@ -1465,7 +1495,7 @@
     },
     {
       "path": "/portal/meus-pedidos",
-      "line": 508,
+      "line": 513,
       "index": false,
       "components": [
         "Navigate"
@@ -1489,7 +1519,7 @@
     },
     {
       "path": "/portal-parceiro",
-      "line": 512,
+      "line": 517,
       "index": false,
       "components": [
         "B2BRouteGuard",
@@ -1518,7 +1548,7 @@
     },
     {
       "path": "/portal-parceiro",
-      "line": 514,
+      "line": 519,
       "index": true,
       "components": [
         "Navigate"
@@ -1550,7 +1580,7 @@
     },
     {
       "path": "/portal-parceiro/perfil",
-      "line": 515,
+      "line": 520,
       "index": false,
       "components": [
         "PortalParceiroPerfil"
@@ -1582,7 +1612,7 @@
     },
     {
       "path": "/portal-parceiro/dashboard",
-      "line": 516,
+      "line": 521,
       "index": false,
       "components": [
         "ParceiroDashboardRouter"
@@ -1619,7 +1649,7 @@
     },
     {
       "path": "/portal-parceiro/pedidos",
-      "line": 517,
+      "line": 522,
       "index": false,
       "components": [
         "ParceiroMeusPedidos"
@@ -1655,7 +1685,7 @@
     },
     {
       "path": "/portal-parceiro/solicitacoes",
-      "line": 518,
+      "line": 523,
       "index": false,
       "components": [
         "ParceiroSolicitacoes"
@@ -1686,7 +1716,7 @@
     },
     {
       "path": "/portal-parceiro/novo",
-      "line": 519,
+      "line": 524,
       "index": false,
       "components": [
         "ParceiroNovoPedido"
@@ -1718,7 +1748,7 @@
     },
     {
       "path": "/portal-parceiro/catalogo",
-      "line": 520,
+      "line": 525,
       "index": false,
       "components": [
         "ParceiroNovoPedido"
@@ -1760,7 +1790,7 @@
     },
     {
       "path": "/portal-parceiro/simulador",
-      "line": 521,
+      "line": 526,
       "index": false,
       "components": [
         "ParceiroNovoPedido"
@@ -1797,7 +1827,7 @@
     },
     {
       "path": "/portal-parceiro/historico",
-      "line": 522,
+      "line": 527,
       "index": false,
       "components": [
         "ParceiroHistorico"
@@ -1827,7 +1857,7 @@
     },
     {
       "path": "/portal-parceiro/meu-historico",
-      "line": 523,
+      "line": 528,
       "index": false,
       "components": [
         "ParceiroMeuHistorico"
@@ -1860,7 +1890,7 @@
     },
     {
       "path": "/portal-parceiro/favoritos",
-      "line": 524,
+      "line": 529,
       "index": false,
       "components": [
         "ParceiroFavoritos"
@@ -1894,7 +1924,7 @@
     },
     {
       "path": "/portal-parceiro/financeiro",
-      "line": 525,
+      "line": 530,
       "index": false,
       "components": [
         "ParceiroFinanceiro"
@@ -1929,7 +1959,7 @@
     },
     {
       "path": "/portal-parceiro/historico-financeiro",
-      "line": 526,
+      "line": 531,
       "index": false,
       "components": [
         "Navigate"
@@ -1957,7 +1987,7 @@
     },
     {
       "path": "/portal-parceiro/meu-historico-financeiro",
-      "line": 527,
+      "line": 532,
       "index": false,
       "components": [
         "Navigate"
@@ -1985,7 +2015,7 @@
     },
     {
       "path": "/portal-parceiro/fichas",
-      "line": 529,
+      "line": 534,
       "index": false,
       "components": [
         "ParceiroFichasTecnicas"
@@ -2022,7 +2052,7 @@
     },
     {
       "path": "/portal-parceiro/simulacoes",
-      "line": 530,
+      "line": 535,
       "index": false,
       "components": [
         "ParceiroHistoricoSimulacoes"
@@ -2057,7 +2087,7 @@
     },
     {
       "path": "/portal-parceiro/simulacoes-equipe",
-      "line": 531,
+      "line": 536,
       "index": false,
       "components": [
         "ParceiroSimulacoesEquipe"
@@ -2091,7 +2121,7 @@
     },
     {
       "path": "/portal-parceiro/meus-produtores",
-      "line": 532,
+      "line": 537,
       "index": false,
       "components": [
         "ParceiroMeusProdutoresTecnico"
@@ -2122,7 +2152,7 @@
     },
     {
       "path": "/portal-parceiro/meus-produtores/:clienteId",
-      "line": 533,
+      "line": 538,
       "index": false,
       "components": [
         "ParceiroDetalheProdutorTecnico"
@@ -2151,7 +2181,7 @@
     },
     {
       "path": "/portal-parceiro/tecnicos-produtores",
-      "line": 534,
+      "line": 539,
       "index": false,
       "components": [
         "ParceiroTecnicosProdutores"
@@ -2181,7 +2211,7 @@
     },
     {
       "path": "/portal-parceiro/usuarios-clientes",
-      "line": 535,
+      "line": 540,
       "index": false,
       "components": [
         "ParceiroUsuariosClientesB2B"
@@ -2210,7 +2240,7 @@
     },
     {
       "path": "/visita-tecnica",
-      "line": 542,
+      "line": 547,
       "index": false,
       "components": [
         "RoleGuard",
@@ -2249,7 +2279,7 @@
     },
     {
       "path": "/visita-tecnica/nova",
-      "line": 543,
+      "line": 548,
       "index": false,
       "components": [
         "RoleGuard",
@@ -2281,7 +2311,7 @@
     },
     {
       "path": "/visita-tecnica/:id",
-      "line": 544,
+      "line": 549,
       "index": false,
       "components": [
         "RoleGuard",
@@ -2312,7 +2342,7 @@
     },
     {
       "path": "/",
-      "line": 550,
+      "line": 555,
       "index": false,
       "components": [
         "Index"
@@ -2336,18 +2366,20 @@
       "navigation": [],
       "references": [
         "src/components/authz/AuthzEpochBoundary.tsx",
+        "src/components/catalogo/servicos/ServicosTab.tsx",
         "src/components/clientes/ClienteDocumentosTab.tsx",
         "src/components/entregas/EntregaComprovantePanel.tsx",
         "src/components/entregas/RegistrarEntregaDialog.tsx",
         "src/components/financeiro/DocumentosPanel.tsx",
         "src/components/financeiro/relatorios/ReportShell.tsx",
+        "src/components/fiscal/PisCofinsHistory.tsx",
         "src/components/guards/ForaDoPlano.tsx",
         "src/components/nav/NavItemRow.tsx",
         "src/components/onboarding/OnboardingEmpresa.tsx",
+        "src/components/portal/MinhasCampanhas.tsx",
         "src/config/navigation.ts",
         "src/features/comunicacao/RouteGuard.tsx",
         "src/hooks/usePushSubscription.ts",
-        "src/integrations/supabase/bindingGuard.ts",
         "src/lib/accessAuditLog.ts",
         "src/lib/authz/authenticatedAttachment.ts",
         "src/lib/comprovanteEntregaPdf.ts",
@@ -2378,7 +2410,7 @@
     },
     {
       "path": "/clientes",
-      "line": 551,
+      "line": 556,
       "index": false,
       "components": [
         "RoleGuard",
@@ -2418,7 +2450,7 @@
     },
     {
       "path": "/clientes/:id",
-      "line": 552,
+      "line": 557,
       "index": false,
       "components": [
         "RoleGuard",
@@ -2451,7 +2483,7 @@
     },
     {
       "path": "/parceiros/:id",
-      "line": 553,
+      "line": 558,
       "index": false,
       "components": [
         "RoleGuard",
@@ -2484,7 +2516,7 @@
     },
     {
       "path": "/fazendas",
-      "line": 554,
+      "line": 559,
       "index": false,
       "components": [
         "RoleGuard",
@@ -2523,7 +2555,7 @@
     },
     {
       "path": "/fazendas/:id",
-      "line": 555,
+      "line": 560,
       "index": false,
       "components": [
         "RoleGuard",
@@ -2555,7 +2587,7 @@
     },
     {
       "path": "/talhoes",
-      "line": 556,
+      "line": 561,
       "index": false,
       "components": [
         "RoleGuard",
@@ -2591,7 +2623,7 @@
     },
     {
       "path": "/talhoes/:id",
-      "line": 557,
+      "line": 562,
       "index": false,
       "components": [
         "RoleGuard",
@@ -2623,7 +2655,7 @@
     },
     {
       "path": "/auditoria",
-      "line": 558,
+      "line": 563,
       "index": false,
       "components": [
         "RoleGuard",
@@ -2653,7 +2685,7 @@
     },
     {
       "path": "/auditoria-sync",
-      "line": 559,
+      "line": 564,
       "index": false,
       "components": [
         "Navigate"
@@ -2680,7 +2712,7 @@
     },
     {
       "path": "/base-tecnica",
-      "line": 561,
+      "line": 566,
       "index": false,
       "components": [
         "RoleGuard",
@@ -2699,12 +2731,14 @@
         "administrativo",
         "operador_onfarm",
         "producao",
+        "financeiro",
         "gestor_comercial"
       ],
       "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:protocolos:desktop",
         "navigation:protocolos-produtos:desktop",
+        "navigation:protocolos-servicos:desktop",
         "navigation:protocolos-microrganismos:desktop",
         "navigation:protocolos-catalogo-tecnico:desktop",
         "navigation:protocolos-culturas:desktop",
@@ -2722,7 +2756,7 @@
     },
     {
       "path": "/protocolos",
-      "line": 562,
+      "line": 567,
       "index": false,
       "components": [
         "PreservedNavigate"
@@ -2754,7 +2788,7 @@
     },
     {
       "path": "/ordens-servico",
-      "line": 563,
+      "line": 568,
       "index": false,
       "components": [
         "RoleGuard",
@@ -2797,7 +2831,7 @@
     },
     {
       "path": "/lotes",
-      "line": 565,
+      "line": 570,
       "index": false,
       "components": [
         "RoleGuard",
@@ -2833,7 +2867,7 @@
     },
     {
       "path": "/controle-qualidade",
-      "line": 566,
+      "line": 571,
       "index": false,
       "components": [
         "RoleGuard",
@@ -2868,7 +2902,7 @@
     },
     {
       "path": "/envase",
-      "line": 567,
+      "line": 572,
       "index": false,
       "components": [
         "RoleGuard",
@@ -2904,7 +2938,7 @@
     },
     {
       "path": "/estoque",
-      "line": 568,
+      "line": 573,
       "index": false,
       "components": [
         "RoleGuard",
@@ -2940,7 +2974,7 @@
     },
     {
       "path": "/estoque/embalagens",
-      "line": 569,
+      "line": 574,
       "index": false,
       "components": [
         "RoleGuard",
@@ -2974,7 +3008,7 @@
     },
     {
       "path": "/entregas",
-      "line": 570,
+      "line": 575,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3019,7 +3053,7 @@
     },
     {
       "path": "/entregas/:id/formulario",
-      "line": 571,
+      "line": 576,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3052,7 +3086,7 @@
     },
     {
       "path": "/etiquetas/:id/imprimir",
-      "line": 572,
+      "line": 577,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3083,7 +3117,7 @@
     },
     {
       "path": "/aplicacoes",
-      "line": 573,
+      "line": 578,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3118,7 +3152,7 @@
     },
     {
       "path": "/relatorios",
-      "line": 574,
+      "line": 579,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3155,7 +3189,7 @@
     },
     {
       "path": "/consultor-tecnico",
-      "line": 575,
+      "line": 580,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3190,7 +3224,7 @@
     },
     {
       "path": "/fluxo-tecnico",
-      "line": 576,
+      "line": 581,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3226,7 +3260,7 @@
     },
     {
       "path": "/bi-agronomico",
-      "line": 578,
+      "line": 583,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3263,7 +3297,7 @@
     },
     {
       "path": "/bi-operacional",
-      "line": 579,
+      "line": 584,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3301,7 +3335,7 @@
     },
     {
       "path": "/alertas-operacionais",
-      "line": 580,
+      "line": 585,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3344,7 +3378,7 @@
     },
     {
       "path": "/previsao-agronomica",
-      "line": 583,
+      "line": 588,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3379,7 +3413,7 @@
     },
     {
       "path": "/solicitacoes",
-      "line": 584,
+      "line": 589,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3415,7 +3449,7 @@
     },
     {
       "path": "/monitoramento-alertas",
-      "line": 585,
+      "line": 590,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3449,7 +3483,7 @@
     },
     {
       "path": "/agenda-tecnica",
-      "line": 586,
+      "line": 591,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3483,7 +3517,7 @@
     },
     {
       "path": "/dashboard",
-      "line": 587,
+      "line": 592,
       "index": false,
       "components": [
         "PreservedNavigate"
@@ -3510,7 +3544,7 @@
     },
     {
       "path": "/dashboard/geral",
-      "line": 588,
+      "line": 593,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3542,7 +3576,7 @@
     },
     {
       "path": "/dashboard/executivo",
-      "line": 589,
+      "line": 594,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3575,7 +3609,7 @@
     },
     {
       "path": "/dashboard/operacional",
-      "line": 590,
+      "line": 595,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3607,7 +3641,7 @@
     },
     {
       "path": "/painel-operacional",
-      "line": 591,
+      "line": 596,
       "index": false,
       "components": [
         "PreservedNavigate"
@@ -3634,7 +3668,7 @@
     },
     {
       "path": "/cockpit-laboratorio",
-      "line": 592,
+      "line": 597,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3671,7 +3705,7 @@
     },
     {
       "path": "/financeiro",
-      "line": 593,
+      "line": 598,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3706,7 +3740,7 @@
     },
     {
       "path": "/financeiro/receber",
-      "line": 594,
+      "line": 599,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3744,7 +3778,7 @@
     },
     {
       "path": "/financeiro/pagar",
-      "line": 595,
+      "line": 600,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3780,7 +3814,7 @@
     },
     {
       "path": "/financeiro/categorias",
-      "line": 596,
+      "line": 601,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3813,7 +3847,7 @@
     },
     {
       "path": "/financeiro/centros-custo",
-      "line": 597,
+      "line": 602,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3845,7 +3879,7 @@
     },
     {
       "path": "/financeiro/contas-bancarias",
-      "line": 598,
+      "line": 603,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3876,7 +3910,7 @@
     },
     {
       "path": "/financeiro/formas-pagamento",
-      "line": 599,
+      "line": 604,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3907,7 +3941,7 @@
     },
     {
       "path": "/financeiro/recorrencias",
-      "line": 600,
+      "line": 605,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3939,7 +3973,7 @@
     },
     {
       "path": "/financeiro/fluxo-caixa",
-      "line": 601,
+      "line": 606,
       "index": false,
       "components": [
         "RoleGuard",
@@ -3973,7 +4007,7 @@
     },
     {
       "path": "/financeiro/dre",
-      "line": 602,
+      "line": 607,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4005,7 +4039,7 @@
     },
     {
       "path": "/financeiro/notas-fiscais",
-      "line": 603,
+      "line": 608,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4042,7 +4076,7 @@
     },
     {
       "path": "/financeiro/entregas-nao-faturadas",
-      "line": 604,
+      "line": 609,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4081,7 +4115,7 @@
     },
     {
       "path": "/financeiro/auditoria",
-      "line": 605,
+      "line": 610,
       "index": false,
       "components": [
         "Navigate"
@@ -4108,7 +4142,7 @@
     },
     {
       "path": "/financeiro/configuracoes",
-      "line": 606,
+      "line": 611,
       "index": false,
       "components": [
         "Navigate"
@@ -4135,7 +4169,7 @@
     },
     {
       "path": "/financeiro/relatorios",
-      "line": 607,
+      "line": 612,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4166,7 +4200,7 @@
     },
     {
       "path": "/financeiro/relatorios/mensal",
-      "line": 608,
+      "line": 613,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4195,7 +4229,7 @@
     },
     {
       "path": "/financeiro/relatorios/contas-receber",
-      "line": 609,
+      "line": 614,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4224,7 +4258,7 @@
     },
     {
       "path": "/financeiro/relatorios/contas-pagar",
-      "line": 610,
+      "line": 615,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4253,7 +4287,7 @@
     },
     {
       "path": "/financeiro/relatorios/inadimplencia",
-      "line": 611,
+      "line": 616,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4282,7 +4316,7 @@
     },
     {
       "path": "/financeiro/relatorios/nfe-pendente",
-      "line": 612,
+      "line": 617,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4311,7 +4345,7 @@
     },
     {
       "path": "/financeiro/relatorios/entregas-faturamento",
-      "line": 613,
+      "line": 618,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4340,7 +4374,7 @@
     },
     {
       "path": "/financeiro/relatorios/por-cliente",
-      "line": 614,
+      "line": 619,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4369,7 +4403,7 @@
     },
     {
       "path": "/financeiro/relatorios/prestacao-contas",
-      "line": 615,
+      "line": 620,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4398,7 +4432,7 @@
     },
     {
       "path": "/financeiro/recibos",
-      "line": 616,
+      "line": 621,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4433,7 +4467,7 @@
     },
     {
       "path": "/executivo",
-      "line": 617,
+      "line": 622,
       "index": false,
       "components": [
         "PreservedNavigate"
@@ -4462,7 +4496,7 @@
     },
     {
       "path": "/portal-executivo",
-      "line": 618,
+      "line": 623,
       "index": false,
       "components": [
         "PreservedNavigate"
@@ -4494,7 +4528,7 @@
     },
     {
       "path": "/comercial/parceiros",
-      "line": 619,
+      "line": 624,
       "index": false,
       "components": [
         "Navigate"
@@ -4521,7 +4555,7 @@
     },
     {
       "path": "/comercial/pedidos-b2b",
-      "line": 620,
+      "line": 625,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4554,7 +4588,7 @@
     },
     {
       "path": "/comercial/pedidos-b2b/novo",
-      "line": 621,
+      "line": 626,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4582,7 +4616,7 @@
     },
     {
       "path": "/comercial/pedidos-b2b/novo",
-      "line": 621,
+      "line": 626,
       "index": true,
       "components": [
         "ParceiroNovoPedido"
@@ -4611,7 +4645,7 @@
     },
     {
       "path": "/comercial/solicitacoes-b2b",
-      "line": 622,
+      "line": 627,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4643,7 +4677,7 @@
     },
     {
       "path": "/comercial/dashboard-b2b",
-      "line": 623,
+      "line": 628,
       "index": false,
       "components": [
         "Navigate"
@@ -4670,7 +4704,7 @@
     },
     {
       "path": "/comercial/campanhas",
-      "line": 624,
+      "line": 629,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4700,7 +4734,7 @@
     },
     {
       "path": "/comercial/minha-carteira/pedido",
-      "line": 626,
+      "line": 630,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4717,8 +4751,8 @@
       "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
-        "src/pages/comercial/VendedorNovoPedido.tsx",
-        "src/lib/permissions.ts"
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts"
       ],
       "classification": 2,
       "navigationJustification": "system/internal route; never automatically expose",
@@ -4727,7 +4761,7 @@
     },
     {
       "path": "/comercial/minha-carteira/pedido",
-      "line": 626,
+      "line": 630,
       "index": true,
       "components": [
         "ParceiroNovoPedido"
@@ -4745,8 +4779,8 @@
       "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
-        "src/pages/comercial/VendedorNovoPedido.tsx",
-        "src/lib/permissions.ts"
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts"
       ],
       "classification": 7,
       "navigationJustification": "legacy/index redirect; inspect target",
@@ -4755,7 +4789,7 @@
     },
     {
       "path": "/comercial/minha-carteira",
-      "line": 625,
+      "line": 631,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4777,7 +4811,8 @@
       "references": [
         "src/config/navigation.ts",
         "src/lib/permissions.ts",
-        "src/lib/saas/featureRouteMap.ts"
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/comercial/VendedorNovoPedido.tsx"
       ],
       "classification": 1,
       "navigationJustification": "declarative navigation",
@@ -4786,7 +4821,7 @@
     },
     {
       "path": "/comercial/simulador",
-      "line": 625,
+      "line": 632,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4817,7 +4852,7 @@
     },
     {
       "path": "/comercial/catalogo",
-      "line": 626,
+      "line": 633,
       "index": false,
       "components": [
         "PreservedNavigate"
@@ -4845,7 +4880,7 @@
     },
     {
       "path": "/comercial/indicadores",
-      "line": 627,
+      "line": 634,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4875,7 +4910,7 @@
     },
     {
       "path": "/comercial/alertas",
-      "line": 628,
+      "line": 635,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4905,7 +4940,7 @@
     },
     {
       "path": "/comercial/dashboard-consolidado",
-      "line": 629,
+      "line": 636,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4935,7 +4970,7 @@
     },
     {
       "path": "/comercial/condicoes-pagamento",
-      "line": 630,
+      "line": 637,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4967,7 +5002,7 @@
     },
     {
       "path": "/comercial/auditoria-motor-b2b",
-      "line": 631,
+      "line": 638,
       "index": false,
       "components": [
         "RoleGuard",
@@ -4998,7 +5033,7 @@
     },
     {
       "path": "/operacao/planejamento",
-      "line": 632,
+      "line": 639,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5032,7 +5067,7 @@
     },
     {
       "path": "/operacao/planejamento/:id",
-      "line": 633,
+      "line": 640,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5062,7 +5097,7 @@
     },
     {
       "path": "/operacao/dashboard-producao",
-      "line": 634,
+      "line": 641,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5095,7 +5130,7 @@
     },
     {
       "path": "/financeiro/b2b",
-      "line": 635,
+      "line": 642,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5128,7 +5163,7 @@
     },
     {
       "path": "/financeiro/b2b/dashboard",
-      "line": 636,
+      "line": 643,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5162,7 +5197,7 @@
     },
     {
       "path": "/financeiro/b2b/governanca",
-      "line": 637,
+      "line": 644,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5195,7 +5230,7 @@
     },
     {
       "path": "/financeiro/b2b/aging",
-      "line": 638,
+      "line": 645,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5228,7 +5263,7 @@
     },
     {
       "path": "/financeiro/b2b/previsao",
-      "line": 639,
+      "line": 646,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5261,7 +5296,7 @@
     },
     {
       "path": "/financeiro/b2b/rentabilidade",
-      "line": 640,
+      "line": 647,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5294,7 +5329,7 @@
     },
     {
       "path": "/financeiro/b2b/alertas",
-      "line": 641,
+      "line": 648,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5327,7 +5362,7 @@
     },
     {
       "path": "/financeiro/b2b/central-governanca",
-      "line": 642,
+      "line": 649,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5358,7 +5393,7 @@
     },
     {
       "path": "/financeiro/b2b/regras",
-      "line": 643,
+      "line": 650,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5389,7 +5424,7 @@
     },
     {
       "path": "/executivo/socios-b2b",
-      "line": 644,
+      "line": 651,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5419,7 +5454,7 @@
     },
     {
       "path": "/configuracoes",
-      "line": 645,
+      "line": 652,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5457,7 +5492,7 @@
     },
     {
       "path": "/configuracoes/objetivos-visita",
-      "line": 646,
+      "line": 653,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5492,7 +5527,7 @@
     },
     {
       "path": "/configuracoes/parametros-cq",
-      "line": 647,
+      "line": 654,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5528,7 +5563,7 @@
     },
     {
       "path": "/configuracoes/fiscal/empresa",
-      "line": 648,
+      "line": 655,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5563,7 +5598,7 @@
     },
     {
       "path": "/configuracoes/produtos",
-      "line": 648,
+      "line": 656,
       "index": false,
       "components": [
         "PreservedNavigate"
@@ -5582,6 +5617,7 @@
       "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
+        "src/config/navigation.ts",
         "src/lib/permissions.ts"
       ],
       "classification": 7,
@@ -5591,7 +5627,7 @@
     },
     {
       "path": "/configuracoes/fiscal/produtos",
-      "line": 650,
+      "line": 657,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5612,9 +5648,15 @@
         "navigation:fiscal-perfis-produtos:desktop"
       ],
       "references": [
+        "src/components/fiscal/CatalogoFiscalCobertura.tsx",
+        "src/components/fiscal/FiscalGuidePanel.tsx",
+        "src/components/fiscal/documentos/PreEmissaoPendenciasSecao.tsx",
         "src/components/fiscal/homologacao/HomologacaoSecao.tsx",
+        "src/components/protocolos/ProdutosTab.tsx",
         "src/config/navigation.ts",
+        "src/lib/fiscal/preEmissionPendencies.ts",
         "src/lib/permissions.ts",
+        "src/pages/configuracoes/FiscalEmpresa.tsx",
         "src/pages/configuracoes/FiscalProdutos.tsx",
         "src/pages/fiscal/FiscalProntidao.tsx"
       ],
@@ -5625,7 +5667,7 @@
     },
     {
       "path": "/configuracoes/fiscal/servicos",
-      "line": 651,
+      "line": 658,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5646,8 +5688,11 @@
         "navigation:fiscal-perfis-servicos:desktop"
       ],
       "references": [
+        "src/components/fiscal/CatalogoFiscalCobertura.tsx",
+        "src/components/fiscal/documentos/PreEmissaoPendenciasSecao.tsx",
         "src/components/fiscal/homologacao/HomologacaoSecao.tsx",
         "src/config/navigation.ts",
+        "src/lib/fiscal/preEmissionPendencies.ts",
         "src/lib/permissions.ts",
         "src/pages/configuracoes/FiscalServicos.tsx",
         "src/pages/fiscal/FiscalProntidao.tsx"
@@ -5659,7 +5704,7 @@
     },
     {
       "path": "/configuracoes/fiscal/clientes",
-      "line": 652,
+      "line": 659,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5680,9 +5725,14 @@
         "navigation:fiscal-perfis-clientes:desktop"
       ],
       "references": [
+        "src/components/fiscal/CatalogoFiscalCobertura.tsx",
+        "src/components/fiscal/FiscalGuidePanel.tsx",
+        "src/components/fiscal/documentos/PreEmissaoPendenciasSecao.tsx",
         "src/components/fiscal/homologacao/HomologacaoSecao.tsx",
         "src/config/navigation.ts",
+        "src/lib/fiscal/preEmissionPendencies.ts",
         "src/lib/permissions.ts",
+        "src/pages/ClienteDetalhe.tsx",
         "src/pages/configuracoes/FiscalClientes.tsx",
         "src/pages/fiscal/FiscalProntidao.tsx"
       ],
@@ -5693,7 +5743,7 @@
     },
     {
       "path": "/fiscal/perfis/produtos",
-      "line": 653,
+      "line": 660,
       "index": false,
       "components": [
         "PreservedNavigate"
@@ -5725,7 +5775,7 @@
     },
     {
       "path": "/fiscal/perfis/servicos",
-      "line": 654,
+      "line": 661,
       "index": false,
       "components": [
         "PreservedNavigate"
@@ -5757,7 +5807,7 @@
     },
     {
       "path": "/fiscal/perfis/clientes",
-      "line": 655,
+      "line": 662,
       "index": false,
       "components": [
         "PreservedNavigate"
@@ -5789,7 +5839,7 @@
     },
     {
       "path": "/fiscal/documentos",
-      "line": 656,
+      "line": 663,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5822,7 +5872,7 @@
     },
     {
       "path": "/fiscal/reconciliacao",
-      "line": 657,
+      "line": 664,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5852,7 +5902,7 @@
     },
     {
       "path": "/fiscal/prontidao",
-      "line": 658,
+      "line": 665,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5884,7 +5934,7 @@
     },
     {
       "path": "/comunicacao",
-      "line": 659,
+      "line": 666,
       "index": false,
       "components": [
         "RoleGuard",
@@ -5917,7 +5967,7 @@
     },
     {
       "path": "/notificacoes",
-      "line": 662,
+      "line": 669,
       "index": false,
       "components": [
         "CentralNotificacoes"
@@ -5949,7 +5999,7 @@
     },
     {
       "path": "*",
-      "line": 665,
+      "line": 672,
       "index": false,
       "components": [
         "NotFound"
@@ -5988,6 +6038,8 @@
         "src/components/financeiro/FiscalTab.tsx",
         "src/components/financeiro/HistoricoTab.tsx",
         "src/components/financeiro/relatorios/HistoricoExportacoes.tsx",
+        "src/components/fiscal/FiscalGuidePanel.tsx",
+        "src/components/fiscal/documentos/PreEmissaoPendenciasSecao.tsx",
         "src/components/previsao/CalculoRisco.tsx",
         "src/components/previsao/DashboardClimatico.tsx",
         "src/components/previsao/HistoricoAlertas.tsx",
@@ -5995,6 +6047,7 @@
         "src/components/protocolos/CatalogoVolumesDialog.tsx",
         "src/components/protocolos/MicrorganismosTab.tsx",
         "src/components/protocolos/ProdutosTab.tsx",
+        "src/components/protocolos/TenantReferencePanel.tsx",
         "src/components/protocolos/catalog/VersoesHistoricoTab.tsx",
         "src/components/shared/RecomendacaoChat.tsx",
         "src/components/solicitacoes/SolicitacaoDetalheTabs.tsx",
@@ -6042,6 +6095,8 @@
         "src/hooks/useProductProfile.ts",
         "src/hooks/useServiceFiscalProfiles.ts",
         "src/hooks/useSystemConfig.ts",
+        "src/hooks/useTenantProductDetails.ts",
+        "src/hooks/useTenantProductVolumes.ts",
         "src/hooks/useVisitasTecnicasLista.ts",
         "src/integrations/supabase/cultivofarm.types.ts",
         "src/integrations/supabase/types.ts",
@@ -6182,6 +6237,12 @@
     {
       "id": "protocolos-produtos",
       "route": "/base-tecnica?tab=produtos",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "protocolos-servicos",
+      "route": "/base-tecnica?tab=servicos",
       "source": "navigation",
       "audience": "desktop"
     },
@@ -6780,7 +6841,8 @@
     {
       "path": "src/pages/Auth.tsx",
       "consumers": [
-        "src/App.tsx"
+        "src/App.tsx",
+        "src/pages/public/RastrearProduto.tsx"
       ],
       "classification": "route_or_embedded; inspect consumers"
     },
@@ -6921,7 +6983,8 @@
     {
       "path": "src/pages/NotFound.tsx",
       "consumers": [
-        "src/App.tsx"
+        "src/App.tsx",
+        "src/pages/fiscal/DiagnosticoElegibilidade.tsx"
       ],
       "classification": "route_or_embedded; inspect consumers"
     },
@@ -7337,6 +7400,13 @@
       "classification": "route_or_embedded; inspect consumers"
     },
     {
+      "path": "src/pages/comercial/MinhaCarteiraVendedor.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
       "path": "src/pages/comercial/PedidosB2B.tsx",
       "consumers": [
         "src/App.tsx"
@@ -7352,6 +7422,13 @@
     },
     {
       "path": "src/pages/comercial/SolicitacoesB2B.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/comercial/VendedorNovoPedido.tsx",
       "consumers": [
         "src/App.tsx"
       ],
@@ -7374,7 +7451,9 @@
     {
       "path": "src/pages/configuracoes/FiscalClientes.tsx",
       "consumers": [
-        "src/App.tsx"
+        "src/App.tsx",
+        "src/components/fiscal/FiscalGuidePanel.tsx",
+        "src/components/fiscal/documentos/PreEmissaoPendenciasSecao.tsx"
       ],
       "classification": "route_or_embedded; inspect consumers"
     },
@@ -7388,14 +7467,19 @@
     {
       "path": "src/pages/configuracoes/FiscalProdutos.tsx",
       "consumers": [
-        "src/App.tsx"
+        "src/App.tsx",
+        "src/components/fiscal/FiscalGuidePanel.tsx",
+        "src/components/fiscal/documentos/PreEmissaoPendenciasSecao.tsx",
+        "src/pages/configuracoes/FiscalEmpresa.tsx"
       ],
       "classification": "route_or_embedded; inspect consumers"
     },
     {
       "path": "src/pages/configuracoes/FiscalServicos.tsx",
       "consumers": [
-        "src/App.tsx"
+        "src/App.tsx",
+        "src/components/catalogo/servicos/ServicosTab.tsx",
+        "src/components/fiscal/documentos/PreEmissaoPendenciasSecao.tsx"
       ],
       "classification": "route_or_embedded; inspect consumers"
     },
@@ -7422,10 +7506,8 @@
     },
     {
       "path": "src/pages/configuracoes/ProdutosEmpresa.tsx",
-      "consumers": [
-        "src/App.tsx"
-      ],
-      "classification": "route_or_embedded; inspect consumers"
+      "consumers": [],
+      "classification": "6: no import detected; not automatically exposed"
     },
     {
       "path": "src/pages/configuracoes/SlaB2BTab.tsx",
@@ -7754,6 +7836,13 @@
         "src/pages/financeiro/relatorios/RelatorioMensal.tsx",
         "src/pages/financeiro/relatorios/RelatorioNFePendente.tsx",
         "src/pages/financeiro/relatorios/RelatorioPorCliente.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/fiscal/DiagnosticoElegibilidade.tsx",
+      "consumers": [
+        "src/App.tsx"
       ],
       "classification": "route_or_embedded; inspect consumers"
     },

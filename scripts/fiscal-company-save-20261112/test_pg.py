@@ -5,11 +5,16 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import shutil
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 OUT = HERE / 'evidence'
+# PostgreSQL derives $libdir from the invoked binary path; /usr/bin symlinks point into the
+# real installation, so use its resolved bin dir (same complete install, e.g. dict_snowball).
+_PGBIN = Path(shutil.which('pg_ctl') or 'pg_ctl').resolve().parent
+os.environ['PATH'] = f"{_PGBIN}{os.pathsep}{os.environ.get('PATH', '')}"
 TMP = Path(tempfile.mkdtemp(prefix='fiscal-save-'))
 os.chmod(TMP, 0o777)
 PRIV = ['setpriv', '--reuid=1000', '--regid=1000', '--clear-groups'] if os.getuid() == 0 else []

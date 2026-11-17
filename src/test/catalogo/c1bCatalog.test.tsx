@@ -51,7 +51,7 @@ describe("C1B inactive candidate canonical readers", () => {
   it("actual grid consumes RPC projection, filters families and never mounts internal reader", async () => {
     const h = renderHook(() => usePartnerCatalog("partner-A"), { wrapper });
     await waitFor(() => expect(h.result.current.data).toHaveLength(4));
-    render(<CatalogoCardsGrid scope="b2b" source={{ ...h.result.current, data: partnerCatalogRows(h.result.current.data ?? []) }} />);
+    render(<CatalogoCardsGrid scope="b2b" source={{ ...h.result.current, data: partnerCatalogRows(h.result.current.data ?? []) }} />, { wrapper });
     expect(screen.getByText("P0")).toBeTruthy();
     fireEvent.click(screen.getByRole("radio", { name: "Químicos" }));
     expect(screen.getByText("P1")).toBeTruthy();
@@ -71,7 +71,7 @@ describe("C1B inactive candidate canonical readers", () => {
     const h = renderHook(() => usePartnerCatalog("partner-A"), { wrapper });
     await waitFor(() => expect(h.result.current.data).toHaveLength(4));
     const source = { ...h.result.current, data: partnerCatalogRows(h.result.current.data ?? []) };
-    const ui = render(<CatalogoCardsGrid scope="b2b" source={source} />);
+    const ui = render(<CatalogoCardsGrid scope="b2b" source={source} />, { wrapper });
     fireEvent.click(screen.getAllByRole("button", { name: /^Ver ficha$/ })[0]);
     expect(screen.getByRole("dialog").textContent).toContain("P0");
     ui.rerender(<CatalogoCardsGrid scope="b2b" source={{ ...source, scope: "actor-B", data: [] }} />);
