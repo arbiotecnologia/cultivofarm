@@ -1,0 +1,23 @@
+// CANDIDATO NÃO IMPLANTADO. Destino após revisão: supabase/functions/user-email-change-sync/index.ts
+// O TITULAR (JWT verificado) pede a sincronização do próprio profiles.email depois que o Auth confirmou.
+// Só o próprio sub; o SQL só grava quando auth.users.email já é o endereço canônico do pedido.
+import { createClient } from "npm:@supabase/supabase-js@2.110.8";
+import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return handlePreflight(req);
+  const origin = req.headers.get("Origin");
+  const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...corsHeadersFor(origin), "Content-Type": "application/json", "Cache-Control": "no-store, private" } });
+  if (origin && !isTrustedOrigin(origin)) return json({ error: "origin_forbidden" }, 403);
+  if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+  const url = Deno.env.get("SUPABASE_URL"), anon = Deno.env.get("SUPABASE_ANON_KEY"), svc = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !anon || !svc || url !== "https://swzpzcwiasxmjutrmvkm.supabase.co") return json({ error: "unavailable" }, 503);
+  const h = req.headers.get("Authorization"); if (!h?.startsWith("Bearer ")) return json({ error: "not_authenticated" }, 401);
+  const token = h.slice(7).trim();
+  const admin = createClient(url, svc, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { data: u, error: ue } = await admin.auth.getUser(token);
+  if (ue || !u.user?.id) return json({ error: "not_authenticated" }, 401);
+  const { data, error } = await admin.rpc("user_email_change_sync_service_v1", { p_holder: u.user.id });
+  if (error) { console.error(JSON.stringify({ fn: "user-email-change-sync", code: error.code ?? null })); return json({ error: "failed" }, 400); }
+  return json(data);
+});

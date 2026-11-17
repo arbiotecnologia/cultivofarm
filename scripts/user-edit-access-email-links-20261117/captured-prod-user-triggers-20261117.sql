@@ -2,7 +2,7 @@
 -- e os 28 gatilhos não internos de profiles/user_roles/user_clientes/partner_users (pg_get_functiondef/pg_get_triggerdef).
 -- md5(pg_get_functiondef) pinados: sync_user_cliente_principal=1d053564ccd5fa672a10ec87d5cb0baa,
 -- guard_profile_tenant_fields=bd6d513d936f5c5fb0490b5d1d2f9f1d, enforce_cliente_id_for_produtor=ecad56badcb2120f7048fad7519f76f4,
--- cf_user_guards_v1.acquire_gate=b0dd9a14d5fd799a40df0975baf4c5a6. HML tem versão diferente: NÃO usar como referência.
+-- cf_user_guards_v1.acquire_gate=b0dd9a14d5fd799a40df0975baf4c5a6 (corpo com CRLF, bytes exatos via base64). HML tem versão diferente: NÃO usar como referência.
 CREATE OR REPLACE FUNCTION public.enforce_cliente_id_for_produtor()
  RETURNS trigger
  LANGUAGE plpgsql

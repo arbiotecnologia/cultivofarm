@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
-const rpc = vi.fn(); const updateUser = vi.fn(); const refreshSession = vi.fn();
-vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...a), auth: { updateUser: (...a: unknown[]) => updateUser(...a), refreshSession: () => refreshSession() } } }));
+const rpc = vi.fn(); const updateUser = vi.fn(); const refreshSession = vi.fn(); const invoke = vi.fn();
+vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...a), functions: { invoke: (...a: unknown[]) => invoke(...a) }, auth: { updateUser: (...a: unknown[]) => updateUser(...a), refreshSession: () => refreshSession() } } }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "u1" } }) }));
 import { HolderAccountGuards, HolderAccountGuardsInner } from "@/components/configuracoes/HolderAccountGuards";
 
@@ -17,7 +17,7 @@ function server(over: Record<string, unknown> = {}) {
     ...over,
   } as Record<string, unknown>)[n]);
 }
-beforeEach(() => { rpc.mockReset(); updateUser.mockReset(); refreshSession.mockReset(); });
+beforeEach(() => { rpc.mockReset(); updateUser.mockReset(); refreshSession.mockReset(); invoke.mockReset(); invoke.mockResolvedValue({ data: { status: "confirmed" }, error: null }); });
 
 describe("HolderAccountGuards", () => {
   it("fechado pelo gate", () => { server(); const { container } = render(<HolderAccountGuards />); expect(container.innerHTML).toBe(""); expect(rpc).not.toHaveBeenCalled(); });
@@ -26,6 +26,13 @@ describe("HolderAccountGuards", () => {
     await screen.findByText(/novo@ex.test/);
     expect(rpc.mock.calls.map((c) => c[0])).toEqual(["my_session_authz_state_v1", "user_email_change_sync_self_v1", "user_email_change_my_pending_v1"]);
     expect(refreshSession).not.toHaveBeenCalled();
+    expect(invoke).not.toHaveBeenCalled();
+  });
+  it("Auth confirmou: perfil sincronizado só pelo Edge do titular (guard de profiles nega sob JWT)", async () => {
+    server({ user_email_change_sync_self_v1: { data: { status: "auth_confirmed_sync_pending" }, error: null }, user_email_change_my_pending_v1: { data: { status: "none" }, error: null } });
+    render(<HolderAccountGuardsInner userId="u1" />);
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith("user-email-change-sync", { body: {} }));
+    await waitFor(() => expect(rpc.mock.calls.map((c) => c[0])).toContain("user_email_change_my_pending_v1"));
   });
   it("aceitar usa updateUser com o endereço canônico do servidor, sem confirmar", async () => {
     server(); updateUser.mockResolvedValue({ error: null });

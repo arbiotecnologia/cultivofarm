@@ -1,3 +1,4 @@
 - Pacote somente revisão: nada aqui é aplicado ao banco hospedado; o auditor aplica após preflight do ref `swzpzcwiasxmjutrmvkm` — evita DDL/autorização não revisada em produção.
-- Reutilizar `user_roles`, `user_clientes` (access_level/valid_from/valid_until/revoked_*) e o padrão de troca de e-mail via Auth Admin `generateLink(email_change_*)`; sem tabelas ou rotas paralelas.
-- Toda escrita via RPC SECURITY DEFINER com tenant derivado no servidor, bloqueio de autoalteração, idempotência e trilha de auditoria; nunca UPDATE direto em auth.users.
+- Reutilizar `user_roles`, `user_clientes` e `partner_users`; e-mail muda só pelo titular via `auth.updateUser` com o endereço canônico do servidor — sem tabelas, rotas ou links administrativos paralelos.
+- Escritas que tocam `user_clientes`/`profiles` só no núcleo service-only via Edge com o JWT do ator verificado e reautorizado no SQL (admin, tenant, iat > épocas) — o gatilho global de principal grava `profiles.cliente_id` e o guard de profiles nega isso sob JWT.
+- `principal` nunca distingue acesso técnico de produtor; transições encerram todos os vínculos incompatíveis. Testes carregam os gatilhos de produção verbatim e o candidato pina seus md5 — HML difere.

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { RPC, USER_ADMIN_REFINEMENT_INSTALLED, emailSchema, friendlyError } from "@/lib/configuracoes/userAdminRefinement";
+import { EDGE, RPC, USER_ADMIN_REFINEMENT_INSTALLED, emailSchema, friendlyError } from "@/lib/configuracoes/userAdminRefinement";
 
 const rpc = (name: string, args: Record<string, unknown> = {}) =>
   (supabase.rpc as unknown as (n: string, a: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>)(name, args);
@@ -26,8 +26,13 @@ export function HolderAccountGuardsInner({ userId }: { userId: string }) {
       const st = await rpc(RPC.mySessionState);
       if (gen !== generation.current) return;
       if (!st.error && (st.data as { stale?: boolean } | null)?.stale === true) await supabase.auth.refreshSession();
-      await rpc(RPC.myEmailSync);
+      const sy = await rpc(RPC.myEmailSync);
       if (gen !== generation.current) return;
+      // Auth já confirmou: profiles.email só muda no servidor (Edge com o JWT do próprio titular).
+      if (!sy.error && (sy.data as { status?: string } | null)?.status === "auth_confirmed_sync_pending") {
+        await supabase.functions.invoke(EDGE.emailSync, { body: {} });
+        if (gen !== generation.current) return;
+      }
       const p = await rpc(RPC.myEmailPending);
       if (gen !== generation.current) return;
       setPending(p.error ? null : (p.data as Pending));
@@ -53,7 +58,7 @@ export function HolderAccountGuardsInner({ userId }: { userId: string }) {
         const rel = await rpc(RPC.myEmailRelease, { p_op_id: pending.op_id }).catch(() => ({ data: null, error: { message: "release_failed" } }));
         const released = !rel.error && (rel.data as { released?: boolean } | null)?.released === true;
         setPending({ ...pending, accepted: !released });
-        setMsg(released
+        setMsg(rel.error?.message?.includes("email_change_release_too_early") ? friendlyError(rel.error.message) : released
           ? "Não foi possível enviar a confirmação. Nada foi alterado; você pode tentar de novo ou recusar."
           : "Não foi possível comprovar se a confirmação foi enviada. Verifique sua caixa de entrada; o pedido segue aguardando confirmação e não pode ser recusado.");
         return;

@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  ACCESS_TARGET_LABEL, PAGE_SIZE, RPC, RPC_EMAIL_REQUEST, emailSchema, friendlyError, incompatibleRoles, isConsultor,
+  ACCESS_TARGET_LABEL, B2B_ROLES, EDGE, PAGE_SIZE, RPC, RPC_EMAIL_REQUEST, edgeErrorCode, emailSchema, friendlyError, incompatibleRoles, isConsultor,
   parseClientesPage, parseConsultorLinks, validatePeriod, validateTransition, type AccessTarget, type ClienteOption,
 } from "@/lib/configuracoes/userAdminRefinement";
 
@@ -16,6 +16,13 @@ import {
 const rpc = (name: string, args: Record<string, unknown>) =>
   (supabase.rpc as unknown as (n: string, a: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>)(name, args);
 const newKey = () => crypto.randomUUID();
+/** Escrita pelo Edge (ator = JWT verificado no servidor; nada do corpo autoriza). */
+const edge = async (op: "change_access_type" | "consultor_link", args: Record<string, unknown>) => {
+  const { data, error } = await supabase.functions.invoke(EDGE.userAdmin, { body: { op, args } });
+  if (error) throw new Error(await edgeErrorCode(error));
+  return data;
+};
+const EXTERNAL = ["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"];
 
 const INTERNAL_ROLES: { value: string; label: string }[] = [
   { value: "administrador", label: "Administrador" }, { value: "gestor", label: "Gestor" },
@@ -26,7 +33,7 @@ const INTERNAL_ROLES: { value: string; label: string }[] = [
 ];
 
 export interface RefinementTarget { user_id: string; email: string | null; roles: string[] }
-interface Props { target: RefinementTarget; actorId: string; currentType: string; onChanged: () => void }
+interface Props { target: RefinementTarget; actorId: string; currentType: string; onChanged: () => void; externalEditorMounted?: boolean }
 
 function ClientePicker({ onPick, disabled }: { onPick: (c: ClienteOption) => void; disabled?: boolean }) {
   const [q, setQ] = useState(""); const [page, setPage] = useState(0);
@@ -66,14 +73,14 @@ function AccessTypeSection({ target, actorId, currentType, onChanged }: Props) {
   const [to, setTo] = useState<AccessTarget | "">(""); const [roles, setRoles] = useState<string[]>([]);
   const [cliente, setCliente] = useState<ClienteOption | null>(null); const [reason, setReason] = useState("");
   const [key, setKey] = useState(newKey); const [err, setErr] = useState<string | null>(null);
-  const [remove, setRemove] = useState<string[]>([]);
+  const [remove, setRemove] = useState<string[]>([]); const [b2b, setB2b] = useState<string[]>([]);
+  const hasExternal = target.roles.some((r) => EXTERNAL.includes(r));
   const self = actorId === target.user_id;
   const incompat = to ? incompatibleRoles(target.roles, to) : [];
   const m = useMutation({
     mutationFn: async () => {
-      const { error } = await rpc(RPC.changeAccessType, { p_user_id: target.user_id, p_target: to, p_internal_roles: to === "internal" ? roles : null,
-        p_remove_roles: remove.filter((r) => incompat.includes(r)), p_cliente_id: to === "producer" ? cliente?.id ?? null : null, p_idempotency_key: key, p_reason: reason });
-      if (error) throw new Error(error.message);
+      await edge("change_access_type", { user_id: target.user_id, target: to, roles: to === "internal" ? roles : to === "b2b" ? b2b : [],
+        remove_roles: remove.filter((r) => incompat.includes(r)), ...(to === "producer" && cliente ? { cliente_id: cliente.id } : {}), idempotency_key: key, reason });
     },
     onSuccess: () => { setKey(newKey()); setTo(""); setReason(""); setRemove([]); setErr(null); onChanged(); },
     onError: (e: Error) => setErr(friendlyError(e.message)),
@@ -81,7 +88,7 @@ function AccessTypeSection({ target, actorId, currentType, onChanged }: Props) {
   const submit = () => {
     if (!to) return;
     const v = validateTransition({ actorId, targetId: target.user_id, from: currentType, to, internalRoles: roles, clienteId: cliente?.id ?? null, reason,
-      currentRoles: target.roles, removeRoles: remove });
+      currentRoles: target.roles, removeRoles: remove, b2bRoles: b2b });
     if (v) { setErr(v); return; }
     if (!m.isPending) m.mutate();
   };
@@ -94,7 +101,7 @@ function AccessTypeSection({ target, actorId, currentType, onChanged }: Props) {
           <SelectContent>{(Object.keys(ACCESS_TARGET_LABEL) as AccessTarget[]).map((t) => <SelectItem key={t} value={t}>{ACCESS_TARGET_LABEL[t]}</SelectItem>)}</SelectContent>
         </Select>
         {to === "internal" && <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-2 border rounded-md p-2 max-h-40 overflow-y-auto overscroll-contain">
-          {INTERNAL_ROLES.map((r) => <label key={r.value} className="flex items-center gap-2 text-sm">
+          {INTERNAL_ROLES.filter((r) => !(hasExternal && r.value === "administrador")).map((r) => <label key={r.value} className="flex items-center gap-2 text-sm">
             <Checkbox checked={roles.includes(r.value)} onCheckedChange={(c) => setRoles(c === true ? [...roles, r.value] : roles.filter((x) => x !== r.value))} />{r.label}
           </label>)}
         </div>}
@@ -102,7 +109,13 @@ function AccessTypeSection({ target, actorId, currentType, onChanged }: Props) {
           <p className="text-xs">Cliente: <strong>{cliente?.nome ?? "nenhum selecionado"}</strong></p>
           <ClientePicker onPick={setCliente} />
         </div>}
-        {to === "b2b" && <p className="text-xs text-muted-foreground">Exige vínculo ativo com um parceiro B2B desta empresa (cadastrado no ciclo de vida do parceiro).</p>}
+        {to === "internal" && hasExternal && <p className="text-xs text-muted-foreground">Administrador não aparece aqui: só pode ser concedido depois, a um usuário já interno.</p>}
+        {to === "b2b" && <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">Exige vínculo ativo com um parceiro B2B desta empresa (cadastrado no ciclo de vida do parceiro). Marque cada perfil explicitamente; técnico não inclui gestor.</p>
+          {B2B_ROLES.filter((r) => !target.roles.includes(r)).map((r) => <label key={r} className="flex items-center gap-2 text-sm">
+            <Checkbox checked={b2b.includes(r)} onCheckedChange={(c) => setB2b(c === true ? [...b2b, r] : b2b.filter((x) => x !== r))} />{r === "parceiro_b2b" ? "Parceiro B2B — Gestor" : "Parceiro B2B — Técnico"}
+          </label>)}
+        </div>}
         {to && incompat.length > 0 && <div className="border border-destructive/40 rounded-md p-2 space-y-1" aria-label="Perfis incompatíveis">
           <p className="text-xs">Estes perfis não convivem com {ACCESS_TARGET_LABEL[to]}. Marque para confirmar a remoção; sem confirmação nada é alterado.</p>
           {incompat.map((r) => <label key={r} className="flex items-center gap-2 text-sm">
@@ -112,7 +125,7 @@ function AccessTypeSection({ target, actorId, currentType, onChanged }: Props) {
         {to && <>
           <Label htmlFor="access-reason">Motivo</Label>
           <Input id="access-reason" value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
-          <p className="text-xs text-muted-foreground">Perfis compatíveis são mantidos. Vínculos dos perfis removidos são encerrados com histórico. As sessões abertas do usuário perdem a autoridade e precisam ser renovadas.</p>
+          <p className="text-xs text-muted-foreground">Perfis compatíveis são mantidos. Vínculos com clientes que não cabem no novo tipo são todos encerrados com histórico (inclusive secundários). As sessões abertas do usuário perdem a autoridade e precisam ser renovadas.</p>
           <Button type="button" className="w-full h-auto min-h-10 whitespace-normal" disabled={m.isPending} onClick={submit}>
             {m.isPending ? "Aplicando…" : `Confirmar mudança para ${ACCESS_TARGET_LABEL[to]}`}
           </Button>
@@ -180,10 +193,9 @@ function ConsultorLinksSection({ target }: Props) {
   } });
   const m = useMutation({
     mutationFn: async (a: { action: "add" | "end" | "replace"; cliente_id: string; replace?: string }) => {
-      const { error } = await rpc(RPC.consultorLink, { p_user_id: target.user_id, p_action: a.action, p_cliente_id: a.cliente_id, p_replace_cliente_id: a.replace ?? null,
-        p_access_level: a.action === "end" ? null : level, p_valid_from: a.action === "end" || !from ? null : new Date(from).toISOString(),
-        p_valid_until: a.action === "end" || !until ? null : new Date(until).toISOString(), p_idempotency_key: newKey(), p_reason: null });
-      if (error) throw new Error(error.message);
+      await edge("consultor_link", { user_id: target.user_id, action: a.action, cliente_id: a.cliente_id, ...(a.replace ? { replace_cliente_id: a.replace } : {}),
+        ...(a.action === "end" ? {} : { access_level: level, ...(from ? { valid_from: new Date(from).toISOString() } : {}), ...(until ? { valid_until: new Date(until).toISOString() } : {}) }),
+        idempotency_key: newKey() });
     },
     onSuccess: () => { setPick(null); setReplace(""); setErr(null); qc.invalidateQueries({ queryKey: qk }); },
     onError: (e: Error) => { setErr(friendlyError(e.message)); qc.invalidateQueries({ queryKey: qk }); },
@@ -236,7 +248,7 @@ export function UserAdminRefinementPanel(props: Props) {
   return (
     <div className="space-y-3">
       <AccessTypeSection {...props} />
-      {props.actorId !== props.target.user_id && <EmailSection {...props} />}
+      {props.actorId !== props.target.user_id && !props.externalEditorMounted && <EmailSection {...props} />}
       {isConsultor(props.target.roles) && props.currentType === "internal" && props.actorId !== props.target.user_id && <ConsultorLinksSection {...props} />}
     </div>
   );

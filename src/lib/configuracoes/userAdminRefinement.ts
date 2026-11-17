@@ -7,13 +7,16 @@ import { z } from "zod";
 
 export const USER_ADMIN_REFINEMENT_INSTALLED = false;
 
+/**
+ * Escritas de tipo de acesso e vínculos passam pelo Edge (JWT do ator verificado → núcleo service-only):
+ * em produção o gatilho global de principal grava profiles.cliente_id e o guard de profiles nega isso sob JWT.
+ */
+export const EDGE = { userAdmin: "tenant-user-admin", emailSync: "user-email-change-sync" } as const;
 export const RPC = {
-  changeAccessType: "tenant_admin_change_access_type_v1",
   emailStatus: "tenant_admin_email_change_status_v1",
   emailCancel: "tenant_admin_email_change_cancel_v1",
   searchClientes: "tenant_admin_search_clientes_v1",
   consultorLinks: "tenant_admin_consultor_links_v1",
-  consultorLink: "tenant_admin_consultor_link_v1",
   mySessionState: "my_session_authz_state_v1",
   myEmailPending: "user_email_change_my_pending_v1",
   myEmailAccept: "user_email_change_accept_v1",
@@ -36,6 +39,8 @@ export const reasonSchema = z.string().trim().min(5, "Informe o motivo (mín. 5 
 
 /** Validação local da transição (o servidor revalida tudo). */
 const INTERNAL = ["administrador","gestor","administrativo","financeiro","gestor_comercial","producao","aplicador","operador_onfarm","consultor_tecnico","tecnico_agronomo","vendedor"];
+const EXTERNAL = ["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"];
+export const B2B_ROLES = ["parceiro_b2b", "parceiro_b2b_tecnico"] as const;
 const ALLOWED: Record<AccessTarget, string[]> = { internal: INTERNAL, b2b: ["parceiro_b2b", "parceiro_b2b_tecnico"], producer: ["cliente_produtor"] };
 /** Papéis atuais que não convivem com o destino (espelho da regra do servidor). Compatíveis são preservados. */
 export function incompatibleRoles(current: string[], to: AccessTarget): string[] {
@@ -45,7 +50,7 @@ export function incompatibleRoles(current: string[], to: AccessTarget): string[]
 export function validateTransition(i: {
   actorId: string; targetId: string; from: string; to: AccessTarget;
   internalRoles: string[]; clienteId: string | null; reason: string;
-  currentRoles?: string[]; removeRoles?: string[];
+  currentRoles?: string[]; removeRoles?: string[]; b2bRoles?: string[];
 }): string | null {
   const pend = incompatibleRoles(i.currentRoles ?? [], i.to).filter((r) => !(i.removeRoles ?? []).includes(r));
   if (pend.length) return "Confirme a remoção dos perfis incompatíveis ou mantenha o tipo atual.";
@@ -53,6 +58,10 @@ export function validateTransition(i: {
   if (i.from === i.to) return "Selecione um tipo de acesso diferente do atual.";
   if (i.to === "internal" && i.internalRoles.length === 0 && !(i.currentRoles ?? []).some((r) => INTERNAL.includes(r) && !(i.removeRoles ?? []).includes(r))) return "Selecione ao menos um perfil interno.";
   if (i.internalRoles.includes("superadmin")) return "Perfil não atribuível.";
+  if (i.internalRoles.includes("administrador") && (i.to !== "internal" || (i.currentRoles ?? []).some((r) => EXTERNAL.includes(r))))
+    return "Administrador só pode ser concedido a usuário já interno, em uma alteração separada.";
+  if (i.to === "b2b" && !(i.currentRoles ?? []).some((r) => (B2B_ROLES as readonly string[]).includes(r)) && !(i.b2bRoles ?? []).length)
+    return "Selecione explicitamente o perfil B2B (gestor e/ou técnico).";
   if (i.to === "producer" && !i.clienteId) return "Selecione o cliente/produtor.";
   const r = reasonSchema.safeParse(i.reason);
   return r.success ? null : r.error.issues[0].message;
@@ -95,6 +104,12 @@ const ERRORS: Record<string, string> = {
   internal_roles_not_allowed: "Perfis internos não se aplicam a este tipo de acesso.",
   no_change: "Nenhuma alteração a aplicar.",
   request_not_pending: "Este pedido não está mais pendente.",
+  admin_grant_requires_internal_user: "Administrador só pode ser concedido a usuário já interno, em uma alteração separada.",
+  b2b_roles_required: "Selecione explicitamente o perfil B2B (gestor e/ou técnico).",
+  cliente_not_allowed: "Cliente só se aplica ao tipo Cliente/Produtor.",
+  scope_unprovable: "Há vínculos deste usuário que não pertencem a esta empresa. Nada foi alterado; acione o suporte interno.",
+  email_change_release_too_early: "Ainda pode haver um envio em andamento. Aguarde alguns minutos e verifique sua caixa de entrada antes de tentar de novo.",
+  not_authenticated: "Sua sessão expirou. Entre novamente.",
   delivery_not_ready: "Solicitação registrada, mas o envio de confirmação está desativado. O e-mail atual continua válido.",
 };
 export function friendlyError(message: string | undefined | null): string {
@@ -122,3 +137,10 @@ export const parseConsultorLinks = (d: unknown): ConsultorLinks => linksSchema.p
 
 export const isConsultor = (roles: string[] | null | undefined) =>
   (roles ?? []).some((r) => r === "consultor_tecnico" || r === "tecnico_agronomo");
+
+/** Erro do Edge: o corpo traz só o código de negócio fixo do servidor. */
+export async function edgeErrorCode(error: unknown): Promise<string> {
+  const ctx = (error as { context?: { json?: () => Promise<unknown> } } | null)?.context;
+  try { const b = (await ctx?.json?.()) as { error?: string } | undefined; if (b?.error) return b.error; } catch { /* corpo ausente */ }
+  return (error as Error | null)?.message ?? "failed";
+}

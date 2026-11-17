@@ -1151,7 +1151,7 @@ export default function Configuracoes() {
                     {USER_ADMIN_REFINEMENT_INSTALLED && isAdmin && <UserAdminRefinementPanel
                       key={editUser.user_id}
                       target={{ user_id: editUser.user_id, email: editUser.email ?? null, roles: editOrig?.roles ?? [] }}
-                      actorId={user?.id ?? ''} currentType={editTipo}
+                      actorId={user?.id ?? ''} currentType={editTipo} externalEditorMounted={externalCommonCandidate}
                       onChanged={() => {
                         queryClient.invalidateQueries({ queryKey: ['admin-users', profile?.organization_id, user?.id] });
                         queryClient.invalidateQueries({ queryKey: ['admin-user-links', profile?.organization_id, user?.id] });

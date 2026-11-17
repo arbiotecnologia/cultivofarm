@@ -173,3 +173,61 @@ inclui cancelamento antes do aceite, cancelamento/recusa negados após aceite e 
 liberação negada com envio ambíguo, prazo vencido sem expirar, confirmação tardia sincronizando,
 liberação após falha comprovada e cancelamento depois, troca de empresa sem sobrescrita por outro
 tenant e sincronização restrita ao titular. Não prova JWT/Auth/RLS hospedados.
+
+---
+# rev.5 — auditoria pré-release com os gatilhos reais de produção (17/11/2026, 15h UTC)
+
+## Achados (catálogo de produção, somente leitura; ref comprovado em client.ts/config.toml; PostgreSQL 17.6)
+1. `sync_user_cliente_principal` (AFTER STATEMENT ins/upd/del) promove principal vigente de QUALQUER usuário
+   (inclusive consultor) e grava `profiles.cliente_id`. Harness anterior não o tinha.
+2. **Bloqueador do candidato anterior:** `guard_profile_tenant_fields` (BEFORE UPDATE profiles) nega mudança de
+   `cliente_id`/`email` sempre que `auth.uid()` não é nulo. Toda RPC sob JWT que cria o 1º vínculo, troca principal ou
+   sincroniza e-mail falharia em produção com `profile_protected_fields` (provado no harness). Os escritores existentes
+   (`admin_provision_user_profile_v1`, `platform_complete_org_admin_email_change`) rodam via service_role.
+3. Transição consultor→produtor anterior mantinha o vínculo `principal` (promovido pelo gatilho a um cliente de consultoria)
+   ⇒ o novo produtor herdaria leitura financeira desse cliente (`ar_producer_read` = papel produtor + `get_cliente_ids_for_user`);
+   e o INSERT do novo principal antes da revogação violaria `uq_user_clientes_principal`.
+4. Produtor→interno encerrava só o principal; secundários ficavam vigentes. Destino B2B inseria `parceiro_b2b` (gestor) sempre.
+5. Administrador: política vigente (RLS de `user_roles` + `admin_edit_user_profile_v1`) permite ao admin do tenant conceder
+   `administrador` só a usuário interno (externos: `user_edit_linked_role_unavailable`). O candidato permitia externo→admin numa operação.
+6. **Exposição pré-existente (não alterada):** `campanhas_cliente_select` em `commercial_campaigns` não exige papel produtor;
+   qualquer vínculo vigente (consultor incluído) vê campanhas comerciais do cliente. Reproduzido no harness com a política verbatim.
+   Vínculos de consultor criados por esta tela ampliariam essa exposição. Decisão do proprietário necessária antes do postflight.
+7. Corpos `cf_user_guards_v1.*` em produção usam CRLF; captura preserva os bytes (md5 conferido).
+
+## Correções (candidato, seção 8; nada global alterado)
+- Escritas de tipo de acesso e vínculos: `public.tenant_admin_user_access_exec_v1` (somente service_role) →
+  núcleos `platform_private.user_admin_change_access_type_core` / `user_admin_consultor_link_core`, chamados pelo Edge
+  candidato `edge/tenant-user-admin.index.ts.review` (getClaims+getUser do ator; iat repassado). O SQL reautoriza o ator:
+  admin vigente, não superadmin, mesma empresa, iat posterior a `user_authz_epoch` e a convites. RPCs públicas antigas removidas.
+- Escopo sem `principal`: produtor ⇒ encerra todos os vínculos do tenant exceto o escolhido, depois upsert principal;
+  B2B ⇒ encerra todos; saída de produtor ⇒ encerra todos; interno sem consultor final ⇒ encerra todos. Produtor→produtor
+  (secundários) permanece no caminho canônico (`no_change`).
+- B2B: papéis só por lista explícita (`b2b_roles_required`); técnico não recebe gestor.
+- Administrador: `admin_grant_requires_internal_user` se destino ≠ interno ou se o alvo tem papel externo.
+- PRE: md5 de `sync_user_cliente_principal`, `guard_profile_tenant_fields`, `enforce_cliente_id_for_produtor`,
+  `acquire_gate` e 28 gatilhos habilitados; drift aborta (HML diverge e não serve de referência).
+- E-mail: sob JWT a reconciliação só observa (`auth_confirmed_sync_pending`); `profiles.email` muda só em
+  `user_email_change_sync_service_v1` (service_role, Edge `edge/user-email-change-sync.index.ts.review` com o JWT do titular).
+  Liberação pós-aceite exige 10 min de carência (Auth pode registrar `email_change` depois da resposta) e `ever_accepted_at`
+  mantém reconciliáveis pedidos cancelados/expirados depois de aceitos: link tardio sincroniza só o titular, auditoria `late=true`.
+- UI (flag `USER_ADMIN_REFINEMENT_INSTALLED=false`): escritas via `functions.invoke('tenant-user-admin')`; perfis B2B
+  explícitos; Administrador oculto para alvo externo; seção de e-mail não monta quando o editor externo (F2) está montado
+  (evita dois editores); titular chama o Edge de sync ao ver `auth_confirmed_sync_pending`.
+
+## Testes
+- PostgreSQL 17.12 descartável, 28 gatilhos de produção verbatim habilitados + leitores/políticas verbatim
+  (`captured-prod-*.sql`): **147/147** (`evidence-local.json`, com `snapshots` antes/depois e `findings`).
+  Bootstrap declarado: o 1º admin de cada empresa é semeado com `session_replication_role=replica` (z99_cf_require_admin exige admin prévio).
+  Sintético: auth.uid/iat por GUC, Auth/caixa de e-mail falsos, tabelas consumidoras reduzidas. NÃO prova JWT/RLS/Storage hosted.
+- Vitest: `userAdminRefinement` 29/29, `holderAccountGuards` 10/10. Regressão `config|auth|portal` 1246/1247 (falha pré-existente
+  `cultivofarm-runtime.static` → `src/lib/fiscal/eligibilityDiagnostic.ts`, não tocado). `multiportal*|fluxo-tecnico|equipe-tecnica|
+  clientes|monitoramento|b2bTecnicoCampo|mobilePerfil` 618/620 com initdb do sistema (sem `dict_snowball`); as 2 baterias PG
+  repetidas com PostgreSQL 17 completo: 2/2. `tsgo -b --noEmit` OK; `vite build` OK (saída em /tmp).
+
+## Pendências / limites
+- Decisão sobre `campanhas_cliente_select` (achado 6) antes de ligar vínculos de consultor.
+- Edges candidatos não implantados; revisão, instalação e postflight com JWT reais A/B (admin, consultor, produtor, B2B técnico)
+  e Auth/SMTP reais. Mobile: só verificado por classes/estrutura e testes de componente; a UI está fechada pelo gate, sem prova
+  em navegador real nesta rodada.
+- Rollback deny-only atualizado (remove o ponto de entrada de serviço; mantém sync/reconcile e épocas).

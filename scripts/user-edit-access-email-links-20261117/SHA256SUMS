@@ -1,4 +1,8 @@
-73d9ff59bd5533226e53b49ed134dad8cafb5d712b69e7ace359d2a8071a30be  scripts/user-edit-access-email-links-20261117/candidate.sql.review
-7602be5cfddbb8aeb47d9b37dc74bbb33acae6948796791e4a9de3050d688006  scripts/user-edit-access-email-links-20261117/rollback.sql.review
-6d9ffd916a4c00acc49c24ddc07bd75529cc4b5f93bdfe7206bda04a19c26588  scripts/user-edit-access-email-links-20261117/harness-stubs.sql
-35e9e3c6e42e52618961349fd4dba4ae2fc375ef160bcf5797d66ba7d60d14ba  scripts/user-edit-access-email-links-20261117/test-local.py
+5441adf882a75f1044f45bc1c3b2845368d0ad6a05891950abe1a7198652cb58  scripts/user-edit-access-email-links-20261117/candidate.sql.review
+e92d878e7126bc61c573e658851a3c69877e22af20f30c04c416cdffe2ecfb80  scripts/user-edit-access-email-links-20261117/rollback.sql.review
+749231311f0febf363f92ab861b31ac416fb056c013c7170a73b1ed066476e4f  scripts/user-edit-access-email-links-20261117/harness-stubs.sql
+2a25966209754f7c4a33ec1cf833d4adaf5afd142f0f2309c0dec0d2cfafab90  scripts/user-edit-access-email-links-20261117/test-local.py
+d9b9c1b0f07fb2377c71b4c0a9a6945ceb4d7e08d64bd4530918dcc7ea66519a  scripts/user-edit-access-email-links-20261117/captured-prod-user-triggers-20261117.sql
+5350c3060a0e4a0c7ff3a7e56c3e2ff6b4a814c9cc9a81e96b07baa1be054089  scripts/user-edit-access-email-links-20261117/captured-prod-consumers-20261117.sql
+27170169acf32c682bb06544b31c66e60b43f5fdd4bf4b447d7839ef13df92b0  scripts/user-edit-access-email-links-20261117/edge/tenant-user-admin.index.ts.review
+83ab3ba381f2f1a975505fc270d45782658a183dae6bf7d38a71585807df7cf5  scripts/user-edit-access-email-links-20261117/edge/user-email-change-sync.index.ts.review

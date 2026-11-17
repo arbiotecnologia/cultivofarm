@@ -70,16 +70,17 @@ describe("painel", () => {
     rpc.mockImplementation(async (n: string) => {
       if (n === "tenant_admin_consultor_links_v1") return { data: { items: [{ cliente_id: C, nome: "Fazenda Um", access_level: "read", valid_from: null, valid_until: null, revoked_at: null, status: "vigente" }], history: [] }, error: null };
       if (n === "tenant_admin_search_clientes_v1") return { data: null, error: { message: "forbidden" } };
-      if (n === "tenant_admin_consultor_link_v1") return { data: null, error: { message: "link_not_active" } };
       return { data: { status: "none" }, error: null };
     });
+    invoke.mockResolvedValue({ data: null, error: { message: "edge", context: { json: async () => ({ error: "link_not_active" }) } } });
     wrap(<UserAdminRefinementPanel target={{ user_id: T, email: "c@ex.test", roles: ["consultor_tecnico"] }} actorId={A} currentType="internal" onChanged={() => {}} />);
     await waitFor(() => expect(screen.getByText(/Fazenda Um/)).toBeTruthy());
     await waitFor(() => expect(screen.getAllByText(/Operação não permitida/).length).toBeGreaterThan(0));
     fireEvent.click(screen.getByText("Encerrar"));
     await waitFor(() => expect(screen.getByText(/já foi encerrado/)).toBeTruthy());
-    const call = rpc.mock.calls.find((c) => c[0] === "tenant_admin_consultor_link_v1")!;
-    expect(call[1]).toMatchObject({ p_action: "end", p_cliente_id: C, p_user_id: T });
+    const call = invoke.mock.calls.find((c) => c[0] === "tenant-user-admin")!;
+    expect(call[1]).toMatchObject({ body: { op: "consultor_link", args: { action: "end", cliente_id: C, user_id: T } } });
+    expect(rpc.mock.calls.some((c) => String(c[0]).includes("consultor_link_v1"))).toBe(false);
   });
   it("produtor não recebe seção de consultor", () => {
     rpc.mockResolvedValue({ data: { status: "none" }, error: null });
@@ -98,5 +99,41 @@ describe("fase 2b/3b — papéis combinados e titular", () => {
   });
   it("interno preserva perfis existentes (sem exigir novo)", () => {
     expect(validateTransition({ ...base, from: "b2b", to: "internal" as never, clienteId: null, currentRoles: ["parceiro_b2b", "gestor"], removeRoles: ["parceiro_b2b"] })).toBeNull();
+  });
+});
+
+describe("rev.5 — gatilhos reais: Edge, B2B explícito, administrador e editores externos", () => {
+  beforeEach(() => { rpc.mockReset(); invoke.mockReset(); rpc.mockResolvedValue({ data: { status: "none" }, error: null }); });
+  it("B2B exige perfil explícito (técnico não vira gestor)", () => {
+    expect(validateTransition({ ...base, to: "b2b" as never, clienteId: null, currentRoles: ["financeiro"], removeRoles: ["financeiro"] })).toMatch(/explicitamente/);
+    expect(validateTransition({ ...base, to: "b2b" as never, clienteId: null, currentRoles: ["financeiro"], removeRoles: ["financeiro"], b2bRoles: ["parceiro_b2b_tecnico"] })).toBeNull();
+  });
+  it("administrador não é concedido junto com saída de papel externo", () => {
+    expect(validateTransition({ ...base, from: "b2b", to: "internal" as never, clienteId: null, internalRoles: ["administrador"], currentRoles: ["parceiro_b2b_tecnico"], removeRoles: ["parceiro_b2b_tecnico"] })).toMatch(/já interno/);
+    expect(validateTransition({ ...base, from: "internal", to: "internal" as never, clienteId: null, internalRoles: ["administrador"], currentRoles: ["financeiro"] })).toMatch(/diferente/);
+  });
+  it("tipo de acesso B2B envia só os perfis marcados, pelo Edge", async () => {
+    invoke.mockResolvedValue({ data: { ok: true }, error: null });
+    wrap(<UserAdminRefinementPanel target={{ user_id: T, email: "x@ex.test", roles: ["financeiro"] }} actorId={A} currentType="internal" onChanged={() => {}} />);
+    fireEvent.click(screen.getByLabelText("Novo tipo de acesso"));
+    fireEvent.click(await screen.findByRole("option", { name: "Parceiro B2B" }));
+    fireEvent.click(screen.getByText("Parceiro B2B — Técnico"));
+    fireEvent.click(screen.getByText("Remover financeiro"));
+    fireEvent.change(screen.getByLabelText("Motivo"), { target: { value: "vira técnico B2B" } });
+    fireEvent.click(screen.getByText(/Confirmar mudança/));
+    await waitFor(() => expect(invoke).toHaveBeenCalled());
+    expect(invoke.mock.calls[0][1].body.args).toMatchObject({ target: "b2b", roles: ["parceiro_b2b_tecnico"], remove_roles: ["financeiro"] });
+    expect(rpc.mock.calls.some((c) => String(c[0]).includes("change_access_type"))).toBe(false);
+  });
+  it("usuário externo: opção Administrador não aparece no destino interno", async () => {
+    wrap(<UserAdminRefinementPanel target={{ user_id: T, email: "x@ex.test", roles: ["parceiro_b2b_tecnico"] }} actorId={A} currentType="b2b" onChanged={() => {}} />);
+    fireEvent.click(screen.getByLabelText("Novo tipo de acesso"));
+    fireEvent.click(await screen.findByRole("option", { name: "Interno" }));
+    expect(screen.queryByText("Administrador")).toBeNull();
+    expect(screen.getByText(/só pode ser concedido depois/)).toBeTruthy();
+  });
+  it("com o editor externo montado, o painel não abre um segundo editor de e-mail", () => {
+    wrap(<UserAdminRefinementPanel target={{ user_id: T, email: "x@ex.test", roles: ["cliente_produtor"] }} actorId={A} currentType="producer" externalEditorMounted onChanged={() => {}} />);
+    expect(screen.queryByLabelText("Alterar e-mail")).toBeNull();
   });
 });
