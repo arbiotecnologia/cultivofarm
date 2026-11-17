@@ -23708,6 +23708,7 @@ export type Database = {
       }
       lote_volume_envasado: { Args: { _lote_id: string }; Returns: number }
       mask_sensitive_jsonb: { Args: { v: Json }; Returns: Json }
+      my_session_authz_state_v1: { Args: never; Returns: Json }
       normalizar_alvo: { Args: { p_nome: string }; Returns: string }
       notification_p1_visible: {
         Args: { cid?: string; sid: string; st: string; uid: string }
@@ -24451,6 +24452,10 @@ export type Database = {
       }
       prefixo_para_microrganismo: { Args: { _tipo: string }; Returns: string }
       prefixo_para_produto: { Args: { _tipo: string }; Returns: string }
+      producer_my_campaigns_v1: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: Json
+      }
       product_regulatory_storage_read_allowed: {
         Args: { p_path: string }
         Returns: boolean
@@ -27442,6 +27447,26 @@ export type Database = {
         Args: { p_cliente: string; p_fazenda: string; p_talhao: string }
         Returns: boolean
       }
+      tenant_admin_consultor_links_v1: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
+      tenant_admin_email_change_cancel_v1: {
+        Args: { p_idempotency_key: string; p_user_id: string }
+        Returns: Json
+      }
+      tenant_admin_email_change_request_v1: {
+        Args: {
+          p_idempotency_key: string
+          p_new_email: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      tenant_admin_email_change_status_v1: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       tenant_admin_list_users: {
         Args: {
           p_active?: boolean
@@ -27452,8 +27477,21 @@ export type Database = {
         }
         Returns: Json
       }
+      tenant_admin_search_clientes_v1: {
+        Args: { p_limit: number; p_offset: number; p_search: string }
+        Returns: Json
+      }
       tenant_admin_set_user_active: {
         Args: { p_active: boolean; p_user_id: string }
+        Returns: Json
+      }
+      tenant_admin_user_access_exec_v1: {
+        Args: {
+          p_actor: string
+          p_actor_iat: number
+          p_args: Json
+          p_op: string
+        }
         Returns: Json
       }
       tenant_admin_user_links: { Args: { p_user_ids: string[] }; Returns: Json }
@@ -27811,6 +27849,15 @@ export type Database = {
       update_product_b2b_description: {
         Args: { p_explicacao_b2b: string; p_profile_id: string }
         Returns: undefined
+      }
+      user_email_change_accept_v1: { Args: { p_op_id: string }; Returns: Json }
+      user_email_change_decline_v1: { Args: { p_op_id: string }; Returns: Json }
+      user_email_change_my_pending_v1: { Args: never; Returns: Json }
+      user_email_change_release_v1: { Args: { p_op_id: string }; Returns: Json }
+      user_email_change_sync_self_v1: { Args: never; Returns: Json }
+      user_email_change_sync_service_v1: {
+        Args: { p_holder: string }
+        Returns: Json
       }
       validate_catalog_approval_checklist: {
         Args: {
