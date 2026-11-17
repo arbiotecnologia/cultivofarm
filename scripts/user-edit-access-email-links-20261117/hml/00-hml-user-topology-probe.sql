@@ -1,6 +1,5 @@
 -- SONDA SOMENTE LEITURA — rodar em vrlcdwmlytukrjezrrnf ANTES do candidato. Lista exatamente as garantias faltantes.
 BEGIN TRANSACTION READ ONLY;
-CREATE TEMP TABLE hml_probe_out(item text) ON COMMIT DROP;
 DO $probe$
 DECLARE v_fail text[] := ARRAY[]::text[]; v_sync text; r record;
 BEGIN
@@ -62,8 +61,8 @@ BEGIN
               AND (c.relname, t.tgname) NOT IN (SELECT * FROM (VALUES ('partner_users','a00_cf_user_gate'), ('partner_users','a00_cf_user_no_truncate'), ('partner_users','a10_partner_users_derive_tenant'), ('partner_users','a20_partner_users_bump_version'), ('partner_users','z90_cf_touch_profile'), ('profiles','a00_cf_user_gate'), ('profiles','a00_cf_user_no_truncate'), ('profiles','guard_profile_senha_provisoria'), ('profiles','guard_profile_senha_ticket'), ('profiles','guard_profile_sensitive_fields'), ('profiles','h15_profile_organization_guard'), ('profiles','trg_guard_profile_tenant_fields'), ('profiles','trg_profiles_enforce_cliente'), ('profiles','update_profiles_updated_at'), ('profiles','z99_cf_profile_stamp'), ('profiles','z99_cf_require_admin'), ('user_clientes','a00_cf_user_gate'), ('user_clientes','a00_cf_user_no_truncate'), ('user_clientes','z90_cf_touch_profile'), ('user_roles','a00_cf_user_gate'), ('user_roles','a00_cf_user_no_truncate'), ('user_roles','trg_guard_superadmin_role_assignment'), ('user_roles','trg_user_roles_enforce_cliente'), ('user_roles','z90_cf_touch_profile'), ('user_roles','z99_cf_require_admin'), ('user_clientes','trg_user_clientes_sync_del'), ('user_clientes','trg_user_clientes_sync_ins'), ('user_clientes','trg_user_clientes_sync_upd'), ('user_clientes','trg_user_clientes_sync')) x(a, b)) LOOP
     v_fail := v_fail || ('untested_extra_trigger:' || r.relname || '.' || r.tgname);
   END LOOP;
-  INSERT INTO hml_probe_out SELECT 'sync_md5=' || v_sync; INSERT INTO hml_probe_out SELECT unnest(v_fail);
-  IF cardinality(v_fail) = 0 THEN INSERT INTO hml_probe_out VALUES ('PRE_WOULD_PASS'); END IF;
+  RAISE NOTICE 'PROBE sync_md5=%', v_sync;
+  FOR r IN SELECT unnest(v_fail) AS i LOOP RAISE NOTICE 'PROBE %', r.i; END LOOP;
+  IF cardinality(v_fail) = 0 THEN RAISE NOTICE 'PROBE PRE_WOULD_PASS'; END IF;
 END $probe$;
-SELECT item FROM hml_probe_out ORDER BY 1;
 ROLLBACK;

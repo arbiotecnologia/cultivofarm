@@ -63,9 +63,9 @@ BEGIN
 """
     if mode == "raise":
         return "DO $pre5$\n" + body + "  IF cardinality(v_fail) > 0 THEN RAISE EXCEPTION 'PRE HML drift: %', array_to_string(v_fail, ', '); END IF;\n  RAISE NOTICE 'PRE HML ok: sync=%', v_sync;\nEND $pre5$;\n"
-    return ("CREATE TEMP TABLE hml_probe_out(item text) ON COMMIT DROP;\nDO $probe$\n" + body +
-            "  INSERT INTO hml_probe_out SELECT 'sync_md5=' || v_sync; INSERT INTO hml_probe_out SELECT unnest(v_fail);\n"
-            "  IF cardinality(v_fail) = 0 THEN INSERT INTO hml_probe_out VALUES ('PRE_WOULD_PASS'); END IF;\nEND $probe$;\nSELECT item FROM hml_probe_out ORDER BY 1;\n")
+    return ("DO $probe$\n" + body +
+            "  RAISE NOTICE 'PROBE sync_md5=%', v_sync;\n  FOR r IN SELECT unnest(v_fail) AS i LOOP RAISE NOTICE 'PROBE %', r.i; END LOOP;\n"
+            "  IF cardinality(v_fail) = 0 THEN RAISE NOTICE 'PROBE PRE_WOULD_PASS'; END IF;\nEND $probe$;\n")
 
 hdr = ("-- =====================================================================\n-- PACOTE HML — EXCLUSIVO vrlcdwmlytukrjezrrnf. GERADO por hml/build_hml.py a partir de candidate.sql.review.\n"
        "-- Difere do candidato de produção SOMENTE no bloco PRE $pre5$. NÃO executar em produção (a impressão digital aborta).\n"

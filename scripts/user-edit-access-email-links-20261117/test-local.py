@@ -38,13 +38,47 @@ def check(name, cond, detail=""):
     results.append({"name": name, "pass": bool(cond), "detail": detail}); print(("PASS " if cond else "FAIL ") + name, detail if not cond else "")
 def denied(name, sql, user, code):
     p = psql(sql, user, ok=False); check(name, p.returncode != 0 and code in p.stderr, p.stderr.strip()[-160:])
+# rev.6 — topologias: prod (gatilhos de produção verbatim + candidato de produção);
+# hml_legacy / hml_stmt (candidato HML gerado; gatilho de principal legado por linha ou statement de produção).
+TOPO = os.environ.get("TOPOLOGY", "prod"); LEG = TOPO == "hml_legacy"; UNSUPPORTED = []; assert TOPO in ("prod", "hml_legacy", "hml_stmt")
+HML_ORGS = ("c809e74f-486b-44b2-b2f4-4088f53421bb", "dcf50a75-579a-4828-a0fc-1d8eadcb4b8a")
+# Costura declarada: no banco descartável is_platform_superadmin é sintético; seu pin (comprovado em HML pelo alinhamento 01) é pulado SÓ na cópia /tmp.
+gen = subprocess.run(["python3", os.path.join(HERE, "hml", "build_hml.py")], capture_output=True, text=True,
+                     env={**os.environ, "HML_HARNESS_SKIP_PINS": "public.is_platform_superadmin(uuid)"})
+if gen.returncode: print(gen.stderr); sys.exit(2)
+HML_SQL = "/tmp/candidate-hml.harness.sql"
+def load(path):
+    return subprocess.run(["psql", "-h", tmp, "-p", port, "-U", "postgres", "-v", "ON_ERROR_STOP=1", "-qX", "-f", path], capture_output=True, text=True)
+LEGACY_SQL = open(os.path.join(HERE, "..", "..", "supabase", "migrations", "20260519155317_951d81f0-fda4-4bf3-ae39-c96edda8df7f.sql")).read()
+LEGACY_FN = LEGACY_SQL[LEGACY_SQL.index("CREATE OR REPLACE FUNCTION public.sync_user_cliente_principal()"):]
+LEGACY_FN = LEGACY_FN[:LEGACY_FN.index("$$;") + 3]
 try:
-    for f in ("harness-stubs.sql", "captured-prod-user-triggers-20261117.sql", "captured-prod-consumers-20261117.sql", "candidate.sql.review"):
-        p = subprocess.run(["psql", "-h", tmp, "-p", port, "-U", "postgres", "-v", "ON_ERROR_STOP=1", "-qX", "-f", os.path.join(HERE, f)], capture_output=True, text=True)
+    for f in ("harness-stubs.sql", "captured-prod-user-triggers-20261117.sql", "captured-prod-consumers-20261117.sql"):
+        p = load(os.path.join(HERE, f))
         if p.returncode: print(p.stderr); sys.exit(2)
+    PROD_ORGS = ("8eae2bc1-ad00-4402-9f57-564258e493ca","442444d9-263f-45d9-a991-a679498d06c3","4e537fd6-4632-4c70-a782-386dba3e8f9f","8f57c7dd-0557-4041-b401-7a00f7244626","007bb519-cba0-4704-be2c-cb93ad010048")
+    psql("INSERT INTO public.organizations(id) VALUES " + ",".join(f"('{o}')" for o in (HML_ORGS if TOPO != "prod" else PROD_ORGS)))
+    if TOPO == "hml_legacy":   # variante legada documentada (md5 50392a57…), carregada do arquivo de migração do repositório
+        psql("DROP TRIGGER trg_user_clientes_sync_ins ON public.user_clientes; DROP TRIGGER trg_user_clientes_sync_upd ON public.user_clientes; DROP TRIGGER trg_user_clientes_sync_del ON public.user_clientes; DROP FUNCTION public.sync_user_cliente_principal();")
+        psql(LEGACY_FN + "\nCREATE TRIGGER trg_user_clientes_sync AFTER INSERT OR UPDATE OR DELETE ON public.user_clientes FOR EACH ROW EXECUTE FUNCTION public.sync_user_cliente_principal();")
+        check("HML legado: md5 do gatilho = variante documentada", psql("SELECT md5(pg_get_functiondef('public.sync_user_cliente_principal()'::regprocedure))").stdout.strip() == "50392a57c5908c67c709c4e84f0e932e")
+    other = HML_SQL if TOPO == "prod" else os.path.join(HERE, "candidate.sql.review")
+    p = load(other)
+    check("PRE recusa o pacote da outra topologia (sem mutação)", p.returncode != 0 and ("not_homolog" in p.stderr or "PRE drift" in p.stderr or "impressão digital" in p.stderr)
+          and psql("SELECT to_regprocedure('public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb)') IS NULL").stdout.strip() == "t", p.stderr[-200:])
+    pr = subprocess.run(["psql", "-h", tmp, "-p", port, "-U", "postgres", "-qAtX", "-f", os.path.join(HERE, "hml", "00-hml-user-topology-probe.sql")], capture_output=True, text=True)
+    items = [x.split("PROBE ", 1)[1] for x in pr.stderr.split("\n") if "NOTICE:  PROBE " in x]
+    if TOPO == "prod":
+        check("sonda HML em produção aponta 'não é homologação'", any(x.startswith("not_homolog") for x in items), str(items))
+    else:   # única pendência = costura sintética declarada (is_platform_superadmin)
+        check("sonda HML: só a costura sintética declarada diverge", [x for x in items if not x.startswith("sync_md5=")] == [x for x in items if x.startswith("function_drift:public.is_platform_superadmin")]
+              and len([x for x in items if x.startswith("function_drift")]) == 1, str(items))
+    p = load(os.path.join(HERE, "candidate.sql.review") if TOPO == "prod" else HML_SQL)
+    if p.returncode: print(p.stderr); sys.exit(2)
     U = {k: str(uuid.uuid4()) for k in ["adminA","adminB","consA","prodA","b2bA","intA","superX"]}
     OA, OB = str(uuid.uuid4()), str(uuid.uuid4()); C1, C2, C3, CB = (str(uuid.uuid4()) for _ in range(4)); PA, PB = str(uuid.uuid4()), str(uuid.uuid4())
     org = {"adminA":OA,"consA":OA,"prodA":OA,"b2bA":OA,"intA":OA,"adminB":OB,"superX":OA}
+    psql(f"INSERT INTO public.organizations(id) VALUES ('{OA}'),('{OB}')")
     seed = [f"INSERT INTO auth.users VALUES ('{u}','{k}@ex.test')" for k,u in U.items()]
     seed += [f"INSERT INTO public.profiles(user_id,nome,email,organization_id) VALUES ('{u}','{k}','{k}@ex.test','{org[k]}')" for k,u in U.items()]
     seed += [f"INSERT INTO public.clientes VALUES ('{C1}','Fazenda Um',null,'{OA}'),('{C2}','Fazenda Dois',null,'{OA}'),('{C3}','Sítio 100%_x',null,'{OA}'),('{CB}','Fazenda B',null,'{OB}')",
@@ -62,7 +96,8 @@ try:
     seed = [x if not x.startswith("INSERT INTO public.profiles") else x for x in seed]
     seed = [x for x in seed if not (x.startswith("INSERT INTO public.profiles") and (f"'{U['adminA']}'" in x or f"'{U['adminB']}'" in x))]
     psql("; ".join(seed))
-    check("gatilhos reais carregados e habilitados (28)", psql("SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O' AND tgrelid IN ('public.profiles'::regclass,'public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass)").stdout.strip() == "28")
+    NTRG = "26" if TOPO == "hml_legacy" else "28"
+    check(f"gatilhos carregados e habilitados ({NTRG})", psql("SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O' AND tgrelid IN ('public.profiles'::regclass,'public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass)").stdout.strip() == NTRG)
     k = lambda: str(uuid.uuid4())
     A, B = U["adminA"], U["adminB"]
     def AT(u, t, add=None, rm=None, cli=None, key=None, reason="motivo válido"):
@@ -295,7 +330,11 @@ try:
     outs = []
     def worker(): outs.append(psql(L("end", C1), A, ok=False))
     ts = [threading.Thread(target=worker) for _ in range(2)]; [t.start() for t in ts]; [t.join() for t in ts]
-    check("concorrência: exatamente um encerramento", sorted(o.returncode for o in outs) == [0, 1] and "link_not_active" in "".join(o.stderr for o in outs))
+    if LEG:
+        check("HML legado: encerrar o vínculo mais antigo (reeleito encerrado) aborta nas duas", all(o.returncode != 0 for o in outs) and "scope_postcondition_failed" in "".join(o.stderr for o in outs))
+        UNSUPPORTED.append("encerrar/substituir o vínculo mais antigo de consultor com outros vigentes (gatilho legado reelege vínculo encerrado)")
+    else:
+        check("concorrência: exatamente um encerramento", sorted(o.returncode for o in outs) == [0, 1] and "link_not_active" in "".join(o.stderr for o in outs))
     # ===================== rev.5 — gatilhos REAIS de produção, fotos antes/depois =====================
     snap = lambda u: json.loads(last(psql(f"SELECT platform_private.user_admin_scope_snapshot('{u}','{OA}')")))
     fin = lambda u, c, iat=None: last(psql(f"SELECT count(*) FROM public.accounts_receivable WHERE customer_id='{c}'", u, iat=iat))
@@ -312,15 +351,19 @@ try:
     SNAPS["consultor_multi_antes"] = b = snap(K)
     check("gatilho real promoveu principal do CONSULTOR e gravou profiles.cliente_id", b["profile_cliente_id"] == C1 and sum(l["principal"] for l in b["active_links"]) == 1 and len(b["active_links"]) == 3)
     check("consultor com principal: financeiro negado (sem papel produtor)", all(fin(K, c) == "0" for c in (C1, C2, C3)))
-    FINDINGS.append({"id": "campanhas_cliente_select", "observado_consultor_ve_campanha": com(K) != "0",
-                     "nota": "Política global existente não exige papel cliente_produtor; qualquer vínculo vigente vê campanhas comerciais do cliente. Pré-existente; não alterada (fora do escopo, exige decisão)."})
-    r = json.loads(last(psql(AT(K, "producer", rm=arr("consultor_tecnico"), cli=f"'{C2}'", reason="consultor vira produtor"), A)))
-    SNAPS["consultor_multi_depois_produtor"] = a = snap(K)
-    check("consultor multi -> produtor (principal diferente) sem unique violation", r["ok"] is True and a["roles"] == ["cliente_produtor"])
-    check("só o cliente escolhido fica vigente/principal; demais encerrados", [l["cliente_id"] for l in a["active_links"]] == [C2] and a["active_links"][0]["principal"] and a["open_links"] == 1 and a["profile_cliente_id"] == C2)
-    check("financeiro do novo produtor: só o próprio cliente", fin(K, C2) == "1" and fin(K, C1) == "0" and fin(K, C3) == "0" and ids(K) == "ids:" + C2)
-    check("JWT antigo do novo produtor: financeiro negado", fin(K, C2, iat=T0) == "0")
-    check("ex-vínculos técnicos preservados como histórico", psql(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{K}'").stdout.strip() == "3")
+    check("rev.6: consultor com vínculo vigente NÃO vê campanha comercial", com(K) == "0")
+    if LEG:
+        denied("HML legado: consultor multi -> produtor (principal diferente) aborta limpo", AT(K, "producer", rm=arr("consultor_tecnico"), cli=f"'{C2}'", reason="consultor vira produtor"), A, "principal_sync_incompatible")
+        check("HML legado: aborto sem mutação (fotos iguais)", snap(K) == b and roles(K) == "consultor_tecnico")
+        UNSUPPORTED.append("consultor multi -> produtor com principal diferente (exige gatilho statement com filtro de vigência)")
+    else:
+        r = json.loads(last(psql(AT(K, "producer", rm=arr("consultor_tecnico"), cli=f"'{C2}'", reason="consultor vira produtor"), A)))
+        SNAPS["consultor_multi_depois_produtor"] = a = snap(K)
+        check("consultor multi -> produtor (principal diferente) sem unique violation", r["ok"] is True and a["roles"] == ["cliente_produtor"])
+        check("só o cliente escolhido fica vigente/principal; demais encerrados", [l["cliente_id"] for l in a["active_links"]] == [C2] and a["active_links"][0]["principal"] and a["open_links"] == 1 and a["profile_cliente_id"] == C2)
+        check("financeiro do novo produtor: só o próprio cliente", fin(K, C2) == "1" and fin(K, C1) == "0" and fin(K, C3) == "0" and ids(K) == "ids:" + C2)
+        check("JWT antigo do novo produtor: financeiro negado", fin(K, C2, iat=T0) == "0")
+        check("ex-vínculos técnicos preservados como histórico", psql(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{K}'").stdout.strip() == "3")
     # 2) Produtor com secundário -> interno (e -> interno consultor): nenhum vínculo residual
     def mkprod(nm, cs):
         u = mkuser(nm, OA)
@@ -344,7 +387,7 @@ try:
     check("técnico B2B não recebeu gestor implicitamente", a["roles"] == ["parceiro_b2b_tecnico"])
     denied("B2B técnico sem papel explícito = sem mudança", AT(P3, "b2b"), A, "no_change")
     check("ex-produtor B2B: financeiro negado", fin(P3, C2) == "0" and fin(P3, C3) == "0")
-    denied("produtor já produtor: secundários só pelo caminho canônico", AT(K, "producer", cli=f"'{C1}'"), A, "no_change")
+    if not LEG: denied("produtor já produtor: secundários só pelo caminho canônico", AT(K, "producer", cli=f"'{C1}'"), A, "no_change")
     # 4) Administrador: paridade com admin_edit_user_profile_v1 e sem atalho por transição externa
     W2 = mkuser("w2", OA); psql(f"INSERT INTO public.user_roles(user_id,role) VALUES ('{W2}','financeiro')")
     r = json.loads(last(psql(AT(W2, "internal", add=arr("administrador"), reason="promoção a admin"), A)))
@@ -358,9 +401,14 @@ try:
     # 5) Substituição do vínculo principal de consultor sem violação de unicidade
     K2 = mkuser("k2", OA); psql(f"INSERT INTO public.user_roles(user_id,role) VALUES ('{K2}','consultor_tecnico')")
     psql(LX(K2, "add", C1), A); psql(LX(K2, "add", C2), A)
-    psql(LX(K2, "replace", C3, rep=C1), A); a = snap(K2); SNAPS["consultor_replace_principal"] = a
-    check("replace do principal: um único principal vigente, cliente_id coerente", sorted(l["cliente_id"] for l in a["active_links"]) == sorted([C2, C3])
-          and sum(l["principal"] for l in a["active_links"]) == 1 and a["profile_cliente_id"] in (C2, C3))
+    if LEG:
+        b2 = snap(K2)
+        denied("HML legado: replace do principal mais antigo aborta limpo", LX(K2, "replace", C3, rep=C1), A, "scope_postcondition_failed")
+        check("HML legado: aborto do replace sem mutação", snap(K2) == b2)
+    else:
+        psql(LX(K2, "replace", C3, rep=C1), A); a = snap(K2); SNAPS["consultor_replace_principal"] = a
+        check("replace do principal: um único principal vigente, cliente_id coerente", sorted(l["cliente_id"] for l in a["active_links"]) == sorted([C2, C3])
+              and sum(l["principal"] for l in a["active_links"]) == 1 and a["profile_cliente_id"] in (C2, C3))
     # 6) E-mail: liberação antes de o Auth registrar o envio + link tardio após cancelamento
     H4 = mkuser("h4", OA)
     op4 = json.loads(last(psql(f"SELECT public.tenant_admin_email_change_request_v1('{H4}','h4novo@ex.test','{k()}')", A)))["op_id"]
@@ -375,8 +423,51 @@ try:
     check("auditoria marca confirmação tardia", psql(f"SELECT after_state->>'late' FROM platform_private.user_admin_change_audit WHERE kind='email_confirmed' AND target_id='{H4}'").stdout.strip() == "true")
     check("serviço de sync negado sob JWT", psql(f"SELECT public.user_email_change_sync_service_v1('{H4}')", H4, ok=False).returncode != 0)
     check("serviço de sync sem pedido não altera perfil", SYNC(NB)["status"] == "none" and pe(NB) == "nb@ex.test")
+    # ===================== rev.6 — campanhas: vínculo de consultor não concede acesso comercial =====================
+    CAMP = OLDOP; CAMPB = str(uuid.uuid4())
+    psql(f"INSERT INTO public.commercial_campaigns(id,ativa,tipo_publico) VALUES ('{CAMPB}',true,'b2b'); INSERT INTO public.commercial_campaign_partners VALUES ('{CAMPB}','{PA}')")
+    seen = lambda u, iat=None: last(psql("SELECT coalesce(string_agg(id::text, ',' ORDER BY id), '-') FROM public.commercial_campaigns", u, iat=iat))
+    CP = mkuser("cpuro", OA); psql(f"INSERT INTO public.user_roles(user_id,role) VALUES ('{CP}','consultor_tecnico')"); psql(LX(CP, "add", C1), A)
+    check("campanha: consultor puro com vínculo vigente não vê", seen(CP) == "-")
+    TA = mkuser("tagro", OA); psql(f"INSERT INTO public.user_roles(user_id,role) VALUES ('{TA}','tecnico_agronomo')"); psql(LX(TA, "add", C1), A)
+    check("campanha: técnico agrônomo com vínculo vigente não vê", seen(TA) == "-")
+    PX = mkprod("pcamp", (C1,))
+    check("campanha: produtor com vínculo vigente vê a do seu cliente", seen(PX) == CAMP)
+    GC = mkuser("gcom", OA); psql(f"INSERT INTO public.user_roles(user_id,role) VALUES ('{GC}','gestor_comercial')")
+    check("campanha: gestor comercial (autorização explícita) preservado", CAMP in seen(GC) and CAMPB in seen(GC))
+    check("campanha: administrador preservado", CAMP in seen(A))
+    BP = mkuser("bpart", OA); psql(f"INSERT INTO public.user_roles(user_id,role) VALUES ('{BP}','parceiro_b2b'); INSERT INTO public.partner_users(partner_id,user_id,papel,tenant_id) VALUES ('{PA}','{BP}','gestor','{OA}')")
+    check("campanha: parceiro B2B vê só a campanha B2B do seu parceiro", seen(BP) == CAMPB)
+    MIX = mkprod("pmix", (C1,)); psql(f"INSERT INTO public.user_roles(user_id,role) VALUES ('{MIX}','consultor_tecnico')")
+    check("campanha: produtor+consultor (vínculo ambíguo) negado", seen(MIX) == "-")
+    PBX = mkuser("pbx", OB); psql(f"INSERT INTO public.user_clientes(user_id,cliente_id,principal) VALUES ('{PBX}','{C1}',true); INSERT INTO public.user_roles(user_id,role) VALUES ('{PBX}','cliente_produtor')")
+    check("campanha: produtor de outra empresa com vínculo legado cruzado não vê", seen(PBX) == "-")
+    psql(AT(PX, "internal", add=arr("consultor_tecnico"), rm=arr("cliente_produtor"), reason="produtor vira consultor"), A)
+    check("campanha: mudança produtor→consultor (JWT renovado) perde acesso", seen(PX) == "-")
+    psql(LX(PX, "add", C1), A)
+    check("campanha: ex-produtor agora consultor vinculado ao mesmo cliente não vê", seen(PX) == "-")
+    psql(AT(CP, "producer", rm=arr("consultor_tecnico"), cli=f"'{C1}'", reason="consultor vira produtor"), A)
+    check("campanha: mudança consultor→produtor passa a ver (JWT renovado)", seen(CP) == CAMP)
+    check("campanha: JWT antigo após a mudança não vê", seen(CP, iat=T0) == "-")
+    PE = mkprod("pend", (C1,)); psql(f"UPDATE public.user_clientes SET revoked_at = now(), is_active = false WHERE user_id = '{PE}'")
+    check("campanha: produtor com vínculo encerrado não vê", seen(PE) == "-")
+    # ===================== rev.6 — ator inativo / empresa inativa / senha provisória =====================
+    for nm, fix in (("perfil inativo", "UPDATE public.profiles SET ativo = false WHERE user_id = '{u}'"),
+                    ("senha provisória", "UPDATE public.profiles SET senha_provisoria = true WHERE user_id = '{u}'")):
+        AX = mkuser("ax" + nm[:3], OA); psql(f"INSERT INTO public.user_roles(user_id,role) VALUES ('{AX}','administrador')"); psql(fix.format(u=AX))
+        denied(f"ator admin com {nm} negado", AT(U["intA"], "internal", arr("aplicador")), AX, "forbidden")
+    OC = str(uuid.uuid4()); psql(f"INSERT INTO public.organizations(id, ativo) VALUES ('{OC}', false)")
+    AC = mkuser("acinat", OC); TC = mkuser("tcinat", OC)
+    psql(f"SET session_replication_role = replica; INSERT INTO public.user_roles(user_id,role) VALUES ('{AC}','administrador'),('{TC}','financeiro'); SET session_replication_role = origin")
+    denied("ator admin de empresa inativa negado", AT(TC, "internal", arr("aplicador")), AC, "forbidden")
+    check("rev.6: sync de e-mail negado a titular inativo", (lambda u: (psql(f"UPDATE public.profiles SET ativo=false WHERE user_id='{u}'"), psql(f"SET ROLE service_role; SELECT public.user_email_change_sync_service_v1('{u}')", ok=False).returncode != 0)[1])(mkuser("hinat", OA)))
+    # ===================== rev.6 — rollback não reabre o vazamento =====================
+    rb = load(os.path.join(HERE, "rollback.sql.review"))
+    check("rollback executa", rb.returncode == 0, rb.stderr[-200:])
+    check("após rollback: consultor continua sem campanha e produtor mantém", seen(TA) == "-" and seen(CP) == CAMP)
+    check("após rollback: núcleo de escrita inalcançável", psql("SELECT to_regprocedure('public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb)') IS NULL").stdout.strip() == "t")
 finally:
     subprocess.run(AS+["pg_ctl", "-D", data, "-m", "fast", "stop"], capture_output=True); shutil.rmtree(tmp, ignore_errors=True)
 ok = all(r["pass"] for r in results)
-json.dump({"passed": sum(r["pass"] for r in results), "total": len(results), "results": results, "snapshots": SNAPS, "findings": FINDINGS}, open(os.path.join(HERE, "evidence-local.json"), "w"), indent=1, ensure_ascii=False)
+json.dump({"topology": TOPO, "unsupported_in_topology": UNSUPPORTED, "passed": sum(r["pass"] for r in results), "total": len(results), "results": results, "snapshots": SNAPS, "findings": FINDINGS}, open(os.path.join(HERE, "evidence-local.json" if TOPO == "prod" else f"evidence-local-{TOPO}.json"), "w"), indent=1, ensure_ascii=False)
 print(f"{sum(r['pass'] for r in results)}/{len(results)}"); sys.exit(0 if ok else 1)

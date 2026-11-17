@@ -630,6 +630,12 @@ END $$;
 --    interno; não pode ser concedido na mesma operação que retira papéis externos.
 -- =====================================================================
 DO $pre5$ BEGIN
+  -- rev.6 (mais estrito): impressão digital de PRODUÇÃO — as 5 empresas de produção presentes, nenhuma da HML.
+  IF (SELECT count(*) FROM public.organizations WHERE id IN ('8eae2bc1-ad00-4402-9f57-564258e493ca','442444d9-263f-45d9-a991-a679498d06c3',
+        '4e537fd6-4632-4c70-a782-386dba3e8f9f','8f57c7dd-0557-4041-b401-7a00f7244626','007bb519-cba0-4704-be2c-cb93ad010048')) <> 5
+     OR EXISTS (SELECT 1 FROM public.organizations WHERE id IN ('c809e74f-486b-44b2-b2f4-4088f53421bb','dcf50a75-579a-4828-a0fc-1d8eadcb4b8a')) THEN
+    RAISE EXCEPTION 'PRE: impressão digital não é a de produção swzpzcwiasxmjutrmvkm';
+  END IF;
   -- PRE rev.5: o desenho depende do comportamento EXATO capturado em produção (HML difere). Drift aborta.
   IF md5(pg_get_functiondef('public.sync_user_cliente_principal()'::regprocedure)) <> '1d053564ccd5fa672a10ec87d5cb0baa'
      OR md5(pg_get_functiondef('public.guard_profile_tenant_fields()'::regprocedure)) <> 'bd6d513d936f5c5fb0490b5d1d2f9f1d'
@@ -838,10 +844,16 @@ BEGIN
   END IF;
   IF p_target = 'producer' THEN
     -- Nenhum outro principal sobrevive ao passo anterior: sem violação de uq_user_clientes_principal.
-    INSERT INTO public.user_clientes(user_id, cliente_id, principal, is_active, access_level, assigned_by, valid_from)
-    VALUES (p_user_id, p_cliente_id, true, true, 'read', p_actor, now())
-    ON CONFLICT (user_id, cliente_id) DO UPDATE SET principal = true, is_active = true, access_level = 'read',
-      revoked_at = NULL, revoked_by = NULL, valid_until = NULL, valid_from = LEAST(public.user_clientes.valid_from, now()), assigned_by = p_actor;
+    BEGIN
+      INSERT INTO public.user_clientes(user_id, cliente_id, principal, is_active, access_level, assigned_by, valid_from)
+      VALUES (p_user_id, p_cliente_id, true, true, 'read', p_actor, now())
+      ON CONFLICT (user_id, cliente_id) DO UPDATE SET principal = true, is_active = true, access_level = 'read',
+        revoked_at = NULL, revoked_by = NULL, valid_until = NULL, valid_from = LEAST(public.user_clientes.valid_from, now()), assigned_by = p_actor;
+    EXCEPTION WHEN unique_violation THEN
+      -- Gatilho de principal que reelege vínculo encerrado (variante legada por linha) + índice uq_user_clientes_principal:
+      -- não há como trocar o principal sem alterar o gatilho global ⇒ aborta a transição inteira, sem mutação.
+      RAISE EXCEPTION 'principal_sync_incompatible' USING ERRCODE='PT409';
+    END;
   END IF;
   -- 2) Papéis: adiciona só o explícito (+ cliente_produtor no destino produtor) e remove o confirmado.
   INSERT INTO public.user_roles(user_id, role)
@@ -1131,7 +1143,7 @@ ALTER POLICY campanhas_cliente_select ON public.commercial_campaigns USING (
      JOIN public.user_clientes uc ON ((uc.cliente_id = cc.cliente_id)))
   WHERE ((cc.campaign_id = commercial_campaigns.id) AND (uc.user_id = ( SELECT auth.uid() AS uid)) AND (uc.cliente_id = ANY (public.get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))) AND (EXISTS ( SELECT 1
            FROM public.clientes c
-          WHERE ((c.id = cc.cliente_id) AND (c.organization_id = public.h15_actor_organization())))))))))
+          WHERE ((c.id = cc.cliente_id) AND (c.organization_id = public.h15_actor_organization()))))))))
   AND platform_private.has_role(( SELECT auth.uid() AS uid), 'cliente_produtor'::public.app_role)
   AND NOT platform_private.has_role(( SELECT auth.uid() AS uid), 'consultor_tecnico'::public.app_role)
   AND NOT platform_private.has_role(( SELECT auth.uid() AS uid), 'tecnico_agronomo'::public.app_role)

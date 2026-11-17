@@ -231,3 +231,71 @@ tenant e sincronização restrita ao titular. Não prova JWT/Auth/RLS hospedados
   e Auth/SMTP reais. Mobile: só verificado por classes/estrutura e testes de componente; a UI está fechada pelo gate, sem prova
   em navegador real nesta rodada.
 - Rollback deny-only atualizado (remove o ponto de entrada de serviço; mantém sync/reconcile e épocas).
+
+---
+# rev.6 — campanhas, auditoria das Edges e pacote HML (17/11/2026, 15h UTC)
+
+## Campanhas: vínculo de consultor não concede acesso comercial
+- Auditoria read-only em produção: a única leitura de campanhas por vínculo é `campanhas_cliente_select` (commercial_campaigns).
+  `commercial_campaign_clientes/products/partners`, `rpc_commercial_consolidated_dashboard` e `rpc_commercial_simulator__tenant_core`
+  exigem administrador/gestor_comercial (ou parceiro B2B do próprio parceiro); `vw_bi_commercial_campaigns` é security_invoker.
+- Seção (9) do candidato: `ALTER POLICY` com a expressão capturada verbatim **+** papel `cliente_produtor` **e** ausência de
+  `consultor_tecnico`/`tecnico_agronomo` (o vínculo não tem finalidade; papel técnico = ambíguo ⇒ nega). PRE pina md5 da expressão
+  (`715fb261…`) e 3 policies; POST confirma. Produção hoje: 0 usuários com produtor+técnico.
+- Rollback NÃO restaura a expressão antiga e aborta se a encontrar afrouxada.
+
+## Lógica comum (produção e HML, idêntica)
+- `platform_private.user_admin_scope_settle`: pós-condição na mesma transação, independente da versão do gatilho de principal
+  (grava o `profiles.cliente_id` esperado e aborta `scope_postcondition_failed` se algum gatilho deixar outro estado).
+- Troca de principal impossível sem violar `uq_user_clientes_principal` ⇒ `principal_sync_incompatible` (sem mutação).
+- Ator: perfil ativo, sem senha provisória, empresa `ativo` (mesma regra de `h15_actor_organization`) + admin + mesma empresa + iat.
+- Sync de e-mail: titular inativo negado.
+- PRE de produção ficou MAIS estrito: impressão digital (5 empresas de produção presentes, nenhuma da HML).
+
+## Edges (auditoria e reescrita)
+- `edge/_shared/user-admin/verify-actor.ts`: `getClaims` (assinatura) + `getUser` (usuário/sessão vivos), nunca decode manual;
+  exige `role=authenticated`, não anônimo, `sub` UUID, `iat`/`exp` coerentes, usuário não banido/excluído e `user.id = sub`.
+- Identidade nunca vem de corpo/cabeçalhos (`x-user-id`, `x-forwarded-*`, `apikey` ignorados); `p_actor` no corpo é rejeitado.
+- `tenant-user-admin`: só `change_access_type`/`consultor_link`, chaves e tipos por op (lista fechada), corpo ≤ 8 KB, JSON obrigatório,
+  códigos de erro de lista fechada (mensagem livre nunca repassada). `user-email-change-sync`: sem parâmetros, alvo = `sub`.
+- Gate: secret `USER_ADMIN_REFINEMENT_ENABLED="true"` (ausente/qualquer outro valor ⇒ 503 `disabled`); URL fixa por build.
+- `deno test edge/handler_test.ts`: 12/12 (forjado alg none, service_role/anon/anônimo, expirado, iat futuro, usuário diferente/banido/
+  excluído, cabeçalhos falsos, ops não enumeradas incl. `__proto__`, args extras, corpo grande, ator inativo ⇒ 403). Portas falsas:
+  não prova a verificação real de assinatura do Auth hosted.
+
+## Pacote HML (`vrlcdwmlytukrjezrrnf`)
+- `hml/build_hml.py` gera tudo; o SQL difere do de produção SÓ no bloco `$pre5$` (asserção de equivalência no gerador).
+- PRE HML: impressão digital HML; pins comprovados pelo POST do alinhamento 01 (aplicado em HML): guard_profile_tenant_fields,
+  enforce_cliente_id_for_produtor, acquire_gate, is_platform_superadmin, platform_private.has_role, h15_actor_organization;
+  os 25 gatilhos de guarda de produção com a mesma definição e HABILITADOS; gatilho de principal só nas variantes testadas
+  (statement `1d053564…` ou linha legado `50392a57…`, corpo da migração 20260519155317); qualquer gatilho extra aborta.
+- Garantias globais NÃO comprovadas em HML pelo repositório: gatilhos de `user_clientes`, `user_roles`, `partner_users`
+  (fora do escopo do alinhamento 01) e o corpo de `sync_user_cliente_principal`. A sonda `00` lista exatamente o que falta.
+- Na variante legado (sem o gatilho statement com filtro de vigência de produção), fail-closed sem mutação:
+  encerrar/substituir o vínculo mais antigo de consultor com outros vigentes (gatilho legado reelege vínculo encerrado); consultor multi -> produtor com principal diferente (exige gatilho statement com filtro de vigência).
+  Todo o restante (transições, B2B explícito, admin só interno, sessões antigas, multiempresa, e-mail, campanhas, rollback) passa.
+
+## Testes rev.6 (PostgreSQL 17.12 descartável; Auth/e-mail sintéticos; não é prova hosted)
+- produção (28 gatilhos verbatim): **170/170**; HML statement: **170/170**;
+  HML legado (26 gatilhos): **168/168** — `evidence-local*.json`.
+- Costura declarada só na cópia /tmp do HML: pin de `is_platform_superadmin` (sintético no harness).
+- Vitest: config/auth/portal 1246/1247 (falha pré-existente `eligibilityDiagnostic.ts`); portais/visitas/clientes/comercial 454/454;
+  monitoramento 166/166 (PostgreSQL completo). `tsgo -b --noEmit` OK; `vite build` OK.
+
+## Instalação (somente após revisão; nada aplicado)
+Ordem por ambiente: sonda → SQL → Edges (gate OFF) → postflight JWT real → gate ON → flag do frontend.
+- Produção: `/dev-server/scripts/user-edit-access-email-links-20261117/candidate.sql.review` · rollback `/dev-server/scripts/user-edit-access-email-links-20261117/rollback.sql.review`
+- HML: sonda `/dev-server/scripts/user-edit-access-email-links-20261117/hml/00-hml-user-topology-probe.sql` (READ ONLY; deve emitir `PROBE PRE_WOULD_PASS`) ·
+  `/dev-server/scripts/user-edit-access-email-links-20261117/hml/candidate-hml.sql.review` · rollback `/dev-server/scripts/user-edit-access-email-links-20261117/hml/rollback-hml.sql.review` · manifesto `/dev-server/scripts/user-edit-access-email-links-20261117/hml/MANIFEST.json`
+- Edges (copiar para `supabase/functions/`):
+  - `/dev-server/scripts/user-edit-access-email-links-20261117/edge/_shared/user-admin/verify-actor.ts` → `supabase/functions/_shared/user-admin/verify-actor.ts`
+  - `/dev-server/scripts/user-edit-access-email-links-20261117/edge/tenant-user-admin/handler.ts` + `index.ts.review` (produção) ou `/dev-server/scripts/user-edit-access-email-links-20261117/hml/edge/tenant-user-admin/index.ts.review` (HML) → `supabase/functions/tenant-user-admin/`
+  - `/dev-server/scripts/user-edit-access-email-links-20261117/edge/user-email-change-sync/handler.ts` + `index.ts.review` (produção) ou `/dev-server/scripts/user-edit-access-email-links-20261117/hml/edge/user-email-change-sync/index.ts.review` (HML) → `supabase/functions/user-email-change-sync/`
+  - Dependências já existentes: `supabase/functions/_shared/comunicacao/cors.ts`; `npm:@supabase/supabase-js@2.110.8`.
+  - Config: verify_jwt padrão (verificação no código); secrets SUPABASE_URL/ANON/SERVICE_ROLE (padrão) + `USER_ADMIN_REFINEMENT_ENABLED`.
+- Frontend: `USER_ADMIN_REFINEMENT_INSTALLED` continua `false` em `src/lib/configuracoes/userAdminRefinement.ts`.
+
+## Testes reais que o pacote HML suporta (postflight)
+JWT A/B reais: admin A × alvo de B; consultor puro/produtor/gestor comercial/parceiro lendo campanhas; mudança de papel com
+sessão antiga e renovada; produtor→interno/B2B; B2B técnico sem gestor; admin só para interno; ator inativo/empresa inativa;
+e-mail com Auth/SMTP de HML. Na variante legado, os itens bloqueados acima devem retornar o erro, nunca sucesso.

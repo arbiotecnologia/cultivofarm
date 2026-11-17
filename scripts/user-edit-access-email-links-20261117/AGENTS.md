@@ -2,3 +2,5 @@
 - Reutilizar `user_roles`, `user_clientes` e `partner_users`; e-mail muda só pelo titular via `auth.updateUser` com o endereço canônico do servidor — sem tabelas, rotas ou links administrativos paralelos.
 - Escritas que tocam `user_clientes`/`profiles` só no núcleo service-only via Edge com o JWT do ator verificado e reautorizado no SQL (admin, tenant, iat > épocas) — o gatilho global de principal grava `profiles.cliente_id` e o guard de profiles nega isso sob JWT.
 - `principal` nunca distingue acesso técnico de produtor; transições encerram todos os vínculos incompatíveis. Testes carregam os gatilhos de produção verbatim e o candidato pina seus md5 — HML difere.
+- Pacote HML só por `hml/build_hml.py` (difere apenas no PRE `$pre5$`); topologias não testadas abortam — nunca afrouxar o PRE de produção nem alterar gatilhos globais.
+- Leitura comercial nunca por vínculo de consultor; rollback nunca restaura `campanhas_cliente_select` antiga.

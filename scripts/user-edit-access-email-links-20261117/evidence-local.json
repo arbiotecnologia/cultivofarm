@@ -1,9 +1,21 @@
 {
- "passed": 147,
- "total": 147,
+ "topology": "prod",
+ "unsupported_in_topology": [],
+ "passed": 170,
+ "total": 170,
  "results": [
   {
-   "name": "gatilhos reais carregados e habilitados (28)",
+   "name": "PRE recusa o pacote da outra topologia (sem mutação)",
+   "pass": true,
+   "detail": "ping\npsql:/tmp/candidate-hml.harness.sql:699: ERROR:  PRE HML drift: not_homolog:homolog_orgs_absent, not_homolog:production_org_present\nCONTEXT:  PL/pgSQL function inline_code_block line 62 at RAISE\n"
+  },
+  {
+   "name": "sonda HML em produção aponta 'não é homologação'",
+   "pass": true,
+   "detail": "['sync_md5=1d053564ccd5fa672a10ec87d5cb0baa', 'not_homolog:homolog_orgs_absent', 'not_homolog:production_org_present', 'function_drift:public.is_platform_superadmin(uuid):c6cc220ca7d7f3393d624ce808f4d6f8']"
+  },
+  {
+   "name": "gatilhos carregados e habilitados (28)",
    "pass": true,
    "detail": ""
   },
@@ -603,6 +615,11 @@
    "detail": ""
   },
   {
+   "name": "rev.6: consultor com vínculo vigente NÃO vê campanha comercial",
+   "pass": true,
+   "detail": ""
+  },
+  {
    "name": "consultor multi -> produtor (principal diferente) sem unique violation",
    "pass": true,
    "detail": ""
@@ -736,6 +753,106 @@
    "name": "serviço de sync sem pedido não altera perfil",
    "pass": true,
    "detail": ""
+  },
+  {
+   "name": "campanha: consultor puro com vínculo vigente não vê",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "campanha: técnico agrônomo com vínculo vigente não vê",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "campanha: produtor com vínculo vigente vê a do seu cliente",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "campanha: gestor comercial (autorização explícita) preservado",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "campanha: administrador preservado",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "campanha: parceiro B2B vê só a campanha B2B do seu parceiro",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "campanha: produtor+consultor (vínculo ambíguo) negado",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "campanha: produtor de outra empresa com vínculo legado cruzado não vê",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "campanha: mudança produtor→consultor (JWT renovado) perde acesso",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "campanha: ex-produtor agora consultor vinculado ao mesmo cliente não vê",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "campanha: mudança consultor→produtor passa a ver (JWT renovado)",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "campanha: JWT antigo após a mudança não vê",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "campanha: produtor com vínculo encerrado não vê",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "ator admin com perfil inativo negado",
+   "pass": true,
+   "detail": "le[],public.app_role[],uuid,uuid,text) line 14 at assignment\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
+  },
+  {
+   "name": "ator admin com senha provisória negado",
+   "pass": true,
+   "detail": "le[],public.app_role[],uuid,uuid,text) line 14 at assignment\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
+  },
+  {
+   "name": "ator admin de empresa inativa negado",
+   "pass": true,
+   "detail": "le[],public.app_role[],uuid,uuid,text) line 14 at assignment\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
+  },
+  {
+   "name": "rev.6: sync de e-mail negado a titular inativo",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "rollback executa",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "após rollback: consultor continua sem campanha e produtor mantém",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "após rollback: núcleo de escrita inalcançável",
+   "pass": true,
+   "detail": ""
   }
  ],
  "snapshots": {
@@ -747,22 +864,22 @@
    "active_links": [
     {
      "principal": false,
-     "cliente_id": "152c6466-a811-444e-a09d-ac4198e5bf1b",
+     "cliente_id": "126a90a5-9f2c-48f8-9742-ab1e9cd5c187",
      "access_level": "read"
     },
     {
      "principal": false,
-     "cliente_id": "291f8b3e-eef2-4b14-bc05-fb9f22ad5140",
+     "cliente_id": "1d6ce099-c87d-4351-be84-91fd3d434c05",
      "access_level": "read"
     },
     {
      "principal": true,
-     "cliente_id": "8c7c9c8c-1779-45d2-a540-3d75a5a27154",
+     "cliente_id": "8162bd64-7f0d-4d8f-b457-0d81b5782dd8",
      "access_level": "read"
     }
    ],
    "partner_users_open": 0,
-   "profile_cliente_id": "8c7c9c8c-1779-45d2-a540-3d75a5a27154"
+   "profile_cliente_id": "8162bd64-7f0d-4d8f-b457-0d81b5782dd8"
   },
   "consultor_multi_depois_produtor": {
    "roles": [
@@ -772,12 +889,12 @@
    "active_links": [
     {
      "principal": true,
-     "cliente_id": "291f8b3e-eef2-4b14-bc05-fb9f22ad5140",
+     "cliente_id": "126a90a5-9f2c-48f8-9742-ab1e9cd5c187",
      "access_level": "read"
     }
    ],
    "partner_users_open": 0,
-   "profile_cliente_id": "291f8b3e-eef2-4b14-bc05-fb9f22ad5140"
+   "profile_cliente_id": "126a90a5-9f2c-48f8-9742-ab1e9cd5c187"
   },
   "produtor_secundario_antes": {
    "roles": [
@@ -787,17 +904,17 @@
    "active_links": [
     {
      "principal": false,
-     "cliente_id": "291f8b3e-eef2-4b14-bc05-fb9f22ad5140",
+     "cliente_id": "126a90a5-9f2c-48f8-9742-ab1e9cd5c187",
      "access_level": "execute"
     },
     {
      "principal": true,
-     "cliente_id": "8c7c9c8c-1779-45d2-a540-3d75a5a27154",
+     "cliente_id": "8162bd64-7f0d-4d8f-b457-0d81b5782dd8",
      "access_level": "execute"
     }
    ],
    "partner_users_open": 0,
-   "profile_cliente_id": "8c7c9c8c-1779-45d2-a540-3d75a5a27154"
+   "profile_cliente_id": "8162bd64-7f0d-4d8f-b457-0d81b5782dd8"
   },
   "produtor_secundario_depois_interno": {
    "roles": [
@@ -824,18 +941,18 @@
    "open_links": 2,
    "active_links": [
     {
-     "principal": false,
-     "cliente_id": "152c6466-a811-444e-a09d-ac4198e5bf1b",
+     "principal": true,
+     "cliente_id": "126a90a5-9f2c-48f8-9742-ab1e9cd5c187",
      "access_level": "execute"
     },
     {
-     "principal": true,
-     "cliente_id": "291f8b3e-eef2-4b14-bc05-fb9f22ad5140",
+     "principal": false,
+     "cliente_id": "1d6ce099-c87d-4351-be84-91fd3d434c05",
      "access_level": "execute"
     }
    ],
    "partner_users_open": 1,
-   "profile_cliente_id": "291f8b3e-eef2-4b14-bc05-fb9f22ad5140"
+   "profile_cliente_id": "126a90a5-9f2c-48f8-9742-ab1e9cd5c187"
   },
   "produtor_b2b_depois": {
    "roles": [
@@ -853,25 +970,19 @@
    "open_links": 2,
    "active_links": [
     {
-     "principal": false,
-     "cliente_id": "152c6466-a811-444e-a09d-ac4198e5bf1b",
+     "principal": true,
+     "cliente_id": "126a90a5-9f2c-48f8-9742-ab1e9cd5c187",
      "access_level": "read"
     },
     {
-     "principal": true,
-     "cliente_id": "291f8b3e-eef2-4b14-bc05-fb9f22ad5140",
+     "principal": false,
+     "cliente_id": "1d6ce099-c87d-4351-be84-91fd3d434c05",
      "access_level": "read"
     }
    ],
    "partner_users_open": 0,
-   "profile_cliente_id": "291f8b3e-eef2-4b14-bc05-fb9f22ad5140"
+   "profile_cliente_id": "126a90a5-9f2c-48f8-9742-ab1e9cd5c187"
   }
  },
- "findings": [
-  {
-   "id": "campanhas_cliente_select",
-   "observado_consultor_ve_campanha": true,
-   "nota": "Política global existente não exige papel cliente_produtor; qualquer vínculo vigente vê campanhas comerciais do cliente. Pré-existente; não alterada (fora do escopo, exige decisão)."
-  }
- ]
+ "findings": []
 }

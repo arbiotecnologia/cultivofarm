@@ -33,7 +33,7 @@ export const CODES = new Set(["forbidden","self_change_denied","not_authenticate
   "invalid_roles","internal_roles_required","b2b_roles_required","internal_roles_not_allowed","admin_grant_requires_internal_user",
   "invalid_remove_roles","incompatible_roles","partner_link_required","no_change","cliente_required","cliente_not_allowed",
   "idempotency_key_required","idempotency_conflict","scope_unprovable","scope_postcondition_failed","not_internal_consultant",
-  "invalid_period","invalid_replace","link_not_active","link_already_active","invalid_reason","invalid_args","unknown_op"]);
+  "principal_sync_incompatible","invalid_period","invalid_replace","link_not_active","link_already_active","invalid_reason","invalid_args","unknown_op"]);
 
 export async function handle(req: Request, d: Deps): Promise<Response> {
   const origin = req.headers.get("Origin");
