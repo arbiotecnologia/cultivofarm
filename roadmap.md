@@ -1,6 +1,6 @@
 ## 17/11 — Reconciliação solicitada no HEAD atual
-- [ ] Integrar somente os ajustes de layout ausentes de e19c46cd, preservando PR01a21a75 e etiquetas atuais.
-- [ ] Executar regressões locais e navegador nos três tamanhos; distinguir prova sintética de sessão real.
+- [x] Integrados os seis arquivos funcionais ausentes de e19c46cd, incluindo sete ajustes visuais e gatilho PDF; PR01a21a75 e etiquetas atuais preservados byte a byte.
+- [x] 508+82 testes locais aprovados; nove cenários Chromium nos três tamanhos, tipos/rolagem/fechar/rodapé sem overflow ou pageerror; identidade simulada, sem prova de sessão real. Build automático OK.
 - [ ] Verificar GitHub/sync e primeiro acesso autenticado completo: bloqueados por conexão não visível ao agente e Supabase external_unmanaged; sem publicação.
 
 ## 16/11 — Logomarca da etiqueta avulsa

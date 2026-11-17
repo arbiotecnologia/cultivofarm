@@ -12,9 +12,11 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 for (const custom of [false, true]) {
   it(`generates one local PDF when opening ${custom ? 'a custom' : 'the default'} trigger and revokes on close`, async () => {
-    render(<PdfPreviewDialog data={{} as Parameters<typeof PdfPreviewDialog>[0]['data']} trigger={custom ? <Button>PDF personalizado</Button> : undefined} />);
+    const data = { empresa: { nome: 'Empresa sintética' }, dataVisita: '2026-11-14' };
+    render(<PdfPreviewDialog data={data} trigger={custom ? <Button>PDF personalizado</Button> : undefined} />);
     fireEvent.click(screen.getByRole('button', { name: custom ? 'PDF personalizado' : 'Visualizar PDF' }));
     await waitFor(() => expect(mocks.generate).toHaveBeenCalledTimes(1));
+    expect(mocks.generate).toHaveBeenCalledWith(data);
     await waitFor(() => expect(screen.getByTitle('PDF Preview')).toHaveAttribute('src', expect.stringContaining('blob:local-preview')));
     fireEvent.click(screen.getByRole('button', { name: 'Fechar' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
