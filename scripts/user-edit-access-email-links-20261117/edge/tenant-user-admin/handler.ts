@@ -11,7 +11,11 @@ export interface Deps {
 const MAX_BODY = 8192;
 const UUIDK = (v: unknown) => typeof v === "string" && /^[0-9a-f-]{36}$/i.test(v);
 const STR = (max: number) => (v: unknown) => typeof v === "string" && v.length <= max;
-const ROLES = (v: unknown) => Array.isArray(v) && v.length <= 12 && v.every((x) => typeof x === "string" && /^[a-z_]{3,40}$/.test(x));
+// Congruente com c_internal ∪ c_external de user_admin_change_access_type_core (candidate.sql.review).
+const ROLE_ALLOWLIST: ReadonlySet<string> = new Set(["administrador", "gestor", "administrativo", "financeiro", "gestor_comercial",
+  "producao", "aplicador", "operador_onfarm", "consultor_tecnico", "tecnico_agronomo", "vendedor",
+  "cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"]);
+const ROLES = (v: unknown) => Array.isArray(v) && v.length <= 12 && v.every((x) => typeof x === "string" && ROLE_ALLOWLIST.has(x));
 const ISO = (v: unknown) => v === null || (typeof v === "string" && v.length <= 40 && !Number.isNaN(Date.parse(v)));
 type Spec = Record<string, { req: boolean; ok: (v: unknown) => boolean }>;
 export const OPS: Record<string, Spec> = {

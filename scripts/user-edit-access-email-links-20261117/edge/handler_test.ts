@@ -87,3 +87,29 @@ Deno.test("sync: gate, JWT forjado, sem alvo no corpo, titular = sub", async () 
   const r = await syncHandle(req({}, { "x-user-id": TGT }), deps({}, c)); assert(r.status === 200 && c.rpc[0][1].p_holder === SUB, "holder=sub");
   const r2 = await syncHandle(req({}), deps({ rpcErr: { code: "42501", message: "forbidden" } })); assert(r2.status === 403, "inactive holder");
 });
+
+// Payloads EXATOS do UserAdminRefinementPanel (edge("change_access_type", {...})).
+const panel = (target: string, roles: string[], remove_roles: string[]) => ({ op: "change_access_type",
+  args: { user_id: TGT, target, roles, remove_roles, idempotency_key: KEY, reason: "motivo válido" } });
+for (const [nome, b] of [
+  ["B2B técnico", panel("b2b", ["parceiro_b2b_tecnico"], [])],
+  ["gestor B2B", panel("b2b", ["parceiro_b2b"], ["financeiro"])],
+  ["gestor+técnico B2B", panel("b2b", ["parceiro_b2b", "parceiro_b2b_tecnico"], [])],
+  ["remoção de papéis B2B ao virar interno", panel("internal", ["gestor"], ["parceiro_b2b", "parceiro_b2b_tecnico"])],
+  ["remoção de papéis B2B ao virar produtor", panel("producer", [], ["parceiro_b2b_tecnico"])],
+] as const) {
+  Deno.test(`painel: ${nome} chega ao SQL com papéis intactos`, async () => {
+    const c = { rpc: [] } as Calls; const r = await adminHandle(req(b), deps({}, c));
+    assert(r.status === 200 && c.rpc.length === 1, `${nome}: ${r.status}`);
+    const sent = JSON.stringify(c.rpc[0][1]);
+    for (const role of [...b.args.roles, ...b.args.remove_roles]) assert(sent.includes(`"${role}"`), `${nome}: ${role}`);
+  });
+}
+Deno.test("papéis desconhecidos/superadmin/variações continuam rejeitados antes do SQL", async () => {
+  for (const bad of ["superadmin", "parceiro_b2b_x", "Parceiro_b2b", "parceiro_b3", "parceiro_b2b ", "admin"]) {
+    for (const b of [panel("b2b", [bad], []), panel("internal", ["gestor"], [bad])]) {
+      const c = { rpc: [] } as Calls; const r = await adminHandle(req(b), deps({}, c));
+      assert(r.status === 400 && c.rpc.length === 0, bad);
+    }
+  }
+});
