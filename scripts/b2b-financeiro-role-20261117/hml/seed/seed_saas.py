@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Assinaturas QA (HML vrlcdwmlytukrjezrrnf) SÓ pelo contrato canônico platform_transition_subscription('start_trial'),
 com JWT real de Platform Superadmin QA. Não cria plano/versão, não escreve tabela, não cobra (pagamentos seguem OFF).
-Usa a versão PUBLICADA vigente que já contenha pedidos_b2b+contas_receber; se nenhuma existir: STOP (não inventa plano).
+Plano: SOMENTE o plano QA novo `qa_fin_20261117` criado por 04 (sem RPC canônica de criação de plano). Versão: rascunho
+platform_save_plan_version_draft com pedidos_b2b+contas_receber -> platform_validate -> platform_publish ('PUBLICAR').
+Nunca usa/edita planos existentes (os QA 78000000…0001/7e570000…00b1 e reais ficam intocados).
 Recusa tenant que já tenha assinatura. Estado retomável (correlações) em qa-saas-state.json; motivo fixo 'QA-FIN-20261117 …'
 é o que 05/06 usam para distinguir histórico QA. Desfazer: 06-cleanup-hml.sql.review (remove histórico/assinatura QA)."""
 import json, os, sys, urllib.request, urllib.error, uuid
@@ -27,10 +29,22 @@ def pick_version(rows):
 if __name__ == "__main__":
     st = json.load(open(ST)) if os.path.exists(ST) else {"ref": REF, "orgs": {}}
     need(st["ref"] == REF, "estado de outro ref")
-    s, rows = call("GET", "/rest/v1/saas_plan_versions?status=eq.PUBLISHED&effective_to=is.null&select=id,features_snapshot")
-    need(s == 200 and isinstance(rows, list), f"leitura versões {s}")
-    ver = st.get("version") or pick_version(rows); need(ver, "nenhuma versão publicada com pedidos_b2b+contas_receber — não criar plano aqui")
-    st["version"] = ver
+    s, pl = call("GET", "/rest/v1/saas_plans?key=eq.qa_fin_20261117&select=id,key")
+    need(s == 200 and isinstance(pl, list) and len(pl) == 1, "plano QA ausente — rodar 04-seed-plan-hml.sql.review")
+    for k in ("draft_key", "publish_key"): st.setdefault(k, str(uuid.uuid4()))
+    json.dump(st, open(ST, "w"), indent=1)
+    if not st.get("version"):
+        s, d = call("POST", "/rest/v1/rpc/platform_save_plan_version_draft", {"_draft_id": st.get("draft"), "_plan_key": "qa_fin_20261117",
+            "_price_amount": 0, "_currency": "BRL", "_billing_cycle": "monthly", "_trial_days": 30, "_limits": {}, "_effective_from": None,
+            "_features": [{"feature_key": k, "enabled": True} for k in sorted(NEED)], "_reason": REASON, "_idempotency_key": st["draft_key"]})
+        need(s == 200 and d, f"rascunho {s} {d}"); st["draft"] = d; json.dump(st, open(ST, "w"), indent=1)
+        s, chk = call("POST", "/rest/v1/rpc/platform_validate_plan_version_draft", {"_draft_id": d})
+        need(s == 200 and chk.get("valid") and chk.get("complete"), f"validação {s} {chk}")
+        s, v = call("POST", "/rest/v1/rpc/platform_publish_plan_version_draft", {"_draft_id": d, "_reason": REASON, "_idempotency_key": st["publish_key"], "_confirmation": "PUBLICAR"})
+        need(s == 200 and v, f"publicação {s} {v}"); st["version"] = v; json.dump(st, open(ST, "w"), indent=1)
+    s, rows = call("GET", f"/rest/v1/saas_plan_versions?id=eq.{st['version']}&select=id,status,features_snapshot")
+    need(s == 200 and len(rows) == 1 and rows[0]["status"] == "PUBLISHED" and pick_version(rows), "versão QA não publicada com as 2 funcionalidades")
+    ver = st["version"]
     for org in ORGS:
         o = st["orgs"].setdefault(org, {"corr": str(uuid.uuid4())})
         json.dump(st, open(ST, "w"), indent=1)  # correlação persistida ANTES do dispatch: retomada é replay idempotente

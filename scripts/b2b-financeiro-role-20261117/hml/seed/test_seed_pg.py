@@ -56,18 +56,24 @@ CREATE TRIGGER nd BEFORE DELETE ON public.organization_subscription_history FOR 
 CREATE TRIGGER nd BEFORE DELETE ON public.financial_audit_log FOR EACH ROW EXECUTE FUNCTION public.saas_no_delete();
 INSERT INTO public.organizations VALUES ('{A}','QA A'),('{C}','QA C'),('00000000-0000-0000-0000-0000000000ff','Negócio');
 INSERT INTO public.financial_categories(name,type) VALUES ('Receita QA-ref','RECEITA');
-INSERT INTO public.partner_accounts(razao_social, commercial_owner_organization_id) VALUES ('QA-FIN-A','{A}'),('QA-FIN-B','{A}'),('QA-FIN-C','{C}'),('Parceiro de negócio','00000000-0000-0000-0000-0000000000ff');
-INSERT INTO auth.users VALUES ('30000000-0000-0000-0000-000000000001','qa-fin-fin_a-1@x'),('30000000-0000-0000-0000-000000000009','real@cliente');
-INSERT INTO public.profiles VALUES ('30000000-0000-0000-0000-000000000001','QA'),('30000000-0000-0000-0000-000000000009','Real');
-INSERT INTO public.partner_users(user_id, partner_id, papel) SELECT '30000000-0000-0000-0000-000000000001', id, 'financeiro' FROM public.partner_accounts WHERE razao_social='QA-FIN-A';
-WITH s AS (INSERT INTO public.organization_subscriptions(organization_id) VALUES ('{A}'),('{C}') RETURNING id, organization_id)
- INSERT INTO public.organization_subscription_history(subscription_id, organization_id, reason) SELECT id, organization_id, 'QA-FIN-20261117 fixture' FROM s;
+INSERT INTO public.partner_accounts(id, razao_social, commercial_owner_organization_id) VALUES ('cdb78993-89e4-48db-956e-f40b014a8146','Parceiro QA A','{A}'),('9d53f280-f828-4af8-a08c-3574263dc466','Parceiro QA B','{A}'),('6100c3ac-ff5b-4596-a0e3-92665a5dcaab','Parceiro QA C','{C}'),('d7edc250-25a4-4ee2-8b62-27c1645cdfc0','Parceiro de negócio','00000000-0000-0000-0000-0000000000ff');
+INSERT INTO auth.users VALUES ('7d15eddb-38b6-43dd-bbf5-43936155321d','fin-a@x'),('1d0ea582-1d46-4152-8fbe-f425c74942c1','gestor-a@x'),('30000000-0000-0000-0000-000000000009','real@cliente');
+INSERT INTO public.profiles VALUES ('7d15eddb-38b6-43dd-bbf5-43936155321d','QA'),('1d0ea582-1d46-4152-8fbe-f425c74942c1','QA G'),('30000000-0000-0000-0000-000000000009','Real');
+INSERT INTO public.partner_users(user_id, partner_id, papel) VALUES ('7d15eddb-38b6-43dd-bbf5-43936155321d','cdb78993-89e4-48db-956e-f40b014a8146','financeiro'),('1d0ea582-1d46-4152-8fbe-f425c74942c1','cdb78993-89e4-48db-956e-f40b014a8146','gestor');
+CREATE TABLE public.saas_plans(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), key text UNIQUE NOT NULL, name text NOT NULL, description text, active boolean, is_default boolean);
+CREATE TABLE public.saas_plan_versions(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), plan_id uuid NOT NULL REFERENCES public.saas_plans, status text, features_snapshot jsonb);
+CREATE TABLE public.saas_plan_version_audit(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), plan_version_id uuid, action text);
+ALTER TABLE public.organization_subscriptions ADD COLUMN plan_version_id uuid REFERENCES public.saas_plan_versions;
+CREATE TRIGGER nd BEFORE DELETE ON public.saas_plan_versions FOR EACH ROW EXECUTE FUNCTION public.saas_no_delete();
+INSERT INTO public.saas_plans(id,key,name,active) VALUES ('78000000-0000-4f00-8127-000000000001','qa_outro','QA outro',true),('7e570000-0000-4000-8000-0000000000b1','real','Real',true);
+INSERT INTO public.saas_plan_versions(plan_id,status) VALUES ('7e570000-0000-4000-8000-0000000000b1','PUBLISHED');
+GRANT SELECT, INSERT, DELETE ON ALL TABLES IN SCHEMA public TO qa_other;
 """
 BUSINESS = """ALTER TABLE public.accounts_receivable DISABLE TRIGGER a_homolog;  -- só no banco descartável: linha de negócio pré-existente
 INSERT INTO public.accounts_receivable(origin_type, description, category_id, total_amount, first_due_date, installment_count, partner_id, organization_id)
- SELECT 'MANUAL','Negócio real', (SELECT id FROM public.financial_categories), 10, current_date, 1, id, commercial_owner_organization_id FROM public.partner_accounts WHERE razao_social='Parceiro de negócio';
+ SELECT 'MANUAL','Negócio real', (SELECT id FROM public.financial_categories), 10, current_date, 1, id, commercial_owner_organization_id FROM public.partner_accounts WHERE id='d7edc250-25a4-4ee2-8b62-27c1645cdfc0';
 ALTER TABLE public.accounts_receivable ENABLE TRIGGER a_homolog;"""
-SEED = (D / "05-seed-hml.sql.review").read_text(); CLEAN = (D / "06-cleanup-hml.sql.review").read_text()
+PLAN = (D / "04-seed-plan-hml.sql.review").read_text(); SEED = (D / "05-seed-hml.sql.review").read_text(); CLEAN = (D / "06-cleanup-hml.sql.review").read_text()
 MD5 = "SELECT md5(prosrc)||'|'||md5(pg_get_functiondef(oid)) FROM pg_proc WHERE proname IN ('homolog_validation_block_receivable_insert','fn_h6d_block_hard_delete','saas_no_delete','fn_financial_audit') ORDER BY proname;"
 COUNT = "SELECT (SELECT count(*) FROM public.accounts_receivable)||','||(SELECT count(*) FROM public.accounts_receivable_installments)||','||(SELECT count(*) FROM public.partner_order_financial_links)||','||(SELECT count(*) FROM public.financial_audit_log)||','||(SELECT count(*) FROM public.partner_accounts);"
 try:
@@ -76,11 +82,18 @@ try:
     # 1) impressão digital: sem a função homolog (como produção) o seed recusa sem efeitos
     psql("CREATE TABLE public.organizations(id uuid);"); psql(SEED, err="QA_SEED_REFUSED: impressão digital HML ausente"); psql("DROP TABLE public.organizations;"); ok("recusa alvo sem impressão digital HML")
     psql(SCHEMA); psql(BUSINESS); base_md5 = psql(MD5); base = psql(COUNT)
+    psql(SEED, err="QA_SEED_REFUSED: rodar 04"); ok("05 exige 04 + seed_saas")
+    psql(PLAN, user="qa_other", err="QA_SEED_REFUSED: session_user"); psql(PLAN); psql(PLAN, err="QA_SEED_REFUSED: seed anterior existe"); ok("04 cria plano QA novo uma vez")
+    SAAS = """WITH v AS (INSERT INTO public.saas_plan_versions(plan_id,status,features_snapshot) SELECT id,'PUBLISHED','[{"feature_key":"pedidos_b2b"},{"feature_key":"contas_receber"}]' FROM public.saas_plans WHERE key='qa_fin_20261117' RETURNING id),
+ a AS (INSERT INTO public.saas_plan_version_audit(plan_version_id,action) SELECT id,'published' FROM v),
+ s AS (INSERT INTO public.organization_subscriptions(organization_id,plan_version_id) SELECT o, v.id FROM v, unnest('{%s,%s}'::uuid[]) o RETURNING id, organization_id)
+ INSERT INTO public.organization_subscription_history(subscription_id, organization_id, reason) SELECT id, organization_id, 'QA-FIN-20261117 fixture' FROM s;""" % (A, C)
+    psql(SAAS)  # simula seed_saas.py (RPCs canônicas no HML real)
     # 2) não-postgres recusado
     psql(SEED, user="qa_other", err="QA_SEED_REFUSED: session_user"); ok("recusa sessão não-postgres")
     # 3) falha no meio: rollback integral e corpo homolog intacto
     psql("CREATE FUNCTION public.boom() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'GUARD_REAL_X'; END$$; CREATE TRIGGER boom BEFORE INSERT ON public.partner_order_financial_links FOR EACH ROW EXECUTE FUNCTION public.boom();")
-    psql(SEED, err="GUARD_REAL_X"); assert psql(MD5) == base_md5 and psql(COUNT) == base and psql("SELECT to_regnamespace('qa_b2bfin') IS NULL") == "t"
+    psql(SEED, err="GUARD_REAL_X"); assert psql(MD5) == base_md5 and psql(COUNT) == base and psql("SELECT count(*) FROM qa_b2bfin.manifest WHERE kind='receivable'") == "0"
     psql("DROP TRIGGER boom ON public.partner_order_financial_links;"); ok("outra guarda recusa -> rollback total, exceção nunca persiste")
     # 4) seed real
     out = psql(SEED); assert psql(MD5) == base_md5, "corpo não restaurado"
@@ -95,14 +108,16 @@ try:
     psql(SEED, err="QA_SEED_REFUSED: seed anterior existe"); ok("seed não duplica")
     psql("ALTER TABLE qa_b2bfin.manifest OWNER TO postgres;"); psql("SELECT * FROM qa_b2bfin.manifest", user="qa_other", err="permission denied"); ok("manifesto inacessível a outros papéis")
     # 5) limpeza: exige negar se semente atingir tabela protegida
-    psql("CREATE TABLE public.saas_plans(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), note text); INSERT INTO public.saas_plans(note) SELECT 'ref '||id FROM public.partner_accounts WHERE razao_social='QA-FIN-A';")
-    psql(CLEAN, err="QA_CLEAN_REFUSED: referência em tabela protegida public.saas_plans"); assert psql(MD5) == base_md5; psql("DROP TABLE public.saas_plans;"); ok("limpeza recusa tocar tabela protegida (rollback)")
+    psql("UPDATE public.saas_plans SET description='ref cdb78993-89e4-48db-956e-f40b014a8146' WHERE key='real';")
+    psql(CLEAN, err="QA_CLEAN_REFUSED: referência em tabela protegida"); assert psql(MD5) == base_md5
+    psql("UPDATE public.saas_plans SET description=NULL WHERE key='real';"); ok("limpeza recusa tocar plano não-QA (rollback)")
     out = psql(CLEAN); assert "QA_CLEAN_PASS" in out
     assert psql(MD5) == base_md5 and psql(COUNT) == "1,1,0,1,1" and psql("SELECT to_regnamespace('qa_b2bfin') IS NULL") == "t", psql(COUNT)
-    assert psql("SELECT count(*) FROM public.organization_subscriptions")=="0" and psql("SELECT count(*) FROM public.organizations")=="3" and psql("SELECT nome FROM public.profiles")=="Real" and psql("SELECT count(*) FROM auth.users")=="2"
+    assert psql("SELECT count(*) FROM public.organization_subscriptions")=="0" and psql("SELECT count(*) FROM public.organizations")=="3" and psql("SELECT nome FROM public.profiles")=="Real" and psql("SELECT count(*) FROM auth.users")=="3"
+    assert psql("SELECT string_agg(key,',' ORDER BY key) FROM public.saas_plans")=="qa_outro,real" and psql("SELECT count(*) FROM public.saas_plan_versions")=="1" and psql("SELECT count(*) FROM public.saas_plan_version_audit")=="0"
     ok("limpeza remove títulos/parcelas/vínculos/pedidos/auditoria/assinaturas/parceiros/perfis QA; negócio, tenants e auth intactos; corpos restaurados")
     psql("DELETE FROM public.accounts_receivable;", err="H6D_NO_DELETE"); ok("no-delete restaurado após limpeza")
-    v = psql((D / "07-verify-clean-hml.sql.readonly").read_text()); assert v.startswith("QA_VERIFY|t|0|0|0|1|0|"), v; ok("07 verifica limpo (auth qa-fin restante = remover via Admin API)")
+    v = psql((D / "07-verify-clean-hml.sql.readonly").read_text()); assert v.startswith("QA_VERIFY|t|0|0|0|0|0|2|0|"), v; ok("07 verifica limpo (auth qa-fin restante = remover via Admin API)")
 finally:
     subprocess.run(PRIV + ["pg_ctl", "-D", str(TMP/"d"), "stop", "-m", "immediate"], capture_output=True)
     (D / "evidence-seed-local.json").write_text(json.dumps({"synthetic_schema": True, "proves_hml_triggers": False, "results": R}, indent=1, ensure_ascii=False))

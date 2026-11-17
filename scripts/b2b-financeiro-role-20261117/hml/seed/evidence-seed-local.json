@@ -7,6 +7,14 @@
    "status": "PASS"
   },
   {
+   "name": "05 exige 04 + seed_saas",
+   "status": "PASS"
+  },
+  {
+   "name": "04 cria plano QA novo uma vez",
+   "status": "PASS"
+  },
+  {
    "name": "recusa sessão não-postgres",
    "status": "PASS"
   },
@@ -43,7 +51,7 @@
    "status": "PASS"
   },
   {
-   "name": "limpeza recusa tocar tabela protegida (rollback)",
+   "name": "limpeza recusa tocar plano não-QA (rollback)",
    "status": "PASS"
   },
   {

@@ -15,11 +15,19 @@ DO $$ BEGIN
 END $$;
 {{LIB}}
 INSERT INTO qa_b2bfin.ticket VALUES (txid_current(), 'cleanup');
+CREATE FUNCTION qa_b2bfin.own_plan_row(t regclass, h text) RETURNS boolean LANGUAGE plpgsql SET search_path TO '' AS $f$
+DECLARE j jsonb; qp uuid := (SELECT id FROM public.saas_plans WHERE key = 'qa_fin_20261117');
+BEGIN
+ IF qp IS NULL THEN RETURN false; END IF;
+ EXECUTE format('SELECT to_jsonb(x) FROM %s x WHERE md5(to_jsonb(x)::text) = %L', t, h) INTO j;
+ RETURN coalesce((j->>'id') = qp::text, false) OR coalesce((j->>'plan_id') = qp::text, false)
+  OR coalesce((j->>'plan_version_id') IN (SELECT id::text FROM public.saas_plan_versions WHERE plan_id = qp), false);  -- NULL nunca autoriza
+END $f$;
 CREATE TEMP TABLE qa_seed(id uuid PRIMARY KEY) ON COMMIT DROP;
 CREATE TEMP TABLE qa_hit(tbl regclass, rowhash text, id uuid, PRIMARY KEY (tbl, rowhash)) ON COMMIT DROP;
 INSERT INTO qa_seed SELECT id FROM qa_b2bfin.manifest ON CONFLICT DO NOTHING;
-INSERT INTO qa_seed SELECT id FROM public.partner_accounts WHERE razao_social LIKE 'QA-FIN-%' ON CONFLICT DO NOTHING;
-INSERT INTO qa_seed SELECT id FROM auth.users WHERE email LIKE 'qa-fin-%' ON CONFLICT DO NOTHING;  -- leitura apenas
+INSERT INTO qa_seed VALUES ('cdb78993-89e4-48db-956e-f40b014a8146'),('9d53f280-f828-4af8-a08c-3574263dc466'),('6100c3ac-ff5b-4596-a0e3-92665a5dcaab'),('7d15eddb-38b6-43dd-bbf5-43936155321d'),('5db79a8e-82af-419d-ae66-87a98c02fbec'),('c3ed723f-1017-478e-99b2-25b48b3ab77e'),('1d0ea582-1d46-4152-8fbe-f425c74942c1'),('51652ab6-da23-4a3d-8f29-417af15cc761') ON CONFLICT DO NOTHING;  -- parceiros/usuários QA exatos do root
+INSERT INTO qa_seed SELECT id FROM public.saas_plans WHERE key = 'qa_fin_20261117' ON CONFLICT DO NOTHING;
 DO $$
 DECLARE c record; lvl int; n bigint; q text;
  protected text[] := '{public.organizations,public.saas_plans,public.saas_plan_versions,public.saas_plan_version_features,public.saas_features,public.financial_categories,public.payment_methods,public.configuracoes_sistema}';
@@ -37,7 +45,8 @@ BEGIN
   END LOOP;
   INSERT INTO qa_seed SELECT id FROM qa_hit WHERE id IS NOT NULL ON CONFLICT DO NOTHING;
  END LOOP;
- IF EXISTS (SELECT 1 FROM qa_hit h JOIN unnest(protected) x ON to_regclass(x) = h.tbl) THEN RAISE EXCEPTION 'QA_CLEAN_REFUSED: referência em tabela protegida %', (SELECT string_agg(DISTINCT x, ',') FROM qa_hit h JOIN unnest(protected) x ON to_regclass(x) = h.tbl); END IF;
+ -- tabelas protegidas: só linhas do PRÓPRIO plano QA (id/plan_id/plan_version_id manifestado ou plano qa_fin_20261117)
+ IF EXISTS (SELECT 1 FROM qa_hit h JOIN unnest(protected) x ON to_regclass(x) = h.tbl WHERE NOT qa_b2bfin.own_plan_row(h.tbl, h.rowhash)) THEN RAISE EXCEPTION 'QA_CLEAN_REFUSED: referência em tabela protegida %', (SELECT string_agg(DISTINCT x, ',') FROM qa_hit h JOIN unnest(protected) x ON to_regclass(x) = h.tbl WHERE NOT qa_b2bfin.own_plan_row(h.tbl, h.rowhash)); END IF;
  SELECT count(*) INTO n FROM qa_hit; IF n > 5000 THEN RAISE EXCEPTION 'QA_CLEAN_REFUSED: % linhas — volume não plausível para fixtures', n; END IF;
  IF EXISTS (SELECT 1 FROM qa_hit WHERE id IN ('d7edc250-25a4-4ee2-8b62-27c1645cdfc0','525fea87-e27e-43f7-af7b-a30064188332','85ba8b71-8514-4ec9-90d3-bfc7ab3ed214')) THEN RAISE EXCEPTION 'QA_CLEAN_REFUSED: linha protegida atingida'; END IF;
  INSERT INTO qa_b2bfin.rowmark SELECT rowhash, tbl FROM qa_hit ON CONFLICT DO NOTHING;
@@ -68,5 +77,5 @@ END $$;
 SELECT 'QA_CLEAN_DELETED' k, jsonb_object_agg(tbl::text, n) v FROM (SELECT tbl, count(*) n FROM qa_hit GROUP BY tbl) x;
 SELECT 'QA_CLEAN_RESTORED' k, qa_b2bfin.restore_all() v;
 DROP SCHEMA qa_b2bfin CASCADE;
-SELECT 'QA_CLEAN_PASS' k, (SELECT count(*) FROM auth.users WHERE email LIKE 'qa-fin-%') auth_qa_restantes_remover_via_admin_api;
+SELECT 'QA_CLEAN_PASS' k, (SELECT count(*) FROM auth.users WHERE id IN ('7d15eddb-38b6-43dd-bbf5-43936155321d','5db79a8e-82af-419d-ae66-87a98c02fbec','c3ed723f-1017-478e-99b2-25b48b3ab77e','1d0ea582-1d46-4152-8fbe-f425c74942c1','51652ab6-da23-4a3d-8f29-417af15cc761')) auth_qa_restantes_remover_via_admin_api;
 COMMIT;

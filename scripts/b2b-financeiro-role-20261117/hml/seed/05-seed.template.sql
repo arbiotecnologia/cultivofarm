@@ -1,7 +1,7 @@
 -- GERADO por build_seed.py a partir de 05-seed.template.sql + _lib.sql; não editar.
 -- SEED QA Financeiro B2B — SOMENTE HML vrlcdwmlytukrjezrrnf, como postgres, numa única transação (SQL editor do HML).
--- Pré-requisitos: 02c instalado (POST_02C_PASS), parceiros QA-FIN-A/B/C criados pelo root, assinaturas QA ativas via
--- seed_saas.py (motivo 'QA-FIN-20261117'). Cria por parceiro 1 pedido + 1 título B2B_ORDER + parcelas + vínculo, com IDs
+-- Pré-requisitos: 04 (plano QA) + seed_saas.py (versão QA publicada e start_trial, motivo 'QA-FIN-20261117'); parceiros e
+-- usuários QA já criados pelo root, identificados por IDs fixos (não recriados). Cria por parceiro 1 pedido + 1 título B2B_ORDER + parcelas + vínculo, com IDs
 -- manifestados em qa_b2bfin.manifest. Única exceção: o bloqueio homolog de inserção de títulos, relaxado só para
 -- postgres + ticket desta txid + IDs manifestados com descrição QA-FIN-, e restaurado (def/md5 idênticos) ANTES do COMMIT.
 -- Nenhum gatilho é desativado; todas as demais guardas executam normalmente e qualquer recusa aborta tudo. Sem NF/cobrança.
@@ -12,22 +12,21 @@ DO $$ BEGIN
  IF to_regprocedure('platform_private.homolog_validation_block_receivable_insert()') IS NULL THEN RAISE EXCEPTION 'QA_SEED_REFUSED: impressão digital HML ausente — alvo não é vrlcdwmlytukrjezrrnf'; END IF;
  IF to_regprocedure('platform_private.b2b_credit_balances(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'QA_SEED_REFUSED: cadeia B4 presente — alvo parece produção'; END IF;
  IF (SELECT count(*) FROM public.organizations WHERE id IN ('525fea87-e27e-43f7-af7b-a30064188332','85ba8b71-8514-4ec9-90d3-bfc7ab3ed214')) <> 2 THEN RAISE EXCEPTION 'QA_SEED_REFUSED: tenants QA ausentes'; END IF;
- IF to_regnamespace('qa_b2bfin') IS NOT NULL THEN RAISE EXCEPTION 'QA_SEED_REFUSED: seed anterior existe — rodar 06 antes'; END IF;
- IF EXISTS (SELECT 1 FROM public.partner_accounts WHERE id = 'd7edc250-25a4-4ee2-8b62-27c1645cdfc0' AND razao_social LIKE 'QA-FIN-%') THEN RAISE EXCEPTION 'QA_SEED_REFUSED: fixture proibida'; END IF;
+ IF to_regclass('qa_b2bfin.manifest') IS NULL THEN RAISE EXCEPTION 'QA_SEED_REFUSED: rodar 04 e seed_saas.py antes'; END IF;
+ IF NOT EXISTS (SELECT 1 FROM qa_b2bfin.manifest WHERE kind='qa_plan') THEN RAISE EXCEPTION 'QA_SEED_REFUSED: rodar 04 e seed_saas.py antes'; END IF;
+ IF EXISTS (SELECT 1 FROM qa_b2bfin.manifest WHERE kind='receivable') THEN RAISE EXCEPTION 'QA_SEED_REFUSED: seed anterior existe — rodar 06 antes'; END IF;
 END $$;
-CREATE SCHEMA qa_b2bfin; REVOKE ALL ON SCHEMA qa_b2bfin FROM PUBLIC;
-CREATE TABLE qa_b2bfin.manifest(kind text NOT NULL, label text, tbl regclass NOT NULL, id uuid NOT NULL, PRIMARY KEY (tbl, id));
 {{LIB}}
 INSERT INTO qa_b2bfin.ticket VALUES (txid_current(), 'seed');
 SELECT qa_b2bfin.relax('platform_private.homolog_validation_block_receivable_insert()'::regprocedure);
 DO $$
-DECLARE k text; pid uuid; org uuid; cat uuid; oid_ uuid; rid uuid; n int; orgs uuid[] := '{525fea87-e27e-43f7-af7b-a30064188332,85ba8b71-8514-4ec9-90d3-bfc7ab3ed214}';
+DECLARE pmap jsonb := '{"A":["cdb78993-89e4-48db-956e-f40b014a8146","525fea87-e27e-43f7-af7b-a30064188332"],"B":["9d53f280-f828-4af8-a08c-3574263dc466","525fea87-e27e-43f7-af7b-a30064188332"],"C":["6100c3ac-ff5b-4596-a0e3-92665a5dcaab","85ba8b71-8514-4ec9-90d3-bfc7ab3ed214"]}'; k text; pid uuid; org uuid; cat uuid; oid_ uuid; rid uuid; n int; orgs uuid[] := '{525fea87-e27e-43f7-af7b-a30064188332,85ba8b71-8514-4ec9-90d3-bfc7ab3ed214}';
 BEGIN
  SELECT id INTO cat FROM public.financial_categories WHERE active AND upper(type) = 'RECEITA' ORDER BY created_at, id LIMIT 1;
  IF cat IS NULL THEN RAISE EXCEPTION 'QA_SEED_BLOCKED: nenhuma categoria RECEITA ativa (não criada pelo seed)'; END IF;
  FOR k IN SELECT unnest('{A,B,C}'::text[]) LOOP
-  SELECT id, commercial_owner_organization_id INTO STRICT pid, org FROM public.partner_accounts WHERE razao_social LIKE 'QA-FIN-' || k || '%' AND deleted_at IS NULL;
-  IF NOT org = ANY (orgs) THEN RAISE EXCEPTION 'QA_SEED_REFUSED: parceiro % fora dos tenants QA', k; END IF;
+  SELECT id, commercial_owner_organization_id INTO STRICT pid, org FROM public.partner_accounts WHERE id = (pmap->k->>0)::uuid AND deleted_at IS NULL;
+  IF org IS DISTINCT FROM (pmap->k->>1)::uuid THEN RAISE EXCEPTION 'QA_SEED_REFUSED: parceiro % fora do tenant QA esperado', k; END IF;
   INSERT INTO qa_b2bfin.manifest VALUES ('partner', k, 'public.partner_accounts', pid);
   INSERT INTO qa_b2bfin.manifest SELECT 'partner_user', k, 'public.partner_users', id FROM public.partner_users WHERE partner_id = pid;
   IF EXISTS (SELECT 1 FROM public.accounts_receivable WHERE partner_id = pid) OR EXISTS (SELECT 1 FROM public.partner_orders WHERE partner_id = pid) THEN RAISE EXCEPTION 'QA_SEED_REFUSED: parceiro % já tem pedidos/títulos', k; END IF;
@@ -51,6 +50,8 @@ BEGIN
  END LOOP;
  -- assinaturas criadas por seed_saas.py: só registradas se TODO o histórico tiver motivo QA (senão é assinatura real).
  IF EXISTS (SELECT 1 FROM public.organization_subscription_history h WHERE h.organization_id = ANY (orgs) AND h.reason NOT LIKE 'QA-FIN-20261117%') THEN RAISE EXCEPTION 'QA_SEED_REFUSED: histórico de assinatura não-QA nos tenants'; END IF;
+ INSERT INTO qa_b2bfin.manifest SELECT 'qa_version', 'qa_fin_20261117', 'public.saas_plan_versions', v.id FROM public.saas_plan_versions v WHERE v.plan_id = (SELECT id FROM qa_b2bfin.manifest WHERE kind='qa_plan');
+ IF EXISTS (SELECT 1 FROM public.organization_subscriptions s WHERE s.organization_id = ANY (orgs) AND s.plan_version_id NOT IN (SELECT id FROM qa_b2bfin.manifest WHERE kind='qa_version')) THEN RAISE EXCEPTION 'QA_SEED_REFUSED: assinatura fora do plano QA'; END IF;
  INSERT INTO qa_b2bfin.manifest SELECT 'subscription', organization_id::text, 'public.organization_subscriptions', id FROM public.organization_subscriptions WHERE organization_id = ANY (orgs);
 END $$;
 DO $$ BEGIN IF (SELECT count(*) FROM qa_b2bfin.manifest WHERE kind='receivable') <> 3 OR (SELECT count(*) FROM qa_b2bfin.manifest WHERE kind='installment') < 3 THEN RAISE EXCEPTION 'QA_SEED_INCOMPLETE'; END IF; END $$;
