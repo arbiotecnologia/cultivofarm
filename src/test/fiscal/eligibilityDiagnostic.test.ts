@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 const { rpc, from, functions } = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn(), functions: { invoke: vi.fn() } }));
 rpc.mockImplementation(() => Promise.resolve({ data: null, error: null }));
-vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc, from, functions, bind: undefined } }));
-import { runEligibilityDiagnostic, isPreviewHost, isDiagnosticOpen, summarize } from "@/lib/fiscal/eligibilityDiagnostic";
+vi.mock("@/integrations/supabase/client", () => ({ SUPABASE_URL: "https://swzpzcwiasxmjutrmvkm.supabase.co", supabase: { rpc, from, functions, bind: undefined } }));
+import { runEligibilityDiagnostic, databaseHost, isPreviewHost, isDiagnosticOpen, summarize } from "@/lib/fiscal/eligibilityDiagnostic";
 
 const ID = "11111111-2222-4333-8444-555555555555";
 beforeEach(() => { rpc.mockReset(); from.mockReset(); functions.invoke.mockReset(); });
@@ -34,5 +34,17 @@ describe("diagnóstico de elegibilidade", () => {
     expect(s).toMatchObject({ eligible: true, hasOrderId: true, hasDebtorPartnerId: true, orderMatchesInput: true });
     const h = summarize("2-args", "ENTREGA", ID, { eligible: false, reasons: [{ code: "FISCAL_SOURCE_NOT_FOUND" }] }, null);
     expect(h).toMatchObject({ codes: ["FISCAL_SOURCE_NOT_FOUND"], hasOrderId: false, orderMatchesInput: null });
+  });
+});
+
+describe("databaseHost usa o cliente canônico", () => {
+  afterEach(() => { vi.unstubAllEnvs(); });
+  it("ignora VITE_SUPABASE_URL divergente", () => {
+    vi.stubEnv("VITE_SUPABASE_URL", "https://yzszlzjpovmcteuxjznj.supabase.co");
+    expect(databaseHost()).toBe("swzpzcwiasxmjutrmvkm.supabase.co");
+  });
+  it("funciona com VITE_SUPABASE_URL ausente", () => {
+    vi.stubEnv("VITE_SUPABASE_URL", undefined as unknown as string);
+    expect(databaseHost()).toBe("swzpzcwiasxmjutrmvkm.supabase.co");
   });
 });

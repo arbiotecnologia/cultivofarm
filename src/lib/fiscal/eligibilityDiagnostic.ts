@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL } from "@/integrations/supabase/client";
 
 /** Painel de diagnóstico temporário (somente leitura). Expira e fecha sozinho. */
 export const ELIGIBILITY_DIAGNOSTIC_EXPIRES_AT = "2026-11-18T23:59:59Z";
@@ -81,5 +81,5 @@ export async function runEligibilityDiagnostic(type: EligibilitySourceType, rawI
 }
 
 export function databaseHost(): string {
-  try { return new URL(import.meta.env.VITE_SUPABASE_URL as string).hostname; } catch { return "desconhecido"; }
+  try { return new URL(SUPABASE_URL).hostname; } catch { return "desconhecido"; }
 }

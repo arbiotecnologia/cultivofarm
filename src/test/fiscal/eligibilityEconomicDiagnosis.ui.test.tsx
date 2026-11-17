@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor, within, cleanup } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach } from "vitest";
 const mocks = vi.hoisted(() => ({ rpc: vi.fn(), profile: { organization_id: "local-company", ativo: true } }));
-vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: mocks.rpc } }));
+vi.mock("@/integrations/supabase/client", () => ({ SUPABASE_URL: "https://swzpzcwiasxmjutrmvkm.supabase.co", supabase: { rpc: mocks.rpc } }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ profile: mocks.profile, user: { id: "local-user" } }) }));
 import Page from "@/pages/fiscal/DiagnosticoElegibilidade";
 import { summarize } from "@/lib/fiscal/eligibilityDiagnostic";
