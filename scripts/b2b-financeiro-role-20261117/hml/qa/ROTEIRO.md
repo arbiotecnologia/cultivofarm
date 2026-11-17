@@ -45,3 +45,7 @@ Não verificado: endpoint `tenant-user-admin` não está no repositório (implan
 - Demais rotinas da transição (C9): md5 HML = produção.
 - create-user HML v2 só aceita papéis internos: `provision_fixtures.py` cria interno `aplicador`, transiciona para `b2b_finance` (cria vínculo) e, para gestor/técnico, segue `b2b_finance → b2b` pelo contrato canônico. Nenhum provisionador paralelo.
 - Bloqueio de fixture: HML tem um único parceiro sintético e zero pedidos/títulos. A/B/C exigem que o root cadastre `QA-FIN-A/B/C` pelo cadastro comercial canônico; sem isso o script para. Títulos: `BLOCKED_NO_ROWS` (ver `../LIMITES-PROVA.md`).
+
+## Estado real HML (root, 17/11 22:28) e próximo passo
+Instalados: `b2b_finance_role_hml_enum_20261117` (02a) e `b2b_finance_role_hml_readers_20261117` (02b), POST_PASS. 01/02a/02b/03 inalterados desde 71c542678 → não reaplicar nem rodar 01-pre (exige ausência).
+Próximo (root): `02c-install-access-transition-hml.sql.review` como migração incremental (o próprio arquivo pina núcleo/exec + gatilhos C9 e exige 02b) → `03c-post-access-transition-hml.sql.readonly` = `POST_02C_PASS` (rodar ANTES de criar qualquer Financeiro) → cadastro QA-FIN-A/B/C → `provision_fixtures.py` → `jwt_suite.py` → navegador/CSV. Rollback só 02c: `04c-rollback-access-transition-hml.sql.review`.

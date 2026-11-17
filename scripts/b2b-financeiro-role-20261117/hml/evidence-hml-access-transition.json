@@ -1,5 +1,5 @@
 {
- "total": 49,
+ "total": 50,
  "results": [
   {
    "name": "live_pin_user_admin_change_access_type_core",
@@ -27,6 +27,10 @@
   },
   {
    "name": "c9_pin_partner_users_derive_tenant",
+   "status": "PASS"
+  },
+  {
+   "name": "03c_post_pass",
    "status": "PASS"
   },
   {

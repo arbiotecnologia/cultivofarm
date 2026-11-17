@@ -53,6 +53,7 @@ try:
         load(HM / "captured" / "c9" / f"{n}.sql"); sch, _, fn = n.rpartition(".")
         check(f"c9_pin_{fn}", q(f"SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname='{sch or 'public'}' AND p.proname='{fn}'") == HP[n][1])
     psql("SET app.expected_ref='vrlcdwmlytukrjezrrnf';\n" + c02)
+    check("03c_post_pass", q((HM / "03c-post-access-transition-hml.sql.readonly").read_text()).endswith("POST_02C_PASS"))
     check("02c_sem_execute_cliente", q("SELECT has_function_privilege('authenticated','platform_private.user_admin_change_access_type_core(uuid,bigint,uuid,text,public.app_role[],public.app_role[],uuid,uuid,text,uuid,integer)','EXECUTE')::text || has_function_privilege('service_role','platform_private.user_admin_change_access_type_core(uuid,bigint,uuid,text,public.app_role[],public.app_role[],uuid,uuid,text,uuid,integer)','EXECUTE')::text") == "falsefalse")
     check("02c_exec_acl_preservada", q("SELECT has_function_privilege('authenticated','public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb)','EXECUTE')") == "f")
     # Dados sintéticos

@@ -1,0 +1,17 @@
+-- HML 03c POST (somente leitura) após 02c — vrlcdwmlytukrjezrrnf. Esperado: uma linha POST_02C_PASS.
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;
+SELECT CASE WHEN
+  to_regprocedure('platform_private.user_admin_change_access_type_core(uuid,bigint,uuid,text,public.app_role[],public.app_role[],uuid,uuid,text,uuid,integer)') IS NOT NULL
+  AND to_regprocedure('platform_private.user_admin_change_access_type_core(uuid,bigint,uuid,text,public.app_role[],public.app_role[],uuid,uuid,text)') IS NULL
+  AND NOT has_function_privilege('authenticated','platform_private.user_admin_change_access_type_core(uuid,bigint,uuid,text,public.app_role[],public.app_role[],uuid,uuid,text,uuid,integer)','EXECUTE')
+  AND NOT has_function_privilege('service_role','platform_private.user_admin_change_access_type_core(uuid,bigint,uuid,text,public.app_role[],public.app_role[],uuid,uuid,text,uuid,integer)','EXECUTE')
+  AND NOT has_function_privilege('anon','platform_private.user_admin_change_access_type_core(uuid,bigint,uuid,text,public.app_role[],public.app_role[],uuid,uuid,text,uuid,integer)','EXECUTE')
+  AND NOT has_function_privilege('authenticated','public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb)','EXECUTE')
+  AND NOT has_function_privilege('anon','public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb)','EXECUTE')
+  AND has_function_privilege('authenticated','public.tenant_admin_partner_link_v1(uuid)','EXECUTE')
+  AND NOT has_function_privilege('anon','public.tenant_admin_partner_link_v1(uuid)','EXECUTE')
+  AND md5(pg_get_functiondef('public.partner_users_derive_tenant()'::regprocedure))='84266976f19951ec5825f9b9e684fab2'
+  AND md5(pg_get_functiondef('cf_user_guards_v1.touch_related_profiles()'::regprocedure))='7700e70682c0f5aa137ff7087c1a9ba5'
+  AND NOT EXISTS (SELECT 1 FROM public.user_roles WHERE role='parceiro_b2b_financeiro')
+THEN 'POST_02C_PASS' ELSE 'POST_02C_FAIL' END AS veredito;
+ROLLBACK;
