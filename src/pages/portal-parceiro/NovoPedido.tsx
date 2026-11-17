@@ -876,7 +876,7 @@ export default function NovoPedido() {
                   return (
                     <div key={i.key} className={`border rounded-md p-2 space-y-1 ${semPreco ? "border-destructive/60 bg-destructive/5" : ""}`}>
                       <div className="flex justify-between gap-2">
-                        <div className="text-sm font-medium truncate flex items-center gap-2">
+                        <div className="min-w-0 text-sm font-medium break-words whitespace-normal flex flex-wrap items-center gap-2">
                           {i.nome}
                           {renderTipoBadge(i.item_tipo)}
                         </div>
@@ -1172,7 +1172,7 @@ export default function NovoPedido() {
               {cartList.map((i) => (
                 <div key={i.key} className="p-2 flex justify-between gap-2 items-start">
                   <div className="min-w-0 space-y-0.5">
-                    <div className="font-medium truncate flex items-center gap-2">
+                    <div className="min-w-0 font-medium break-words whitespace-normal flex flex-wrap items-center gap-2">
                       {i.nome}
                       {renderTipoBadge(i.item_tipo)}
                     </div>

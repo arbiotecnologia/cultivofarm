@@ -1,3 +1,8 @@
+## 17/11 — Reconciliação solicitada no HEAD atual
+- [ ] Integrar somente os ajustes de layout ausentes de e19c46cd, preservando PR01a21a75 e etiquetas atuais.
+- [ ] Executar regressões locais e navegador nos três tamanhos; distinguir prova sintética de sessão real.
+- [ ] Verificar GitHub/sync e primeiro acesso autenticado completo: bloqueados por conexão não visível ao agente e Supabase external_unmanaged; sem publicação.
+
 ## 16/11 — Logomarca da etiqueta avulsa
 - [x] Três estados/upload local limitado, capability escopada e grayscale no mesmo motor; empresa com fallback textual explícito sem leitor de logo autorizado.
 - [x] 132/132 testes, build/typecheck automático OK e 18 PDFs nos três formatos/viewports; print vazio preexistente corrigido. Evidências /tmp/browser/label-logo e relatório/rollback atualizados.
