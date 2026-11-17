@@ -30,3 +30,11 @@ No HML o crédito fica **fechado por construção** (cadeia B4 ausente). A prova
 - Demais leituras exigem `parceiro_b2b` ou papéis internos (`financeiro` interno ≠ papel externo) → não alcançáveis pelo Financeiro B2B.
 - HML difere da produção (fora do escopo, reportar): falta `b2b_phase1_tenant_guard` RESTRICTIVE em `partner_order_financial_links` e `financial_rpc_only_*` em parcelas.
 - Gatilhos de `partner_users` que a transição 02c aciona divergem da produção: `partner_users_derive_tenant` (HML 84266976 / prod def221f8) e `cf_user_guards_v1.touch_related_profiles` (HML 7700e706 / prod e5911c38). **Bloqueio**: rodar `hml/02-capture-triggers.sql.readonly` (C9) antes de instalar 02c no HML; a bateria de transição será refeita com esses corpos reais.
+
+## rev.3 (revisão independente sobre ba877bd) — ordem de execução
+1. Root cria parceiros sintéticos `QA-FIN-A/B` (mesma empresa) e `QA-FIN-C` (outra) no cadastro comercial canônico; fornece `ORDER_PAYLOAD_JSON` válido e, se C10 mostrar títulos desses parceiros, `TITLES_JSON` `{"A":[{"id","order_id","status","installments":[...]}],...}`.
+2. `TARGET=hml python3 provision_fixtures.py` → `fixture-manifest.json` + `qa-tokens.env` (0600; nunca versionar/compartilhar). Sem e-mail: domínio `qa-fin.invalid`, create-user ramo interno `email_confirm`, papel temporário `aplicador` removido na transição canônica.
+3. `source qa-tokens.env; MANIFEST=fixture-manifest.json TARGET=hml python3 jwt_suite.py` → `evidence-hml-jwt.json`. `QA_FIN_REVOKED` obrigatório (token emitido antes da revogação).
+4. Navegador desktop/mobile e CSV: prova separada abaixo; a suíte nunca a substitui.
+Critérios: negação só com 401/403 + 42501 + mensagem exata; obrigações validadas pelo envelope estrito e IDs sentinela exatos; vazio = BLOCKED_NO_ROWS; escrita aceita = FAIL + `leaks[]` para limpeza pelo root. Revogado vira usuário interno `aplicador` sintético (registrar no encerramento).
+Não verificado: endpoint `tenant-user-admin` não está no repositório (implantado à parte) — se responder 404 o script para; formato de `b2b_finance_credit_v1` no ensaio a confirmar no PG descartável.
