@@ -9,17 +9,21 @@ GRANT EXECUTE ON FUNCTION auth.uid(), auth.jwt() TO PUBLIC;
 CREATE TABLE auth.users (id uuid PRIMARY KEY, email text, email_change text);
 CREATE TYPE public.app_role AS ENUM ('superadmin','administrador','gestor','administrativo','financeiro','gestor_comercial','producao','aplicador','operador_onfarm','consultor_tecnico','tecnico_agronomo','vendedor','cliente_produtor','parceiro_b2b','parceiro_b2b_tecnico');
 CREATE TYPE public.access_level_tecnico AS ENUM ('read','execute','manage');
-CREATE TABLE public.profiles (id uuid DEFAULT gen_random_uuid(), user_id uuid PRIMARY KEY, nome text, email text, ativo boolean DEFAULT true, organization_id uuid, senha_provisoria boolean DEFAULT false);
+-- profiles com as colunas capturadas de produção:
+CREATE TABLE public.profiles (id uuid NOT NULL DEFAULT gen_random_uuid(), user_id uuid PRIMARY KEY, nome text NOT NULL DEFAULT '', email text, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(), telefone text, cargo text, cpf_cnpj text, ativo boolean NOT NULL DEFAULT true, cliente_id uuid, crea text, especialidade text, data_admissao date, observacoes_internas text, organization_id uuid, senha_provisoria boolean NOT NULL DEFAULT false);
 CREATE TABLE public.platform_org_admin_invites (user_id uuid, access_operation_status text, access_valid_after timestamptz);
 CREATE TABLE public.user_roles (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, role public.app_role NOT NULL, UNIQUE (user_id, role));
 CREATE TABLE public.clientes (id uuid PRIMARY KEY, nome text, razao_social text, organization_id uuid);
 -- Capturado (estrutura) de produção:
 CREATE TABLE public.user_clientes (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, cliente_id uuid NOT NULL REFERENCES public.clientes(id),
-  principal boolean DEFAULT false, created_at timestamptz DEFAULT now(), is_active boolean DEFAULT true, access_level public.access_level_tecnico DEFAULT 'read',
-  assigned_by uuid, valid_from timestamptz DEFAULT now(), valid_until timestamptz, revoked_at timestamptz, revoked_by uuid, UNIQUE (user_id, cliente_id));
+  principal boolean NOT NULL DEFAULT false, created_at timestamptz NOT NULL DEFAULT now(), is_active boolean NOT NULL DEFAULT true, access_level public.access_level_tecnico NOT NULL DEFAULT 'execute',
+  assigned_by uuid, valid_from timestamptz NOT NULL DEFAULT now(), valid_until timestamptz, revoked_at timestamptz, revoked_by uuid, UNIQUE (user_id, cliente_id));
 CREATE UNIQUE INDEX uq_user_clientes_principal ON public.user_clientes (user_id) WHERE principal = true;
 CREATE TABLE public.partner_accounts (id uuid PRIMARY KEY, ativo boolean DEFAULT true, deleted_at timestamptz, commercial_owner_organization_id uuid);
-CREATE TABLE public.partner_users (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), partner_id uuid, user_id uuid, papel text, revoked_at timestamptz, revoked_by uuid, revoke_reason text, tenant_id uuid);
+CREATE TABLE public.partner_users (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), partner_id uuid NOT NULL, user_id uuid NOT NULL, created_at timestamptz NOT NULL DEFAULT now(), papel text NOT NULL DEFAULT 'gestor', valid_from timestamptz NOT NULL DEFAULT now(), revoked_at timestamptz, revoked_by uuid, revoke_reason text, tenant_id uuid, version integer NOT NULL DEFAULT 1);
+CREATE TABLE cf_user_guards_v1.state (singleton boolean PRIMARY KEY, revision bigint NOT NULL); INSERT INTO cf_user_guards_v1.state VALUES (true, 0);
+CREATE TABLE platform_private.authz_tickets (txid bigint, scope text, target uuid); -- SINTÉTICO (só para has_ticket)
+CREATE FUNCTION platform_private.has_ticket(_scope text, _target uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $$ SELECT EXISTS (SELECT 1 FROM platform_private.authz_tickets WHERE txid = txid_current() AND scope = _scope AND target = _target) $$; -- corpo capturado
 -- Capturados (corpo) de produção 17/11/2026, verbatim:
 CREATE OR REPLACE FUNCTION platform_private.platform_actor_access_ready(p_user uuid)
  RETURNS boolean
@@ -48,23 +52,6 @@ CREATE FUNCTION platform_private.is_tenant_admin_for_user(p_target_user_id uuid)
   SELECT auth.uid() IS NOT NULL AND public.has_role(auth.uid(), 'administrador'::public.app_role)
      AND NOT public.is_platform_superadmin(auth.uid()) AND NOT public.is_platform_superadmin(p_target_user_id)
      AND platform_private.is_same_tenant_user(p_target_user_id) $$;
-CREATE FUNCTION public.fn_authz_uid_scope_ok(_uid uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public' AS $$
-  SELECT auth.uid() IS NULL OR (_uid IS NOT NULL AND _uid = auth.uid()) OR public.has_role(auth.uid(), 'administrador'::app_role) $$;
-CREATE FUNCTION public.has_active_user_cliente_access(_user_id uuid, _cliente_id uuid, _levels text[] DEFAULT ARRAY['read','execute','manage']) RETURNS boolean
-LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO 'public' AS $$
-BEGIN
-  IF _user_id IS NULL OR _cliente_id IS NULL THEN RETURN false; END IF;
-  IF NOT public.fn_authz_uid_scope_ok(_user_id) THEN RETURN false; END IF;
-  IF public.has_role(_user_id, 'administrador'::public.app_role) THEN RETURN true; END IF;
-  RETURN EXISTS (SELECT 1 FROM public.user_clientes uc WHERE uc.user_id=_user_id AND uc.cliente_id=_cliente_id AND uc.is_active AND uc.revoked_at IS NULL
-     AND (uc.valid_from IS NULL OR uc.valid_from <= now()) AND (uc.valid_until IS NULL OR uc.valid_until >= now()) AND uc.access_level::text = ANY(_levels));
-END $$;
--- Gatilhos capturados: require_admin (statement) e enforce_cliente_id_for_produtor (parte user_roles).
-CREATE FUNCTION cf_user_guards_v1.require_admin() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
-BEGIN IF NOT EXISTS(SELECT 1 FROM public.profiles p JOIN public.user_roles r USING(user_id) WHERE p.ativo IS TRUE AND r.role='administrador') THEN RAISE EXCEPTION 'user_last_active_admin' USING ERRCODE='PT409'; END IF; RETURN NULL; END $$;
-CREATE TRIGGER z99_cf_require_admin AFTER INSERT OR UPDATE OR DELETE ON public.user_roles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.require_admin();
-CREATE FUNCTION public.enforce_cliente_id_for_produtor() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $$
-BEGIN IF NEW.role='cliente_produtor' AND NOT EXISTS (SELECT 1 FROM public.user_clientes WHERE user_id=NEW.user_id) THEN RAISE EXCEPTION 'produtor_sem_cliente' USING ERRCODE='check_violation'; END IF; RETURN NEW; END $$;
-CREATE TRIGGER trg_user_roles_enforce_cliente BEFORE INSERT OR UPDATE ON public.user_roles FOR EACH ROW EXECUTE FUNCTION public.enforce_cliente_id_for_produtor();
+-- Gatilhos: carregados VERBATIM de captured-prod-user-triggers-20261117.sql (todos os 28, habilitados).
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT USAGE ON SCHEMA platform_private TO authenticated; -- espelha produção: public.has_role (INVOKER) chama platform_private.has_role

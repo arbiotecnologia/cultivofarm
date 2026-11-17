@@ -104,108 +104,7 @@ REVOKE ALL ON FUNCTION platform_private.user_admin_replay(uuid,text,text) FROM P
 -- listar explicitamente em p_remove_roles; caso contrário a chamada é REJEITADA sem mutação.
 -- Ao final, invalida JWTs anteriores do alvo (user_authz_epoch, mesmo mecanismo iat do convite admin).
 -- ---------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.tenant_admin_change_access_type_v1(
-  p_user_id uuid, p_target text, p_internal_roles public.app_role[], p_remove_roles public.app_role[],
-  p_cliente_id uuid, p_idempotency_key uuid, p_reason text)
-RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
-DECLARE
-  v_actor uuid := auth.uid(); v_org uuid; v_hash text; v_prev jsonb; v_before jsonb; v_after jsonb;
-  c_internal constant public.app_role[] := ARRAY['administrador','gestor','administrativo','financeiro','gestor_comercial',
-    'producao','aplicador','operador_onfarm','consultor_tecnico','tecnico_agronomo','vendedor']::public.app_role[];
-  c_consult constant public.app_role[] := ARRAY['consultor_tecnico','tecnico_agronomo']::public.app_role[];
-  v_allowed public.app_role[]; v_current public.app_role[]; v_incompat public.app_role[];
-  v_remove public.app_role[] := ARRAY(SELECT DISTINCT unnest(COALESCE(p_remove_roles, '{}'::public.app_role[])));
-  v_add public.app_role[] := ARRAY(SELECT DISTINCT unnest(COALESCE(p_internal_roles, '{}'::public.app_role[])));
-  v_final public.app_role[];
-BEGIN
-  v_org := platform_private.user_admin_ctx(p_user_id);
-  IF p_target IS NULL OR p_target NOT IN ('internal','b2b','producer') THEN RAISE EXCEPTION 'invalid_access_type' USING ERRCODE='22023'; END IF;
-  IF p_reason IS NULL OR length(btrim(p_reason)) < 5 OR length(p_reason) > 500 THEN RAISE EXCEPTION 'reason_required' USING ERRCODE='22023'; END IF;
-  v_hash := md5(concat_ws('|', p_user_id, p_target, array_to_string(ARRAY(SELECT unnest(v_add) ORDER BY 1), ','),
-                          array_to_string(ARRAY(SELECT unnest(v_remove) ORDER BY 1), ','), p_cliente_id, btrim(p_reason)));
-  v_prev := platform_private.user_admin_replay(p_idempotency_key, 'access_type', v_hash);
-  IF v_prev IS NOT NULL THEN RETURN v_prev; END IF;
-
-  PERFORM pg_advisory_xact_lock(hashtextextended('user_admin:' || p_user_id::text, 0));
-  v_org := platform_private.user_admin_ctx(p_user_id); -- revalidação após a espera
-  PERFORM platform_private.user_admin_scope_proof(p_user_id, v_org);
-
-  IF EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = p_user_id AND role = 'superadmin') THEN
-    RAISE EXCEPTION 'forbidden' USING ERRCODE='42501';
-  END IF;
-  IF p_target <> 'internal' AND cardinality(v_add) > 0 THEN RAISE EXCEPTION 'internal_roles_not_allowed' USING ERRCODE='22023'; END IF;
-  IF NOT (v_add <@ c_internal) THEN RAISE EXCEPTION 'internal_roles_required' USING ERRCODE='22023'; END IF;
-
-  v_current := ARRAY(SELECT role FROM public.user_roles WHERE user_id = p_user_id ORDER BY role);
-  v_allowed := CASE p_target WHEN 'internal' THEN c_internal
-                             WHEN 'b2b' THEN ARRAY['parceiro_b2b','parceiro_b2b_tecnico']::public.app_role[]
-                             ELSE ARRAY['cliente_produtor']::public.app_role[] END;
-  v_incompat := ARRAY(SELECT r FROM unnest(v_current) r WHERE NOT (r = ANY(v_allowed)) ORDER BY r);
-  -- Remoção só do que é incompatível e foi confirmado; nada silencioso.
-  IF EXISTS (SELECT 1 FROM unnest(v_remove) r WHERE NOT (r = ANY(v_incompat))) THEN
-    RAISE EXCEPTION 'invalid_remove_roles' USING ERRCODE='22023';
-  END IF;
-  IF EXISTS (SELECT 1 FROM unnest(v_incompat) r WHERE NOT (r = ANY(v_remove))) THEN
-    RAISE EXCEPTION 'incompatible_roles' USING ERRCODE='PT409',
-      DETAIL = array_to_string(ARRAY(SELECT r::text FROM unnest(v_incompat) r WHERE NOT (r = ANY(v_remove))), ',');
-  END IF;
-  v_final := ARRAY(SELECT DISTINCT r FROM unnest(v_current || v_add) r WHERE NOT (r = ANY(v_remove)));
-  IF p_target = 'internal' AND NOT (v_final && c_internal) THEN RAISE EXCEPTION 'internal_roles_required' USING ERRCODE='22023'; END IF;
-  IF p_target = 'b2b' AND NOT EXISTS (SELECT 1 FROM public.partner_users pu JOIN public.partner_accounts pa ON pa.id = pu.partner_id
-                    WHERE pu.user_id = p_user_id AND pu.revoked_at IS NULL AND pu.tenant_id = v_org
-                      AND pa.commercial_owner_organization_id = v_org AND pa.ativo AND pa.deleted_at IS NULL) THEN
-    RAISE EXCEPTION 'partner_link_required' USING ERRCODE='22023';
-  END IF;
-  IF p_target = 'producer' AND (p_cliente_id IS NULL OR NOT EXISTS (SELECT 1 FROM public.clientes WHERE id = p_cliente_id AND organization_id = v_org)) THEN
-    RAISE EXCEPTION 'cliente_required' USING ERRCODE='22023';
-  END IF;
-  IF v_final = v_current AND p_target <> 'producer' THEN RAISE EXCEPTION 'no_change' USING ERRCODE='22023'; END IF;
-
-  SELECT jsonb_build_object('roles', to_jsonb(v_current),
-    'links', COALESCE((SELECT jsonb_agg(to_jsonb(uc) ORDER BY uc.id) FROM public.user_clientes uc JOIN public.clientes c ON c.id = uc.cliente_id AND c.organization_id = v_org WHERE uc.user_id = p_user_id AND uc.revoked_at IS NULL), '[]'),
-    'partner', COALESCE((SELECT jsonb_agg(to_jsonb(pu) ORDER BY pu.id) FROM public.partner_users pu WHERE pu.user_id = p_user_id AND pu.revoked_at IS NULL AND pu.tenant_id = v_org), '[]'))
-  INTO v_before;
-
-  -- 1) Vínculos exigidos pelo destino antes dos papéis (gatilho de produtor).
-  IF p_target = 'producer' THEN
-    INSERT INTO public.user_clientes(user_id, cliente_id, principal, is_active, access_level, assigned_by, valid_from)
-    VALUES (p_user_id, p_cliente_id, true, true, 'read', v_actor, now())
-    ON CONFLICT (user_id, cliente_id) DO UPDATE SET principal = true, is_active = true, access_level = 'read',
-      revoked_at = NULL, revoked_by = NULL, valid_until = NULL, valid_from = now(), assigned_by = v_actor;
-  END IF;
-  INSERT INTO public.user_roles(user_id, role)
-  SELECT p_user_id, r FROM unnest(v_add || CASE p_target WHEN 'b2b' THEN ARRAY['parceiro_b2b']::public.app_role[]
-                                                         WHEN 'producer' THEN ARRAY['cliente_produtor']::public.app_role[]
-                                                         ELSE '{}'::public.app_role[] END) r
-  ON CONFLICT (user_id, role) DO NOTHING;
-  -- 2) Encerramento (sem DELETE) dos vínculos que dependiam dos papéis removidos explicitamente.
-  IF 'cliente_produtor' = ANY(v_remove) THEN
-    UPDATE public.user_clientes SET revoked_at = now(), revoked_by = v_actor, is_active = false, principal = false
-     WHERE user_id = p_user_id AND revoked_at IS NULL AND principal
-       AND cliente_id IN (SELECT id FROM public.clientes WHERE organization_id = v_org);
-  END IF;
-  IF v_remove && c_consult AND NOT (v_final && c_consult) THEN
-    UPDATE public.user_clientes SET revoked_at = now(), revoked_by = v_actor, is_active = false
-     WHERE user_id = p_user_id AND revoked_at IS NULL AND NOT principal AND cliente_id IS DISTINCT FROM p_cliente_id
-       AND cliente_id IN (SELECT id FROM public.clientes WHERE organization_id = v_org);
-  END IF;
-  IF v_remove && ARRAY['parceiro_b2b','parceiro_b2b_tecnico']::public.app_role[]
-     AND NOT (v_final && ARRAY['parceiro_b2b','parceiro_b2b_tecnico']::public.app_role[]) THEN
-    UPDATE public.partner_users SET revoked_at = now(), revoked_by = v_actor, revoke_reason = 'access_type_change'
-     WHERE user_id = p_user_id AND revoked_at IS NULL AND tenant_id = v_org;
-  END IF;
-  DELETE FROM public.user_roles WHERE user_id = p_user_id AND role = ANY(v_remove);
-
-  -- 3) JWTs anteriores do alvo perdem autoridade (renovação obrigatória).
-  PERFORM platform_private.user_authz_bump(p_user_id);
-
-  SELECT jsonb_build_object('ok', true, 'user_id', p_user_id, 'access_type', p_target,
-    'roles', COALESCE((SELECT jsonb_agg(role ORDER BY role) FROM public.user_roles WHERE user_id = p_user_id), '[]'),
-    'removed_roles', to_jsonb(ARRAY(SELECT unnest(v_remove) ORDER BY 1)), 'sessions_invalidated', true) INTO v_after;
-  INSERT INTO platform_private.user_admin_change_audit(idempotency_key, actor_id, organization_id, target_id, kind, request_hash, before_state, after_state, reason)
-  VALUES (p_idempotency_key, v_actor, v_org, p_user_id, 'access_type', v_hash, v_before, v_after, btrim(p_reason));
-  RETURN v_after;
-END $$;
+-- (removido em 17/11 rev.5: escrita migrou para o núcleo service-only da seção 8)
 
 -- ---------------------------------------------------------------------
 -- (3) E-mail: o administrador APENAS registra o pedido; a confirmação é do titular (seção 6).
@@ -348,62 +247,7 @@ BEGIN
      AND EXISTS (SELECT 1 FROM public.clientes c2 WHERE c2.id::text = a.after_state->>'cliente_id' AND c2.organization_id = v_org)), '[]'));
 END $$;
 
-CREATE OR REPLACE FUNCTION public.tenant_admin_consultor_link_v1(
-  p_user_id uuid, p_action text, p_cliente_id uuid, p_replace_cliente_id uuid,
-  p_access_level public.access_level_tecnico, p_valid_from timestamptz, p_valid_until timestamptz,
-  p_idempotency_key uuid, p_reason text)
-RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
-DECLARE v_actor uuid := auth.uid(); v_org uuid; v_hash text; v_prev jsonb; v_before jsonb; v_after jsonb;
-  v_from timestamptz := COALESCE(p_valid_from, now()); v_level public.access_level_tecnico := COALESCE(p_access_level, 'read');
-BEGIN
-  v_org := platform_private.user_admin_ctx(p_user_id);
-  IF p_action NOT IN ('add','end','replace') THEN RAISE EXCEPTION 'invalid_action' USING ERRCODE='22023'; END IF;
-  IF p_reason IS NOT NULL AND length(p_reason) > 500 THEN RAISE EXCEPTION 'invalid_reason' USING ERRCODE='22023'; END IF;
-  v_hash := md5(concat_ws('|', p_user_id, p_action, p_cliente_id, p_replace_cliente_id, v_level, p_valid_from, p_valid_until, p_reason));
-  v_prev := platform_private.user_admin_replay(p_idempotency_key, 'consultor_link', v_hash);
-  IF v_prev IS NOT NULL THEN RETURN v_prev; END IF;
-  PERFORM pg_advisory_xact_lock(hashtextextended('user_admin:' || p_user_id::text, 0));
-  v_org := platform_private.user_admin_ctx(p_user_id);
-  IF NOT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = p_user_id AND role IN ('consultor_tecnico','tecnico_agronomo'))
-     OR EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = p_user_id AND role IN ('cliente_produtor','parceiro_b2b','parceiro_b2b_tecnico')) THEN
-    RAISE EXCEPTION 'not_internal_consultant' USING ERRCODE='22023';
-  END IF;
-  IF p_cliente_id IS NULL OR NOT EXISTS (SELECT 1 FROM public.clientes WHERE id = p_cliente_id AND organization_id = v_org) THEN
-    RAISE EXCEPTION 'forbidden' USING ERRCODE='42501';
-  END IF;
-  IF p_valid_until IS NOT NULL AND p_valid_until <= v_from THEN RAISE EXCEPTION 'invalid_period' USING ERRCODE='22023'; END IF;
-  IF p_action = 'replace' AND (p_replace_cliente_id IS NULL OR NOT EXISTS (SELECT 1 FROM public.clientes WHERE id = p_replace_cliente_id AND organization_id = v_org)) THEN
-    RAISE EXCEPTION 'forbidden' USING ERRCODE='42501';
-  END IF;
-  PERFORM platform_private.user_admin_scope_proof(p_user_id, v_org);
-
-  IF p_action = 'end' THEN
-    SELECT to_jsonb(uc) INTO v_before FROM public.user_clientes uc WHERE user_id = p_user_id AND cliente_id = p_cliente_id AND revoked_at IS NULL;
-    IF v_before IS NULL THEN RAISE EXCEPTION 'link_not_active' USING ERRCODE='PT409'; END IF;
-    UPDATE public.user_clientes SET revoked_at = now(), revoked_by = v_actor, is_active = false, principal = false
-     WHERE user_id = p_user_id AND cliente_id = p_cliente_id AND revoked_at IS NULL;
-  ELSE
-    IF p_action = 'replace' THEN
-      IF p_replace_cliente_id IS NULL OR p_replace_cliente_id = p_cliente_id THEN RAISE EXCEPTION 'invalid_replace' USING ERRCODE='22023'; END IF;
-      UPDATE public.user_clientes SET revoked_at = now(), revoked_by = v_actor, is_active = false, principal = false
-       WHERE user_id = p_user_id AND cliente_id = p_replace_cliente_id AND revoked_at IS NULL;
-      IF NOT FOUND THEN RAISE EXCEPTION 'link_not_active' USING ERRCODE='PT409'; END IF;
-    END IF;
-    SELECT to_jsonb(uc) INTO v_before FROM public.user_clientes uc WHERE user_id = p_user_id AND cliente_id = p_cliente_id;
-    IF v_before IS NOT NULL AND (v_before->>'revoked_at') IS NULL AND (v_before->>'is_active')::boolean THEN
-      RAISE EXCEPTION 'link_already_active' USING ERRCODE='PT409';
-    END IF;
-    INSERT INTO public.user_clientes(user_id, cliente_id, principal, is_active, access_level, assigned_by, valid_from, valid_until)
-    VALUES (p_user_id, p_cliente_id, false, true, v_level, v_actor, v_from, p_valid_until)
-    ON CONFLICT (user_id, cliente_id) DO UPDATE SET is_active = true, principal = false, access_level = v_level,
-      assigned_by = v_actor, valid_from = v_from, valid_until = p_valid_until, revoked_at = NULL, revoked_by = NULL;
-  END IF;
-
-  v_after := jsonb_build_object('ok', true, 'action', p_action, 'cliente_id', p_cliente_id, 'replaced_cliente_id', p_replace_cliente_id);
-  INSERT INTO platform_private.user_admin_change_audit(idempotency_key, actor_id, organization_id, target_id, kind, request_hash, before_state, after_state, reason)
-  VALUES (p_idempotency_key, v_actor, v_org, p_user_id, 'consultor_link', v_hash, COALESCE(v_before, '{}'), v_after, p_reason);
-  RETURN v_after;
-END $$;
+-- (removido em 17/11 rev.5: escrita migrou para o núcleo service-only da seção 8)
 
 -- ---------------------------------------------------------------------
 -- (5) Sessões desatualizadas. Estende o mecanismo SUPORTADO já existente em
@@ -770,10 +614,422 @@ BEGIN
                             'locked', r.holder_accepted_at IS NOT NULL);
 END $$;
 
+-- =====================================================================
+-- (8) rev.5 — 17/11/2026. Compatibilidade com os gatilhos REAIS de produção (capturados verbatim em
+-- captured-prod-user-triggers-20261117.sql). Nenhum gatilho/política global é alterado.
+--  * sync_user_cliente_principal (AFTER STATEMENT) promove principal de QUALQUER usuário e grava
+--    profiles.cliente_id; guard_profile_tenant_fields nega mudança de cliente_id/email sempre que
+--    auth.uid() IS NOT NULL. Logo, escritas em user_clientes/profiles só são possíveis no contexto de
+--    serviço (auth.uid() nulo). O ator é o JWT verificado pelo Edge (auth.getUser) e é reautorizado
+--    aqui: papel administrador vigente, mesma empresa, iat posterior às épocas de sessão. service_role
+--    é só transporte, nunca autoridade.
+--  * "principal" NUNCA distingue acesso técnico de acesso de produtor: toda transição encerra TODOS os
+--    vínculos vigentes do tenant incompatíveis com o destino (inclusive secundários de produtor).
+--  * Técnico B2B não vira gestor implicitamente: papéis B2B só por lista explícita.
+--  * Administrador: mesma política do caminho canônico (admin_edit_user_profile_v1): só para usuário
+--    interno; não pode ser concedido na mesma operação que retira papéis externos.
+-- =====================================================================
+DO $pre5$ BEGIN
+  -- PRE rev.5: o desenho depende do comportamento EXATO capturado em produção (HML difere). Drift aborta.
+  IF md5(pg_get_functiondef('public.sync_user_cliente_principal()'::regprocedure)) <> '1d053564ccd5fa672a10ec87d5cb0baa'
+     OR md5(pg_get_functiondef('public.guard_profile_tenant_fields()'::regprocedure)) <> 'bd6d513d936f5c5fb0490b5d1d2f9f1d'
+     OR md5(pg_get_functiondef('public.enforce_cliente_id_for_produtor()'::regprocedure)) <> 'ecad56badcb2120f7048fad7519f76f4'
+     OR md5(pg_get_functiondef('cf_user_guards_v1.acquire_gate()'::regprocedure)) <> 'b0dd9a14d5fd799a40df0975baf4c5a6'
+     OR (SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal AND tgenabled = 'O' AND tgrelid IN
+          ('public.profiles'::regclass,'public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass)) <> 28 THEN
+    RAISE EXCEPTION 'PRE drift: gatilhos de usuário diferem da captura de produção de 17/11/2026';
+  END IF;
+END $pre5$;
+CREATE OR REPLACE FUNCTION platform_private.user_admin_actor_ctx(p_actor uuid, p_actor_iat bigint, p_target uuid)
+RETURNS uuid LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE v_org uuid; v_iat timestamptz;
+BEGIN
+  IF auth.uid() IS NOT NULL THEN RAISE EXCEPTION 'service_context_required' USING ERRCODE='42501'; END IF;
+  IF p_actor IS NULL OR p_actor_iat IS NULL OR p_actor_iat <= 0 THEN RAISE EXCEPTION 'not_authenticated' USING ERRCODE='28000'; END IF;
+  IF p_target IS NULL THEN RAISE EXCEPTION 'invalid_target' USING ERRCODE='22023'; END IF;
+  IF p_target = p_actor THEN RAISE EXCEPTION 'self_change_denied' USING ERRCODE='42501'; END IF;
+  v_iat := to_timestamp(p_actor_iat);
+  -- Sessão do ator anterior a qualquer época de autorização dele: sem autoridade.
+  IF EXISTS (SELECT 1 FROM platform_private.user_authz_epoch e WHERE e.user_id = p_actor AND v_iat <= e.valid_after)
+     OR EXISTS (SELECT 1 FROM public.platform_org_admin_invites i WHERE i.user_id = p_actor
+                 AND (i.access_operation_status = 'processing' OR (i.access_valid_after IS NOT NULL AND v_iat <= i.access_valid_after))) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE='42501';
+  END IF;
+  IF NOT platform_private.has_role(p_actor, 'administrador'::public.app_role)
+     OR public.is_platform_superadmin(p_actor) OR public.is_platform_superadmin(p_target) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE='42501';
+  END IF;
+  SELECT organization_id INTO v_org FROM public.profiles WHERE user_id = p_actor AND ativo IS TRUE;
+  IF v_org IS NULL OR NOT EXISTS (SELECT 1 FROM public.profiles WHERE user_id = p_target AND organization_id = v_org) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE='42501';
+  END IF;
+  RETURN v_org;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.user_admin_actor_ctx(uuid,bigint,uuid) FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION platform_private.user_admin_replay_actor(p_actor uuid, p_key uuid, p_kind text, p_hash text)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE r record;
+BEGIN
+  IF p_key IS NULL THEN RAISE EXCEPTION 'idempotency_key_required' USING ERRCODE='22023'; END IF;
+  SELECT kind, request_hash, after_state INTO r FROM platform_private.user_admin_change_audit
+   WHERE actor_id = p_actor AND idempotency_key = p_key
+     AND organization_id = (SELECT organization_id FROM public.profiles WHERE user_id = p_actor);
+  IF NOT FOUND THEN RETURN NULL; END IF;
+  IF r.kind <> p_kind OR r.request_hash <> p_hash THEN RAISE EXCEPTION 'idempotency_conflict' USING ERRCODE='PT409'; END IF;
+  RETURN r.after_state || jsonb_build_object('replayed', true);
+END $$;
+REVOKE ALL ON FUNCTION platform_private.user_admin_replay_actor(uuid,uuid,text,text) FROM PUBLIC, anon, authenticated;
+
+-- Fotografia do escopo efetivo (para auditoria e testes): vínculos vigentes do tenant, cliente_id, papéis.
+CREATE OR REPLACE FUNCTION platform_private.user_admin_scope_snapshot(p_target uuid, p_org uuid)
+RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $$
+  SELECT jsonb_build_object(
+    'roles', COALESCE((SELECT jsonb_agg(role ORDER BY role) FROM public.user_roles WHERE user_id = p_target), '[]'),
+    'active_links', COALESCE((SELECT jsonb_agg(jsonb_build_object('cliente_id', uc.cliente_id, 'principal', uc.principal, 'access_level', uc.access_level) ORDER BY uc.cliente_id)
+        FROM public.user_clientes uc JOIN public.clientes c ON c.id = uc.cliente_id AND c.organization_id = p_org
+       WHERE uc.user_id = p_target AND uc.is_active AND uc.revoked_at IS NULL AND uc.valid_from <= now()
+         AND (uc.valid_until IS NULL OR uc.valid_until >= now())), '[]'),
+    'open_links', (SELECT count(*) FROM public.user_clientes uc JOIN public.clientes c ON c.id = uc.cliente_id AND c.organization_id = p_org
+       WHERE uc.user_id = p_target AND uc.revoked_at IS NULL),
+    'profile_cliente_id', (SELECT cliente_id FROM public.profiles WHERE user_id = p_target),
+    'partner_users_open', (SELECT count(*) FROM public.partner_users WHERE user_id = p_target AND revoked_at IS NULL AND tenant_id = p_org));
+$$;
+REVOKE ALL ON FUNCTION platform_private.user_admin_scope_snapshot(uuid,uuid) FROM PUBLIC, anon, authenticated;
+
+-- Encerra (sem DELETE) TODOS os vínculos abertos do tenant, exceto p_keep. principal=false explícito;
+-- o gatilho global recalcula principal/profiles.cliente_id no fim do comando.
+CREATE OR REPLACE FUNCTION platform_private.user_admin_end_tenant_links(p_target uuid, p_org uuid, p_actor uuid, p_keep uuid)
+RETURNS int LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE n int;
+BEGIN
+  UPDATE public.user_clientes SET revoked_at = now(), revoked_by = p_actor, is_active = false, principal = false
+   WHERE user_id = p_target AND revoked_at IS NULL AND cliente_id IS DISTINCT FROM p_keep
+     AND cliente_id IN (SELECT id FROM public.clientes WHERE organization_id = p_org);
+  GET DIAGNOSTICS n = ROW_COUNT; RETURN n;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.user_admin_end_tenant_links(uuid,uuid,uuid,uuid) FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION platform_private.user_admin_change_access_type_core(
+  p_actor uuid, p_actor_iat bigint, p_user_id uuid, p_target text, p_roles public.app_role[], p_remove_roles public.app_role[],
+  p_cliente_id uuid, p_idempotency_key uuid, p_reason text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE
+  v_org uuid; v_hash text; v_prev jsonb; v_before jsonb; v_after jsonb; v_ended int := 0;
+  c_internal constant public.app_role[] := ARRAY['administrador','gestor','administrativo','financeiro','gestor_comercial',
+    'producao','aplicador','operador_onfarm','consultor_tecnico','tecnico_agronomo','vendedor']::public.app_role[];
+  c_external constant public.app_role[] := ARRAY['cliente_produtor','parceiro_b2b','parceiro_b2b_tecnico']::public.app_role[];
+  c_b2b constant public.app_role[] := ARRAY['parceiro_b2b','parceiro_b2b_tecnico']::public.app_role[];
+  c_consult constant public.app_role[] := ARRAY['consultor_tecnico','tecnico_agronomo']::public.app_role[];
+  v_allowed public.app_role[]; v_current public.app_role[]; v_incompat public.app_role[];
+  v_remove public.app_role[] := ARRAY(SELECT DISTINCT unnest(COALESCE(p_remove_roles, '{}'::public.app_role[])));
+  v_add public.app_role[] := ARRAY(SELECT DISTINCT unnest(COALESCE(p_roles, '{}'::public.app_role[])));
+  v_final public.app_role[]; v_end_all boolean := false;
+BEGIN
+  v_org := platform_private.user_admin_actor_ctx(p_actor, p_actor_iat, p_user_id);
+  IF p_target IS NULL OR p_target NOT IN ('internal','b2b','producer') THEN RAISE EXCEPTION 'invalid_access_type' USING ERRCODE='22023'; END IF;
+  IF p_reason IS NULL OR length(btrim(p_reason)) < 5 OR length(p_reason) > 500 THEN RAISE EXCEPTION 'reason_required' USING ERRCODE='22023'; END IF;
+  IF array_position(v_add, NULL) IS NOT NULL OR array_position(v_remove, NULL) IS NOT NULL THEN RAISE EXCEPTION 'invalid_roles' USING ERRCODE='22023'; END IF;
+  v_hash := md5(concat_ws('|', p_user_id, p_target, array_to_string(ARRAY(SELECT unnest(v_add) ORDER BY 1), ','),
+                          array_to_string(ARRAY(SELECT unnest(v_remove) ORDER BY 1), ','), p_cliente_id, btrim(p_reason)));
+  v_prev := platform_private.user_admin_replay_actor(p_actor, p_idempotency_key, 'access_type', v_hash);
+  IF v_prev IS NOT NULL THEN RETURN v_prev; END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtextextended('user_admin:' || p_user_id::text, 0));
+  v_org := platform_private.user_admin_actor_ctx(p_actor, p_actor_iat, p_user_id); -- revalidação após a espera
+  PERFORM platform_private.user_admin_scope_proof(p_user_id, v_org);
+
+  CASE p_target
+    WHEN 'internal' THEN IF NOT (v_add <@ c_internal) THEN RAISE EXCEPTION 'internal_roles_required' USING ERRCODE='22023'; END IF;
+    WHEN 'b2b' THEN IF NOT (v_add <@ c_b2b) THEN RAISE EXCEPTION 'b2b_roles_required' USING ERRCODE='22023'; END IF;
+    ELSE IF cardinality(v_add) > 0 THEN RAISE EXCEPTION 'internal_roles_not_allowed' USING ERRCODE='22023'; END IF;
+  END CASE;
+
+  v_current := ARRAY(SELECT role FROM public.user_roles WHERE user_id = p_user_id ORDER BY role);
+  -- Promoção a administrador: idêntica ao caminho canônico (só usuário já interno); nunca junto com
+  -- a retirada de papéis externos nem para usuário com papel externo.
+  IF 'administrador' = ANY(v_add) AND (p_target <> 'internal' OR v_current && c_external) THEN
+    RAISE EXCEPTION 'admin_grant_requires_internal_user' USING ERRCODE='42501';
+  END IF;
+  v_allowed := CASE p_target WHEN 'internal' THEN c_internal WHEN 'b2b' THEN c_b2b ELSE ARRAY['cliente_produtor']::public.app_role[] END;
+  v_incompat := ARRAY(SELECT r FROM unnest(v_current) r WHERE NOT (r = ANY(v_allowed)) ORDER BY r);
+  IF EXISTS (SELECT 1 FROM unnest(v_remove) r WHERE NOT (r = ANY(v_incompat))) THEN RAISE EXCEPTION 'invalid_remove_roles' USING ERRCODE='22023'; END IF;
+  IF EXISTS (SELECT 1 FROM unnest(v_incompat) r WHERE NOT (r = ANY(v_remove))) THEN
+    RAISE EXCEPTION 'incompatible_roles' USING ERRCODE='PT409',
+      DETAIL = array_to_string(ARRAY(SELECT r::text FROM unnest(v_incompat) r WHERE NOT (r = ANY(v_remove))), ',');
+  END IF;
+  v_final := ARRAY(SELECT DISTINCT r FROM unnest(v_current || v_add || CASE WHEN p_target = 'producer' THEN ARRAY['cliente_produtor']::public.app_role[] ELSE '{}'::public.app_role[] END) r
+                   WHERE NOT (r = ANY(v_remove)) ORDER BY 1);
+  IF p_target = 'internal' AND NOT (v_final && c_internal) THEN RAISE EXCEPTION 'internal_roles_required' USING ERRCODE='22023'; END IF;
+  IF p_target = 'b2b' AND NOT (v_final && c_b2b) THEN RAISE EXCEPTION 'b2b_roles_required' USING ERRCODE='22023'; END IF;
+  IF p_target = 'b2b' AND NOT EXISTS (SELECT 1 FROM public.partner_users pu JOIN public.partner_accounts pa ON pa.id = pu.partner_id
+                    WHERE pu.user_id = p_user_id AND pu.revoked_at IS NULL AND pu.tenant_id = v_org
+                      AND pa.commercial_owner_organization_id = v_org AND pa.ativo AND pa.deleted_at IS NULL) THEN
+    RAISE EXCEPTION 'partner_link_required' USING ERRCODE='22023';
+  END IF;
+  IF p_target = 'producer' THEN
+    IF 'cliente_produtor' = ANY(v_current) THEN RAISE EXCEPTION 'no_change' USING ERRCODE='22023'; END IF; -- secundários: caminho canônico
+    IF p_cliente_id IS NULL OR NOT EXISTS (SELECT 1 FROM public.clientes WHERE id = p_cliente_id AND organization_id = v_org) THEN
+      RAISE EXCEPTION 'cliente_required' USING ERRCODE='22023';
+    END IF;
+  ELSIF p_cliente_id IS NOT NULL THEN RAISE EXCEPTION 'cliente_not_allowed' USING ERRCODE='22023';
+  END IF;
+  IF v_final = v_current THEN RAISE EXCEPTION 'no_change' USING ERRCODE='22023'; END IF;
+
+  v_before := platform_private.user_admin_scope_snapshot(p_user_id, v_org);
+
+  -- 1) Escopo de cliente SEM usar principal: produtor/B2B → só o cliente escolhido (ou nenhum);
+  --    saída de produtor → todos encerrados; interno sem consultor final → todos encerrados.
+  v_end_all := p_target IN ('producer','b2b') OR 'cliente_produtor' = ANY(v_remove)
+               OR (p_target = 'internal' AND NOT (v_final && c_consult));
+  IF v_end_all THEN
+    v_ended := platform_private.user_admin_end_tenant_links(p_user_id, v_org, p_actor, CASE WHEN p_target = 'producer' THEN p_cliente_id END);
+  END IF;
+  IF p_target = 'producer' THEN
+    -- Nenhum outro principal sobrevive ao passo anterior: sem violação de uq_user_clientes_principal.
+    INSERT INTO public.user_clientes(user_id, cliente_id, principal, is_active, access_level, assigned_by, valid_from)
+    VALUES (p_user_id, p_cliente_id, true, true, 'read', p_actor, now())
+    ON CONFLICT (user_id, cliente_id) DO UPDATE SET principal = true, is_active = true, access_level = 'read',
+      revoked_at = NULL, revoked_by = NULL, valid_until = NULL, valid_from = LEAST(public.user_clientes.valid_from, now()), assigned_by = p_actor;
+  END IF;
+  -- 2) Papéis: adiciona só o explícito (+ cliente_produtor no destino produtor) e remove o confirmado.
+  INSERT INTO public.user_roles(user_id, role)
+  SELECT p_user_id, r FROM unnest(v_final) r WHERE NOT (r = ANY(v_current))
+  ON CONFLICT (user_id, role) DO NOTHING;
+  IF v_remove && c_b2b AND NOT (v_final && c_b2b) THEN
+    UPDATE public.partner_users SET revoked_at = now(), revoked_by = p_actor, revoke_reason = 'access_type_change'
+     WHERE user_id = p_user_id AND revoked_at IS NULL AND tenant_id = v_org;
+  END IF;
+  DELETE FROM public.user_roles WHERE user_id = p_user_id AND role = ANY(v_remove);
+  -- 3) JWTs anteriores do alvo perdem autoridade.
+  PERFORM platform_private.user_authz_bump(p_user_id);
+
+  v_after := jsonb_build_object('ok', true, 'user_id', p_user_id, 'access_type', p_target,
+    'roles', COALESCE((SELECT jsonb_agg(role ORDER BY role) FROM public.user_roles WHERE user_id = p_user_id), '[]'),
+    'removed_roles', to_jsonb(ARRAY(SELECT unnest(v_remove) ORDER BY 1)), 'ended_links', v_ended, 'sessions_invalidated', true,
+    'scope', platform_private.user_admin_scope_snapshot(p_user_id, v_org));
+  INSERT INTO platform_private.user_admin_change_audit(idempotency_key, actor_id, organization_id, target_id, kind, request_hash, before_state, after_state, reason)
+  VALUES (p_idempotency_key, p_actor, v_org, p_user_id, 'access_type', v_hash, v_before, v_after, btrim(p_reason));
+  RETURN v_after;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.user_admin_change_access_type_core(uuid,bigint,uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION platform_private.user_admin_consultor_link_core(
+  p_actor uuid, p_actor_iat bigint, p_user_id uuid, p_action text, p_cliente_id uuid, p_replace_cliente_id uuid,
+  p_access_level public.access_level_tecnico, p_valid_from timestamptz, p_valid_until timestamptz,
+  p_idempotency_key uuid, p_reason text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE v_org uuid; v_hash text; v_prev jsonb; v_before jsonb; v_after jsonb;
+  v_from timestamptz := COALESCE(p_valid_from, now()); v_level public.access_level_tecnico := COALESCE(p_access_level, 'read');
+BEGIN
+  v_org := platform_private.user_admin_actor_ctx(p_actor, p_actor_iat, p_user_id);
+  IF p_action IS NULL OR p_action NOT IN ('add','end','replace') THEN RAISE EXCEPTION 'invalid_action' USING ERRCODE='22023'; END IF;
+  IF v_level = 'manage' THEN RAISE EXCEPTION 'invalid_access_level' USING ERRCODE='22023'; END IF;
+  IF p_reason IS NOT NULL AND length(p_reason) > 500 THEN RAISE EXCEPTION 'invalid_reason' USING ERRCODE='22023'; END IF;
+  v_hash := md5(concat_ws('|', p_user_id, p_action, p_cliente_id, p_replace_cliente_id, v_level, p_valid_from, p_valid_until, p_reason));
+  v_prev := platform_private.user_admin_replay_actor(p_actor, p_idempotency_key, 'consultor_link', v_hash);
+  IF v_prev IS NOT NULL THEN RETURN v_prev; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('user_admin:' || p_user_id::text, 0));
+  v_org := platform_private.user_admin_actor_ctx(p_actor, p_actor_iat, p_user_id);
+  IF NOT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = p_user_id AND role IN ('consultor_tecnico','tecnico_agronomo'))
+     OR EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = p_user_id AND role IN ('cliente_produtor','parceiro_b2b','parceiro_b2b_tecnico')) THEN
+    RAISE EXCEPTION 'not_internal_consultant' USING ERRCODE='22023';
+  END IF;
+  IF p_cliente_id IS NULL OR NOT EXISTS (SELECT 1 FROM public.clientes WHERE id = p_cliente_id AND organization_id = v_org) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE='42501';
+  END IF;
+  IF p_valid_until IS NOT NULL AND p_valid_until <= v_from THEN RAISE EXCEPTION 'invalid_period' USING ERRCODE='22023'; END IF;
+  IF p_action = 'replace' AND (p_replace_cliente_id IS NULL OR NOT EXISTS (SELECT 1 FROM public.clientes WHERE id = p_replace_cliente_id AND organization_id = v_org)) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE='42501';
+  END IF;
+  PERFORM platform_private.user_admin_scope_proof(p_user_id, v_org);
+  IF p_action = 'end' THEN
+    SELECT to_jsonb(uc) INTO v_before FROM public.user_clientes uc WHERE user_id = p_user_id AND cliente_id = p_cliente_id AND revoked_at IS NULL;
+    IF v_before IS NULL THEN RAISE EXCEPTION 'link_not_active' USING ERRCODE='PT409'; END IF;
+    UPDATE public.user_clientes SET revoked_at = now(), revoked_by = p_actor, is_active = false, principal = false
+     WHERE user_id = p_user_id AND cliente_id = p_cliente_id AND revoked_at IS NULL;
+  ELSE
+    IF p_action = 'replace' THEN
+      IF p_replace_cliente_id = p_cliente_id THEN RAISE EXCEPTION 'invalid_replace' USING ERRCODE='22023'; END IF;
+      UPDATE public.user_clientes SET revoked_at = now(), revoked_by = p_actor, is_active = false, principal = false
+       WHERE user_id = p_user_id AND cliente_id = p_replace_cliente_id AND revoked_at IS NULL;
+      IF NOT FOUND THEN RAISE EXCEPTION 'link_not_active' USING ERRCODE='PT409'; END IF;
+    END IF;
+    SELECT to_jsonb(uc) INTO v_before FROM public.user_clientes uc WHERE user_id = p_user_id AND cliente_id = p_cliente_id;
+    IF v_before IS NOT NULL AND (v_before->>'revoked_at') IS NULL AND (v_before->>'is_active')::boolean THEN
+      RAISE EXCEPTION 'link_already_active' USING ERRCODE='PT409';
+    END IF;
+    -- principal=false: o gatilho global pode promovê-lo; principal não tem efeito de autorização aqui.
+    INSERT INTO public.user_clientes(user_id, cliente_id, principal, is_active, access_level, assigned_by, valid_from, valid_until)
+    VALUES (p_user_id, p_cliente_id, false, true, v_level, p_actor, v_from, p_valid_until)
+    ON CONFLICT (user_id, cliente_id) DO UPDATE SET is_active = true, principal = false, access_level = v_level,
+      assigned_by = p_actor, valid_from = v_from, valid_until = p_valid_until, revoked_at = NULL, revoked_by = NULL;
+  END IF;
+  v_after := jsonb_build_object('ok', true, 'action', p_action, 'cliente_id', p_cliente_id, 'replaced_cliente_id', p_replace_cliente_id);
+  INSERT INTO platform_private.user_admin_change_audit(idempotency_key, actor_id, organization_id, target_id, kind, request_hash, before_state, after_state, reason)
+  VALUES (p_idempotency_key, p_actor, v_org, p_user_id, 'consultor_link', v_hash, COALESCE(v_before, '{}'), v_after, p_reason);
+  RETURN v_after;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.user_admin_consultor_link_core(uuid,bigint,uuid,text,uuid,uuid,public.access_level_tecnico,timestamptz,timestamptz,uuid,text) FROM PUBLIC, anon, authenticated;
+
+-- Ponto de entrada ÚNICO do Edge (service_role). Nunca concedido a authenticated/anon.
+CREATE OR REPLACE FUNCTION public.tenant_admin_user_access_exec_v1(p_actor uuid, p_actor_iat bigint, p_op text, p_args jsonb)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE a jsonb := COALESCE(p_args, '{}'::jsonb);
+  roles_of constant text := 'SELECT ARRAY(SELECT jsonb_array_elements_text(COALESCE($1, ''[]''::jsonb))::public.app_role)';
+  v_roles public.app_role[]; v_rm public.app_role[];
+BEGIN
+  IF auth.uid() IS NOT NULL THEN RAISE EXCEPTION 'service_context_required' USING ERRCODE='42501'; END IF;
+  IF jsonb_typeof(a) <> 'object' THEN RAISE EXCEPTION 'invalid_args' USING ERRCODE='22023'; END IF;
+  IF p_op = 'change_access_type' THEN
+    IF EXISTS (SELECT 1 FROM jsonb_object_keys(a) k WHERE k NOT IN ('user_id','target','roles','remove_roles','cliente_id','idempotency_key','reason')) THEN
+      RAISE EXCEPTION 'invalid_args' USING ERRCODE='22023'; END IF;
+    EXECUTE roles_of INTO v_roles USING a->'roles'; EXECUTE roles_of INTO v_rm USING a->'remove_roles';
+    RETURN platform_private.user_admin_change_access_type_core(p_actor, p_actor_iat, (a->>'user_id')::uuid, a->>'target', v_roles, v_rm,
+      NULLIF(a->>'cliente_id','')::uuid, (a->>'idempotency_key')::uuid, a->>'reason');
+  ELSIF p_op = 'consultor_link' THEN
+    IF EXISTS (SELECT 1 FROM jsonb_object_keys(a) k WHERE k NOT IN ('user_id','action','cliente_id','replace_cliente_id','access_level','valid_from','valid_until','idempotency_key','reason')) THEN
+      RAISE EXCEPTION 'invalid_args' USING ERRCODE='22023'; END IF;
+    RETURN platform_private.user_admin_consultor_link_core(p_actor, p_actor_iat, (a->>'user_id')::uuid, a->>'action', (a->>'cliente_id')::uuid,
+      NULLIF(a->>'replace_cliente_id','')::uuid, NULLIF(a->>'access_level','')::public.access_level_tecnico,
+      NULLIF(a->>'valid_from','')::timestamptz, NULLIF(a->>'valid_until','')::timestamptz, (a->>'idempotency_key')::uuid, a->>'reason');
+  END IF;
+  RAISE EXCEPTION 'invalid_op' USING ERRCODE='22023';
+END $$;
+REVOKE ALL ON FUNCTION public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) TO service_role;
+
+-- ---------------------------------------------------------------------
+-- E-mail rev.5: profiles.email só muda no contexto de serviço (guard global). Sob JWT, a reconciliação
+-- apenas OBSERVA e devolve 'auth_confirmed_sync_pending'; o Edge user-email-change-sync (JWT do próprio
+-- titular verificado) chama user_email_change_sync_service_v1. Nada é cancelado/expirado por isso.
+-- ---------------------------------------------------------------------
+ALTER TABLE platform_private.user_email_change_requests ADD COLUMN IF NOT EXISTS ever_accepted_at timestamptz;
+
+CREATE OR REPLACE FUNCTION platform_private.user_email_change_reconcile(p_op_id uuid)
+RETURNS text LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE r record; v_auth text;
+BEGIN
+  SELECT * INTO r FROM platform_private.user_email_change_requests WHERE id = p_op_id FOR UPDATE;
+  IF NOT FOUND THEN RETURN 'missing'; END IF;
+  SELECT lower(email) INTO v_auth FROM auth.users WHERE id = r.target_id;
+  -- Pendente, ou encerrado localmente depois de ter sido aceito (link pode ter saído antes do Auth registrar).
+  IF NOT (r.status = 'pending' OR (r.status IN ('cancelled','expired') AND r.ever_accepted_at IS NOT NULL)) THEN RETURN r.status; END IF;
+  IF v_auth IS DISTINCT FROM lower(r.new_email) THEN RETURN r.status; END IF;
+  IF auth.uid() IS NOT NULL THEN RETURN 'auth_confirmed_sync_pending'; END IF;
+  UPDATE public.profiles SET email = r.new_email WHERE user_id = r.target_id AND email IS DISTINCT FROM r.new_email;
+  UPDATE platform_private.user_email_change_requests SET status = 'confirmed', closed_at = now() WHERE id = r.id;
+  INSERT INTO platform_private.user_admin_change_audit(idempotency_key, actor_id, organization_id, target_id, kind, request_hash, before_state, after_state)
+  VALUES (r.id, r.target_id, r.organization_id, r.target_id, 'email_confirmed', md5(r.id::text),
+          jsonb_build_object('email', r.old_email, 'prior_status', r.status), jsonb_build_object('email', r.new_email, 'late', r.status <> 'pending'))
+  ON CONFLICT (actor_id, idempotency_key) DO NOTHING;
+  RETURN 'confirmed';
+END $$;
+REVOKE ALL ON FUNCTION platform_private.user_email_change_reconcile(uuid) FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION public.user_email_change_sync_service_v1(p_holder uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE x record; v_st text; v_out text := 'none';
+BEGIN
+  IF auth.uid() IS NOT NULL THEN RAISE EXCEPTION 'service_context_required' USING ERRCODE='42501'; END IF;
+  IF p_holder IS NULL THEN RAISE EXCEPTION 'invalid_target' USING ERRCODE='22023'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('user_admin:' || p_holder::text, 0));
+  -- Só pedidos do próprio titular; o e-mail é o que o Auth já confirmou para ele.
+  FOR x IN SELECT id FROM platform_private.user_email_change_requests
+            WHERE target_id = p_holder AND (status = 'pending' OR (status IN ('cancelled','expired') AND ever_accepted_at IS NOT NULL))
+            ORDER BY created_at DESC LOOP
+    v_st := platform_private.user_email_change_reconcile(x.id);
+    IF v_st = 'confirmed' THEN v_out := 'confirmed'; EXIT; END IF;
+  END LOOP;
+  RETURN jsonb_build_object('status', v_out);
+END $$;
+REVOKE ALL ON FUNCTION public.user_email_change_sync_service_v1(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.user_email_change_sync_service_v1(uuid) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.user_email_change_accept_v1(p_op_id uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE r record;
+BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'not_authenticated' USING ERRCODE='28000'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('user_admin:' || auth.uid()::text, 0));
+  SELECT * INTO r FROM platform_private.user_email_change_requests WHERE id = p_op_id FOR UPDATE;
+  IF NOT FOUND OR r.target_id <> auth.uid() THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
+  IF r.status = 'pending' AND r.holder_accepted_at IS NOT NULL THEN
+    RETURN jsonb_build_object('ok', true, 'op_id', r.id, 'new_email', r.new_email, 'replayed', true);
+  END IF;
+  IF r.organization_id IS DISTINCT FROM (SELECT organization_id FROM public.profiles WHERE user_id = auth.uid()) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE='42501';
+  END IF;
+  IF r.status <> 'pending' OR r.expires_at < now() THEN RAISE EXCEPTION 'request_not_pending' USING ERRCODE='PT409'; END IF;
+  IF EXISTS (SELECT 1 FROM auth.users WHERE lower(email) = lower(r.new_email) AND id <> r.target_id) THEN
+    RAISE EXCEPTION 'email_unavailable' USING ERRCODE='PT409';
+  END IF;
+  UPDATE platform_private.user_email_change_requests SET holder_accepted_at = now(), ever_accepted_at = COALESCE(ever_accepted_at, now()) WHERE id = p_op_id;
+  RETURN jsonb_build_object('ok', true, 'op_id', r.id, 'new_email', r.new_email);
+END $$;
+
+-- Liberação após erro de envio: além de o Auth não mostrar troca pendente, exige carência desde o aceite
+-- (o Auth pode registrar email_change DEPOIS da resposta ao cliente). Mesmo liberado e cancelado, um
+-- link tardio continua reconciliável (ever_accepted_at) — o perfil nunca fica divergente do Auth.
+CREATE OR REPLACE FUNCTION public.user_email_change_release_v1(p_op_id uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE r record; v_auth text; v_pending text;
+BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'not_authenticated' USING ERRCODE='28000'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('user_admin:' || auth.uid()::text, 0));
+  SELECT * INTO r FROM platform_private.user_email_change_requests WHERE id = p_op_id FOR UPDATE;
+  IF NOT FOUND OR r.target_id <> auth.uid() THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
+  IF r.status <> 'pending' THEN RETURN jsonb_build_object('ok', true, 'status', r.status, 'replayed', true); END IF;
+  IF r.holder_accepted_at IS NULL THEN RETURN jsonb_build_object('ok', true, 'status', 'pending', 'released', false); END IF;
+  SELECT lower(email), lower(email_change) INTO v_auth, v_pending FROM auth.users WHERE id = auth.uid();
+  IF v_auth = lower(r.new_email) THEN RETURN jsonb_build_object('ok', true, 'status', platform_private.user_email_change_reconcile(r.id)); END IF;
+  IF v_pending = lower(r.new_email) THEN RAISE EXCEPTION 'email_change_accepted_locked' USING ERRCODE='PT409'; END IF;
+  IF r.holder_accepted_at > now() - interval '10 minutes' THEN RAISE EXCEPTION 'email_change_release_too_early' USING ERRCODE='PT409'; END IF;
+  UPDATE platform_private.user_email_change_requests SET holder_accepted_at = NULL WHERE id = r.id;
+  INSERT INTO platform_private.user_admin_change_audit(idempotency_key, actor_id, organization_id, target_id, kind, request_hash, after_state)
+  VALUES (gen_random_uuid(), auth.uid(), r.organization_id, r.target_id, 'email_cancel', md5(r.id::text || '|release'),
+          jsonb_build_object('op_id', r.id, 'released_after_dispatch_failure', true));
+  RETURN jsonb_build_object('ok', true, 'status', 'pending', 'released', true);
+END $$;
+
+CREATE OR REPLACE FUNCTION public.user_email_change_sync_self_v1() RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE r record; v_pending text; v_st text;
+BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'not_authenticated' USING ERRCODE='28000'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('user_admin:' || auth.uid()::text, 0));
+  -- Aceito tardiamente encerrado (cancelado/expirado após aceite) também é observado.
+  IF EXISTS (SELECT 1 FROM platform_private.user_email_change_requests q JOIN auth.users u ON u.id = q.target_id
+              WHERE q.target_id = auth.uid() AND q.status IN ('cancelled','expired') AND q.ever_accepted_at IS NOT NULL
+                AND lower(u.email) = lower(q.new_email)) THEN
+    RETURN jsonb_build_object('status', 'auth_confirmed_sync_pending');
+  END IF;
+  SELECT * INTO r FROM platform_private.user_email_change_requests
+   WHERE target_id = auth.uid() AND status = 'pending' AND holder_accepted_at IS NOT NULL
+   ORDER BY holder_accepted_at DESC LIMIT 1 FOR UPDATE;
+  IF NOT FOUND THEN
+    SELECT * INTO r FROM platform_private.user_email_change_requests
+     WHERE target_id = auth.uid() AND organization_id = (SELECT organization_id FROM public.profiles WHERE user_id = auth.uid())
+       AND status IN ('pending','confirmed') ORDER BY created_at DESC LIMIT 1 FOR UPDATE;
+  END IF;
+  IF NOT FOUND THEN RETURN jsonb_build_object('status', 'none'); END IF;
+  IF r.status = 'confirmed' THEN RETURN jsonb_build_object('status', 'confirmed', 'replayed', true); END IF;
+  v_st := platform_private.user_email_change_reconcile(r.id);
+  IF v_st IN ('confirmed','auth_confirmed_sync_pending') THEN RETURN jsonb_build_object('status', v_st, 'locked', r.holder_accepted_at IS NOT NULL); END IF;
+  IF r.holder_accepted_at IS NULL AND r.expires_at < now() THEN
+    UPDATE platform_private.user_email_change_requests SET status = 'expired', closed_at = now() WHERE id = r.id;
+    RETURN jsonb_build_object('status', 'expired');
+  END IF;
+  SELECT lower(email_change) INTO v_pending FROM auth.users WHERE id = auth.uid();
+  RETURN jsonb_build_object('status', CASE WHEN v_pending IS NULL THEN 'awaiting_holder'
+                                           WHEN v_pending = lower(r.new_email) THEN 'awaiting_auth_confirmation'
+                                           ELSE 'auth_pending_mismatch' END,
+                            'locked', r.holder_accepted_at IS NOT NULL);
+END $$;
+
 -- ACL: somente authenticated; PUBLIC/anon revogados.
 DO $$ DECLARE f text; BEGIN
   FOREACH f IN ARRAY ARRAY[
-    'public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text)',
     'public.my_session_authz_state_v1()',
     'public.user_email_change_my_pending_v1()',
     'public.user_email_change_accept_v1(uuid)',
@@ -784,8 +1040,7 @@ DO $$ DECLARE f text; BEGIN
     'public.tenant_admin_email_change_status_v1(uuid)',
     'public.tenant_admin_email_change_cancel_v1(uuid,uuid)',
     'public.tenant_admin_search_clientes_v1(text,int,int)',
-    'public.tenant_admin_consultor_links_v1(uuid)',
-    'public.tenant_admin_consultor_link_v1(uuid,text,uuid,uuid,public.access_level_tecnico,timestamptz,timestamptz,uuid,text)']
+    'public.tenant_admin_consultor_links_v1(uuid)']
   LOOP
     EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon', f);
     EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO authenticated', f);

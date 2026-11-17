@@ -1,56 +1,76 @@
 {
- "passed": 110,
- "total": 110,
+ "passed": 147,
+ "total": 147,
  "results": [
+  {
+   "name": "gatilhos reais carregados e habilitados (28)",
+   "pass": true,
+   "detail": ""
+  },
   {
    "name": "self escalation negado",
    "pass": true,
-   "detail": " line 6 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 12 at assignment"
+   "detail": "le[],public.app_role[],uuid,uuid,text) line 14 at assignment\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
   },
   {
    "name": "admin outro tenant negado",
    "pass": true,
-   "detail": " line 7 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 12 at assignment"
+   "detail": "le[],public.app_role[],uuid,uuid,text) line 14 at assignment\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
   },
   {
    "name": "não admin negado",
    "pass": true,
-   "detail": " line 7 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 12 at assignment"
+   "detail": "le[],public.app_role[],uuid,uuid,text) line 14 at assignment\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
   },
   {
    "name": "alvo superadmin negado",
    "pass": true,
-   "detail": " line 7 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 12 at assignment"
+   "detail": "le[],public.app_role[],uuid,uuid,text) line 14 at assignment\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
   },
   {
-   "name": "anon sem EXECUTE",
+   "name": "authenticated sem EXECUTE no núcleo de serviço",
    "pass": true,
-   "detail": "ERROR:  permission denied for function tenant_admin_change_access_type_v1"
+   "detail": "ERROR:  permission denied for function tenant_admin_user_access_exec_v1"
+  },
+  {
+   "name": "anon sem EXECUTE no núcleo de serviço",
+   "pass": true,
+   "detail": "ERROR:  permission denied for function tenant_admin_user_access_exec_v1"
+  },
+  {
+   "name": "serviço sem iat do ator negado",
+   "pass": true,
+   "detail": "le[],public.app_role[],uuid,uuid,text) line 14 at assignment\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
   },
   {
    "name": "motivo obrigatório",
    "pass": true,
-   "detail": "on_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 14 at RAISE"
+   "detail": "pp_role[],public.app_role[],uuid,uuid,text) line 16 at RAISE\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
   },
   {
    "name": "superadmin não atribuível",
    "pass": true,
-   "detail": "es_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 28 at RAISE"
+   "detail": "pp_role[],public.app_role[],uuid,uuid,text) line 28 at RAISE\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
+  },
+  {
+   "name": "B2B sem papel explícito",
+   "pass": true,
+   "detail": "pp_role[],public.app_role[],uuid,uuid,text) line 49 at RAISE\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
   },
   {
    "name": "B2B sem vínculo de parceiro",
    "pass": true,
-   "detail": "nk_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 48 at RAISE"
+   "detail": "pp_role[],public.app_role[],uuid,uuid,text) line 53 at RAISE\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
   },
   {
    "name": "produtor com cliente de outro tenant",
    "pass": true,
-   "detail": "te_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 51 at RAISE"
+   "detail": "pp_role[],public.app_role[],uuid,uuid,text) line 58 at RAISE\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
   },
   {
    "name": "papel incompatível sem confirmação é rejeitado",
    "pass": true,
-   "detail": " financeiro\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 40 at RAISE"
+   "detail": "pp_role[],public.app_role[],uuid,uuid,text) line 43 at RAISE\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
   },
   {
    "name": "rejeição sem mutação",
@@ -60,7 +80,7 @@
   {
    "name": "remover papel compatível é rejeitado",
    "pass": true,
-   "detail": "emove_roles\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 37 at RAISE"
+   "detail": "pp_role[],public.app_role[],uuid,uuid,text) line 41 at RAISE\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
   },
   {
    "name": "interno: papéis existentes preservados + novo",
@@ -85,7 +105,7 @@
   {
    "name": "mesma chave, payload diferente",
    "pass": true,
-   "detail": " line 9 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 17 at assignment"
+   "detail": "le[],public.app_role[],uuid,uuid,text) line 20 at assignment\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
   },
   {
    "name": "user_id preservado",
@@ -125,7 +145,7 @@
   {
    "name": "admin rebaixado com JWT antigo não executa RPC admin",
    "pass": true,
-   "detail": " line 7 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 12 at assignment"
+   "detail": "le[],public.app_role[],uuid,uuid,text) line 14 at assignment\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
   },
   {
    "name": "admin rebaixado com JWT antigo (iat antigo) negado",
@@ -160,7 +180,7 @@
   {
    "name": "B2B→interno sem confirmar remoção",
    "pass": true,
-   "detail": "b2b_tecnico\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 40 at RAISE"
+   "detail": "pp_role[],public.app_role[],uuid,uuid,text) line 43 at RAISE\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
   },
   {
    "name": "B2B→interno revoga partner_users",
@@ -263,7 +283,12 @@
    "detail": ""
   },
   {
-   "name": "sync no retorno após confirmação do Auth",
+   "name": "sob JWT do titular só observa (guard global de profiles)",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "sync de serviço do titular após confirmação do Auth",
    "pass": true,
    "detail": ""
   },
@@ -305,7 +330,7 @@
   {
    "name": "liberação negada com troca pendente no Auth (envio ambíguo)",
    "pass": true,
-   "detail": "ERROR:  email_change_accepted_locked\nCONTEXT:  PL/pgSQL function public.user_email_change_release_v1(uuid) line 14 at RAISE"
+   "detail": "ERROR:  email_change_accepted_locked\nCONTEXT:  PL/pgSQL function public.user_email_change_release_v1(uuid) line 12 at RAISE"
   },
   {
    "name": "novo pedido bloqueado enquanto travado",
@@ -323,7 +348,12 @@
    "detail": ""
   },
   {
-   "name": "confirmação tardia sincroniza profiles",
+   "name": "confirmação tardia: titular observa",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "confirmação tardia sincroniza profiles (serviço)",
    "pass": true,
    "detail": ""
   },
@@ -331,6 +361,11 @@
    "name": "cancelamento negado entre aceite e envio",
    "pass": true,
    "detail": "ERROR:  email_change_accepted_locked\nCONTEXT:  PL/pgSQL function public.tenant_admin_email_change_cancel_v1(uuid,uuid) line 13 at RAISE"
+  },
+  {
+   "name": "liberação imediata negada (Auth pode registrar o envio depois)",
+   "pass": true,
+   "detail": "ERROR:  email_change_release_too_early\nCONTEXT:  PL/pgSQL function public.user_email_change_release_v1(uuid) line 13 at RAISE"
   },
   {
    "name": "liberação após falha de envio comprovada",
@@ -400,22 +435,22 @@
   {
    "name": "vínculo duplicado",
    "pass": true,
-   "detail": "lic.tenant_admin_consultor_link_v1(uuid,text,uuid,uuid,public.access_level_tecnico,timestamp with time zone,timestamp with time zone,uuid,text) line 40 at RAISE"
+   "detail": "me zone,timestamp with time zone,uuid,text) line 40 at RAISE\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 17 at RETURN"
   },
   {
    "name": "cliente de outro tenant",
    "pass": true,
-   "detail": "lic.tenant_admin_consultor_link_v1(uuid,text,uuid,uuid,public.access_level_tecnico,timestamp with time zone,timestamp with time zone,uuid,text) line 18 at RAISE"
+   "detail": "me zone,timestamp with time zone,uuid,text) line 19 at RAISE\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 17 at RETURN"
   },
   {
    "name": "período inválido",
    "pass": true,
-   "detail": "lic.tenant_admin_consultor_link_v1(uuid,text,uuid,uuid,public.access_level_tecnico,timestamp with time zone,timestamp with time zone,uuid,text) line 20 at RAISE"
+   "detail": "me zone,timestamp with time zone,uuid,text) line 21 at RAISE\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 17 at RETURN"
   },
   {
    "name": "vínculo para produtor (não consultor)",
    "pass": true,
-   "detail": "lic.tenant_admin_consultor_link_v1(uuid,text,uuid,uuid,public.access_level_tecnico,timestamp with time zone,timestamp with time zone,uuid,text) line 15 at RAISE"
+   "detail": "me zone,timestamp with time zone,uuid,text) line 16 at RAISE\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 17 at RETURN"
   },
   {
    "name": "substituição encerra antigo",
@@ -465,12 +500,12 @@
   {
    "name": "transição com vínculo cruzado rejeitada",
    "pass": true,
-   "detail": "(p_user_id, v_org)\"\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 22 at PERFORM"
+   "detail": "_role[],public.app_role[],uuid,uuid,text) line 25 at PERFORM\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
   },
   {
    "name": "transição com vínculo cruzado (remoção) rejeitada",
    "pass": true,
-   "detail": "(p_user_id, v_org)\"\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 22 at PERFORM"
+   "detail": "_role[],public.app_role[],uuid,uuid,text) line 25 at PERFORM\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
   },
   {
    "name": "rejeição atômica: papéis e vínculos intactos",
@@ -480,12 +515,12 @@
   {
    "name": "vínculo novo com legado cruzado rejeitado",
    "pass": true,
-   "detail": "c.tenant_admin_consultor_link_v1(uuid,text,uuid,uuid,public.access_level_tecnico,timestamp with time zone,timestamp with time zone,uuid,text) line 24 at PERFORM"
+   "detail": " zone,timestamp with time zone,uuid,text) line 25 at PERFORM\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 17 at RETURN"
   },
   {
    "name": "replace valida o cliente substituído (outro tenant)",
    "pass": true,
-   "detail": "lic.tenant_admin_consultor_link_v1(uuid,text,uuid,uuid,public.access_level_tecnico,timestamp with time zone,timestamp with time zone,uuid,text) line 22 at RAISE"
+   "detail": "me zone,timestamp with time zone,uuid,text) line 23 at RAISE\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 17 at RETURN"
   },
   {
    "name": "replace cruzado não encerrou o vínculo B",
@@ -500,7 +535,7 @@
   {
    "name": "partner_users de outro tenant bloqueia transição",
    "pass": true,
-   "detail": "(p_user_id, v_org)\"\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],public.app_role[],uuid,uuid,text) line 22 at PERFORM"
+   "detail": "_role[],public.app_role[],uuid,uuid,text) line 25 at PERFORM\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
   },
   {
    "name": "partner_users de B intactos",
@@ -520,7 +555,7 @@
   {
    "name": "titular não aceita pedido da organização anterior",
    "pass": true,
-   "detail": "ERROR:  forbidden\nCONTEXT:  PL/pgSQL function public.user_email_change_accept_v1(uuid) line 13 at RAISE"
+   "detail": "ERROR:  forbidden\nCONTEXT:  PL/pgSQL function public.user_email_change_accept_v1(uuid) line 12 at RAISE"
   },
   {
    "name": "sync do titular ignora pedido anterior",
@@ -551,6 +586,292 @@
    "name": "concorrência: exatamente um encerramento",
    "pass": true,
    "detail": ""
+  },
+  {
+   "name": "sob JWT o par real sync_principal+guard nega escrita (prova do caminho de serviço)",
+   "pass": true,
+   "detail": "_until >= now())\n          ORDER BY created_at ASC, id ASC\n          LIMIT 1\n       )\"\nPL/pgSQL function sync_user_cliente_principal() line 88 at SQL statement\n"
+  },
+  {
+   "name": "gatilho real promoveu principal do CONSULTOR e gravou profiles.cliente_id",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "consultor com principal: financeiro negado (sem papel produtor)",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "consultor multi -> produtor (principal diferente) sem unique violation",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "só o cliente escolhido fica vigente/principal; demais encerrados",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "financeiro do novo produtor: só o próprio cliente",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "JWT antigo do novo produtor: financeiro negado",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "ex-vínculos técnicos preservados como histórico",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "produtor -> interno: principal E secundário encerrados, cliente_id nulo",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "ex-produtor interno: financeiro negado",
+   "pass": true,
+   "detail": "('0', '0', 'ids:')"
+  },
+  {
+   "name": "produtor -> consultor: vínculos de produtor não viram técnicos",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "produtor -> B2B: sem vínculos residuais, cliente_id nulo",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "técnico B2B não recebeu gestor implicitamente",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "B2B técnico sem papel explícito = sem mudança",
+   "pass": true,
+   "detail": "pp_role[],public.app_role[],uuid,uuid,text) line 62 at RAISE\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
+  },
+  {
+   "name": "ex-produtor B2B: financeiro negado",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "produtor já produtor: secundários só pelo caminho canônico",
+   "pass": true,
+   "detail": "pp_role[],public.app_role[],uuid,uuid,text) line 56 at RAISE\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
+  },
+  {
+   "name": "interno -> +administrador (mesma política do caminho canônico)",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "novo admin: JWT antigo sem autoridade de admin",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "externo -> interno+administrador na mesma operação negado",
+   "pass": true,
+   "detail": "pp_role[],public.app_role[],uuid,uuid,text) line 37 at RAISE\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
+  },
+  {
+   "name": "negação de admin sem mutação",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "B2B não aceita administrador",
+   "pass": true,
+   "detail": "pp_role[],public.app_role[],uuid,uuid,text) line 29 at RAISE\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
+  },
+  {
+   "name": "admin não promove a si mesmo",
+   "pass": true,
+   "detail": "le[],public.app_role[],uuid,uuid,text) line 14 at assignment\nPL/pgSQL function public.tenant_admin_user_access_exec_v1(uuid,bigint,text,jsonb) line 12 at RETURN"
+  },
+  {
+   "name": "replace do principal: um único principal vigente, cliente_id coerente",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "corrida: liberação antes de o Auth registrar o envio negada",
+   "pass": true,
+   "detail": "ERROR:  email_change_release_too_early\nCONTEXT:  PL/pgSQL function public.user_email_change_release_v1(uuid) line 13 at RAISE"
+  },
+  {
+   "name": "cancelado após liberação",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "link tardio após cancelamento: titular observa divergência",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "link tardio após cancelamento: serviço reconcilia só o titular",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "auditoria marca confirmação tardia",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "serviço de sync negado sob JWT",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "serviço de sync sem pedido não altera perfil",
+   "pass": true,
+   "detail": ""
+  }
+ ],
+ "snapshots": {
+  "consultor_multi_antes": {
+   "roles": [
+    "consultor_tecnico"
+   ],
+   "open_links": 3,
+   "active_links": [
+    {
+     "principal": false,
+     "cliente_id": "32301afd-cee9-40e4-bb86-b3d1a4e824a0",
+     "access_level": "read"
+    },
+    {
+     "principal": false,
+     "cliente_id": "792e6056-c10e-45f9-9b4b-47b0f8893554",
+     "access_level": "read"
+    },
+    {
+     "principal": true,
+     "cliente_id": "ebc0d703-6007-4f61-98b6-f274ebf53e47",
+     "access_level": "read"
+    }
+   ],
+   "partner_users_open": 0,
+   "profile_cliente_id": "ebc0d703-6007-4f61-98b6-f274ebf53e47"
+  },
+  "consultor_multi_depois_produtor": {
+   "roles": [
+    "cliente_produtor"
+   ],
+   "open_links": 1,
+   "active_links": [
+    {
+     "principal": true,
+     "cliente_id": "792e6056-c10e-45f9-9b4b-47b0f8893554",
+     "access_level": "read"
+    }
+   ],
+   "partner_users_open": 0,
+   "profile_cliente_id": "792e6056-c10e-45f9-9b4b-47b0f8893554"
+  },
+  "produtor_secundario_antes": {
+   "roles": [
+    "cliente_produtor"
+   ],
+   "open_links": 2,
+   "active_links": [
+    {
+     "principal": false,
+     "cliente_id": "792e6056-c10e-45f9-9b4b-47b0f8893554",
+     "access_level": "execute"
+    },
+    {
+     "principal": true,
+     "cliente_id": "ebc0d703-6007-4f61-98b6-f274ebf53e47",
+     "access_level": "execute"
+    }
+   ],
+   "partner_users_open": 0,
+   "profile_cliente_id": "ebc0d703-6007-4f61-98b6-f274ebf53e47"
+  },
+  "produtor_secundario_depois_interno": {
+   "roles": [
+    "gestor"
+   ],
+   "open_links": 0,
+   "active_links": [],
+   "partner_users_open": 0,
+   "profile_cliente_id": null
+  },
+  "produtor_secundario_depois_consultor": {
+   "roles": [
+    "consultor_tecnico"
+   ],
+   "open_links": 0,
+   "active_links": [],
+   "partner_users_open": 0,
+   "profile_cliente_id": null
+  },
+  "produtor_b2b_antes": {
+   "roles": [
+    "cliente_produtor"
+   ],
+   "open_links": 2,
+   "active_links": [
+    {
+     "principal": false,
+     "cliente_id": "32301afd-cee9-40e4-bb86-b3d1a4e824a0",
+     "access_level": "execute"
+    },
+    {
+     "principal": true,
+     "cliente_id": "792e6056-c10e-45f9-9b4b-47b0f8893554",
+     "access_level": "execute"
+    }
+   ],
+   "partner_users_open": 1,
+   "profile_cliente_id": "792e6056-c10e-45f9-9b4b-47b0f8893554"
+  },
+  "produtor_b2b_depois": {
+   "roles": [
+    "parceiro_b2b_tecnico"
+   ],
+   "open_links": 0,
+   "active_links": [],
+   "partner_users_open": 1,
+   "profile_cliente_id": null
+  },
+  "consultor_replace_principal": {
+   "roles": [
+    "consultor_tecnico"
+   ],
+   "open_links": 2,
+   "active_links": [
+    {
+     "principal": false,
+     "cliente_id": "32301afd-cee9-40e4-bb86-b3d1a4e824a0",
+     "access_level": "read"
+    },
+    {
+     "principal": true,
+     "cliente_id": "792e6056-c10e-45f9-9b4b-47b0f8893554",
+     "access_level": "read"
+    }
+   ],
+   "partner_users_open": 0,
+   "profile_cliente_id": "792e6056-c10e-45f9-9b4b-47b0f8893554"
+  }
+ },
+ "findings": [
+  {
+   "id": "campanhas_cliente_select",
+   "observado_consultor_ve_campanha": true,
+   "nota": "Política global existente não exige papel cliente_produtor; qualquer vínculo vigente vê campanhas comerciais do cliente. Pré-existente; não alterada (fora do escopo, exige decisão)."
   }
  ]
 }
