@@ -1,0 +1,7 @@
+-- HML CAPTURA 3 (somente leitura, só agregados, sem linhas de negócio) — vrlcdwmlytukrjezrrnf. Devolver C10.
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;
+SELECT 'C10' k, ar.organization_id org, ar.partner_id, ar.origin_type, ar.status, count(*) n,
+  (SELECT count(*) FROM public.accounts_receivable_installments i WHERE i.receivable_id = ANY(array_agg(ar.id))) parcelas,
+  (SELECT count(*) FROM public.partner_users pu WHERE pu.partner_id = ar.partner_id) vinculos
+FROM public.accounts_receivable ar WHERE ar.partner_id IS NOT NULL GROUP BY 2,3,4,5 ORDER BY 2,3;
+ROLLBACK;

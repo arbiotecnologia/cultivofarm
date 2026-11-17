@@ -25,13 +25,17 @@ def rpc(tok, fn, args=None): return call(tok, "POST", f"/rest/v1/rpc/{fn}", args
 def err(j): return (j or {}).get("message", "") if isinstance(j, dict) else ""
 def check(name, ok, status, detail=""):
     res.append({"name": name, "status": "PASS" if ok else "FAIL", "http": status, "detail": detail[:80]}); print(("PASS " if ok else "FAIL ") + name, status)
+def blocked(name, status, detail=""):
+    res.append({"name": name, "status": "BLOCKED_NO_ROWS", "http": status, "detail": detail}); print("BLOCKED_NO_ROWS " + name, status)
 def rows_partner(j): return {r.get("partner_id") for r in (j or {}).get("rows", [])} if isinstance(j, dict) else set()
 for nm, tok, own in [("A", E("QA_FIN_A"), A), ("B", E("QA_FIN_B"), B), ("C", E("QA_FIN_C"), C)]:
     s, j = rpc(tok, "b2b_finance_capability_v1")
     check(f"cap_{nm}_positiva_propria", s == 200 and j.get("allowed") is True and j.get("partner_id") == own and j.get("writes") is False, s)
     check(f"cap_{nm}_credito_fechado_hml", s == 200 and j.get("credit_read") is False, s)
     s, j = rpc(tok, "rpc_portal_partner_financial", {"p_partner_id": own, "p_own_finance_v1": True})
-    check(f"obrigacoes_{nm}_proprias", s == 200 and rows_partner(j) <= {own}, s)
+    rp = rows_partner(j)
+    if s == 200 and not rp: blocked(f"obrigacoes_{nm}_proprias", s, "zero títulos: isolamento NÃO provado")
+    else: check(f"obrigacoes_{nm}_proprias", s == 200 and rp == {own}, s)
     for onm, other in [("A", A), ("B", B), ("C", C)]:
         if other == own: continue
         s, j = rpc(tok, "rpc_portal_partner_financial", {"p_partner_id": other, "p_own_finance_v1": True})
@@ -62,3 +66,5 @@ s, j = rpc(None, "b2b_finance_capability_v1"); check("anon_sem_capacidade", s >=
 json.dump({"target": "vrlcdwmlytukrjezrrnf", "partners": {"A": h(A), "B": h(B), "C": h(C)}, "results": res,
            "total": len(res), "failed": sum(r["status"] != "PASS" for r in res)}, open("evidence-hml-jwt.json", "w"), indent=1, ensure_ascii=False)
 print("TOTAL", len(res), "FAILED", sum(r["status"] != "PASS" for r in res)); sys.exit(1 if any(r["status"] != "PASS" for r in res) else 0)
+_b = [r["name"] for r in res if r["status"] != "PASS"]
+print("VEREDITO:", "PASS" if not _b else "NAO_PASS " + ",".join(_b)); sys.exit(0 if not _b else 1)
