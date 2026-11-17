@@ -3,28 +3,30 @@
 Autorização do usuário: criar dados fictícios de teste e eliminá-los todos depois. Nada aqui roda em produção.
 Sem NF, sem cobrança, sem envios. Nenhum gatilho é desativado.
 
-## Ordem (root executa)
-1. `04-register-saas-hml.sql.review` (postgres): só registra no manifesto as 2 assinaturas TRIAL e os 4 overrides GRANT já
-   criados pelo root (IDs fixos, motivo QA conferido). Plano gratuito `7e570000…a1`/versão `…b1` nunca entram e ficam protegidos.
-   Não executar provisionamento nem assinatura de novo.
-2. `05-seed-hml.sql.review` no SQL editor do HML (postgres). Saída `QA_TITLES_JSON` → salvar como `TITLES_JSON`;
-   conferir `QA_SEED_RESTORED` (md5 do bloqueio homolog) contra a captura.
-3. `qa/provision_fixtures.py` e `qa/jwt_suite.py` com `TITLES_JSON`; depois navegador desktop/mobile e CSV.
-4. Remover contas Auth `qa-fin-*` pela Admin API/painel (o SQL não toca `auth.*`).
-5. `06-cleanup-hml.sql.review` (postgres) → deve terminar em `QA_CLEAN_PASS`.
-6. `07-verify-clean-hml.sql.readonly` → `schema_removido=t` e todas as contagens 0.
+## Ordem (root; nada é reprovisionado)
+1. `04-register-saas-hml.sql.review` — registra as 2 assinaturas e 4 overrides já criados (IDs fixos).
+2. `05-seed-hml.sql.review` — títulos sentinela A/B/C + origem legada fictícia; salvar `QA_TITLES_JSON` e rodar
+   `qa/merge_seed_manifest.py <manifest> <titles.json>` (limites 5000/7000/9000).
+3. Crédito: pacote `../credit` (01d → 02d → 03d). Depois `jwt_suite.py` (`CREDIT_02D=installed`), navegador desktop/mobile, CSV,
+   revogação (`QA_FIN_REVOKED`).
+4. `06a-cleanup-dryrun-hml.sql.rollback` — lista tabela/ID/hash/vínculo de cada linha, recusas e `QA_CLEAN_DIGEST`; termina em ROLLBACK.
+5. Revisar a lista; então `SET app.qa_cleanup_digest='<digest>';` + `06-cleanup-hml.sql.review` na MESMA sessão → `QA_CLEAN_PASS`.
+6. Contas Auth: painel Supabase do HML → Authentication → Users → buscar cada um dos 5 UUIDs → Delete user (mecanismo oficial;
+   a Admin API `DELETE /auth/v1/admin/users/{id}` exige service_role e fica a critério do root). Nenhum outro usuário é tocado.
+7. `04d-rollback-credit-hml.sql.review` se o 02d não for mantido; `07-verify-clean-hml.sql.readonly` → tudo 0.
 
 ## Exceção temporária (única)
 - Seed: só `platform_private.homolog_validation_block_receivable_insert()`; cleanup: só gatilhos de DELETE das tabelas que
   contêm linhas QA. Liberação exige `session_user=postgres` + ticket da própria `txid` + linha manifestada (id pré-registrado
   com descrição `QA-FIN-` ou hash exato da linha). Os corpos são restaurados pelo texto original e conferidos (md5 + definição)
   antes do `COMMIT`; qualquer falha reverte tudo. Outras sessões nunca veem o corpo alterado.
-- Limpeza descobre referências em `public`/`platform_private` (uuid, uuid[], text, jsonb; 3 níveis), recusa tabelas
-  protegidas (tenants, planos, versões, funcionalidades, categorias, métodos, configuração), fixtures proibidas e volume > 5000,
-  e exige zero referências restantes.
+- Limpeza: escopo só por colunas uuid/uuid[] ligadas aos 5 usuários, 3 parceiros, 2 assinaturas, 4 overrides e manifesto
+  (id próprio nunca autojustifica). Recusa sem exceção: tabelas `saas_*`/catálogo/comercial/fiscal/organizações/categorias/métodos,
+  linhas de outro tenant, linha de negócio ligada a usuário QA só por coluna de ator, fixtures proibidas, referência só textual,
+  volume > 2000. Execução exige o digest do dry-run e zero referências restantes.
 
 ## Limites honestos
-- `test_seed_pg.py` (15/15) usa esquema sintético mínimo: prova a mecânica, NÃO que os gatilhos reais do HML aceitem o seed.
+- `test_seed_pg.py` (17/17) usa esquema sintético mínimo: prova a mecânica, NÃO que os gatilhos reais do HML aceitem o seed.
   Se outra guarda real (ex.: gate SaaS, cerca fiscal de títulos, condição de pagamento) recusar, o seed aborta sem efeito e a
   mensagem deve voltar para revisão — nunca contornar.
 - Crédito: o seed grava limite fictício; o crédito HML é o legado (`213ac31f…`) e não equivale ao de produção.

@@ -3,55 +3,63 @@
  "proves_hml_triggers": false,
  "results": [
   {
-   "name": "recusa alvo sem impressão digital HML",
+   "name": "recusa alvo sem impressão digital HML (produção)",
    "status": "PASS"
   },
   {
-   "name": "04 registra SaaS QA existente uma vez; 05 exige 04",
+   "name": "05 exige 04; 04 exige SaaS QA existente",
    "status": "PASS"
   },
   {
-   "name": "recusa sessão não-postgres",
+   "name": "04 registra 2 assinaturas + 4 overrides uma única vez",
    "status": "PASS"
   },
   {
-   "name": "outra guarda recusa -> rollback total, exceção nunca persiste",
+   "name": "guarda real recusa -> rollback total, exceção nunca persiste",
    "status": "PASS"
   },
   {
-   "name": "seed cria títulos A/B/C com pedido, 2 parcelas e vínculo, manifestados",
+   "name": "seed cria títulos A/B/C com pedido, 2 parcelas e vínculo",
    "status": "PASS"
   },
   {
-   "name": "dados não-vazios após seed",
+   "name": "origem legada fictícia completa (termos, cronograma, snapshot selado, auditoria) e função de seed removida",
    "status": "PASS"
   },
   {
-   "name": "após seed o bloqueio homolog volta a valer (postgres sem ticket)",
+   "name": "após seed: bloqueio homolog e no-delete voltam a valer para todos",
    "status": "PASS"
   },
   {
-   "name": "outro papel continua bloqueado",
+   "name": "seed não duplica; manifesto fechado",
    "status": "PASS"
   },
   {
-   "name": "no-delete continua valendo fora da limpeza",
+   "name": "dry-run lista 61 linhas (tabela/ID/hash/vínculo), sem recusas e sem alterar nada",
    "status": "PASS"
   },
   {
-   "name": "seed não duplica",
+   "name": "execução exige o digest do dry-run",
    "status": "PASS"
   },
   {
-   "name": "manifesto inacessível a outros papéis",
+   "name": "limpeza recusa ator QA em linha de negócio (dry-run lista, execução aborta sem efeito)",
    "status": "PASS"
   },
   {
-   "name": "limpeza recusa tocar plano não-QA (rollback)",
+   "name": "limpeza recusa coincidência só textual (dry-run lista, execução aborta sem efeito)",
    "status": "PASS"
   },
   {
-   "name": "limpeza remove títulos/parcelas/vínculos/pedidos/auditoria/assinaturas/parceiros/perfis QA; negócio, tenants e auth intactos; corpos restaurados",
+   "name": "limpeza recusa linha de outro tenant (dry-run lista, execução aborta sem efeito)",
+   "status": "PASS"
+  },
+  {
+   "name": "limpeza recusa plano/versão protegido (dry-run lista, execução aborta sem efeito)",
+   "status": "PASS"
+  },
+  {
+   "name": "limpeza remove toda a massa QA; plano/versão, tenants, negócio e auth intactos; corpos restaurados",
    "status": "PASS"
   },
   {
@@ -59,7 +67,7 @@
    "status": "PASS"
   },
   {
-   "name": "07 verifica limpo (auth qa-fin restante = remover via Admin API)",
+   "name": "07 confirma limpo (contas Auth: remover no painel)",
    "status": "PASS"
   }
  ]

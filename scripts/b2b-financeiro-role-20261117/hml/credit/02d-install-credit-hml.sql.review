@@ -1,0 +1,416 @@
+-- GERADO por build_credit_hml.py; não editar. HML vrlcdwmlytukrjezrrnf SOMENTE. Pré: 02b HML instalado (crédito fechado).
+-- Instala a MESMA cadeia de crédito de produção (corpos LIVE md5-pinados) só no caminho privado do Financeiro;
+-- NÃO cria b2b_integration_actor/b2b_credit_balances públicos nem altera fn_b2b_credit_exposure legado do HML.
+-- Costuras declaradas: FKs para tabelas ausentes no HML (holiday_calendars, b2b_condition_versions) e gatilhos de
+-- imutabilidade das tabelas B4 omitidos; tabelas ficam vazias, RLS ON, sem GRANT (só postgres) — escrita fiscal B4 fechada.
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+DO $$ DECLARE p jsonb := '{"hml_cap": "320de5b55a1ef75efc3a10cc7130a76a", "hml_cred": "fd99c750bfcdcd3ac44a7bf815e7ba83", "prod_cap": "339a8b5c98dede38b77d343041f6692d", "prod_cred": "57e0bb43364ccee43ba6c58b12cafed3", "cores": {"platform_private.b2b_credit_balances_core": "d528ba53d4db80439aebade58d58fdbe", "platform_private.b2b_credit_exposure_core": "7028dcaa0a5d44841e794f310ba3567c"}, "helpers": {"platform_private.b2b_credit_config_block": "a9ff339b7a9151b0945a37ef9aef66e3", "platform_private.b2b_debtor_partner": "19d096e643067fc3c73d0a0a1546d0ea", "platform_private.b2b_receivable_partner_scope": "cbebb71371eec7bd73fcdc2900088876", "platform_private.b2b_allocation_money_row": "2c8e4c323d1625bd06b9756c5fc7891d", "platform_private.b2b_legacy_money_row": "72d0b11083230fa663da46df31b7af22", "platform_private.b2b_proven_money_row_internal": "b4cfcf65495322ce3c3b911a3597abe2", "platform_private.b2b_order_residual": "93769163bfc7c72a4bbc722e62313179"}, "tables": {"platform_private.b2b_authorized_documents": "d3b9b88c021c0054e433efe9315785a4", "platform_private.b2b_document_allocations": "7728ae8c115a80dd21f48de110ba3c56", "platform_private.b2b_allocation_reversals": "a71ba8a7a6fea40cafadfcc710161e68", "platform_private.price_schedule_snapshots": "a5fd43a98659b5485ed175556708e14f", "platform_private.b2b_financial_forecasts": "ff046e3ad490560d14ec3bec9a37a472", "platform_private.b2b_order_condition_snapshots": "0f10e5075b78c820b8dbdbff2468fbf1", "platform_private.b2b_order_condition_quote_snapshots": "512293038e3aff8d9d266f37c1ee3683"}}'; k text; v text;
+BEGIN
+ IF to_regprocedure('platform_private.homolog_validation_block_receivable_insert()') IS NULL THEN RAISE EXCEPTION 'B2B_FIN_02D_REF_UNPROVEN: impressão digital HML ausente'; END IF;
+ IF coalesce(current_setting('app.expected_ref', true), '') <> 'vrlcdwmlytukrjezrrnf' THEN RAISE EXCEPTION 'B2B_FIN_02D_REF_UNPROVEN: SET app.expected_ref'; END IF;
+ IF to_regprocedure('platform_private.b2b_credit_balances(uuid,uuid)') IS NOT NULL OR to_regprocedure('platform_private.b2b_integration_actor(uuid)') IS NOT NULL THEN
+  RAISE EXCEPTION 'B2B_FIN_02D_UNEXPECTED: cadeia B4 pública presente — recapturar antes'; END IF;
+ IF (SELECT md5(p.prosrc) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=('platform_private.b2b_finance_credit_core') AND p.prokind='f') IS DISTINCT FROM p->>'hml_cred'
+  OR (SELECT md5(p.prosrc) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=('platform_private.b2b_finance_capability_core') AND p.prokind='f') IS DISTINCT FROM p->>'hml_cap' THEN
+  RAISE EXCEPTION 'B2B_FIN_02D_DRIFT: leitores Financeiro HML fora do estado esperado (pre)'; END IF;
+ FOR k, v IN SELECT key, value #>> '{}' FROM jsonb_each(p->'helpers') LOOP
+  IF (SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=(k) AND p.prokind='f') IS NOT NULL AND (SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=(k) AND p.prokind='f') <> v THEN RAISE EXCEPTION 'B2B_FIN_02D_DRIFT: % existe no HML com corpo diferente de produção', k; END IF;
+  
+ END LOOP;
+ FOR k, v IN SELECT key, value #>> '{}' FROM jsonb_each(p->'tables') LOOP
+  IF to_regclass(k) IS NOT NULL AND (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull, ',' ORDER BY a.attnum)) FROM pg_attribute a WHERE a.attrelid=to_regclass(k) AND a.attnum>0 AND NOT a.attisdropped) <> v THEN RAISE EXCEPTION 'B2B_FIN_02D_DRIFT: tabela % difere de produção', k; END IF;
+  
+ END LOOP;
+ 
+ IF to_regclass('public.receivable_payments') IS NULL OR to_regclass('public.partner_order_payment_schedule') IS NULL OR to_regclass('public.financial_audit_log') IS NULL THEN
+  RAISE EXCEPTION 'B2B_FIN_02D_DEP: tabela pública da cadeia ausente'; END IF;
+END $$;
+
+CREATE TABLE platform_private.b2b_fin_02d_objects(kind text NOT NULL, name text PRIMARY KEY);
+REVOKE ALL ON platform_private.b2b_fin_02d_objects FROM PUBLIC;
+DO $d$ BEGIN IF to_regclass('platform_private.b2b_authorized_documents') IS NULL THEN
+ EXECUTE 'CREATE TABLE platform_private.b2b_authorized_documents (id uuid NOT NULL, organization_id uuid NOT NULL, partner_id uuid NOT NULL, order_id uuid NOT NULL, kind text NOT NULL, issue_date date NOT NULL, event_key text NOT NULL, source_digest text NOT NULL, items jsonb NOT NULL, state text NOT NULL, CHECK (isfinite(issue_date)), CHECK ((kind = ANY (ARRAY[''NFE''::text, ''NFSE''::text]))), UNIQUE (organization_id, kind, event_key), PRIMARY KEY (id), CHECK ((source_digest ~ ''^[0-9a-f]{64}$''::text)), CHECK ((state = ANY (ARRAY[''AUTHORIZED''::text, ''CANCELED''::text]))), FOREIGN KEY (order_id) REFERENCES public.partner_orders(id))';
+ EXECUTE 'ALTER TABLE platform_private.b2b_authorized_documents ENABLE ROW LEVEL SECURITY'; EXECUTE 'REVOKE ALL ON platform_private.b2b_authorized_documents FROM PUBLIC';
+ INSERT INTO platform_private.b2b_fin_02d_objects VALUES ('table', 'platform_private.b2b_authorized_documents'); END IF; END $d$;
+DO $d$ BEGIN IF to_regclass('platform_private.b2b_document_allocations') IS NULL THEN
+ EXECUTE 'CREATE TABLE platform_private.b2b_document_allocations (document_id uuid NOT NULL, organization_id uuid NOT NULL, order_id uuid NOT NULL, partner_id uuid NOT NULL, receivable_id uuid NOT NULL, source_digest text NOT NULL, principal numeric NOT NULL, financed_interest numeric NOT NULL, items jsonb NOT NULL, item_money jsonb NOT NULL, rows jsonb NOT NULL, created_at timestamp with time zone DEFAULT now() NOT NULL, CHECK ((financed_interest >= (0)::numeric)), CHECK ((jsonb_typeof(item_money) = ''array''::text)), PRIMARY KEY (document_id), CHECK ((principal > (0)::numeric)), UNIQUE (receivable_id), FOREIGN KEY (document_id) REFERENCES platform_private.b2b_authorized_documents(id), FOREIGN KEY (order_id) REFERENCES public.partner_orders(id), FOREIGN KEY (receivable_id) REFERENCES public.accounts_receivable(id))';
+ EXECUTE 'ALTER TABLE platform_private.b2b_document_allocations ENABLE ROW LEVEL SECURITY'; EXECUTE 'REVOKE ALL ON platform_private.b2b_document_allocations FROM PUBLIC';
+ INSERT INTO platform_private.b2b_fin_02d_objects VALUES ('table', 'platform_private.b2b_document_allocations'); END IF; END $d$;
+DO $d$ BEGIN IF to_regclass('platform_private.b2b_allocation_reversals') IS NULL THEN
+ EXECUTE 'CREATE TABLE platform_private.b2b_allocation_reversals (document_id uuid NOT NULL, replacement_document_id uuid, source_digest text NOT NULL, created_at timestamp with time zone DEFAULT now() NOT NULL, PRIMARY KEY (document_id), FOREIGN KEY (document_id) REFERENCES platform_private.b2b_document_allocations(document_id), FOREIGN KEY (replacement_document_id) REFERENCES platform_private.b2b_authorized_documents(id))';
+ EXECUTE 'ALTER TABLE platform_private.b2b_allocation_reversals ENABLE ROW LEVEL SECURITY'; EXECUTE 'REVOKE ALL ON platform_private.b2b_allocation_reversals FROM PUBLIC';
+ INSERT INTO platform_private.b2b_fin_02d_objects VALUES ('table', 'platform_private.b2b_allocation_reversals'); END IF; END $d$;
+DO $d$ BEGIN IF to_regclass('platform_private.price_schedule_snapshots') IS NULL THEN
+ EXECUTE 'CREATE TABLE platform_private.price_schedule_snapshots (receivable_id uuid NOT NULL, organization_id uuid NOT NULL, customer_id uuid NOT NULL, actor_id uuid NOT NULL, transaction_id bigint NOT NULL, policy_version text NOT NULL, calendar_version text NOT NULL, calendar_sha256 text NOT NULL, nf_reference uuid NOT NULL, nf_issue_date date NOT NULL, table_amount numeric(14,2) NOT NULL, discount_percent numeric(5,2) NOT NULL, principal numeric(14,2) NOT NULL, monthly_rate_percent numeric(6,3) NOT NULL, installment_count integer NOT NULL, financed_total numeric(14,2) NOT NULL, credit_limit numeric(14,2) NOT NULL, exposure_before numeric(14,2) NOT NULL, rows jsonb NOT NULL, created_at timestamp with time zone DEFAULT now() NOT NULL, CHECK ((discount_percent = (40)::numeric)), CHECK (((installment_count >= 1) AND (installment_count <= 3))), PRIMARY KEY (receivable_id), CHECK ((principal > (0)::numeric)), CHECK ((table_amount > (0)::numeric)), FOREIGN KEY (receivable_id) REFERENCES public.accounts_receivable(id))';
+ EXECUTE 'ALTER TABLE platform_private.price_schedule_snapshots ENABLE ROW LEVEL SECURITY'; EXECUTE 'REVOKE ALL ON platform_private.price_schedule_snapshots FROM PUBLIC';
+ INSERT INTO platform_private.b2b_fin_02d_objects VALUES ('table', 'platform_private.price_schedule_snapshots'); END IF; END $d$;
+DO $d$ BEGIN IF to_regclass('platform_private.b2b_financial_forecasts') IS NULL THEN
+ EXECUTE 'CREATE TABLE platform_private.b2b_financial_forecasts (id uuid DEFAULT gen_random_uuid() NOT NULL, order_id uuid NOT NULL, organization_id uuid NOT NULL, partner_id uuid NOT NULL, total_amount numeric(14,2) NOT NULL, residual_amount numeric(14,2) NOT NULL, state text NOT NULL, due_dates_estimated boolean DEFAULT true NOT NULL, economic_snapshot jsonb NOT NULL, schedule_snapshot jsonb NOT NULL, items_snapshot jsonb NOT NULL, credit_decision_snapshot jsonb NOT NULL, commercial_approved_by uuid NOT NULL, commercial_approved_at timestamp with time zone NOT NULL, credit_approved_by uuid, credit_approved_at timestamp with time zone, fiscal_intent_id uuid, last_error_code text, version integer DEFAULT 1 NOT NULL, created_at timestamp with time zone DEFAULT now() NOT NULL, updated_at timestamp with time zone DEFAULT now() NOT NULL, CHECK (((residual_amount >= (0)::numeric) AND (residual_amount <= total_amount))), CHECK (due_dates_estimated), CHECK ((jsonb_typeof(items_snapshot) = ''array''::text)), UNIQUE (order_id), PRIMARY KEY (id), CHECK ((jsonb_typeof(schedule_snapshot) = ''array''::text)), CHECK ((state = ANY (ARRAY[''aguardando_fiscal''::text, ''emissao_em_andamento''::text, ''consulta_fiscal_obrigatoria''::text, ''faturado_parcial''::text, ''faturado_total''::text, ''cancelado_antes_nf''::text, ''cancelado_residual''::text]))), CHECK ((total_amount > (0)::numeric)), CHECK ((version > 0)), FOREIGN KEY (order_id) REFERENCES public.partner_orders(id))';
+ EXECUTE 'ALTER TABLE platform_private.b2b_financial_forecasts ENABLE ROW LEVEL SECURITY'; EXECUTE 'REVOKE ALL ON platform_private.b2b_financial_forecasts FROM PUBLIC';
+ INSERT INTO platform_private.b2b_fin_02d_objects VALUES ('table', 'platform_private.b2b_financial_forecasts'); END IF; END $d$;
+DO $d$ BEGIN IF to_regclass('platform_private.b2b_order_condition_snapshots') IS NULL THEN
+ EXECUTE 'CREATE TABLE platform_private.b2b_order_condition_snapshots (order_id uuid NOT NULL, organization_id uuid NOT NULL, partner_id uuid NOT NULL, actor_id uuid NOT NULL, plan_id uuid NOT NULL, choice jsonb NOT NULL, condition jsonb NOT NULL, request_hash text NOT NULL, rows jsonb NOT NULL, principal numeric, financed_interest numeric, financed_total numeric, quote boolean NOT NULL, payment_terms_id uuid, cart_hash text NOT NULL, payment_method_name text NOT NULL, estimated boolean DEFAULT true NOT NULL, due_basis text DEFAULT ''nf_issue''::text NOT NULL, estimated_reference_date date NOT NULL, created_at timestamp with time zone DEFAULT now() NOT NULL, condition_version integer NOT NULL, condition_method text NOT NULL, CHECK (((quote AND (principal IS NULL) AND (financed_interest IS NULL) AND (financed_total IS NULL) AND (rows = ''[]''::jsonb)) OR ((NOT quote) AND (principal > (0)::numeric) AND (financed_interest >= (0)::numeric) AND (financed_total = (principal + financed_interest))))), CHECK ((due_basis = ''nf_issue''::text)), CHECK (estimated), PRIMARY KEY (order_id), FOREIGN KEY (order_id) REFERENCES public.partner_orders(id))';
+ EXECUTE 'ALTER TABLE platform_private.b2b_order_condition_snapshots ENABLE ROW LEVEL SECURITY'; EXECUTE 'REVOKE ALL ON platform_private.b2b_order_condition_snapshots FROM PUBLIC';
+ INSERT INTO platform_private.b2b_fin_02d_objects VALUES ('table', 'platform_private.b2b_order_condition_snapshots'); END IF; END $d$;
+DO $d$ BEGIN IF to_regclass('platform_private.b2b_order_condition_quote_snapshots') IS NULL THEN
+ EXECUTE 'CREATE TABLE platform_private.b2b_order_condition_quote_snapshots (order_id uuid NOT NULL, organization_id uuid NOT NULL, partner_id uuid NOT NULL, actor_id uuid NOT NULL, plan_id uuid NOT NULL, choice jsonb NOT NULL, condition jsonb NOT NULL, request_hash text NOT NULL, rows jsonb NOT NULL, principal numeric NOT NULL, financed_interest numeric NOT NULL, financed_total numeric NOT NULL, payment_terms_id uuid NOT NULL, cart_hash text NOT NULL, payment_method_name text NOT NULL, estimated boolean DEFAULT true NOT NULL, due_basis text DEFAULT ''nf_issue''::text NOT NULL, estimated_reference_date date NOT NULL, condition_version integer NOT NULL, condition_method text NOT NULL, created_at timestamp with time zone DEFAULT now() NOT NULL, CHECK (((principal > (0)::numeric) AND (financed_interest >= (0)::numeric) AND (financed_total = (principal + financed_interest)))), CHECK ((due_basis = ''nf_issue''::text)), CHECK (estimated), PRIMARY KEY (order_id), FOREIGN KEY (order_id) REFERENCES public.partner_orders(id))';
+ EXECUTE 'ALTER TABLE platform_private.b2b_order_condition_quote_snapshots ENABLE ROW LEVEL SECURITY'; EXECUTE 'REVOKE ALL ON platform_private.b2b_order_condition_quote_snapshots FROM PUBLIC';
+ INSERT INTO platform_private.b2b_fin_02d_objects VALUES ('table', 'platform_private.b2b_order_condition_quote_snapshots'); END IF; END $d$;
+DO $d$ BEGIN IF to_regclass('platform_private.b4_order_condition_snapshots') IS NULL THEN EXECUTE 'CREATE VIEW platform_private.b4_order_condition_snapshots AS SELECT order_id, organization_id, partner_id, actor_id, plan_id, choice, condition, request_hash, rows, principal, financed_interest, financed_total, quote, payment_terms_id, cart_hash, payment_method_name, estimated, due_basis, estimated_reference_date, condition_version, condition_method, created_at FROM platform_private.b2b_order_condition_snapshots WHERE quote IS FALSE UNION ALL SELECT order_id, organization_id, partner_id, actor_id, plan_id, choice, condition, request_hash, rows, principal, financed_interest, financed_total, false AS quote, payment_terms_id, cart_hash, payment_method_name, estimated, due_basis, estimated_reference_date, condition_version, condition_method, created_at FROM platform_private.b2b_order_condition_quote_snapshots'; EXECUTE 'REVOKE ALL ON platform_private.b4_order_condition_snapshots FROM PUBLIC';
+ INSERT INTO platform_private.b2b_fin_02d_objects VALUES ('view', 'platform_private.b4_order_condition_snapshots'); END IF; END $d$;
+DO $d$ BEGIN IF (SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=('platform_private.b2b_credit_config_block') AND p.prokind='f') IS NULL THEN EXECUTE $q$CREATE OR REPLACE FUNCTION platform_private.b2b_credit_config_block(p_partner uuid)
+ RETURNS text
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  SELECT CASE
+    WHEN NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id = p_partner AND s.active IS TRUE) THEN 'configuracao_financeira_inativa'
+    WHEN NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id = p_partner AND s.active IS TRUE AND s.credit_limit IS NOT NULL AND s.credit_limit >= 0 AND s.credit_limit::text NOT IN ('NaN','Infinity','-Infinity')) THEN 'limite_nao_definido'
+    WHEN NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id = p_partner AND s.active IS TRUE
+      AND s.overdue_tolerance_days IS NOT NULL AND s.overdue_tolerance_days >= 0
+      AND s.block_if_overdue IS NOT NULL AND s.credit_limit_action IN ('block','approval_required')) THEN 'configuracao_financeira_incompleta'
+  END $function$$q$; INSERT INTO platform_private.b2b_fin_02d_objects VALUES ('function', 'platform_private.b2b_credit_config_block'); END IF; END $d$;
+DO $d$ BEGIN IF (SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=('platform_private.b2b_debtor_partner') AND p.prokind='f') IS NULL THEN EXECUTE $q$CREATE OR REPLACE FUNCTION platform_private.b2b_debtor_partner(p_org uuid, p_customer uuid)
+ RETURNS uuid[]
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  SELECT array_agg(pa.id ORDER BY pa.id) FROM public.partner_accounts pa
+   WHERE pa.client_id = p_customer AND pa.commercial_owner_organization_id = p_org
+     AND pa.ativo IS TRUE AND pa.deleted_at IS NULL $function$$q$; INSERT INTO platform_private.b2b_fin_02d_objects VALUES ('function', 'platform_private.b2b_debtor_partner'); END IF; END $d$;
+DO $d$ BEGIN IF (SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=('platform_private.b2b_receivable_partner_scope') AND p.prokind='f') IS NULL THEN EXECUTE $q$CREATE OR REPLACE FUNCTION platform_private.b2b_receivable_partner_scope(p_receivable uuid)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE a public.accounts_receivable; links uuid[];
+BEGIN
+ SELECT * INTO a FROM public.accounts_receivable WHERE id=p_receivable;
+ IF NOT FOUND THEN RAISE EXCEPTION 'CREDIT_RECEIVABLE_NOT_FOUND' USING ERRCODE='23514'; END IF;
+ links:=platform_private.b2b_debtor_partner(a.organization_id,a.customer_id);
+ IF coalesce(cardinality(links),0)>1 THEN RAISE EXCEPTION 'CREDIT_PARTNER_LINK_AMBIGUOUS' USING ERRCODE='42501'; END IF;
+ IF a.partner_id IS NOT NULL THEN
+  IF NOT EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id=a.partner_id
+    AND pa.commercial_owner_organization_id=a.organization_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL)
+  THEN RAISE EXCEPTION 'CREDIT_PARTNER_OWNER_MISMATCH' USING ERRCODE='23514'; END IF;
+  IF coalesce(cardinality(links),0)=1 AND links[1] IS DISTINCT FROM a.partner_id
+  THEN RAISE EXCEPTION 'CREDIT_PARTNER_CONFLICT' USING ERRCODE='23514'; END IF;
+  RETURN a.partner_id;
+ END IF;
+ RETURN links[1];
+END $function$$q$; INSERT INTO platform_private.b2b_fin_02d_objects VALUES ('function', 'platform_private.b2b_receivable_partner_scope'); END IF; END $d$;
+DO $d$ BEGIN IF (SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=('platform_private.b2b_allocation_money_row') AND p.prokind='f') IS NULL THEN EXECUTE $q$CREATE OR REPLACE FUNCTION platform_private.b2b_allocation_money_row(p_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE i public.accounts_receivable_installments; a public.accounts_receivable; x platform_private.b2b_document_allocations; row jsonb;
+BEGIN
+ SELECT * INTO i FROM public.accounts_receivable_installments WHERE id=p_id;
+ SELECT * INTO a FROM public.accounts_receivable WHERE id=i.receivable_id AND organization_id=i.organization_id;
+ SELECT * INTO x FROM platform_private.b2b_document_allocations WHERE receivable_id=a.id AND organization_id=a.organization_id;
+ IF NOT FOUND THEN RETURN NULL; END IF;
+ IF a.origin_type IS DISTINCT FROM 'B2B_ORDER' OR a.origin_id IS DISTINCT FROM x.order_id OR a.partner_id IS DISTINCT FROM x.partner_id OR a.b2b_document_id IS DISTINCT FROM x.document_id
+ OR (SELECT count(*) FROM public.accounts_receivable_installments s WHERE s.receivable_id=a.id)<>jsonb_array_length(x.rows)
+ OR (SELECT count(DISTINCT s.installment_number) FROM public.accounts_receivable_installments s WHERE s.receivable_id=a.id)<>jsonb_array_length(x.rows)
+ OR (SELECT sum((r->>'principal_amount')::numeric) FROM jsonb_array_elements(x.rows) r) IS DISTINCT FROM x.principal
+ OR (SELECT sum((r->>'interest_amount')::numeric) FROM jsonb_array_elements(x.rows) r) IS DISTINCT FROM x.financed_interest
+ OR NOT EXISTS(SELECT 1 FROM platform_private.b2b_authorized_documents d WHERE d.id=x.document_id AND d.organization_id=x.organization_id AND d.order_id=x.order_id AND d.partner_id=x.partner_id AND d.source_digest=x.source_digest AND d.state='AUTHORIZED')
+ OR EXISTS(SELECT 1 FROM platform_private.price_schedule_snapshots s WHERE s.receivable_id=a.id)
+ OR (SELECT count(*) FROM jsonb_array_elements(x.rows) r WHERE (r->>'installment_number')::int=i.installment_number)<>1
+ THEN RAISE EXCEPTION 'B2B_ALLOCATION_ORIGIN_INVALID' USING ERRCODE='23514'; END IF;
+ SELECT r INTO row FROM jsonb_array_elements(x.rows) r WHERE (r->>'installment_number')::int=i.installment_number;
+ IF i.original_amount IS DISTINCT FROM (row->>'amount')::numeric OR i.due_date IS DISTINCT FROM (row->>'due_date')::date
+ OR i.original_amount IS DISTINCT FROM (row->>'principal_amount')::numeric+(row->>'interest_amount')::numeric
+ OR a.total_amount IS DISTINCT FROM x.principal+x.financed_interest
+ THEN RAISE EXCEPTION 'B2B_ALLOCATION_ORIGIN_INVALID' USING ERRCODE='23514'; END IF;
+ RETURN to_jsonb(i)||jsonb_build_object('monetary_semantics','financed_total_v1','interest_amount',i.interest_amount+(row->>'interest_amount')::numeric,'financed_interest_amount',(row->>'interest_amount')::numeric,
+ 'monetary_origin',jsonb_build_object('contract','RECEIVABLE_MONEY_V1','source','b2b_document_allocation_v1','installment_id',i.id,'receivable_id',a.id,'organization_id',a.organization_id,'order_id',x.order_id,'document_id',x.document_id,'snapshot_principal',(row->>'principal_amount')::numeric,'snapshot_interest',(row->>'interest_amount')::numeric));
+END $function$$q$; INSERT INTO platform_private.b2b_fin_02d_objects VALUES ('function', 'platform_private.b2b_allocation_money_row'); END IF; END $d$;
+DO $d$ BEGIN IF (SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=('platform_private.b2b_legacy_money_row') AND p.prokind='f') IS NULL THEN EXECUTE $q$CREATE OR REPLACE FUNCTION platform_private.b2b_legacy_money_row(p_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE i public.accounts_receivable_installments; a public.accounts_receivable; po public.partner_orders;
+ org uuid; sealed jsonb; sch jsonb; terms jsonb; audit jsonb;
+ financing numeric; principal numeric; late_interest numeric; received numeric; disc numeric; penalty numeric;
+BEGIN
+ SELECT * INTO i FROM public.accounts_receivable_installments WHERE id=p_id;
+ org:=i.organization_id;
+ SELECT * INTO a FROM public.accounts_receivable WHERE id=i.receivable_id AND organization_id=org;
+ IF a.origin_type IS DISTINCT FROM 'B2B_ORDER' THEN RETURN NULL; END IF;
+ SELECT * INTO po FROM public.partner_orders WHERE id=a.origin_id AND partner_id=a.partner_id;
+ sealed:=po.internal_economic_snapshot; terms:=sealed->'terms';
+ IF sealed IS NULL OR sealed->>'schema_version' IS DISTINCT FROM '1' OR sealed->>'sealed_by' IS NULL
+ OR coalesce(sealed->'origin'->>'organization_id',sealed->'origin'->>'creditor_organization_id') IS DISTINCT FROM org::text
+ OR sealed->'origin'->>'partner_id' IS DISTINCT FROM a.partner_id::text
+ OR NOT EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id=a.partner_id AND pa.commercial_owner_organization_id=org)
+ OR terms->>'id' IS DISTINCT FROM po.payment_terms_id::text OR terms->>'partner_order_id' IS DISTINCT FROM po.id::text
+ OR (SELECT count(*) FROM public.partner_order_financial_links l WHERE l.partner_order_id=po.id AND l.receivable_id=a.id AND l.partner_id=a.partner_id)<>1
+ OR (SELECT count(*) FROM public.partner_order_financial_links l WHERE l.receivable_id=a.id)<>1
+ OR EXISTS(SELECT 1 FROM platform_private.price_schedule_snapshots s WHERE s.receivable_id=a.id)
+ OR EXISTS(SELECT 1 FROM platform_private.b2b_document_allocations x WHERE x.receivable_id=a.id)
+ THEN RAISE EXCEPTION 'B2B_LEGACY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+ IF jsonb_typeof(sealed->'schedule') IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'B2B_LEGACY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+ IF (SELECT count(*) FROM jsonb_array_elements(sealed->'schedule') s WHERE (s->>'installment_number')::int=i.installment_number)<>1 THEN RAISE EXCEPTION 'B2B_LEGACY_SCHEDULE_AMBIGUOUS' USING ERRCODE='23514'; END IF;
+ SELECT s INTO sch FROM jsonb_array_elements(sealed->'schedule') s WHERE (s->>'installment_number')::int=i.installment_number;
+ IF (SELECT count(*) FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=po.id AND s.payment_terms_id=po.payment_terms_id AND s.installment_number=i.installment_number AND s.receivable_installment_id=i.id)<>1
+ OR NOT EXISTS(SELECT 1 FROM public.partner_order_payment_schedule s WHERE s.id=(sch->>'id')::uuid AND s.receivable_installment_id=i.id AND (to_jsonb(s)-ARRAY['created_at','status','receivable_installment_id'])=sch)
+ OR (SELECT count(*) FROM public.accounts_receivable_installments s WHERE s.receivable_id=a.id)<>(terms->>'installment_count')::int
+ THEN RAISE EXCEPTION 'B2B_LEGACY_LINK_MISMATCH' USING ERRCODE='23514'; END IF;
+ -- Captured writer's immutable INSERT audit is required, not merely a current schedule match.
+ IF (SELECT count(*) FROM public.financial_audit_log f WHERE f.entity_type='accounts_receivable_installments' AND f.entity_id=i.id AND f.action='INSERT')<>1 THEN RAISE EXCEPTION 'B2B_LEGACY_WRITER_UNPROVEN' USING ERRCODE='23514'; END IF;
+ SELECT f.new_data INTO audit FROM public.financial_audit_log f WHERE f.entity_type='accounts_receivable_installments' AND f.entity_id=i.id AND f.action='INSERT';
+ financing:=(sch->>'interest_amount')::numeric; principal:=(sch->>'principal_amount')::numeric;
+ IF principal IS NULL OR financing IS NULL OR principal<0 OR financing<0 OR principal+financing IS DISTINCT FROM i.original_amount
+ OR i.original_amount IS DISTINCT FROM (sch->>'amount')::numeric OR i.due_date IS DISTINCT FROM (sch->>'due_date')::date
+ OR audit->>'receivable_id' IS DISTINCT FROM a.id::text OR audit->>'organization_id' IS DISTINCT FROM org::text
+ OR (audit->>'original_amount')::numeric IS DISTINCT FROM i.original_amount OR (audit->>'interest_amount')::numeric IS DISTINCT FROM financing
+ OR (terms->>'final_amount')::numeric IS DISTINCT FROM a.total_amount
+ OR (SELECT sum((s->>'amount')::numeric) FROM jsonb_array_elements(sealed->'schedule') s) IS DISTINCT FROM a.total_amount
+ THEN RAISE EXCEPTION 'B2B_LEGACY_WRITER_INCOMPATIBLE' USING ERRCODE='23514'; END IF;
+ IF EXISTS(SELECT 1 FROM public.receivable_payments p WHERE p.installment_id=i.id AND p.organization_id IS DISTINCT FROM org)
+ OR EXISTS(SELECT 1 FROM public.receivable_payments p WHERE p.installment_id=i.id AND p.is_reversal AND NOT EXISTS(SELECT 1 FROM public.receivable_payments r WHERE r.id=p.reversed_payment_id AND r.installment_id=i.id AND r.organization_id=org AND NOT r.is_reversal))
+ THEN RAISE EXCEPTION 'B2B_LEGACY_LEDGER_INCOMPATIBLE' USING ERRCODE='23514'; END IF;
+ SELECT coalesce(sum(p.interest_amount),0),coalesce(sum(p.amount_received),0),coalesce(sum(p.discount_amount),0),coalesce(sum(p.penalty_amount),0)
+ INTO late_interest,received,disc,penalty FROM public.receivable_payments p WHERE p.installment_id=i.id;
+ IF received IS DISTINCT FROM i.received_amount OR disc IS DISTINCT FROM i.discount_amount OR penalty IS DISTINCT FROM i.penalty_amount
+ OR (EXISTS(SELECT 1 FROM public.receivable_payments p WHERE p.installment_id=i.id) AND i.interest_amount IS DISTINCT FROM late_interest)
+ OR (NOT EXISTS(SELECT 1 FROM public.receivable_payments p WHERE p.installment_id=i.id) AND i.interest_amount IS DISTINCT FROM financing)
+ THEN RAISE EXCEPTION 'B2B_LEGACY_LEDGER_MISMATCH' USING ERRCODE='23514'; END IF;
+ RETURN to_jsonb(i)||jsonb_build_object('monetary_semantics','financed_total_v1','interest_amount',financing+late_interest,'financed_interest_amount',financing,
+ 'monetary_origin',jsonb_build_object('contract','RECEIVABLE_MONEY_V1','source','b2b_immutable_schedule_v1','installment_id',i.id,'receivable_id',a.id,'organization_id',org,'order_id',po.id,'schedule_id',sch->>'id','snapshot_principal',principal,'snapshot_interest',financing));
+END $function$$q$; INSERT INTO platform_private.b2b_fin_02d_objects VALUES ('function', 'platform_private.b2b_legacy_money_row'); END IF; END $d$;
+DO $d$ BEGIN IF (SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=('platform_private.b2b_proven_money_row_internal') AND p.prokind='f') IS NULL THEN EXECUTE $q$CREATE OR REPLACE FUNCTION platform_private.b2b_proven_money_row_internal(p_id uuid, p_org uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE org uuid:=p_org; i public.accounts_receivable_installments; row jsonb; r jsonb;
+BEGIN
+ IF org IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;
+ SELECT s.* INTO i FROM public.accounts_receivable_installments s JOIN public.accounts_receivable a ON a.id=s.receivable_id WHERE s.id=p_id AND s.organization_id=org AND a.organization_id=org;
+ IF NOT FOUND THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;
+ row:=NULL;
+  IF EXISTS(SELECT 1 FROM platform_private.price_schedule_snapshots s WHERE s.receivable_id=i.receivable_id AND s.organization_id=org) THEN
+   IF EXISTS(SELECT 1 FROM public.accounts_receivable a WHERE a.id=i.receivable_id AND a.origin_type='B2B_ORDER') THEN RAISE EXCEPTION 'MONEY_ORIGIN_MIXED' USING ERRCODE='23514'; END IF;
+   IF (SELECT count(*) FROM platform_private.price_schedule_snapshots s CROSS JOIN LATERAL jsonb_array_elements(s.rows) x WHERE s.receivable_id=i.receivable_id AND s.organization_id=org AND (x->>'installment_number')::int=i.installment_number)<>1 THEN RAISE EXCEPTION 'MONEY_ORIGIN_INVALID' USING ERRCODE='23514'; END IF;
+   SELECT x INTO r FROM platform_private.price_schedule_snapshots s CROSS JOIN LATERAL jsonb_array_elements(s.rows) x WHERE s.receivable_id=i.receivable_id AND s.organization_id=org AND (x->>'installment_number')::int=i.installment_number;
+   IF i.original_amount IS DISTINCT FROM (r->>'amount')::numeric OR i.original_amount IS DISTINCT FROM (r->>'principal')::numeric+(r->>'interest')::numeric THEN RAISE EXCEPTION 'MONEY_ORIGIN_INVALID' USING ERRCODE='23514'; END IF;
+   row:=to_jsonb(i)||jsonb_build_object('monetary_semantics','financed_total_v1','interest_amount',i.interest_amount+(r->>'interest')::numeric,'financed_interest_amount',(r->>'interest')::numeric,'monetary_origin',jsonb_build_object('contract','RECEIVABLE_MONEY_V1','source','price_snapshot_v1','installment_id',i.id,'receivable_id',i.receivable_id,'organization_id',org,'snapshot_principal',(r->>'principal')::numeric,'snapshot_interest',(r->>'interest')::numeric));
+  ELSE
+   row:=platform_private.b2b_allocation_money_row(i.id);
+   IF row IS NULL THEN row:=platform_private.b2b_legacy_money_row(i.id); END IF;
+  END IF;
+  IF row IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+ RETURN row;
+END $function$$q$; INSERT INTO platform_private.b2b_fin_02d_objects VALUES ('function', 'platform_private.b2b_proven_money_row_internal'); END IF; END $d$;
+DO $d$ BEGIN IF (SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=('platform_private.b2b_order_residual') AND p.prokind='f') IS NULL THEN EXECUTE $q$CREATE OR REPLACE FUNCTION platform_private.b2b_order_residual(p_order uuid)
+ RETURNS numeric
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE po public.partner_orders; s platform_private.b4_order_condition_snapshots; allocated numeric; total numeric; org uuid;
+BEGIN
+ SELECT * INTO po FROM public.partner_orders WHERE id=p_order;
+ SELECT pa.commercial_owner_organization_id INTO org FROM public.partner_accounts pa WHERE pa.id=po.partner_id;
+ IF org IS NULL THEN RAISE EXCEPTION 'CREDIT_ORDER_AMOUNT_UNPROVEN' USING ERRCODE='23514'; END IF;
+ SELECT * INTO s FROM platform_private.b4_order_condition_snapshots WHERE order_id=p_order;
+ total:=coalesce(s.financed_total,po.final_amount_with_interest);
+ IF total IS NULL OR total<0 OR total::text IN ('NaN','Infinity','-Infinity') THEN RAISE EXCEPTION 'CREDIT_ORDER_AMOUNT_UNPROVEN' USING ERRCODE='23514'; END IF;
+ IF EXISTS(SELECT 1 FROM public.partner_order_financial_links l WHERE l.partner_order_id=p_order) THEN
+  -- Legacy 1:1 can be netted only when the complete title is proven by the same projection.
+  IF s.order_id IS NOT NULL OR (SELECT count(*) FROM public.partner_order_financial_links l WHERE l.partner_order_id=p_order)<>1 THEN RAISE EXCEPTION 'CREDIT_LEGACY_ALLOCATION_UNPROVEN' USING ERRCODE='23514'; END IF;
+  PERFORM platform_private.b2b_proven_money_row_internal(i.id,org) FROM public.partner_order_financial_links l JOIN public.accounts_receivable a ON a.id=l.receivable_id JOIN public.accounts_receivable_installments i ON i.receivable_id=a.id WHERE l.partner_order_id=p_order;
+  IF NOT EXISTS(SELECT 1 FROM public.partner_order_financial_links l JOIN public.accounts_receivable a ON a.id=l.receivable_id WHERE l.partner_order_id=p_order AND a.total_amount=total AND a.status<>'CANCELED') THEN RAISE EXCEPTION 'CREDIT_LEGACY_ALLOCATION_UNPROVEN' USING ERRCODE='23514'; END IF;
+  RETURN 0;
+ END IF;
+ IF po.receivable_generated AND s.order_id IS NULL THEN RAISE EXCEPTION 'CREDIT_LEGACY_ALLOCATION_UNPROVEN' USING ERRCODE='23514'; END IF;
+ SELECT coalesce(sum(x.principal+x.financed_interest),0) INTO allocated FROM platform_private.b2b_document_allocations x WHERE x.order_id=p_order AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals r WHERE r.document_id=x.document_id);
+ IF allocated>total THEN RAISE EXCEPTION 'CREDIT_OVERALLOCATED' USING ERRCODE='23514'; END IF;
+ RETURN total-allocated;
+END $function$$q$; INSERT INTO platform_private.b2b_fin_02d_objects VALUES ('function', 'platform_private.b2b_order_residual'); END IF; END $d$;
+CREATE FUNCTION platform_private.b2b_credit_balances_core(p_partner uuid, p_exclude uuid, p_org uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE org uuid:=p_org; po record; i record; row jsonb; open_amount numeric:=0; overdue numeric:=0; committed numeric:=0; pending numeric:=0; balance numeric; residual numeric; tolerance int; debtor uuid;
+BEGIN
+ IF org IS NULL OR org IS DISTINCT FROM (SELECT pa.commercial_owner_organization_id FROM public.partner_accounts pa
+   WHERE pa.id=p_partner AND pa.ativo IS TRUE AND pa.deleted_at IS NULL) THEN RAISE EXCEPTION 'B2B_TENANT_DENIED' USING ERRCODE='42501'; END IF;
+ IF platform_private.b2b_credit_config_block(p_partner) IS NOT NULL THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE='23514'; END IF;
+ SELECT overdue_tolerance_days INTO tolerance FROM public.partner_financial_settings WHERE partner_id=p_partner AND active IS TRUE;
+ IF tolerance IS NULL OR tolerance<0 THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE='23514'; END IF;
+ FOR i IN SELECT a.id AS receivable_id,s.id,s.due_date FROM public.accounts_receivable_installments s JOIN public.accounts_receivable a ON a.id=s.receivable_id
+  WHERE a.organization_id=org AND s.organization_id=org AND a.status<>'CANCELED' AND s.status<>'CANCELED'
+   AND (a.partner_id=p_partner OR EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id=p_partner AND pa.client_id=a.customer_id
+        AND pa.commercial_owner_organization_id=org AND pa.ativo IS TRUE AND pa.deleted_at IS NULL)) LOOP
+  debtor:=platform_private.b2b_receivable_partner_scope(i.receivable_id);
+  IF debtor IS DISTINCT FROM p_partner THEN RAISE EXCEPTION 'CREDIT_PARTNER_CONFLICT' USING ERRCODE='23514'; END IF;
+  row:=platform_private.b2b_proven_money_row_internal(i.id,org);
+  IF row IS NULL THEN RAISE EXCEPTION 'CREDIT_MONEY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+  balance:=greatest((row->>'original_amount')::numeric+(row->>'interest_amount')::numeric-(row->>'financed_interest_amount')::numeric+(row->>'penalty_amount')::numeric-(row->>'discount_amount')::numeric-(row->>'received_amount')::numeric,0);
+  open_amount:=open_amount+balance;
+  IF i.due_date<CURRENT_DATE-tolerance THEN overdue:=overdue+balance; END IF;
+ END LOOP;
+ FOR po IN SELECT id,status::text AS status FROM public.partner_orders WHERE partner_id=p_partner AND id IS DISTINCT FROM p_exclude AND status::text IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','pendente','solicitado','em_analise_comercial','aguardando_aprovacao_credito','aguardando_ajuste_comercial','aguardando_itens') LOOP
+  residual:=platform_private.b2b_order_residual(po.id);
+  IF po.status IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue') THEN committed:=committed+residual; ELSE pending:=pending+residual; END IF;
+ END LOOP;
+ RETURN jsonb_build_object('saldo_em_aberto',open_amount,'saldo_vencido',overdue,'comprometido_nao_faturado',committed,'comprometido_pendente',pending);
+END $function$;
+INSERT INTO platform_private.b2b_fin_02d_objects VALUES ('function', 'platform_private.b2b_credit_balances_core');
+CREATE FUNCTION platform_private.b2b_credit_exposure_core(p_partner_id uuid, p_new_order_amount numeric DEFAULT 0, p_exclude_order_id uuid DEFAULT NULL::uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_settings_json jsonb;
+  v_fc record; v_b4_residual numeric; v_effective numeric; v_owner uuid;
+  v_limit numeric(14,2); v_open numeric(14,2); v_overdue numeric(14,2);
+  v_committed numeric(14,2); v_pending numeric(14,2);
+  v_new numeric(14,2) := ROUND(COALESCE(p_new_order_amount,0),2);
+  v_proj numeric(14,2); v_disp numeric(14,2); v_pct numeric;
+  v_tolerance int; v_block boolean; v_action text; v_reason text;
+BEGIN
+  IF p_new_order_amount IS NULL OR p_new_order_amount<0 OR p_new_order_amount::text IN ('NaN','Infinity','-Infinity') THEN RAISE EXCEPTION 'CREDIT_AMOUNT_INVALID' USING ERRCODE='23514'; END IF;
+  IF platform_private.b2b_credit_config_block(p_partner_id) IS NOT NULL THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE='PT409'; END IF;
+  SELECT COALESCE(credit_limit,0), COALESCE(overdue_tolerance_days,0),
+         COALESCE(block_if_overdue,false), COALESCE(credit_limit_action,'block')
+    INTO v_limit, v_tolerance, v_block, v_action
+  FROM public.partner_financial_settings WHERE partner_id = p_partner_id;
+  v_limit := COALESCE(v_limit,0); v_tolerance := COALESCE(v_tolerance,0);
+  v_block := COALESCE(v_block,false); v_action := COALESCE(v_action,'block');
+
+  v_settings_json:=platform_private.b2b_credit_balances_core(p_partner_id,p_exclude_order_id,(SELECT pa.commercial_owner_organization_id FROM public.partner_accounts pa WHERE pa.id=p_partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL));
+  v_open:=(v_settings_json->>'saldo_em_aberto')::numeric;
+  v_overdue:=(v_settings_json->>'saldo_vencido')::numeric;
+  v_committed:=(v_settings_json->>'comprometido_nao_faturado')::numeric;
+  v_pending:=(v_settings_json->>'comprometido_pendente')::numeric;
+  -- B4+previsão (corpo único; ordem B4 -> 09-12): o residual B4 (total menos
+  -- alocações de NF autorizadas não estornadas) segue como única base e títulos
+  -- abertos entram só por saldo_em_aberto. A previsão nunca é aditiva: apenas zera
+  -- residual formalmente cancelado e, nos demais estados, precisa coincidir com o
+  -- residual B4. Divergência, tenant ou parceiro conflitante falham fechados.
+  SELECT pa.commercial_owner_organization_id INTO v_owner FROM public.partner_accounts pa WHERE pa.id=p_partner_id;
+  FOR v_fc IN SELECT f.order_id,f.state,f.residual_amount,f.organization_id,f.partner_id AS forecast_partner,
+      po.partner_id AS order_partner,po.status::text AS status
+    FROM platform_private.b2b_financial_forecasts f JOIN public.partner_orders po ON po.id=f.order_id
+    WHERE (po.partner_id=p_partner_id OR f.partner_id=p_partner_id)
+      AND po.id IS DISTINCT FROM p_exclude_order_id
+      AND po.status::text IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','pendente','solicitado','em_analise_comercial','aguardando_aprovacao_credito','aguardando_ajuste_comercial','aguardando_itens')
+  LOOP
+    IF v_fc.forecast_partner IS DISTINCT FROM v_fc.order_partner OR v_fc.organization_id IS DISTINCT FROM v_owner THEN
+      RAISE EXCEPTION 'CREDIT_FORECAST_SCOPE_CONFLICT' USING ERRCODE='23514'; END IF;
+    v_b4_residual:=platform_private.b2b_order_residual(v_fc.order_id);
+    IF v_fc.state IN ('cancelado_antes_nf','cancelado_residual') THEN v_effective:=0;
+    ELSIF v_fc.residual_amount IS DISTINCT FROM v_b4_residual THEN
+      RAISE EXCEPTION 'CREDIT_FORECAST_RESIDUAL_DIVERGENCE' USING ERRCODE='23514';
+    ELSE v_effective:=v_b4_residual; END IF;
+    IF v_fc.status IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue') THEN v_committed:=v_committed-v_b4_residual+v_effective;
+    ELSE v_pending:=v_pending-v_b4_residual+v_effective; END IF;
+  END LOOP;
+  v_proj := ROUND(v_open + v_committed + v_pending + v_new, 2);
+  v_disp := GREATEST(v_limit - v_proj, 0);
+  v_pct  := CASE WHEN v_limit > 0 THEN ROUND((v_proj / v_limit) * 100, 2) ELSE 0 END;
+
+  v_reason := CASE
+    WHEN v_block AND v_overdue > 0 THEN 'OVERDUE_BLOCK'
+    WHEN v_proj > v_limit AND v_action = 'approval_required' THEN 'LIMIT_EXCEEDED_APPROVAL'
+    WHEN v_proj > v_limit THEN 'LIMIT_EXCEEDED_BLOCK'
+    ELSE 'OK' END;
+
+  RETURN jsonb_build_object(
+    'partner_id', p_partner_id,
+    'credit_limit', v_limit,
+    'saldo_em_aberto', v_open,
+    'saldo_vencido', v_overdue,
+    'comprometido_nao_faturado', v_committed,
+    'comprometido_pendente', v_pending,
+    'novo_pedido', v_new,
+    'exposicao_atual', ROUND(v_open + v_committed + v_pending, 2),
+    'exposicao_projetada', v_proj,
+    'credito_disponivel', v_disp,
+    'percentual_utilizado', v_pct,
+    'overdue_tolerance_days', v_tolerance,
+    'block_if_overdue', v_block,
+    'credit_limit_action', v_action,
+    'tem_vencidos', v_overdue > 0,
+    'reason_code', v_reason
+  );
+END $function$;
+INSERT INTO platform_private.b2b_fin_02d_objects VALUES ('function', 'platform_private.b2b_credit_exposure_core');
+CREATE OR REPLACE FUNCTION platform_private.b2b_finance_capability_core()
+ RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO ''
+AS $function$
+DECLARE u uuid:=auth.uid(); pid uuid; nome text;
+BEGIN
+ pid:=platform_private.b2b_finance_actor_partner();
+ IF u IS NULL OR pid IS NULL THEN
+  RETURN jsonb_build_object('contract','B2B_FINANCE_ROLE_V1','allowed',false,'reason','not_finance_actor'); END IF;
+ IF NOT EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='pedidos_b2b')
+  OR NOT EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='contas_receber') THEN
+  RETURN jsonb_build_object('contract','B2B_FINANCE_ROLE_V1','allowed',false,'reason','not_entitled'); END IF;
+ SELECT coalesce(nullif(btrim(pa.nome_fantasia),''),pa.razao_social) INTO nome FROM public.partner_accounts pa WHERE pa.id=pid;
+ RETURN jsonb_build_object('contract','B2B_FINANCE_ROLE_V1','allowed',true,'partner_id',pid,'partner_name',nome,
+  'obligations_read',true,'export',true,'credit_read',true,'writes',false);
+END $function$;
+CREATE OR REPLACE FUNCTION platform_private.b2b_finance_credit_core()
+ RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO ''
+AS $function$
+DECLARE u uuid:=auth.uid(); pid uuid; c jsonb;
+BEGIN
+ pid:=platform_private.b2b_finance_actor_partner();
+ IF u IS NULL OR pid IS NULL
+  OR NOT EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='pedidos_b2b')
+  OR NOT EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='contas_receber') THEN
+  RAISE EXCEPTION 'own_finance_forbidden' USING ERRCODE='42501'; END IF;
+ c:=platform_private.b2b_credit_exposure_core(pid,0,NULL);
+ RETURN jsonb_build_object('contract','B2B_FINANCE_CREDIT_V1','partner_id',pid,
+  'credit_limit',c->'credit_limit','exposicao_atual',c->'exposicao_atual','credito_disponivel',c->'credito_disponivel',
+  'percentual_utilizado',c->'percentual_utilizado','saldo_em_aberto',c->'saldo_em_aberto','saldo_vencido',c->'saldo_vencido',
+  'comprometido_nao_faturado',c->'comprometido_nao_faturado','comprometido_pendente',c->'comprometido_pendente',
+  'tem_vencidos',c->'tem_vencidos','reason_code',c->'reason_code');
+END $function$;
+DO $d$ DECLARE f regprocedure; BEGIN
+ FOR f IN SELECT p.oid FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace JOIN platform_private.b2b_fin_02d_objects o ON o.kind='function' AND o.name=s.nspname||'.'||p.proname LOOP
+  EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon, authenticated, service_role', f); END LOOP; END $d$;
+REVOKE ALL ON FUNCTION platform_private.b2b_finance_capability_core() FROM PUBLIC, anon, service_role; GRANT EXECUTE ON FUNCTION platform_private.b2b_finance_capability_core() TO authenticated;
+REVOKE ALL ON FUNCTION platform_private.b2b_finance_credit_core() FROM PUBLIC, anon, service_role; GRANT EXECUTE ON FUNCTION platform_private.b2b_finance_credit_core() TO authenticated;
+DO $$ DECLARE p jsonb := '{"hml_cap": "320de5b55a1ef75efc3a10cc7130a76a", "hml_cred": "fd99c750bfcdcd3ac44a7bf815e7ba83", "prod_cap": "339a8b5c98dede38b77d343041f6692d", "prod_cred": "57e0bb43364ccee43ba6c58b12cafed3", "cores": {"platform_private.b2b_credit_balances_core": "d528ba53d4db80439aebade58d58fdbe", "platform_private.b2b_credit_exposure_core": "7028dcaa0a5d44841e794f310ba3567c"}, "helpers": {"platform_private.b2b_credit_config_block": "a9ff339b7a9151b0945a37ef9aef66e3", "platform_private.b2b_debtor_partner": "19d096e643067fc3c73d0a0a1546d0ea", "platform_private.b2b_receivable_partner_scope": "cbebb71371eec7bd73fcdc2900088876", "platform_private.b2b_allocation_money_row": "2c8e4c323d1625bd06b9756c5fc7891d", "platform_private.b2b_legacy_money_row": "72d0b11083230fa663da46df31b7af22", "platform_private.b2b_proven_money_row_internal": "b4cfcf65495322ce3c3b911a3597abe2", "platform_private.b2b_order_residual": "93769163bfc7c72a4bbc722e62313179"}, "tables": {"platform_private.b2b_authorized_documents": "d3b9b88c021c0054e433efe9315785a4", "platform_private.b2b_document_allocations": "7728ae8c115a80dd21f48de110ba3c56", "platform_private.b2b_allocation_reversals": "a71ba8a7a6fea40cafadfcc710161e68", "platform_private.price_schedule_snapshots": "a5fd43a98659b5485ed175556708e14f", "platform_private.b2b_financial_forecasts": "ff046e3ad490560d14ec3bec9a37a472", "platform_private.b2b_order_condition_snapshots": "0f10e5075b78c820b8dbdbff2468fbf1", "platform_private.b2b_order_condition_quote_snapshots": "512293038e3aff8d9d266f37c1ee3683"}}'; k text; v text;
+BEGIN
+ IF to_regprocedure('platform_private.homolog_validation_block_receivable_insert()') IS NULL THEN RAISE EXCEPTION 'B2B_FIN_02D_REF_UNPROVEN: impressão digital HML ausente'; END IF;
+ IF coalesce(current_setting('app.expected_ref', true), '') <> 'vrlcdwmlytukrjezrrnf' THEN RAISE EXCEPTION 'B2B_FIN_02D_REF_UNPROVEN: SET app.expected_ref'; END IF;
+ IF to_regprocedure('platform_private.b2b_credit_balances(uuid,uuid)') IS NOT NULL OR to_regprocedure('platform_private.b2b_integration_actor(uuid)') IS NOT NULL THEN
+  RAISE EXCEPTION 'B2B_FIN_02D_UNEXPECTED: cadeia B4 pública presente — recapturar antes'; END IF;
+ IF (SELECT md5(p.prosrc) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=('platform_private.b2b_finance_credit_core') AND p.prokind='f') IS DISTINCT FROM p->>'prod_cred'
+  OR (SELECT md5(p.prosrc) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=('platform_private.b2b_finance_capability_core') AND p.prokind='f') IS DISTINCT FROM p->>'prod_cap' THEN
+  RAISE EXCEPTION 'B2B_FIN_02D_DRIFT: leitores Financeiro HML fora do estado esperado (post)'; END IF;
+ FOR k, v IN SELECT key, value #>> '{}' FROM jsonb_each(p->'helpers') LOOP
+  IF (SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=(k) AND p.prokind='f') IS NOT NULL AND (SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=(k) AND p.prokind='f') <> v THEN RAISE EXCEPTION 'B2B_FIN_02D_DRIFT: % existe no HML com corpo diferente de produção', k; END IF;
+  IF (SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=(k) AND p.prokind='f') IS DISTINCT FROM v THEN RAISE EXCEPTION 'B2B_FIN_02D_POST: % ausente/divergente', k; END IF;
+ END LOOP;
+ FOR k, v IN SELECT key, value #>> '{}' FROM jsonb_each(p->'tables') LOOP
+  IF to_regclass(k) IS NOT NULL AND (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull, ',' ORDER BY a.attnum)) FROM pg_attribute a WHERE a.attrelid=to_regclass(k) AND a.attnum>0 AND NOT a.attisdropped) <> v THEN RAISE EXCEPTION 'B2B_FIN_02D_DRIFT: tabela % difere de produção', k; END IF;
+  IF to_regclass(k) IS NULL THEN RAISE EXCEPTION 'B2B_FIN_02D_POST: % ausente', k; END IF;
+ END LOOP;
+ FOR k, v IN SELECT key, value #>> '{}' FROM jsonb_each(p->'cores') LOOP IF (SELECT md5(p.prosrc) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=(k) AND p.prokind='f') IS DISTINCT FROM v THEN RAISE EXCEPTION 'B2B_FIN_02D_POST: núcleo % divergente', k; END IF; END LOOP;
+ IF to_regclass('public.receivable_payments') IS NULL OR to_regclass('public.partner_order_payment_schedule') IS NULL OR to_regclass('public.financial_audit_log') IS NULL THEN
+  RAISE EXCEPTION 'B2B_FIN_02D_DEP: tabela pública da cadeia ausente'; END IF;
+END $$;
+
+SELECT 'INSTALL_02D_OK' k, (SELECT jsonb_agg(name ORDER BY name) FROM platform_private.b2b_fin_02d_objects) criados;
+COMMIT;

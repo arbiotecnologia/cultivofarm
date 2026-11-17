@@ -17,6 +17,7 @@ DO $$ BEGIN
  IF EXISTS (SELECT 1 FROM qa_b2bfin.manifest WHERE kind='receivable') THEN RAISE EXCEPTION 'QA_SEED_REFUSED: seed anterior existe — rodar 06 antes'; END IF;
 END $$;
 {{LIB}}
+{{LEGACY}}
 INSERT INTO qa_b2bfin.ticket VALUES (txid_current(), 'seed');
 SELECT qa_b2bfin.relax('platform_private.homolog_validation_block_receivable_insert()'::regprocedure);
 DO $$
@@ -37,11 +38,12 @@ BEGIN
    VALUES (rid, 'B2B_ORDER', oid_, 'QA-FIN-' || k || ' título sentinela', cat, 1000.00, current_date, current_date + 30, 2, pid, org, 'QA-FIN fixture sintética sem NF/cobrança', false);
   SELECT count(*) INTO n FROM public.accounts_receivable_installments WHERE receivable_id = rid;
   IF n = 0 THEN
-   INSERT INTO public.accounts_receivable_installments (receivable_id, installment_number, due_date, original_amount, received_amount, net_amount, organization_id)
-    VALUES (rid, 1, current_date + 30, 500.00, 0, 500.00, org), (rid, 2, current_date + 60, 500.00, 0, 500.00, org);
+   INSERT INTO public.accounts_receivable_installments (receivable_id, installment_number, due_date, original_amount, received_amount, discount_amount, interest_amount, penalty_amount, net_amount, organization_id)
+    VALUES (rid, 1, current_date + 30, 500.00, 0, 0, 0, 0, 500.00, org), (rid, 2, current_date + 60, 500.00, 0, 0, 0, 0, 500.00, org);
   END IF;
   INSERT INTO qa_b2bfin.manifest SELECT 'installment', k, 'public.accounts_receivable_installments', id FROM public.accounts_receivable_installments WHERE receivable_id = rid;
   INSERT INTO public.partner_order_financial_links (partner_order_id, partner_id, receivable_id) VALUES (oid_, pid, rid);
+  PERFORM qa_b2bfin.seed_legacy_origin(oid_, rid, pid, org, k);
   INSERT INTO qa_b2bfin.manifest SELECT 'link', k, 'public.partner_order_financial_links', id FROM public.partner_order_financial_links WHERE receivable_id = rid;
   IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings WHERE partner_id = pid) THEN
    INSERT INTO public.partner_financial_settings (partner_id, credit_limit) VALUES (pid, CASE k WHEN 'A' THEN 5000 WHEN 'B' THEN 7000 ELSE 9000 END);
@@ -51,8 +53,9 @@ BEGIN
 END $$;
 DO $$ BEGIN IF (SELECT count(*) FROM qa_b2bfin.manifest WHERE kind='receivable') <> 3 OR (SELECT count(*) FROM qa_b2bfin.manifest WHERE kind='installment') < 3 THEN RAISE EXCEPTION 'QA_SEED_INCOMPLETE'; END IF; END $$;
 SELECT 'QA_SEED_RESTORED' k, qa_b2bfin.restore_all() v;
+DROP FUNCTION qa_b2bfin.seed_legacy_origin(uuid,uuid,uuid,uuid,text);
 SELECT 'QA_TITLES_JSON' k, jsonb_object_agg(label, t) v FROM (
- SELECT m.label, jsonb_agg(jsonb_build_object('id', m.id, 'order_id', (SELECT id FROM qa_b2bfin.manifest o WHERE o.kind='order' AND o.label=m.label),
+ SELECT m.label, jsonb_agg(jsonb_build_object('id', m.id, 'total', (SELECT total_amount FROM public.accounts_receivable WHERE id = m.id), 'order_id', (SELECT id FROM qa_b2bfin.manifest o WHERE o.kind='order' AND o.label=m.label),
    'installments', (SELECT jsonb_agg(i.id ORDER BY i.id) FROM qa_b2bfin.manifest i WHERE i.kind='installment' AND i.label=m.label))) t
  FROM qa_b2bfin.manifest m WHERE m.kind = 'receivable' GROUP BY m.label) x;
 COMMIT;

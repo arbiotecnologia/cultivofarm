@@ -14,7 +14,8 @@ Regras de prova:
  - Navegador/CSV: prova separada (ROTEIRO.md), nunca inferida desta suíte."""
 import hashlib, json, os, sys, urllib.request, urllib.error
 REFS = {"hml": "vrlcdwmlytukrjezrrnf", "rehearsal": "swzpzcwiasxmjutrmvkm"}
-T = os.environ.get("TARGET"); 
+T = os.environ.get("TARGET")
+CREDIT = T == "rehearsal" or os.environ.get("CREDIT_02D") == "installed"  # HML: só após 02d + POST_02D_PASS; 
 if T not in REFS: sys.exit("REFUSED: TARGET=hml|rehearsal")
 if T == "rehearsal" and os.environ.get("REHEARSAL_CONFIRM") != "SINTETICO-ISOLADO-ROOT-REVISOU": sys.exit("REFUSED: REHEARSAL_CONFIRM")
 REF = REFS[T]; URL = f"https://{REF}.supabase.co"
@@ -58,7 +59,7 @@ for nm, tk in [("A", "QA_FIN_A"), ("B", "QA_FIN_B"), ("C", "QA_FIN_C")]:
     tok, p = TOK[tk], P[nm]; own = p["id"]
     s, j = rpc(tok, "b2b_finance_capability_v1")
     check(f"cap_{nm}", s == 200 and isinstance(j, dict) and j.get("contract") == "B2B_FINANCE_ROLE_V1" and j.get("allowed") is True
-          and j.get("partner_id") == own and j.get("writes") is False and j.get("credit_read") is (T == "rehearsal"), s)
+          and j.get("partner_id") == own and j.get("writes") is False and j.get("credit_read") is CREDIT, s)
     s, j = rpc(tok, "rpc_portal_partner_financial", {"p_partner_id": own, "p_own_finance_v1": True})
     if s != 200 or not envelope_ok(j, own): check(f"obrigacoes_{nm}_contrato", False, s)
     else:
@@ -74,8 +75,13 @@ for nm, tk in [("A", "QA_FIN_A"), ("B", "QA_FIN_B"), ("C", "QA_FIN_C")]:
         check(f"contadores_{nm}_forja_{onm}", denied(j, s, ["permission_denied"]), s)
     s, j = rpc(tok, "rpc_partner_message_counters", {"p_partner_id": own}); check(f"contadores_{nm}_proprio_negado", denied(j, s, ["permission_denied"]), s)
     s, j = rpc(tok, "b2b_finance_credit_v1")
-    if T == "hml": check(f"credito_{nm}_fechado_hml", denied(j, s, ["own_finance_credit_unavailable"]), s)
-    else: check(f"credito_{nm}_proprio", s == 200 and isinstance(j, dict) and j.get("partner_id") == own, s)  # formato a confirmar no PG descartável
+    if not CREDIT: check(f"credito_{nm}_fechado_hml", denied(j, s, ["own_finance_credit_unavailable"]), s)
+    else:
+        exp = round(sum(float(t.get("total", 0)) for t in p.get("titles", [])), 2)
+        check(f"credito_{nm}_proprio_exato", s == 200 and isinstance(j, dict) and j.get("contract") == "B2B_FINANCE_CREDIT_V1" and j.get("partner_id") == own
+              and p.get("credit_limit") is not None and float(j.get("credit_limit")) == float(p["credit_limit"]) and p.get("titles")
+              and float(j.get("exposicao_atual")) == exp and float(j.get("credito_disponivel")) == round(float(p["credit_limit"]) - exp, 2)
+              and j.get("reason_code") == "OK", (s, j))
     s, j = rpc(tok, "fn_b2b_credit_exposure", {"p_partner_id": own, "p_new_order_amount": 0, "p_exclude_order_id": None})
     check(f"exposicao_legada_{nm}_sem_execute", denied(j, s, ACL), s)
     fo_all = {x for f in foreign_all(nm) for x in set().union(*sentinels(f)) | {f["id"], f["link_id"]}}

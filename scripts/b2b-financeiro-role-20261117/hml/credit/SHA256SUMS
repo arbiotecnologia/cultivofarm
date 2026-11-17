@@ -1,0 +1,6 @@
+46db4992cab570167ba96ab8ca40a457a294e510668213263c380d6554a95e79  prod-b4-tables.json
+ad4273d3ea9d81a4b728fbf4c1ea07baf266b7b4cb6df294e13e6ffbebbdc93f  01d-pre-credit-hml.sql.readonly
+75d7c5c14b2011ee98a8af2b24070d97bf0cae3e4e6ce44029f773cac37f82ae  02d-install-credit-hml.sql.review
+7423f6a12dfa22f324242fbeac5a6d9bc675295dea6c8c2463f8e3dced346158  03d-post-credit-hml.sql.readonly
+c4adc55ef98fa044597765d48d203e68fdaf40fea4a48ec8864b68aa18288b67  04d-rollback-credit-hml.sql.review
+9f47c0ccd4497a8721f422d298ca400daeb0be6e4c85943b75566cd05357f5be  credit-pins.json

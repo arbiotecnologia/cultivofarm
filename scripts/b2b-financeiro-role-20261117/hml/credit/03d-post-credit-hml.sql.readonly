@@ -1,0 +1,29 @@
+-- GERADO; HML somente leitura após 02d. POST_02D_PASS + snapshot do núcleo para os 3 parceiros QA.
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;
+DO $$ DECLARE p jsonb := '{"hml_cap": "320de5b55a1ef75efc3a10cc7130a76a", "hml_cred": "fd99c750bfcdcd3ac44a7bf815e7ba83", "prod_cap": "339a8b5c98dede38b77d343041f6692d", "prod_cred": "57e0bb43364ccee43ba6c58b12cafed3", "cores": {"platform_private.b2b_credit_balances_core": "d528ba53d4db80439aebade58d58fdbe", "platform_private.b2b_credit_exposure_core": "7028dcaa0a5d44841e794f310ba3567c"}, "helpers": {"platform_private.b2b_credit_config_block": "a9ff339b7a9151b0945a37ef9aef66e3", "platform_private.b2b_debtor_partner": "19d096e643067fc3c73d0a0a1546d0ea", "platform_private.b2b_receivable_partner_scope": "cbebb71371eec7bd73fcdc2900088876", "platform_private.b2b_allocation_money_row": "2c8e4c323d1625bd06b9756c5fc7891d", "platform_private.b2b_legacy_money_row": "72d0b11083230fa663da46df31b7af22", "platform_private.b2b_proven_money_row_internal": "b4cfcf65495322ce3c3b911a3597abe2", "platform_private.b2b_order_residual": "93769163bfc7c72a4bbc722e62313179"}, "tables": {"platform_private.b2b_authorized_documents": "d3b9b88c021c0054e433efe9315785a4", "platform_private.b2b_document_allocations": "7728ae8c115a80dd21f48de110ba3c56", "platform_private.b2b_allocation_reversals": "a71ba8a7a6fea40cafadfcc710161e68", "platform_private.price_schedule_snapshots": "a5fd43a98659b5485ed175556708e14f", "platform_private.b2b_financial_forecasts": "ff046e3ad490560d14ec3bec9a37a472", "platform_private.b2b_order_condition_snapshots": "0f10e5075b78c820b8dbdbff2468fbf1", "platform_private.b2b_order_condition_quote_snapshots": "512293038e3aff8d9d266f37c1ee3683"}}'; k text; v text;
+BEGIN
+ IF to_regprocedure('platform_private.homolog_validation_block_receivable_insert()') IS NULL THEN RAISE EXCEPTION 'B2B_FIN_02D_REF_UNPROVEN: impressão digital HML ausente'; END IF;
+ IF coalesce(current_setting('app.expected_ref', true), '') <> 'vrlcdwmlytukrjezrrnf' THEN RAISE EXCEPTION 'B2B_FIN_02D_REF_UNPROVEN: SET app.expected_ref'; END IF;
+ IF to_regprocedure('platform_private.b2b_credit_balances(uuid,uuid)') IS NOT NULL OR to_regprocedure('platform_private.b2b_integration_actor(uuid)') IS NOT NULL THEN
+  RAISE EXCEPTION 'B2B_FIN_02D_UNEXPECTED: cadeia B4 pública presente — recapturar antes'; END IF;
+ IF (SELECT md5(p.prosrc) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=('platform_private.b2b_finance_credit_core') AND p.prokind='f') IS DISTINCT FROM p->>'prod_cred'
+  OR (SELECT md5(p.prosrc) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=('platform_private.b2b_finance_capability_core') AND p.prokind='f') IS DISTINCT FROM p->>'prod_cap' THEN
+  RAISE EXCEPTION 'B2B_FIN_02D_DRIFT: leitores Financeiro HML fora do estado esperado (post)'; END IF;
+ FOR k, v IN SELECT key, value #>> '{}' FROM jsonb_each(p->'helpers') LOOP
+  IF (SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=(k) AND p.prokind='f') IS NOT NULL AND (SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=(k) AND p.prokind='f') <> v THEN RAISE EXCEPTION 'B2B_FIN_02D_DRIFT: % existe no HML com corpo diferente de produção', k; END IF;
+  IF (SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=(k) AND p.prokind='f') IS DISTINCT FROM v THEN RAISE EXCEPTION 'B2B_FIN_02D_POST: % ausente/divergente', k; END IF;
+ END LOOP;
+ FOR k, v IN SELECT key, value #>> '{}' FROM jsonb_each(p->'tables') LOOP
+  IF to_regclass(k) IS NOT NULL AND (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull, ',' ORDER BY a.attnum)) FROM pg_attribute a WHERE a.attrelid=to_regclass(k) AND a.attnum>0 AND NOT a.attisdropped) <> v THEN RAISE EXCEPTION 'B2B_FIN_02D_DRIFT: tabela % difere de produção', k; END IF;
+  IF to_regclass(k) IS NULL THEN RAISE EXCEPTION 'B2B_FIN_02D_POST: % ausente', k; END IF;
+ END LOOP;
+ FOR k, v IN SELECT key, value #>> '{}' FROM jsonb_each(p->'cores') LOOP IF (SELECT md5(p.prosrc) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=(k) AND p.prokind='f') IS DISTINCT FROM v THEN RAISE EXCEPTION 'B2B_FIN_02D_POST: núcleo % divergente', k; END IF; END LOOP;
+ IF to_regclass('public.receivable_payments') IS NULL OR to_regclass('public.partner_order_payment_schedule') IS NULL OR to_regclass('public.financial_audit_log') IS NULL THEN
+  RAISE EXCEPTION 'B2B_FIN_02D_DEP: tabela pública da cadeia ausente'; END IF;
+END $$;
+DO $$ BEGIN
+ IF has_function_privilege('authenticated','platform_private.b2b_credit_exposure_core(uuid,numeric,uuid)','EXECUTE') OR has_function_privilege('anon','platform_private.b2b_credit_exposure_core(uuid,numeric,uuid)','EXECUTE')
+  OR has_function_privilege('authenticated','platform_private.b2b_credit_balances_core(uuid,uuid,uuid)','EXECUTE') OR has_function_privilege('anon','public.b2b_finance_credit_v1()','EXECUTE')
+  THEN RAISE EXCEPTION 'B2B_FIN_02D_POST: ACL ampla'; END IF; END $$;
+SELECT 'POST_02D_PASS' k, p::text partner, platform_private.b2b_credit_exposure_core(p, 0, NULL) snapshot FROM unnest('{cdb78993-89e4-48db-956e-f40b014a8146,9d53f280-f828-4af8-a08c-3574263dc466,6100c3ac-ff5b-4596-a0e3-92665a5dcaab}'::uuid[]) p;
+ROLLBACK;

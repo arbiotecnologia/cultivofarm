@@ -1,81 +1,44 @@
--- GERADO por build_seed.py a partir de 06-cleanup.template.sql + _lib.sql; não editar.
--- LIMPEZA QA Financeiro B2B — SOMENTE HML vrlcdwmlytukrjezrrnf, postgres, transação única. Rodar DEPOIS de o root remover
--- as contas Auth qa-fin-* (Admin API) OU antes — aqui só se removem linhas public/platform_private; auth.* é intocado.
--- Semente = manifesto do seed + perfis/vínculos dos usuários qa-fin-* + parceiros QA-FIN-*. Descobre TODA linha que
--- referencia a semente (uuid/text/jsonb, 3 níveis), recusa tabelas protegidas/fixtures proibidas/volume excessivo,
--- relaxa SOMENTE os gatilhos de DELETE das tabelas atingidas para essas linhas exatas (hash) e restaura def/md5 antes
--- do COMMIT. Ao fim exige zero referências e remove o schema qa_b2bfin. Nenhum gatilho desativado; tenants/planos preservados.
+-- GERADO por build_seed.py; não editar.
+-- LIMPEZA QA (HML vrlcdwmlytukrjezrrnf, postgres, transação única). Exige o DIGEST aprovado no dry-run:
+--   SET app.qa_cleanup_digest = '<digest do 06a>';  (na mesma sessão, antes deste script)
+-- Escopo: só linhas ligadas por coluna uuid aos 5 usuários, 3 parceiros, 2 assinaturas, 4 overrides e manifesto. Qualquer recusa
+-- (tabela protegida, outro tenant, ator QA em linha de negócio, fixture proibida, referência só textual, volume) aborta.
+-- Planos/versões/catálogo/tenants nunca entram. Relaxa SÓ gatilhos de DELETE das tabelas atingidas para os hashes exatos e
+-- restaura def/md5 antes do COMMIT. auth.* intocado (contas saem pelo painel Auth depois).
 BEGIN;
 SET LOCAL lock_timeout = '5s';
-DO $$ BEGIN
- IF session_user <> 'postgres' THEN RAISE EXCEPTION 'QA_CLEAN_REFUSED: session_user'; END IF;
- IF to_regprocedure('platform_private.homolog_validation_block_receivable_insert()') IS NULL OR to_regprocedure('platform_private.b2b_credit_balances(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'QA_CLEAN_REFUSED: alvo não é HML'; END IF;
+DO $$ BEGIN IF session_user <> 'postgres' OR to_regprocedure('platform_private.homolog_validation_block_receivable_insert()') IS NULL
+  OR to_regprocedure('platform_private.b2b_credit_balances(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'QA_CLEAN_REFUSED: alvo/sessão'; END IF;
  IF to_regnamespace('qa_b2bfin') IS NULL THEN CREATE SCHEMA qa_b2bfin; REVOKE ALL ON SCHEMA qa_b2bfin FROM PUBLIC;
-   CREATE TABLE qa_b2bfin.manifest(kind text NOT NULL, label text, tbl regclass NOT NULL, id uuid NOT NULL, PRIMARY KEY (tbl, id)); END IF;
+  CREATE TABLE qa_b2bfin.manifest(kind text NOT NULL, label text, tbl regclass NOT NULL, id uuid NOT NULL, PRIMARY KEY (tbl, id)); END IF;
 END $$;
 {{LIB}}
-INSERT INTO qa_b2bfin.ticket VALUES (txid_current(), 'cleanup');
-CREATE FUNCTION qa_b2bfin.own_plan_row(t regclass, h text) RETURNS boolean LANGUAGE plpgsql SET search_path TO '' AS $f$
-DECLARE j jsonb; qp uuid := (SELECT id FROM public.saas_plans WHERE key = 'qa_fin_20261117');
-BEGIN
- IF qp IS NULL THEN RETURN false; END IF;
- EXECUTE format('SELECT to_jsonb(x) FROM %s x WHERE md5(to_jsonb(x)::text) = %L', t, h) INTO j;
- RETURN coalesce((j->>'id') = qp::text, false) OR coalesce((j->>'plan_id') = qp::text, false)
-  OR coalesce((j->>'plan_version_id') IN (SELECT id::text FROM public.saas_plan_versions WHERE plan_id = qp), false);  -- NULL nunca autoriza
-END $f$;
-CREATE TEMP TABLE qa_seed(id uuid PRIMARY KEY) ON COMMIT DROP;
-CREATE TEMP TABLE qa_hit(tbl regclass, rowhash text, id uuid, PRIMARY KEY (tbl, rowhash)) ON COMMIT DROP;
-INSERT INTO qa_seed SELECT id FROM qa_b2bfin.manifest ON CONFLICT DO NOTHING;
-INSERT INTO qa_seed VALUES ('cdb78993-89e4-48db-956e-f40b014a8146'),('9d53f280-f828-4af8-a08c-3574263dc466'),('6100c3ac-ff5b-4596-a0e3-92665a5dcaab'),('7d15eddb-38b6-43dd-bbf5-43936155321d'),('5db79a8e-82af-419d-ae66-87a98c02fbec'),('c3ed723f-1017-478e-99b2-25b48b3ab77e'),('1d0ea582-1d46-4152-8fbe-f425c74942c1'),('51652ab6-da23-4a3d-8f29-417af15cc761') ON CONFLICT DO NOTHING;  -- parceiros/usuários QA exatos do root
-INSERT INTO qa_seed VALUES ('019fe16e-4a05-4ca1-8480-c2727b92dfa2'),('d69bf60a-faa2-4cc0-80df-fd8dc913e9e9'),('1aca4276-7043-4616-8dd5-839d2e4e86de'),('1eac8c31-6b09-43fd-bbec-e523a812e6ba'),('fcb4c72d-2040-4bbc-98fd-145f1463ec04'),('2624ff4a-c4dd-4885-af23-beb8463d2209') ON CONFLICT DO NOTHING;  -- SaaS QA do root
-DO $$
-DECLARE c record; lvl int; n bigint; q text;
- protected text[] := '{public.organizations,public.saas_plans,public.saas_plan_versions,public.saas_plan_version_features,public.saas_features,public.financial_categories,public.payment_methods,public.configuracoes_sistema}';
-BEGIN
- IF EXISTS (SELECT 1 FROM qa_seed WHERE id IN ('d7edc250-25a4-4ee2-8b62-27c1645cdfc0','525fea87-e27e-43f7-af7b-a30064188332','85ba8b71-8514-4ec9-90d3-bfc7ab3ed214')) THEN RAISE EXCEPTION 'QA_CLEAN_REFUSED: semente contém fixture/tenant protegido'; END IF;
- FOR lvl IN 1..3 LOOP
-  FOR c IN SELECT a.attrelid::regclass t, a.attname col, format_type(a.atttypid, NULL) ty
-     FROM pg_attribute a JOIN pg_class r ON r.oid = a.attrelid JOIN pg_namespace s ON s.oid = r.relnamespace
-     WHERE r.relkind IN ('r','p') AND a.attnum > 0 AND NOT a.attisdropped AND s.nspname IN ('public','platform_private')
-       AND format_type(a.atttypid, NULL) IN ('uuid','uuid[]','text','jsonb','json') LOOP
-   q := CASE c.ty WHEN 'uuid' THEN format('%I IN (SELECT id FROM qa_seed)', c.col)
-                  WHEN 'uuid[]' THEN format('%I && (SELECT array_agg(id) FROM qa_seed)', c.col)
-                  ELSE format('%I::text ~ (SELECT string_agg(id::text, ''|'') FROM qa_seed)', c.col) END;
-   EXECUTE format('INSERT INTO qa_hit SELECT %L::regclass, md5(to_jsonb(x)::text), CASE WHEN to_jsonb(x) ? ''id'' AND (to_jsonb(x)->>''id'') ~ ''^[0-9a-f-]{36}$'' THEN (to_jsonb(x)->>''id'')::uuid END FROM %s x WHERE %s ON CONFLICT DO NOTHING', c.t, c.t, q);
-  END LOOP;
-  INSERT INTO qa_seed SELECT id FROM qa_hit WHERE id IS NOT NULL ON CONFLICT DO NOTHING;
- END LOOP;
- -- tabelas protegidas: só linhas do PRÓPRIO plano QA (id/plan_id/plan_version_id manifestado ou plano qa_fin_20261117)
- IF EXISTS (SELECT 1 FROM qa_hit h JOIN unnest(protected) x ON to_regclass(x) = h.tbl WHERE NOT qa_b2bfin.own_plan_row(h.tbl, h.rowhash)) THEN RAISE EXCEPTION 'QA_CLEAN_REFUSED: referência em tabela protegida %', (SELECT string_agg(DISTINCT x, ',') FROM qa_hit h JOIN unnest(protected) x ON to_regclass(x) = h.tbl WHERE NOT qa_b2bfin.own_plan_row(h.tbl, h.rowhash)); END IF;
- SELECT count(*) INTO n FROM qa_hit; IF n > 5000 THEN RAISE EXCEPTION 'QA_CLEAN_REFUSED: % linhas — volume não plausível para fixtures', n; END IF;
- IF EXISTS (SELECT 1 FROM qa_hit WHERE id IN ('d7edc250-25a4-4ee2-8b62-27c1645cdfc0','525fea87-e27e-43f7-af7b-a30064188332','85ba8b71-8514-4ec9-90d3-bfc7ab3ed214')) THEN RAISE EXCEPTION 'QA_CLEAN_REFUSED: linha protegida atingida'; END IF;
- INSERT INTO qa_b2bfin.rowmark SELECT rowhash, tbl FROM qa_hit ON CONFLICT DO NOTHING;
- FOR c IN SELECT DISTINCT t.tgfoid::regprocedure f FROM pg_trigger t WHERE NOT t.tgisinternal AND t.tgrelid IN (SELECT tbl FROM qa_hit) AND (t.tgtype & 8) <> 0 AND (t.tgtype & 1) <> 0 LOOP
-  PERFORM qa_b2bfin.relax(c.f);
- END LOOP;
+{{DISCOVER}}
+DO $$ DECLARE d text; BEGIN
+ IF EXISTS (SELECT 1 FROM qa_refuse) THEN RAISE EXCEPTION 'QA_CLEAN_REFUSED: % recusa(s) — ver 06a', (SELECT count(*) FROM qa_refuse); END IF;
+ SELECT md5(coalesce(string_agg(x, ',' ORDER BY x), '')) INTO d FROM (SELECT DISTINCT tbl::text || ':' || rowhash x FROM qa_hit) q;
+ IF d IS DISTINCT FROM current_setting('app.qa_cleanup_digest', true) THEN RAISE EXCEPTION 'QA_CLEAN_REFUSED: digest % difere do aprovado no dry-run', d; END IF;
 END $$;
-DO $$
-DECLARE pass int; t regclass; left_ bigint;
-BEGIN
+INSERT INTO qa_b2bfin.ticket VALUES (txid_current(), 'cleanup');
+INSERT INTO qa_b2bfin.rowmark SELECT rowhash, tbl FROM qa_hit ON CONFLICT DO NOTHING;
+DO $$ DECLARE c record; BEGIN
+ FOR c IN SELECT DISTINCT t.tgfoid::regprocedure f FROM pg_trigger t WHERE NOT t.tgisinternal AND t.tgrelid IN (SELECT tbl FROM qa_hit) AND (t.tgtype & 8) <> 0 AND (t.tgtype & 1) <> 0 LOOP
+  PERFORM qa_b2bfin.relax(c.f); END LOOP; END $$;
+DO $$ DECLARE pass int; t regclass; n bigint; c record; BEGIN
  FOR pass IN 1..12 LOOP
   FOR t IN SELECT DISTINCT tbl FROM qa_hit LOOP
-   BEGIN
-    EXECUTE format('DELETE FROM %s x WHERE md5(to_jsonb(x)::text) IN (SELECT rowhash FROM qa_hit WHERE tbl = %L::regclass)', t, t);
+   BEGIN EXECUTE format('DELETE FROM %s x WHERE md5(to_jsonb(x)::text) IN (SELECT rowhash FROM qa_hit WHERE tbl = %L::regclass)', t, t);
    EXCEPTION WHEN foreign_key_violation THEN NULL; END;
   END LOOP;
  END LOOP;
- -- prova final: nenhuma linha restante referencia a semente
- left_ := 0;
- DECLARE c record; n bigint; BEGIN
-  FOR c IN SELECT a.attrelid::regclass t, a.attname col, format_type(a.atttypid, NULL) ty FROM pg_attribute a JOIN pg_class r ON r.oid=a.attrelid JOIN pg_namespace s ON s.oid=r.relnamespace
-    WHERE r.relkind IN ('r','p') AND a.attnum>0 AND NOT a.attisdropped AND s.nspname IN ('public','platform_private') AND format_type(a.atttypid,NULL) IN ('uuid','uuid[]','text','jsonb','json') LOOP
-   EXECUTE format('SELECT count(*) FROM %s x WHERE %s', c.t, CASE c.ty WHEN 'uuid' THEN format('%I IN (SELECT id FROM qa_seed)', c.col) WHEN 'uuid[]' THEN format('%I && (SELECT array_agg(id) FROM qa_seed)', c.col) ELSE format('%I::text ~ (SELECT string_agg(id::text, ''|'') FROM qa_seed)', c.col) END) INTO n;
-   left_ := left_ + n;
-  END LOOP; END;
- IF left_ <> 0 THEN RAISE EXCEPTION 'QA_CLEAN_INCOMPLETE: % referências restantes (rollback integral)', left_; END IF;
+ FOR c IN SELECT a.attrelid::regclass t, a.attname col, format_type(a.atttypid, NULL) ty FROM pg_attribute a JOIN pg_class r ON r.oid = a.attrelid JOIN pg_namespace s ON s.oid = r.relnamespace
+   WHERE r.relkind IN ('r','p') AND a.attnum > 0 AND NOT a.attisdropped AND s.nspname IN ('public','platform_private') AND format_type(a.atttypid, NULL) IN ('uuid','uuid[]') LOOP
+  EXECUTE format('SELECT count(*) FROM %s x JOIN qa_seed s ON %s', c.t, CASE c.ty WHEN 'uuid' THEN format('x.%I = s.id', c.col) ELSE format('s.id = ANY (x.%I)', c.col) END) INTO n;
+  IF n <> 0 THEN RAISE EXCEPTION 'QA_CLEAN_INCOMPLETE: % linhas ainda referenciam a semente em %.% (rollback integral)', n, c.t, c.col; END IF;
+ END LOOP;
 END $$;
-SELECT 'QA_CLEAN_DELETED' k, jsonb_object_agg(tbl::text, n) v FROM (SELECT tbl, count(*) n FROM qa_hit GROUP BY tbl) x;
+SELECT 'QA_CLEAN_DELETED' k, jsonb_object_agg(tbl::text, n) v FROM (SELECT tbl, count(DISTINCT rowhash) n FROM qa_hit GROUP BY tbl) x;
 SELECT 'QA_CLEAN_RESTORED' k, qa_b2bfin.restore_all() v;
 DROP SCHEMA qa_b2bfin CASCADE;
-SELECT 'QA_CLEAN_PASS' k, (SELECT count(*) FROM auth.users WHERE id IN ('7d15eddb-38b6-43dd-bbf5-43936155321d','5db79a8e-82af-419d-ae66-87a98c02fbec','c3ed723f-1017-478e-99b2-25b48b3ab77e','1d0ea582-1d46-4152-8fbe-f425c74942c1','51652ab6-da23-4a3d-8f29-417af15cc761')) auth_qa_restantes_remover_via_admin_api;
+SELECT 'QA_CLEAN_PASS' k, (SELECT count(*) FROM auth.users WHERE id IN ('7d15eddb-38b6-43dd-bbf5-43936155321d','5db79a8e-82af-419d-ae66-87a98c02fbec','c3ed723f-1017-478e-99b2-25b48b3ab77e','1d0ea582-1d46-4152-8fbe-f425c74942c1','51652ab6-da23-4a3d-8f29-417af15cc761')) contas_auth_a_remover_no_painel;
 COMMIT;

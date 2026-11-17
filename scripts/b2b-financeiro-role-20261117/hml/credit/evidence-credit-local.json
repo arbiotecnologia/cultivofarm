@@ -1,0 +1,150 @@
+{
+ "total": 36,
+ "results": [
+  {
+   "name": "pre_ref_divergente_falha",
+   "status": "PASS"
+  },
+  {
+   "name": "pre_drift_aborta",
+   "status": "PASS"
+  },
+  {
+   "name": "pre_pass",
+   "status": "PASS"
+  },
+  {
+   "name": "install_sem_enum_aborta",
+   "status": "PASS"
+  },
+  {
+   "name": "post_pass",
+   "status": "PASS"
+  },
+  {
+   "name": "02d_pre_ref_obrigatorio",
+   "status": "PASS"
+  },
+  {
+   "name": "02d_pre_tabela_divergente_aborta",
+   "status": "PASS"
+  },
+  {
+   "name": "02d_pre_helper_divergente_aborta",
+   "status": "PASS"
+  },
+  {
+   "name": "02d_pre_pass",
+   "status": "PASS"
+  },
+  {
+   "name": "antes_02d_credito_fechado",
+   "status": "PASS"
+  },
+  {
+   "name": "02d_install",
+   "status": "PASS"
+  },
+  {
+   "name": "02d_post_pass_snapshot",
+   "status": "PASS"
+  },
+  {
+   "name": "capacidade_credito_aberto",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_A_limite",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_A_partner",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_A_exposicao",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_A_disponivel",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_B_exposicao_propria",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_C_disponivel_proprio",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_sem_prova_writer_falha_fechado",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_outro_parceiro_nao_afetado",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_A_restabelecido",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_B_mesma_empresa_isolado",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_C_outro_tenant_isolado",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_revogado_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_gestor_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "nucleo_sem_execute_cliente",
+   "status": "PASS"
+  },
+  {
+   "name": "balancos_sem_execute_cliente",
+   "status": "PASS"
+  },
+  {
+   "name": "sem_wrapper_publica_nova",
+   "status": "PASS"
+  },
+  {
+   "name": "nucleos_identicos_producao",
+   "status": "PASS"
+  },
+  {
+   "name": "04d_rollback",
+   "status": "PASS"
+  },
+  {
+   "name": "apos_rollback_credito_fechado",
+   "status": "PASS"
+  },
+  {
+   "name": "apos_rollback_capacidade_motivo",
+   "status": "PASS"
+  },
+  {
+   "name": "apos_rollback_sem_objetos",
+   "status": "PASS"
+  },
+  {
+   "name": "02d_reinstala_apos_rollback",
+   "status": "PASS"
+  },
+  {
+   "name": "reinstalado_credito",
+   "status": "PASS"
+  }
+ ],
+ "note": "PostgreSQL descartável; auth sintética; cadeia de PRODUÇÃO real (md5); não prova JWT/RLS hospedados"
+}

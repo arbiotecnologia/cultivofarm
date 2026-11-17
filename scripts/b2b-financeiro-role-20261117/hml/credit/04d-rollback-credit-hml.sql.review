@@ -1,0 +1,45 @@
+-- GERADO por build_credit_hml.py; não editar. Volta o HML ao estado 02b (crédito fechado) e remove SÓ o que o 02d criou (ledger).
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+
+DO $$ BEGIN
+ IF to_regprocedure('platform_private.homolog_validation_block_receivable_insert()') IS NULL THEN RAISE EXCEPTION 'B2B_FIN_02D_REF_UNPROVEN: impressão digital HML ausente'; END IF;
+ IF coalesce(current_setting('app.expected_ref', true), '') <> 'vrlcdwmlytukrjezrrnf' THEN RAISE EXCEPTION 'B2B_FIN_02D_REF_UNPROVEN: SET app.expected_ref'; END IF;
+ IF to_regclass('platform_private.b2b_fin_02d_objects') IS NULL THEN RAISE EXCEPTION 'B2B_FIN_04D_NOT_INSTALLED'; END IF;
+ IF (SELECT md5(p.prosrc) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=('platform_private.b2b_finance_credit_core') AND p.prokind='f') <> '57e0bb43364ccee43ba6c58b12cafed3' OR (SELECT md5(p.prosrc) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=('platform_private.b2b_finance_capability_core') AND p.prokind='f') <> '339a8b5c98dede38b77d343041f6692d' THEN RAISE EXCEPTION 'B2B_FIN_04D_DRIFT'; END IF;
+END $$;
+CREATE OR REPLACE FUNCTION platform_private.b2b_finance_capability_core()
+ RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO ''
+AS $function$
+DECLARE u uuid:=auth.uid(); pid uuid; nome text;
+BEGIN
+ pid:=platform_private.b2b_finance_actor_partner();
+ IF u IS NULL OR pid IS NULL THEN
+  RETURN jsonb_build_object('contract','B2B_FINANCE_ROLE_V1','allowed',false,'reason','not_finance_actor'); END IF;
+ IF NOT EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='pedidos_b2b')
+  OR NOT EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='contas_receber') THEN
+  RETURN jsonb_build_object('contract','B2B_FINANCE_ROLE_V1','allowed',false,'reason','not_entitled'); END IF;
+ SELECT coalesce(nullif(btrim(pa.nome_fantasia),''),pa.razao_social) INTO nome FROM public.partner_accounts pa WHERE pa.id=pid;
+ RETURN jsonb_build_object('contract','B2B_FINANCE_ROLE_V1','allowed',true,'partner_id',pid,'partner_name',nome,
+  'obligations_read',true,'export',true,'credit_read',false,'credit_reason','credit_chain_unavailable','writes',false);
+END $function$;
+CREATE OR REPLACE FUNCTION platform_private.b2b_finance_credit_core()
+ RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO ''
+AS $function$
+BEGIN
+ -- HML: cadeia canônica de crédito ausente; nunca cair na fórmula legada sem gate.
+ RAISE EXCEPTION 'own_finance_credit_unavailable' USING ERRCODE='42501';
+END $function$;
+DO $$ DECLARE o record; n bigint; f regprocedure; BEGIN
+ FOR o IN SELECT * FROM platform_private.b2b_fin_02d_objects WHERE kind='function' LOOP
+  FOR f IN SELECT p.oid FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=o.name LOOP EXECUTE 'DROP FUNCTION '||f; END LOOP; END LOOP;
+ FOR o IN SELECT * FROM platform_private.b2b_fin_02d_objects WHERE kind='view' LOOP EXECUTE 'DROP VIEW '||o.name; END LOOP;
+ FOR o IN SELECT * FROM platform_private.b2b_fin_02d_objects WHERE kind='table' ORDER BY CASE name WHEN 'platform_private.b2b_allocation_reversals' THEN 0 WHEN 'platform_private.b2b_document_allocations' THEN 1 ELSE 2 END LOOP
+  EXECUTE 'SELECT count(*) FROM '||o.name INTO n; IF n <> 0 THEN RAISE EXCEPTION 'B2B_FIN_04D_REFUSED: % tem linhas — preservar histórico', o.name; END IF; EXECUTE 'DROP TABLE '||o.name; END LOOP;
+ DROP TABLE platform_private.b2b_fin_02d_objects;
+END $$;
+DO $$ BEGIN IF (SELECT md5(p.prosrc) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=('platform_private.b2b_finance_credit_core') AND p.prokind='f') <> 'fd99c750bfcdcd3ac44a7bf815e7ba83' OR (SELECT md5(p.prosrc) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname=('platform_private.b2b_finance_capability_core') AND p.prokind='f') <> '320de5b55a1ef75efc3a10cc7130a76a' THEN RAISE EXCEPTION 'B2B_FIN_04D_RESTORE_DRIFT'; END IF; END $$;
+REVOKE ALL ON FUNCTION platform_private.b2b_finance_credit_core() FROM PUBLIC, anon, service_role; GRANT EXECUTE ON FUNCTION platform_private.b2b_finance_credit_core() TO authenticated;
+REVOKE ALL ON FUNCTION platform_private.b2b_finance_capability_core() FROM PUBLIC, anon, service_role; GRANT EXECUTE ON FUNCTION platform_private.b2b_finance_capability_core() TO authenticated;
+SELECT 'ROLLBACK_02D_OK' k;
+COMMIT;

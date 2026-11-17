@@ -54,6 +54,39 @@ BEGIN
  RETURN out;
 END $f$;
 
+-- Origem "legada provada" FICTÍCIA para o leitor de crédito de PRODUÇÃO (b2b_legacy_money_row): termos, cronograma, snapshot
+-- econômico selado e auditoria INSERT das parcelas, todos marcados QA-FIN e manifestados. Exercita leitura/fórmula/isolamento;
+-- NÃO prova a proveniência do writer canônico (é réplica sintética do que ele gravaria). Sem NF, sem cobrança.
+CREATE OR REPLACE FUNCTION qa_b2bfin.seed_legacy_origin(p_order uuid, p_rec uuid, p_partner uuid, p_org uuid, p_label text) RETURNS void
+LANGUAGE plpgsql SET search_path TO '' AS $f$
+DECLARE t uuid := gen_random_uuid(); n int; tot numeric; sched jsonb;
+BEGIN
+ SELECT count(*), sum(original_amount) INTO n, tot FROM public.accounts_receivable_installments WHERE receivable_id = p_rec;
+ IF n = 0 THEN RAISE EXCEPTION 'QA_SEED_INCOMPLETE: título % sem parcelas', p_label; END IF;
+ INSERT INTO qa_b2bfin.manifest VALUES ('terms', p_label, 'public.partner_order_payment_terms', t);
+ INSERT INTO public.partner_order_payment_terms (id, partner_order_id, plan_name_snapshot, plan_code_snapshot, discount_percent_snapshot,
+   monthly_interest_percent_snapshot, months_count_snapshot, installment_count, first_due_date, table_amount, discount_amount,
+   net_amount_after_discount, financial_interest_amount, final_amount, approval_status)
+  SELECT t, p_order, 'QA-FIN fixture', 'QA-FIN', 0, 0, n, n, min(due_date), tot, 0, tot, 0, tot, 'not_required'
+  FROM public.accounts_receivable_installments WHERE receivable_id = p_rec;
+ INSERT INTO public.partner_order_payment_schedule (partner_order_id, payment_terms_id, installment_number, due_date, amount, principal_amount, interest_amount, status, receivable_installment_id)
+  SELECT p_order, t, i.installment_number, i.due_date, i.original_amount, i.original_amount, 0, 'planned', i.id
+  FROM public.accounts_receivable_installments i WHERE i.receivable_id = p_rec;
+ INSERT INTO qa_b2bfin.manifest SELECT 'schedule', p_label, 'public.partner_order_payment_schedule', id FROM public.partner_order_payment_schedule WHERE payment_terms_id = t;
+ SELECT jsonb_agg(to_jsonb(s) - ARRAY['created_at','status','receivable_installment_id'] ORDER BY s.installment_number) INTO sched
+  FROM public.partner_order_payment_schedule s WHERE s.payment_terms_id = t;
+ UPDATE public.partner_orders SET payment_terms_id = t, internal_economic_snapshot = jsonb_build_object('schema_version', '1',
+   'sealed_by', 'QA-FIN-20261117 fixture sintética', 'qa_fixture', true,
+   'origin', jsonb_build_object('organization_id', p_org, 'partner_id', p_partner),
+   'terms', jsonb_build_object('id', t, 'partner_order_id', p_order, 'installment_count', n, 'final_amount', tot), 'schedule', sched)
+  WHERE id = p_order;
+ INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, reason)
+  SELECT 'accounts_receivable_installments', i.id, 'INSERT', jsonb_build_object('receivable_id', i.receivable_id, 'organization_id', i.organization_id,
+    'original_amount', i.original_amount, 'interest_amount', 0), 'QA-FIN-20261117 fixture sintética'
+  FROM public.accounts_receivable_installments i WHERE i.receivable_id = p_rec
+   AND NOT EXISTS (SELECT 1 FROM public.financial_audit_log f WHERE f.entity_type = 'accounts_receivable_installments' AND f.entity_id = i.id AND f.action = 'INSERT');
+END $f$;
+
 INSERT INTO qa_b2bfin.ticket VALUES (txid_current(), 'seed');
 SELECT qa_b2bfin.relax('platform_private.homolog_validation_block_receivable_insert()'::regprocedure);
 DO $$
@@ -74,11 +107,12 @@ BEGIN
    VALUES (rid, 'B2B_ORDER', oid_, 'QA-FIN-' || k || ' título sentinela', cat, 1000.00, current_date, current_date + 30, 2, pid, org, 'QA-FIN fixture sintética sem NF/cobrança', false);
   SELECT count(*) INTO n FROM public.accounts_receivable_installments WHERE receivable_id = rid;
   IF n = 0 THEN
-   INSERT INTO public.accounts_receivable_installments (receivable_id, installment_number, due_date, original_amount, received_amount, net_amount, organization_id)
-    VALUES (rid, 1, current_date + 30, 500.00, 0, 500.00, org), (rid, 2, current_date + 60, 500.00, 0, 500.00, org);
+   INSERT INTO public.accounts_receivable_installments (receivable_id, installment_number, due_date, original_amount, received_amount, discount_amount, interest_amount, penalty_amount, net_amount, organization_id)
+    VALUES (rid, 1, current_date + 30, 500.00, 0, 0, 0, 0, 500.00, org), (rid, 2, current_date + 60, 500.00, 0, 0, 0, 0, 500.00, org);
   END IF;
   INSERT INTO qa_b2bfin.manifest SELECT 'installment', k, 'public.accounts_receivable_installments', id FROM public.accounts_receivable_installments WHERE receivable_id = rid;
   INSERT INTO public.partner_order_financial_links (partner_order_id, partner_id, receivable_id) VALUES (oid_, pid, rid);
+  PERFORM qa_b2bfin.seed_legacy_origin(oid_, rid, pid, org, k);
   INSERT INTO qa_b2bfin.manifest SELECT 'link', k, 'public.partner_order_financial_links', id FROM public.partner_order_financial_links WHERE receivable_id = rid;
   IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings WHERE partner_id = pid) THEN
    INSERT INTO public.partner_financial_settings (partner_id, credit_limit) VALUES (pid, CASE k WHEN 'A' THEN 5000 WHEN 'B' THEN 7000 ELSE 9000 END);
@@ -88,8 +122,9 @@ BEGIN
 END $$;
 DO $$ BEGIN IF (SELECT count(*) FROM qa_b2bfin.manifest WHERE kind='receivable') <> 3 OR (SELECT count(*) FROM qa_b2bfin.manifest WHERE kind='installment') < 3 THEN RAISE EXCEPTION 'QA_SEED_INCOMPLETE'; END IF; END $$;
 SELECT 'QA_SEED_RESTORED' k, qa_b2bfin.restore_all() v;
+DROP FUNCTION qa_b2bfin.seed_legacy_origin(uuid,uuid,uuid,uuid,text);
 SELECT 'QA_TITLES_JSON' k, jsonb_object_agg(label, t) v FROM (
- SELECT m.label, jsonb_agg(jsonb_build_object('id', m.id, 'order_id', (SELECT id FROM qa_b2bfin.manifest o WHERE o.kind='order' AND o.label=m.label),
+ SELECT m.label, jsonb_agg(jsonb_build_object('id', m.id, 'total', (SELECT total_amount FROM public.accounts_receivable WHERE id = m.id), 'order_id', (SELECT id FROM qa_b2bfin.manifest o WHERE o.kind='order' AND o.label=m.label),
    'installments', (SELECT jsonb_agg(i.id ORDER BY i.id) FROM qa_b2bfin.manifest i WHERE i.kind='installment' AND i.label=m.label))) t
  FROM qa_b2bfin.manifest m WHERE m.kind = 'receivable' GROUP BY m.label) x;
 COMMIT;
