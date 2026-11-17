@@ -35,3 +35,9 @@ Nada deste pacote foi aplicado ao banco hospedado, implantado ou publicado.
 - Edição/transição de tipo para/desde Financeiro no painel de refinamento (`scripts/user-edit-access-email-links-20261117`) não atualiza `partner_users.papel`; manter fechada (o helper nega papel/vínculo divergente). Revogação/inativação funcionam pelos caminhos existentes.
 - Monitor de época do AuthProvider não inclui o papel; revogação é percebida pela reconsulta da capacidade (30 s / foco) e por toda RPC.
 - Documentos/anexos financeiros continuam fechados (mesma regra do leitor C2).
+
+## Rev.2 (crédito e contadores)
+- Crédito: `b2b_finance_credit_v1` (INVOKER) → `b2b_finance_credit_core` (DEFINER, ator derivado do servidor) → `b2b_credit_exposure_core` (corpo LIVE de `fn_b2b_credit_exposure` sem a linha de ator; sem EXECUTE a clientes). `fn_b2b_credit_exposure` mantém assinatura/ACL e a mesma checagem `b2b_integration_actor` antes de delegar. Projeção sem parâmetros de política.
+- `rpc_partner_message_counters`: financeiro negado (`permission_denied`).
+- Pendentes nesta revisão: transição de edição para/de Financeiro (writer atômico), sonda de sessão do AuthProvider para o papel, provas hospedadas/navegador.
+- Bateria local: 105/105 (seams de crédito declaradas em fixture.sql; não são corpos LIVE).

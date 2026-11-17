@@ -1,5 +1,5 @@
 {
- "total": 79,
+ "total": 105,
  "results": [
   {
    "name": "pre_ref_divergente_falha",
@@ -31,6 +31,66 @@
   },
   {
    "name": "financeiro_capacidade_sem_escrita_credito_bloqueado",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_proprio_limite",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_proprio_utilizado",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_proprio_disponivel",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_proprio_percentual",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_irmao_isolado",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_outro_tenant_isolado",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_sem_parametros_de_politica",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_igual_calculo_canonico_gestor",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_nao_usa_calculadora_de_pedido",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_nao_usa_calculadora_irmao",
+   "status": "PASS"
+  },
+  {
+   "name": "nucleo_credito_sem_execute",
+   "status": "PASS"
+  },
+  {
+   "name": "contadores_mensagens_fechados_financeiro",
+   "status": "PASS"
+  },
+  {
+   "name": "contadores_mensagens_fechados_irmao_explicito",
+   "status": "PASS"
+  },
+  {
+   "name": "contadores_gestor_regressao",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_config_incompleta_falha_fechado",
    "status": "PASS"
   },
   {
@@ -82,11 +142,19 @@
    "status": "PASS"
   },
   {
+   "name": "tecnico_credito_negado",
+   "status": "PASS"
+  },
+  {
    "name": "misto_financeiro_tecnico_sem_capacidade",
    "status": "PASS"
   },
   {
    "name": "misto_financeiro_tecnico_obrigacoes_negadas",
+   "status": "PASS"
+  },
+  {
+   "name": "misto_financeiro_tecnico_credito_negado",
    "status": "PASS"
   },
   {
@@ -98,11 +166,19 @@
    "status": "PASS"
   },
   {
+   "name": "revogado_credito_negado",
+   "status": "PASS"
+  },
+  {
    "name": "perfil_inativo_sem_capacidade",
    "status": "PASS"
   },
   {
    "name": "perfil_inativo_obrigacoes_negadas",
+   "status": "PASS"
+  },
+  {
+   "name": "perfil_inativo_credito_negado",
    "status": "PASS"
   },
   {
@@ -114,6 +190,10 @@
    "status": "PASS"
   },
   {
+   "name": "sem_vinculo_credito_negado",
+   "status": "PASS"
+  },
+  {
    "name": "vigencia_futura_sem_capacidade",
    "status": "PASS"
   },
@@ -122,11 +202,19 @@
    "status": "PASS"
   },
   {
+   "name": "vigencia_futura_credito_negado",
+   "status": "PASS"
+  },
+  {
    "name": "papel_vinculo_divergente_sem_capacidade",
    "status": "PASS"
   },
   {
    "name": "papel_vinculo_divergente_obrigacoes_negadas",
+   "status": "PASS"
+  },
+  {
+   "name": "papel_vinculo_divergente_credito_negado",
    "status": "PASS"
   },
   {
@@ -211,6 +299,10 @@
   },
   {
    "name": "revogacao_retira_acesso",
+   "status": "PASS"
+  },
+  {
+   "name": "revogacao_retira_credito",
    "status": "PASS"
   },
   {
@@ -310,7 +402,19 @@
    "status": "PASS"
   },
   {
+   "name": "rollback_restaura_fn_b2b_credit_exposure",
+   "status": "PASS"
+  },
+  {
+   "name": "rollback_restaura_rpc_partner_message_counters",
+   "status": "PASS"
+  },
+  {
    "name": "rollback_remove_capacidade",
+   "status": "PASS"
+  },
+  {
+   "name": "rollback_remove_nucleo_credito",
    "status": "PASS"
   },
   {

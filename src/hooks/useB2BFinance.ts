@@ -2,7 +2,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { supabase } from "@/integrations/supabase/client";
 import { parseOwnFinance } from "@/lib/comercial/financeContract";
-import { isExclusiveFinanceRoles, parseFinanceCapability } from "@/lib/comercial/b2bFinanceRole";
+import { isExclusiveFinanceRoles, parseFinanceCapability, parseFinanceCredit } from "@/lib/comercial/b2bFinanceRole";
 
 type Rpc = (name: string, args?: Record<string, unknown>) => { abortSignal(s: AbortSignal): PromiseLike<{ data: unknown; error: unknown }> };
 const rpc: Rpc = (supabase.rpc as unknown as Rpc).bind(supabase);
@@ -37,4 +37,18 @@ export function useB2BFinanceObligations(partnerId: string | null, cursor: { at:
     },
   });
   return { ...q, data: partnerId && q.ready && !q.isError ? q.data : undefined };
+}
+
+/** Crédito próprio: só com capacidade positiva `credit_read`; erro nunca vira zero. */
+export function useB2BFinanceCredit(partnerId: string | null, creditRead: boolean) {
+  const q = useScopedPortalQuery({
+    queryKey: ["b2b-finance-credit", "B2B_FINANCE_CREDIT_V1", partnerId],
+    enabled: !!partnerId && creditRead, staleTime: 0,
+    queryFn: async (signal) => {
+      const { data, error } = await rpc("b2b_finance_credit_v1").abortSignal(signal);
+      if (error) throw new Error("finance_credit_unavailable");
+      return parseFinanceCredit(data, partnerId as string);
+    },
+  });
+  return { ...q, data: partnerId && creditRead && q.ready && !q.isError ? q.data : undefined };
 }

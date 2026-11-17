@@ -14,7 +14,7 @@ vi.mock("@/lib/biExport", () => ({ exportToCSV: (...a: unknown[]) => csv(...a), 
 
 import PortalFinanceiroB2B from "@/pages/portal-financeiro-b2b/PortalFinanceiroB2B";
 import {
-  B2B_FINANCE_ROLE_INSTALLED, isExclusiveFinanceRoles, isOverdue, obligationExportRows, parseFinanceCapability, summarizeObligations,
+  B2B_FINANCE_ROLE_INSTALLED, isExclusiveFinanceRoles, isOverdue, obligationExportRows, parseFinanceCapability, parseFinanceCredit, summarizeObligations, titleOpen,
 } from "@/lib/comercial/b2bFinanceRole";
 import { externalUserPayload, registrationRoles, validateUserDraft } from "@/lib/configuracoes/externalUserDraft";
 import { canAccess, getHomeForRole } from "@/lib/permissions";
@@ -62,8 +62,44 @@ describe("Financeiro B2B — regras de papel e rotas", () => {
   });
   it("exportação contém só campos financeiros, sem identificadores internos", () => {
     const out = obligationExportRows([title(1, [inst(1, "2026-11-10", 10, 4)])]);
-    expect(out).toEqual([{ pedido: "PED-1", titulo_status: "OPEN", parcela: "1", vencimento: "2026-11-10", valor: "10.00", pago: "4.00", saldo: "6.00", parcela_status: "OPEN" }]);
+    expect(out).toEqual([{ pedido: "PED-1", titulo_status: "Em aberto", parcela: "1", vencimento: "2026-11-10", valor: "10.00", pago: "4.00", saldo: "6.00", parcela_status: "Em aberto" }]);
     expect(JSON.stringify(out)).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/);
+  });
+});
+
+const credit = { contract: "B2B_FINANCE_CREDIT_V1", partner_id: P1, credit_limit: 10000, exposicao_atual: 1000, credito_disponivel: 9000,
+  percentual_utilizado: 10, saldo_em_aberto: 1000, saldo_vencido: 0, comprometido_nao_faturado: 0, comprometido_pendente: 0, tem_vencidos: false, reason_code: "OK" };
+describe("Financeiro B2B — status e crédito", () => {
+  it("título cancelado/quitado/desconhecido não soma saldo mesmo com parcela OPEN", () => {
+    const rows = [title(1, [inst(1, "2026-11-01", 100, 0)], "CANCELED"), title(2, [inst(1, "2026-11-01", 70, 0)], "canceled"),
+      title(3, [inst(1, "2026-11-01", 30, 0, "CANCELED")]), title(4, [inst(1, "2026-11-01", 9, 0)], "ESTRANHO"), title(5, [inst(1, "2026-11-30", 5, 0, "partial")])];
+    expect(summarizeObligations(rows, "2026-11-17")).toEqual({ open: 5, overdue: 0, overdueCount: 0, nextDue: "2026-11-30", openTitles: 1 });
+    expect(rows.filter(titleOpen).map((r) => r.numero)).toEqual(["PED-5"]);
+    expect(obligationExportRows([rows[0]])[0]).toMatchObject({ saldo: "0.00", titulo_status: "Cancelado" });
+  });
+  it("crédito estrito: outro parceiro, campos de política e contrato errado rejeitados", () => {
+    expect(parseFinanceCredit(credit, P1).credito_disponivel).toBe(9000);
+    expect(() => parseFinanceCredit(credit, "20000000-0000-4000-8000-000000000002")).toThrow();
+    expect(() => parseFinanceCredit({ ...credit, credit_limit_action: "block" }, P1)).toThrow();
+    expect(() => parseFinanceCredit({ ...credit, contract: "X" }, P1)).toThrow();
+    expect(() => parseFinanceCredit({ ...credit, credito_disponivel: -1 }, P1)).toThrow();
+  });
+  it("crédito exibido só com capacidade positiva; erro mostra indisponível, nunca zero", async () => {
+    let fail = false;
+    rpc.mockImplementation((name: string) => Promise.resolve(name === "b2b_finance_capability_v1" ? { data: { ...cap, credit_read: true, credit_reason: undefined }, error: null }
+      : name === "b2b_finance_credit_v1" ? (fail ? { data: null, error: { message: "x" } } : { data: credit, error: null }) : { data: obligations([]), error: null }));
+    const { unmount } = wrap();
+    const box = await screen.findByLabelText("Crédito do parceiro");
+    expect(box.textContent).toMatch(/10\.000,00/); expect(box.textContent).toMatch(/9\.000,00/);
+    expect(rpc).toHaveBeenCalledWith("b2b_finance_credit_v1");
+    unmount(); fail = true; wrap();
+    expect((await screen.findByText("Não foi possível carregar o crédito."))).toBeTruthy();
+    expect(screen.queryByLabelText("Crédito do parceiro")).toBeNull();
+  });
+  it("capacidade sem crédito não consulta o leitor de crédito", async () => {
+    rpc.mockImplementation((name: string) => Promise.resolve(name === "b2b_finance_capability_v1" ? { data: cap, error: null } : { data: obligations([]), error: null }));
+    wrap(); await screen.findByText(/Informações de crédito indisponíveis/);
+    expect(rpc).not.toHaveBeenCalledWith("b2b_finance_credit_v1");
   });
 });
 
@@ -96,7 +132,7 @@ describe("Financeiro B2B — portal e guarda", () => {
       : { data: obligations([title(1, [inst(1, "2026-11-10", 100, 0)]), title(2, [inst(1, "2026-10-01", 50, 50, "PAID")], "PAID")]), error: null }));
     wrap();
     await screen.findByText("Financeiro do parceiro");
-    await screen.findByText(/ainda não estão disponíveis/);
+    await screen.findByText(/Informações de crédito indisponíveis/);
     expect(rpc).toHaveBeenCalledWith("rpc_portal_partner_financial", { p_partner_id: P1, p_own_finance_v1: true, p_before: null, p_before_id: null });
     expect(rpc.mock.calls.map((c) => c[0]).sort()).toEqual(["b2b_finance_capability_v1", "rpc_portal_partner_financial"]);
     fireEvent.click(screen.getByRole("button", { name: /Exportar CSV/ }));

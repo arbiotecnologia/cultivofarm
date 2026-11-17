@@ -36,13 +36,16 @@ def cap(uid, key="allowed"): return act(uid, f"SELECT public.b2b_finance_capabil
 LOAD = ["platform_private.platform_actor_access_ready", "platform_private.has_role", "has_role", "platform_private.h15_actor_organization",
         "h15_actor_organization", "is_platform_superadmin", "platform_private.require_service_role", "is_valid_b2b_partner_user",
         "platform_private.b2b_own_obligations_owner", "platform_private.b2b_own_obligations", "rpc_portal_partner_financial",
-        "platform_private.external_provisioning_scope", "admin_provision_user_profile_v1", "b2b_finish_provisioning"]
+        "platform_private.external_provisioning_scope", "admin_provision_user_profile_v1", "b2b_finish_provisioning",
+        "fn_b2b_credit_exposure", "rpc_partner_message_counters"]
 data = TMP / "data"
 try:
     subprocess.run(PRIV + ["initdb", "-D", str(data), "-U", "postgres", "-A", "trust"], check=True, capture_output=True)
     subprocess.run(PRIV + ["pg_ctl", "-D", str(data), "-l", str(TMP / "log"), "-o", f"-k {TMP} -h \"\" -p {PORT}", "start", "-w"], check=True, capture_output=True)
     run((H / "fixture.sql").read_text())
     for n in LOAD: run((H / "captured" / f"{n}.sql").read_text() + ";")
+    run("REVOKE ALL ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) TO authenticated;"
+        "GRANT EXECUTE ON FUNCTION public.rpc_partner_message_counters(uuid) TO authenticated;")
     run("GRANT EXECUTE ON FUNCTION public.rpc_portal_partner_financial(uuid,boolean,timestamptz,uuid) TO authenticated;"
         "REVOKE ALL ON FUNCTION public.rpc_portal_partner_financial(uuid,boolean,timestamptz,uuid) FROM PUBLIC, anon;")
     run((H / "fixture-post.sql").read_text())
@@ -81,7 +84,27 @@ INSERT INTO accounts_receivable_installments(receivable_id,installment_number,du
  SELECT id,1,current_date+30,total_amount,0,'OPEN',organization_id FROM accounts_receivable;""")
     # Positivos
     check("financeiro_capacidade_propria", cap(F1) + "SELECT public.b2b_finance_capability_v1()->>'partner_id';", f"true\n{P1}")
-    check("financeiro_capacidade_sem_escrita_credito_bloqueado", act(F1, "SELECT (c->>'writes')||(c->>'credit_read')||(c->>'export') FROM public.b2b_finance_capability_v1() c;"), "falsefalsetrue")
+    check("financeiro_capacidade_sem_escrita_credito_bloqueado", act(F1, "SELECT (c->>'writes')||(c->>'credit_read')||(c->>'export') FROM public.b2b_finance_capability_v1() c;"), "falsetruetrue")
+    run(f"""INSERT INTO partner_financial_settings VALUES('{P1}',10000,0,true,'block'),('{P2}',5000,0,false,'block'),('{PB}',7000,0,false,'block');
+INSERT INTO platform_private.t_balances VALUES('{P1}',1000,0),('{P2}',2000,0),('{PB}',3000,0);
+INSERT INTO partner_order_messages(order_id,status) VALUES('30000000-0000-0000-0000-000000000001','nao_lida'),('30000000-0000-0000-0000-000000000002','nao_lida');""")
+    cred = lambda uid, k: act(uid, f"SELECT public.b2b_finance_credit_v1()->>'{k}';")
+    check("credito_proprio_limite", cred(F1, "credit_limit"), "10000.00")
+    check("credito_proprio_utilizado", cred(F1, "exposicao_atual"), "1000.00")
+    check("credito_proprio_disponivel", cred(F1, "credito_disponivel"), "9000.00")
+    check("credito_proprio_percentual", cred(F1, "percentual_utilizado"), "10.00")
+    check("credito_irmao_isolado", cred(F2, "credito_disponivel"), "3000.00")
+    check("credito_outro_tenant_isolado", cred(FB, "credito_disponivel"), "4000.00")
+    check("credito_sem_parametros_de_politica", act(F1, "SELECT public.b2b_finance_credit_v1() ?| ARRAY['credit_limit_action','block_if_overdue','overdue_tolerance_days','novo_pedido'];"), "f")
+    check("credito_igual_calculo_canonico_gestor", act(G1, f"SELECT (public.fn_b2b_credit_exposure('{P1}',0,NULL)->>'credito_disponivel');"), "9000.00")
+    check("financeiro_nao_usa_calculadora_de_pedido", act(F1, f"SELECT public.fn_b2b_credit_exposure('{P1}',0,NULL);"), error="B2B_ACTOR_DENIED")
+    check("financeiro_nao_usa_calculadora_irmao", act(F1, f"SELECT public.fn_b2b_credit_exposure('{P2}',0,NULL);"), error="B2B_ACTOR_DENIED")
+    check("nucleo_credito_sem_execute", act(F1, f"SELECT platform_private.b2b_credit_exposure_core('{P2}',0,NULL);"), error="permission denied")
+    check("contadores_mensagens_fechados_financeiro", act(F1, "SELECT public.rpc_partner_message_counters(NULL);"), error="permission_denied")
+    check("contadores_mensagens_fechados_irmao_explicito", act(F1, f"SELECT public.rpc_partner_message_counters('{P2}');"), error="permission_denied")
+    check("contadores_gestor_regressao", act(G1, "SELECT public.rpc_partner_message_counters(NULL)->>'nao_lidas';"), "1")
+    run(f"DELETE FROM partner_financial_settings WHERE partner_id='{P2}'")
+    check("credito_config_incompleta_falha_fechado", cred(F2, "credit_limit"), error="CREDIT_SETTINGS_INCOMPLETE")
     check("financeiro_le_obrigacoes_proprias", own(F1, P1), "PED-P1")
     check("financeiro_parcelas_proprias", act(F1, f"SELECT jsonb_array_length(public.rpc_portal_partner_financial('{P1}',true)->'rows'->0->'installments');"), "1")
     check("financeiro_p2_mesma_empresa_isolado", own(F2, P2), "PED-P2")
@@ -96,6 +119,7 @@ INSERT INTO accounts_receivable_installments(receivable_id,installment_number,du
     for nm, uid in [("tecnico", T1), ("misto_financeiro_tecnico", FM), ("revogado", FR), ("perfil_inativo", FI), ("sem_vinculo", FX), ("vigencia_futura", FV), ("papel_vinculo_divergente", FP)]:
         check(f"{nm}_sem_capacidade", cap(uid), "false")
         check(f"{nm}_obrigacoes_negadas", own(uid, P1), error="own_finance_forbidden")
+        check(f"{nm}_credito_negado", act(uid, "SELECT public.b2b_finance_credit_v1();"), error="own_finance_forbidden")
     check("misto_nao_vale_como_tecnico", act(FM, f"SELECT public.is_valid_b2b_partner_user('{FM}','{P1}');"), "f")
     check("financeiro_nao_vale_validador_b2b", act(F1, f"SELECT public.is_valid_b2b_partner_user('{F1}','{P1}');"), "f")
     # Regressão gestor
@@ -125,6 +149,7 @@ INSERT INTO accounts_receivable_installments(receivable_id,installment_number,du
     run(f"DELETE FROM platform_private.user_authz_epoch")
     run(f"UPDATE partner_users SET revoked_at=now(), revoked_by='{ADM}', revoke_reason='fim' WHERE user_id='{F2}'")
     check("revogacao_retira_acesso", own(F2, P2), error="own_finance_forbidden")
+    check("revogacao_retira_credito", act(F2, "SELECT public.b2b_finance_credit_v1();"), error="own_finance_forbidden")
     run(f"UPDATE organizations SET status='suspensa' WHERE id='{ORG_B}'")
     check("empresa_inativa_retira_acesso", own(FB, PB), error="own_finance_forbidden")
     run(f"UPDATE organizations SET status='ativa' WHERE id='{ORG_B}'; UPDATE partner_accounts SET ativo=false WHERE id='{P1}'")
@@ -163,10 +188,11 @@ INSERT INTO accounts_receivable_installments(receivable_id,installment_number,du
     run("DELETE FROM user_roles WHERE role='parceiro_b2b_financeiro'; DELETE FROM partner_users WHERE papel='financeiro';")
     run("SET app.expected_ref='swzpzcwiasxmjutrmvkm';\n" + rb)
     pins = json.loads((H / "pins.json").read_text())
-    for n in ["platform_private.b2b_own_obligations_owner", "platform_private.external_provisioning_scope", "admin_provision_user_profile_v1", "b2b_finish_provisioning"]:
+    for n in ["platform_private.b2b_own_obligations_owner", "platform_private.external_provisioning_scope", "admin_provision_user_profile_v1", "b2b_finish_provisioning", "fn_b2b_credit_exposure", "rpc_partner_message_counters"]:
         sch, _, fn = n.rpartition(".")
         check(f"rollback_restaura_{fn}", f"SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname='{sch or 'public'}' AND p.proname='{fn}';", pins[n][1])
     check("rollback_remove_capacidade", "SELECT to_regprocedure('public.b2b_finance_capability_v1()') IS NULL;", "t")
+    check("rollback_remove_nucleo_credito", "SELECT to_regprocedure('platform_private.b2b_credit_exposure_core(uuid,numeric,uuid)') IS NULL;", "t")
     check("rollback_gestor_preservado", own(G1, P1), "PED-P1")
 finally:
     subprocess.run(PRIV + ["pg_ctl", "-D", str(data), "stop", "-m", "fast"], capture_output=True)

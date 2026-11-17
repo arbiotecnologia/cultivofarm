@@ -44,8 +44,8 @@ AS $function$
    AND public.h15_actor_organization()=owner.id;
 $function$;
 
--- 4. Capacidade (somente leitura). Crédito BLOQUEADO: a calculadora canônica exige
---    c2_order_actor_scope, que também é a autoridade dos writers de pedido.
+-- 4. Capacidade (somente leitura). Crédito lido pelo núcleo canônico único (seção 6),
+--    autorizado só pelo ator financeiro — c2_order_actor_scope/writers permanecem fechados.
 CREATE FUNCTION platform_private.b2b_finance_capability_core()
  RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO ''
 AS $function$
@@ -59,7 +59,7 @@ BEGIN
   RETURN jsonb_build_object('contract','B2B_FINANCE_ROLE_V1','allowed',false,'reason','not_entitled'); END IF;
  SELECT coalesce(nullif(btrim(pa.nome_fantasia),''),pa.razao_social) INTO nome FROM public.partner_accounts pa WHERE pa.id=pid;
  RETURN jsonb_build_object('contract','B2B_FINANCE_ROLE_V1','allowed',true,'partner_id',pid,'partner_name',nome,
-  'obligations_read',true,'export',true,'credit_read',false,'credit_reason','canonical_calculator_blocked','writes',false);
+  'obligations_read',true,'export',true,'credit_read',true,'writes',false);
 END $function$;
 CREATE FUNCTION public.b2b_finance_capability_v1()
  RETURNS jsonb LANGUAGE sql STABLE SET search_path TO ''
@@ -76,6 +76,28 @@ CREATE POLICY b2b_finance_role_direct_closed ON public.partner_accounts AS RESTR
 -- 6. Deltas mínimos sobre corpos LIVE capturados (md5 conferidos no PRE).
 -- @@CAPTURED_DELTAS@@
 
+-- 6b. Leitor de crédito próprio: parceiro derivado do servidor, projeção sem parâmetros de política.
+CREATE FUNCTION platform_private.b2b_finance_credit_core()
+ RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO ''
+AS $function$
+DECLARE u uuid:=auth.uid(); pid uuid; c jsonb;
+BEGIN
+ pid:=platform_private.b2b_finance_actor_partner();
+ IF u IS NULL OR pid IS NULL
+  OR NOT EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='pedidos_b2b')
+  OR NOT EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='contas_receber') THEN
+  RAISE EXCEPTION 'own_finance_forbidden' USING ERRCODE='42501'; END IF;
+ c:=platform_private.b2b_credit_exposure_core(pid,0,NULL);
+ RETURN jsonb_build_object('contract','B2B_FINANCE_CREDIT_V1','partner_id',pid,
+  'credit_limit',c->'credit_limit','exposicao_atual',c->'exposicao_atual','credito_disponivel',c->'credito_disponivel',
+  'percentual_utilizado',c->'percentual_utilizado','saldo_em_aberto',c->'saldo_em_aberto','saldo_vencido',c->'saldo_vencido',
+  'comprometido_nao_faturado',c->'comprometido_nao_faturado','comprometido_pendente',c->'comprometido_pendente',
+  'tem_vencidos',c->'tem_vencidos','reason_code',c->'reason_code');
+END $function$;
+CREATE FUNCTION public.b2b_finance_credit_v1()
+ RETURNS jsonb LANGUAGE sql STABLE SET search_path TO ''
+AS $function$ SELECT platform_private.b2b_finance_credit_core(); $function$;
+
 -- 7. ACL mínima (padrão do projeto concede service_role a funções novas: revogar).
 REVOKE ALL ON FUNCTION platform_private.b2b_finance_role_holder() FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION platform_private.b2b_finance_role_holder() TO authenticated;
@@ -84,4 +106,9 @@ REVOKE ALL ON FUNCTION platform_private.b2b_finance_capability_core() FROM PUBLI
 GRANT EXECUTE ON FUNCTION platform_private.b2b_finance_capability_core() TO authenticated;
 REVOKE ALL ON FUNCTION public.b2b_finance_capability_v1() FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION public.b2b_finance_capability_v1() TO authenticated;
+REVOKE ALL ON FUNCTION platform_private.b2b_credit_exposure_core(uuid,numeric,uuid) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION platform_private.b2b_finance_credit_core() FROM PUBLIC, anon, service_role;
+GRANT EXECUTE ON FUNCTION platform_private.b2b_finance_credit_core() TO authenticated;
+REVOKE ALL ON FUNCTION public.b2b_finance_credit_v1() FROM PUBLIC, anon, service_role;
+GRANT EXECUTE ON FUNCTION public.b2b_finance_credit_v1() TO authenticated;
 COMMIT;

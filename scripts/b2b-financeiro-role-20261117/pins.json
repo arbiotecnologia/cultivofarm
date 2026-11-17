@@ -54,5 +54,13 @@
  "rpc_portal_partner_financial": [
   "rpc_portal_partner_financial",
   "d9d53c802ca11c59d235c7d32d6e8eee"
+ ],
+ "fn_b2b_credit_exposure": [
+  "fn_b2b_credit_exposure",
+  "7d841856ba1e2dd34b0fa6491c4914b5"
+ ],
+ "rpc_partner_message_counters": [
+  "rpc_partner_message_counters",
+  "5b049aa45efddf8aff1b92b14a759a46"
  ]
 }

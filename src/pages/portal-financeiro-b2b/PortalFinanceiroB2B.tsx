@@ -7,11 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useB2BFinanceObligations } from "@/hooks/useB2BFinance";
+import { useB2BFinanceCredit, useB2BFinanceObligations } from "@/hooks/useB2BFinance";
 import { brl, fmtDate } from "@/lib/financial/format";
 import { exportToCSV, buildExportFilename } from "@/lib/biExport";
 import {
-  installmentBalance, isOverdue, obligationExportRows, OBLIGATION_EXPORT_HEADERS, summarizeObligations, titleOpen,
+  installmentBalance, isOverdue, obligationStatusLabel, obligationExportRows, OBLIGATION_EXPORT_HEADERS, summarizeObligations, titleOpen,
   type ObligationTitle,
 } from "@/lib/comercial/b2bFinanceRole";
 
@@ -20,7 +20,7 @@ type Tab = (typeof TABS)[number];
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
 export default function PortalFinanceiroB2B() {
-  return <B2BFinanceRouteGuard>{(cap) => <FinanceHome {...cap} />}</B2BFinanceRouteGuard>;
+  return <B2BFinanceRouteGuard>{(cap) => <FinanceHome key={cap.partnerId} {...cap} />}</B2BFinanceRouteGuard>;
 }
 
 function FinanceHome({ partnerId, partnerName, exportAllowed, creditRead }: { partnerId: string; partnerName: string | null; exportAllowed: boolean; creditRead: boolean }) {
@@ -29,6 +29,7 @@ function FinanceHome({ partnerId, partnerName, exportAllowed, creditRead }: { pa
   const [cursors, setCursors] = useState<{ at: string; id: string }[]>([]);
   const cursor = cursors.length ? cursors[cursors.length - 1] : null;
   const q = useB2BFinanceObligations(partnerId, cursor);
+  const credit = useB2BFinanceCredit(partnerId, creditRead);
   const rows = (q.data?.rows ?? []) as ObligationTitle[];
   const day = today();
   const summary = summarizeObligations(rows, day);
@@ -48,7 +49,7 @@ function FinanceHome({ partnerId, partnerName, exportAllowed, creditRead }: { pa
           </div>
           {exportAllowed && <Button variant="outline" size="sm" disabled={!rows.length}
             onClick={() => exportToCSV(obligationExportRows(rows), OBLIGATION_EXPORT_HEADERS, buildExportFilename("financeiro-parceiro-b2b"))}>
-            <Download className="h-4 w-4 mr-1" aria-hidden="true" />Exportar CSV</Button>}
+            <Download className="h-4 w-4 mr-1" aria-hidden="true" />Exportar CSV (página)</Button>}
         </div>
         <Tabs value={tab} onValueChange={(v) => { const n = new URLSearchParams(params); n.set("tab", v); setParams(n, { replace: true }); }}>
           <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex">
@@ -63,15 +64,23 @@ function FinanceHome({ partnerId, partnerName, exportAllowed, creditRead }: { pa
               <TabsContent value="resumo" className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <Kpi label="Em aberto (página)" value={brl(summary.open)} />
-                  <Kpi label="Vencido" value={brl(summary.overdue)} hint={`${summary.overdueCount} parcela(s)`} />
+                  <Kpi label="Vencido (página)" value={brl(summary.overdue)} hint={`${summary.overdueCount} parcela(s)`} />
                   <Kpi label="Próximo vencimento" value={summary.nextDue ? fmtDate(summary.nextDue) : "—"} />
-                  <Kpi label="Títulos em aberto" value={String(summary.openTitles)} />
+                  <Kpi label="Títulos em aberto (página)" value={String(summary.openTitles)} />
                 </div>
                 <Card><CardHeader className="pb-2"><CardTitle className="text-base">Crédito</CardTitle></CardHeader>
-                  <CardContent className="text-sm text-muted-foreground">
-                    {creditRead ? "Limite e utilização disponíveis." : "Limite, utilização e saldo de crédito ainda não estão disponíveis nesta versão."}
+                  <CardContent className="text-sm">
+                    {!creditRead ? <p className="text-muted-foreground">Informações de crédito indisponíveis para este acesso.</p>
+                      : credit.isLoading ? <p role="status" className="text-muted-foreground">Carregando crédito…</p>
+                      : credit.isError || !credit.data ? <div role="alert" className="space-y-2"><p className="text-foreground">Não foi possível carregar o crédito.</p>
+                          <Button variant="outline" size="sm" onClick={() => void credit.refetch()}>Tentar novamente</Button></div>
+                      : <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" aria-label="Crédito do parceiro">
+                          <Kpi label="Limite" value={brl(credit.data.credit_limit)} />
+                          <Kpi label="Utilizado" value={brl(credit.data.exposicao_atual)} hint={`${credit.data.percentual_utilizado.toLocaleString("pt-BR")}% do limite`} />
+                          <Kpi label="Disponível" value={brl(credit.data.credito_disponivel)} hint={credit.data.tem_vencidos ? "Há valores vencidos" : undefined} />
+                        </div>}
                   </CardContent></Card>
-                <p className="text-xs text-muted-foreground">Valores referem-se às obrigações do parceiro perante o fornecedor exibidas nesta página.</p>
+                <p className="text-xs text-muted-foreground">Totais marcados “(página)” somam só os títulos desta página; o crédito considera todas as obrigações do parceiro. Títulos cancelados ou quitados não entram no saldo.</p>
               </TabsContent>
               <TabsContent value="titulos"><TitleList rows={abertos} day={day} empty="Nenhum título em aberto." /></TabsContent>
               <TabsContent value="historico"><TitleList rows={historico} day={day} empty="Nenhum título quitado ou encerrado." /></TabsContent>
@@ -99,13 +108,13 @@ function TitleList({ rows, day, empty }: { rows: ObligationTitle[]; day: string;
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0"><p className="font-medium text-foreground break-words">Pedido {t.numero}</p>
           <p className="text-xs text-muted-foreground">Emitido em {fmtDate(t.created_at)}</p></div>
-        <div className="text-right"><p className="font-semibold text-foreground">{brl(t.total)}</p><Badge variant="outline">{t.status}</Badge></div>
+        <div className="text-right"><p className="font-semibold text-foreground">{brl(t.total)}</p><Badge variant="outline">{obligationStatusLabel(t.status)}</Badge></div>
       </div>
       <ul className="divide-y border rounded-md" aria-label={`Parcelas do pedido ${t.numero}`}>
         {t.installments.map((i) => <li key={i.id} className="p-2 grid grid-cols-2 sm:grid-cols-5 gap-1 text-sm">
           <span>Parcela {i.numero}</span><span>{i.vencimento ? fmtDate(i.vencimento) : "—"}</span>
-          <span>{brl(i.valor)}</span><span>Saldo {brl(installmentBalance(i))}</span>
-          <span>{isOverdue(i, day) ? <Badge variant="destructive">Vencida</Badge> : <Badge variant="secondary">{i.status}</Badge>}</span>
+          <span>{brl(i.valor)}</span><span>Saldo {brl(installmentBalance(i, t.status))}</span>
+          <span>{isOverdue(i, day, t.status) ? <Badge variant="destructive">Vencida</Badge> : <Badge variant="secondary">{obligationStatusLabel(i.status)}</Badge>}</span>
         </li>)}
       </ul>
     </CardContent></Card></li>)}

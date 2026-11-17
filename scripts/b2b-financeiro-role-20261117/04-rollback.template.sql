@@ -11,6 +11,8 @@ END $$;
 DROP POLICY b2b_finance_role_direct_closed ON public.partner_order_financial_links;
 DROP POLICY b2b_finance_role_direct_closed ON public.partner_accounts;
 -- @@CAPTURED_ORIGINALS@@
+DROP FUNCTION public.b2b_finance_credit_v1();
+DROP FUNCTION platform_private.b2b_finance_credit_core();
 DROP FUNCTION public.b2b_finance_capability_v1();
 DROP FUNCTION platform_private.b2b_finance_capability_core();
 DROP FUNCTION platform_private.b2b_finance_actor_partner();

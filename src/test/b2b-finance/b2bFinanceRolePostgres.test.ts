@@ -17,7 +17,7 @@ it("Financeiro B2B em PostgreSQL descartável/Auth sintética: isolamento, negat
   for (const name of ["financeiro_le_obrigacoes_proprias", "financeiro_nega_parceiro_irmao", "financeiro_nega_outro_tenant", "tecnico_obrigacoes_negadas",
     "revogado_obrigacoes_negadas", "perfil_inativo_obrigacoes_negadas", "sem_vinculo_obrigacoes_negadas", "misto_financeiro_tecnico_obrigacoes_negadas",
     "financeiro_nao_cria_pedido", "financeiro_links_diretos_fechados", "gestor_regressao_le_proprio", "token_anterior_a_epoca_negado",
-    "cadastro_financeiro_exclusivo", "provisao_financeiro_grava_vinculo", "rollback_restaura_b2b_own_obligations_owner"])
+    "cadastro_financeiro_exclusivo", "credito_proprio_disponivel", "credito_irmao_isolado", "credito_outro_tenant_isolado", "financeiro_nao_usa_calculadora_de_pedido", "nucleo_credito_sem_execute", "contadores_mensagens_fechados_financeiro", "contadores_gestor_regressao", "revogacao_retira_credito", "rollback_restaura_fn_b2b_credit_exposure", "rollback_restaura_rpc_partner_message_counters", "provisao_financeiro_grava_vinculo", "rollback_restaura_b2b_own_obligations_owner"])
     expect(stdout).toContain(`PASS ${name}\n`);
-  expect(stdout).toContain("TOTAL 79 PASS");
+  expect(stdout).toContain("TOTAL 105 PASS");
 }, pgBatteryTestTimeout(120_000));

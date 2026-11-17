@@ -33,23 +33,31 @@ export interface ObligationInstallment { id: string; numero: number; vencimento:
 export interface ObligationTitle { id: string; order_id: string; numero: string; created_at: string; total: number; status: string; installments: ObligationInstallment[] }
 
 const cents = (v: number) => Math.round(v * 100);
-const isClosed = (s: string) => ["PAID", "RECEIVED", "CANCELED", "CANCELLED", "recebido", "cancelado"].includes(s);
-export const installmentBalance = (i: ObligationInstallment) => isClosed(i.status) ? 0 : Math.max(cents(i.valor) - cents(i.recebido), 0) / 100;
+/** Status canônicos (CHECK): OPEN, PARTIAL, PAID, CANCELED, OVERDUE. Comparação normalizada;
+ *  desconhecido/cancelado/quitado nunca soma saldo (fail-closed contra saldo falso). */
+const norm = (s: string) => String(s ?? "").trim().toUpperCase();
+const OPEN_STATUSES = new Set(["OPEN", "PARTIAL", "OVERDUE"]);
+const isClosed = (s: string) => !OPEN_STATUSES.has(norm(s));
+export const isCanceled = (s: string) => ["CANCELED", "CANCELLED", "CANCELADO"].includes(norm(s));
+const STATUS_LABEL: Record<string, string> = { OPEN: "Em aberto", PARTIAL: "Parcial", OVERDUE: "Vencido", PAID: "Quitado", CANCELED: "Cancelado", CANCELLED: "Cancelado" };
+export const obligationStatusLabel = (s: string) => STATUS_LABEL[norm(s)] ?? "Status desconhecido";
+export const installmentBalance = (i: ObligationInstallment, titleStatus?: string) =>
+  isClosed(i.status) || (titleStatus !== undefined && isClosed(titleStatus)) ? 0 : Math.max(cents(i.valor) - cents(i.recebido), 0) / 100;
 /** Data civil local (AAAA-MM-DD) — vencida só depois do dia de vencimento. */
-export function isOverdue(i: ObligationInstallment, today: string): boolean {
-  return installmentBalance(i) > 0 && !!i.vencimento && i.vencimento.slice(0, 10) < today;
+export function isOverdue(i: ObligationInstallment, today: string, titleStatus?: string): boolean {
+  return installmentBalance(i, titleStatus) > 0 && !!i.vencimento && i.vencimento.slice(0, 10) < today;
 }
 export function titleOpen(t: ObligationTitle): boolean {
-  return !isClosed(t.status) && t.installments.some((i) => installmentBalance(i) > 0);
+  return !isClosed(t.status) && t.installments.some((i) => installmentBalance(i, t.status) > 0);
 }
 /** Resumo somente sobre as obrigações projetadas pelo servidor; nunca saldo interno do fornecedor. */
 export function summarizeObligations(rows: readonly ObligationTitle[], today: string) {
   let open = 0, overdue = 0, overdueCount = 0, nextDue: string | null = null;
   for (const t of rows) for (const i of t.installments) {
-    const b = cents(installmentBalance(i));
+    const b = cents(installmentBalance(i, t.status));
     if (b <= 0) continue;
     open += b;
-    if (isOverdue(i, today)) { overdue += b; overdueCount++; }
+    if (isOverdue(i, today, t.status)) { overdue += b; overdueCount++; }
     else if (i.vencimento && (!nextDue || i.vencimento < nextDue)) nextDue = i.vencimento.slice(0, 10);
   }
   return { open: open / 100, overdue: overdue / 100, overdueCount, nextDue, openTitles: rows.filter(titleOpen).length };
@@ -57,9 +65,24 @@ export function summarizeObligations(rows: readonly ObligationTitle[], today: st
 /** Linhas de exportação: apenas campos financeiros já autorizados (sem IDs internos). */
 export function obligationExportRows(rows: readonly ObligationTitle[]) {
   return rows.flatMap((t) => t.installments.map((i) => ({
-    pedido: t.numero, titulo_status: t.status, parcela: String(i.numero), vencimento: i.vencimento ?? "",
-    valor: i.valor.toFixed(2), pago: i.recebido.toFixed(2), saldo: installmentBalance(i).toFixed(2), parcela_status: i.status,
+    pedido: t.numero, titulo_status: obligationStatusLabel(t.status), parcela: String(i.numero), vencimento: i.vencimento ?? "",
+    valor: i.valor.toFixed(2), pago: i.recebido.toFixed(2), saldo: installmentBalance(i, t.status).toFixed(2), parcela_status: obligationStatusLabel(i.status),
   })));
 }
 export const OBLIGATION_EXPORT_HEADERS = { pedido: "Pedido", titulo_status: "Status do título", parcela: "Parcela", vencimento: "Vencimento",
   valor: "Valor", pago: "Pago", saldo: "Saldo", parcela_status: "Status da parcela" };
+
+/** Leitor de crédito próprio (B2B_FINANCE_CREDIT_V1): núcleo canônico único no servidor. */
+const money = z.number().finite();
+const credit = z.object({
+  contract: z.literal("B2B_FINANCE_CREDIT_V1"), partner_id: uuid, credit_limit: money.nonnegative(), exposicao_atual: money,
+  credito_disponivel: money.nonnegative(), percentual_utilizado: money, saldo_em_aberto: money, saldo_vencido: money,
+  comprometido_nao_faturado: money, comprometido_pendente: money, tem_vencidos: z.boolean(),
+  reason_code: z.enum(["OK", "OVERDUE_BLOCK", "LIMIT_EXCEEDED_APPROVAL", "LIMIT_EXCEEDED_BLOCK"]),
+}).strict();
+export type FinanceCredit = z.infer<typeof credit>;
+export function parseFinanceCredit(raw: unknown, expectedPartner: string): FinanceCredit {
+  const r = credit.safeParse(raw);
+  if (!r.success || r.data.partner_id !== expectedPartner) throw new Error("finance_credit_invalid");
+  return r.data;
+}

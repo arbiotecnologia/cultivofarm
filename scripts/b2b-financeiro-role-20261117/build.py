@@ -16,7 +16,7 @@ def sub(t, old, new, name):
     if t.count(old) != 1: sys.exit(f"ANCHOR {name}: {old[:60]!r} x{t.count(old)}")
     return t.replace(old, new)
 
-DELTA = ["platform_private.b2b_own_obligations_owner", "platform_private.external_provisioning_scope", "admin_provision_user_profile_v1", "b2b_finish_provisioning"]
+DELTA = ["platform_private.b2b_own_obligations_owner", "platform_private.external_provisioning_scope", "admin_provision_user_profile_v1", "b2b_finish_provisioning", "fn_b2b_credit_exposure", "rpc_partner_message_counters"]
 FIN = "'parceiro_b2b_financeiro'"
 out = []
 # 1. Guardião de obrigações próprias: ramo financeiro exclusivo, gestor preservado verbatim.
@@ -53,12 +53,28 @@ t = body("b2b_finish_provisioning")
 t = sub(t, "WHEN 'parceiro_b2b'=ANY(rs) THEN 'gestor' ELSE 'tecnico' END);",
  "WHEN 'parceiro_b2b'=ANY(rs) THEN 'gestor' WHEN 'parceiro_b2b_financeiro'=ANY(rs) THEN 'financeiro' ELSE 'tecnico' END);", "finish")
 out.append(t.rstrip() + ";\n")
+# 5. Crédito: corpo canônico vira núcleo privado SEM a checagem de ator (mesma fórmula, byte a byte);
+#    a função pública mantém assinatura/ACL e reexecuta a MESMA checagem antes de delegar.
+src = body("fn_b2b_credit_exposure")
+core = sub(src, "CREATE OR REPLACE FUNCTION public.fn_b2b_credit_exposure(", "CREATE OR REPLACE FUNCTION platform_private.b2b_credit_exposure_core(", "core1")
+core = sub(core, "  PERFORM platform_private.b2b_integration_actor(p_partner_id);\n", "", "core2")
+out.append(core.rstrip() + ";\n")
+hdr = src[:src.index("DECLARE")]
+out.append(hdr + """BEGIN
+  -- B2B_FINANCE_ROLE_V1: autorização canônica inalterada; cálculo delegado ao núcleo único.
+  PERFORM platform_private.b2b_integration_actor(p_partner_id);
+  RETURN platform_private.b2b_credit_exposure_core(p_partner_id, p_new_order_amount, p_exclude_order_id);
+END $function$;\n""")
+# 6. Contadores de mensagens: fechados ao portador do papel financeiro (antes de qualquer leitura).
+t = body("rpc_partner_message_counters")
+t = sub(t, "BEGIN\n  IF NOT (public.has_role(", "BEGIN\n  IF platform_private.b2b_finance_role_holder() THEN\n    RAISE EXCEPTION 'permission_denied' USING ERRCODE = '42501';\n  END IF;\n  IF NOT (public.has_role(", "counters")
+out.append(t.rstrip() + ";\n")
 tpl = (H / "02b-install.template.sql").read_text()
 res = tpl.replace("-- @@CAPTURED_DELTAS@@\n", "\n".join(out))
 (H / "02b-install.sql.review").write_text(res)
 pins = json.dumps({k: v for k, v in PINS.items() if k in DELTA})
 pre = (H / "01-pre.template.sql").read_text().replace("@@PINS@@", pins)
 (H / "01-pre.sql.readonly").write_text(pre)
-rb = (H / "04-rollback.template.sql").read_text().replace("-- @@CAPTURED_ORIGINALS@@\n", "".join(body(n).rstrip() + ";\n" for n in DELTA))
+rb = (H / "04-rollback.template.sql").read_text().replace("-- @@CAPTURED_ORIGINALS@@\n", "".join(body(n).rstrip() + ";\n" for n in DELTA) + "DROP FUNCTION platform_private.b2b_credit_exposure_core(uuid,numeric,uuid);\n")
 (H / "04-rollback.sql.review").write_text(rb)
 print("OK", hashlib.sha256(res.encode()).hexdigest())
