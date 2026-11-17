@@ -7,11 +7,7 @@
    "status": "PASS"
   },
   {
-   "name": "05 exige 04 + seed_saas",
-   "status": "PASS"
-  },
-  {
-   "name": "04 cria plano QA novo uma vez",
+   "name": "04 registra SaaS QA existente uma vez; 05 exige 04",
    "status": "PASS"
   },
   {

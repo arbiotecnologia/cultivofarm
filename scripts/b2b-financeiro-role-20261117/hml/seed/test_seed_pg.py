@@ -65,15 +65,18 @@ CREATE TABLE public.saas_plan_versions(id uuid PRIMARY KEY DEFAULT gen_random_uu
 CREATE TABLE public.saas_plan_version_audit(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), plan_version_id uuid, action text);
 ALTER TABLE public.organization_subscriptions ADD COLUMN plan_version_id uuid REFERENCES public.saas_plan_versions;
 CREATE TRIGGER nd BEFORE DELETE ON public.saas_plan_versions FOR EACH ROW EXECUTE FUNCTION public.saas_no_delete();
-INSERT INTO public.saas_plans(id,key,name,active) VALUES ('78000000-0000-4f00-8127-000000000001','qa_outro','QA outro',true),('7e570000-0000-4000-8000-0000000000b1','real','Real',true);
-INSERT INTO public.saas_plan_versions(plan_id,status) VALUES ('7e570000-0000-4000-8000-0000000000b1','PUBLISHED');
+INSERT INTO public.saas_plans(id,key,name,active) VALUES ('78000000-0000-4f00-8127-000000000001','qa_outro','QA outro',true),('7e570000-0000-4000-8000-0000000000a1','gratuito','Gratuito',true);
+INSERT INTO public.saas_plan_versions(id,plan_id,status) VALUES ('7e570000-0000-4000-8000-0000000000b1','7e570000-0000-4000-8000-0000000000a1','PUBLISHED');
+CREATE TABLE public.organization_feature_overrides(id uuid PRIMARY KEY, organization_id uuid REFERENCES public.organizations, reason text);
+CREATE TABLE public.organization_feature_override_audit(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), override_id uuid, action text);
+CREATE TRIGGER nd BEFORE DELETE ON public.organization_feature_override_audit FOR EACH ROW EXECUTE FUNCTION public.saas_no_delete();
 GRANT SELECT, INSERT, DELETE ON ALL TABLES IN SCHEMA public TO qa_other;
 """
 BUSINESS = """ALTER TABLE public.accounts_receivable DISABLE TRIGGER a_homolog;  -- só no banco descartável: linha de negócio pré-existente
 INSERT INTO public.accounts_receivable(origin_type, description, category_id, total_amount, first_due_date, installment_count, partner_id, organization_id)
  SELECT 'MANUAL','Negócio real', (SELECT id FROM public.financial_categories), 10, current_date, 1, id, commercial_owner_organization_id FROM public.partner_accounts WHERE id='d7edc250-25a4-4ee2-8b62-27c1645cdfc0';
 ALTER TABLE public.accounts_receivable ENABLE TRIGGER a_homolog;"""
-PLAN = (D / "04-seed-plan-hml.sql.review").read_text(); SEED = (D / "05-seed-hml.sql.review").read_text(); CLEAN = (D / "06-cleanup-hml.sql.review").read_text()
+PLAN = (D / "04-register-saas-hml.sql.review").read_text(); SEED = (D / "05-seed-hml.sql.review").read_text(); CLEAN = (D / "06-cleanup-hml.sql.review").read_text()
 MD5 = "SELECT md5(prosrc)||'|'||md5(pg_get_functiondef(oid)) FROM pg_proc WHERE proname IN ('homolog_validation_block_receivable_insert','fn_h6d_block_hard_delete','saas_no_delete','fn_financial_audit') ORDER BY proname;"
 COUNT = "SELECT (SELECT count(*) FROM public.accounts_receivable)||','||(SELECT count(*) FROM public.accounts_receivable_installments)||','||(SELECT count(*) FROM public.partner_order_financial_links)||','||(SELECT count(*) FROM public.financial_audit_log)||','||(SELECT count(*) FROM public.partner_accounts);"
 try:
@@ -82,13 +85,12 @@ try:
     # 1) impressão digital: sem a função homolog (como produção) o seed recusa sem efeitos
     psql("CREATE TABLE public.organizations(id uuid);"); psql(SEED, err="QA_SEED_REFUSED: impressão digital HML ausente"); psql("DROP TABLE public.organizations;"); ok("recusa alvo sem impressão digital HML")
     psql(SCHEMA); psql(BUSINESS); base_md5 = psql(MD5); base = psql(COUNT)
-    psql(SEED, err="QA_SEED_REFUSED: rodar 04"); ok("05 exige 04 + seed_saas")
-    psql(PLAN, user="qa_other", err="QA_SEED_REFUSED: session_user"); psql(PLAN); psql(PLAN, err="QA_SEED_REFUSED: seed anterior existe"); ok("04 cria plano QA novo uma vez")
-    SAAS = """WITH v AS (INSERT INTO public.saas_plan_versions(plan_id,status,features_snapshot) SELECT id,'PUBLISHED','[{"feature_key":"pedidos_b2b"},{"feature_key":"contas_receber"}]' FROM public.saas_plans WHERE key='qa_fin_20261117' RETURNING id),
- a AS (INSERT INTO public.saas_plan_version_audit(plan_version_id,action) SELECT id,'published' FROM v),
- s AS (INSERT INTO public.organization_subscriptions(organization_id,plan_version_id) SELECT o, v.id FROM v, unnest('{%s,%s}'::uuid[]) o RETURNING id, organization_id)
- INSERT INTO public.organization_subscription_history(subscription_id, organization_id, reason) SELECT id, organization_id, 'QA-FIN-20261117 fixture' FROM s;""" % (A, C)
-    psql(SAAS)  # simula seed_saas.py (RPCs canônicas no HML real)
+    SAAS = """INSERT INTO public.organization_subscriptions(id,organization_id,plan_version_id) SELECT x.id::uuid, x.o::uuid, (SELECT id FROM public.saas_plan_versions LIMIT 1) FROM (VALUES ('fcb4c72d-2040-4bbc-98fd-145f1463ec04','%s'),('2624ff4a-c4dd-4885-af23-beb8463d2209','%s')) x(id,o);
+ INSERT INTO public.organization_subscription_history(subscription_id, organization_id, reason) SELECT id, organization_id, 'QA-FIN-20261117: massa ficticia autorizada, somente homologacao' FROM public.organization_subscriptions;
+ INSERT INTO public.organization_feature_overrides(id, organization_id, reason) VALUES ('019fe16e-4a05-4ca1-8480-c2727b92dfa2','%s','QA-FIN-20261117: t'),('d69bf60a-faa2-4cc0-80df-fd8dc913e9e9','%s','QA-FIN-20261117: t'),('1aca4276-7043-4616-8dd5-839d2e4e86de','%s','QA-FIN-20261117: t'),('1eac8c31-6b09-43fd-bbec-e523a812e6ba','%s','QA-FIN-20261117: t');
+ INSERT INTO public.organization_feature_override_audit(override_id, action) SELECT id, 'grant' FROM public.organization_feature_overrides;""" % (A, C, A, C, A, C)
+    psql(SEED, err="QA_SEED_REFUSED: rodar 04"); psql(PLAN, err="QA_SEED_REFUSED: assinaturas QA ausentes"); psql(SAAS)  # massa SaaS que o root criou
+    psql(PLAN, user="qa_other", err="QA_SEED_REFUSED: session_user"); psql(PLAN); psql(PLAN, err="QA_SEED_REFUSED: seed anterior existe"); ok("04 registra SaaS QA existente uma vez; 05 exige 04")
     # 2) não-postgres recusado
     psql(SEED, user="qa_other", err="QA_SEED_REFUSED: session_user"); ok("recusa sessão não-postgres")
     # 3) falha no meio: rollback integral e corpo homolog intacto
@@ -108,13 +110,13 @@ try:
     psql(SEED, err="QA_SEED_REFUSED: seed anterior existe"); ok("seed não duplica")
     psql("ALTER TABLE qa_b2bfin.manifest OWNER TO postgres;"); psql("SELECT * FROM qa_b2bfin.manifest", user="qa_other", err="permission denied"); ok("manifesto inacessível a outros papéis")
     # 5) limpeza: exige negar se semente atingir tabela protegida
-    psql("UPDATE public.saas_plans SET description='ref cdb78993-89e4-48db-956e-f40b014a8146' WHERE key='real';")
+    psql("UPDATE public.saas_plans SET description='ref cdb78993-89e4-48db-956e-f40b014a8146' WHERE key='gratuito';")
     psql(CLEAN, err="QA_CLEAN_REFUSED: referência em tabela protegida"); assert psql(MD5) == base_md5
-    psql("UPDATE public.saas_plans SET description=NULL WHERE key='real';"); ok("limpeza recusa tocar plano não-QA (rollback)")
+    psql("UPDATE public.saas_plans SET description=NULL WHERE key='gratuito';"); ok("limpeza recusa tocar plano não-QA (rollback)")
     out = psql(CLEAN); assert "QA_CLEAN_PASS" in out
     assert psql(MD5) == base_md5 and psql(COUNT) == "1,1,0,1,1" and psql("SELECT to_regnamespace('qa_b2bfin') IS NULL") == "t", psql(COUNT)
     assert psql("SELECT count(*) FROM public.organization_subscriptions")=="0" and psql("SELECT count(*) FROM public.organizations")=="3" and psql("SELECT nome FROM public.profiles")=="Real" and psql("SELECT count(*) FROM auth.users")=="3"
-    assert psql("SELECT string_agg(key,',' ORDER BY key) FROM public.saas_plans")=="qa_outro,real" and psql("SELECT count(*) FROM public.saas_plan_versions")=="1" and psql("SELECT count(*) FROM public.saas_plan_version_audit")=="0"
+    assert psql("SELECT string_agg(key,',' ORDER BY key) FROM public.saas_plans")=="gratuito,qa_outro" and psql("SELECT count(*) FROM public.saas_plan_versions")=="1" and psql("SELECT count(*) FROM public.organization_feature_overrides")=="0" and psql("SELECT count(*) FROM public.organization_feature_override_audit")=="0"
     ok("limpeza remove títulos/parcelas/vínculos/pedidos/auditoria/assinaturas/parceiros/perfis QA; negócio, tenants e auth intactos; corpos restaurados")
     psql("DELETE FROM public.accounts_receivable;", err="H6D_NO_DELETE"); ok("no-delete restaurado após limpeza")
     v = psql((D / "07-verify-clean-hml.sql.readonly").read_text()); assert v.startswith("QA_VERIFY|t|0|0|0|0|0|2|0|"), v; ok("07 verifica limpo (auth qa-fin restante = remover via Admin API)")

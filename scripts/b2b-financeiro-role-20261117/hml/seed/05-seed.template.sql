@@ -1,7 +1,7 @@
 -- GERADO por build_seed.py a partir de 05-seed.template.sql + _lib.sql; não editar.
 -- SEED QA Financeiro B2B — SOMENTE HML vrlcdwmlytukrjezrrnf, como postgres, numa única transação (SQL editor do HML).
--- Pré-requisitos: 04 (plano QA) + seed_saas.py (versão QA publicada e start_trial, motivo 'QA-FIN-20261117'); parceiros e
--- usuários QA já criados pelo root, identificados por IDs fixos (não recriados). Cria por parceiro 1 pedido + 1 título B2B_ORDER + parcelas + vínculo, com IDs
+-- Pré-requisito: 04 (registro das assinaturas/overrides QA já criados pelo root). Parceiros e usuários QA já existem e são
+-- identificados por IDs fixos (não recriados). Cria por parceiro 1 pedido + 1 título B2B_ORDER + parcelas + vínculo, com IDs
 -- manifestados em qa_b2bfin.manifest. Única exceção: o bloqueio homolog de inserção de títulos, relaxado só para
 -- postgres + ticket desta txid + IDs manifestados com descrição QA-FIN-, e restaurado (def/md5 idênticos) ANTES do COMMIT.
 -- Nenhum gatilho é desativado; todas as demais guardas executam normalmente e qualquer recusa aborta tudo. Sem NF/cobrança.
@@ -13,7 +13,7 @@ DO $$ BEGIN
  IF to_regprocedure('platform_private.b2b_credit_balances(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'QA_SEED_REFUSED: cadeia B4 presente — alvo parece produção'; END IF;
  IF (SELECT count(*) FROM public.organizations WHERE id IN ('525fea87-e27e-43f7-af7b-a30064188332','85ba8b71-8514-4ec9-90d3-bfc7ab3ed214')) <> 2 THEN RAISE EXCEPTION 'QA_SEED_REFUSED: tenants QA ausentes'; END IF;
  IF to_regclass('qa_b2bfin.manifest') IS NULL THEN RAISE EXCEPTION 'QA_SEED_REFUSED: rodar 04 e seed_saas.py antes'; END IF;
- IF NOT EXISTS (SELECT 1 FROM qa_b2bfin.manifest WHERE kind='qa_plan') THEN RAISE EXCEPTION 'QA_SEED_REFUSED: rodar 04 e seed_saas.py antes'; END IF;
+ IF NOT EXISTS (SELECT 1 FROM qa_b2bfin.manifest WHERE kind='subscription') THEN RAISE EXCEPTION 'QA_SEED_REFUSED: rodar 04 antes'; END IF;
  IF EXISTS (SELECT 1 FROM qa_b2bfin.manifest WHERE kind='receivable') THEN RAISE EXCEPTION 'QA_SEED_REFUSED: seed anterior existe — rodar 06 antes'; END IF;
 END $$;
 {{LIB}}
@@ -48,11 +48,6 @@ BEGIN
   END IF;
   INSERT INTO qa_b2bfin.manifest SELECT 'credit_settings', k, 'public.partner_financial_settings', id FROM public.partner_financial_settings WHERE partner_id = pid ON CONFLICT DO NOTHING;
  END LOOP;
- -- assinaturas criadas por seed_saas.py: só registradas se TODO o histórico tiver motivo QA (senão é assinatura real).
- IF EXISTS (SELECT 1 FROM public.organization_subscription_history h WHERE h.organization_id = ANY (orgs) AND h.reason NOT LIKE 'QA-FIN-20261117%') THEN RAISE EXCEPTION 'QA_SEED_REFUSED: histórico de assinatura não-QA nos tenants'; END IF;
- INSERT INTO qa_b2bfin.manifest SELECT 'qa_version', 'qa_fin_20261117', 'public.saas_plan_versions', v.id FROM public.saas_plan_versions v WHERE v.plan_id = (SELECT id FROM qa_b2bfin.manifest WHERE kind='qa_plan');
- IF EXISTS (SELECT 1 FROM public.organization_subscriptions s WHERE s.organization_id = ANY (orgs) AND s.plan_version_id NOT IN (SELECT id FROM qa_b2bfin.manifest WHERE kind='qa_version')) THEN RAISE EXCEPTION 'QA_SEED_REFUSED: assinatura fora do plano QA'; END IF;
- INSERT INTO qa_b2bfin.manifest SELECT 'subscription', organization_id::text, 'public.organization_subscriptions', id FROM public.organization_subscriptions WHERE organization_id = ANY (orgs);
 END $$;
 DO $$ BEGIN IF (SELECT count(*) FROM qa_b2bfin.manifest WHERE kind='receivable') <> 3 OR (SELECT count(*) FROM qa_b2bfin.manifest WHERE kind='installment') < 3 THEN RAISE EXCEPTION 'QA_SEED_INCOMPLETE'; END IF; END $$;
 SELECT 'QA_SEED_RESTORED' k, qa_b2bfin.restore_all() v;

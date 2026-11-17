@@ -64,7 +64,7 @@ CREATE TEMP TABLE qa_seed(id uuid PRIMARY KEY) ON COMMIT DROP;
 CREATE TEMP TABLE qa_hit(tbl regclass, rowhash text, id uuid, PRIMARY KEY (tbl, rowhash)) ON COMMIT DROP;
 INSERT INTO qa_seed SELECT id FROM qa_b2bfin.manifest ON CONFLICT DO NOTHING;
 INSERT INTO qa_seed VALUES ('cdb78993-89e4-48db-956e-f40b014a8146'),('9d53f280-f828-4af8-a08c-3574263dc466'),('6100c3ac-ff5b-4596-a0e3-92665a5dcaab'),('7d15eddb-38b6-43dd-bbf5-43936155321d'),('5db79a8e-82af-419d-ae66-87a98c02fbec'),('c3ed723f-1017-478e-99b2-25b48b3ab77e'),('1d0ea582-1d46-4152-8fbe-f425c74942c1'),('51652ab6-da23-4a3d-8f29-417af15cc761') ON CONFLICT DO NOTHING;  -- parceiros/usuários QA exatos do root
-INSERT INTO qa_seed SELECT id FROM public.saas_plans WHERE key = 'qa_fin_20261117' ON CONFLICT DO NOTHING;
+INSERT INTO qa_seed VALUES ('019fe16e-4a05-4ca1-8480-c2727b92dfa2'),('d69bf60a-faa2-4cc0-80df-fd8dc913e9e9'),('1aca4276-7043-4616-8dd5-839d2e4e86de'),('1eac8c31-6b09-43fd-bbec-e523a812e6ba'),('fcb4c72d-2040-4bbc-98fd-145f1463ec04'),('2624ff4a-c4dd-4885-af23-beb8463d2209') ON CONFLICT DO NOTHING;  -- SaaS QA do root
 DO $$
 DECLARE c record; lvl int; n bigint; q text;
  protected text[] := '{public.organizations,public.saas_plans,public.saas_plan_versions,public.saas_plan_version_features,public.saas_features,public.financial_categories,public.payment_methods,public.configuracoes_sistema}';
