@@ -79,7 +79,18 @@ ALTER TABLE public.accounts_receivable ENABLE ROW LEVEL SECURITY;
 CREATE POLICY ar_producer_read ON public.accounts_receivable FOR SELECT TO authenticated USING ((platform_private.has_role(( SELECT auth.uid() AS uid), 'cliente_produtor'::app_role) AND (customer_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))) AND (partner_id IS NULL) AND (origin_type IS DISTINCT FROM 'B2B_ORDER'::text)));
 CREATE TABLE public.commercial_campaigns (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), ativa boolean, tipo_publico text);
 CREATE TABLE public.commercial_campaign_clientes (campaign_id uuid, cliente_id uuid);
-CREATE FUNCTION platform_private.h15_actor_organization() RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $$ SELECT organization_id FROM public.profiles WHERE user_id = auth.uid() $$; -- SINTÉTICO
+-- Capturado verbatim 17/11/2026 (rev.6; antes era sintético):
+CREATE OR REPLACE FUNCTION platform_private.h15_actor_organization()
+ RETURNS uuid
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+ SELECT p.organization_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE WHERE p.user_id=auth.uid() AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p.user_id);
+$function$
+;
+CREATE FUNCTION public.get_user_partner_id() RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $$ SELECT partner_id FROM public.partner_users WHERE user_id = auth.uid() AND revoked_at IS NULL LIMIT 1 $$; -- SINTÉTICO
+CREATE TABLE public.commercial_campaign_partners (campaign_id uuid, partner_id uuid); -- SINTÉTICA
 CREATE OR REPLACE FUNCTION public.h15_actor_organization()
  RETURNS uuid
  LANGUAGE sql
@@ -94,5 +105,11 @@ CREATE POLICY campanhas_cliente_select ON public.commercial_campaigns FOR SELECT
   WHERE ((cc.campaign_id = commercial_campaigns.id) AND (uc.user_id = ( SELECT auth.uid() AS uid)) AND (uc.cliente_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))) AND (EXISTS ( SELECT 1
            FROM clientes c
           WHERE ((c.id = cc.cliente_id) AND (c.organization_id = h15_actor_organization())))))))));
-GRANT SELECT ON public.accounts_receivable, public.commercial_campaigns, public.commercial_campaign_clientes TO authenticated;
+-- rev.6: as outras duas policies de commercial_campaigns, verbatim (produção tem exatamente 3).
+CREATE POLICY campanhas_admin_all ON public.commercial_campaigns FOR ALL TO authenticated USING ((platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role))) WITH CHECK ((platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role)));
+CREATE POLICY campanhas_partner_select ON public.commercial_campaigns FOR SELECT TO authenticated USING ((platform_private.has_role(( SELECT auth.uid() AS uid), 'parceiro_b2b'::app_role) AND ativa AND (tipo_publico = ANY (ARRAY['b2b'::text, 'ambos'::text])) AND (EXISTS ( SELECT 1
+   FROM commercial_campaign_partners cp
+  WHERE ((cp.campaign_id = commercial_campaigns.id) AND (cp.partner_id = get_user_partner_id()))))));
+GRANT SELECT ON public.accounts_receivable, public.commercial_campaigns, public.commercial_campaign_clientes, public.commercial_campaign_partners TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_user_partner_id() TO authenticated;
 GRANT EXECUTE ON FUNCTION platform_private.h15_actor_organization() TO authenticated;

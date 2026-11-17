@@ -659,7 +659,8 @@ BEGIN
      OR public.is_platform_superadmin(p_actor) OR public.is_platform_superadmin(p_target) THEN
     RAISE EXCEPTION 'forbidden' USING ERRCODE='42501';
   END IF;
-  SELECT organization_id INTO v_org FROM public.profiles WHERE user_id = p_actor AND ativo IS TRUE;
+  SELECT p.organization_id INTO v_org FROM public.profiles p JOIN public.organizations o ON o.id = p.organization_id AND o.ativo IS TRUE
+   WHERE p.user_id = p_actor AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p.user_id);
   IF v_org IS NULL OR NOT EXISTS (SELECT 1 FROM public.profiles WHERE user_id = p_target AND organization_id = v_org) THEN
     RAISE EXCEPTION 'forbidden' USING ERRCODE='42501';
   END IF;
@@ -709,6 +710,56 @@ BEGIN
   GET DIAGNOSTICS n = ROW_COUNT; RETURN n;
 END $$;
 REVOKE ALL ON FUNCTION platform_private.user_admin_end_tenant_links(uuid,uuid,uuid,uuid) FROM PUBLIC, anon, authenticated;
+
+-- rev.6: pós-condição INDEPENDENTE da versão do gatilho de principal (produção STATEMENT, HML pode diferir).
+-- Não substitui nem desativa gatilhos: grava explicitamente o estado esperado e verifica na mesma transação;
+-- se algum gatilho deixar estado diferente, a operação inteira aborta (scope_postcondition_failed).
+--   p_mode 'producer' : vigentes do tenant = {p_keep}, principal vigente = p_keep, profiles.cliente_id = p_keep
+--   p_mode 'none'     : nenhum vínculo vigente do tenant, profiles.cliente_id fora dos clientes do tenant
+--   p_mode 'consultor': profiles.cliente_id nulo ou um vínculo vigente (nunca vínculo encerrado)
+CREATE OR REPLACE FUNCTION platform_private.user_admin_scope_settle(p_target uuid, p_org uuid, p_keep uuid, p_mode text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE v_active uuid[]; v_cli uuid; v_marker boolean;
+BEGIN
+  v_active := ARRAY(SELECT uc.cliente_id FROM public.user_clientes uc JOIN public.clientes c ON c.id = uc.cliente_id AND c.organization_id = p_org
+                     WHERE uc.user_id = p_target AND uc.is_active AND uc.revoked_at IS NULL AND uc.valid_from <= now()
+                       AND (uc.valid_until IS NULL OR uc.valid_until >= now()) ORDER BY 1);
+  IF p_mode = 'producer' THEN
+    IF v_active IS DISTINCT FROM ARRAY[p_keep] OR EXISTS (SELECT 1 FROM public.user_clientes uc JOIN public.clientes c ON c.id = uc.cliente_id AND c.organization_id = p_org
+         WHERE uc.user_id = p_target AND uc.revoked_at IS NULL AND uc.cliente_id <> p_keep)
+       OR NOT EXISTS (SELECT 1 FROM public.user_clientes WHERE user_id = p_target AND cliente_id = p_keep AND principal AND revoked_at IS NULL) THEN
+      RAISE EXCEPTION 'scope_postcondition_failed' USING ERRCODE='P0001', DETAIL='producer';
+    END IF;
+    UPDATE public.profiles SET cliente_id = p_keep WHERE user_id = p_target AND cliente_id IS DISTINCT FROM p_keep;
+  ELSIF p_mode = 'none' THEN
+    IF cardinality(v_active) <> 0 OR EXISTS (SELECT 1 FROM public.user_clientes uc JOIN public.clientes c ON c.id = uc.cliente_id AND c.organization_id = p_org
+         WHERE uc.user_id = p_target AND uc.revoked_at IS NULL) THEN
+      RAISE EXCEPTION 'scope_postcondition_failed' USING ERRCODE='P0001', DETAIL='none';
+    END IF;
+    UPDATE public.profiles SET cliente_id = NULL WHERE user_id = p_target
+       AND cliente_id IN (SELECT id FROM public.clientes WHERE organization_id = p_org);
+  ELSIF p_mode = 'consultor' THEN
+    SELECT cliente_id INTO v_cli FROM public.profiles WHERE user_id = p_target;
+    IF v_cli IS NOT NULL AND v_cli IN (SELECT id FROM public.clientes WHERE organization_id = p_org) AND NOT (v_cli = ANY(v_active)) THEN
+      UPDATE public.profiles SET cliente_id = (SELECT uc.cliente_id FROM public.user_clientes uc WHERE uc.user_id = p_target AND uc.principal
+                                               AND uc.cliente_id = ANY(v_active) LIMIT 1) WHERE user_id = p_target;
+    END IF;
+  ELSE RAISE EXCEPTION 'invalid_settle_mode' USING ERRCODE='22023';
+  END IF;
+  SELECT cliente_id INTO v_cli FROM public.profiles WHERE user_id = p_target;
+  IF v_cli IS NOT NULL AND v_cli IN (SELECT id FROM public.clientes WHERE organization_id = p_org) AND NOT (v_cli = ANY(v_active)) THEN
+    RAISE EXCEPTION 'scope_postcondition_failed' USING ERRCODE='P0001', DETAIL='profile_cliente_id';
+  END IF;
+  -- Marcador 'principal' em linha encerrada só é tolerado sem vínculo vigente (artefato do gatilho legado por linha);
+  -- com vínculo vigente, o principal tem de ser vigente.
+  v_marker := EXISTS (SELECT 1 FROM public.user_clientes uc JOIN public.clientes c ON c.id = uc.cliente_id AND c.organization_id = p_org
+                       WHERE uc.user_id = p_target AND uc.principal AND uc.revoked_at IS NOT NULL);
+  IF v_marker AND cardinality(v_active) > 0 THEN
+    RAISE EXCEPTION 'scope_postcondition_failed' USING ERRCODE='P0001', DETAIL='principal_on_closed_link';
+  END IF;
+  RETURN jsonb_build_object('active', to_jsonb(v_active), 'legacy_principal_marker', v_marker);
+END $$;
+REVOKE ALL ON FUNCTION platform_private.user_admin_scope_settle(uuid,uuid,uuid,text) FROM PUBLIC, anon, authenticated;
 
 CREATE OR REPLACE FUNCTION platform_private.user_admin_change_access_type_core(
   p_actor uuid, p_actor_iat bigint, p_user_id uuid, p_target text, p_roles public.app_role[], p_remove_roles public.app_role[],
@@ -801,6 +852,8 @@ BEGIN
      WHERE user_id = p_user_id AND revoked_at IS NULL AND tenant_id = v_org;
   END IF;
   DELETE FROM public.user_roles WHERE user_id = p_user_id AND role = ANY(v_remove);
+  PERFORM platform_private.user_admin_scope_settle(p_user_id, v_org, p_cliente_id,
+    CASE WHEN p_target = 'producer' THEN 'producer' WHEN v_end_all THEN 'none' ELSE 'consultor' END);
   -- 3) JWTs anteriores do alvo perdem autoridade.
   PERFORM platform_private.user_authz_bump(p_user_id);
 
@@ -865,6 +918,7 @@ BEGIN
     ON CONFLICT (user_id, cliente_id) DO UPDATE SET is_active = true, principal = false, access_level = v_level,
       assigned_by = p_actor, valid_from = v_from, valid_until = p_valid_until, revoked_at = NULL, revoked_by = NULL;
   END IF;
+  PERFORM platform_private.user_admin_scope_settle(p_user_id, v_org, NULL, 'consultor');
   v_after := jsonb_build_object('ok', true, 'action', p_action, 'cliente_id', p_cliente_id, 'replaced_cliente_id', p_replace_cliente_id);
   INSERT INTO platform_private.user_admin_change_audit(idempotency_key, actor_id, organization_id, target_id, kind, request_hash, before_state, after_state, reason)
   VALUES (p_idempotency_key, p_actor, v_org, p_user_id, 'consultor_link', v_hash, COALESCE(v_before, '{}'), v_after, p_reason);
@@ -934,6 +988,10 @@ BEGIN
   IF auth.uid() IS NOT NULL THEN RAISE EXCEPTION 'service_context_required' USING ERRCODE='42501'; END IF;
   IF p_holder IS NULL THEN RAISE EXCEPTION 'invalid_target' USING ERRCODE='22023'; END IF;
   PERFORM pg_advisory_xact_lock(hashtextextended('user_admin:' || p_holder::text, 0));
+  -- rev.6: titular inativo não dispara escrita (reconcilia quando reativado).
+  IF NOT EXISTS (SELECT 1 FROM public.profiles WHERE user_id = p_holder AND ativo IS TRUE) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE='42501';
+  END IF;
   -- Só pedidos do próprio titular; o e-mail é o que o Auth já confirmou para ele.
   FOR x IN SELECT id FROM platform_private.user_email_change_requests
             WHERE target_id = p_holder AND (status = 'pending' OR (status IN ('cancelled','expired') AND ever_accepted_at IS NOT NULL))
@@ -1048,3 +1106,39 @@ DO $$ DECLARE f text; BEGIN
 END $$;
 
 COMMIT;
+
+-- =====================================================================
+-- (9) rev.6 — 17/11/2026. Vínculo de consultor NÃO concede acesso comercial (decisão do requisito).
+-- Única leitura de campanhas por vínculo em produção: policy campanhas_cliente_select (commercial_campaigns).
+-- Demais leituras auditadas (somente leitura, 17/11): commercial_campaign_clientes/products/partners e
+-- rpc_commercial_consolidated_dashboard / rpc_commercial_simulator__tenant_core exigem administrador/
+-- gestor_comercial ou parceiro_b2b+partner próprio; vw_bi_commercial_campaigns é security_invoker (herda as policies).
+-- Correção: mesma expressão capturada + papel cliente_produtor vigente E ausência de papel técnico
+-- (vínculos não carregam finalidade; com papel técnico o vínculo é ambíguo ⇒ nega). Admin/gestor_comercial
+-- (campanhas_admin_all) e parceiro (campanhas_partner_select) inalterados.
+-- =====================================================================
+DO $pre9$ BEGIN
+  PERFORM set_config('search_path', '"$user", public', true);  -- mesmo search_path da captura (pg_get_expr depende dele)
+  IF (SELECT md5(pg_get_expr(polqual, polrelid)) FROM pg_policy WHERE polrelid = 'public.commercial_campaigns'::regclass AND polname = 'campanhas_cliente_select')
+       IS DISTINCT FROM '715fb261c976e20478efa42788e2a52d'
+     OR (SELECT count(*) FROM pg_policy WHERE polrelid = 'public.commercial_campaigns'::regclass) <> 3 THEN
+    RAISE EXCEPTION 'PRE drift: policies de commercial_campaigns diferem da captura de 17/11/2026';
+  END IF;
+END $pre9$;
+ALTER POLICY campanhas_cliente_select ON public.commercial_campaigns USING (
+  (ativa AND (tipo_publico = ANY (ARRAY['comercial'::text, 'ambos'::text])) AND (EXISTS ( SELECT 1
+   FROM (public.commercial_campaign_clientes cc
+     JOIN public.user_clientes uc ON ((uc.cliente_id = cc.cliente_id)))
+  WHERE ((cc.campaign_id = commercial_campaigns.id) AND (uc.user_id = ( SELECT auth.uid() AS uid)) AND (uc.cliente_id = ANY (public.get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))) AND (EXISTS ( SELECT 1
+           FROM public.clientes c
+          WHERE ((c.id = cc.cliente_id) AND (c.organization_id = public.h15_actor_organization())))))))))
+  AND platform_private.has_role(( SELECT auth.uid() AS uid), 'cliente_produtor'::public.app_role)
+  AND NOT platform_private.has_role(( SELECT auth.uid() AS uid), 'consultor_tecnico'::public.app_role)
+  AND NOT platform_private.has_role(( SELECT auth.uid() AS uid), 'tecnico_agronomo'::public.app_role)
+);
+DO $post9$ BEGIN
+  IF (SELECT pg_get_expr(polqual, polrelid) FROM pg_policy WHERE polrelid = 'public.commercial_campaigns'::regclass AND polname = 'campanhas_cliente_select')
+       !~ 'cliente_produtor' THEN
+    RAISE EXCEPTION 'POST: campanhas_cliente_select sem exigência de papel produtor';
+  END IF;
+END $post9$;

@@ -20,5 +20,13 @@ DROP FUNCTION IF EXISTS public.my_session_authz_state_v1();
 -- platform_actor_access_ready: MANTER a versão com user_authz_epoch (deny-only). Restaurar o corpo
 -- capturado (md5 048249c0c2106c3761e26eacb8d0de84) reabriria autoridade de JWTs anteriores a
 -- mudanças já executadas; só após expiração dos tokens antigos e com decisão do auditor.
--- Gatilhos/políticas globais: nada a desfazer (o candidato não os altera).
+-- Gatilhos globais: nada a desfazer (o candidato não os altera).
+-- rev.6 — campanhas_cliente_select: NÃO restaurar a expressão anterior (reabriria leitura comercial por vínculo
+-- de consultor). Rollback mantém a versão restrita; a verificação abaixo aborta se alguém a tiver afrouxado.
+DO $rb9$ BEGIN
+  IF (SELECT pg_get_expr(polqual, polrelid) FROM pg_policy WHERE polrelid = 'public.commercial_campaigns'::regclass AND polname = 'campanhas_cliente_select') !~ 'cliente_produtor' THEN
+    RAISE EXCEPTION 'rollback: campanhas_cliente_select sem exigência de papel produtor — não prosseguir';
+  END IF;
+END $rb9$;
+-- user_admin_scope_settle é inalcançável sem os núcleos (fica, sem EXECUTE de cliente).
 COMMIT;

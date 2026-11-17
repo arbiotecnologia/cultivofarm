@@ -1,0 +1,16 @@
+// CANDIDATO NÃO IMPLANTADO. Destino: supabase/functions/user-email-change-sync/index.ts (+ handler.ts e _shared/user-admin/verify-actor.ts).
+// Gate: secret USER_ADMIN_REFINEMENT_ENABLED="true" (ausente = desligado). Alvo fixo por build (produção ou HML).
+import { createClient } from "npm:@supabase/supabase-js@2.110.8";
+import { corsHeadersFor, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
+import { handle } from "./handler.ts";
+const EXPECTED_URL = "https://vrlcdwmlytukrjezrrnf.supabase.co";
+const url = Deno.env.get("SUPABASE_URL"), anon = Deno.env.get("SUPABASE_ANON_KEY"), svc = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const pub = url && anon ? createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } }) : null;
+const admin = url && svc ? createClient(url, svc, { auth: { persistSession: false, autoRefreshToken: false } }) : null;
+Deno.serve((req) => handle(req, {
+  enabled: Deno.env.get("USER_ADMIN_REFINEMENT_ENABLED") === "true",
+  urlOk: url === EXPECTED_URL && !!pub && !!admin,
+  auth: { getClaims: (t) => pub!.auth.getClaims(t) as never, getUser: (t) => pub!.auth.getUser(t) as never },
+  rpc: (fn, args) => admin!.rpc(fn, args) as never,
+  cors: corsHeadersFor, trusted: isTrustedOrigin, log: (o) => console.error(JSON.stringify(o)),
+}));

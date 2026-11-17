@@ -55,3 +55,7 @@ CREATE FUNCTION platform_private.is_tenant_admin_for_user(p_target_user_id uuid)
 -- Gatilhos: carregados VERBATIM de captured-prod-user-triggers-20261117.sql (todos os 28, habilitados).
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT USAGE ON SCHEMA platform_private TO authenticated; -- espelha produção: public.has_role (INVOKER) chama platform_private.has_role
+
+-- rev.6 SINTÉTICA: organizations (só colunas usadas por h15_actor_organization/ator).
+CREATE TABLE IF NOT EXISTS public.organizations (id uuid PRIMARY KEY, ativo boolean NOT NULL DEFAULT true);
+GRANT SELECT ON public.organizations TO authenticated;

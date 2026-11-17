@@ -1,0 +1,14 @@
+{
+ "source_candidate_sha256": "d6cfe89e0cd170e5c4cd2349d3ce4bb92ffb898b8f45f4152a413087b62b631e",
+ "files": {
+  "hml/00-hml-user-topology-probe.sql": "3bbbd8b2aea27b746aabce065cf6c871a8324389be4ee58919c5b352a63c9c8e",
+  "hml/candidate-hml.sql.review": "2a7d10d261a460a25cee88b6ee4d510940b33de89cc65f93d741e7a3a002b501",
+  "hml/rollback-hml.sql.review": "16fd1d8dcc58e33f8f8732fae14b29c1f1af87bdce057f7f42a4c015b7ca3a91",
+  "hml/edge/tenant-user-admin/index.ts.review": "0a3d4077718768b8c95e4fead5f408b167afc1980150dd3fc81a8234b5e03066",
+  "hml/edge/user-email-change-sync/index.ts.review": "1b743b3db4974431ce3af1bd9c183430c4c792ac1c72b7a360e6cf520e1055c1"
+ },
+ "accepted_sync_variants": {
+  "1d053564ccd5fa672a10ec87d5cb0baa": "statement (produção, scripts/user-links-principal)",
+  "50392a57c5908c67c709c4e84f0e932e": "row legado (migração 20260519155317)"
+ }
+}
