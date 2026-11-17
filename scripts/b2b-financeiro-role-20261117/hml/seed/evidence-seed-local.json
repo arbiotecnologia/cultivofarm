@@ -1,0 +1,62 @@
+{
+ "synthetic_schema": true,
+ "proves_hml_triggers": false,
+ "results": [
+  {
+   "name": "recusa alvo sem impressão digital HML",
+   "status": "PASS"
+  },
+  {
+   "name": "recusa sessão não-postgres",
+   "status": "PASS"
+  },
+  {
+   "name": "outra guarda recusa -> rollback total, exceção nunca persiste",
+   "status": "PASS"
+  },
+  {
+   "name": "seed cria títulos A/B/C com pedido, 2 parcelas e vínculo, manifestados",
+   "status": "PASS"
+  },
+  {
+   "name": "dados não-vazios após seed",
+   "status": "PASS"
+  },
+  {
+   "name": "após seed o bloqueio homolog volta a valer (postgres sem ticket)",
+   "status": "PASS"
+  },
+  {
+   "name": "outro papel continua bloqueado",
+   "status": "PASS"
+  },
+  {
+   "name": "no-delete continua valendo fora da limpeza",
+   "status": "PASS"
+  },
+  {
+   "name": "seed não duplica",
+   "status": "PASS"
+  },
+  {
+   "name": "manifesto inacessível a outros papéis",
+   "status": "PASS"
+  },
+  {
+   "name": "limpeza recusa tocar tabela protegida (rollback)",
+   "status": "PASS"
+  },
+  {
+   "name": "limpeza remove títulos/parcelas/vínculos/pedidos/auditoria/assinaturas/parceiros/perfis QA; negócio, tenants e auth intactos; corpos restaurados",
+   "status": "PASS"
+  },
+  {
+   "name": "no-delete restaurado após limpeza",
+   "status": "PASS"
+  },
+  {
+   "name": "07 verifica limpo (auth qa-fin restante = remover via Admin API)",
+   "status": "PASS"
+  }
+ ]
+}

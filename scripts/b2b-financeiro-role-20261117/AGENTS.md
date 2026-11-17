@@ -6,3 +6,4 @@
 - `02b-install.sql.review` e `04-rollback.sql.review` são gerados por `build.py` a partir de `captured/` com md5 pinados; nunca editar à mão — drift aborta.
 - Transição para/de Financeiro só no contrato canônico `tenant_admin_user_access_exec_v1`/`user_admin_change_access_type_core` (02c, alvo `b2b_finance`), papel+`partner_users.papel` na mesma transação, CAS `expected_link_version` revalidado após o lock e bump de época — nunca writer paralelo.
 - Monitor de sessão do papel usa `b2b_finance_capability_v1` como sonda (`b2bFinanceContextProbe`), atrás do gate do perfil — sem sonda paralela.
+- Massa QA do HML só por `hml/seed` (gerado por `build_seed.py`): exceção transacional postgres+ticket txid+linhas manifestadas, corpos restaurados com md5 antes do COMMIT e limpeza por descoberta com tabelas protegidas — nunca desativar gatilhos, criar writer público ou rodar fora de `vrlcdwmlytukrjezrrnf`.

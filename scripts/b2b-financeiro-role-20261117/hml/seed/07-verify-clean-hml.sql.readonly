@@ -1,0 +1,11 @@
+-- HML somente leitura: confirma que não restou fixture QA-FIN e que o bloqueio homolog está com o corpo original.
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;
+SELECT 'QA_VERIFY' k,
+ to_regnamespace('qa_b2bfin') IS NULL schema_removido,
+ (SELECT count(*) FROM public.partner_accounts WHERE razao_social LIKE 'QA-FIN-%') parceiros_qa,
+ (SELECT count(*) FROM public.accounts_receivable WHERE description LIKE 'QA-FIN-%') titulos_qa,
+ (SELECT count(*) FROM public.partner_orders WHERE numero LIKE 'QA-FIN-%') pedidos_qa,
+ (SELECT count(*) FROM auth.users WHERE email LIKE 'qa-fin-%') auth_qa,
+ (SELECT count(*) FROM public.organization_subscription_history WHERE reason LIKE 'QA-FIN-20261117%') historico_assinatura_qa,
+ (SELECT md5(prosrc) FROM pg_proc WHERE oid = to_regprocedure('platform_private.homolog_validation_block_receivable_insert()')) homolog_block_md5_comparar_com_QA_SEED_RESTORED;
+ROLLBACK;
