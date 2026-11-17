@@ -1,0 +1,1 @@
+- PDF preview generation belongs to the shared DialogTrigger, not only its default child — prevents custom-trigger blank previews without changing authority.
