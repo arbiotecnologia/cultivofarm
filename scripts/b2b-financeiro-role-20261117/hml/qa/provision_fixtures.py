@@ -44,7 +44,11 @@ for k, pid in P.items():
     s, j = call(ADM[k], "GET", f"/rest/v1/partner_accounts?id=eq.{pid}&select=id,razao_social,commercial_owner_organization_id")
     need(s == 200 and len(j) == 1 and str(j[0]["razao_social"]).startswith("QA-FIN-"), f"parceiro {k} não é fixture QA-FIN- visível ao admin")
     P[k] = {"id": pid, "org": j[0]["commercial_owner_organization_id"]}
-need(P["A"]["org"] == P["B"]["oSTATE = "qa-state.private.json"
+need(P["A"]["org"] == P["B"]["org"] != P["C"]["org"], "topologia A/B mesma empresa, C outra")
+s, j = call(ADM["A"], "GET", f"/rest/v1/partner_financial_settings?partner_id=in.({P['A']['id']},{P['B']['id']},{P['C']['id']})&select=partner_id,credit_limit")
+lim = {r["partner_id"]: r["credit_limit"] for r in (j or [])} if s == 200 else {}
+order = json.load(open(E["ORDER_PAYLOAD_JSON"])); titles = json.load(open(E["TITLES_JSON"])) if E.get("TITLES_JSON") else {}
+STATE = "qa-state.private.json"
 def persist(st):
     tmp = STATE + ".tmp"; fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     os.write(fd, json.dumps(st, indent=1).encode()); os.fsync(fd); os.close(fd); os.replace(tmp, STATE)
