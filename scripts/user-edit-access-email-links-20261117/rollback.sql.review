@@ -1,0 +1,12 @@
+-- Rollback deny-first: remove apenas os novos pontos de entrada; dados e auditoria preservados.
+BEGIN;
+DROP FUNCTION IF EXISTS public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text);
+DROP FUNCTION IF EXISTS public.tenant_admin_email_change_request_v1(uuid,text,uuid);
+DROP FUNCTION IF EXISTS public.tenant_admin_email_change_status_v1(uuid);
+DROP FUNCTION IF EXISTS public.tenant_admin_email_change_cancel_v1(uuid,uuid);
+DROP FUNCTION IF EXISTS public.tenant_admin_search_clientes_v1(text,int,int);
+DROP FUNCTION IF EXISTS public.tenant_admin_consultor_links_v1(uuid);
+DROP FUNCTION IF EXISTS public.tenant_admin_consultor_link_v1(uuid,text,uuid,uuid,public.access_level_tecnico,timestamptz,timestamptz,uuid,text);
+REVOKE ALL ON FUNCTION platform_private.user_email_change_sync_v1(uuid) FROM service_role;
+-- Tabelas platform_private.user_admin_change_audit / user_email_change_requests mantidas (histórico).
+COMMIT;

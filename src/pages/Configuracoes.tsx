@@ -47,6 +47,8 @@ import { carregarVinculosUsuarios } from "@/lib/configuracoes/userLinksQuery";
 import { carregarUsuariosAdmin, definirStatusUsuario, montarArgsListagem, placeholderMesmaConsulta, type UsuarioListado } from "@/lib/configuracoes/usuariosListQuery";
 import { ExternalCommonUserEditBoundary } from "@/components/configuracoes/ExternalCommonUserEditForm";
 import { PartnerLifecycleFields } from "@/components/configuracoes/PartnerLifecycleFields";
+import { UserAdminRefinementPanel } from "@/components/configuracoes/UserAdminRefinementPanel";
+import { USER_ADMIN_REFINEMENT_INSTALLED } from "@/lib/configuracoes/userAdminRefinement";
 import { ExternalRegistrationFields } from "@/components/configuracoes/ExternalRegistrationFields";
 import { EXTERNAL_USER_EDIT_PHASE2_REVIEWED } from "@/lib/configuracoes/externalUserEditGate";
 import { pauseStateKey, readPauseState, writePauseState, clearPauseState } from "@/lib/authz/pauseRetainedState";
@@ -1146,6 +1148,14 @@ export default function Configuracoes() {
                     <div><Label>Email</Label><Input value={editUser.email || ""} disabled className="bg-muted" /></div>
                     <div><Label>Tipo de acesso</Label><p className="text-sm">{(editTipo === "b2b_tecnico" ? "Parceiro B2B — Técnico" : ROTULO_TIPO_ACESSO[editTipo])}</p></div>
                     <div><Label>Vínculo atual</Label><div className="border rounded-md p-2">{renderVinculo(editOrig ?? editUser, true)}</div></div>
+                    {USER_ADMIN_REFINEMENT_INSTALLED && isAdmin && <UserAdminRefinementPanel
+                      key={editUser.user_id}
+                      target={{ user_id: editUser.user_id, email: editUser.email ?? null, roles: editOrig?.roles ?? [] }}
+                      actorId={user?.id ?? ''} currentType={editTipo}
+                      onChanged={() => {
+                        queryClient.invalidateQueries({ queryKey: ['admin-users', profile?.organization_id, user?.id] });
+                        queryClient.invalidateQueries({ queryKey: ['admin-user-links', profile?.organization_id, user?.id] });
+                      }} />}
                     {isAdmin && externalLifecycleCandidate && canTenantEmail && !vinculos.isFetching && !vinculos.isError && <>
                       {!vinculos.data?.get(editUser.user_id)?.parceiro?.partner_id && <ExternalRegistrationFields
                         key={`partner:${externalScope}`} companyLabel={organizationProfile.data?.nome} partnerOnly roles={[]} partnerId={editPartner} clients={[]} primary={null}

@@ -1,0 +1,241 @@
+{
+ "passed": 47,
+ "total": 47,
+ "results": [
+  {
+   "name": "self escalation negado",
+   "pass": true,
+   "detail": "ser_admin_ctx(uuid) line 6 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text) line 9 at assignment"
+  },
+  {
+   "name": "admin outro tenant negado",
+   "pass": true,
+   "detail": "ser_admin_ctx(uuid) line 7 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text) line 9 at assignment"
+  },
+  {
+   "name": "não admin negado",
+   "pass": true,
+   "detail": "ser_admin_ctx(uuid) line 7 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text) line 9 at assignment"
+  },
+  {
+   "name": "alvo superadmin negado",
+   "pass": true,
+   "detail": "ser_admin_ctx(uuid) line 7 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text) line 9 at assignment"
+  },
+  {
+   "name": "anon sem EXECUTE",
+   "pass": true,
+   "detail": "ERROR:  permission denied for function tenant_admin_change_access_type_v1"
+  },
+  {
+   "name": "motivo obrigatório",
+   "pass": true,
+   "detail": "ERROR:  reason_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text) line 11 at RAISE"
+  },
+  {
+   "name": "superadmin não atribuível",
+   "pass": true,
+   "detail": "ROR:  internal_roles_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text) line 32 at RAISE"
+  },
+  {
+   "name": "B2B sem vínculo de parceiro",
+   "pass": true,
+   "detail": "ERROR:  partner_link_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text) line 51 at RAISE"
+  },
+  {
+   "name": "produtor com cliente de outro tenant",
+   "pass": true,
+   "detail": "ERROR:  cliente_required\nCONTEXT:  PL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text) line 60 at RAISE"
+  },
+  {
+   "name": "interno→produtor",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "replay idempotente",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "mesma chave, payload diferente",
+   "pass": true,
+   "detail": "ay(uuid,text,text) line 8 at RAISE\nPL/pgSQL function public.tenant_admin_change_access_type_v1(uuid,text,public.app_role[],uuid,uuid,text) line 13 at assignment"
+  },
+  {
+   "name": "user_id preservado",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "papel financeiro residual removido (sessão existente perde acesso)",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "produtor→interno consultor",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "vínculo preservado sem principal",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "B2B→interno revoga partner_users",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "partner_users preservado (histórico)",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "interno→B2B com vínculo ativo",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "auditoria append-only",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "auditoria não legível por authenticated",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "e-mail duplicado",
+   "pass": true,
+   "detail": "ERROR:  email_unavailable\nCONTEXT:  PL/pgSQL function public.tenant_admin_email_change_request_v1(uuid,text,uuid) line 19 at RAISE"
+  },
+  {
+   "name": "e-mail inválido",
+   "pass": true,
+   "detail": "ERROR:  invalid_email\nCONTEXT:  PL/pgSQL function public.tenant_admin_email_change_request_v1(uuid,text,uuid) line 6 at RAISE"
+  },
+  {
+   "name": "e-mail outro tenant",
+   "pass": true,
+   "detail": "unction platform_private.user_admin_ctx(uuid) line 7 at RAISE\nPL/pgSQL function public.tenant_admin_email_change_request_v1(uuid,text,uuid) line 4 at assignment"
+  },
+  {
+   "name": "solicitação pendente",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "segunda pendência bloqueada",
+   "pass": true,
+   "detail": "ERROR:  email_change_pending\nCONTEXT:  PL/pgSQL function public.tenant_admin_email_change_request_v1(uuid,text,uuid) line 24 at RAISE"
+  },
+  {
+   "name": "e-mail atual preservado antes da confirmação",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "sync negado a authenticated",
+   "pass": true,
+   "detail": "chema platform_private\nLINE 1: ...435af9d01',false); SET ROLE authenticated; SELECT platform_p...\n                                                             ^"
+  },
+  {
+   "name": "sync aguarda titular",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "sync após confirmação",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "cancelamento",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "busca paginada só do tenant",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "busca escapa curingas",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "busca por não admin",
+   "pass": true,
+   "detail": "ERROR:  forbidden\nCONTEXT:  PL/pgSQL function public.tenant_admin_search_clientes_v1(text,integer,integer) line 4 at RAISE"
+  },
+  {
+   "name": "múltiplos vínculos ativos",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "vínculo duplicado",
+   "pass": true,
+   "detail": "lic.tenant_admin_consultor_link_v1(uuid,text,uuid,uuid,public.access_level_tecnico,timestamp with time zone,timestamp with time zone,uuid,text) line 36 at RAISE"
+  },
+  {
+   "name": "cliente de outro tenant",
+   "pass": true,
+   "detail": "lic.tenant_admin_consultor_link_v1(uuid,text,uuid,uuid,public.access_level_tecnico,timestamp with time zone,timestamp with time zone,uuid,text) line 18 at RAISE"
+  },
+  {
+   "name": "período inválido",
+   "pass": true,
+   "detail": "lic.tenant_admin_consultor_link_v1(uuid,text,uuid,uuid,public.access_level_tecnico,timestamp with time zone,timestamp with time zone,uuid,text) line 20 at RAISE"
+  },
+  {
+   "name": "vínculo para produtor (não consultor)",
+   "pass": true,
+   "detail": "lic.tenant_admin_consultor_link_v1(uuid,text,uuid,uuid,public.access_level_tecnico,timestamp with time zone,timestamp with time zone,uuid,text) line 15 at RAISE"
+  },
+  {
+   "name": "substituição encerra antigo",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "consultor acessa vinculado",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "revogação corta acesso técnico",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "consultor sem acesso a não vinculado",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "histórico preservado após reativação",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "listagem cross-tenant",
+   "pass": true,
+   "detail": "ne 7 at RAISE\nSQL statement \"SELECT platform_private.user_admin_ctx(p_user_id)\"\nPL/pgSQL function public.tenant_admin_consultor_links_v1(uuid) line 3 at PERFORM"
+  },
+  {
+   "name": "vínculo futuro não concede acesso",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "concorrência: exatamente um encerramento",
+   "pass": true,
+   "detail": ""
+  }
+ ]
+}

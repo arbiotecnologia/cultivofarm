@@ -1,0 +1,233 @@
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  ACCESS_TARGET_LABEL, EDGE_EMAIL_CHANGE, PAGE_SIZE, RPC, emailSchema, friendlyError, isConsultor,
+  parseClientesPage, parseConsultorLinks, validatePeriod, validateTransition, type AccessTarget, type ClienteOption,
+} from "@/lib/configuracoes/userAdminRefinement";
+
+// RPCs candidatas ainda não estão nos tipos gerados (não instaladas).
+const rpc = (name: string, args: Record<string, unknown>) =>
+  (supabase.rpc as unknown as (n: string, a: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>)(name, args);
+const newKey = () => crypto.randomUUID();
+
+const INTERNAL_ROLES: { value: string; label: string }[] = [
+  { value: "administrador", label: "Administrador" }, { value: "gestor", label: "Gestor" },
+  { value: "administrativo", label: "Administrativo" }, { value: "financeiro", label: "Financeiro" },
+  { value: "gestor_comercial", label: "Gestor Comercial" }, { value: "producao", label: "Produção" },
+  { value: "aplicador", label: "Aplicador" }, { value: "operador_onfarm", label: "Operador OnFarm" },
+  { value: "consultor_tecnico", label: "Consultor Técnico" }, { value: "tecnico_agronomo", label: "Técnico Agrônomo" },
+];
+
+export interface RefinementTarget { user_id: string; email: string | null; roles: string[] }
+interface Props { target: RefinementTarget; actorId: string; currentType: string; onChanged: () => void }
+
+function ClientePicker({ onPick, disabled }: { onPick: (c: ClienteOption) => void; disabled?: boolean }) {
+  const [q, setQ] = useState(""); const [page, setPage] = useState(0);
+  const query = useQuery({
+    queryKey: ["tenant-admin-clientes", q, page],
+    queryFn: async () => {
+      const { data, error } = await rpc(RPC.searchClientes, { p_search: q, p_offset: page * PAGE_SIZE, p_limit: PAGE_SIZE });
+      if (error) throw new Error(error.message);
+      return parseClientesPage(data);
+    },
+    retry: false, staleTime: 15_000,
+  });
+  const pages = query.data ? Math.max(1, Math.ceil(query.data.total / PAGE_SIZE)) : 1;
+  return (
+    <div className="space-y-2">
+      <Input placeholder="Buscar cliente/produtor" value={q} maxLength={100} disabled={disabled}
+        onChange={(e) => { setQ(e.target.value); setPage(0); }} aria-label="Buscar cliente/produtor" />
+      <div className="border rounded-md max-h-40 overflow-y-auto overscroll-contain divide-y" aria-busy={query.isFetching}>
+        {query.isLoading && <p className="p-2 text-xs text-muted-foreground">Carregando…</p>}
+        {query.isError && <p role="alert" className="p-2 text-xs text-destructive">{friendlyError((query.error as Error).message)}</p>}
+        {query.data?.items.length === 0 && <p className="p-2 text-xs text-muted-foreground">Nenhum cliente encontrado.</p>}
+        {query.data?.items.map((c) => (
+          <button key={c.id} type="button" disabled={disabled} onClick={() => onPick(c)}
+            className="w-full text-left p-2 text-sm hover:bg-muted break-words">{c.nome}</button>
+        ))}
+      </div>
+      <div className="flex items-center justify-between text-xs">
+        <Button type="button" size="sm" variant="outline" disabled={page === 0 || query.isFetching} onClick={() => setPage(page - 1)}>Anterior</Button>
+        <span>Página {page + 1} de {pages}</span>
+        <Button type="button" size="sm" variant="outline" disabled={page + 1 >= pages || query.isFetching} onClick={() => setPage(page + 1)}>Próxima</Button>
+      </div>
+    </div>
+  );
+}
+
+function AccessTypeSection({ target, actorId, currentType, onChanged }: Props) {
+  const [to, setTo] = useState<AccessTarget | "">(""); const [roles, setRoles] = useState<string[]>([]);
+  const [cliente, setCliente] = useState<ClienteOption | null>(null); const [reason, setReason] = useState("");
+  const [key, setKey] = useState(newKey); const [err, setErr] = useState<string | null>(null);
+  const self = actorId === target.user_id;
+  const m = useMutation({
+    mutationFn: async () => {
+      const { error } = await rpc(RPC.changeAccessType, { p_user_id: target.user_id, p_target: to, p_internal_roles: to === "internal" ? roles : null,
+        p_cliente_id: to === "producer" ? cliente?.id ?? null : null, p_idempotency_key: key, p_reason: reason });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => { setKey(newKey()); setTo(""); setReason(""); setErr(null); onChanged(); },
+    onError: (e: Error) => setErr(friendlyError(e.message)),
+  });
+  const submit = () => {
+    if (!to) return;
+    const v = validateTransition({ actorId, targetId: target.user_id, from: currentType, to, internalRoles: roles, clienteId: cliente?.id ?? null, reason });
+    if (v) { setErr(v); return; }
+    if (!m.isPending) m.mutate();
+  };
+  return (
+    <section className="space-y-2 border rounded-md p-3" aria-label="Alterar tipo de acesso">
+      <h4 className="font-semibold text-sm">Alterar tipo de acesso</h4>
+      {self ? <p className="text-xs text-muted-foreground">Você não pode alterar o próprio tipo de acesso.</p> : <>
+        <Select value={to} onValueChange={(v) => { setTo(v as AccessTarget); setErr(null); }}>
+          <SelectTrigger aria-label="Novo tipo de acesso"><SelectValue placeholder="Selecione o novo tipo" /></SelectTrigger>
+          <SelectContent>{(Object.keys(ACCESS_TARGET_LABEL) as AccessTarget[]).map((t) => <SelectItem key={t} value={t}>{ACCESS_TARGET_LABEL[t]}</SelectItem>)}</SelectContent>
+        </Select>
+        {to === "internal" && <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-2 border rounded-md p-2 max-h-40 overflow-y-auto overscroll-contain">
+          {INTERNAL_ROLES.map((r) => <label key={r.value} className="flex items-center gap-2 text-sm">
+            <Checkbox checked={roles.includes(r.value)} onCheckedChange={(c) => setRoles(c === true ? [...roles, r.value] : roles.filter((x) => x !== r.value))} />{r.label}
+          </label>)}
+        </div>}
+        {to === "producer" && <div className="space-y-1">
+          <p className="text-xs">Cliente: <strong>{cliente?.nome ?? "nenhum selecionado"}</strong></p>
+          <ClientePicker onPick={setCliente} />
+        </div>}
+        {to === "b2b" && <p className="text-xs text-muted-foreground">Exige vínculo ativo com um parceiro B2B desta empresa (cadastrado no ciclo de vida do parceiro).</p>}
+        {to && <>
+          <Label htmlFor="access-reason">Motivo</Label>
+          <Input id="access-reason" value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
+          <p className="text-xs text-muted-foreground">Os perfis e vínculos do tipo anterior serão encerrados (com histórico). O acesso é revalidado no servidor imediatamente.</p>
+          <Button type="button" className="w-full h-auto min-h-10 whitespace-normal" disabled={m.isPending} onClick={submit}>
+            {m.isPending ? "Aplicando…" : `Confirmar mudança para ${ACCESS_TARGET_LABEL[to]}`}
+          </Button>
+        </>}
+        {err && <p role="alert" className="text-xs text-destructive">{err}</p>}
+      </>}
+    </section>
+  );
+}
+
+function EmailSection({ target, onChanged }: Props) {
+  const qc = useQueryClient(); const [email, setEmail] = useState(""); const [key, setKey] = useState(newKey);
+  const [msg, setMsg] = useState<string | null>(null);
+  const status = useQuery({
+    queryKey: ["tenant-admin-email-change", target.user_id],
+    queryFn: async () => { const { data, error } = await rpc(RPC.emailStatus, { p_user_id: target.user_id }); if (error) throw new Error(error.message); return data as { status: string; new_email?: string; expires_at?: string } },
+    retry: false,
+  });
+  const request = useMutation({
+    mutationFn: async () => {
+      const parsed = emailSchema.safeParse(email); if (!parsed.success) throw new Error("invalid_email");
+      const { data, error } = await supabase.functions.invoke(EDGE_EMAIL_CHANGE, { body: { user_id: target.user_id, new_email: parsed.data, idempotency_key: key } });
+      const code = (data as { code?: string } | null)?.code;
+      if (code === "delivery_not_ready") return "delivery_not_ready";
+      if (error) throw new Error(code ?? error.message);
+      return "sent";
+    },
+    onSuccess: (r) => { setKey(newKey()); setEmail(""); setMsg(r === "sent" ? "Solicitação enviada. A troca só vale após o titular confirmar." : friendlyError(r)); qc.invalidateQueries({ queryKey: ["tenant-admin-email-change", target.user_id] }); },
+    onError: (e: Error) => setMsg(friendlyError(e.message)),
+  });
+  const cancel = useMutation({
+    mutationFn: async () => { const { error } = await rpc(RPC.emailCancel, { p_user_id: target.user_id, p_idempotency_key: newKey() }); if (error) throw new Error(error.message); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["tenant-admin-email-change", target.user_id] }); onChanged(); },
+    onError: (e: Error) => setMsg(friendlyError(e.message)),
+  });
+  const pending = status.data?.status === "pending";
+  return (
+    <section className="space-y-2 border rounded-md p-3" aria-label="Alterar e-mail">
+      <h4 className="font-semibold text-sm">E-mail</h4>
+      <p className="text-sm break-all">Atual: {target.email ?? "—"}</p>
+      {status.isLoading && <p className="text-xs text-muted-foreground">Verificando solicitações…</p>}
+      {status.isError && <p role="alert" className="text-xs text-destructive">{friendlyError((status.error as Error).message)}</p>}
+      {pending ? <div className="space-y-2">
+        <Badge variant="outline" className="whitespace-normal break-all">Pendente: {status.data?.new_email}</Badge>
+        <p className="text-xs text-muted-foreground">Aguardando confirmação do titular. O e-mail atual continua válido.</p>
+        <Button type="button" variant="outline" size="sm" disabled={cancel.isPending} onClick={() => cancel.mutate()}>Cancelar solicitação</Button>
+      </div> : <div className="space-y-2">
+        <Label htmlFor="new-email">Novo e-mail</Label>
+        <Input id="new-email" type="email" value={email} maxLength={254} onChange={(e) => setEmail(e.target.value)} />
+        <Button type="button" size="sm" disabled={request.isPending || !email} onClick={() => request.mutate()}>{request.isPending ? "Enviando…" : "Solicitar alteração"}</Button>
+      </div>}
+      {msg && <p role="status" className="text-xs">{msg}</p>}
+    </section>
+  );
+}
+
+function ConsultorLinksSection({ target }: Props) {
+  const qc = useQueryClient(); const qk = ["tenant-admin-consultor-links", target.user_id];
+  const [pick, setPick] = useState<ClienteOption | null>(null); const [replace, setReplace] = useState<string>("");
+  const [level, setLevel] = useState<"read" | "execute">("read"); const [from, setFrom] = useState(""); const [until, setUntil] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const links = useQuery({ queryKey: qk, retry: false, queryFn: async () => {
+    const { data, error } = await rpc(RPC.consultorLinks, { p_user_id: target.user_id }); if (error) throw new Error(error.message); return parseConsultorLinks(data);
+  } });
+  const m = useMutation({
+    mutationFn: async (a: { action: "add" | "end" | "replace"; cliente_id: string; replace?: string }) => {
+      const { error } = await rpc(RPC.consultorLink, { p_user_id: target.user_id, p_action: a.action, p_cliente_id: a.cliente_id, p_replace_cliente_id: a.replace ?? null,
+        p_access_level: a.action === "end" ? null : level, p_valid_from: a.action === "end" || !from ? null : new Date(from).toISOString(),
+        p_valid_until: a.action === "end" || !until ? null : new Date(until).toISOString(), p_idempotency_key: newKey(), p_reason: null });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => { setPick(null); setReplace(""); setErr(null); qc.invalidateQueries({ queryKey: qk }); },
+    onError: (e: Error) => { setErr(friendlyError(e.message)); qc.invalidateQueries({ queryKey: qk }); },
+  });
+  const active = links.data?.items.filter((l) => l.status !== "encerrado") ?? [];
+  const add = () => {
+    if (!pick) return; const v = validatePeriod(from || null, until || null); if (v) { setErr(v); return; }
+    m.mutate(replace ? { action: "replace", cliente_id: pick.id, replace } : { action: "add", cliente_id: pick.id });
+  };
+  return (
+    <section className="space-y-2 border rounded-md p-3" aria-label="Clientes do consultor">
+      <h4 className="font-semibold text-sm">Clientes/produtores atendidos</h4>
+      <p className="text-xs text-muted-foreground">Concede somente acesso técnico aos clientes listados. Financeiro e comercial não são liberados.</p>
+      {links.isLoading && <p className="text-xs text-muted-foreground">Carregando vínculos…</p>}
+      {links.isError && <p role="alert" className="text-xs text-destructive">{friendlyError((links.error as Error).message)}</p>}
+      <ul className="max-h-48 overflow-y-auto overscroll-contain divide-y border rounded-md">
+        {links.data?.items.length === 0 && <li className="p-2 text-xs text-muted-foreground">Nenhum vínculo.</li>}
+        {links.data?.items.map((l) => <li key={l.cliente_id} className="p-2 text-sm flex flex-wrap items-center gap-2 justify-between">
+          <span className="break-words min-w-0">{l.nome} <Badge variant="outline">{l.status}</Badge>
+            <span className="block text-xs text-muted-foreground">{l.access_level === "read" ? "Leitura" : l.access_level === "execute" ? "Execução" : "Gestão"}
+              {l.valid_from ? ` · de ${new Date(l.valid_from).toLocaleDateString("pt-BR")}` : ""}{l.valid_until ? ` até ${new Date(l.valid_until).toLocaleDateString("pt-BR")}` : ""}</span></span>
+          {l.status !== "encerrado" && <Button type="button" size="sm" variant="outline" disabled={m.isPending} onClick={() => m.mutate({ action: "end", cliente_id: l.cliente_id })}>Encerrar</Button>}
+        </li>)}
+      </ul>
+      <div className="space-y-2">
+        <Label>Adicionar cliente</Label>
+        <p className="text-xs">Selecionado: <strong>{pick?.nome ?? "nenhum"}</strong></p>
+        <ClientePicker onPick={setPick} disabled={m.isPending} />
+        <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-2">
+          <div><Label htmlFor="link-from">Início</Label><Input id="link-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
+          <div><Label htmlFor="link-until">Fim (opcional)</Label><Input id="link-until" type="date" value={until} onChange={(e) => setUntil(e.target.value)} /></div>
+        </div>
+        <Select value={level} onValueChange={(v) => setLevel(v as "read" | "execute")}>
+          <SelectTrigger aria-label="Nível de acesso"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="read">Leitura técnica</SelectItem><SelectItem value="execute">Execução técnica</SelectItem></SelectContent>
+        </Select>
+        {active.length > 0 && <Select value={replace || "none"} onValueChange={(v) => setReplace(v === "none" ? "" : v)}>
+          <SelectTrigger aria-label="Substituir vínculo"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="none">Adicionar (sem substituir)</SelectItem>
+            {active.map((l) => <SelectItem key={l.cliente_id} value={l.cliente_id}>Substituir {l.nome}</SelectItem>)}</SelectContent>
+        </Select>}
+        <Button type="button" size="sm" disabled={!pick || m.isPending} onClick={add}>{m.isPending ? "Salvando…" : replace ? "Substituir" : "Adicionar"}</Button>
+      </div>
+      {err && <p role="alert" className="text-xs text-destructive">{err}</p>}
+    </section>
+  );
+}
+
+export function UserAdminRefinementPanel(props: Props) {
+  return (
+    <div className="space-y-3">
+      <AccessTypeSection {...props} />
+      {props.actorId !== props.target.user_id && <EmailSection {...props} />}
+      {isConsultor(props.target.roles) && props.currentType === "internal" && props.actorId !== props.target.user_id && <ConsultorLinksSection {...props} />}
+    </div>
+  );
+}
