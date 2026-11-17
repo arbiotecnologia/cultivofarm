@@ -1,5 +1,5 @@
 {
- "total": 105,
+ "total": 113,
  "results": [
   {
    "name": "pre_ref_divergente_falha",
@@ -87,6 +87,30 @@
   },
   {
    "name": "contadores_gestor_regressao",
+   "status": "PASS"
+  },
+  {
+   "name": "balancos_acl_live_preservada",
+   "status": "PASS"
+  },
+  {
+   "name": "tecnico_credito_canonico_preservado",
+   "status": "PASS"
+  },
+  {
+   "name": "financeiro_balancos_wrapper_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "nucleo_balancos_sem_execute",
+   "status": "PASS"
+  },
+  {
+   "name": "nucleo_balancos_org_forjada_negada",
+   "status": "PASS"
+  },
+  {
+   "name": "credito_ignora_titulo_cancelado",
    "status": "PASS"
   },
   {
@@ -410,7 +434,15 @@
    "status": "PASS"
   },
   {
+   "name": "rollback_restaura_b2b_credit_balances",
+   "status": "PASS"
+  },
+  {
    "name": "rollback_remove_capacidade",
+   "status": "PASS"
+  },
+  {
+   "name": "rollback_remove_nucleo_balancos",
    "status": "PASS"
   },
   {

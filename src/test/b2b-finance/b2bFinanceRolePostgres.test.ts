@@ -19,5 +19,16 @@ it("Financeiro B2B em PostgreSQL descartável/Auth sintética: isolamento, negat
     "financeiro_nao_cria_pedido", "financeiro_links_diretos_fechados", "gestor_regressao_le_proprio", "token_anterior_a_epoca_negado",
     "cadastro_financeiro_exclusivo", "credito_proprio_disponivel", "credito_irmao_isolado", "credito_outro_tenant_isolado", "financeiro_nao_usa_calculadora_de_pedido", "nucleo_credito_sem_execute", "contadores_mensagens_fechados_financeiro", "contadores_gestor_regressao", "revogacao_retira_credito", "rollback_restaura_fn_b2b_credit_exposure", "rollback_restaura_rpc_partner_message_counters", "provisao_financeiro_grava_vinculo", "rollback_restaura_b2b_own_obligations_owner"])
     expect(stdout).toContain(`PASS ${name}\n`);
-  expect(stdout).toContain("TOTAL 105 PASS");
+  expect(stdout).toContain("TOTAL 113 PASS");
+}, pgBatteryTestTimeout(120_000));
+it("transição canônica para/de Financeiro sobre gatilhos de produção e corpos LIVE: atômica, CAS, isolamento, regressão e reversão", async () => {
+  const before = readFileSync(`${DIR}/02c-install-access-transition.sql.review`, "utf8");
+  await promisify(execFile)("python3", [`${DIR}/build.py`], { encoding: "utf8" });
+  expect(readFileSync(`${DIR}/02c-install-access-transition.sql.review`, "utf8")).toBe(before);
+  const { stdout } = await runPgBattery("python3", [`${DIR}/test_access_transition_pg.py`], { encoding: "utf8" });
+  for (const name of ["live_pin_user_admin_change_access_type_core", "gestor_para_fin_atomico", "gestor_para_fin_cas_obsoleto", "admin_outro_tenant_negado",
+    "fin_para_tec_atomico", "fin_para_gestor", "interno_para_fin_parceiro_outro_tenant", "fin_para_interno_revoga_vinculo", "produtor_para_fin_encerra_clientes",
+    "replay_chave_com_payload_diferente", "sessao_antiga_invalidada", "leitor_vinculo_admin_outro_tenant_negado", "regressao_gestor_mais_tecnico", "rollback_restaura_nucleo"])
+    expect(stdout).toContain(`PASS ${name}\n`);
+  expect(stdout).toContain("TOTAL 42 PASS");
 }, pgBatteryTestTimeout(120_000));

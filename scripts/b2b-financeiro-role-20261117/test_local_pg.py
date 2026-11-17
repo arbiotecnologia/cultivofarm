@@ -37,13 +37,15 @@ LOAD = ["platform_private.platform_actor_access_ready", "platform_private.has_ro
         "h15_actor_organization", "is_platform_superadmin", "platform_private.require_service_role", "is_valid_b2b_partner_user",
         "platform_private.b2b_own_obligations_owner", "platform_private.b2b_own_obligations", "rpc_portal_partner_financial",
         "platform_private.external_provisioning_scope", "admin_provision_user_profile_v1", "b2b_finish_provisioning",
-        "fn_b2b_credit_exposure", "rpc_partner_message_counters"]
+        "fn_b2b_credit_exposure", "rpc_partner_message_counters",
+        "platform_private.b2b_credit_config_block", "platform_private.b2b_credit_balances"]
 data = TMP / "data"
 try:
     subprocess.run(PRIV + ["initdb", "-D", str(data), "-U", "postgres", "-A", "trust"], check=True, capture_output=True)
     subprocess.run(PRIV + ["pg_ctl", "-D", str(data), "-l", str(TMP / "log"), "-o", f"-k {TMP} -h \"\" -p {PORT}", "start", "-w"], check=True, capture_output=True)
     run((H / "fixture.sql").read_text())
     for n in LOAD: run((H / "captured" / f"{n}.sql").read_text() + ";")
+    run("REVOKE ALL ON FUNCTION platform_private.b2b_credit_balances(uuid,uuid) FROM PUBLIC; REVOKE ALL ON FUNCTION platform_private.b2b_credit_config_block(uuid) FROM PUBLIC;")  # ACL LIVE: só postgres
     run("REVOKE ALL ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) TO authenticated;"
         "GRANT EXECUTE ON FUNCTION public.rpc_partner_message_counters(uuid) TO authenticated;")
     run("GRANT EXECUTE ON FUNCTION public.rpc_portal_partner_financial(uuid,boolean,timestamptz,uuid) TO authenticated;"
@@ -86,7 +88,6 @@ INSERT INTO accounts_receivable_installments(receivable_id,installment_number,du
     check("financeiro_capacidade_propria", cap(F1) + "SELECT public.b2b_finance_capability_v1()->>'partner_id';", f"true\n{P1}")
     check("financeiro_capacidade_sem_escrita_credito_bloqueado", act(F1, "SELECT (c->>'writes')||(c->>'credit_read')||(c->>'export') FROM public.b2b_finance_capability_v1() c;"), "falsetruetrue")
     run(f"""INSERT INTO partner_financial_settings VALUES('{P1}',10000,0,true,'block'),('{P2}',5000,0,false,'block'),('{PB}',7000,0,false,'block');
-INSERT INTO platform_private.t_balances VALUES('{P1}',1000,0),('{P2}',2000,0),('{PB}',3000,0);
 INSERT INTO partner_order_messages(order_id,status) VALUES('30000000-0000-0000-0000-000000000001','nao_lida'),('30000000-0000-0000-0000-000000000002','nao_lida');""")
     cred = lambda uid, k: act(uid, f"SELECT public.b2b_finance_credit_v1()->>'{k}';")
     check("credito_proprio_limite", cred(F1, "credit_limit"), "10000.00")
@@ -103,8 +104,17 @@ INSERT INTO partner_order_messages(order_id,status) VALUES('30000000-0000-0000-0
     check("contadores_mensagens_fechados_financeiro", act(F1, "SELECT public.rpc_partner_message_counters(NULL);"), error="permission_denied")
     check("contadores_mensagens_fechados_irmao_explicito", act(F1, f"SELECT public.rpc_partner_message_counters('{P2}');"), error="permission_denied")
     check("contadores_gestor_regressao", act(G1, "SELECT public.rpc_partner_message_counters(NULL)->>'nao_lidas';"), "1")
-    run(f"DELETE FROM partner_financial_settings WHERE partner_id='{P2}'")
+    check("balancos_acl_live_preservada", "SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid='platform_private.b2b_credit_balances(uuid,uuid)'::regprocedure;", "{postgres=X/postgres}")
+    check("tecnico_credito_canonico_preservado", act(T1, f"SELECT public.fn_b2b_credit_exposure('{P1}',0,NULL)->>'credito_disponivel';"), "9000.00")
+    check("financeiro_balancos_wrapper_negado", act(F1, f"SELECT platform_private.b2b_credit_balances('{P1}',NULL);"), error="permission denied")
+    check("nucleo_balancos_sem_execute", act(F1, f"SELECT platform_private.b2b_credit_balances_core('{P1}',NULL,'{ORG_A}');"), error="permission denied")
+    check("nucleo_balancos_org_forjada_negada", f"SELECT platform_private.b2b_credit_balances_core('{P1}',NULL,'{ORG_B}');", error="B2B_TENANT_DENIED")
+    run(f"UPDATE accounts_receivable SET status='CANCELED' WHERE partner_id='{P1}'")
+    check("credito_ignora_titulo_cancelado", cred(F1, "exposicao_atual"), "0.00")
+    run(f"UPDATE accounts_receivable SET status='OPEN' WHERE partner_id='{P1}'")
+    run(f"UPDATE partner_financial_settings SET active=false WHERE partner_id='{P2}'")
     check("credito_config_incompleta_falha_fechado", cred(F2, "credit_limit"), error="CREDIT_SETTINGS_INCOMPLETE")
+    run(f"UPDATE partner_financial_settings SET active=true WHERE partner_id='{P2}'")
     check("financeiro_le_obrigacoes_proprias", own(F1, P1), "PED-P1")
     check("financeiro_parcelas_proprias", act(F1, f"SELECT jsonb_array_length(public.rpc_portal_partner_financial('{P1}',true)->'rows'->0->'installments');"), "1")
     check("financeiro_p2_mesma_empresa_isolado", own(F2, P2), "PED-P2")
@@ -188,10 +198,11 @@ INSERT INTO partner_order_messages(order_id,status) VALUES('30000000-0000-0000-0
     run("DELETE FROM user_roles WHERE role='parceiro_b2b_financeiro'; DELETE FROM partner_users WHERE papel='financeiro';")
     run("SET app.expected_ref='swzpzcwiasxmjutrmvkm';\n" + rb)
     pins = json.loads((H / "pins.json").read_text())
-    for n in ["platform_private.b2b_own_obligations_owner", "platform_private.external_provisioning_scope", "admin_provision_user_profile_v1", "b2b_finish_provisioning", "fn_b2b_credit_exposure", "rpc_partner_message_counters"]:
+    for n in ["platform_private.b2b_own_obligations_owner", "platform_private.external_provisioning_scope", "admin_provision_user_profile_v1", "b2b_finish_provisioning", "fn_b2b_credit_exposure", "rpc_partner_message_counters", "platform_private.b2b_credit_balances"]:
         sch, _, fn = n.rpartition(".")
         check(f"rollback_restaura_{fn}", f"SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname='{sch or 'public'}' AND p.proname='{fn}';", pins[n][1])
     check("rollback_remove_capacidade", "SELECT to_regprocedure('public.b2b_finance_capability_v1()') IS NULL;", "t")
+    check("rollback_remove_nucleo_balancos", "SELECT to_regprocedure('platform_private.b2b_credit_balances_core(uuid,uuid,uuid)') IS NULL;", "t")
     check("rollback_remove_nucleo_credito", "SELECT to_regprocedure('platform_private.b2b_credit_exposure_core(uuid,numeric,uuid)') IS NULL;", "t")
     check("rollback_gestor_preservado", own(G1, P1), "PED-P1")
 finally:

@@ -44,15 +44,18 @@ CREATE FUNCTION public.get_user_partner_id() RETURNS uuid LANGUAGE sql STABLE SE
     THEN (array_agg(pu.partner_id) FILTER (WHERE pu.revoked_at IS NULL))[1] END
   FROM public.partner_users pu LEFT JOIN public.partner_accounts pa ON pa.id = pu.partner_id WHERE pu.user_id = auth.uid(); $$;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
--- SEAMS DECLARADAS do crédito (não são corpos LIVE): ator de pedido, balanços e residual sintéticos.
-CREATE TABLE public.partner_financial_settings(partner_id uuid PRIMARY KEY, credit_limit numeric, overdue_tolerance_days int, block_if_overdue boolean, credit_limit_action text);
-CREATE TABLE platform_private.t_balances(partner_id uuid PRIMARY KEY, aberto numeric, vencido numeric);
+-- Crédito: b2b_credit_balances e b2b_credit_config_block são corpos LIVE (captured/). SEAMS DECLARADAS (não LIVE):
+-- b2b_integration_actor (substitui c2_order_actor_scope pelo validador canônico de gestor/técnico), prova de origem
+-- monetária, devedor do título e residual de pedido.
+CREATE TABLE public.partner_financial_settings(partner_id uuid PRIMARY KEY, credit_limit numeric, overdue_tolerance_days int, block_if_overdue boolean, credit_limit_action text, active boolean DEFAULT true);
+ALTER TABLE public.accounts_receivable ADD COLUMN customer_id uuid;
 CREATE TABLE platform_private.b2b_financial_forecasts(order_id uuid, state text, residual_amount numeric, organization_id uuid, partner_id uuid);
 CREATE FUNCTION platform_private.b2b_integration_actor(p_partner uuid, p_internal boolean DEFAULT false) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
-BEGIN IF NOT public.is_valid_b2b_partner_user(auth.uid(),p_partner) THEN RAISE EXCEPTION 'B2B_ACTOR_DENIED' USING ERRCODE='42501'; END IF; RETURN NULL; END $$;
-CREATE FUNCTION platform_private.b2b_credit_config_block(p uuid) RETURNS text LANGUAGE sql AS $$ SELECT CASE WHEN EXISTS(SELECT 1 FROM public.partner_financial_settings WHERE partner_id=p) THEN NULL ELSE 'missing' END $$;
-CREATE FUNCTION platform_private.b2b_credit_balances(p uuid, x uuid) RETURNS jsonb LANGUAGE sql AS $$
- SELECT jsonb_build_object('saldo_em_aberto',coalesce(b.aberto,0),'saldo_vencido',coalesce(b.vencido,0),'comprometido_nao_faturado',0,'comprometido_pendente',0) FROM (SELECT 1) d LEFT JOIN platform_private.t_balances b ON b.partner_id=p $$;
+BEGIN IF NOT public.is_valid_b2b_partner_user(auth.uid(),p_partner) THEN RAISE EXCEPTION 'B2B_ACTOR_DENIED' USING ERRCODE='42501'; END IF;
+ RETURN (SELECT commercial_owner_organization_id FROM public.partner_accounts WHERE id=p_partner); END $$;
+CREATE FUNCTION platform_private.b2b_receivable_partner_scope(p uuid) RETURNS uuid LANGUAGE sql SECURITY DEFINER SET search_path TO '' AS $$ SELECT partner_id FROM public.accounts_receivable WHERE id=p $$;
+CREATE FUNCTION platform_private.b2b_proven_money_row_internal(p_id uuid, p_org uuid) RETURNS jsonb LANGUAGE sql SECURITY DEFINER SET search_path TO '' AS $$
+ SELECT jsonb_build_object('original_amount',original_amount,'interest_amount',0,'financed_interest_amount',0,'penalty_amount',0,'discount_amount',0,'received_amount',received_amount)
+ FROM public.accounts_receivable_installments WHERE id=p_id AND organization_id=p_org $$;
 CREATE FUNCTION platform_private.b2b_order_residual(o uuid) RETURNS numeric LANGUAGE sql AS $$ SELECT 0::numeric $$;
 CREATE TABLE public.partner_order_messages(id uuid DEFAULT gen_random_uuid(), order_id uuid, status text);
-GRANT SELECT ON public.partner_financial_settings TO authenticated;

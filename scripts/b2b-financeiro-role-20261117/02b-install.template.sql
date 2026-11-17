@@ -107,6 +107,7 @@ GRANT EXECUTE ON FUNCTION platform_private.b2b_finance_capability_core() TO auth
 REVOKE ALL ON FUNCTION public.b2b_finance_capability_v1() FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION public.b2b_finance_capability_v1() TO authenticated;
 REVOKE ALL ON FUNCTION platform_private.b2b_credit_exposure_core(uuid,numeric,uuid) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION platform_private.b2b_credit_balances_core(uuid,uuid,uuid) FROM PUBLIC, anon, authenticated, service_role;
 REVOKE ALL ON FUNCTION platform_private.b2b_finance_credit_core() FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION platform_private.b2b_finance_credit_core() TO authenticated;
 REVOKE ALL ON FUNCTION public.b2b_finance_credit_v1() FROM PUBLIC, anon, service_role;

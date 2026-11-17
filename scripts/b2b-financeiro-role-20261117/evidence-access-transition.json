@@ -1,0 +1,174 @@
+{
+ "total": 42,
+ "results": [
+  {
+   "name": "live_pin_user_admin_change_access_type_core",
+   "status": "PASS"
+  },
+  {
+   "name": "live_pin_tenant_admin_user_access_exec_v1",
+   "status": "PASS"
+  },
+  {
+   "name": "02c_exige_02b",
+   "status": "PASS"
+  },
+  {
+   "name": "02c_ref_divergente",
+   "status": "PASS"
+  },
+  {
+   "name": "02c_sem_execute_cliente",
+   "status": "PASS"
+  },
+  {
+   "name": "02c_exec_acl_preservada",
+   "status": "PASS"
+  },
+  {
+   "name": "gestor_para_fin_sem_remover_incompat",
+   "status": "PASS"
+  },
+  {
+   "name": "gestor_para_fin_cas_obsoleto",
+   "status": "PASS"
+  },
+  {
+   "name": "gestor_para_fin_sem_versao",
+   "status": "PASS"
+  },
+  {
+   "name": "gestor_para_fin_troca_parceiro_negada",
+   "status": "PASS"
+  },
+  {
+   "name": "fin_combinado_com_tecnico_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "admin_outro_tenant_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "gestor_para_fin_atomico",
+   "status": "PASS"
+  },
+  {
+   "name": "gestor_para_fin_bump_versao",
+   "status": "PASS"
+  },
+  {
+   "name": "gestor_para_fin_auditado",
+   "status": "PASS"
+  },
+  {
+   "name": "sessao_antiga_invalidada",
+   "status": "PASS"
+  },
+  {
+   "name": "fin_para_tec_cas_obsoleto",
+   "status": "PASS"
+  },
+  {
+   "name": "replay_chave_com_payload_diferente",
+   "status": "PASS"
+  },
+  {
+   "name": "fin_para_tec_atomico",
+   "status": "PASS"
+  },
+  {
+   "name": "replay_idempotente_sem_nova_mutacao",
+   "status": "PASS"
+  },
+  {
+   "name": "tec_para_fin",
+   "status": "PASS"
+  },
+  {
+   "name": "fin_para_gestor",
+   "status": "PASS"
+  },
+  {
+   "name": "interno_para_fin_sem_parceiro",
+   "status": "PASS"
+  },
+  {
+   "name": "interno_para_fin_parceiro_outro_tenant",
+   "status": "PASS"
+  },
+  {
+   "name": "interno_para_fin_cria_vinculo",
+   "status": "PASS"
+  },
+  {
+   "name": "fin_para_interno_revoga_vinculo",
+   "status": "PASS"
+  },
+  {
+   "name": "produtor_para_fin_encerra_clientes",
+   "status": "PASS"
+  },
+  {
+   "name": "fin_para_produtor",
+   "status": "PASS"
+  },
+  {
+   "name": "leitor_vinculo_admin_mesmo_tenant",
+   "status": "PASS"
+  },
+  {
+   "name": "leitor_vinculo_admin_outro_tenant_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "leitor_vinculo_nao_admin_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "leitor_vinculo_anon_sem_execute",
+   "status": "PASS"
+  },
+  {
+   "name": "partner_id_fora_do_alvo_fin_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "versao_fora_de_fin_negada",
+   "status": "PASS"
+  },
+  {
+   "name": "admin_para_fin_negado",
+   "status": "PASS"
+  },
+  {
+   "name": "chamada_autenticada_direta_negada",
+   "status": "PASS"
+  },
+  {
+   "name": "regressao_gestor_mais_tecnico",
+   "status": "PASS"
+  },
+  {
+   "name": "rollback_restaura_nucleo",
+   "status": "PASS"
+  },
+  {
+   "name": "rollback_restaura_exec",
+   "status": "PASS"
+  },
+  {
+   "name": "rollback_remove_assinatura_nova",
+   "status": "PASS"
+  },
+  {
+   "name": "rollback_remove_leitor_vinculo",
+   "status": "PASS"
+  },
+  {
+   "name": "rollback_nucleo_sem_execute_publico",
+   "status": "PASS"
+  }
+ ],
+ "note": "PostgreSQL descartável; auth sintética"
+}

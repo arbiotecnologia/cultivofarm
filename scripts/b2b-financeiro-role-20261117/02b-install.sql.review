@@ -317,6 +317,49 @@ BEGIN
  RETURN jsonb_build_object('success',true,'user_id',p_user,'first_access_pending',true);
 END $function$;
 
+CREATE OR REPLACE FUNCTION platform_private.b2b_credit_balances_core(p_partner uuid, p_exclude uuid, p_org uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE org uuid:=p_org; po record; i record; row jsonb; open_amount numeric:=0; overdue numeric:=0; committed numeric:=0; pending numeric:=0; balance numeric; residual numeric; tolerance int; debtor uuid;
+BEGIN
+ IF org IS NULL OR org IS DISTINCT FROM (SELECT pa.commercial_owner_organization_id FROM public.partner_accounts pa
+   WHERE pa.id=p_partner AND pa.ativo IS TRUE AND pa.deleted_at IS NULL) THEN RAISE EXCEPTION 'B2B_TENANT_DENIED' USING ERRCODE='42501'; END IF;
+ IF platform_private.b2b_credit_config_block(p_partner) IS NOT NULL THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE='23514'; END IF;
+ SELECT overdue_tolerance_days INTO tolerance FROM public.partner_financial_settings WHERE partner_id=p_partner AND active IS TRUE;
+ IF tolerance IS NULL OR tolerance<0 THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE='23514'; END IF;
+ FOR i IN SELECT a.id AS receivable_id,s.id,s.due_date FROM public.accounts_receivable_installments s JOIN public.accounts_receivable a ON a.id=s.receivable_id
+  WHERE a.organization_id=org AND s.organization_id=org AND a.status<>'CANCELED' AND s.status<>'CANCELED'
+   AND (a.partner_id=p_partner OR EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id=p_partner AND pa.client_id=a.customer_id
+        AND pa.commercial_owner_organization_id=org AND pa.ativo IS TRUE AND pa.deleted_at IS NULL)) LOOP
+  debtor:=platform_private.b2b_receivable_partner_scope(i.receivable_id);
+  IF debtor IS DISTINCT FROM p_partner THEN RAISE EXCEPTION 'CREDIT_PARTNER_CONFLICT' USING ERRCODE='23514'; END IF;
+  row:=platform_private.b2b_proven_money_row_internal(i.id,org);
+  IF row IS NULL THEN RAISE EXCEPTION 'CREDIT_MONEY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+  balance:=greatest((row->>'original_amount')::numeric+(row->>'interest_amount')::numeric-(row->>'financed_interest_amount')::numeric+(row->>'penalty_amount')::numeric-(row->>'discount_amount')::numeric-(row->>'received_amount')::numeric,0);
+  open_amount:=open_amount+balance;
+  IF i.due_date<CURRENT_DATE-tolerance THEN overdue:=overdue+balance; END IF;
+ END LOOP;
+ FOR po IN SELECT id,status::text AS status FROM public.partner_orders WHERE partner_id=p_partner AND id IS DISTINCT FROM p_exclude AND status::text IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','pendente','solicitado','em_analise_comercial','aguardando_aprovacao_credito','aguardando_ajuste_comercial','aguardando_itens') LOOP
+  residual:=platform_private.b2b_order_residual(po.id);
+  IF po.status IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue') THEN committed:=committed+residual; ELSE pending:=pending+residual; END IF;
+ END LOOP;
+ RETURN jsonb_build_object('saldo_em_aberto',open_amount,'saldo_vencido',overdue,'comprometido_nao_faturado',committed,'comprometido_pendente',pending);
+END $function$;
+
+CREATE OR REPLACE FUNCTION platform_private.b2b_credit_balances(p_partner uuid, p_exclude uuid DEFAULT NULL::uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+BEGIN
+ -- B2B_FINANCE_ROLE_V1: autorização canônica inalterada; cálculo no núcleo único.
+ RETURN platform_private.b2b_credit_balances_core(p_partner,p_exclude,platform_private.b2b_integration_actor(p_partner));
+END $function$;
+
 CREATE OR REPLACE FUNCTION platform_private.b2b_credit_exposure_core(p_partner_id uuid, p_new_order_amount numeric DEFAULT 0, p_exclude_order_id uuid DEFAULT NULL::uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -341,7 +384,7 @@ BEGIN
   v_limit := COALESCE(v_limit,0); v_tolerance := COALESCE(v_tolerance,0);
   v_block := COALESCE(v_block,false); v_action := COALESCE(v_action,'block');
 
-  v_settings_json:=platform_private.b2b_credit_balances(p_partner_id,p_exclude_order_id);
+  v_settings_json:=platform_private.b2b_credit_balances_core(p_partner_id,p_exclude_order_id,(SELECT pa.commercial_owner_organization_id FROM public.partner_accounts pa WHERE pa.id=p_partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL));
   v_open:=(v_settings_json->>'saldo_em_aberto')::numeric;
   v_overdue:=(v_settings_json->>'saldo_vencido')::numeric;
   v_committed:=(v_settings_json->>'comprometido_nao_faturado')::numeric;
@@ -472,6 +515,7 @@ GRANT EXECUTE ON FUNCTION platform_private.b2b_finance_capability_core() TO auth
 REVOKE ALL ON FUNCTION public.b2b_finance_capability_v1() FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION public.b2b_finance_capability_v1() TO authenticated;
 REVOKE ALL ON FUNCTION platform_private.b2b_credit_exposure_core(uuid,numeric,uuid) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION platform_private.b2b_credit_balances_core(uuid,uuid,uuid) FROM PUBLIC, anon, authenticated, service_role;
 REVOKE ALL ON FUNCTION platform_private.b2b_finance_credit_core() FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION platform_private.b2b_finance_credit_core() TO authenticated;
 REVOKE ALL ON FUNCTION public.b2b_finance_credit_v1() FROM PUBLIC, anon, service_role;

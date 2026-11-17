@@ -10,7 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   ACCESS_TARGET_LABEL, B2B_ROLES, EDGE, PAGE_SIZE, RPC, RPC_EMAIL_REQUEST, edgeErrorCode, emailSchema, friendlyError, incompatibleRoles, isConsultor,
   parseClientesPage, parseConsultorLinks, validatePeriod, validateTransition, type AccessTarget, type ClienteOption,
+  accessTargets, needsLinkCas, parsePartnerLink,
 } from "@/lib/configuracoes/userAdminRefinement";
+import { B2B_FINANCE_ROLE_INSTALLED } from "@/lib/comercial/b2bFinanceRole";
 
 // RPCs candidatas ainda não estão nos tipos gerados (não instaladas).
 const rpc = (name: string, args: Record<string, unknown>) =>
@@ -22,7 +24,7 @@ const edge = async (op: "change_access_type" | "consultor_link", args: Record<st
   if (error) throw new Error(await edgeErrorCode(error));
   return data;
 };
-const EXTERNAL = ["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"];
+const EXTERNAL = ["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico", "parceiro_b2b_financeiro"];
 
 const INTERNAL_ROLES: { value: string; label: string }[] = [
   { value: "administrador", label: "Administrador" }, { value: "gestor", label: "Gestor" },
@@ -77,18 +79,28 @@ function AccessTypeSection({ target, actorId, currentType, onChanged }: Props) {
   const hasExternal = target.roles.some((r) => EXTERNAL.includes(r));
   const self = actorId === target.user_id;
   const incompat = to ? incompatibleRoles(target.roles, to) : [];
+  const [partnerId, setPartnerId] = useState<string>("");
+  const cas = !!to && B2B_FINANCE_ROLE_INSTALLED && needsLinkCas(to, target.roles);
+  const linkQ = useQuery({ queryKey: ["tenant-admin-partner-link", actorId, target.user_id], enabled: cas, retry: false, staleTime: 0,
+    queryFn: async () => { const { data, error } = await rpc("tenant_admin_partner_link_v1", { p_user_id: target.user_id }); if (error) throw new Error(error.message); return parsePartnerLink(data); } });
+  const partnersQ = useQuery({ queryKey: ["tenant-admin-partners", actorId], enabled: to === "b2b_finance" && !!linkQ.data && !linkQ.data.link, retry: false,
+    queryFn: async () => { const { data, error } = await supabase.from("partner_accounts").select("id, razao_social").eq("ativo", true).is("deleted_at", null).order("razao_social").limit(200);
+      if (error) throw new Error(error.message); return (data ?? []) as { id: string; razao_social: string }[]; } });
+  const link = cas && !linkQ.isError ? linkQ.data ?? null : null;
   const m = useMutation({
     mutationFn: async () => {
-      await edge("change_access_type", { user_id: target.user_id, target: to, roles: to === "internal" ? roles : to === "b2b" ? b2b : [],
-        remove_roles: remove.filter((r) => incompat.includes(r)), ...(to === "producer" && cliente ? { cliente_id: cliente.id } : {}), idempotency_key: key, reason });
+      await edge("change_access_type", { user_id: target.user_id, target: to, roles: to === "internal" ? roles : to === "b2b" ? b2b : to === "b2b_finance" ? ["parceiro_b2b_financeiro"] : [],
+        remove_roles: remove.filter((r) => incompat.includes(r)), ...(to === "producer" && cliente ? { cliente_id: cliente.id } : {}),
+        ...(cas ? { expected_link_version: link?.link?.version ?? null } : {}),
+        ...(to === "b2b_finance" && !link?.link && partnerId ? { partner_id: partnerId } : {}), idempotency_key: key, reason });
     },
-    onSuccess: () => { setKey(newKey()); setTo(""); setReason(""); setRemove([]); setErr(null); onChanged(); },
-    onError: (e: Error) => setErr(friendlyError(e.message)),
+    onSuccess: () => { setKey(newKey()); setTo(""); setReason(""); setRemove([]); setPartnerId(""); setErr(null); onChanged(); },
+    onError: (e: Error) => { setErr(friendlyError(e.message)); if (e.message === "partner_link_conflict") { setKey(newKey()); void linkQ.refetch(); } },
   });
   const submit = () => {
     if (!to) return;
     const v = validateTransition({ actorId, targetId: target.user_id, from: currentType, to, internalRoles: roles, clienteId: cliente?.id ?? null, reason,
-      currentRoles: target.roles, removeRoles: remove, b2bRoles: b2b });
+      currentRoles: target.roles, removeRoles: remove, b2bRoles: b2b, link: cas ? link : undefined, partnerId: partnerId || null });
     if (v) { setErr(v); return; }
     if (!m.isPending) m.mutate();
   };
@@ -98,7 +110,7 @@ function AccessTypeSection({ target, actorId, currentType, onChanged }: Props) {
       {self ? <p className="text-xs text-muted-foreground">Você não pode alterar o próprio tipo de acesso.</p> : <>
         <Select value={to} onValueChange={(v) => { setTo(v as AccessTarget); setRemove([]); setErr(null); }}>
           <SelectTrigger aria-label="Novo tipo de acesso"><SelectValue placeholder="Selecione o novo tipo" /></SelectTrigger>
-          <SelectContent>{(Object.keys(ACCESS_TARGET_LABEL) as AccessTarget[]).map((t) => <SelectItem key={t} value={t}>{ACCESS_TARGET_LABEL[t]}</SelectItem>)}</SelectContent>
+          <SelectContent>{accessTargets(B2B_FINANCE_ROLE_INSTALLED).map((t) => <SelectItem key={t} value={t}>{ACCESS_TARGET_LABEL[t]}</SelectItem>)}</SelectContent>
         </Select>
         {to === "internal" && <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-2 border rounded-md p-2 max-h-40 overflow-y-auto overscroll-contain">
           {INTERNAL_ROLES.filter((r) => !(hasExternal && r.value === "administrador")).map((r) => <label key={r.value} className="flex items-center gap-2 text-sm">
@@ -116,6 +128,17 @@ function AccessTypeSection({ target, actorId, currentType, onChanged }: Props) {
             <Checkbox checked={b2b.includes(r)} onCheckedChange={(c) => setB2b(c === true ? [...b2b, r] : b2b.filter((x) => x !== r))} />{r === "parceiro_b2b" ? "Parceiro B2B — Gestor" : "Parceiro B2B — Técnico"}
           </label>)}
         </div>}
+        {to === "b2b_finance" && <div className="space-y-1" aria-label="Parceiro do financeiro">
+          <p className="text-xs text-muted-foreground">Acesso somente de consulta aos títulos, parcelas e crédito do próprio parceiro. Não pode ser combinado com outros perfis.</p>
+          {linkQ.isLoading && <p className="text-xs text-muted-foreground">Lendo vínculo…</p>}
+          {linkQ.isError && <p role="alert" className="text-xs text-destructive">Não foi possível ler o vínculo com o parceiro.</p>}
+          {link?.link && <p className="text-xs">Vínculo atual mantido; o papel do vínculo passa a financeiro.</p>}
+          {link && !link.link && !link.ambiguous && !link.foreign && <Select value={partnerId} onValueChange={setPartnerId}>
+            <SelectTrigger aria-label="Parceiro B2B"><SelectValue placeholder={partnersQ.isLoading ? "Carregando parceiros…" : "Selecione o parceiro"} /></SelectTrigger>
+            <SelectContent>{(partnersQ.data ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.razao_social}</SelectItem>)}</SelectContent>
+          </Select>}
+        </div>}
+        {cas && to !== "b2b_finance" && linkQ.isError && <p role="alert" className="text-xs text-destructive">Não foi possível ler o vínculo com o parceiro.</p>}
         {to && incompat.length > 0 && <div className="border border-destructive/40 rounded-md p-2 space-y-1" aria-label="Perfis incompatíveis">
           <p className="text-xs">Estes perfis não convivem com {ACCESS_TARGET_LABEL[to]}. Marque para confirmar a remoção; sem confirmação nada é alterado.</p>
           {incompat.map((r) => <label key={r} className="flex items-center gap-2 text-sm">

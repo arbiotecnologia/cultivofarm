@@ -28,10 +28,26 @@ export const RPC = {
 export const RPC_EMAIL_REQUEST = "tenant_admin_email_change_request_v1";
 export const PAGE_SIZE = 20;
 
-export type AccessTarget = "internal" | "b2b" | "producer";
+export type AccessTarget = "internal" | "b2b" | "producer" | "b2b_finance";
 export const ACCESS_TARGET_LABEL: Record<AccessTarget, string> = {
-  internal: "Interno", b2b: "Parceiro B2B", producer: "Cliente/Produtor",
+  internal: "Interno", b2b: "Parceiro B2B", producer: "Cliente/Produtor", b2b_finance: "Financeiro B2B",
 };
+/** Destinos oferecidos: Financeiro B2B só após 02c instalado (gate do perfil). */
+export function accessTargets(financeInstalled: boolean): AccessTarget[] {
+  return financeInstalled ? ["internal", "b2b", "producer", "b2b_finance"] : ["internal", "b2b", "producer"];
+}
+export const B2B_FINANCE = "parceiro_b2b_financeiro";
+/** Vínculo observado (PARTNER_LINK_V1) — sua versão é o CAS enviado ao servidor. */
+const partnerLink = z.object({
+  contract: z.literal("PARTNER_LINK_V1"), ambiguous: z.boolean(), foreign: z.boolean(),
+  link: z.object({ partner_id: z.string().uuid(), papel: z.enum(["gestor", "tecnico", "financeiro"]), version: z.number().int().min(1) }).strict().nullable(),
+}).strict();
+export type PartnerLinkState = z.infer<typeof partnerLink>;
+export function parsePartnerLink(raw: unknown): PartnerLinkState {
+  const r = partnerLink.safeParse(raw); if (!r.success) throw new Error("partner_link_invalid"); return r.data;
+}
+/** A transição envolve o papel financeiro (destino ou origem) e, portanto, exige CAS do vínculo. */
+export const needsLinkCas = (to: AccessTarget, current: string[]) => to === "b2b_finance" || current.includes(B2B_FINANCE);
 
 export const emailSchema = z.string().trim().toLowerCase().max(254)
   .regex(/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/, "Informe um e-mail válido.");
@@ -39,9 +55,9 @@ export const reasonSchema = z.string().trim().min(5, "Informe o motivo (mín. 5 
 
 /** Validação local da transição (o servidor revalida tudo). */
 const INTERNAL = ["administrador","gestor","administrativo","financeiro","gestor_comercial","producao","aplicador","operador_onfarm","consultor_tecnico","tecnico_agronomo","vendedor"];
-const EXTERNAL = ["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"];
+const EXTERNAL = ["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico", "parceiro_b2b_financeiro"];
 export const B2B_ROLES = ["parceiro_b2b", "parceiro_b2b_tecnico"] as const;
-const ALLOWED: Record<AccessTarget, string[]> = { internal: INTERNAL, b2b: ["parceiro_b2b", "parceiro_b2b_tecnico"], producer: ["cliente_produtor"] };
+const ALLOWED: Record<AccessTarget, string[]> = { internal: INTERNAL, b2b: ["parceiro_b2b", "parceiro_b2b_tecnico"], producer: ["cliente_produtor"], b2b_finance: ["parceiro_b2b_financeiro"] };
 /** Papéis atuais que não convivem com o destino (espelho da regra do servidor). Compatíveis são preservados. */
 export function incompatibleRoles(current: string[], to: AccessTarget): string[] {
   return current.filter((r) => !ALLOWED[to].includes(r)).sort();
@@ -51,6 +67,7 @@ export function validateTransition(i: {
   actorId: string; targetId: string; from: string; to: AccessTarget;
   internalRoles: string[]; clienteId: string | null; reason: string;
   currentRoles?: string[]; removeRoles?: string[]; b2bRoles?: string[];
+  link?: PartnerLinkState | null; partnerId?: string | null;
 }): string | null {
   const pend = incompatibleRoles(i.currentRoles ?? [], i.to).filter((r) => !(i.removeRoles ?? []).includes(r));
   if (pend.length) return "Confirme a remoção dos perfis incompatíveis ou mantenha o tipo atual.";
@@ -63,6 +80,11 @@ export function validateTransition(i: {
   if (i.to === "b2b" && !(i.currentRoles ?? []).some((r) => (B2B_ROLES as readonly string[]).includes(r)) && !(i.b2bRoles ?? []).length)
     return "Selecione explicitamente o perfil B2B (gestor e/ou técnico).";
   if (i.to === "producer" && !i.clienteId) return "Selecione o cliente/produtor.";
+  if (needsLinkCas(i.to, i.currentRoles ?? [])) {
+    if (!i.link) return "Aguarde a leitura do vínculo com o parceiro.";
+    if (i.link.ambiguous || i.link.foreign) return "O usuário tem vínculo de parceiro inconsistente ou de outra empresa; regularize antes.";
+    if (i.to === "b2b_finance" && !i.link.link && !i.partnerId) return "Selecione o parceiro B2B do financeiro.";
+  }
   const r = reasonSchema.safeParse(i.reason);
   return r.success ? null : r.error.issues[0].message;
 }
@@ -86,6 +108,13 @@ const ERRORS: Record<string, string> = {
   self_change_denied: "Você não pode alterar o próprio acesso.",
   forbidden: "Operação não permitida para este usuário.",
   partner_link_required: "Vincule primeiro o usuário a um parceiro B2B ativo desta empresa.",
+  partner_link_conflict: "O vínculo com o parceiro mudou desde a leitura. Os dados foram recarregados; revise e confirme novamente.",
+  partner_link_ambiguous: "O usuário tem mais de um vínculo de parceiro ativo; regularize antes.",
+  partner_link_foreign: "O vínculo de parceiro do usuário pertence a outra empresa.",
+  partner_required: "Selecione o parceiro B2B do financeiro.",
+  partner_link_change_unsupported: "Para trocar de parceiro, encerre o vínculo atual no ciclo de vida do parceiro.",
+  b2b_finance_role_exclusive: "Financeiro B2B não pode ser combinado com outros perfis.",
+  b2b_finance_roles_required: "Financeiro B2B não pode ser combinado com outros perfis.",
   cliente_required: "Selecione um cliente/produtor desta empresa.",
   internal_roles_required: "Selecione ao menos um perfil interno válido.",
   reason_required: "Informe o motivo da alteração.",

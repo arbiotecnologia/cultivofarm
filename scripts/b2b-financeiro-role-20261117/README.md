@@ -41,3 +41,10 @@ Nada deste pacote foi aplicado ao banco hospedado, implantado ou publicado.
 - `rpc_partner_message_counters`: financeiro negado (`permission_denied`).
 - Pendentes nesta revisão: transição de edição para/de Financeiro (writer atômico), sonda de sessão do AuthProvider para o papel, provas hospedadas/navegador.
 - Bateria local: 105/105 (seams de crédito declaradas em fixture.sql; não são corpos LIVE).
+
+## Rev.3 (transição, monitor, crédito transitivo)
+- Descoberta: `b2b_credit_balances` LIVE chama `b2b_integration_actor` (→ `c2_order_actor_scope`), o que negaria o financeiro mesmo com o núcleo de exposição. Corrigido: `b2b_credit_balances_core(p_partner,p_exclude,p_org)` gerado do corpo LIVE, org obrigatória = dona ativa do parceiro; wrapper pública mantém ACL `postgres` e a checagem canônica.
+- `02c-install-access-transition.sql.review` (requer 02b e o pacote user-edit instalado, pins LIVE do núcleo/exec): alvo `b2b_finance`, CAS de vínculo, leitor `tenant_admin_partner_link_v1`. Reversão `04c`.
+- Edge `tenant-user-admin` (pacote user-edit): allowlist + `partner_id`/`expected_link_version`; 20/20 Deno.
+- Ordem: 01-pre → 02a → 02b → 03-post → 02c → Edge `create-user` (patch) e `tenant-user-admin` → postflight hospedado → só então `B2B_FINANCE_ROLE_INSTALLED=true`.
+- Baterias locais: `test_local_pg.py` 113/113 (balanços/config reais; seams declaradas em fixture.sql), `test_access_transition_pg.py` 42/42 (28 gatilhos de produção verbatim + núcleo/exec LIVE).

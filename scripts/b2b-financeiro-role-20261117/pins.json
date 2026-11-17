@@ -62,5 +62,21 @@
  "rpc_partner_message_counters": [
   "rpc_partner_message_counters",
   "5b049aa45efddf8aff1b92b14a759a46"
+ ],
+ "platform_private.b2b_credit_balances": [
+  "platform_private.b2b_credit_balances",
+  "9fbf08a16f6bcbec379945886c85c245"
+ ],
+ "platform_private.b2b_credit_config_block": [
+  "platform_private.b2b_credit_config_block",
+  "a9ff339b7a9151b0945a37ef9aef66e3"
+ ],
+ "platform_private.user_admin_change_access_type_core": [
+  "platform_private.user_admin_change_access_type_core",
+  "c2d7f9dfd17fe919ed9fcbb9ea8e6a57"
+ ],
+ "tenant_admin_user_access_exec_v1": [
+  "tenant_admin_user_access_exec_v1",
+  "aa74b1d3705cdd76a9c621bc2593f85d"
  ]
 }

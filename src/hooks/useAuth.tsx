@@ -7,6 +7,8 @@ import { normalizeRoles, pickPrimaryRole } from "@/lib/portalContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { subscribePortalEvents } from "@/lib/portalBroadcast";
 import { clearActivePortalContext } from "@/lib/activePortalContext";
+import { B2B_FINANCE_ROLE_INSTALLED, isExclusiveFinanceRoles } from "@/lib/comercial/b2bFinanceRole";
+import { b2bFinanceContextProbe } from "@/lib/authz/b2bFinanceContextProbe";
 import { AUTHZ_CACHE_FOUNDATION_ENABLED, AUTHZ_CACHE_ROLLOUT_SCOPE, PRODUCER_CONTEXT_MONITOR_ENABLED, FINANCIAL_CONTEXT_MONITOR_ENABLED, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED, CONSULTANT_CONTEXT_MONITOR_ENABLED, OPERATOR_CONTEXT_MONITOR_ENABLED, MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
 import { c2ContextProbe, isC2ExternalScope } from "@/lib/authz/multiProfileContract";
 import { b2bContextProbe } from "@/lib/authz/b2bContextProbe";
@@ -37,6 +39,7 @@ const EXTERNAL_AUTHZ_ROLES: ReadonlyArray<AppRole> = [
   "cliente_produtor",
   "parceiro_b2b",
   "parceiro_b2b_tecnico",
+  "parceiro_b2b_financeiro",
 ];
 
 interface Profile {
@@ -585,6 +588,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     roles.length === 1 && roles[0] === "cliente_produtor";
   const financialContextOnly = b2bContextOnly && FINANCIAL_CONTEXT_MONITOR_ENABLED &&
     roles.length === 1 && roles[0] === "financeiro";
+  // Financeiro B2B externo exclusivo: monitorado pela capacidade canônica do servidor (gate do perfil).
+  const b2bFinanceContextOnly = b2bContextOnly && B2B_FINANCE_ROLE_INSTALLED && isExclusiveFinanceRoles(roles) &&
+    typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
   const companyAdminContextOnly = b2bContextOnly && COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED &&
     roles.length === 1 && roles[0] === "administrador" &&
     typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
@@ -613,7 +619,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Auto-recovery limited to the scopes already homologated (pair/residual/admin/finance).
   const autoRecoveryScope = environmentalContextOnly;
   const isExternalUser = b2bContextOnly
-    ? managerConsultantContextOnly || residualContextOnly || operatorContextOnly || consultantContextOnly || companyAdminContextOnly || financialContextOnly || producerContextOnly || cumulativeExternal
+    ? managerConsultantContextOnly || residualContextOnly || b2bFinanceContextOnly || operatorContextOnly || consultantContextOnly || companyAdminContextOnly || financialContextOnly || producerContextOnly || cumulativeExternal
     : roles.some((r) => EXTERNAL_AUTHZ_ROLES.includes(r));
   const principalReady = !!user?.id && profile?.user_id === user.id && profile.ativo === true &&
     profile.senha_provisoria === false && !!profile.organization_id;
@@ -643,6 +649,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (residualRole) return internalContextProbe(user?.id ?? "", profile?.organization_id ?? "", residualRole);
         if (managerConsultantContextOnly || financialContextOnly || companyAdminContextOnly || consultantContextOnly || operatorContextOnly) {
           return internalContextProbe(user?.id ?? "", profile?.organization_id ?? "", managerConsultantContextOnly ? MANAGER_CONSULTANT_ROLES : operatorContextOnly ? "operador_onfarm" : consultantContextOnly ? "consultor_tecnico" : companyAdminContextOnly ? "administrador" : "financeiro");
+        }
+        if (b2bFinanceContextOnly) {
+          const financeRpc = supabase.rpc as unknown as (name: string) => Promise<{ data: unknown; error: unknown }>;
+          const { data, error } = await financeRpc.call(supabase, "b2b_finance_capability_v1");
+          if (error) throw new Error("b2b_finance_probe_unavailable");
+          return b2bFinanceContextProbe(data);
         }
         if (cumulativeExternal) {
           const { data,error } = await supabase.rpc("get_my_available_portal_contexts");

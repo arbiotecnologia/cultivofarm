@@ -9,5 +9,7 @@ SELECT CASE WHEN
   AND NOT has_function_privilege('authenticated','platform_private.b2b_credit_exposure_core(uuid,numeric,uuid)','EXECUTE')
   AND pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure) LIKE '%b2b_integration_actor(p_partner_id)%'
   AND pg_get_functiondef('public.rpc_partner_message_counters(uuid)'::regprocedure) LIKE '%b2b_finance_role_holder()%'
+  AND NOT has_function_privilege('authenticated','platform_private.b2b_credit_balances_core(uuid,uuid,uuid)','EXECUTE')
+  AND pg_get_functiondef('platform_private.b2b_credit_balances(uuid,uuid)'::regprocedure) LIKE '%b2b_integration_actor(p_partner)%'
   AND (SELECT count(*) FROM pg_policies WHERE policyname='b2b_finance_role_direct_closed' AND permissive='RESTRICTIVE')=2
  THEN 'POST_PASS' ELSE 'POST_FAIL' END AS status;

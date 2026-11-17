@@ -113,3 +113,28 @@ Deno.test("papéis desconhecidos/superadmin/variações continuam rejeitados ant
     }
   }
 });
+
+// Financeiro B2B (02c): alvo b2b_finance com parceiro e versão observada do vínculo.
+Deno.test("painel: Financeiro B2B encaminha parceiro e CAS do vínculo intactos", async () => {
+  const P = "20000000-0000-4000-8000-000000000001";
+  for (const args of [
+    { ...panel("b2b_finance", ["parceiro_b2b_financeiro"], ["parceiro_b2b"]).args, expected_link_version: 3 },
+    { ...panel("b2b_finance", ["parceiro_b2b_financeiro"], ["financeiro"]).args, partner_id: P, expected_link_version: null },
+    { ...panel("b2b", ["parceiro_b2b_tecnico"], ["parceiro_b2b_financeiro"]).args, expected_link_version: 4 },
+  ]) {
+    const c = { rpc: [] } as Calls; const r = await adminHandle(req({ op: "change_access_type", args }), deps({}, c));
+    assert(r.status === 200 && c.rpc.length === 1, `${args.target}: ${r.status}`);
+    const sent = JSON.stringify(c.rpc[0][1]);
+    assert(sent.includes(`"expected_link_version":${args.expected_link_version}`), "versão");
+    if ("partner_id" in args) assert(sent.includes(P), "parceiro");
+  }
+});
+Deno.test("Financeiro B2B: versão inválida e alvo desconhecido rejeitados antes do SQL", async () => {
+  for (const v of [0, -1, 1.5, "3", 2147483648]) {
+    const c = { rpc: [] } as Calls;
+    const r = await adminHandle(req({ op: "change_access_type", args: { ...panel("b2b_finance", ["parceiro_b2b_financeiro"], []).args, expected_link_version: v } }), deps({}, c));
+    assert(r.status === 400 && c.rpc.length === 0, String(v));
+  }
+  const c = { rpc: [] } as Calls;
+  assert((await adminHandle(req(panel("finance", ["parceiro_b2b_financeiro"], [])), deps({}, c))).status === 400 && c.rpc.length === 0, "alvo");
+});

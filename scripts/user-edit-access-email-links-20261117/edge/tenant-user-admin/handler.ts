@@ -11,17 +11,18 @@ export interface Deps {
 const MAX_BODY = 8192;
 const UUIDK = (v: unknown) => typeof v === "string" && /^[0-9a-f-]{36}$/i.test(v);
 const STR = (max: number) => (v: unknown) => typeof v === "string" && v.length <= max;
-// Congruente com c_internal ∪ c_external de user_admin_change_access_type_core (candidate.sql.review).
+// Congruente com c_internal ∪ c_external (+ c_fin do 02c b2b-financeiro-role-20261117) de user_admin_change_access_type_core (candidate.sql.review).
 const ROLE_ALLOWLIST: ReadonlySet<string> = new Set(["administrador", "gestor", "administrativo", "financeiro", "gestor_comercial",
   "producao", "aplicador", "operador_onfarm", "consultor_tecnico", "tecnico_agronomo", "vendedor",
-  "cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"]);
+  "cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico", "parceiro_b2b_financeiro"]);
 const ROLES = (v: unknown) => Array.isArray(v) && v.length <= 12 && v.every((x) => typeof x === "string" && ROLE_ALLOWLIST.has(x));
 const ISO = (v: unknown) => v === null || (typeof v === "string" && v.length <= 40 && !Number.isNaN(Date.parse(v)));
 type Spec = Record<string, { req: boolean; ok: (v: unknown) => boolean }>;
 export const OPS: Record<string, Spec> = {
   change_access_type: {
-    user_id: { req: true, ok: UUIDK }, target: { req: true, ok: (v) => v === "internal" || v === "b2b" || v === "producer" },
+    user_id: { req: true, ok: UUIDK }, target: { req: true, ok: (v) => v === "internal" || v === "b2b" || v === "producer" || v === "b2b_finance" },
     roles: { req: false, ok: ROLES }, remove_roles: { req: false, ok: ROLES }, cliente_id: { req: false, ok: UUIDK },
+    partner_id: { req: false, ok: UUIDK }, expected_link_version: { req: false, ok: (v) => v === null || (Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 2147483647) },
     idempotency_key: { req: true, ok: UUIDK }, reason: { req: true, ok: STR(500) },
   },
   consultor_link: {
@@ -37,7 +38,9 @@ export const CODES = new Set(["forbidden","self_change_denied","not_authenticate
   "invalid_roles","internal_roles_required","b2b_roles_required","internal_roles_not_allowed","admin_grant_requires_internal_user",
   "invalid_remove_roles","incompatible_roles","partner_link_required","no_change","cliente_required","cliente_not_allowed",
   "idempotency_key_required","idempotency_conflict","scope_unprovable","scope_postcondition_failed","not_internal_consultant",
-  "principal_sync_incompatible","invalid_period","invalid_replace","link_not_active","link_already_active","invalid_reason","invalid_args","unknown_op"]);
+  "principal_sync_incompatible","invalid_period","invalid_replace","link_not_active","link_already_active","invalid_reason","invalid_args","unknown_op",
+  "b2b_finance_roles_required","b2b_finance_role_exclusive","partner_not_allowed","partner_link_ambiguous","partner_link_conflict",
+  "partner_link_foreign","link_version_not_allowed","partner_required","partner_link_change_unsupported"]);
 
 export async function handle(req: Request, d: Deps): Promise<Response> {
   const origin = req.headers.get("Origin");
