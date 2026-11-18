@@ -10888,6 +10888,7 @@ export type Database = {
           microrganismo_id: string
           objetivo_uso: string | null
           observacao: string | null
+          updated_at: string
         }
         Insert: {
           ativo?: boolean
@@ -10899,6 +10900,7 @@ export type Database = {
           microrganismo_id: string
           objetivo_uso?: string | null
           observacao?: string | null
+          updated_at?: string
         }
         Update: {
           ativo?: boolean
@@ -10910,6 +10912,7 @@ export type Database = {
           microrganismo_id?: string
           objetivo_uso?: string | null
           observacao?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -11606,6 +11609,7 @@ export type Database = {
           id: string
           microrganismo_id: string
           prioridade: number
+          updated_at: string
         }
         Insert: {
           alvo_nome: string
@@ -11617,6 +11621,7 @@ export type Database = {
           id?: string
           microrganismo_id: string
           prioridade?: number
+          updated_at?: string
         }
         Update: {
           alvo_nome?: string
@@ -11628,6 +11633,7 @@ export type Database = {
           id?: string
           microrganismo_id?: string
           prioridade?: number
+          updated_at?: string
         }
         Relationships: [
           {
@@ -23710,6 +23716,15 @@ export type Database = {
       }
       lote_volume_envasado: { Args: { _lote_id: string }; Returns: number }
       mask_sensitive_jsonb: { Args: { v: Json }; Returns: Json }
+      micro_document_attest_bytes_v1: {
+        Args: {
+          p_mime: string
+          p_sha256: string
+          p_size: number
+          p_upload: string
+        }
+        Returns: boolean
+      }
       my_session_authz_state_v1: { Args: never; Returns: Json }
       normalizar_alvo: { Args: { p_nome: string }; Returns: string }
       notification_p1_visible: {
@@ -27501,6 +27516,18 @@ export type Database = {
         Returns: Json
       }
       tenant_admin_user_links: { Args: { p_user_ids: string[] }; Returns: Json }
+      tenant_catalog_documentary_capability_v1: {
+        Args: { p_entity: string; p_id: string }
+        Returns: Json
+      }
+      tenant_catalog_documentary_finish_v1: {
+        Args: { p_lease: string }
+        Returns: boolean
+      }
+      tenant_catalog_documentary_reserve_v1: {
+        Args: { p_entity: string; p_id: string }
+        Returns: Json
+      }
       tenant_catalog_formulacoes_replace: {
         Args: {
           p_expected_produto_updated_at: string
@@ -27602,6 +27629,48 @@ export type Database = {
         Returns: Json
       }
       tenant_email_settings_scope: { Args: never; Returns: boolean }
+      tenant_micro_document_commit_v1: {
+        Args: { p_micro: string; p_upload: string }
+        Returns: Json
+      }
+      tenant_micro_document_list_v1: {
+        Args: { p_micro: string }
+        Returns: Json
+      }
+      tenant_micro_document_open_snapshot_v1: {
+        Args: { p_micro: string; p_version: string }
+        Returns: Json
+      }
+      tenant_micro_document_prepare_v1: {
+        Args: {
+          p_document: string
+          p_expected_root: string
+          p_key: string
+          p_metadata: Json
+          p_micro: string
+          p_previous_version: number
+        }
+        Returns: Json
+      }
+      tenant_micro_document_upload_snapshot_v1: {
+        Args: { p_micro: string; p_upload: string }
+        Returns: Json
+      }
+      tenant_microorganism_ficha_read_v1: {
+        Args: { p_id: string }
+        Returns: Json
+      }
+      tenant_microorganism_ficha_save_v1: {
+        Args: {
+          p_evidence: Json
+          p_expected_profile_updated_at: string
+          p_expected_updated_at: string
+          p_id: string
+          p_key: string
+          p_payload: Json
+        }
+        Returns: Json
+      }
       tenant_owned_product_fiscal_save: {
         Args: {
           p_expected_updated_at: string
