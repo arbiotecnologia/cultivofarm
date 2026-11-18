@@ -1,6 +1,6 @@
 import {z} from 'zod';
 const text=(max:number)=>z.string().max(max);
-export const structuredOriginSchema=z.object({title:text(300).min(1),url:text(2048).refine(v=>{try{return ['http:','https:'].includes(new URL(v).protocol);}catch{return false;}},'Informe uma fonte HTTP(S).'),document_id:z.string().uuid().nullable(),excerpt:text(4000)}).strict();
+export const structuredOriginSchema=z.object({title:text(300).min(1),url:text(2048).refine(v=>{if(v==='')return true;try{return ['http:','https:'].includes(new URL(v).protocol);}catch{return false;}},'Informe uma fonte HTTP(S).'),document_id:z.string().uuid().nullable(),excerpt:text(4000)}).strict().refine(o=>o.url!==''||o.document_id!==null,{message:'Informe uma URL HTTP(S) ou vincule um documento privado do dossiê.',path:['url']});
 const registrationSchema=z.object({holder:text(200),manufacturer:text(200),number:text(120),agency:text(120),documentary_status:z.enum(['PENDING','DOCUMENTED']),origin:structuredOriginSchema.nullable()}).strict().superRefine((r,c)=>{
  if(!r.origin&&(r.holder||r.manufacturer||r.number||r.agency||r.documentary_status!=='PENDING'))c.addIssue({code:'custom',message:'Vincule uma fonte documental antes de informar o registro.'});
 });

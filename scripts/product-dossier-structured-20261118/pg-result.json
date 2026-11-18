@@ -63,6 +63,13 @@
     "caller finalize after record locks",
     "caller finalize replay",
     "finalize replay does not duplicate document",
+    "private document source without URL accepted",
+    "private source persisted without invented URL",
+    "reject private source neither URL nor document",
+    "reject private source deleted document",
+    "reject private source other dossier document",
+    "reject private source unsafe URL with valid document",
+    "rejected private sources preserve data",
     "prepare second upload for cancel",
     "caller cancel begin record scope after locks",
     "cancel requires service guard",
@@ -73,7 +80,7 @@
     "gate rollback closed reader",
     "deny rollback retains history"
   ],
-  "count": 72,
+  "count": 79,
   "exit_code": 0,
   "limits": "Schema, Auth and fiscal dependencies synthetic; canonical versioned management bodies and captured fresh actor; no JWT/Storage/hosted evidence."
 }

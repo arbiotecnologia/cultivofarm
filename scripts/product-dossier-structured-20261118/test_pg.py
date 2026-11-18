@@ -195,6 +195,16 @@ try:
  check('caller finalize after record locks',actor(f"SELECT tenant_product_dossier_upload_finalize('{upload}')->>'state'"),'COMMITTED')
  check('caller finalize replay',actor(f"SELECT tenant_product_dossier_upload_finalize('{upload}')->>'state'"),'COMMITTED')
  check('finalize replay does not duplicate document',f"SELECT count(*) FROM microorganism_regulatory_documents WHERE id='{upload}'",'1')
+ cur=sql(f"SELECT updated_at FROM microorganism_regulatory_dossiers WHERE id='{did}'")
+ privsrc={**data,'lines':[{**data['lines'][0],'origin':{**origin,'url':'','document_id':upload}}]}
+ assert json.loads(check('private document source without URL accepted',save(privsrc,cur,'00000000-0000-4000-8000-0000000000a1')))['dossier_id']==did
+ check('private source persisted without invented URL',f"SELECT (structured_data#>>'{{lines,0,origin,url}}')||'|'||(structured_data#>>'{{lines,0,origin,document_id}}') FROM microorganism_regulatory_dossiers WHERE id='{did}'",'|'+upload)
+ cur=sql(f"SELECT updated_at FROM microorganism_regulatory_dossiers WHERE id='{did}'")
+ sql(f"SET session_replication_role=replica;INSERT INTO microorganism_regulatory_documents(id,dossier_id,title,storage_path,content_sha256,deleted_at) VALUES('00000000-0000-4000-8000-0000000000d1','{did}','QA excluído','dossiers/x/y/z','{'d'*64}',now()),('00000000-0000-4000-8000-0000000000d2','{fertilizer['dossier_id']}','QA estrangeiro','dossiers/x/y/w','{'e'*64}',NULL);")
+ for name,o,err in [('neither URL nor document',{**origin,'url':'','document_id':None},'DOSSIER_SOURCE_INVALID'),('deleted document',{**origin,'url':'','document_id':'00000000-0000-4000-8000-0000000000d1'},'DOSSIER_SOURCE_SCOPE_INVALID'),('other dossier document',{**origin,'url':'','document_id':'00000000-0000-4000-8000-0000000000d2'},'DOSSIER_SOURCE_SCOPE_INVALID'),('unsafe URL with valid document',{**origin,'url':'javascript:alert(1)','document_id':upload},'DOSSIER_SOURCE_INVALID')]:
+  bad={**data,'lines':[{**data['lines'][0],'origin':o}]}
+  check('reject private source '+name,save(bad,cur,'00000000-0000-4000-8000-0000000000a2'),error=err)
+ check('rejected private sources preserve data',f"SELECT updated_at FROM microorganism_regulatory_dossiers WHERE id='{did}'",cur)
  cancel_upload='00000000-0000-4000-8000-000000000096'
  cancel_intent=json.dumps({**json.loads(intent),'sha256':'b'*64})
  cancel_rev=sql(f"SELECT updated_at FROM microorganism_regulatory_dossiers WHERE id='{did}'")
@@ -216,7 +226,7 @@ try:
  check('revoked replay refuses',save(),error='catalog_visibility_feature_unavailable')
  sql(f"UPDATE platform_private.members SET feature=true WHERE id='{uid}'")
  check('gate rollback closed reader',"UPDATE platform_private.product_dossier_structured_gate SET enabled=false WHERE singleton;"+actor(f"SELECT tenant_product_dossier_version_detail('{P}','{did}')"),error='DOSSIER_STRUCTURED_UNAVAILABLE')
- check('deny rollback retains history',f"SELECT count(*) FROM platform_private.product_dossier_structured_history WHERE product_id='{P}'",'1')
+ check('deny rollback retains history',f"SELECT count(*) FROM platform_private.product_dossier_structured_history WHERE product_id='{P}'",'2')
  (H/'pg-result.json').write_text(json.dumps({'checks':checks,'count':len(checks),'exit_code':0,'limits':'Schema, Auth and fiscal dependencies synthetic; canonical versioned management bodies and captured fresh actor; no JWT/Storage/hosted evidence.'},indent=2)+'\n');print(json.dumps({'exit_code':0,'count':len(checks)}))
 finally:
  if t2 is not None:

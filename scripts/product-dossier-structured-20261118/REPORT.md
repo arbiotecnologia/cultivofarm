@@ -41,3 +41,7 @@ Aptidão para publicação depende de todos esses gates; testes sintéticos não
 - `assemble.py` valida assinaturas do catálogo com `public|platform_private|storage`; `build.py` (targets/wrappers) segue restrito a `public|platform_private`.
 - Funções `storage.*` são somente pins de leitura PRE/POST: drift entre PRE e POST aborta e nunca podem ser build targets.
 - `test_pg.py` (72 checks) cria `storage.update_updated_at_column()`/`storage.protect_delete()` com gatilhos reais, prova captura, montagem positiva em dois clusters e md5/owner/ACL inalterados; `test_assembly.py` 13 testes.
+
+## Correção: origem por documento privado sem URL
+- Origem exige título e (URL HTTP(S) válida OU `document_id` de documento não excluído do mesmo dossiê, validado no servidor). URL vazia só é aceita com documento; URL informada continua validada mesmo com documento.
+- `test_pg.py` (79 checks): positivo fonte privada sem URL; negativos sem ambos, documento excluído, documento de outro dossiê e URL insegura com documento válido, com dados preservados. Vitest: schema cliente equivalente. UI indica URL opcional quando há anexo vinculado.
