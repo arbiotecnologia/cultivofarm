@@ -109,9 +109,9 @@ describe("Financeiro B2B — cadastro canônico", () => {
     expect(registrationRoles(false)).not.toContain("parceiro_b2b_financeiro");
     expect(validateUserDraft(base as any, "b2b", false).roles).toBeTruthy();
   });
-  // Estado de ativação separado: na liberação final só esta asserção muda para true.
-  it("ativação: flag do código ainda OFF antes da liberação", () => {
-    expect(B2B_FINANCE_ROLE_INSTALLED).toBe(false);
+  // Estado de ativação separado: liberação final (backend de produção instalado, POST_PASS).
+  it("ativação: flag do código ON após liberação", () => {
+    expect(B2B_FINANCE_ROLE_INSTALLED).toBe(true);
   });
   it("gate ON: exige parceiro, é exclusivo e grava papel financeiro", () => {
     expect(registrationRoles(true)).toContain("parceiro_b2b_financeiro");

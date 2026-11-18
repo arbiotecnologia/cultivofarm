@@ -112,7 +112,7 @@ export async function handler(req: Request, clientFactory: typeof createClient =
 
     // Existing entrypoint, actor-scoped preflight. Never authorize this branch
     // with the elevated SDK or turn a partner role into a cumulative staff role.
-    if (rolesArr.some((r) => ["parceiro_b2b", "parceiro_b2b_tecnico", "cliente_produtor"].includes(r))) {
+    if (rolesArr.some((r) => ["parceiro_b2b", "parceiro_b2b_tecnico", "parceiro_b2b_financeiro", "cliente_produtor"].includes(r))) {
       if (Deno.env.get("SUPABASE_URL") !== "https://swzpzcwiasxmjutrmvkm.supabase.co" ||
         typeof callerId !== "string" || !callerId || claimsData.claims.role !== "authenticated" ||
         !Number.isSafeInteger(claimsData.claims.iat)) {
@@ -120,10 +120,12 @@ export async function handler(req: Request, clientFactory: typeof createClient =
           status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const dedicatedRole = rolesArr.includes("parceiro_b2b") ? "parceiro_b2b" : rolesArr.includes("parceiro_b2b_tecnico") ? "parceiro_b2b_tecnico" : "cliente_produtor";
-      const expectedPapel = dedicatedRole === "parceiro_b2b_tecnico" ? "tecnico" : "gestor";
+      // B2B_FINANCE_ROLE_V1: financeiro externo é exclusivo (sem gestor/técnico/produtor) e usa papel "financeiro".
+      const financeRole = rolesArr.includes("parceiro_b2b_financeiro");
+      const dedicatedRole = rolesArr.includes("parceiro_b2b") ? "parceiro_b2b" : rolesArr.includes("parceiro_b2b_tecnico") ? "parceiro_b2b_tecnico" : financeRole ? "parceiro_b2b_financeiro" : "cliente_produtor";
+      const expectedPapel = dedicatedRole === "parceiro_b2b_tecnico" ? "tecnico" : dedicatedRole === "parceiro_b2b_financeiro" ? "financeiro" : "gestor";
       const isProducer = rolesArr.includes("cliente_produtor");
-      const hasPartner = rolesArr.some(r => r === "parceiro_b2b" || r === "parceiro_b2b_tecnico");
+      const hasPartner = rolesArr.some(r => r === "parceiro_b2b" || r === "parceiro_b2b_tecnico" || r === "parceiro_b2b_financeiro");
       const uuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
       const clients = Array.isArray(cliente_ids) ? cliente_ids : cliente_id ? [cliente_id] : [];
       const primary = principal_cliente_id ?? clients[0] ?? null;
@@ -131,8 +133,8 @@ export async function handler(req: Request, clientFactory: typeof createClient =
       const conflictingClients = (cliente_ids != null && !Array.isArray(cliente_ids)) ||
         (cliente_id != null && (!uuid(cliente_id) || (Array.isArray(cliente_ids) &&
           (cliente_ids.length !== 1 || cliente_ids[0] !== cliente_id))));
-      if (forgedScope || conflictingClients || rolesArr.length < 1 || rolesArr.length > 3 ||
-        rolesArr.some(r => !["parceiro_b2b","parceiro_b2b_tecnico","cliente_produtor"].includes(r)) ||
+      if (forgedScope || conflictingClients || rolesArr.length < 1 || rolesArr.length > 3 || (financeRole && rolesArr.length !== 1) ||
+        rolesArr.some(r => !["parceiro_b2b","parceiro_b2b_tecnico","parceiro_b2b_financeiro","cliente_produtor"].includes(r)) ||
         (Array.isArray(rolesInput) && (rolesInput.length !== rolesArr.length || rolesInput.some(r => typeof r !== "string"))) ||
         (role != null && (rolesArr.length !== 1 || role !== dedicatedRole)) ||
         (hasPartner ? !uuid(partner_id) || (partner_papel != null && partner_papel !== expectedPapel) : partner_id != null || partner_papel != null) ||

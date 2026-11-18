@@ -10,7 +10,11 @@ it("pacote SQL é regenerado dos corpos LIVE pinados sem drift", async () => {
   expect(stdout).toMatch(/^OK /);
   expect(readFileSync(`${DIR}/02b-install.sql.review`, "utf8")).toBe(before);
   expect(before).not.toMatch(/GRANT [^;]* TO anon/);
-  expect(readFileSync("supabase/functions/create-user/index.ts", "utf8")).not.toContain("parceiro_b2b_financeiro");
+  // Liberação final: o canônico é exatamente o candidato revisado (sem o cabeçalho de candidato).
+  const live = readFileSync("supabase/functions/create-user/index.ts", "utf8");
+  const candidate = readFileSync(`${DIR}/edge/create-user.index.ts.candidate`, "utf8").replace(/^\/\/ CANDIDATO NÃO IMPLANTADO[^\n]*\n/, "");
+  expect(live).toBe(candidate);
+  expect(live).toContain("parceiro_b2b_financeiro");
 }, 30_000);
 it("Financeiro B2B em PostgreSQL descartável/Auth sintética: isolamento, negativos, sem escrita, regressão gestor e reversão", async () => {
   const { stdout } = await runPgBattery("python3", [`${DIR}/test_local_pg.py`], { encoding: "utf8" });

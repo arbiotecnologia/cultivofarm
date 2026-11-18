@@ -1,4 +1,18 @@
-# Validação local — 17/11/2026 (nenhuma escrita hospedada)
+# Validação — atualizada 18/11/2026
+
+## HML real (root) — ver README "Provas": 72/72 JWT/RLS/crédito/browser/CSV/revogação; limpeza QA_VERIFY zero.
+## Produção: 02a+02b+02c success, 03-post POST_PASS (root). Edges `create-user` e `tenant-user-admin` implantadas pelo agente em 18/11.
+
+## Liberação local (18/11/2026)
+| Verificação | Resultado |
+|---|---|
+| `npx vitest run src/test/b2b-finance --maxWorkers=2` (UI/rotas/cadastro, bateria PG, regeneração, canônico == candidato) | 4 arquivos, 33/33 |
+| Transições/cadastro/painel (vitest, maxWorkers=2) | 3 arquivos, 59/59 |
+| Deno `scripts/user-edit-access-email-links-20261117/edge/handler_test.ts` | 20/20 |
+| `deno check` create-user e tenant-user-admin canônicos | OK |
+| `tsgo -b --noEmit` / `vite build` | exit 0 / exit 0 |
+
+## Histórico — validação local 17/11/2026 (nenhuma escrita hospedada)
 
 | Verificação | Comando | Resultado |
 |---|---|---|
@@ -18,5 +32,5 @@ títulos, links e conta do parceiro retornam 0; inserção de pedido/link negada
 anon sem capacidade; gestor preservado (lê o próprio, nega irmão, pedidos diretos); provisionamento exclusivo/parceiro obrigatório/admin de outro tenant negado/
 papel divergente ou nulo negado/service_role obrigatório; reversão recusa com papel ativo e restaura os quatro corpos por md5.
 
-Limites: auth sintética por GUC; políticas de `partner_accounts_self_select` e RLS de títulos aproximadas (helpers não capturados). Não prova JWT, PostgREST,
+Limites (somente da validação local; cobertos depois pela HML real): auth sintética por GUC; políticas de `partner_accounts_self_select` e RLS de títulos aproximadas (helpers não capturados). Não prova JWT, PostgREST,
 RLS, Storage ou Edge hospedados, nem uso real em navegador autenticado.

@@ -1,7 +1,11 @@
-# Perfil Financeiro B2B externo (`parceiro_b2b_financeiro`) — candidato INATIVO
+# Perfil Financeiro B2B externo (`parceiro_b2b_financeiro`) — LIBERADO (18/11/2026)
 
 Usuário EXTERNO da equipe do parceiro, somente leitura das obrigações do próprio parceiro perante o fornecedor.
-Nada deste pacote foi aplicado ao banco hospedado, implantado ou publicado.
+## Estado atual (18/11/2026)
+- Produção `swzpzcwiasxmjutrmvkm`: root aplicou 02a+02b+02c (commit 7f8a55a), todos success; 03-post POST_PASS. Nenhum dado criado em produção.
+- Edges implantadas pelo agente: `create-user` (patch revisado, base sha256 931ba9fa…ca095 conferida; canônico == candidato sem cabeçalho) e `tenant-user-admin` (handler revisado do pacote user-edit + `_shared/user-admin/verify-actor.ts`). Verificação live pelo root.
+- `B2B_FINANCE_ROLE_INSTALLED=true`. Frontend NÃO publicado: publicação pelo root após verificação.
+- As seções abaixo são histórico das revisões; pendências antigas foram resolvidas (ver "Resolvido").
 
 ## Captura LIVE (somente leitura, 17/11/2026, ref swzpzcwiasxmjutrmvkm comprovado por `supabase/config.toml` e cliente canônico)
 - `app_role` sem o valor; `partner_users_papel_check` = gestor/tecnico; `partner_users.user_id` único.
@@ -30,7 +34,7 @@ Nada deste pacote foi aplicado ao banco hospedado, implantado ou publicado.
 6. Postflight REST/JWT real: financeiro A/B mesma empresa, outro tenant, revogado, inativo, técnico, gestor, sem entitlement; chamadas diretas às tabelas.
 7. Só então `B2B_FINANCE_ROLE_INSTALLED=true` em `src/lib/comercial/b2bFinanceRole.ts` (oferece o perfil no cadastro).
 
-## Pendências reais (não autorizadas por este pacote)
+## Resolvido (histórico rev.1 — pendências originais, todas fechadas nas rev.2/3 e no QA HML real)
 - Crédito (limite/utilização/saldo): exige leitor de crédito separado que não dependa de `c2_order_actor_scope`, com revisão própria.
 - Edição/transição de tipo para/desde Financeiro no painel de refinamento (`scripts/user-edit-access-email-links-20261117`) não atualiza `partner_users.papel`; manter fechada (o helper nega papel/vínculo divergente). Revogação/inativação funcionam pelos caminhos existentes.
 - Monitor de época do AuthProvider não inclui o papel; revogação é percebida pela reconsulta da capacidade (30 s / foco) e por toda RPC.
@@ -39,7 +43,6 @@ Nada deste pacote foi aplicado ao banco hospedado, implantado ou publicado.
 ## Rev.2 (crédito e contadores)
 - Crédito: `b2b_finance_credit_v1` (INVOKER) → `b2b_finance_credit_core` (DEFINER, ator derivado do servidor) → `b2b_credit_exposure_core` (corpo LIVE de `fn_b2b_credit_exposure` sem a linha de ator; sem EXECUTE a clientes). `fn_b2b_credit_exposure` mantém assinatura/ACL e a mesma checagem `b2b_integration_actor` antes de delegar. Projeção sem parâmetros de política.
 - `rpc_partner_message_counters`: financeiro negado (`permission_denied`).
-- Pendentes nesta revisão: transição de edição para/de Financeiro (writer atômico), sonda de sessão do AuthProvider para o papel, provas hospedadas/navegador.
 - Bateria local: 105/105 (seams de crédito declaradas em fixture.sql; não são corpos LIVE).
 
 ## Rev.3 (transição, monitor, crédito transitivo)
@@ -48,3 +51,8 @@ Nada deste pacote foi aplicado ao banco hospedado, implantado ou publicado.
 - Edge `tenant-user-admin` (pacote user-edit): allowlist + `partner_id`/`expected_link_version`; 20/20 Deno.
 - Ordem: 01-pre → 02a → 02b → 03-post → 02c → Edge `create-user` (patch) e `tenant-user-admin` → postflight hospedado → só então `B2B_FINANCE_ROLE_INSTALLED=true`.
 - Baterias locais: `test_local_pg.py` 113/113 (balanços/config reais; seams declaradas em fixture.sql), `test_access_transition_pg.py` 42/42 (28 gatilhos de produção verbatim + núcleo/exec LIVE).
+
+## Provas — HML real versus local
+- HML REAL (`vrlcdwmlytukrjezrrnf`, executado pelo root): 72/72 com JWTs password Auth de 5 contas descartáveis/3 parceiros (A/B mesma org, C outra); 6 forjas cross-partner 403; writes/RLS negados; crédito A 5000/1000/4000, B 7000/1000/6000, C 9000/1000/8000; histórico cancelado; browser desktop e mobile 390px sem overflow; CSV 3 linhas somente A; revogação canônica negou JWT antigo e AuthProvider retirou dados/CSV. Limpeza: 127 registros + 5 Auth via Admin API, QA_VERIFY todos zero, schema QA removido.
+- LOCAL (PostgreSQL descartável/auth sintética, Vitest, Deno): não prova ambiente hospedado; ver `VALIDATION.md`.
+- Produção: apenas PRE/POST_PASS e instalação; sem massa fictícia (proibida). Verificação live das Edges pelo root.
