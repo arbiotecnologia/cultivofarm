@@ -1,5 +1,5 @@
 {
- "total": 36,
+ "total": 37,
  "results": [
   {
    "name": "pre_ref_divergente_falha",
@@ -43,6 +43,10 @@
   },
   {
    "name": "02d_install",
+   "status": "PASS"
+  },
+  {
+   "name": "03d_cabecalho_final_zero_reproduz_falha_root",
    "status": "PASS"
   },
   {

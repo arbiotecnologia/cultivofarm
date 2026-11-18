@@ -105,10 +105,13 @@ describe("Financeiro B2B — status e crédito", () => {
 
 describe("Financeiro B2B — cadastro canônico", () => {
   const base = { nome: "Fin", email: "Fin@X.io", password: "", roles: ["parceiro_b2b_financeiro"], partner_id: P1, cliente_ids: [] as string[] };
-  it("gate OFF: perfil não oferecido nem aceito", () => {
+  it("gate OFF (parâmetro explícito): perfil não oferecido nem aceito", () => {
+    expect(registrationRoles(false)).not.toContain("parceiro_b2b_financeiro");
+    expect(validateUserDraft(base as any, "b2b", false).roles).toBeTruthy();
+  });
+  // Estado de ativação separado: na liberação final só esta asserção muda para true.
+  it("ativação: flag do código ainda OFF antes da liberação", () => {
     expect(B2B_FINANCE_ROLE_INSTALLED).toBe(false);
-    expect(registrationRoles()).not.toContain("parceiro_b2b_financeiro");
-    expect(validateUserDraft(base as any, "b2b").roles).toBeTruthy();
   });
   it("gate ON: exige parceiro, é exclusivo e grava papel financeiro", () => {
     expect(registrationRoles(true)).toContain("parceiro_b2b_financeiro");

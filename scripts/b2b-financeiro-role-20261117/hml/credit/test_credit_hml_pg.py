@@ -97,17 +97,24 @@ INSERT INTO accounts_receivable(id,total_amount,partner_id,origin_type,origin_id
 INSERT INTO partner_order_financial_links(partner_order_id,receivable_id,partner_id) SELECT origin_id,id,partner_id FROM accounts_receivable;
 INSERT INTO accounts_receivable_installments(receivable_id,installment_number,due_date,original_amount,received_amount,status,organization_id)
  SELECT id,1,current_date+30,total_amount,0,'OPEN',organization_id FROM accounts_receivable;
-UPDATE partner_orders po SET final_amount_with_interest=a.total_amount FROM accounts_receivable a WHERE a.origin_id=po.id;
+UPDATE partner_orders SET final_amount_with_interest=0;  -- default real HML (0): o seed precisa preencher; ver check abaixo
 INSERT INTO partner_financial_settings VALUES('{P1}',10000,0,true,'block'),('{P2}',5000,0,false,'block'),('{PB}',7000,0,false,'block');""")
     # Origem legada provada FICTÍCIA pelo MESMO fragmento do seed 05 (hml/seed/_legacy_origin.sql).
     run("CREATE TABLE IF NOT EXISTS public.partner_order_payment_terms(id uuid PRIMARY KEY, partner_order_id uuid NOT NULL, plan_name_snapshot text NOT NULL, plan_code_snapshot text NOT NULL, discount_percent_snapshot numeric NOT NULL, monthly_interest_percent_snapshot numeric NOT NULL, months_count_snapshot numeric NOT NULL, installment_count int, first_due_date date NOT NULL, table_amount numeric, discount_amount numeric, net_amount_after_discount numeric, financial_interest_amount numeric, final_amount numeric, approval_status text);"
         "CREATE SCHEMA qa_b2bfin; CREATE TABLE qa_b2bfin.manifest(kind text NOT NULL, label text, tbl regclass NOT NULL, id uuid NOT NULL, PRIMARY KEY (tbl, id));"
         + (HM / "seed" / "_legacy_origin.sql").read_text()
-        + "SELECT qa_b2bfin.seed_legacy_origin(origin_id, id, partner_id, organization_id, id::text) FROM accounts_receivable;")
+        + "SELECT qa_b2bfin.seed_legacy_origin(origin_id, id, partner_id, organization_id, id::text) FROM accounts_receivable WHERE status<>'CANCELED';")
     cred = lambda uid, k: act(uid, f"SELECT public.b2b_finance_credit_v1()->>'{k}';")
+    # Histórico QA como aplicado no HML: pedido cancelado + título/parcela CANCELED vinculados, sem origem/ledger.
+    run(f"""INSERT INTO partner_orders(id,partner_id,numero,status,final_amount_with_interest) VALUES('30000000-0000-0000-0000-0000000000a4','{P1}','QA-FIN-A-HIST','cancelado',400);
+INSERT INTO accounts_receivable(id,total_amount,partner_id,origin_type,origin_id,organization_id,status) VALUES('40000000-0000-0000-0000-0000000000a4',400,'{P1}','B2B_ORDER','30000000-0000-0000-0000-0000000000a4','{ORG_A}','CANCELED');
+INSERT INTO partner_order_financial_links(partner_order_id,receivable_id,partner_id) VALUES('30000000-0000-0000-0000-0000000000a4','40000000-0000-0000-0000-0000000000a4','{P1}');
+INSERT INTO accounts_receivable_installments(receivable_id,installment_number,due_date,original_amount,received_amount,status,organization_id) VALUES('40000000-0000-0000-0000-0000000000a4',1,current_date-60,400,0,'CANCELED','{ORG_A}');""")
     check("antes_02d_credito_fechado", cred(F1, "credit_limit"), error="own_finance_credit_unavailable")
     check("02d_install", E + (CR / "02d-install-credit-hml.sql.review").read_text(), None)
     post = (CR / "03d-post-credit-hml.sql.readonly").read_text().replace("cdb78993-89e4-48db-956e-f40b014a8146", P1).replace("9d53f280-f828-4af8-a08c-3574263dc466", P2).replace("6100c3ac-ff5b-4596-a0e3-92665a5dcaab", PB)
+    check("03d_cabecalho_final_zero_reproduz_falha_root", E + post, error="CREDIT_LEGACY_ALLOCATION_UNPROVEN")
+    run("UPDATE partner_orders po SET final_amount_with_interest=a.total_amount FROM accounts_receivable a WHERE a.origin_id=po.id AND a.status<>'CANCELED';")  # = correção do root / seed atual
     snap = run(E + post); print(snap); assert snap.count("POST_02D_PASS") == 3 and '"credit_limit": 10000' in snap, snap; results.append({"name": "02d_post_pass_snapshot", "status": "PASS"})
     check("capacidade_credito_aberto", cap(F1, "credit_read"), "true")
     check("credito_A_limite", cred(F1, "credit_limit"), "10000.00")

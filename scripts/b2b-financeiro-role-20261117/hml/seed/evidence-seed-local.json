@@ -37,7 +37,7 @@
    "status": "PASS"
   },
   {
-   "name": "histórico A: título encerrado fictício (PAID, sem pagamento) vinculado e NÃO aditivo ao crédito legado real (aberto=1000)",
+   "name": "histórico A: título CANCELADO fictício (pedido cancelado, sem pagamento); cabeçalhos abertos final=1000 vinculado e NÃO aditivo ao crédito legado real (aberto=1000)",
    "status": "PASS"
   },
   {
@@ -65,7 +65,7 @@
    "status": "PASS"
   },
   {
-   "name": "dry-run lista 93 linhas (tabela/ID/hash/vínculo), sem recusas e sem alterar nada",
+   "name": "dry-run lista 97 linhas (tabela/ID/hash/vínculo), sem recusas e sem alterar nada",
    "status": "PASS"
   },
   {

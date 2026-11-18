@@ -58,8 +58,8 @@ BEGIN
   oid_ := gen_random_uuid(); rid := gen_random_uuid();
   INSERT INTO qa_b2bfin.manifest VALUES ('order', k, 'public.partner_orders', oid_), ('receivable', k, 'public.accounts_receivable', rid);
   -- Status aprovado já na criação (vínculo financeiro exige pedido aprovado); sem itens, sem produção, sem NF.
-  INSERT INTO public.partner_orders (id, numero, partner_id, cliente_id, status, subtotal, desconto_total, total, ready_for_production, observacoes)
-   VALUES (oid_, 'QA-FIN-' || k || '-001', pid, cli, 'aprovado', 1000.00, 0, 1000.00, false, 'QA-FIN fixture sintética');
+  INSERT INTO public.partner_orders (id, numero, partner_id, cliente_id, status, subtotal, desconto_total, total, final_amount_with_interest, ready_for_production, observacoes)
+   VALUES (oid_, 'QA-FIN-' || k || '-001', pid, cli, 'aprovado', 1000.00, 0, 1000.00, 1000.00, false, 'QA-FIN fixture sintética');
   IF (SELECT status::text FROM public.partner_orders WHERE id = oid_) <> 'aprovado' THEN RAISE EXCEPTION 'QA_SEED_INCOMPLETE: pedido % não ficou aprovado (guarda de crédito real)', k; END IF;
   PERFORM qa_b2bfin.permit_insert_receivable(rid, pid, org);
   INSERT INTO public.accounts_receivable (id, origin_type, origin_id, description, category_id, total_amount, issue_date, first_due_date, installment_count, partner_id, organization_id, notes, fiscal_invoice_required, created_by)
@@ -74,22 +74,25 @@ BEGIN
   INSERT INTO public.partner_order_financial_links (partner_order_id, partner_id, receivable_id) VALUES (oid_, pid, rid);
   PERFORM qa_b2bfin.seed_legacy_origin(oid_, rid, pid, org, k);
   INSERT INTO qa_b2bfin.manifest SELECT 'link', k, 'public.partner_order_financial_links', id FROM public.partner_order_financial_links WHERE receivable_id = rid;
-  -- Histórico (só A): título fictício ENCERRADO (PAID por marcação, sem baixa/pagamento/recibo), vinculado e não aditivo ao crédito.
+  -- Histórico (só A): título fictício CANCELADO, vinculado, sem pagamento, não aditivo ao crédito.
   IF k = 'A' THEN
    hid := gen_random_uuid(); hrid := gen_random_uuid();
    INSERT INTO qa_b2bfin.manifest VALUES ('order', 'A_HIST', 'public.partner_orders', hid), ('receivable_closed', 'A_HIST', 'public.accounts_receivable', hrid);
-   INSERT INTO public.partner_orders (id, numero, partner_id, cliente_id, status, subtotal, desconto_total, total, ready_for_production, observacoes)
-    VALUES (hid, 'QA-FIN-A-HIST', pid, cli, 'aprovado', 400.00, 0, 400.00, false, 'QA-FIN fixture sintética (histórico encerrado)');
+   INSERT INTO public.partner_orders (id, numero, partner_id, cliente_id, status, subtotal, desconto_total, total, final_amount_with_interest, ready_for_production, observacoes)
+    VALUES (hid, 'QA-FIN-A-HIST', pid, cli, 'aprovado', 400.00, 0, 400.00, 400.00, false, 'QA-FIN fixture sintética (histórico encerrado)');
    PERFORM qa_b2bfin.permit_insert_receivable(hrid, pid, org);
    INSERT INTO public.accounts_receivable (id, origin_type, origin_id, description, category_id, total_amount, issue_date, first_due_date, installment_count, partner_id, organization_id, notes, fiscal_invoice_required, created_by)
     VALUES (hrid, 'B2B_ORDER', hid, 'QA-FIN-A título encerrado (histórico)', cat, 400.00, current_date - 90, current_date - 60, 1, pid, org, 'QA-FIN fixture sintética encerrada sem pagamento real', false, actor);
    PERFORM qa_b2bfin.permit_close();
    IF (SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id = hrid) <> 1 THEN RAISE EXCEPTION 'QA_SEED_INCOMPLETE: histórico sem parcela'; END IF;
    INSERT INTO qa_b2bfin.manifest SELECT 'installment_closed', 'A_HIST', 'public.accounts_receivable_installments', id FROM public.accounts_receivable_installments WHERE receivable_id = hrid;
-   UPDATE public.accounts_receivable_installments SET status = 'PAID', received_amount = original_amount WHERE receivable_id = hrid;
-   UPDATE public.accounts_receivable SET status = 'PAID' WHERE id = hrid;
-   INSERT INTO public.partner_order_financial_links (partner_order_id, partner_id, receivable_id, financial_status) VALUES (hid, pid, hrid, 'recebido');
+   -- Estado aplicado pelo root em HML (DML com guardas normais): vínculo enquanto aprovado, depois título/parcela CANCELED
+   -- (received 0) e pedido cancelado — sem origem/ledger de crédito, excluído do crédito.
+   INSERT INTO public.partner_order_financial_links (partner_order_id, partner_id, receivable_id) VALUES (hid, pid, hrid);
    INSERT INTO qa_b2bfin.manifest SELECT 'link', 'A_HIST', 'public.partner_order_financial_links', id FROM public.partner_order_financial_links WHERE receivable_id = hrid;
+   UPDATE public.accounts_receivable_installments SET status = 'CANCELED', received_amount = 0 WHERE receivable_id = hrid;
+   UPDATE public.accounts_receivable SET status = 'CANCELED' WHERE id = hrid;
+   UPDATE public.partner_orders SET status = 'cancelado' WHERE id = hid;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings WHERE partner_id = pid) THEN
    sid := gen_random_uuid(); INSERT INTO qa_b2bfin.manifest VALUES ('credit_settings', k, 'public.partner_financial_settings', sid);
@@ -98,6 +101,8 @@ BEGIN
   INSERT INTO qa_b2bfin.manifest SELECT 'credit_settings', k, 'public.partner_financial_settings', id FROM public.partner_financial_settings WHERE partner_id = pid ON CONFLICT DO NOTHING;
  END LOOP;
 END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM qa_b2bfin.manifest m JOIN public.partner_orders o ON o.id = m.id JOIN public.accounts_receivable a ON a.origin_id = o.id
+  WHERE m.kind = 'order' AND a.status <> 'CANCELED' AND o.final_amount_with_interest IS DISTINCT FROM a.total_amount) THEN RAISE EXCEPTION 'QA_SEED_INCOMPLETE: cabeçalho final <> título (CREDIT_LEGACY_ALLOCATION)'; END IF; END $$;
 DO $$ BEGIN IF (SELECT count(*) FROM qa_b2bfin.manifest WHERE kind='receivable') <> 3 OR (SELECT count(*) FROM qa_b2bfin.manifest WHERE kind='installment') < 3 THEN RAISE EXCEPTION 'QA_SEED_INCOMPLETE'; END IF; END $$;
 DROP TRIGGER zzz_qa_fin_row_fence ON public.accounts_receivable;
 DO $$ DECLARE r jsonb := qa_b2bfin.restore_all(); BEGIN IF jsonb_array_length(r) <> 4 THEN RAISE EXCEPTION 'QA_RESTORE_COUNT %', r; END IF; END $$;
@@ -109,7 +114,7 @@ SELECT 'QA_TITLES_JSON' k, jsonb_object_agg(label, t) v FROM (
  SELECT m.label, jsonb_agg(jsonb_build_object('id', m.id, 'total', (SELECT total_amount FROM public.accounts_receivable WHERE id = m.id), 'order_id', (SELECT id FROM qa_b2bfin.manifest o WHERE o.kind='order' AND o.label=m.label),
    'installments', (SELECT jsonb_agg(i.id ORDER BY i.id) FROM qa_b2bfin.manifest i WHERE i.kind='installment' AND i.label=m.label))) t
  FROM qa_b2bfin.manifest m WHERE m.kind = 'receivable' GROUP BY m.label) x;
-SELECT 'QA_HISTORY_JSON' k, jsonb_build_object('A', (SELECT jsonb_build_object('id', m.id, 'status', 'PAID', 'total', 400.00, 'credit_additive', false,
+SELECT 'QA_HISTORY_JSON' k, jsonb_build_object('A', (SELECT jsonb_build_object('id', m.id, 'status', 'CANCELED', 'total', 400.00, 'credit_additive', false,
   'order_id', (SELECT id FROM qa_b2bfin.manifest o WHERE o.kind='order' AND o.label='A_HIST'),
   'installments', (SELECT jsonb_agg(i.id) FROM qa_b2bfin.manifest i WHERE i.kind='installment_closed')) FROM qa_b2bfin.manifest m WHERE m.kind='receivable_closed')) v;
 COMMIT;
