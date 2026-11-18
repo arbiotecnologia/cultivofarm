@@ -222,7 +222,7 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 flex-wrap">
             Ficha técnica — {micro.nome}
-            <TechnicalProfileStatusBadge status={data?.profile?.status_validacao ?? null} />
+            {isError ? <span role="alert" className="text-xs text-destructive">Falha ao carregar</span> : !isSuccess ? <span role="status" className="text-xs text-muted-foreground">Carregando ficha…</span> : <TechnicalProfileStatusBadge status={data?.profile?.status_validacao ?? null} />}
           </DialogTitle>
           <DialogDescription className="italic">
             {micro.nome_cientifico} · {micro.tipo}
@@ -232,7 +232,7 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
         {isError ? (
           <ProfileLoadErrorState busy={isFetching} onRetry={() => { void refetch(); }} />
         ) : isLoading ? (
-          <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
+          <div role="status" className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> Carregando ficha…</div>
         ) : (
           <div className="space-y-3 min-w-0">
           {tenantContent && <DocumentaryAI identity={{ name: micro.nome, manufacturer: "", registration: "", entity: "microrganismo", id: micro.id }} values={{ ...form }} allowed={Object.keys(form).filter(k => k !== "status_validacao")} onApply={fields => editForm({ ...form, ...fields })} />}
@@ -352,11 +352,11 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
               try { await upsert.mutateAsync({ microrganismo_id: micro.id, ...form }); if (current()) { dirty.current = false; toast.success("Conteúdo da ficha salvo"); } }
               catch (e) { if (current()) toast.error(e instanceof Error ? e.message : "Rascunho preservado"); }
             }}>Salvar conteúdo</Button>}
-            <Button variant="outline" size="sm" onClick={copyResumo}>Copiar resumo</Button>
-            {!isError && canEditFull && data?.profile?.id && (
+            <Button variant="outline" size="sm" disabled={!isSuccess || isError} onClick={copyResumo}>Copiar resumo</Button>
+            {!isError && isSuccess && canEditFull && data?.profile?.id && (
               <ReturnToReviewButton kind="micro" profileId={data.profile.id} onDone={refetch} />
             )}
-            {!isError && canEditFull && (
+            {!isError && isSuccess && canEditFull && (
               <>
                 <Button size="sm" variant="outline" disabled={upsert.isPending}
                   onClick={() => handleSaveWithStatus("rascunho")}>

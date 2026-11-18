@@ -9,6 +9,7 @@ import { Loader2, FileCheck2, AlertTriangle, BookOpen, ShoppingCart } from "luci
 import { formatDateTimeDisplay } from "@/lib/date-utils";
 import { MicroorganismTechnicalProfileDialog } from "./MicroorganismTechnicalProfileDialog";
 import { ProductTechnicalProfileDialog } from "./ProductTechnicalProfileDialog";
+import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
 import { useTabParam } from "@/lib/navigation/useTabParam";
 import { consultarCatalogo } from "@/lib/catalogoQueries";
 import { CatalogoQueryErrorState } from "@/components/catalogo/CatalogoQueryErrorState";
@@ -237,7 +238,7 @@ function ItemList({ items, onOpen }: { items: Item[]; onOpen: (i: Item) => void 
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <Badge variant="outline" className="text-[9px] uppercase">{i.tipo}</Badge>
                   {i.b2b_enabled && <Badge className="text-[9px] bg-blue-600">B2B</Badge>}
-                  <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-800 bg-amber-50">em revisão</Badge>
+                  <TechnicalProfileStatusBadge status={i.status} />
                 </div>
                 <div className="font-semibold truncate mt-1">{i.nome}</div>
                 {i.subtitulo && <div className="text-xs italic text-muted-foreground truncate">{i.subtitulo}</div>}

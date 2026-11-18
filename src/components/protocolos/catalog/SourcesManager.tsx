@@ -41,7 +41,9 @@ const confidenceClass = (c: string) =>
     : "bg-slate-100 text-slate-700 border-slate-200";
 
 export function SourcesManager({ entidadeTipo, entidadeId, canEdit = false, canDelete = false }: Props) {
-  const { data: sources = [], isLoading } = useCatalogSources(entidadeTipo, entidadeId);
+  const sourcesQuery = useCatalogSources(entidadeTipo, entidadeId);
+  const sources = sourcesQuery.data ?? [];
+  const hasData = sourcesQuery.data !== undefined;
   const del = useDeleteCatalogSource(entidadeTipo, entidadeId);
 
   const [formOpen, setFormOpen] = useState(false);
@@ -72,7 +74,7 @@ export function SourcesManager({ entidadeTipo, entidadeId, canEdit = false, canD
       <div className="flex items-center justify-between gap-2">
         <div className="text-xs text-muted-foreground flex items-center gap-1.5">
           <BookOpen className="h-3.5 w-3.5" />
-          {sources.length} {sources.length === 1 ? "fonte cadastrada" : "fontes cadastradas"}
+          {hasData ? <>{sources.length} {sources.length === 1 ? "fonte cadastrada" : "fontes cadastradas"}</> : sourcesQuery.isError ? "Fontes indisponíveis" : "Carregando fontes…"}
         </div>
         {canEdit && (
           <Button size="sm" onClick={openCreate}>
@@ -81,10 +83,17 @@ export function SourcesManager({ entidadeTipo, entidadeId, canEdit = false, canD
         )}
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-6">
-          <Loader2 className="h-5 w-5 animate-spin" />
+      {sourcesQuery.isError && (
+        <div role="alert" className="rounded-md border border-destructive/40 p-3 text-xs space-y-2">
+          <p>Não foi possível carregar as fontes técnicas{hasData ? " atualizadas; exibindo a última leitura válida" : ""}. A falha não significa ausência de fontes.</p>
+          <Button size="sm" variant="outline" disabled={sourcesQuery.isFetching} onClick={() => { void sourcesQuery.refetch(); }}>Tentar novamente</Button>
         </div>
+      )}
+      {!hasData ? (
+        sourcesQuery.isError ? null : (
+        <div role="status" className="flex items-center justify-center gap-2 py-6 text-xs text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> Carregando fontes…
+        </div>)
       ) : sources.length === 0 ? (
         <Card>
           <CardContent className="py-6 text-center text-xs text-muted-foreground">

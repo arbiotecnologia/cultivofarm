@@ -248,9 +248,9 @@ function ProductFicha({
         <p className="text-muted-foreground">
           {produto.codigo ?? "Sem código"} · {produto.tipo}
         </p>
-        <TechnicalProfileStatusBadge
+        {query.isError ? <span role="alert" className="text-xs text-destructive">Falha ao carregar</span> : !query.isSuccess ? <span role="status" className="text-xs text-muted-foreground">Carregando ficha…</span> : <TechnicalProfileStatusBadge
           status={query.data?.profile?.status_validacao ?? null}
-        />
+        />}
       </header>
       {query.isError || evidenceQuery.isError || versionMismatch ? (
         <ProfileLoadErrorState
