@@ -1,8 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { PRODUCT_DOCUMENTARY_FIELDS, matchingProductEvidence, productResearchIdentity } from '@/lib/catalogo/productDocumentary';
+import { PRODUCT_DOCUMENTARY_FIELDS, matchingProductEvidence, productResearchIdentity, parseProductEvidenceEnvelope } from '@/lib/catalogo/productDocumentary';
 const id='00000000-0000-4000-8000-000000000001';
-const evidence={field:'resumo_curto',value:'Texto documentado',identity:{entity:'produto' as const,id,name:'Produto',manufacturer:'',registration:''},sources:[{url:'https://example.org/ficha',title:'Fabricante',excerpt:'Trecho'}]};
+const evidence={field:'resumo_curto',value:'Texto documentado',candidate_key:'A',identity:{entity:'produto' as const,id,name:'Produto',manufacturer:'',registration:''},sources:[{url:'https://example.org/ficha',title:'Fabricante',excerpt:'Trecho'}]};
 describe('documentação de produto',()=>{
+ it('recusa envelope de outro produto e revisão sem perfil',()=>{
+  const envelope={product_id:id,profile_id:null,profile_revision:null,evidence:[]};
+  expect(parseProductEvidenceEnvelope(envelope,id).evidence).toEqual([]);
+  expect(()=>parseProductEvidenceEnvelope(envelope,'outro')).toThrow();
+  expect(()=>parseProductEvidenceEnvelope({...envelope,profile_revision:'2026-11-18T03:48:00Z'},id)).toThrow();
+ });
  it('exclui preço, estoque, tributos, aprovação, formulação e registro da IA',()=>{
   for(const field of ['valor_ha_brl','estoque_minimo','ncm','status_validacao','formulacoes','observacoes_regulatorias','dose_ml_ha'])expect(PRODUCT_DOCUMENTARY_FIELDS).not.toContain(field);
  });

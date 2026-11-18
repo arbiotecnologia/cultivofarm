@@ -6,8 +6,9 @@ import { useScopedPortalQuery } from "./useScopedPortalQuery";
 import { useTenantCatalogEditor } from "./useTenantCatalogEditor";
 import { useStorageAccessScope } from "./useStorageAccessScope";
 import { useRef } from "react";
-import { productEvidenceSchema, matchingProductEvidence } from "@/lib/catalogo/productDocumentary";
+import { parseProductEvidenceEnvelope, matchingProductEvidence } from "@/lib/catalogo/productDocumentary";
 import type { DocumentaryEvidence } from "@/lib/catalogo/documentarySuggestions";
+import { parseProductProfileRows } from "@/lib/catalogo/productProfileSchema";
 
 export interface ProductProfile {
   id: string;
@@ -80,26 +81,27 @@ export async function fetchProductProfileBundle(client: any, produtoId: string, 
   if (erro) {
     throw new Error(erro.message || "Não foi possível carregar a ficha técnica");
   }
-  const composicao: ProductComposicao[] = ((fRes.data ?? []) as any[]).map((f) => ({
-    microrganismo_id: f.microrganismo_id,
-    component_insumo_id: f.component_insumo_id,
-    volume_ml: f.volume_ml,
-    proporcao: f.proporcao,
+  const parsed = parseProductProfileRows(pRes.data, tRes.data, cRes.data, fRes.data, produtoId);
+  const composicao: ProductComposicao[] = parsed.formulas.map((f) => ({
+    microrganismo_id: f.microrganismo_id ?? null,
+    component_insumo_id: f.component_insumo_id ?? null,
+    volume_ml: f.volume_ml ?? null,
+    proporcao: f.proporcao ?? null,
     microrganismo: f.microrganismos
       ? {
           id: f.microrganismos.id,
           nome: f.microrganismos.nome,
-          nome_cientifico: f.microrganismos.nome_cientifico,
-          funcao_agronomica: f.microrganismos.funcao_agronomica,
+          nome_cientifico: f.microrganismos.nome_cientifico ?? null,
+          funcao_agronomica: f.microrganismos.funcao_agronomica ?? null,
           tipo: f.microrganismos.tipo,
         }
       : null,
     insumo_nome: f.insumo?.nome ?? null,
   }));
   return {
-    profile: (pRes.data as ProductProfile | null) ?? null,
-    targets: (tRes.data ?? []) as any[],
-    crops: (cRes.data ?? []) as any[],
+    profile: parsed.profile as ProductProfile | null,
+    targets: parsed.targets,
+    crops: parsed.crops,
     composicao,
   };
 }
@@ -163,13 +165,15 @@ export function useUpsertProductProfile() {
 
 /** Additive read: only an exact pre-install absence means no documentary extension. */
 export function useProductDocumentaryEvidence(productId: string | undefined, enabled: boolean) {
-  return useScopedPortalQuery({
+  const query = useScopedPortalQuery({
     queryKey: ["product-documentary-evidence", productId], enabled: enabled && !!productId, retry: false,
     queryFn: async signal => {
       const { data, error } = await (supabase as any).rpc("tenant_product_documentary_read_v1", { p_product_id: productId }).abortSignal(signal);
-      if (error?.code === "PGRST202" && error.message?.includes("tenant_product_documentary_read_v1")) return [];
+      if (error?.code === "PGRST202" && error.message?.includes("tenant_product_documentary_read_v1")) return { product_id: productId, profile_id: null, profile_revision: null, evidence: [] };
       if (error) throw error;
-      return productEvidenceSchema.parse(data);
+      if (!productId) throw new Error("Produto indisponível");
+      return parseProductEvidenceEnvelope(data, productId);
     },
   });
+  return { ...query, data: query.data?.evidence, profileRevision: query.data?.profile_revision, profileId: query.data?.profile_id };
 }

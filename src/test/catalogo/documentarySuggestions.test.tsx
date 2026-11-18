@@ -15,7 +15,7 @@ it("não mistura fontes de candidatos distintos com o mesmo texto", () => {
   const otherSource = { ...source, url: "https://example.org/outro" };
   const result = { candidates: [candidate("A"), candidate("B")], suggestions: [suggestion(), { ...suggestion("B"), sources: [otherSource] }] };
   expect(selectedDocumentaryEvidence(result, "A", ["descricao"], ["descricao"], props.identity)).toEqual([
-    { field: "descricao", value: "Descrição sugerida", identity: props.identity, sources: [source] },
+    { field: "descricao", value: "Descrição sugerida", identity: props.identity, sources: [source], candidate_key: "A" },
   ]);
 });
 beforeEach(() => { state.ready = true; state.invoke.mockReset(); props.onApply.mockReset(); });

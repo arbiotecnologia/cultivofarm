@@ -8,9 +8,21 @@ export const PRODUCT_DOCUMENTARY_FIELDS = [
 ] as const;
 export const productEvidenceSchema = z.array(z.object({
   field: z.enum(PRODUCT_DOCUMENTARY_FIELDS), value: z.string().min(1).max(12000),
+  candidate_key: z.string().min(1).max(200),
   identity: z.object({ entity: z.literal("produto"), id: z.string().uuid(), name: z.string().min(1), manufacturer: z.string(), registration: z.string() }).passthrough(),
   sources: z.array(sourceSchema).min(1).max(20),
 }).strict()).max(40);
+
+export function parseProductEvidenceEnvelope(value: unknown, productId: string) {
+  return z.object({
+    product_id: z.literal(productId), profile_id: z.string().uuid().nullable(),
+    profile_revision: z.string().datetime({ offset: true }).nullable(), evidence: productEvidenceSchema,
+  }).strict().superRefine((row, ctx) => {
+    if ((row.profile_id === null) !== (row.profile_revision === null) || row.evidence.some(e => e.identity.id !== productId)) {
+      ctx.addIssue({ code: "custom", message: "Versão ou produto da evidência divergente" });
+    }
+  }).parse(value);
+}
 
 export function matchingProductEvidence(evidence: DocumentaryEvidence[], values: Record<string, unknown>, id: string) {
   return productEvidenceSchema.parse(evidence.filter(e => e.value === values[e.field] && e.identity.id === id));

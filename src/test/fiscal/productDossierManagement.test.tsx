@@ -21,6 +21,17 @@ beforeEach(()=>{m.roles=['administrador'];m.org='org';m.epoch=0;m.created=false;
  });});
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
 describe('edição compacta do dossiê compartilhado',()=>{
+ it('rascunho integrado bloqueia saída e versão; cancelar libera sem escrita',async()=>{
+   m.created=true;const blocked=vi.fn();
+   render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><ProductDossierManagement onBlockedChange={blocked} product={{product_id:pid,nome:'Produto QA',codigo:'QA',ativo:true,organization_name:'QA',owner_organization_id:'00000000-0000-4000-8000-000000000010'}}/></QueryClientProvider>);
+   fireEvent.change(await screen.findByLabelText('Observações'),{target:{value:'Rascunho retido'}});
+   await waitFor(()=>expect(blocked).toHaveBeenLastCalledWith(true));
+   expect((screen.getByLabelText('Versão do dossiê') as HTMLButtonElement).disabled).toBe(true);
+   expect((screen.getByRole('button',{name:'Voltar aos produtos'}) as HTMLButtonElement).disabled).toBe(true);
+   fireEvent.click(screen.getByRole('button',{name:'Cancelar rascunho do dossiê'}));
+   await waitFor(()=>expect(blocked).toHaveBeenLastCalledWith(false));
+   expect(m.rpc.mock.calls.some(([n])=>n==='tenant_product_dossier_management_save')).toBe(false);
+ });
  async function open(){m.created=true;mount();fireEvent.click(await screen.findByRole('button',{name:'Gerenciar dossiê de Produto sintético'}));await screen.findByLabelText('Observações');}
  it('recolher cobertura conserva seleção e bloqueia atualizar até salvar',async()=>{
    await open();fireEvent.click(screen.getByRole('button',{name:'Editar cobertura'}));fireEvent.click(screen.getAllByRole('checkbox')[1]);fireEvent.click(screen.getByRole('button',{name:'Recolher cobertura'}));

@@ -7,12 +7,13 @@ CREATE FUNCTION platform_private.product_source_https_v1(p_url text) RETURNS boo
 $f$;
 REVOKE ALL ON FUNCTION platform_private.product_source_https_v1(text) FROM PUBLIC,anon,authenticated,service_role;
 CREATE FUNCTION public.tenant_product_documentary_read_v1(p_product_id uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
-DECLARE org uuid; result jsonb;
+DECLARE org uuid; result jsonb; current_profile uuid; current_revision timestamptz;
 BEGIN
  org:=platform_private.catalog_tenant_actor('read_catalog');
  IF NOT EXISTS(SELECT 1 FROM public.produtos WHERE id=p_product_id AND owner_organization_id=org) THEN RAISE EXCEPTION 'product_evidence_denied' USING ERRCODE='42501'; END IF;
- SELECT evidence INTO result FROM platform_private.product_evidence_history_v1 WHERE product_id=p_product_id ORDER BY sequence DESC LIMIT 1;
- RETURN coalesce(result,'[]'::jsonb);
+ SELECT id,updated_at INTO current_profile,current_revision FROM public.product_technical_profiles WHERE produto_id=p_product_id;
+ SELECT evidence INTO result FROM platform_private.product_evidence_history_v1 WHERE product_id=p_product_id AND profile_id=current_profile AND profile_revision=current_revision ORDER BY sequence DESC LIMIT 1;
+ RETURN jsonb_build_object('product_id',p_product_id,'profile_id',current_profile,'profile_revision',current_revision,'evidence',coalesce(result,'[]'::jsonb));
 END $f$;
 REVOKE ALL ON FUNCTION public.tenant_product_documentary_read_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.tenant_product_documentary_read_v1(uuid) TO authenticated;
@@ -35,7 +36,7 @@ BEGIN
      IF v_enabled IS DISTINCT FROM true THEN RAISE EXCEPTION 'product_evidence_closed' USING ERRCODE='42501'; END IF;
      IF jsonb_typeof(v_evidence) IS DISTINCT FROM 'array' OR jsonb_array_length(v_evidence)>40 OR octet_length(v_evidence::text)>300000 THEN RAISE EXCEPTION 'product_evidence_shape' USING ERRCODE='22023'; END IF;
      FOR v_item IN SELECT value FROM jsonb_array_elements(v_evidence) LOOP
-       IF jsonb_typeof(v_item) IS DISTINCT FROM 'object' OR (v_item-ARRAY['field','value','identity','sources'])<>'{}' OR NOT coalesce(v_item->>'field','')=ANY(ARRAY['resumo_curto','explicacao_tecnica','explicacao_produtor','explicacao_b2b','indicacoes_uso','janela_aplicacao','cuidados_aplicacao','compatibilidade','beneficio_combinado']) OR jsonb_typeof(v_item->'value') IS DISTINCT FROM 'string' OR length(v_item->>'value') NOT BETWEEN 1 AND 12000 OR jsonb_typeof(v_item->'identity') IS DISTINCT FROM 'object' OR jsonb_typeof(v_item->'sources') IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'product_evidence_shape' USING ERRCODE='22023'; END IF;
+       IF jsonb_typeof(v_item) IS DISTINCT FROM 'object' OR (v_item-ARRAY['field','value','identity','sources','candidate_key'])<>'{}' OR jsonb_typeof(v_item->'candidate_key') IS DISTINCT FROM 'string' OR length(v_item->>'candidate_key') NOT BETWEEN 1 AND 200 OR NOT coalesce(v_item->>'field','')=ANY(ARRAY['resumo_curto','explicacao_tecnica','explicacao_produtor','explicacao_b2b','indicacoes_uso','janela_aplicacao','cuidados_aplicacao','compatibilidade','beneficio_combinado']) OR jsonb_typeof(v_item->'value') IS DISTINCT FROM 'string' OR length(v_item->>'value') NOT BETWEEN 1 AND 12000 OR jsonb_typeof(v_item->'identity') IS DISTINCT FROM 'object' OR jsonb_typeof(v_item->'sources') IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'product_evidence_shape' USING ERRCODE='22023'; END IF;
        IF v_item->'identity'->>'entity' IS DISTINCT FROM 'produto' OR coalesce(v_item->'identity'->>'name','')='' OR jsonb_array_length(v_item->'sources') NOT BETWEEN 1 AND 20 THEN RAISE EXCEPTION 'product_evidence_identity' USING ERRCODE='22023'; END IF;
        IF p_payload->>(v_item->>'field') IS DISTINCT FROM v_item->>'value' THEN RAISE EXCEPTION 'product_evidence_value_mismatch' USING ERRCODE='22023'; END IF;
        FOR v_source IN SELECT value FROM jsonb_array_elements(v_item->'sources') LOOP

@@ -14,10 +14,10 @@ export const documentarySchema = z.object({
 });
 export type DocumentaryResult = z.infer<typeof documentarySchema>;
 export type DocumentaryIdentity = { name: string; manufacturer: string; registration: string; entity: "produto" | "microrganismo"; id?: string; scientificName?: string; strain?: string; purpose?: string; synonyms?: string; concentration?: string; presentation?: string; researchScope?: "species" | "product_strain" };
-export type DocumentaryEvidence = { field: string; value: string; identity: DocumentaryIdentity; sources: z.infer<typeof sourceSchema>[] };
+export type DocumentaryEvidence = { field: string; value: string; identity: DocumentaryIdentity; sources: z.infer<typeof sourceSchema>[]; candidate_key?: string };
 export function selectedDocumentaryEvidence(result: DocumentaryResult, candidate: string, selected: readonly string[], allowed: readonly string[], identity: DocumentaryIdentity): DocumentaryEvidence[] {
   const values = selectedDocumentaryValues(result, candidate, selected, allowed);
-  return result.suggestions.filter(s => s.candidate_key === candidate && values[s.field] === s.value).map(s => ({ field: s.field, value: s.value, identity, sources: s.sources }));
+  return result.suggestions.filter(s => s.candidate_key === candidate && values[s.field] === s.value).map(s => ({ field: s.field, value: s.value, identity, sources: s.sources, ...(identity.entity === "produto" ? { candidate_key: candidate } : {}) }));
 }
 export function selectedDocumentaryValues(result: DocumentaryResult, candidate: string, selected: readonly string[], allowed: readonly string[]): Record<string, string> {
   if (!result.candidates.some(c => c.key === candidate)) return {};

@@ -1,9 +1,10 @@
 ## 18/11 — Ficha de produtos e auditoria IA
-- [ ] Gate de equivalência HML: root prepara alinhamento mínimo de tenant_product_save/recorte_a_actor_fresh; exigir captura e revisão antes de prova integrada, nunca repinar produção para HML (descoberta 03:47, REPORT).
+- [x] Root informou alinhamento HML aplicado 03:48 e 29 Auth HTTP PASS; evidência externa baseline, não certificação da nova ficha/fontes (REPORT).
 - [x] Integrar conteúdo/fontes/dossiê na ficha e preservar metadata/composição sequenciais; 1044 regressões locais PASS.
 - [x] Preparar identidade, fontes por campo e delta canônico fechado; dois bundles IA explícitos HML/produção, Deno PASS.
 - [x] Navegador sintético desktop/mobile geração/aplicação/salvar/reabrir fontes PASS; 22 SQL locais PASS, build automático OK. REPORT no pacote.
-- [ ] Fechar captura exata/POST/ACL/trigger e roundtrip integral; schema do bundle e drafts do dossiê/vínculos exigem revisão adicional descrita no REPORT.
+- [x] Continuação pós-root: schema/target/revisão, candidato das fontes e bloqueio/cancelamento do dossiê; 1074 testes, 24 SQL e desktop/mobile sintéticos PASS, sem hosted.
+- [ ] Fechar captura exata/POST/ACL/trigger e roundtrip integral pelo root; schema e bloqueio dos drafts foram implementados/testados localmente, vínculos consultivos e homologação integrada permanecem descritos no REPORT.
 - [ ] Auditoria independente e homologação HML pelo root; sem produção/publicação pelo agente.
 
 ## 18/11 — Documentos exclusivos do microrganismo

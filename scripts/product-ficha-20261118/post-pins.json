@@ -1,5 +1,5 @@
 {
-  "tenant_product_documentary_read_v1(uuid)": "be8cc03d5ab439d3faf727ac879a330f",
+  "tenant_product_documentary_read_v1(uuid)": "7968646c7c0a40683f626f61a2757f55",
   "platform_private.product_source_https_v1(text)": "d7748edc9d462f825944571cd805f0d6",
-  "tenant_catalog_root_save(text,uuid,jsonb,timestamp with time zone,uuid)": "017e2dc3f252a394979413ca709a3406"
+  "tenant_catalog_root_save(text,uuid,jsonb,timestamp with time zone,uuid)": "48d77a73f134113ca5786909f170af62"
 }

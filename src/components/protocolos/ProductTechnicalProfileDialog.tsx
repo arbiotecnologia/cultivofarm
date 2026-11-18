@@ -57,24 +57,32 @@ function ProductFicha({ open, onOpenChange, produto, embedded, onDirtyChange }: 
   const [evidence, setEvidence] = useState<DocumentaryEvidence[]>([]);
   const [dirty, setDirty] = useState(false);
   const [exit, setExit] = useState(false);
+  const [section, setSection] = useState("resumo");
+  const [dossierBlocked, setDossierBlocked] = useState(false);
   const observed = useRef<NonNullable<typeof query.data>["profile"]>(null);
   const baseline = useRef<ProductFormState>(buildProductFormDefaults(produto));
   const hydrated = useRef(false);
   const lock = useRef(false);
+  const [versionMismatch, setVersionMismatch] = useState(false);
   const alive = useRef(true);
-  useEffect(() => () => { alive.current = false; }, []);
-  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
+  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
+  useEffect(() => { onDirtyChange?.(dirty || dossierBlocked); }, [dirty, dossierBlocked, onDirtyChange]);
   useEffect(() => {
     if (hydrated.current || !query.isSuccess || (own && !evidenceQuery.isSuccess)) return;
+    if (evidenceQuery.profileRevision && (evidenceQuery.profileRevision !== query.data?.profile?.updated_at || evidenceQuery.profileId !== query.data?.profile?.id)) {
+      setVersionMismatch(true);
+      return;
+    }
+    setVersionMismatch(false);
     observed.current = query.data?.profile ?? null;
     baseline.current = query.data?.profile ? mapProductProfileToForm(query.data.profile) : buildProductFormDefaults(produto);
     setForm(baseline.current);
     setEvidence((evidenceQuery.data ?? []) as DocumentaryEvidence[]);
     hydrated.current = true;
-  }, [query.isSuccess, query.data, evidenceQuery.isSuccess, evidenceQuery.data, own, produto]);
+  }, [query.isSuccess, query.data, evidenceQuery.isSuccess, evidenceQuery.data, evidenceQuery.profileRevision, evidenceQuery.profileId, own, produto]);
   const change = (fields: Record<string, string>) => { if (lock.current || !writable) return; setDirty(true); setForm(f => ({ ...f, ...fields })); };
   const submit = async () => {
-    if (lock.current || !writable || !hydrated.current || query.isError || evidenceQuery.isError) return;
+    if (lock.current || dossierBlocked || !writable || !hydrated.current || query.isError || evidenceQuery.isError) return;
     lock.current = true;
     const current = editor.capture();
     const snapshot = { ...form };
@@ -91,8 +99,8 @@ function ProductFicha({ open, onOpenChange, produto, embedded, onDirtyChange }: 
   };
   const content = <>
     <header className="space-y-2"><h2 className="text-xl font-semibold break-words">{produto.nome}</h2><p className="text-muted-foreground">{produto.codigo ?? "Sem código"} · {produto.tipo}</p><TechnicalProfileStatusBadge status={query.data?.profile?.status_validacao ?? null} /></header>
-    {query.isError || evidenceQuery.isError ? <ProfileLoadErrorState busy={query.isFetching} onRetry={() => { void query.refetch(); void evidenceQuery.refetch(); }} /> : !hydrated.current ? <p role="status">Carregando ficha…</p> :
-      <Tabs defaultValue="resumo" className="min-w-0">
+    {query.isError || evidenceQuery.isError || versionMismatch ? <ProfileLoadErrorState busy={query.isFetching} onRetry={() => { void query.refetch(); void evidenceQuery.refetch(); }} /> : !hydrated.current ? <p role="status">Carregando ficha…</p> :
+      <Tabs value={section} onValueChange={value => { if (dossierBlocked || save.isPending) { toast.error("Conclua ou cancele as alterações do dossiê antes de sair."); return; } setSection(value); }} className="min-w-0">
         <TabsList className="flex flex-wrap h-auto justify-start gap-1 w-full">
           <TabsTrigger value="resumo">Características técnicas</TabsTrigger><TabsTrigger value="composicao">Composição</TabsTrigger>
           <TabsTrigger value="uso">Uso agronômico</TabsTrigger><TabsTrigger value="b2b">B2B</TabsTrigger>
@@ -110,13 +118,13 @@ function ProductFicha({ open, onOpenChange, produto, embedded, onDirtyChange }: 
           {writable && <DocumentaryAI key={JSON.stringify(dossier.data)} disabled={save.isPending || save.isError || dossier.isLoading || dossier.isError} identity={productResearchIdentity(produto, dossier.data)} values={{ ...form }} allowed={PRODUCT_DOCUMENTARY_FIELDS} onApply={change} onEvidence={accepted => setEvidence(old => [...old.filter(e => !accepted.some(a => a.field === e.field)), ...accepted])} />}
         </TabsContent>
         <TabsContent value="fontes" className="space-y-5"><ProductEvidencePanel evidence={evidence} values={{ ...form }} /><SourcesManager entidadeTipo="produto" entidadeId={produto.id} canEdit={false} canDelete={false} /><VersoesHistoricoTab entidadeTipo="produto" entidadeId={produto.id} canApprove={false} /></TabsContent>
-        <TabsContent value="dossier"><ProductDossierManagement product={{ product_id: produto.id, nome: produto.nome, codigo: produto.codigo, ativo: true, organization_name: "", owner_organization_id: produto.owner_organization_id ?? "" }} /></TabsContent>
+        <TabsContent value="dossier"><ProductDossierManagement onBlockedChange={setDossierBlocked} product={{ product_id: produto.id, nome: produto.nome, codigo: produto.codigo, ativo: true, organization_name: "", owner_organization_id: produto.owner_organization_id ?? "" }} /></TabsContent>
       </Tabs>}
     <footer className="sticky bottom-0 bg-background border-t py-3 flex flex-wrap justify-end gap-2">
       {dirty && <Button type="button" variant="outline" disabled={save.isPending || save.isError} onClick={() => { setForm(baseline.current); setEvidence((evidenceQuery.data ?? []) as DocumentaryEvidence[]); setDirty(false); }}>Cancelar alterações do conteúdo</Button>}
-      {!embedded && <Button variant="outline" disabled={save.isPending} onClick={() => dirty ? setExit(true) : onOpenChange(false)}>Fechar</Button>}
-      {writable && <Button type="button" disabled={save.isPending || !hydrated.current || query.isError || evidenceQuery.isError} onClick={() => void submit()}>{save.isPending ? "Salvando…" : "Salvar conteúdo"}</Button>}
+      {!embedded && <Button variant="outline" disabled={save.isPending || dossierBlocked} onClick={() => dirty ? setExit(true) : onOpenChange(false)}>Fechar</Button>}
+      {writable && <Button type="button" disabled={save.isPending || dossierBlocked || !hydrated.current || query.isError || evidenceQuery.isError} onClick={() => void submit()}>{save.isPending ? "Salvando…" : "Salvar conteúdo"}</Button>}
     </footer>
   </>;
-  return <><DraftExitConfirmation open={exit} onOpenChange={setExit} onLeave={() => onOpenChange(false)} />{embedded ? <section className="space-y-4 min-w-0">{content}</section> : <Dialog open={open} onOpenChange={value => { if (save.isPending) return; if (!value && dirty) setExit(true); else onOpenChange(value); }}><DialogContent aria-describedby={undefined} className="max-w-6xl max-h-[94dvh] overflow-y-auto min-w-0"><DialogHeader><DialogTitle>Ficha do produto</DialogTitle></DialogHeader>{content}</DialogContent></Dialog>}</>;
+  return <><DraftExitConfirmation open={exit} onOpenChange={setExit} onLeave={() => onOpenChange(false)} />{embedded ? <section className="space-y-4 min-w-0">{content}</section> : <Dialog open={open} onOpenChange={value => { if (save.isPending || dossierBlocked) return; if (!value && dirty) setExit(true); else onOpenChange(value); }}><DialogContent aria-describedby={undefined} className="max-w-6xl max-h-[94dvh] overflow-y-auto min-w-0"><DialogHeader><DialogTitle>Ficha do produto</DialogTitle></DialogHeader>{content}</DialogContent></Dialog>}</>;
 }

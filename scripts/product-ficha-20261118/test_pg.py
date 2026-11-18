@@ -41,7 +41,7 @@ try:
  sql(f"INSERT INTO organizations VALUES('{U(11)}',true,'ativa'),('{U(12)}',true,'ativa');INSERT INTO platform_private.members(id,org,editor) VALUES('{U(1)}','{U(11)}',true),('{U(2)}','{U(11)}',false),('{U(3)}','{U(12)}',true);INSERT INTO produtos VALUES('{U(21)}','{U(11)}');")
  sql((H/'source.sql.review').read_text(encoding='utf-8'))
  sql('GRANT EXECUTE ON FUNCTION public.tenant_catalog_root_save(text,uuid,jsonb,timestamptz,uuid) TO authenticated;')
- e={'field':'resumo_curto','value':'Conteúdo aceito','identity':{'entity':'produto','id':U(21),'name':'Produto QA'},'sources':[{'url':'https://example.org/ficha','title':'Documento','excerpt':'Trecho'}]}
+ e={'field':'resumo_curto','value':'Conteúdo aceito','candidate_key':'A','identity':{'entity':'produto','id':U(21),'name':'Produto QA'},'sources':[{'url':'https://example.org/ficha','title':'Documento','excerpt':'Trecho'}]}
  def save(key=100,ev=None,id='NULL',rev='NULL'):
   p={'produto_id':U(21),'resumo_curto':'Conteúdo aceito','documentary_evidence':[e] if ev is None else ev}
   if id!='NULL':p.pop('produto_id')
@@ -49,13 +49,16 @@ try:
  check('closed gate',actor(save()),error='product_evidence_closed')
  sql('UPDATE platform_private.product_evidence_gate_v1 SET enabled=true')
  ack=json.loads(sql(actor(save())));id=ack['id'];rev=ack['updated_at']
- check('sources reopen',actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')->0->>'value'"),'Conteúdo aceito')
- check('reader allowed',actor(f"SELECT jsonb_array_length(tenant_product_documentary_read_v1('{U(21)}'))",2),'1')
+ check('sources reopen',actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')->'evidence'->0->>'value'"),'Conteúdo aceito')
+ check('reader allowed',actor(f"SELECT jsonb_array_length(tenant_product_documentary_read_v1('{U(21)}')->'evidence')",2),'1')
  check('B read denied',actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')",3),error='denied')
  check('B write denied',actor(save(101),3),error='foreign')
  check('reader write denied',actor(save(102),2),error='role_denied')
  check('replay identical',actor(save()),None)
  check('single history after replay','SELECT count(*) FROM platform_private.product_evidence_history_v1','1')
+ check('candidate retained',actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')->'evidence'->0->>'candidate_key'"),'A')
+ check('profile version acknowledged',actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')->>'profile_id'"),id)
+ check('missing candidate rejected',actor(save(109,[{k:v for k,v in e.items() if k!='candidate_key'}])),error='evidence_shape')
  for i,url in enumerate(['javascript:alert(1)','data:text/html,x','http://example.org','https://a:b@example.org/','https://example.org/%0a','https://localhost/a']):
   check('unsafe URL '+url,actor(save(110+i,[{**e,'sources':[{**e['sources'][0],'url':url}]}])),error='source_invalid')
  check('value mismatch atomic',actor(save(120,[{**e,'value':'Diferente'}])),error='value_mismatch')
