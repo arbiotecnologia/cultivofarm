@@ -11284,9 +11284,10 @@ export type Database = {
           mapa_registration_number: string | null
           mapa_status: string | null
           mapa_valid_until: string | null
-          microorganism_id: string
+          microorganism_id: string | null
           notes: string | null
           product_id: string | null
+          product_only: boolean
           published_at: string | null
           published_by: string | null
           published_cest: string | null
@@ -11304,6 +11305,7 @@ export type Database = {
           status: string
           strain_code: string | null
           strain_name: string | null
+          structured_data: Json | null
           technical_review_at: string | null
           technical_review_by: string | null
           technical_review_notes: string | null
@@ -11336,9 +11338,10 @@ export type Database = {
           mapa_registration_number?: string | null
           mapa_status?: string | null
           mapa_valid_until?: string | null
-          microorganism_id: string
+          microorganism_id?: string | null
           notes?: string | null
           product_id?: string | null
+          product_only?: boolean
           published_at?: string | null
           published_by?: string | null
           published_cest?: string | null
@@ -11356,6 +11359,7 @@ export type Database = {
           status?: string
           strain_code?: string | null
           strain_name?: string | null
+          structured_data?: Json | null
           technical_review_at?: string | null
           technical_review_by?: string | null
           technical_review_notes?: string | null
@@ -11388,9 +11392,10 @@ export type Database = {
           mapa_registration_number?: string | null
           mapa_status?: string | null
           mapa_valid_until?: string | null
-          microorganism_id?: string
+          microorganism_id?: string | null
           notes?: string | null
           product_id?: string | null
+          product_only?: boolean
           published_at?: string | null
           published_by?: string | null
           published_cest?: string | null
@@ -11408,6 +11413,7 @@ export type Database = {
           status?: string
           strain_code?: string | null
           strain_name?: string | null
+          structured_data?: Json | null
           technical_review_at?: string | null
           technical_review_by?: string | null
           technical_review_notes?: string | null
@@ -24477,6 +24483,10 @@ export type Database = {
         Args: { p_path: string }
         Returns: boolean
       }
+      product_source_scope_read_v1: {
+        Args: { p_product: string }
+        Returns: boolean
+      }
       proximo_codigo: {
         Args: { _prefixo: string; _tabela: string }
         Returns: string
@@ -27679,6 +27689,10 @@ export type Database = {
           p_reason: string
           p_values: Json
         }
+        Returns: Json
+      }
+      tenant_product_documentary_read_v1: {
+        Args: { p_product_id: string }
         Returns: Json
       }
       tenant_product_dossier_create_covered: {
