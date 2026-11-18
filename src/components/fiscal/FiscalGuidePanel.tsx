@@ -117,7 +117,7 @@ export function ProductFiscalGuide({ productId, displayName, displayCodigo = nul
   );
 }
 
-export function MicroorganismFiscalGuide({ microorganismId, displayName, displayCodigo = null }: { microorganismId: string; displayName: string; displayCodigo?: string | null }) {
+export function MicroorganismFiscalGuide({ microorganismId, displayName, displayCodigo = null, embedded = false }: { microorganismId: string; displayName: string; displayCodigo?: string | null; embedded?: boolean }) {
   const { role } = useAuth();
   const level = getAccessLevel(role, "/configuracoes/fiscal/produtos");
   const canEdit = level === "rw";
@@ -133,7 +133,7 @@ export function MicroorganismFiscalGuide({ microorganismId, displayName, display
       <Shell kind="product" status={p?.profile_status ?? null} hasProfile={!!p} canEdit={canEdit} canRead onEdit={() => setOpen(true)}
         scenarios={SCENARIOS.map((s) => ({ ...s, items: productPendencies(p, s.key) }))}
         extra={presentationPendencies(p, pres.data ?? [])} />
-      {open && <MicroorganismEditDrawer microorganismId={microorganismId} displayName={displayName} displayCodigo={displayCodigo} canEdit={canEdit} onClose={() => setOpen(false)} />}
+      {open && <MicroorganismEditDrawer embedded={embedded} microorganismId={microorganismId} displayName={displayName} displayCodigo={displayCodigo} canEdit={canEdit} onClose={() => setOpen(false)} />}
     </>
   );
 }

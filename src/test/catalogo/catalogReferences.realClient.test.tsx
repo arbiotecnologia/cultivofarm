@@ -22,11 +22,11 @@ it.each(["culturas", "microrganismos"] as const)("%s cria via raiz canônica, CA
   state.fetch.mockResolvedValue(json({ ok: true, id: "new-A", updated_at: stamp, replayed: false }));
   const saved = vi.fn(); render(<TenantReferenceDialog root={root} item={null} onClose={vi.fn()} onSaved={saved} />, { wrapper });
   fireEvent.change(screen.getByLabelText("Nome"), { target: { value: "AR Bio fictícia" } });
-  fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+  fireEvent.click(screen.getByRole("button", { name: root === "microrganismos" ? "Salvar ficha" : "Salvar" }));
   await waitFor(() => expect(saved).toHaveBeenCalledTimes(1));
-  const [url, init] = state.fetch.mock.calls[0]; expect(String(url)).toContain("/rpc/tenant_catalog_root_save");
-  const args = JSON.parse(init.body); expect(args.p_root).toBe(root); expect(args.p_id).toBeNull(); expect(args.p_expected_updated_at).toBeNull();
-  expect(args.p_payload.nome).toBe("AR Bio fictícia"); expect(args.p_payload.owner_organization_id).toBeUndefined(); expect(args.p_payload.status_validacao).toBeUndefined();
+  const [url, init] = state.fetch.mock.calls[0]; expect(String(url)).toContain(root === "microrganismos" ? "/rpc/tenant_microorganism_ficha_save_v1" : "/rpc/tenant_catalog_root_save");
+  const args = JSON.parse(init.body); if (root === "culturas") expect(args.p_root).toBe(root); expect(args.p_id).toBeNull(); expect(args.p_expected_updated_at).toBeNull();
+  expect(root === "microrganismos" ? args.p_payload.root.nome : args.p_payload.nome).toBe("AR Bio fictícia"); expect(args.p_payload.owner_organization_id).toBeUndefined(); expect(args.p_payload.status_validacao).toBeUndefined();
 });
 it("edição mantém ID/CAS e conflito retém valores sem callback ou retry automático", async () => {
   state.fetch.mockResolvedValue(json({ code: "PT409", message: "catalog_cas_conflict" }, 409));

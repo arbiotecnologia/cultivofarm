@@ -1891,3 +1891,11 @@
 - [x] F4.1 harness NF-e: bundle do motor alinhado ao PL_010g v1.03; harness 66 checks em scripts/nfe-f41-certification-20261112/
 - [x] Corrigir escrita fiscal de produto próprio (guia + lista) com canWriteOwnedProduct
 - [ ] Plano Serviços/NFS-e aguardando aprovação
+
+## 18/11 — Ficha completa de microrganismos (sem publicação)
+- [x] Unificar entradas desktop/mobile, identificação e seções técnicas/fiscais/documentais com editor fiscal embutido.
+- [x] IA documental: identidade, seleção, cancelamento, fences e fontes persistentes em contrato candidato.
+- [x] Pacote incremental SQL/Edge, PRE/POST/rollback, PG componente 19/19 e Edge sintético 6/6.
+- [x] Typecheck/build automático, regressões e browser sintético desktop/mobile salvar/reabrir fontes; pesquisa pública real executada.
+- [ ] Instalação/revisão e JWT/RLS/Storage/browser hospedado: sem sessão externa ou ambiente de teste acessível; produção permanece intocada.
+- [ ] Documentos regulatórios e edição das relações canônicas de culturas/alvos: writers atuais contidos, pacote fiscal/regulatório próprio e revisão de autoridade necessários; textos de uso documentado persistem no candidato.

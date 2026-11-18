@@ -1,0 +1,8 @@
+-- Executor must independently prove destination swzpzcwiasxmjutrmvkm before submission.
+SELECT p.oid::regprocedure AS signature, md5(pg_get_functiondef(p.oid)) AS md5, p.proacl
+FROM pg_proc p WHERE p.oid IN (to_regprocedure('platform_private.catalog_tenant_actor(text)'),to_regprocedure('public.tenant_catalog_root_save(text,uuid,jsonb,timestamptz,uuid)'));
+SELECT * FROM platform_private.tenant_catalog_root_cfg WHERE root IN ('microrganismos','microorganism_technical_profiles');
+SELECT conrelid::regclass, conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid IN ('public.microrganismos'::regclass,'public.microorganism_technical_profiles'::regclass);
+SELECT tgrelid::regclass,tgname,pg_get_triggerdef(oid) FROM pg_trigger WHERE NOT tgisinternal AND tgrelid IN ('public.microrganismos'::regclass,'public.microorganism_technical_profiles'::regclass);
+-- Save count + hash by authorized owner without changing any of the 27 AR Bio identities.
+SELECT owner_organization_id,count(*),md5(string_agg(id::text||':'||coalesce(codigo,'')||':'||nome,',' ORDER BY id)) AS identity_hash FROM public.microrganismos GROUP BY owner_organization_id;

@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { MicroorganismFichaEditor } from "./MicroorganismFichaEditor";
 import { DocumentaryAI } from "./catalog/DocumentaryAI";
 import { DraftExitConfirmation } from "@/components/catalogo/DraftExitConfirmation";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,7 +22,12 @@ export type ReferenceRoot = "culturas" | "microrganismos";
 const names = { culturas: "cultura", microrganismos: "microrganismo" };
 
 /** Existing canonical root writer only; never enables the old Owned gate or global DML. */
-export function TenantReferenceDialog({ root, item, onClose, onSaved }: {
+export function TenantReferenceDialog(props: {
+  root: ReferenceRoot; item: Reference | null; onClose(): void; onSaved(row: Reference): void;
+}) {
+  return props.root === "microrganismos" ? <MicroorganismFichaEditor key={`${props.item?.id ?? "new"}`} {...props} /> : <CultureReferenceDialog {...props} />;
+}
+function CultureReferenceDialog({ root, item, onClose, onSaved }: {
   root: ReferenceRoot; item: Reference | null; onClose(): void; onSaved(row: Reference): void;
 }) {
   const editor = useTenantCatalogEditor();
@@ -90,9 +96,10 @@ export function TenantReferencePanel({ root }: { root: ReferenceRoot }) {
     </header>
     <TenantVisibilityBar v={vis} />
     {query.isError ? <div role="alert">Não foi possível consultar. <Button variant="outline" onClick={() => void query.refetch()}>Tentar novamente</Button></div>
-      : query.isLoading ? <p role="status">Carregando…</p> : <ul className="divide-y">{rows.map(r => <li key={r.id} className="flex items-center justify-between gap-3 py-3"><div className="min-w-0"><p className="break-words font-medium">{r.nome}</p><p className="break-words text-sm text-muted-foreground">{r.descricao}</p></div>
+      : query.isLoading ? <p role="status">Carregando…</p> : <ul className="divide-y">{rows.map(r => <li key={r.id} className="flex items-center justify-between gap-3 py-3"><div className="min-w-0">{root === "microrganismos" ? <Button variant="link" className="h-auto whitespace-normal p-0 text-left" onClick={() => setDialog({ item: r })}>{r.nome}</Button> : <p className="break-words font-medium">{r.nome}</p>}<p className="break-words text-sm text-muted-foreground">{r.descricao}</p></div>
         {canManageVis && !r.owner_organization_id && <TenantVisibilityToggle entity={root === "culturas" ? "cultura" : "microrganismo"} item={{ id: r.id, nome: r.nome, ativo: true }} state={vis.map?.get(r.id)} disabledReason={vis.error ?? (vis.map ? null : "Carregando preferências.")} />}
-        {editor.canEdit && r.owner_organization_id === profile?.organization_id && !!r.owner_organization_id && <Button variant="outline" aria-label={`Editar ${r.nome}`} onClick={() => setDialog({ item: r })}><Pencil className="h-4 w-4" /></Button>}</li>)}{rows.length === 0 && <li className="py-8 text-muted-foreground">Nenhum registro encontrado.</li>}</ul>}
+        {root === "microrganismos" && <Button variant="outline" onClick={() => setDialog({ item: r })}>Abrir ficha</Button>}
+        {root === "culturas" && editor.canEdit && r.owner_organization_id === profile?.organization_id && !!r.owner_organization_id && <Button variant="outline" aria-label={`Editar ${r.nome}`} onClick={() => setDialog({ item: r })}><Pencil className="h-4 w-4" /></Button>}</li>)}{rows.length === 0 && <li className="py-8 text-muted-foreground">Nenhum registro encontrado.</li>}</ul>}
     {dialog && <TenantReferenceDialog key={editor.scope} root={root} item={dialog.item} onClose={() => setDialog(undefined)} onSaved={() => {
       setDialog(undefined); void qc.invalidateQueries({ queryKey: ["tenant-reference", root] }); void qc.invalidateQueries({ queryKey: ["tenant-product-details"] });
     }} />}

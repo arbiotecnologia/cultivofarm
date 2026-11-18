@@ -1,0 +1,85 @@
+BEGIN;
+DO $pre$ BEGIN
+ IF md5(pg_get_functiondef(to_regprocedure('platform_private.catalog_tenant_actor(text)'))) IS DISTINCT FROM '5e0ce9cc9122f1c21d76e29a13de8b59' OR md5(pg_get_functiondef(to_regprocedure('public.tenant_catalog_root_save(text,uuid,jsonb,timestamptz,uuid)'))) IS DISTINCT FROM '7db253bcc2150276ea2bb2f7bd90e471' THEN RAISE EXCEPTION 'CATALOG_PIN_DRIFT'; END IF;
+ IF to_regprocedure('public.tenant_microorganism_ficha_save_v1(uuid,timestamptz,timestamptz,jsonb,jsonb,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'ALREADY_INSTALLED_REVIEW_POST'; END IF;
+END $pre$;
+CREATE TABLE platform_private.micro_ficha_gate_v1(singleton boolean PRIMARY KEY DEFAULT true,enabled boolean NOT NULL DEFAULT false);
+INSERT INTO platform_private.micro_ficha_gate_v1 VALUES(true,false);
+CREATE TABLE platform_private.micro_ficha_extra_v1(micro_id uuid PRIMARY KEY REFERENCES public.microrganismos(id),extra jsonb NOT NULL DEFAULT '{}',evidence jsonb NOT NULL DEFAULT '[]',updated_at timestamptz NOT NULL DEFAULT now());
+REVOKE ALL ON platform_private.micro_ficha_gate_v1,platform_private.micro_ficha_extra_v1 FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION public.tenant_microorganism_ficha_read_v1(p_id uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
+DECLARE org uuid; own uuid; result jsonb;
+BEGIN
+ org:=platform_private.catalog_tenant_actor('read_catalog');
+ SELECT owner_organization_id INTO own FROM public.microrganismos WHERE id=p_id;
+ IF own IS DISTINCT FROM org OR org IS NULL THEN RAISE EXCEPTION 'catalog_denied' USING ERRCODE='42501'; END IF;
+ SELECT jsonb_build_object('extra',extra,'evidence',evidence) INTO result FROM platform_private.micro_ficha_extra_v1 WHERE micro_id=p_id;
+ RETURN coalesce(result,jsonb_build_object('extra','{}'::jsonb,'evidence','[]'::jsonb));
+END $f$;
+CREATE FUNCTION public.tenant_microorganism_ficha_save_v1(p_id uuid,p_expected_updated_at timestamptz,p_expected_profile_updated_at timestamptz,p_payload jsonb,p_evidence jsonb,p_key uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
+DECLARE org uuid; own uuid; row public.microrganismos%ROWTYPE; prof public.microorganism_technical_profiles%ROWTYPE; k text; e jsonb; source jsonb; ack jsonb; rep jsonb; h text; root jsonb; content jsonb; extra jsonb; target uuid;
+BEGIN
+ org:=platform_private.catalog_tenant_actor('mutate');
+ PERFORM 1 FROM platform_private.micro_ficha_gate_v1 WHERE singleton=true AND enabled=true FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'micro_ficha_not_active' USING ERRCODE='42501'; END IF;
+ IF p_key IS NULL OR p_payload IS NULL OR jsonb_typeof(p_payload)<>'object' OR (p_payload - ARRAY['root','content','extra'])<>'{}'::jsonb THEN RAISE EXCEPTION 'invalid_payload' USING ERRCODE='22023'; END IF;
+ root:=coalesce(p_payload->'root','{}'); content:=coalesce(p_payload->'content','{}');extra:=coalesce(p_payload->'extra','{}');
+ IF jsonb_typeof(root)<>'object' OR jsonb_typeof(content)<>'object' OR jsonb_typeof(extra)<>'object' THEN RAISE EXCEPTION 'invalid_payload' USING ERRCODE='22023'; END IF;
+ FOR k IN SELECT jsonb_object_keys(root) LOOP
+  IF NOT k=ANY(ARRAY['codigo','nome','nome_cientifico','tipo','fornecedor','funcao_agronomica','concentracao_label','descricao','observacoes']) THEN RAISE EXCEPTION 'root_field_forbidden' USING ERRCODE='22023'; END IF;
+ END LOOP;
+ FOR k IN SELECT jsonb_object_keys(content) LOOP
+  IF NOT k=ANY(ARRAY['resumo_curto','mecanismo_acao','beneficios_agronomicos','explicacao_tecnica','explicacao_produtor','explicacao_b2b','indicacoes_uso','cuidados_aplicacao','compatibilidade','armazenamento','observacoes_regulatorias']) THEN RAISE EXCEPTION 'content_field_forbidden' USING ERRCODE='22023'; END IF;
+ END LOOP;
+ FOR k IN SELECT jsonb_object_keys(extra) LOOP
+  IF NOT k=ANY(ARRAY['sinonimos','cepa','origem','concentracao_unidade','apresentacao','culturas_uso','alvos_uso','documentos_pendentes']) THEN RAISE EXCEPTION 'extra_field_forbidden' USING ERRCODE='22023'; END IF;
+ END LOOP;
+ FOR e IN SELECT value FROM jsonb_each(root||content||extra) LOOP
+  IF jsonb_typeof(e) NOT IN ('string','null') OR length(e#>>'{}')>12000 THEN RAISE EXCEPTION 'field_shape' USING ERRCODE='22023'; END IF;
+ END LOOP;
+ IF jsonb_typeof(p_evidence) IS DISTINCT FROM 'array' OR jsonb_array_length(p_evidence)>40 OR octet_length(p_evidence::text)>300000 THEN RAISE EXCEPTION 'evidence_shape' USING ERRCODE='22023'; END IF;
+ FOR e IN SELECT value FROM jsonb_array_elements(p_evidence) LOOP
+  IF jsonb_typeof(e)<>'object' OR (e - ARRAY['field','value','identity','sources'])<>'{}'::jsonb OR (e->>'field') IS NULL OR NOT (e->>'field')=ANY(ARRAY['descricao','resumo_curto','mecanismo_acao','beneficios_agronomicos','explicacao_tecnica','explicacao_produtor','explicacao_b2b','indicacoes_uso','cuidados_aplicacao','compatibilidade','armazenamento','observacoes_regulatorias']) OR jsonb_typeof(e->'identity') IS DISTINCT FROM 'object' OR jsonb_typeof(e->'value') IS DISTINCT FROM 'string' OR length(e->>'value')>12000 OR jsonb_typeof(e->'sources') IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'evidence_shape' USING ERRCODE='22023'; END IF;
+  IF jsonb_array_length(e->'sources') NOT BETWEEN 1 AND 20 THEN RAISE EXCEPTION 'source_required' USING ERRCODE='22023'; END IF;
+  FOR source IN SELECT value FROM jsonb_array_elements(e->'sources') LOOP
+   IF jsonb_typeof(source)<>'object' OR (source - ARRAY['url','title','excerpt'])<>'{}'::jsonb OR coalesce(source->>'url','') !~ '^https://[A-Za-z0-9.-]+(:443)?/' OR coalesce(source->>'title','')='' OR coalesce(source->>'excerpt','')='' OR length(source::text)>20000 THEN RAISE EXCEPTION 'source_invalid' USING ERRCODE='22023'; END IF;
+  END LOOP;
+ END LOOP;
+ h:=md5(jsonb_build_array('micro-ficha-v1',p_id,p_expected_updated_at,p_expected_profile_updated_at,p_payload,p_evidence)::text);
+ rep:=platform_private.tenant_catalog_receipt(org,p_key,h); IF rep IS NOT NULL THEN RETURN rep; END IF;
+ IF p_id IS NOT NULL THEN
+  SELECT * INTO row FROM public.microrganismos WHERE id=p_id FOR UPDATE;
+  IF NOT FOUND OR row.owner_organization_id IS DISTINCT FROM org THEN RAISE EXCEPTION 'catalog_denied' USING ERRCODE='42501'; END IF;
+  IF platform_private.catalog_tenant_actor('mutate') IS DISTINCT FROM org THEN RAISE EXCEPTION 'actor_changed' USING ERRCODE='42501'; END IF;
+  IF row.updated_at IS DISTINCT FROM p_expected_updated_at OR p_expected_updated_at IS NULL THEN RAISE EXCEPTION 'micro_stale' USING ERRCODE='PT409'; END IF;
+  SELECT * INTO prof FROM public.microorganism_technical_profiles WHERE microrganismo_id=p_id FOR UPDATE;
+  IF prof.updated_at IS DISTINCT FROM p_expected_profile_updated_at THEN RAISE EXCEPTION 'profile_stale' USING ERRCODE='PT409'; END IF;
+ END IF;
+ IF platform_private.catalog_tenant_actor('mutate') IS DISTINCT FROM org THEN RAISE EXCEPTION 'actor_changed' USING ERRCODE='42501'; END IF;
+ ack:=public.tenant_catalog_root_save('microrganismos',p_id,root,p_expected_updated_at,gen_random_uuid()); target:=(ack->>'id')::uuid;
+ IF content<>'{}' THEN
+  IF prof.id IS NULL THEN content:=content||jsonb_build_object('microrganismo_id',target); END IF;
+  PERFORM public.tenant_catalog_root_save('microorganism_technical_profiles',prof.id,content,prof.updated_at,gen_random_uuid());
+ END IF;
+ INSERT INTO platform_private.micro_ficha_extra_v1(micro_id,extra,evidence) VALUES(target,extra,p_evidence)
+ ON CONFLICT(micro_id) DO UPDATE SET extra=platform_private.micro_ficha_extra_v1.extra||excluded.extra,evidence=excluded.evidence,updated_at=clock_timestamp();
+ IF platform_private.catalog_tenant_actor('mutate') IS DISTINCT FROM org THEN RAISE EXCEPTION 'actor_changed' USING ERRCODE='42501'; END IF;
+ ack:=ack||jsonb_build_object('replayed',false);
+ INSERT INTO platform_private.tenant_catalog_root_receipts(actor_id,organization_id,idempotency_key,payload_hash,result) VALUES(auth.uid(),org,p_key,h,ack);
+ RETURN ack;
+END $f$;
+CREATE FUNCTION public.tenant_catalog_documentary_capability_v1(p_entity text,p_id uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
+DECLARE org uuid; own uuid;
+BEGIN
+ org:=platform_private.catalog_tenant_actor('mutate');
+ IF p_entity NOT IN ('produto','microrganismo') OR p_entity IS NULL THEN RAISE EXCEPTION 'invalid_entity' USING ERRCODE='22023'; END IF;
+ IF p_id IS NOT NULL THEN
+  IF p_entity='produto' THEN SELECT owner_organization_id INTO own FROM public.produtos WHERE id=p_id;
+  ELSE SELECT owner_organization_id INTO own FROM public.microrganismos WHERE id=p_id; END IF;
+  IF own IS DISTINCT FROM org THEN RAISE EXCEPTION 'catalog_denied' USING ERRCODE='42501'; END IF;
+ END IF;
+ RETURN jsonb_build_object('allowed',true,'actor_id',auth.uid(),'organization_id',org);
+END $f$;
+REVOKE ALL ON FUNCTION public.tenant_microorganism_ficha_read_v1(uuid),public.tenant_microorganism_ficha_save_v1(uuid,timestamptz,timestamptz,jsonb,jsonb,uuid),public.tenant_catalog_documentary_capability_v1(text,uuid) FROM PUBLIC,anon,authenticated,service_role;
+-- Release is separate: this installation leaves client ACLs closed and save gate OFF.
+COMMIT;

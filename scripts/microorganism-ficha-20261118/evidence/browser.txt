@@ -1,0 +1,5 @@
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+page errors []
+{"viewport": 1280, "sources_reopened": true, "strain_reopened": true, "overflow": false, "dialogs": 1, "errors": [], "limits": "synthetic intercepted transport/Auth, real components. NOT hosted"}
+page errors []
+{"viewport": 390, "sources_reopened": true, "strain_reopened": true, "overflow": false, "dialogs": 1, "errors": [], "limits": "synthetic intercepted transport/Auth, real components. NOT hosted"}

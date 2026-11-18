@@ -1,0 +1,3 @@
+# Merge only after reviewed explicit deployment authorization. No change to canonical config now.
+[functions.catalog-documentary-suggestions]
+verify_jwt = true

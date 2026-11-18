@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Search, Share2, Copy, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { TechnicalProfileStatusBadge } from "@/components/protocolos/TechnicalProfileStatusBadge";
-import { MicroorganismTechnicalProfileDialog } from "@/components/protocolos/MicroorganismTechnicalProfileDialog";
+import { TenantReferenceDialog } from "@/components/protocolos/TenantReferencePanel";
 import { ProductTechnicalProfileDialog } from "@/components/protocolos/ProductTechnicalProfileDialog";
 import { useEmbalagensPorItem, formatEmbalagens } from "@/hooks/useEmbalagensPorItem";
 import { useCatalogoVolumes, formatVolumesCatalogo } from "@/hooks/useCatalogoVolumes";
@@ -210,7 +210,7 @@ export default function MobileCatalogoTecnico() {
       )}
 
       </>}
-      <MicroorganismTechnicalProfileDialog open={!!openMicro} onOpenChange={(v) => !v && setOpenMicro(null)} micro={openMicro} origem="app_mobile" />
+      {openMicro && <TenantReferenceDialog key={editor.scope + openMicro.id} root="microrganismos" item={{...openMicro,updated_at:openMicro.updated_at??null}} onClose={() => setOpenMicro(null)} onSaved={() => setOpenMicro(null)} />}
       <ProductTechnicalProfileDialog open={!!openProd} onOpenChange={(v) => !v && setOpenProd(null)} produto={openProd} origem="app_mobile" />
     </div>
   );

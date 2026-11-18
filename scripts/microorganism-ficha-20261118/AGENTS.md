@@ -1,0 +1,3 @@
+- Preparation only: SQL and Edge candidates remain outside automatic deployment; apply only after independent review and hosted validation — protects production records.
+- Reuse the pinned catalog actor/root writer; supplementary identity and accepted field evidence are private, same-parent and transactional with CAS and idempotency — avoids parallel catalog authority.
+- No technical/fiscal approvals, cultivation instructions, global bypass or deletion on rollback; synthetic dependencies must be reported — prevents unsupported certification.

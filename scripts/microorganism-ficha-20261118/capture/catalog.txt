@@ -1,0 +1,128 @@
+[map[capture:map[columns:[map[column_name:id data_type:uuid table_name:microorganism_technical_profiles] map[column_name:microrganismo_id data_type:uuid table_name:microorganism_technical_profiles] map[column_name:resumo_curto data_type:text table_name:microorganism_technical_profiles] map[column_name:mecanismo_acao data_type:text table_name:microorganism_technical_profiles] map[column_name:beneficios_agronomicos data_type:text table_name:microorganism_technical_profiles] map[column_name:explicacao_tecnica data_type:text table_name:microorganism_technical_profiles] map[column_name:explicacao_produtor data_type:text table_name:microorganism_technical_profiles] map[column_name:explicacao_b2b data_type:text table_name:microorganism_technical_profiles] map[column_name:indicacoes_uso data_type:text table_name:microorganism_technical_profiles] map[column_name:cuidados_aplicacao data_type:text table_name:microorganism_technical_profiles] map[column_name:compatibilidade data_type:text table_name:microorganism_technical_profiles] map[column_name:armazenamento data_type:text table_name:microorganism_technical_profiles] map[column_name:observacoes_regulatorias data_type:text table_name:microorganism_technical_profiles] map[column_name:status_validacao data_type:text table_name:microorganism_technical_profiles] map[column_name:validado_por data_type:uuid table_name:microorganism_technical_profiles] map[column_name:validado_em data_type:timestamp with time zone table_name:microorganism_technical_profiles] map[column_name:created_by data_type:uuid table_name:microorganism_technical_profiles] map[column_name:updated_by data_type:uuid table_name:microorganism_technical_profiles] map[column_name:created_at data_type:timestamp with time zone table_name:microorganism_technical_profiles] map[column_name:updated_at data_type:timestamp with time zone table_name:microorganism_technical_profiles] map[column_name:id data_type:uuid table_name:microrganismos] map[column_name:nome data_type:text table_name:microrganismos] map[column_name:tipo data_type:USER-DEFINED table_name:microrganismos] map[column_name:created_at data_type:timestamp with time zone table_name:microrganismos] map[column_name:nome_cientifico data_type:text table_name:microrganismos] map[column_name:concentracao_ufc_ml data_type:numeric table_name:microrganismos] map[column_name:concentracao_label data_type:text table_name:microrganismos] map[column_name:dose_ml_ha data_type:numeric table_name:microrganismos] map[column_name:valor_dose_brl data_type:numeric table_name:microrganismos] map[column_name:fornecedor data_type:text table_name:microrganismos] map[column_name:safra_referencia data_type:text table_name:microrganismos] map[column_name:producao_on_farm data_type:boolean table_name:microrganismos] map[column_name:meio_cultivo data_type:text table_name:microrganismos] map[column_name:funcao_agronomica data_type:text table_name:microrganismos] map[column_name:observacoes data_type:text table_name:microrganismos] map[column_name:ativo data_type:boolean table_name:microrganismos] map[column_name:b2b_enabled data_type:boolean table_name:microrganismos] map[column_name:codigo data_type:text table_name:microrganismos] map[column_name:descricao data_type:text table_name:microrganismos] map[column_name:preco_tabela data_type:numeric table_name:microrganismos] map[column_name:valor_litro_brl data_type:numeric table_name:microrganismos] map[column_name:product_id data_type:uuid table_name:microrganismos] map[column_name:updated_at data_type:timestamp with time zone table_name:microrganismos] map[column_name:owner_organization_id data_type:uuid table_name:microrganismos]] config:[map[allowed:[nome tipo nome_cientifico concentracao_ufc_ml concentracao_label dose_ml_ha valor_dose_brl fornecedor safra_referencia producao_on_farm meio_cultivo funcao_agronomica observacoes ativo b2b_enabled codigo descricao preco_tabela valor_litro_brl product_id] kind:root parent_col: parent_tbl: refs:map[product_id:produtos] root:microrganismos safe_defaults:map[b2b_enabled:false]] map[allowed:[microrganismo_id resumo_curto mecanismo_acao beneficios_agronomicos explicacao_tecnica explicacao_produtor explicacao_b2b indicacoes_uso cuidados_aplicacao compatibilidade armazenamento observacoes_regulatorias] kind:profile parent_col:microrganismo_id parent_tbl:microrganismos refs:map[microrganismo_id:microrganismos] root:microorganism_technical_profiles safe_defaults:map[]]] functions:[map[definition:CREATE OR REPLACE FUNCTION platform_private.catalog_tenant_actor(p_mode text)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_claims jsonb := NULLIF(current_setting('request.jwt.claims', true), '')::jsonb;
+  v_org uuid;
+BEGIN
+  IF v_uid IS NULL OR v_claims IS NULL OR v_claims->>'role' IS DISTINCT FROM 'authenticated'
+     OR (v_claims->>'sub') IS DISTINCT FROM v_uid::text
+     OR NULLIF(v_claims->>'exp','') IS NULL OR (v_claims->>'exp') !~ '^[0-9]{1,12}$'
+     OR to_timestamp((v_claims->>'exp')::bigint) <= now()
+     OR (NULLIF(v_claims->>'iat','') IS NOT NULL AND ((v_claims->>'iat') !~ '^[0-9]{1,12}$'
+         OR to_timestamp((v_claims->>'iat')::bigint) > now() + interval '60 seconds')) THEN
+    RAISE EXCEPTION 'catalog_visibility_auth_required' USING ERRCODE='42501';
+  END IF;
+  IF public.is_platform_superadmin(v_uid) THEN
+    RAISE EXCEPTION 'catalog_visibility_platform_actor_denied' USING ERRCODE='42501';
+  END IF;
+  v_org := platform_private.h15_actor_organization();
+  IF v_org IS NULL OR NOT EXISTS (SELECT 1 FROM public.organizations o WHERE o.id=v_org AND o.ativo IS TRUE AND o.status='ativa') THEN
+    RAISE EXCEPTION 'catalog_visibility_tenant_unavailable' USING ERRCODE='42501';
+  END IF;
+  IF p_mode IN ('mutate','read_catalog','read_management') AND NOT public._saas_user_has_feature(v_uid, 'catalogo_precos') THEN
+    RAISE EXCEPTION 'catalog_visibility_feature_unavailable' USING ERRCODE='42501';
+  END IF;
+  IF p_mode='mutate' THEN
+    IF NOT (platform_private.has_role(v_uid,'administrador'::public.app_role) OR platform_private.has_role(v_uid,'gestor'::public.app_role)) THEN
+      RAISE EXCEPTION 'catalog_visibility_role_denied' USING ERRCODE='42501'; END IF;
+  ELSIF p_mode='read_catalog' THEN
+    IF NOT public.can_view_catalog_internal(v_uid) THEN
+      RAISE EXCEPTION 'catalog_visibility_role_denied' USING ERRCODE='42501'; END IF;
+  ELSIF p_mode NOT IN ('read_management','read_selection_cultura','read_prefs') OR p_mode IS NULL THEN
+    RAISE EXCEPTION 'catalog_visibility_mode_invalid' USING ERRCODE='22023';
+  END IF;
+  RETURN v_org;
+END; $function$
+ md5:5e0ce9cc9122f1c21d76e29a13de8b59 signature:platform_private.catalog_tenant_actor(text)] map[definition:CREATE OR REPLACE FUNCTION platform_private.tenant_catalog_ref_owner(p_tbl text, p_id uuid)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v uuid;
+BEGIN
+  IF p_tbl NOT IN ('produtos','microrganismos','culturas') THEN RAISE EXCEPTION 'tenant_catalog_ref_table' USING ERRCODE='22023'; END IF;
+  EXECUTE format('SELECT owner_organization_id FROM public.%I WHERE id = $1 FOR SHARE', p_tbl) INTO v USING p_id;
+  RETURN v;
+END $function$
+ md5:9e2a23293124f7953b2d9b63d46a1890 signature:platform_private.tenant_catalog_ref_owner(text,uuid)] map[definition:CREATE OR REPLACE FUNCTION platform_private.tenant_catalog_receipt(p_org uuid, p_key uuid, p_hash text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v platform_private.tenant_catalog_root_receipts%ROWTYPE;
+BEGIN
+  IF p_key IS NULL THEN RAISE EXCEPTION 'tenant_catalog_key_required' USING ERRCODE='22023'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended(concat_ws(':','tcr',auth.uid(),p_org,p_key),0));
+  SELECT * INTO v FROM platform_private.tenant_catalog_root_receipts WHERE actor_id=auth.uid() AND organization_id=p_org AND idempotency_key=[REDACTED]
+  IF NOT FOUND THEN RETURN NULL; END IF;
+  IF v.payload_hash <> p_hash THEN RAISE EXCEPTION 'tenant_catalog_idempotency_conflict' USING ERRCODE='PT409'; END IF;
+  RETURN v.result || jsonb_build_object('replayed', true);
+END $function$
+ md5:e0215d187cf055064e05c76a13dd55d4 signature:platform_private.tenant_catalog_receipt(uuid,uuid,text)] map[definition:CREATE OR REPLACE FUNCTION public.tenant_catalog_root_save(p_root text, p_id uuid, p_payload jsonb, p_expected_updated_at timestamp with time zone, p_idempotency_key uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v_uid uuid := auth.uid(); v_org uuid; v_org2 uuid; v_cfg platform_private.tenant_catalog_root_cfg%ROWTYPE;
+  k text; v_hash text; v_rep jsonb; v_cols text[] := '{}'; v_row jsonb; v_prev jsonb; v_parent uuid; v_ref uuid; v_ts timestamptz;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthenticated' USING ERRCODE='28000'; END IF;
+  v_org := platform_private.catalog_tenant_actor('mutate');
+  SELECT * INTO v_cfg FROM platform_private.tenant_catalog_root_cfg WHERE root = p_root;
+  IF NOT FOUND THEN RAISE EXCEPTION 'tenant_catalog_root_invalid' USING ERRCODE='22023'; END IF;
+  IF p_payload IS NULL OR jsonb_typeof(p_payload) <> 'object' THEN RAISE EXCEPTION 'tenant_catalog_payload_invalid' USING ERRCODE='22023'; END IF;
+  FOR k IN SELECT jsonb_object_keys(p_payload) LOOP
+    IF NOT k = ANY (v_cfg.allowed) THEN RAISE EXCEPTION 'tenant_catalog_field_forbidden:%', k USING ERRCODE='22023'; END IF;
+    v_cols := v_cols || k;
+  END LOOP;
+  IF p_id IS NOT NULL AND p_expected_updated_at IS NULL THEN RAISE EXCEPTION 'tenant_catalog_cas_required' USING ERRCODE='PT409'; END IF;
+  v_hash := md5(concat_ws('|', p_root, coalesce(p_id::text,'new'), p_payload::text, coalesce(p_expected_updated_at::text,'')));
+  v_rep := platform_private.tenant_catalog_receipt(v_org, p_idempotency_key, v_hash);
+  IF v_rep IS NOT NULL THEN RETURN v_rep; END IF;
+  -- referências no payload: mesma empresa (FOR SHARE no pai)
+  FOR k IN SELECT jsonb_object_keys(v_cfg.refs) LOOP
+    IF p_payload ? k AND jsonb_typeof(p_payload->k) <> 'null' THEN
+      v_ref := platform_private.tenant_catalog_ref_owner(v_cfg.refs->>k, (p_payload->>k)::uuid);
+      IF v_ref IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'tenant_catalog_ref_foreign:%', k USING ERRCODE='42501'; END IF;
+    END IF;
+  END LOOP;
+  IF p_id IS NULL THEN
+    IF v_cfg.kind = 'profile' AND NOT p_payload ? v_cfg.parent_col THEN RAISE EXCEPTION 'tenant_catalog_parent_required' USING ERRCODE='22023'; END IF;
+    FOR k IN SELECT jsonb_object_keys(v_cfg.safe_defaults) LOOP
+      IF NOT p_payload ? k THEN p_payload := p_payload || jsonb_build_object(k, v_cfg.safe_defaults->k); v_cols := v_cols || k; END IF;
+    END LOOP;
+    IF v_cfg.kind = 'root' THEN p_payload := p_payload || jsonb_build_object('owner_organization_id', v_org); v_cols := v_cols || 'owner_organization_id'::text; END IF;
+    EXECUTE format('INSERT INTO public.%I (%s) SELECT %s FROM jsonb_populate_record(NULL::public.%I, $1) r RETURNING to_jsonb(%I.*)',
+      p_root, (SELECT string_agg(quote_ident(c), ',') FROM unnest(v_cols) c),
+      (SELECT string_agg('r.' || quote_ident(c), ',') FROM unnest(v_cols) c), p_root, p_root) INTO v_row USING p_payload;
+  ELSE
+    IF v_cfg.kind = 'profile' AND p_payload ? v_cfg.parent_col THEN RAISE EXCEPTION 'tenant_catalog_parent_immutable' USING ERRCODE='22023'; END IF;
+    EXECUTE format('SELECT to_jsonb(x.*) FROM public.%I x WHERE x.id = $1 FOR UPDATE', p_root) INTO v_prev USING p_id;
+    IF v_prev IS NULL THEN RAISE EXCEPTION 'tenant_catalog_not_found' USING ERRCODE='P0002'; END IF;
+    -- reautorização após a espera do lock (troca de empresa/revogação durante a espera nega)
+    v_org2 := platform_private.catalog_tenant_actor('mutate');
+    IF v_org2 IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'tenant_catalog_actor_changed' USING ERRCODE='42501'; END IF;
+    v_parent := CASE WHEN v_cfg.kind = 'root' THEN (v_prev->>'owner_organization_id')::uuid
+                     ELSE platform_private.tenant_catalog_ref_owner(v_cfg.parent_tbl, (v_prev->>v_cfg.parent_col)::uuid) END;
+    IF v_parent IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'tenant_catalog_not_found' USING ERRCODE='P0002'; END IF;
+    IF (v_prev->>'updated_at')::timestamptz IS DISTINCT FROM p_expected_updated_at THEN RAISE EXCEPTION 'tenant_catalog_stale' USING ERRCODE='PT409'; END IF;
+    v_ts := greatest(clock_timestamp(), (v_prev->>'updated_at')::timestamptz + interval '1 microsecond');
+    EXECUTE format('UPDATE public.%I x SET %s updated_at = $3 FROM jsonb_populate_record(NULL::public.%I, $1) r WHERE x.id = $2 RETURNING to_jsonb(x.*)',
+      p_root, coalesce((SELECT string_agg(quote_ident(c) || ' = r.' || quote_ident(c), ', ') || ',' FROM unnest(v_cols) c), ''), p_root)
+      INTO v_row USING p_payload, p_id, v_ts;
+  END IF;
+  v_row := jsonb_build_object('ok', true, 'root', p_root, 'id', v_row->>'id', 'updated_at', v_row->>'updated_at',
+                              'organization_id', v_org, 'replayed', false);
+  INSERT INTO platform_private.tenant_catalog_root_receipts VALUES (v_uid, v_org, p_idempotency_key, v_hash, v_row);
+  RETURN v_row;
+EXCEPTION WHEN unique_violation THEN RAISE EXCEPTION 'tenant_catalog_duplicate' USING ERRCODE='PT409';
+END $function$
+ md5:7db253bcc2150276ea2bb2f7bd90e471 signature:tenant_catalog_root_save(text,uuid,jsonb,timestamp with time zone,uuid)]]]]]

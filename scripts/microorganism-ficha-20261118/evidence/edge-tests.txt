@@ -1,0 +1,44 @@
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/mod.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_almost_equals.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_array_includes.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_equals.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_exists.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_false.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_greater_or_equal.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_greater.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_instance_of.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_is_error.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_less_or_equal.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_less.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_match.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_not_equals.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_not_instance_of.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_not_match.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_not_strict_equals.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_object_match.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_rejects.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_strict_equals.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_string_includes.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert_throws.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assert.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/assertion_error.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/equal.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/fail.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/unimplemented.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/unreachable.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/internal/format.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/internal/mod.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/fmt/colors.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/assert/_constants.ts
+[0m[32mDownload[0m https://deno.land/std@0.224.0/internal/diff.ts
+[0m[32mCheck[0m scripts/microorganism-ficha-20261118/service/index_test.ts
+[0m[38;5;245mrunning 6 tests from ./scripts/microorganism-ficha-20261118/service/index_test.ts[0m
+CORS on options ... [0m[32mok[0m [0m[38;5;245m(16ms)[0m
+wrong destination fails closed ... [0m[32mok[0m [0m[38;5;245m(0ms)[0m
+absent bearer denied before provider ... [0m[32mok[0m [0m[38;5;245m(0ms)[0m
+invalid JWT denied before provider ... [0m[32mok[0m [0m[38;5;245m(4ms)[0m
+authenticated request malformed identity rejected ... [0m[32mok[0m [0m[38;5;245m(2ms)[0m
+authority denied cannot invoke inference ... [0m[32mok[0m [0m[38;5;245m(1ms)[0m
+
+[0m[32mok[0m | 6 passed | 0 failed [0m[38;5;245m(30ms)[0m
+

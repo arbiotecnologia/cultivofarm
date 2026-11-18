@@ -12,7 +12,12 @@ export const documentarySchema = z.object({
   if (new Set(pairs).size !== pairs.length || result.suggestions.some(s => !keys.has(s.candidate_key))) context.addIssue({ code: "custom", message: "Sugestões ambíguas ou sem identificação" });
 });
 export type DocumentaryResult = z.infer<typeof documentarySchema>;
-export type DocumentaryIdentity = { name: string; manufacturer: string; registration: string; entity: "produto" | "microrganismo"; id?: string };
+export type DocumentaryIdentity = { name: string; manufacturer: string; registration: string; entity: "produto" | "microrganismo"; id?: string; scientificName?: string; strain?: string; purpose?: string; synonyms?: string; concentration?: string; presentation?: string; researchScope?: "species" | "product_strain" };
+export type DocumentaryEvidence = { field: string; value: string; identity: DocumentaryIdentity; sources: z.infer<typeof sourceSchema>[] };
+export function selectedDocumentaryEvidence(result: DocumentaryResult, candidate: string, selected: readonly string[], allowed: readonly string[], identity: DocumentaryIdentity): DocumentaryEvidence[] {
+  const values = selectedDocumentaryValues(result, candidate, selected, allowed);
+  return result.suggestions.filter(s => values[s.field] === s.value).map(s => ({ field: s.field, value: s.value, identity, sources: s.sources }));
+}
 export function selectedDocumentaryValues(result: DocumentaryResult, candidate: string, selected: readonly string[], allowed: readonly string[]): Record<string, string> {
   if (!result.candidates.some(c => c.key === candidate)) return {};
   return Object.fromEntries(result.suggestions.filter(s => s.candidate_key === candidate && selected.includes(s.field) && allowed.includes(s.field) && s.sources.length > 0).map(s => [s.field, s.value]));

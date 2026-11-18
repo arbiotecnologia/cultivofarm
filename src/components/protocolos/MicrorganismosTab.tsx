@@ -124,7 +124,7 @@ export function MicrorganismosTab() {
   const ownedRead = useOwnedCatalogRead("microrganismo", { archived: showArchived, offset: ownedOffset, search });
   const [ownedDialog, setOwnedDialog] = useState<{ open: boolean; item: Microrganismo | null }>({ open: false, item: null });
   const [ownedConfirm, setOwnedConfirm] = useState<{ item: Microrganismo; operation: "archive" | "restore" } | null>(null);
-  
+
   const { data: volumesCat } = useCatalogoVolumes();
   const [volumesEdit, setVolumesEdit] = useState<Microrganismo | null>(null);
   const [profileStatusMap, setProfileStatusMap] = useState<Record<string, string>>({});
@@ -133,7 +133,7 @@ export function MicrorganismosTab() {
   const savingRef = useRef(false);
   const [filterTipo, setFilterTipo] = useState("todos");
   const [fichaMicro, setFichaMicro] = useState<Microrganismo | null>(null);
-  
+
   const [form, setForm] = useState({
     id: "",
     nome: "",
@@ -177,7 +177,7 @@ export function MicrorganismosTab() {
   const activeScopeKey = editor.scope;
   useEffect(() => {
     localGeneration.current += 1;
-    setItems([]); setFilteredItems([]); setOwnedDialog({ open: false, item: null }); setOwnedConfirm(null); setVolumesEdit(null); setReference(undefined);
+    setItems([]); setFilteredItems([]); setOwnedDialog({ open: false, item: null }); setOwnedConfirm(null); setVolumesEdit(null); setReference(undefined); setFichaMicro(null);
     void fetch();
     return () => { localGeneration.current += 1; };
     // Session-bound legacy global reads; own reads use the scoped QueryClient hook.
@@ -186,21 +186,21 @@ export function MicrorganismosTab() {
   useEffect(() => {
     let result = [...items, ...((ownedRead.data?.items ?? []) as unknown as Microrganismo[])].filter((item, i, all) => all.findIndex(r => r.id === item.id) === i);
     result = result.filter((item) => showArchived || !item.archived_at);
-    
+
     if (search) {
       const s = search.toLowerCase();
-      result = result.filter(i => 
-        i.nome.toLowerCase().includes(s) || 
+      result = result.filter(i =>
+        i.nome.toLowerCase().includes(s) ||
         (i.nome_cientifico && i.nome_cientifico.toLowerCase().includes(s)) ||
         (i.funcao_agronomica && i.funcao_agronomica.toLowerCase().includes(s)) ||
         (i.codigo && i.codigo.toLowerCase().includes(s))
       );
     }
-    
+
     if (filterTipo !== "todos") {
       result = result.filter(i => i.tipo === filterTipo);
     }
-    
+
     setFilteredItems(result);
   }, [search, filterTipo, items, ownedRead.data, showArchived]);
 
@@ -349,14 +349,14 @@ export function MicrorganismosTab() {
       <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Buscar por nome ou função..." 
-            value={search} 
+          <Input
+            placeholder="Buscar por nome ou função..."
+            value={search}
             onChange={(e) => { setSearch(e.target.value); setOwnedOffset(0); }}
             className="pl-9"
           />
         </div>
-        
+
         <div className="flex gap-2 w-full md:w-auto">
           <Select value={filterTipo} onValueChange={setFilterTipo}>
             <SelectTrigger className="w-[140px]">
@@ -382,9 +382,9 @@ export function MicrorganismosTab() {
             </Button>
           )}
 
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={async () => {
               try {
                 toast.loading("Gerando dossiê de microrganismos...");
@@ -395,7 +395,7 @@ export function MicrorganismosTab() {
                 toast.dismiss();
                 toast.error("Erro ao exportar dossiê: " + err.message);
               }
-            }} 
+            }}
             className="hidden lg:flex"
           >
             <FileText className="h-4 w-4 mr-1" />
@@ -454,27 +454,27 @@ export function MicrorganismosTab() {
                       <Label>Concentração (UFC/mL)</Label>
                       <div className="flex items-end gap-1.5">
                         <div className="relative group flex-1">
-                          <Input 
-                            type="text" 
-                            placeholder="1,3" 
+                          <Input
+                            type="text"
+                            placeholder="1,3"
                             className="h-10 font-mono"
-                            value={form.concentracao_mantissa} 
-                            onChange={(e) => setForm({...form, concentracao_mantissa: e.target.value.replace(".", ",")})} 
+                            value={form.concentracao_mantissa}
+                            onChange={(e) => setForm({...form, concentracao_mantissa: e.target.value.replace(".", ",")})}
                           />
                         </div>
-                        
+
                         <div className="flex items-center h-10 px-0.5">
                           <span className="text-muted-foreground font-medium italic select-none">× 10</span>
                         </div>
 
                         <div className="relative pb-3">
                           <div className="absolute -top-1.5 left-0">
-                            <Input 
-                              type="number" 
-                              placeholder="9" 
+                            <Input
+                              type="number"
+                              placeholder="9"
                               className="w-11 h-8 px-1 text-center font-mono font-bold text-xs"
-                              value={form.concentracao_expoente} 
-                              onChange={(e) => setForm({...form, concentracao_expoente: e.target.value})} 
+                              value={form.concentracao_expoente}
+                              onChange={(e) => setForm({...form, concentracao_expoente: e.target.value})}
                             />
                           </div>
                           <div className="w-11 h-8"></div>
@@ -500,10 +500,10 @@ export function MicrorganismosTab() {
                       </Select>
                     </div>
                     <div className="flex items-center space-x-2 pt-8">
-                      <input 
-                        type="checkbox" 
-                        id="onfarm" 
-                        checked={form.producao_on_farm} 
+                      <input
+                        type="checkbox"
+                        id="onfarm"
+                        checked={form.producao_on_farm}
                         onChange={(e) => setForm({...form, producao_on_farm: e.target.checked})}
                         className="h-4 w-4 rounded border-gray-300"
                       />
@@ -650,7 +650,7 @@ export function MicrorganismosTab() {
                   {m.codigo && (
                     <div className="font-mono text-[10px] text-muted-foreground">{m.codigo}</div>
                   )}
-                  <div className="font-medium flex items-center gap-2 flex-wrap">{m.nome}<CatalogOriginBadge item={m} /></div>
+                  <div className="font-medium flex items-center gap-2 flex-wrap"><Button variant="link" className="h-auto whitespace-normal p-0 text-left" onClick={() => setReference({ item: m })}>{m.nome}</Button><CatalogOriginBadge item={m} /></div>
                   {m.nome_cientifico && (
                     <div className="text-xs text-muted-foreground italic">{m.nome_cientifico}</div>
                   )}
@@ -699,7 +699,7 @@ export function MicrorganismosTab() {
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1 justify-end flex-wrap">
                     <TechnicalProfileStatusBadge status={profileStatusMap[m.id] ?? null} />
-                    {editor.canEdit && m.owner_organization_id === profile?.organization_id && !!m.owner_organization_id && <Button variant="outline" size="sm" onClick={() => setReference({ item: m })}>Editar</Button>}
+
                     <TenantHiddenBadge state={tenantVis.map?.get(m.id)} />
                     {canManageVis && !m.owner_organization_id && (
                       <TenantVisibilityToggle entity="microrganismo" item={{ id: m.id, nome: m.nome, ativo: m.ativo }}
@@ -718,10 +718,10 @@ export function MicrorganismosTab() {
                       size="sm"
                       variant="outline"
                       className="h-7 px-2"
-                      onClick={() => setFichaMicro(m)}
+                      onClick={() => setReference({ item: m })}
                       title="Ficha técnica"
                     >
-                      <FileText className="h-3.5 w-3.5 mr-1" />Ficha
+                      <FileText className="h-3.5 w-3.5 mr-1" />Abrir ficha
                     </Button>
                     <Button
                       size="sm"

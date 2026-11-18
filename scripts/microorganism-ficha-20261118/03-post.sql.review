@@ -1,0 +1,4 @@
+SELECT singleton,enabled FROM platform_private.micro_ficha_gate_v1;
+SELECT p.oid::regprocedure,p.prosecdef,p.proconfig,p.proacl,md5(pg_get_functiondef(p.oid)) FROM pg_proc p WHERE p.proname IN ('tenant_microorganism_ficha_save_v1','tenant_microorganism_ficha_read_v1','tenant_catalog_documentary_capability_v1');
+SELECT owner_organization_id,count(*),md5(string_agg(id::text||':'||coalesce(codigo,'')||':'||nome,',' ORDER BY id)) FROM public.microrganismos GROUP BY owner_organization_id;
+-- Expected: same identities/counts, closed ACL, gate false. Independent JWT tests before activation.

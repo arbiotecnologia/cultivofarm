@@ -1069,12 +1069,13 @@ export function ProductEditDrawer({
 
 // ————————————————————— Drawer: microrganismo (perfil próprio) —————————————————————
 export function MicroorganismEditDrawer({
-  microorganismId, displayName, displayCodigo, canEdit, onClose,
+  microorganismId, displayName, displayCodigo, canEdit, onClose, embedded = false,
 }: {
   microorganismId: string;
   displayName: string;
   displayCodigo: string | null;
   canEdit: boolean;
+  embedded?: boolean;
   onClose: () => void;
 }) {
   const profileQuery = useMicroorganismFiscalProfile(microorganismId);
@@ -1130,6 +1131,7 @@ export function MicroorganismEditDrawer({
 
   return (
     <FiscalProfileDrawer
+      embedded={embedded}
       title={`${canEdit ? "Editar" : "Detalhes do"} perfil fiscal — microrganismo`}
       subtitle={`${displayName}${displayCodigo ? ` — ${displayCodigo}` : ""}`}
       loading={profileQuery.isLoading}
@@ -1153,7 +1155,7 @@ export function MicroorganismEditDrawer({
 // ————————————————————— Drawer genérico compartilhado —————————————————————
 function FiscalProfileDrawer({
   title, subtitle, loading, saving, canEdit, values, errors,
-  onChange, onSubmit, onClose, testId, footer,
+  onChange, onSubmit, onClose, testId, footer, embedded = false,
 }: {
   title: string;
   subtitle: string;
@@ -1167,14 +1169,11 @@ function FiscalProfileDrawer({
   onClose: () => void;
   testId: string;
   footer?: React.ReactNode;
+  embedded?: boolean;
 }) {
   return (
-    <Sheet open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto" data-testid={testId}>
-        <SheetHeader>
-          <SheetTitle>{title}</SheetTitle>
-          <SheetDescription>{subtitle}</SheetDescription>
-        </SheetHeader>
+    <FiscalEditorFrame embedded={embedded} onClose={onClose} testId={testId}>
+        {embedded ? <header><h3 className="font-semibold">{title}</h3><p className="text-sm text-muted-foreground">{subtitle}</p></header> : <SheetHeader><SheetTitle>{title}</SheetTitle><SheetDescription>{subtitle}</SheetDescription></SheetHeader>}
 
         {loading ? (
           <div className="py-6 flex items-center gap-2 text-muted-foreground">
@@ -1241,7 +1240,10 @@ function FiscalProfileDrawer({
           </form>
         )}
         {footer}
-      </SheetContent>
-    </Sheet>
+    </FiscalEditorFrame>
   );
+}
+
+function FiscalEditorFrame({embedded,onClose,testId,children}:{embedded:boolean;onClose():void;testId:string;children:React.ReactNode}) {
+ return embedded ? <section data-testid={testId} className="space-y-4">{children}</section> : <Sheet open onOpenChange={o=>{if(!o)onClose();}}><SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto" data-testid={testId}>{children}</SheetContent></Sheet>;
 }
