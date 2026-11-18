@@ -1,0 +1,22 @@
+import {cleanup,fireEvent,render,screen} from '@testing-library/react';
+import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
+import {afterEach,expect,it,vi} from 'vitest';
+const scope={scope:'A',ready:true,canEdit:true,capture:()=>()=>true};
+vi.mock('@/hooks/useTenantCatalogEditor',()=>({useTenantCatalogEditor:()=>scope}));
+vi.mock('@/hooks/useStorageAccessScope',()=>({useStorageAccessScope:()=>scope}));
+vi.mock('@/hooks/useAuth',()=>({useAuth:()=>({profile:{organization_id:'org-A'}})}));
+vi.mock('@/hooks/useScopedPortalQuery',()=>({useScopedPortalQuery:()=>({isSuccess:true,isError:false,data:null})}));
+vi.mock('@/components/protocolos/catalog/ProfileFieldAI',()=>({ProfileFieldAI:()=>null}));
+vi.mock('@/components/protocolos/MicroFichaRelations',()=>({MicroFichaRelations:()=>null}));
+vi.mock('@/components/protocolos/MicroorganismDocuments',()=>({MicroorganismDocuments:()=>null}));
+vi.mock('@/components/protocolos/catalog/TenantProfileLinks',()=>({TenantProfileLinks:({entity,parent,onPending}:any)=><section><span>{entity}:{parent}</span><button onClick={()=>onPending(true)}>Simular vínculo pendente</button><button onClick={()=>onPending(false)}>Cancelar vínculo pendente</button></section>}));
+import {MicroorganismFichaEditor} from '@/components/protocolos/MicroorganismFichaEditor';
+afterEach(cleanup);
+it('editor de microrganismo monta painel e protege seção, fechamento e salvamento do rascunho',()=>{
+ const close=vi.fn(),saved=vi.fn();render(<QueryClientProvider client={new QueryClient()}><MicroorganismFichaEditor item={{id:'micro-A',nome:'Micro sintético',owner_organization_id:'org-A',updated_at:'2026-11-18T00:00:00Z'} as any} onClose={close} onSaved={saved}/></QueryClientProvider>);
+ fireEvent.click(screen.getByRole('button',{name:'Uso agronômico'}));expect(screen.getByText('microrganismo:micro-A')).toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button',{name:'Simular vínculo pendente'}));expect(screen.getByRole('button',{name:'Salvar ficha'})).toBeDisabled();expect(screen.getByRole('button',{name:'Cancelar',exact:true})).toBeDisabled();
+ fireEvent.click(screen.getByRole('button',{name:'Identificação'}));expect(screen.getByText('microrganismo:micro-A')).toBeInTheDocument();
+ fireEvent.keyDown(screen.getByRole('dialog'),{key:'Escape'});expect(close).not.toHaveBeenCalled();
+ fireEvent.click(screen.getByRole('button',{name:'Cancelar vínculo pendente'}));fireEvent.click(screen.getByRole('button',{name:'Cancelar',exact:true}));expect(close).toHaveBeenCalledOnce();expect(saved).not.toHaveBeenCalled();
+});

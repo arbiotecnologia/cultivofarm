@@ -24,6 +24,7 @@ import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
 import { ProfileFieldAI } from "./catalog/ProfileFieldAI";
 import { ProfileLoadErrorState } from "./catalog/ProfileLoadErrorState";
 import { ProductFichaRelations } from "./ProductFichaRelations";
+import { TenantProfileLinks } from "./catalog/TenantProfileLinks";
 import {
   stageProductRelation,
   type ProductRelation,
@@ -123,7 +124,8 @@ function ProductFicha({
     null,
   );
   const pendingRelation = Object.values(pending).some(Boolean);
-  const blocked = dossierBlocked || pendingRelation;
+  const [extensionPending, setExtensionPending] = useState(false);
+  const blocked = dossierBlocked || pendingRelation || extensionPending;
   const updatePending = useRef((kind: ProductRelationKind, value: boolean) =>
     setPending((old) =>
       old[kind] === value ? old : { ...old, [kind]: value },
@@ -327,6 +329,7 @@ function ProductFicha({
                       onPending={updatePending}
                     />
                   ))}
+                  {own && <TenantProfileLinks entity="produto" parent={produto.id} disabled={save.isPending || !!failure || dossierBlocked || pendingRelation} onPending={setExtensionPending} />}
                 </>
               )}
             </TabsContent>

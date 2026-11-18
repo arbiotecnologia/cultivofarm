@@ -1,4 +1,5 @@
 import { ProfileFieldAI } from "./catalog/ProfileFieldAI";
+import { TenantProfileLinks } from "./catalog/TenantProfileLinks";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MICRO_TYPE_LABELS } from "@/lib/catalogo/documentaryLabels";
 import { safeSourceUrl } from '@/lib/catalogo/safeSourceUrl';
@@ -121,7 +122,9 @@ export function MicroorganismFichaEditor({
   const [pendingRelations, setPendingRelations] = useState<
     Partial<Record<MicroChild["kind"], boolean>>
   >({});
-  const relationPending = Object.values(pendingRelations).some(Boolean);
+  const [extensionPending, setExtensionPending] = useState(false);
+  const canonicalRelationPending = Object.values(pendingRelations).some(Boolean);
+  const relationPending = canonicalRelationPending || extensionPending;
   const onRelationPending = useCallback(
     (kind: MicroChild["kind"], pending: boolean) => {
       setPendingRelations((old) =>
@@ -271,6 +274,7 @@ export function MicroorganismFichaEditor({
     <Dialog
       open
       onOpenChange={(open) => {
+        if (!open && extensionPending) { setError("Salve ou cancele o vínculo adicional antes de fechar a ficha."); return; }
         if (!open && !busy && !documentBusy) {
           if (dirty.current || relationPending) setExit(true);
           else onClose();
@@ -401,6 +405,7 @@ export function MicroorganismFichaEditor({
                       onPending={onRelationPending}
                     />
                   ))}
+                  {item && editable && <TenantProfileLinks entity="microrganismo" parent={item.id} disabled={busy || documentBusy || canonicalRelationPending} onPending={setExtensionPending} />}
                 </>
               )}
               {section === "Conteúdo do catálogo" && (
@@ -576,7 +581,7 @@ export function MicroorganismFichaEditor({
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"
-                disabled={busy || documentBusy}
+                disabled={busy || documentBusy || extensionPending}
                 onClick={() =>
                   dirty.current || relationPending ? setExit(true) : onClose()
                 }

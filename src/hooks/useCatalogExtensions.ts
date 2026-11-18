@@ -33,5 +33,5 @@ export function useCatalogExtensions(kind: "problems" | "links", entity = "produ
       return ack;
     } finally { lock.current = false; }
   };
-  return { ...query, save, canEdit: editor.canEdit, scope: editor.scope };
+  return { ...query, save, hasPendingAttempt: () => !!attempt.current, canEdit: editor.canEdit, scope: editor.scope };
 }

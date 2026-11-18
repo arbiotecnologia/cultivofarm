@@ -20,6 +20,7 @@ vi.mock("@/components/protocolos/ProductFichaRelations", () => ({ ProductFichaRe
 vi.mock("@/components/protocolos/catalog/DocumentaryAI", () => ({ DocumentaryAI: () => null }));
 vi.mock("@/components/protocolos/catalog/VersoesHistoricoTab", () => ({ VersoesHistoricoTab: () => null }));
 vi.mock("@/components/fiscal/ProductDossierManagement", () => ({ ProductDossierManagement: () => null }));
+vi.mock("@/components/protocolos/catalog/TenantProfileLinks", () => ({ TenantProfileLinks: ({entity,parent,onPending}:any) => <section aria-label="Vínculos adicionais da empresa"><span>{entity}:{parent}</span><button onClick={()=>onPending(true)}>Simular rascunho de vínculo</button><button onClick={()=>onPending(false)}>Cancelar rascunho de vínculo</button></section> }));
 import { ProductTechnicalProfileDialog } from "@/components/protocolos/ProductTechnicalProfileDialog";
 const tree = (id = "p1", descricao = "Descrição atual", nome = "Produto") => <ProductTechnicalProfileDialog embedded open produto={{ id, nome, tipo: "solo", codigo: null, descricao, owner_organization_id: "org1" }} onOpenChange={() => {}} />;
 beforeEach(() => {
@@ -108,4 +109,12 @@ it("troca de produto com ausência confirmada não herda rascunho anterior", () 
   expect(screen.getByRole("textbox", { name: "Resumo curto" })).toHaveValue("Descrição nova");
   expect(screen.getByRole("button", { name: "Salvar conteúdo" })).toBeEnabled();
   expect(state.save).not.toHaveBeenCalled();
+});
+it('editor principal monta vínculos e bloqueia navegação e salvamento enquanto há rascunho',()=>{
+ render(tree());fireEvent.mouseDown(screen.getByRole('tab',{name:'Uso agronômico'}),{button:0,ctrlKey:false});
+ expect(screen.getByText('produto:p1')).toBeInTheDocument();fireEvent.click(screen.getByRole('button',{name:'Simular rascunho de vínculo'}));
+ expect(screen.getByRole('button',{name:'Salvar conteúdo'})).toBeDisabled();fireEvent.mouseDown(screen.getByRole('tab',{name:'B2B'}),{button:0,ctrlKey:false});
+ expect(screen.getByRole('tab',{name:'Uso agronômico'})).toHaveAttribute('aria-selected','true');
+ fireEvent.click(screen.getByRole('button',{name:'Cancelar rascunho de vínculo'}));fireEvent.mouseDown(screen.getByRole('tab',{name:'B2B'}),{button:0,ctrlKey:false});
+ expect(screen.getByRole('tab',{name:'B2B'})).toHaveAttribute('aria-selected','true');expect(state.save).not.toHaveBeenCalled();
 });
