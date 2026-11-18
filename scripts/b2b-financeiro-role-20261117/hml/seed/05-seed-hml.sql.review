@@ -26,7 +26,7 @@ DO $$ DECLARE pins jsonb := '{"platform_private.b2b_internal_child_snapshot_guar
  SELECT string_agg(DISTINCT t.tgrelid::regclass || ':' || t.tgfoid::regprocedure::text, ', ') INTO f FROM pg_trigger t
   WHERE NOT t.tgisinternal AND t.tgenabled <> 'D' AND t.tgrelid IN ('public.partner_orders'::regclass, 'public.accounts_receivable'::regclass,
    'public.accounts_receivable_installments'::regclass, 'public.partner_order_payment_terms'::regclass, 'public.partner_order_payment_schedule'::regclass,
-   'public.partner_order_financial_links'::regclass, 'public.partner_financial_settings'::regclass)
+   'public.partner_order_financial_links'::regclass, 'public.partner_financial_settings'::regclass, 'public.financial_audit_log'::regclass)
    AND t.tgfoid NOT IN (SELECT to_regprocedure(x)::oid FROM jsonb_object_keys(pins) x);
  IF f IS NOT NULL THEN RAISE EXCEPTION 'QA_SEED_REFUSED: gatilho não capturado em C11: %', f; END IF;
 END $$;
@@ -34,6 +34,9 @@ END $$;
 CREATE TABLE IF NOT EXISTS qa_b2bfin.ticket(txid bigint PRIMARY KEY, op text NOT NULL);
 CREATE TABLE IF NOT EXISTS qa_b2bfin.saved_fn(fn regprocedure PRIMARY KEY, def text NOT NULL, src_md5 text NOT NULL);
 CREATE TABLE IF NOT EXISTS qa_b2bfin.rowmark(rowhash text PRIMARY KEY, tbl regclass NOT NULL);
+-- Licença por COMANDO para gatilhos FOR EACH STATEMENT: uma linha esperada (id/parceiro/tenant exatos), consumida pela cerca por LINHA.
+CREATE TABLE IF NOT EXISTS qa_b2bfin.stmt_permit(txid bigint NOT NULL, tbl regclass NOT NULL, op text NOT NULL, expect_id uuid NOT NULL,
+ partner_id uuid NOT NULL, organization_id uuid NOT NULL, used boolean NOT NULL DEFAULT false, PRIMARY KEY (txid, tbl, op));
 REVOKE ALL ON ALL TABLES IN SCHEMA qa_b2bfin FROM PUBLIC;
 -- Exceção estrita: postgres + ticket desta transação + linha manifestada (id pré-registrado ou hash de linha derivada).
 CREATE OR REPLACE FUNCTION qa_b2bfin.allowed(j jsonb) RETURNS boolean LANGUAGE sql STABLE SET search_path TO '' AS $f$
@@ -42,6 +45,33 @@ CREATE OR REPLACE FUNCTION qa_b2bfin.allowed(j jsonb) RETURNS boolean LANGUAGE s
   AND (EXISTS (SELECT 1 FROM qa_b2bfin.manifest m WHERE m.id::text = j->>'id' AND (m.kind <> 'receivable' OR j->>'description' LIKE 'QA-FIN-%'))
        OR EXISTS (SELECT 1 FROM qa_b2bfin.rowmark r WHERE r.rowhash = md5(j::text)))
 $f$;
+CREATE OR REPLACE FUNCTION qa_b2bfin.stmt_allowed(t regclass, op text) RETURNS boolean LANGUAGE sql STABLE SET search_path TO '' AS $f$
+ SELECT session_user = 'postgres' AND EXISTS (SELECT 1 FROM qa_b2bfin.ticket k WHERE k.txid = txid_current())
+  AND EXISTS (SELECT 1 FROM qa_b2bfin.stmt_permit p WHERE p.txid = txid_current() AND p.tbl = t AND p.op = op AND NOT p.used)
+$f$;
+-- Cerca temporária POR LINHA (criada e removida na mesma transação): com licença armada, só aceita UMA linha exatamente igual à esperada.
+CREATE OR REPLACE FUNCTION qa_b2bfin.row_fence() RETURNS trigger LANGUAGE plpgsql SET search_path TO '' AS $f$
+DECLARE p qa_b2bfin.stmt_permit; j jsonb := to_jsonb(NEW);
+BEGIN
+ SELECT * INTO p FROM qa_b2bfin.stmt_permit WHERE txid = txid_current() AND tbl = TG_RELID::regclass AND op = TG_OP;
+ IF NOT FOUND THEN RETURN NEW; END IF;  -- sem licença o gatilho STATEMENT original já bloqueou
+ IF p.used OR session_user <> 'postgres' OR (j->>'id')::uuid IS DISTINCT FROM p.expect_id
+    OR (j->>'partner_id')::uuid IS DISTINCT FROM p.partner_id OR (j->>'organization_id')::uuid IS DISTINCT FROM p.organization_id
+    OR coalesce(j->>'description', '') NOT LIKE 'QA-FIN-%'
+    OR NOT EXISTS (SELECT 1 FROM qa_b2bfin.manifest m WHERE m.id = p.expect_id AND m.kind IN ('receivable','receivable_closed')) THEN
+  RAISE EXCEPTION 'QA_ROW_FENCE_DENIED: linha % fora da licença', j->>'id' USING ERRCODE = '42501';
+ END IF;
+ UPDATE qa_b2bfin.stmt_permit SET used = true WHERE txid = p.txid AND tbl = p.tbl AND op = p.op;
+ RETURN NEW;
+END $f$;
+CREATE OR REPLACE FUNCTION qa_b2bfin.permit_insert_receivable(p_id uuid, p_partner uuid, p_org uuid) RETURNS void LANGUAGE sql SET search_path TO '' AS $f$
+ INSERT INTO qa_b2bfin.stmt_permit(txid, tbl, op, expect_id, partner_id, organization_id) VALUES (txid_current(), 'public.accounts_receivable', 'INSERT', p_id, p_partner, p_org)
+$f$;
+CREATE OR REPLACE FUNCTION qa_b2bfin.permit_close() RETURNS void LANGUAGE plpgsql SET search_path TO '' AS $f$
+BEGIN
+ IF EXISTS (SELECT 1 FROM qa_b2bfin.stmt_permit WHERE txid = txid_current() AND NOT used) THEN RAISE EXCEPTION 'QA_PERMIT_UNUSED'; END IF;
+ DELETE FROM qa_b2bfin.stmt_permit WHERE txid = txid_current();
+END $f$;
 CREATE OR REPLACE FUNCTION qa_b2bfin.relax(f regprocedure) RETURNS void LANGUAGE plpgsql SET search_path TO '' AS $f$
 DECLARE p pg_proc%ROWTYPE; d text; src text; pos int; inner_ text; pre text;
 BEGIN
@@ -53,7 +83,8 @@ BEGIN
  INSERT INTO qa_b2bfin.saved_fn VALUES (f, d, md5(src));
  inner_ := rtrim(src, E' \n\t\r'); IF right(inner_, 1) <> ';' THEN inner_ := inner_ || ';'; END IF;
  pre := E'\nBEGIN\n IF TG_LEVEL = ''ROW'' THEN\n  IF TG_OP = ''DELETE'' THEN IF qa_b2bfin.allowed(to_jsonb(OLD)) THEN RETURN OLD; END IF;\n'
-     || E'  ELSIF qa_b2bfin.allowed(to_jsonb(NEW)) THEN RETURN NEW; END IF;\n END IF;\n';
+     || E'  ELSIF qa_b2bfin.allowed(to_jsonb(NEW)) THEN RETURN NEW; END IF;\n'
+     || E' ELSIF qa_b2bfin.stmt_allowed(TG_RELID::regclass, TG_OP) THEN RETURN NULL;\n END IF;\n';
  EXECUTE left(d, pos - 1) || pre || inner_ || E'\nEND;\n' || substr(d, pos + length(src));
 END $f$;
 CREATE OR REPLACE FUNCTION qa_b2bfin.restore_all() RETURNS jsonb LANGUAGE plpgsql SET search_path TO '' AS $f$
@@ -64,6 +95,7 @@ BEGIN
   IF (SELECT md5(prosrc) FROM pg_proc WHERE oid = s.fn) <> s.src_md5 OR pg_get_functiondef(s.fn) <> s.def THEN RAISE EXCEPTION 'QA_RESTORE_DRIFT %', s.fn; END IF;
   out := out || jsonb_build_object('fn', s.fn::text, 'md5', s.src_md5);
  END LOOP;
+ IF EXISTS (SELECT 1 FROM qa_b2bfin.stmt_permit) THEN RAISE EXCEPTION 'QA_PERMIT_LEFT'; END IF;
  DELETE FROM qa_b2bfin.saved_fn; DELETE FROM qa_b2bfin.ticket;
  RETURN out;
 END $f$;
@@ -106,12 +138,13 @@ INSERT INTO qa_b2bfin.ticket VALUES (txid_current(), 'seed');
 --  bloqueio homolog de títulos; guarda de origem interna (auth_required/emitente validado — não se inventa ator nem atestado
 --  fiscal: o pedido fica com internal_origin_snapshot NULL, marcado QA-FIN); exigência de itens na aprovação (pedido fictício
 --  sem itens/produto); cerca C2P1 de configurações financeiras (limite fictício sem ticket de writer).
-SELECT qa_b2bfin.relax('platform_private.homolog_validation_block_receivable_insert()'::regprocedure);
+SELECT qa_b2bfin.relax('platform_private.homolog_validation_block_receivable_insert()'::regprocedure);  -- gatilho FOR EACH STATEMENT no HML
+CREATE TRIGGER zzz_qa_fin_row_fence BEFORE INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION qa_b2bfin.row_fence();
 SELECT qa_b2bfin.relax('platform_private.b2b_internal_order_snapshot_guard()'::regprocedure);
 SELECT qa_b2bfin.relax('public.tg_partner_orders_require_items()'::regprocedure);
 SELECT qa_b2bfin.relax('platform_private.c2p1_settings_fence()'::regprocedure);
 DO $$
-DECLARE pmap jsonb := '{"A":["cdb78993-89e4-48db-956e-f40b014a8146","525fea87-e27e-43f7-af7b-a30064188332"],"B":["9d53f280-f828-4af8-a08c-3574263dc466","525fea87-e27e-43f7-af7b-a30064188332"],"C":["6100c3ac-ff5b-4596-a0e3-92665a5dcaab","85ba8b71-8514-4ec9-90d3-bfc7ab3ed214"]}'; k text; pid uuid; org uuid; cli uuid; cat uuid; oid_ uuid; rid uuid; sid uuid; hid uuid; hrid uuid; n int; orgs uuid[] := '{525fea87-e27e-43f7-af7b-a30064188332,85ba8b71-8514-4ec9-90d3-bfc7ab3ed214}';
+DECLARE pmap jsonb := '{"A":["cdb78993-89e4-48db-956e-f40b014a8146","525fea87-e27e-43f7-af7b-a30064188332"],"B":["9d53f280-f828-4af8-a08c-3574263dc466","525fea87-e27e-43f7-af7b-a30064188332"],"C":["6100c3ac-ff5b-4596-a0e3-92665a5dcaab","85ba8b71-8514-4ec9-90d3-bfc7ab3ed214"]}'; k text; pid uuid; org uuid; cli uuid; cat uuid; oid_ uuid; rid uuid; sid uuid; hid uuid; hrid uuid; actor uuid; n int; orgs uuid[] := '{525fea87-e27e-43f7-af7b-a30064188332,85ba8b71-8514-4ec9-90d3-bfc7ab3ed214}';
 BEGIN
  SELECT id INTO cat FROM public.financial_categories WHERE active AND upper(type) = 'RECEITA' ORDER BY created_at, id LIMIT 1;
  IF cat IS NULL THEN RAISE EXCEPTION 'QA_SEED_BLOCKED: nenhuma categoria RECEITA ativa (não criada pelo seed)'; END IF;
@@ -121,14 +154,18 @@ BEGIN
   INSERT INTO qa_b2bfin.manifest VALUES ('partner', k, 'public.partner_accounts', pid);
   INSERT INTO qa_b2bfin.manifest SELECT 'partner_user', k, 'public.partner_users', id FROM public.partner_users WHERE partner_id = pid;
   IF EXISTS (SELECT 1 FROM public.accounts_receivable WHERE partner_id = pid) OR EXISTS (SELECT 1 FROM public.partner_orders WHERE partner_id = pid) THEN RAISE EXCEPTION 'QA_SEED_REFUSED: parceiro % já tem pedidos/títulos', k; END IF;
+  -- created_by (NOT NULL, FK auth.users): usuário QA manifestado do mesmo tenant — Gestor A (tenant A) / FIN C (tenant B). Fictício.
+  actor := CASE WHEN org = '525fea87-e27e-43f7-af7b-a30064188332' THEN '1d0ea582-1d46-4152-8fbe-f425c74942c1'::uuid ELSE 'c3ed723f-1017-478e-99b2-25b48b3ab77e'::uuid END;
   oid_ := gen_random_uuid(); rid := gen_random_uuid();
   INSERT INTO qa_b2bfin.manifest VALUES ('order', k, 'public.partner_orders', oid_), ('receivable', k, 'public.accounts_receivable', rid);
   -- Status aprovado já na criação (vínculo financeiro exige pedido aprovado); sem itens, sem produção, sem NF.
   INSERT INTO public.partner_orders (id, numero, partner_id, cliente_id, status, subtotal, desconto_total, total, ready_for_production, observacoes)
    VALUES (oid_, 'QA-FIN-' || k || '-001', pid, cli, 'aprovado', 1000.00, 0, 1000.00, false, 'QA-FIN fixture sintética');
   IF (SELECT status::text FROM public.partner_orders WHERE id = oid_) <> 'aprovado' THEN RAISE EXCEPTION 'QA_SEED_INCOMPLETE: pedido % não ficou aprovado (guarda de crédito real)', k; END IF;
-  INSERT INTO public.accounts_receivable (id, origin_type, origin_id, description, category_id, total_amount, issue_date, first_due_date, installment_count, partner_id, organization_id, notes, fiscal_invoice_required)
-   VALUES (rid, 'B2B_ORDER', oid_, 'QA-FIN-' || k || ' título sentinela', cat, 1000.00, current_date, current_date + 30, 2, pid, org, 'QA-FIN fixture sintética sem NF/cobrança', false);
+  PERFORM qa_b2bfin.permit_insert_receivable(rid, pid, org);
+  INSERT INTO public.accounts_receivable (id, origin_type, origin_id, description, category_id, total_amount, issue_date, first_due_date, installment_count, partner_id, organization_id, notes, fiscal_invoice_required, created_by)
+   VALUES (rid, 'B2B_ORDER', oid_, 'QA-FIN-' || k || ' título sentinela', cat, 1000.00, current_date, current_date + 30, 2, pid, org, 'QA-FIN fixture sintética sem NF/cobrança', false, actor);
+  PERFORM qa_b2bfin.permit_close();
   SELECT count(*) INTO n FROM public.accounts_receivable_installments WHERE receivable_id = rid;
   IF n = 0 THEN
    INSERT INTO public.accounts_receivable_installments (receivable_id, installment_number, due_date, original_amount, received_amount, discount_amount, interest_amount, penalty_amount, net_amount, organization_id)
@@ -144,8 +181,10 @@ BEGIN
    INSERT INTO qa_b2bfin.manifest VALUES ('order', 'A_HIST', 'public.partner_orders', hid), ('receivable_closed', 'A_HIST', 'public.accounts_receivable', hrid);
    INSERT INTO public.partner_orders (id, numero, partner_id, cliente_id, status, subtotal, desconto_total, total, ready_for_production, observacoes)
     VALUES (hid, 'QA-FIN-A-HIST', pid, cli, 'aprovado', 400.00, 0, 400.00, false, 'QA-FIN fixture sintética (histórico encerrado)');
-   INSERT INTO public.accounts_receivable (id, origin_type, origin_id, description, category_id, total_amount, issue_date, first_due_date, installment_count, partner_id, organization_id, notes, fiscal_invoice_required)
-    VALUES (hrid, 'B2B_ORDER', hid, 'QA-FIN-A título encerrado (histórico)', cat, 400.00, current_date - 90, current_date - 60, 1, pid, org, 'QA-FIN fixture sintética encerrada sem pagamento real', false);
+   PERFORM qa_b2bfin.permit_insert_receivable(hrid, pid, org);
+   INSERT INTO public.accounts_receivable (id, origin_type, origin_id, description, category_id, total_amount, issue_date, first_due_date, installment_count, partner_id, organization_id, notes, fiscal_invoice_required, created_by)
+    VALUES (hrid, 'B2B_ORDER', hid, 'QA-FIN-A título encerrado (histórico)', cat, 400.00, current_date - 90, current_date - 60, 1, pid, org, 'QA-FIN fixture sintética encerrada sem pagamento real', false, actor);
+   PERFORM qa_b2bfin.permit_close();
    IF (SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id = hrid) <> 1 THEN RAISE EXCEPTION 'QA_SEED_INCOMPLETE: histórico sem parcela'; END IF;
    INSERT INTO qa_b2bfin.manifest SELECT 'installment_closed', 'A_HIST', 'public.accounts_receivable_installments', id FROM public.accounts_receivable_installments WHERE receivable_id = hrid;
    UPDATE public.accounts_receivable_installments SET status = 'PAID', received_amount = original_amount WHERE receivable_id = hrid;
@@ -161,6 +200,7 @@ BEGIN
  END LOOP;
 END $$;
 DO $$ BEGIN IF (SELECT count(*) FROM qa_b2bfin.manifest WHERE kind='receivable') <> 3 OR (SELECT count(*) FROM qa_b2bfin.manifest WHERE kind='installment') < 3 THEN RAISE EXCEPTION 'QA_SEED_INCOMPLETE'; END IF; END $$;
+DROP TRIGGER zzz_qa_fin_row_fence ON public.accounts_receivable;
 DO $$ DECLARE r jsonb := qa_b2bfin.restore_all(); BEGIN IF jsonb_array_length(r) <> 4 THEN RAISE EXCEPTION 'QA_RESTORE_COUNT %', r; END IF; END $$;
 DO $$ DECLARE pins jsonb := '{"platform_private.b2b_internal_child_snapshot_guard()": "8b1e5f5c4daff773d9e381b935ad4850", "platform_private.b2b_internal_order_snapshot_guard()": "2f4e05cde1b715e627f75564b9852105", "platform_private.c2_accounting_pending_guard()": "236da166229dcab49a90a0cc41365814", "platform_private.c2_external_final_state_guard()": "c8acf08966b02dbb3bad0e64e9892bc2", "platform_private.c2p1_settings_fence()": "20f57a91f488e32a5b5aca0b6bc6a926", "platform_private.delivery_no_downstream_20261030()": "933f56e984a48d345bfbb6744527bb53", "platform_private.delivery_order_transition_guard_20261030()": "937ebddc16dc20f5d437ded927fba842", "platform_private.homolog_validation_block_receivable_insert()": "4b82354e6727da801a348607c8a5c5c4", "public._saas_trg_require_feature()": "acf6aa9d659f17a1082fb1147f9e8bdf", "public.audit_partner_order_payment_terms()": "ddd4e5725b6d069a357a7a3412dfac26", "public.d51_5_validate_financial_tenant_links()": "b161d97a97a94cdfe3d93df4689eb5b9", "public.fn_b2b_guard_credit_approval_fields()": "fd1ebc409ea4f31e3c3660c1abad5740", "public.fn_financial_audit()": "8ed2aa015bfdc43f32cb4009d9f7b9ad", "public.fn_generate_receivable_installments()": "aeb38c876ac3e1e5a7564844cecaca66", "public.fn_h6_guard_title_snapshot()": "bc877eab69e8a13c2147f6091134b54e", "public.fn_h6c_set_canonical_payment_terms()": "95daffec6d0f951cf92b3ffb9d0eccc2", "public.fn_h6d_block_hard_delete()": "353aa9a344ca7a4499514b02f6accbbc", "public.guard_tenant_organization_id()": "8f52469b9ba3ea8de23e57cbb46234fc", "public.partner_orders_audit_trigger()": "a40da5e75a575e558dbb638f75c37114", "public.tg_audit_partner_order_commercial()": "f9c5329c0b55c62a80d2a05c4457f100", "public.tg_auto_b2b_receivable()": "f9103f25e71af6d01fcdcd863069e2d5", "public.tg_b2b_block_receivable_before_approval()": "fbb80bceaa6c5bb3ffcc307188ec226a", "public.tg_b2b_enforce_plan_selectable()": "1f501989555b7c4803dd8a51a310a91d", "public.tg_block_partner_order_delete()": "adea2d875f45313127a8823ea11232a6", "public.tg_block_partner_order_edit_after_op()": "7f857f54a9cfcf39c5c9bb26a4ad9d0f", "public.tg_block_pofl_delete()": "2868ad7deee40259eb448a7b40f874ba", "public.tg_governance_audit()": "0eed19be81a10a21adc22258c8daef8e", "public.tg_notify_payment_terms_pending()": "9f7b6a5375680f2f27c3863cd1d6438e", "public.tg_partner_orders_credit_guard()": "8839601441fba1f1be9a24f8e1c90fc0", "public.tg_partner_orders_require_items()": "7a4125d9a007dfcfb02e801783dc5124", "public.tg_pfs_updated_at()": "e3addd320004eb7a8494e7a0c2614c97", "public.tg_pofl_updated_at()": "e3addd320004eb7a8494e7a0c2614c97", "public.tg_recalc_risk_on_ar_change()": "92ee484ac4c401d615ade529a65fecf3", "public.tg_refresh_engagement()": "e70bcec2bc81d38468d68dd70b941f8b", "public.tg_sync_b2b_financial_status()": "a7b7a13d9fd1082a8cff91c6dd5ae6fa", "public.trg_partner_order_timeline()": "aefd3dbbdc0d7081cce4c50cfa494bad", "public.trg_partner_order_to_planning_fn()": "21ed58dacbe9ab84c77a90956ca97c39", "public.update_updated_at_column()": "a27bb088c067b7b77a9f0707b0048e40"}'; k text; BEGIN FOR k IN SELECT jsonb_object_keys(pins) LOOP
  IF (SELECT md5(prosrc) FROM pg_proc WHERE oid = to_regprocedure(k)) IS DISTINCT FROM pins->>k THEN RAISE EXCEPTION 'QA_RESTORE_DRIFT %', k; END IF; END LOOP; END $$;

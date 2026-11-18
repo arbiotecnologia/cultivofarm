@@ -53,11 +53,19 @@
    "status": "PASS"
   },
   {
+   "name": "STATEMENT: licença armada só aceita a linha pré-manifestada exata (id, parceiro, tenant, QA-FIN); outra id/parceiro/descrição/multilinha negadas",
+   "status": "PASS"
+  },
+  {
+   "name": "outras sessões (postgres e qa_other) seguem bloqueadas enquanto a exceção está aberta; corpo original intacto após rollback",
+   "status": "PASS"
+  },
+  {
    "name": "seed não duplica; manifesto fechado",
    "status": "PASS"
   },
   {
-   "name": "dry-run lista 99 linhas (tabela/ID/hash/vínculo), sem recusas e sem alterar nada",
+   "name": "dry-run lista 93 linhas (tabela/ID/hash/vínculo), sem recusas e sem alterar nada",
    "status": "PASS"
   },
   {

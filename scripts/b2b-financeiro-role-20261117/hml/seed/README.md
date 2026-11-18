@@ -24,6 +24,15 @@ Sem NF, sem cobrança, sem envios. Nenhum gatilho é desativado.
 - `test_seed_pg.py` (21/21) executa os 38 corpos reais + `fn_b2b_credit_exposure` legado real; ligações de gatilho e helpers
   não-gatilho (tickets/permissões = false) são aproximações — aceite real só no HML.
 
+## Correção pós-falha 818 (C12, 2026-11-18)
+- Causa: no HML o bloqueio de títulos é `FOR EACH STATEMENT` (`a00_homolog_validation_no_receivable`); o relax só tratava ROW.
+- Agora: o corpo relaxado só libera STATEMENT com postgres + ticket da txid + licença `stmt_permit` (tabela/op/id/parceiro/tenant) ainda
+  não usada; uma cerca temporária POR LINHA (`zzz_qa_fin_row_fence`, criada e removida na mesma transação) aceita UMA linha igual à
+  licença (id pré-manifestado, descrição QA-FIN-, partner/org exatos) e a consome. Licença não usada ou restante aborta.
+- `created_by` (NOT NULL, FK auth.users) = usuário QA do mesmo tenant (Gestor A / FIN C), fictício.
+- Teste (24/24) usa as ligações reais C12 literais e colunas/defaults/checks/FKs capturados; prova que outra id, parceiro, descrição,
+  multilinha e outras sessões (postgres/qa_other) seguem negadas.
+
 ## Exceção temporária
 - Seed: `homolog_validation_block_receivable_insert`, `b2b_internal_order_snapshot_guard`, `tg_partner_orders_require_items` e
   `c2p1_settings_fence`, somente para linhas manifestadas desta txid; cleanup: só gatilhos de DELETE das tabelas que
