@@ -1,0 +1,10 @@
+-- Local catalog snapshot only: no Auth/business rows. Root binds environment outside SQL.
+SELECT jsonb_build_object(
+ 'relations',(SELECT jsonb_agg(jsonb_build_object('name',c.oid::regclass::text,'oid',c.oid,'owner',pg_get_userbyid(c.relowner),'rls',c.relrowsecurity,'force_rls',c.relforcerowsecurity,'replica_identity',c.relreplident,'acl',coalesce(c.relacl::text,''),
+ 'columns',(SELECT jsonb_agg(jsonb_build_object('number',a.attnum,'name',a.attname,'type',format_type(a.atttypid,a.atttypmod),'acl',coalesce(a.attacl::text,''),'not_null',a.attnotnull) ORDER BY a.attnum) FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped),
+ 'policies',(SELECT jsonb_agg(jsonb_build_object('name',p.polname,'command',p.polcmd,'permissive',p.polpermissive,'roles',p.polroles,'using',pg_get_expr(p.polqual,p.polrelid),'check',pg_get_expr(p.polwithcheck,p.polrelid)) ORDER BY p.polname) FROM pg_policy p WHERE p.polrelid=c.oid),
+ 'triggers',(SELECT jsonb_agg(jsonb_build_object('name',tgname,'enabled',tgenabled,'definition',pg_get_triggerdef(oid),'body',md5(pg_get_functiondef(tgfoid))) ORDER BY tgname) FROM pg_trigger WHERE tgrelid=c.oid),
+ 'indexes',(SELECT jsonb_agg(pg_get_indexdef(indexrelid) ORDER BY indexrelid) FROM pg_index WHERE indrelid=c.oid)) ORDER BY c.oid) FROM pg_class c WHERE c.oid IN ('public.produtos'::regclass,'public.catalog_technical_sources'::regclass)),
+ 'functions',(SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'body',md5(pg_get_functiondef(p.oid)),'owner',pg_get_userbyid(p.proowner),'config',p.proconfig,'volatile',p.provolatile,'definer',p.prosecdef,'acl',coalesce(p.proacl::text,'')) ORDER BY p.oid) FROM pg_proc p WHERE p.oid='platform_private.recorte_a_actor_fresh(text)'::regprocedure OR (p.pronamespace='public'::regnamespace AND p.proname='product_source_scope_read_v1')),
+ 'publications',(SELECT jsonb_agg(to_jsonb(x) ORDER BY pubname,schemaname,tablename) FROM pg_publication_tables x WHERE schemaname='public' AND tablename IN ('produtos','catalog_technical_sources'))
+);

@@ -1,0 +1,26 @@
+-- Inactive fragment; assemble.py adds mandatory exact PRE/POST checks and transaction.
+CREATE FUNCTION public.product_source_scope_read_v1(p_product uuid) RETURNS boolean
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+SET search_path = pg_catalog, public, platform_private
+AS $body$
+DECLARE org uuid; owner_org uuid;
+BEGIN
+ IF auth.uid() IS NULL OR p_product IS NULL THEN RETURN false; END IF;
+ org := platform_private.recorte_a_actor_fresh('read_catalog');
+ SELECT owner_organization_id INTO owner_org FROM public.produtos WHERE id=p_product;
+ IF org IS NULL OR owner_org IS DISTINCT FROM org THEN RETURN false; END IF;
+ RETURN platform_private.recorte_a_actor_fresh('read_catalog') IS NOT DISTINCT FROM org;
+EXCEPTION WHEN SQLSTATE '42501' THEN RETURN false;
+END;
+$body$;
+REVOKE ALL ON FUNCTION public.product_source_scope_read_v1(uuid) FROM PUBLIC, anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.product_source_scope_read_v1(uuid) TO authenticated, anon;
+CREATE POLICY product_sources_scope_select_v1 ON public.catalog_technical_sources
+AS RESTRICTIVE FOR SELECT TO PUBLIC
+USING (CASE WHEN entidade_tipo = 'produto' THEN public.product_source_scope_read_v1(entidade_id) ELSE true END);
+CREATE POLICY product_sources_direct_insert_closed_v1 ON public.catalog_technical_sources
+AS RESTRICTIVE FOR INSERT TO PUBLIC WITH CHECK (entidade_tipo IS DISTINCT FROM 'produto');
+CREATE POLICY product_sources_direct_update_closed_v1 ON public.catalog_technical_sources
+AS RESTRICTIVE FOR UPDATE TO PUBLIC USING (entidade_tipo IS DISTINCT FROM 'produto') WITH CHECK (entidade_tipo IS DISTINCT FROM 'produto');
+CREATE POLICY product_sources_direct_delete_closed_v1 ON public.catalog_technical_sources
+AS RESTRICTIVE FOR DELETE TO PUBLIC USING (entidade_tipo IS DISTINCT FROM 'produto');

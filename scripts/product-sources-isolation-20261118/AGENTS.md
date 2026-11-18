@@ -1,0 +1,3 @@
+- Prepare locally only; never install hosted, publish, collect private captures or change previous evidence pins — preserves independent root review.
+- Product source restrictions are additive restrictive policies; preserve every legacy policy, ACL and non-product result, and keep direct product DML closed — prevents role-only leakage and writer bypass.
+- Assembly requires root-local exact PRE/POST catalog snapshots and fresh authority body pins; synthetic disposable PostgreSQL identities are not JWT or Realtime evidence — prevents silent repinning and false certification.

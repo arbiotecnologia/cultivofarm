@@ -1,0 +1,12 @@
+$ vitest run src/test/catalogo/productSourcesIsolation.test.ts
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/catalogo/productSourcesIsolation.test.ts (2 tests) 1317ms
+   ✓ fontes produto negam tenant B, anon e DML direto preservando outros tipos e fresh pós-espera  1260ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  05:23:01
+   Duration  1.85s (transform 30ms, setup 39ms, collect 18ms, tests 1.32s, environment 214ms, prepare 57ms)
+

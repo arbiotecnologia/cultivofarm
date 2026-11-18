@@ -1,3 +1,8 @@
+## 18/11 05:16 — Isolamento de fontes de produto
+- [x] Delta isolado restrictive por produto/owner/read_catalog; DML direto fechado e outras entidades/pins anteriores preservados.
+- [x] 39 checks PostgreSQL descartável, assembly positivo/PRE/POST/rerun e quatro gates negativos; dois Vitest permanentes, roteiro Auth/realtime sem hosted/capturas externas.
+- [ ] Root capturar/assemblar/revisar e homologar Auth + realtime se publicado; instalação não autorizada ao agente.
+
 ## 18/11 05:01 — Fertilizantes/Adubos
 - [x] Refinar ficha integrada, notas/garantias documentais em contratos existentes e identidade IA comercial sem inferências; preservar fila anterior.
 - [x] Testar regressões/fontes/erros/autorização/unidades e desktop/mobile QA; relatório em fertilizer-review sem hosted/publicação.
