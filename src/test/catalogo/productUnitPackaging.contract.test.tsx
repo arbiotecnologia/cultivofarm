@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { PRODUCT_UNITS, isProductUnit, parseUnitCapability, parseAdminUnit } from "@/lib/catalogo/productUnitContract";
+import { PRODUCT_UNITS, isProductUnit, parseUnitCapability, parseAdminUnit, supportsVolumeApplication, supportsVolumeComposition } from "@/lib/catalogo/productUnitContract";
 import { buildTenantProductPayload } from "@/lib/catalogo/tenantProducts";
 import { PackagingAttempt, parsePackagingState, weightKg, cents, type Command } from "@/lib/catalogo/packagingAdminContract";
 import { VolumesChips } from "@/components/protocolos/VolumesChips";
@@ -9,6 +9,16 @@ const PID = "11111111-1111-4111-8111-111111111111";
 const PKG = "22222222-2222-4222-8222-222222222222";
 
 describe("contrato de unidade kg/g/ml/l", () => {
+  it.each(["kg","g",null,undefined,""])("%s não autoriza aplicação volumétrica",unit=>{
+    expect(supportsVolumeApplication(unit)).toBe(false);
+    expect(supportsVolumeComposition(unit,"biologico")).toBe(false);
+  });
+  it.each(["l","ml"])("%s preserva cálculo líquido e não permite composição biológica em químico",unit=>{
+    expect(supportsVolumeApplication(unit)).toBe(true);
+    expect(supportsVolumeComposition(unit,"biologico")).toBe(true);
+    expect(supportsVolumeComposition(unit,"quimico")).toBe(false);
+    expect(supportsVolumeComposition(unit,"fertilizante_adubo")).toBe(false);
+  });
   it("aceita somente as quatro unidades", () => {
     expect([...PRODUCT_UNITS]).toEqual(["kg", "g", "ml", "l"]);
     for (const u of ["kg", "g", "ml", "l"]) expect(isProductUnit(u)).toBe(true);

@@ -1,3 +1,7 @@
+## 18/11 04:51 — Massa versus volume no cadastro
+- [x] Bloquear cálculos volumétricos kg/g e unidade desconhecida; preservar valores/drafts sem conversão e químicos sem composição obrigatória.
+- [x] Testar kg/g versus L/mL e troca de unidade; dose textual por cultura/apresentações existentes e limites documentados sem hosted/publicação; cadastro Mancozebe confirmado fica com root.
+
 ## 18/11 04:48 — Precisão temporal do histórico
 - [x] Comparar revisões sem truncar microssegundos e respeitar offsets; rejeitar futuro e testar histórico igual/anterior (77 Vitest focais).
 - [x] Confirmar proveniência após renomeação na mesma revisão já corrigida em dc7f51ce9 (118 PG/6 assembly); evidências focais sem instalar/publicar.

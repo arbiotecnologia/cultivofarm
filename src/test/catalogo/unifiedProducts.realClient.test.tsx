@@ -221,7 +221,7 @@ it("composição incerta conserva ambas as chaves e CAS para reconciliação exp
 });
 it("parcial montado mantém diálogo e input congelados; retry exato não cria outra raiz", async () => {
   client(); let attempts = 0; state.unitCap = "positive";
-  state.rows = [{ id: "p1", nome: "Produto existente", tipo: "solo", unidade_conteudo: "kg", ativo: true, b2b_enabled: false, e_insumo: false, updated_at: stamp, owner_organization_id: "org-A" }];
+  state.rows = [{ id: "p1", nome: "Produto existente", tipo: "solo", unidade_conteudo: "ml", ativo: true, b2b_enabled: false, e_insumo: false, updated_at: stamp, owner_organization_id: "org-A" }];
   state.fetch.mockImplementation(async (url, init) => {
     const name = String(url).split("/rpc/")[1];
     if (name === "tenant_product_list") return json(state.rows);
@@ -237,7 +237,7 @@ it("parcial montado mantém diálogo e input congelados; retry exato não cria o
   render(<ProdutosTab />, { wrapper });
   await screen.findByText("Produto existente");
   fireEvent.click(screen.getByRole("button", { name: "Editar" }));
-  await unitLoaded("kg");
+  await unitLoaded("mL");
   fireEvent.mouseDown(screen.getByRole("tab", { name: "Composição" }), { button: 0, ctrlKey: false });
   fireEvent.click(await screen.findByRole("button", { name: "Remover componente" }));
   fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
@@ -623,4 +623,70 @@ it("renomeação permite editar outro campo sem reenviar identidade antiga nem a
  const payload=rpcCalls("tenant_catalog_root_save")[0].p_payload;
  expect(payload).toEqual({resumo_curto:"Texto original",explicacao_tecnica:"Outro campo"});
  expect(evidence.identity.name).toBe("Nome anterior");expect(evidence.candidate_key).toBe("A");
+});
+it.each(["kg","g"] as const)("químico %s preserva legado sem cálculo volumétrico nem composição obrigatória",async unit=>{
+ state.unitCap="positive";client();
+ const legacy={dose_ml_ha:125,valor_dose_brl:null,valor_litro_brl:300,valor_ha_brl:37.5};
+ state.rows=[{id:"p1",nome:"Químico QA",tipo:"fungicida",familia_catalogo:"quimico",unidade_conteudo:unit,ativo:true,b2b_enabled:false,e_insumo:false,updated_at:stamp,owner_organization_id:"org-A",...legacy}];
+ state.fetch.mockImplementation(async(url,init)=>{
+  const name=String(url).split('/rpc/')[1];
+  if(name==='tenant_product_list')return json(state.rows);
+  if(name==='tenant_product_save'){Object.assign(state.rows[0],JSON.parse(init.body).p_payload);return json(ack);}
+  if(name)throw new Error(`Unexpected RPC ${name}`);return json([]);
+ });
+ render(<ProdutosTab/>,{wrapper});await screen.findByText('Químico QA');
+ fireEvent.click(screen.getByRole('button',{name:'Editar'}));await unitLoaded(unit);
+ fireEvent.mouseDown(screen.getByRole('tab',{name:'Aplicação & Custo'}),{button:0,ctrlKey:false});
+ expect(screen.queryByLabelText('Dose de aplicação (mL/ha)')).toBeNull();
+ expect(screen.queryByText('Valor por litro')).toBeNull();
+ expect(screen.queryByText(/1 litro = 10 doses/)).toBeNull();
+ // Show original values without deriving a missing dose price during hydration.
+ fireEvent.click(screen.getByText('Valores volumétricos anteriores preservados'));
+ expect(screen.getByText(/Valor de 100 mL: —/)).toBeTruthy();
+ fireEvent.mouseDown(screen.getByRole('tab',{name:'Composição'}),{button:0,ctrlKey:false});
+ expect(screen.queryByRole('button',{name:/\+ Microrganismo/})).toBeNull();
+ fireEvent.click(screen.getByRole('button',{name:'Salvar Produto'}));
+ await waitFor(()=>expect(rpcCalls('tenant_product_save')).toHaveLength(1));
+ const payload=rpcCalls('tenant_product_save')[0].p_payload;
+ for(const field of Object.keys(legacy))expect(payload).not.toHaveProperty(field);
+ expect(state.rows[0]).toMatchObject(legacy);
+ expect(payload).toMatchObject({familia_catalogo:'quimico',unidade_conteudo:unit});
+ expect(rpcCalls('tenant_catalog_formulacoes_replace')).toHaveLength(0);
+});
+it.each(['l','ml'] as const)('%s mantém recálculo líquido e retém rascunho na troca para massa',async unit=>{
+ state.unitCap='positive';client();render(<ProdutosTab/>,{wrapper});await screen.findByText('Nenhum produto encontrado');
+ fireEvent.click(screen.getByRole('button',{name:'Novo produto'}));
+ fireEvent.change(screen.getByLabelText('Nome Comercial *'),{target:{value:'Produto líquido QA'}});
+ await chooseUnit(unit);
+ fireEvent.mouseDown(screen.getByRole('tab',{name:'Aplicação & Custo'}),{button:0,ctrlKey:false});
+ fireEvent.change(screen.getByLabelText('Dose de aplicação (mL/ha)'),{target:{value:'250'}});
+ // Price inputs are ordered inside the liquid section: dose price, litre price, cost/ha.
+ const inputs=screen.getByRole('tabpanel',{name:'Aplicação & Custo'}).querySelectorAll('input');
+ fireEvent.change(inputs[2],{target:{value:'1000'}});
+ fireEvent.mouseDown(screen.getByRole('tab',{name:'Identificação'}),{button:0,ctrlKey:false});
+ await chooseUnit('kg');
+ fireEvent.click(screen.getByRole('button',{name:'Salvar Produto'}));
+ expect(rpcCalls('tenant_product_save')).toHaveLength(0);
+ await chooseUnit('g');
+ expect(rpcCalls('tenant_product_save')).toHaveLength(0);
+ await chooseUnit(unit);
+ fireEvent.mouseDown(screen.getByRole('tab',{name:'Aplicação & Custo'}),{button:0,ctrlKey:false});
+ expect(screen.getByLabelText('Dose de aplicação (mL/ha)')).toHaveValue(250);
+ fireEvent.click(screen.getByRole('button',{name:'Salvar Produto'}));
+ await waitFor(()=>expect(rpcCalls('tenant_product_save')).toHaveLength(1));
+ expect(rpcCalls('tenant_product_save')[0].p_payload).toMatchObject({dose_ml_ha:250,valor_dose_brl:10,valor_litro_brl:100,valor_ha_brl:25,unidade_conteudo:unit});
+});
+it('composição volumétrica suja sobrevive à troca para kg e não é despachada como massa',async()=>{
+ state.unitCap='positive';client();render(<ProdutosTab/>,{wrapper});await screen.findByText('Nenhum produto encontrado');
+ fireEvent.click(screen.getByRole('button',{name:'Novo produto'}));
+ fireEvent.change(screen.getByLabelText('Nome Comercial *'),{target:{value:'Rascunho QA'}});
+ await chooseUnit('ml');
+ fireEvent.mouseDown(screen.getByRole('tab',{name:'Composição'}),{button:0,ctrlKey:false});
+ fireEvent.click(screen.getByRole('button',{name:'+ Microrganismo'}));
+ expect(screen.getByRole('button',{name:'Remover componente'})).toBeTruthy();
+ fireEvent.mouseDown(screen.getByRole('tab',{name:'Identificação'}),{button:0,ctrlKey:false});await chooseUnit('kg');
+ fireEvent.click(screen.getByRole('button',{name:'Salvar Produto'}));
+ expect(rpcCalls('tenant_product_save')).toHaveLength(0);expect(rpcCalls('tenant_catalog_formulacoes_replace')).toHaveLength(0);
+ await chooseUnit('ml');fireEvent.mouseDown(screen.getByRole('tab',{name:'Composição'}),{button:0,ctrlKey:false});
+ expect(screen.getByRole('button',{name:'Remover componente'})).toBeTruthy();
 });

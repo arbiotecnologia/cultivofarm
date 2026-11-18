@@ -15,7 +15,7 @@ import { FEATURE_FLAGS } from "@/config/featureFlags";
 import { Link } from "react-router-dom";
 import { useTenantProducts, useSaveTenantProduct, useArchiveTenantProduct } from "@/hooks/useTenantProducts";
 import { useProductUnitCapability, useProductUnitAdmin } from "@/hooks/useProductUnitAdmin";
-import { isProductUnit, type ProductUnit } from "@/lib/catalogo/productUnitContract";
+import { isProductUnit, supportsVolumeApplication, supportsVolumeComposition, type ProductUnit } from "@/lib/catalogo/productUnitContract";
 import { useTenantProductDetails } from "@/hooks/useTenantProductDetails";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,6 @@ import { DeleteProtocoloButton } from "./DeleteProtocoloButton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { brl } from "@/lib/financial/format";
-import { calcularValorLitro, calcularValorDose, calcularCustoHa, calcularDoseAPartirCustoHa } from "@/lib/catalogo/pricing";
 import { formatValorHaListagem } from "@/lib/catalogo/valorHaListagem";
 
 import { recalcPricing, numOrNullStr, fmtNumStr, type PricingField } from "@/lib/protocolos/pricingRecalc";
@@ -289,15 +288,18 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
 
 
   const [unit, setUnit] = useState<ProductUnit | "">("");
+  const volumeApplication = supportsVolumeApplication(unit);
+  const volumeComposition = supportsVolumeComposition(unit, form.familia_catalogo);
   const unitTouched = useRef(false);
+  const applicationTouched = useRef(false);
   // Geração de hidratação: cada abertura/edição/troca de escopo reaplica a unidade canônica já lida (mesmo em cache)
   // ao produto atual, sem sobrescrever escolha do usuário.
   const [unitHydration, setUnitHydration] = useState(0);
-  const resetUnit = () => { setUnit(""); unitTouched.current = false; setUnitHydration(g => g + 1); };
+  const resetUnit = () => { setUnit(""); unitTouched.current = false; applicationTouched.current = false; setUnitHydration(g => g + 1); };
   const unitCapability = useProductUnitCapability(open && editor.canEdit);
   const unitRead = useProductUnitAdmin(form.id, open && editor.canEdit && unitCapability.data === true);
   useEffect(() => {
-    if (open && form.id && unitRead.isSuccess && !unitTouched.current) setUnit(unitRead.data ?? "");
+    if (open && form.id && unitRead.isSuccess && !unitTouched.current && !retainedSave.current) setUnit(unitRead.data ?? "");
   }, [unitRead.data, unitRead.isSuccess, unitHydration, form.id, open]);
 
   const fetch = async () => { await Promise.all([productList.refetch(), details.refetch()]); };
@@ -336,6 +338,9 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
     if (!retainedSave.current && (unitCapability.data !== true || (form.id && !unitRead.isSuccess) || !isProductUnit(unit))) {
       toast.error("Unidade do produto não confirmada. Escolha kg, g, mL ou L após carregar o cadastro."); return;
     }
+    if (!retainedSave.current && !volumeApplication && applicationTouched.current) {
+      toast.error("Rascunho de dose e custo volumétricos preservado. Volte a mL ou L para revisar antes de salvar; não há conversão para kg/g."); return;
+    }
     const current = editor.capture();
     if (savingRef.current) return;
     savingRef.current = true;
@@ -349,7 +354,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
       ? codigoDigitado
       : (form.id ? (codigoDigitado || null) : null);
 
-    const doseMlHa = form.dose_ml_ha ? Number(form.dose_ml_ha) : (totalVolume > 0 ? totalVolume : null);
+    const doseMlHa = form.dose_ml_ha ? Number(form.dose_ml_ha) : (volumeComposition && totalVolume > 0 ? totalVolume : null);
     const payload: any = {
       nome: form.nome,
       unidade_conteudo: unit,
@@ -359,11 +364,11 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
       modo_acao: form.modo_acao || null,
       codigo: codigoFinal,
       tipo: form.tipo as any,
-      dose_ml_ha: doseMlHa,
+      ...(volumeApplication ? { dose_ml_ha: doseMlHa,
+        valor_ha_brl: form.valor_ha_brl ? Number(form.valor_ha_brl) : null,
+        valor_dose_brl: form.valor_dose_brl ? Number(form.valor_dose_brl) : null,
+        valor_litro_brl: form.valor_litro_brl ? Number(form.valor_litro_brl) : null } : {}),
       modo_aplicacao: form.modo_aplicacao || null,
-      valor_ha_brl: form.valor_ha_brl ? Number(form.valor_ha_brl) : null,
-      valor_dose_brl: form.valor_dose_brl ? Number(form.valor_dose_brl) : null,
-      valor_litro_brl: form.valor_litro_brl ? Number(form.valor_litro_brl) : null,
       funcao_completa: form.funcao_completa || null,
 
       b2b_enabled: form.b2b_enabled,
@@ -375,6 +380,8 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
 
 
     try {
+      if (!retainedSave.current && composicaoTouched.current && !volumeComposition)
+        throw new Error("Rascunho de composição volumétrica preservado. Volte à unidade e família compatíveis para revisá-lo; nenhum dado foi salvo.");
       const existing = items.find(p => p.id === form.id) as any;
       if (composicaoTouched.current && (existing?.composition_status || existing?.declarations?.length)) {
         throw new Error("Composição declarativa preservada. Sua edição não é suportada por este contrato; nenhum dado foi salvo.");
@@ -511,16 +518,11 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
     if (retainedSave.current || savingRef.current) return;
     setContentDirty(false); setProductSection("geral");
     resetUnit();
-    let dose = p.valor_dose_brl;
-    let litro = p.valor_litro_brl;
+    const dose = p.valor_dose_brl;
+    const litro = p.valor_litro_brl;
     const ha = p.valor_ha_brl;
-    const doseHa = p.dose_ml_ha;
-    if (dose == null && litro != null) dose = calcularValorDose(litro);
-    if (litro == null && dose != null) litro = calcularValorLitro(dose);
-    if (dose == null && ha != null && doseHa) {
-      dose = calcularDoseAPartirCustoHa(doseHa, ha);
-      if (dose != null && litro == null) litro = calcularValorLitro(dose);
-    }
+    // Hydration preserves raw legacy values before canonical unit is available.
+    // Never derive a litre price from a product whose unit is not yet confirmed.
     setForm({
       id: p.id,
       updated_at: p.updated_at ?? "",
@@ -563,6 +565,8 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
   const fmtNum = fmtNumStr;
   const numOrNull = numOrNullStr;
   const applyRecalc = (field: PricingField, raw: string) => {
+    if (!volumeApplication || savingRef.current || retainedSave.current) return;
+    applicationTouched.current = true;
     const current = {
       doseMlHa: numOrNull(form.dose_ml_ha),
       valorDose: numOrNull(form.valor_dose_brl),
@@ -590,7 +594,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
   const markComposicaoTouched = () => { composicaoTouched.current = true; };
 
   const addMicrorganismo = () => {
-    if (retainedSave.current || savingRef.current) return;
+    if (!volumeComposition || retainedSave.current || savingRef.current) return;
     markComposicaoTouched();
     setForm(prev => ({
       ...prev,
@@ -599,7 +603,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
   };
 
   const addInsumo = () => {
-    if (retainedSave.current || savingRef.current) return;
+    if (!volumeComposition || retainedSave.current || savingRef.current) return;
     markComposicaoTouched();
     setForm(prev => ({
       ...prev,
@@ -608,7 +612,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
   };
 
   const removeMicrorganismo = (index: number) => {
-    if (retainedSave.current || savingRef.current) return;
+    if (!volumeComposition || retainedSave.current || savingRef.current) return;
     markComposicaoTouched();
     setForm(prev => ({
       ...prev,
@@ -617,7 +621,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
   };
 
   const updateComposicao = (index: number, field: string, value: any) => {
-    if (retainedSave.current || savingRef.current) return;
+    if (!volumeComposition || retainedSave.current || savingRef.current) return;
     markComposicaoTouched();
     setForm(prev => {
       const newComp = [...prev.composicao];
@@ -628,18 +632,18 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
 
   const totalVolume = form.composicao.reduce((sum, c) => sum + (Number(c.volume_ml) || 0), 0);
   
-  const estimatedCost = form.composicao.reduce((sum, c) => {
+  const estimatedCost = volumeComposition ? form.composicao.reduce((sum, c) => {
     if (c.microrganismo_id) {
       const mic = microrganismos.find(m => m.id === c.microrganismo_id);
       if (!mic || !mic.valor_dose_brl) return sum;
       return sum + (Number(c.volume_ml) * mic.valor_dose_brl / 100);
     }
     return sum;
-  }, 0);
+  }, 0) : 0;
 
   // Sugestão de custo/dose a partir da composição
   const sugestaoCusto = estimatedCost > 0 ? estimatedCost : null;
-  const sugestaoDose = totalVolume > 0 ? totalVolume : null;
+  const sugestaoDose = volumeComposition && totalVolume > 0 ? totalVolume : null;
   const doseRefParaCusto = sugestaoDose ?? (form.dose_ml_ha ? Number(form.dose_ml_ha) : null);
   const sugestaoValorDose = (sugestaoCusto != null && doseRefParaCusto && doseRefParaCusto > 0)
     ? sugestaoCusto / (doseRefParaCusto / 100)
@@ -653,6 +657,8 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
   };
 
   const aplicarSugestaoComposicao = () => {
+    if (!volumeComposition || savingRef.current || retainedSave.current) return;
+    applicationTouched.current = true;
     setForm(f => ({
       ...f,
       dose_ml_ha: sugestao.dose || f.dose_ml_ha,
@@ -664,11 +670,11 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
   };
 
   useEffect(() => {
-    if (!composicaoTouched.current) return;
+    if (!volumeComposition || !composicaoTouched.current) return;
     if (sugestaoCusto == null) return;
     aplicarSugestaoComposicao();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [estimatedCost, totalVolume]);
+  }, [estimatedCost, totalVolume, volumeComposition]);
 
   const custoAtual = form.valor_ha_brl ? Number(form.valor_ha_brl) : null;
   const mostrarBotaoSugestao = sugestaoCusto != null && (custoAtual == null || Math.abs(custoAtual - sugestaoCusto) >= 0.01);
@@ -850,37 +856,45 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
 
 
                   <TabsContent value="aplicacao" className="space-y-4">
+                    {!volumeApplication && <div role="status" className="space-y-2 border-b pb-4">
+                      <p className="text-sm">{unit === "kg" || unit === "g" ? "Dose numérica e custo por hectare para kg/g não estão disponíveis neste cadastro. Massa não é convertida em mL ou litros." : "Confirme a unidade antes de editar dose e custo volumétricos."}</p>
+                      <p className="text-sm text-muted-foreground">Dose documental em g/ha ou kg/ha: ficha do produto → Uso agronômico → Culturas. Preço por embalagem: Apresentações do produto, após salvar a identificação.</p>
+                      {(form.dose_ml_ha || form.valor_dose_brl || form.valor_litro_brl || form.valor_ha_brl) && <details className="text-sm"><summary>Valores volumétricos anteriores preservados</summary><p className="break-words text-muted-foreground">Dose: {form.dose_ml_ha || "—"} mL/ha · Valor de 100 mL: {form.valor_dose_brl || "—"} · Valor/L: {form.valor_litro_brl || "—"} · Custo/ha: {form.valor_ha_brl || "—"}. Não são valores de massa e não serão enviados nesta edição.</p></details>}
+                      {applicationTouched.current && <p role="alert" className="text-sm text-destructive">Rascunho volumétrico pendente: volte a mL ou L para revisá-lo antes de salvar.</p>}
+                    </div>}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {volumeApplication &&
                       <div className="space-y-2">
-                        <Label>Dose de aplicação (mL/ha)</Label>
+                        <Label htmlFor="product-application-dose">Dose de aplicação (mL/ha)</Label>
                         <Input
+                          id="product-application-dose"
                           type="number"
                           value={form.dose_ml_ha}
                           onChange={(e) => onChangeDoseMlHa(e.target.value)}
-                          placeholder={totalVolume > 0 ? String(totalVolume) : "Ex: 500"}
+                          placeholder={volumeComposition && totalVolume > 0 ? String(totalVolume) : "Ex: 500"}
                         />
-                        {totalVolume > 0 && (
+                        {volumeComposition && totalVolume > 0 && (
                           <p className="text-[10px] text-muted-foreground italic flex items-center gap-2 flex-wrap">
                             <span>Sugestão pela composição: {totalVolume} mL/ha</span>
                             {mostrarBotaoSugestaoDose && (
-                              <button
+                              <Button variant="link"
                                 type="button"
                                 onClick={() => onChangeDoseMlHa(String(totalVolume))}
                                 className="text-primary underline hover:no-underline not-italic font-medium"
                               >
                                 usar {totalVolume} mL/ha
-                              </button>
+                              </Button>
                             )}
                           </p>
                         )}
-                      </div>
+                      </div>}
                       <div className="space-y-2">
                         <Label>Modo de Aplicação</Label>
                         <Input value={form.modo_aplicacao} onChange={(e) => setForm({...form, modo_aplicacao: e.target.value})} placeholder="Ex: sulco de plantio / via barra" />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-3 rounded-md border bg-muted/20">
+                    {volumeApplication && <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-3 rounded-md border bg-muted/20">
                       <div className="space-y-1">
                         <Label className="text-xs">Valor da dose 100 mL</Label>
                         <MoneyInput
@@ -923,7 +937,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
                           </Button>
                         )}
                       </div>
-                    </div>
+                    </div>}
 
                     <div className="border-t pt-4">
                       <h3 className="text-sm font-semibold mb-3">Referência Comercial</h3><p className="text-xs text-muted-foreground">Fornecedor e safra não estão disponíveis para alteração neste cadastro.</p>
@@ -958,14 +972,20 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
                           <Label htmlFor="prod_ativo">Ativo</Label>
                         </div>
                       </div>
-                      <p className="text-[11px] text-muted-foreground mt-2">
+                      {volumeApplication && <p className="text-[11px] text-muted-foreground mt-2">
                         O portal B2B exibe principalmente o <strong>Custo/ha</strong>, além de dose 100 mL e valor por litro. O desconto é definido no cadastro de cada parceiro.
-                      </p>
+                      </p>}
                     </div>
 
                   </TabsContent>
 
                   <TabsContent value="composicao" className="space-y-4 min-h-[300px] sm:min-h-[400px]">
+                    {!volumeComposition && <div role="status" className="space-y-2 text-sm">
+                      <p>{form.familia_catalogo === "quimico" || form.familia_catalogo === "fertilizante_adubo" ? "Produto químico/fertilizante não exige composição de microrganismos. Formulação e concentração devem vir de documentação confirmada." : "Composição volumétrica indisponível para massa ou unidade não confirmada."}</p>
+                      <p className="text-muted-foreground">Componentes anteriores e rascunho permanecem preservados, sem conversão de massa em volume.</p>
+                      {form.composicao.length > 0 && <details><summary>Componentes volumétricos anteriores</summary>{form.composicao.map((row,i)=><p key={i}>{row.microrganismo_id || row.component_insumo_id} · {row.volume_ml} mL (valor anterior)</p>)}</details>}
+                    </div>}
+                    {volumeComposition && <>
                     {((items.find(p => p.id === form.id) as any)?.composition_status || (items.find(p => p.id === form.id) as any)?.declarations?.length) && <p role="alert">Composição declarativa preservada; edição indisponível neste contrato. Identificação e preços podem ser alterados sem substituí-la.</p>}
                     <div className="flex justify-between items-center mb-2">
                       <Label>Composição Técnica (Fórmula)</Label>
@@ -1129,6 +1149,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
                         </div>
                       </div>
                     </div>
+                    </>}
                   </TabsContent>
                   {form.id && <TabsContent value="conteudo"><ProductTechnicalProfileDialog embedded open produto={items.find(p => p.id === form.id) ?? null} onDirtyChange={setContentDirty} onOpenChange={() => undefined} /></TabsContent>}
                   {canConsultFiscal && form.id && <TabsContent value="fiscal" className="space-y-4"><ProductFiscalGuide productId={form.id} displayName={form.nome} displayCodigo={form.codigo || null} /></TabsContent>}

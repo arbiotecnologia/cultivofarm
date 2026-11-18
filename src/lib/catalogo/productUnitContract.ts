@@ -3,6 +3,13 @@ export type ProductUnit = typeof PRODUCT_UNITS[number];
 export function isProductUnit(value: unknown): value is ProductUnit {
   return PRODUCT_UNITS.some(unit => unit === value);
 }
+/** Legacy numeric application fields are volume-only; never infer density. */
+export function supportsVolumeApplication(unit: unknown): boolean {
+  return unit === "ml" || unit === "l";
+}
+export function supportsVolumeComposition(unit: unknown, family: unknown): boolean {
+  return supportsVolumeApplication(unit) && (family === "biologico" || family === "" || family == null);
+}
 export function parseUnitCapability(raw: unknown): true {
   const data = raw as Record<string, unknown> | null;
   if (!data || data.contract !== "PRODUCT_UNIT_V2" || data.writer !== "tenant_product_save" ||

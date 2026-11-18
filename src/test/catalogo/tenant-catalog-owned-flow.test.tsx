@@ -258,6 +258,14 @@ describe("salvamento único de identificação/composição", () => {
   it("mudança de composição declarativa incompatível recusa tudo antes do produto, sem salvar parcialmente", async () => {
     await openDeclared();
     fireEvent.mouseDown(screen.getByRole("tab", { name: "Composição" }), { button: 0, ctrlKey: false });
+    expect(screen.queryByRole("button", { name: /Microrganismo/ })).toBeNull();
+    // A química fica consultiva. Mesmo mudar a família não pode contornar
+    // a guarda canônica das declarações já existentes.
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Identificação" }), { button: 0, ctrlKey: false });
+    const family=screen.getByRole("combobox",{name:"Família"}).parentElement?.querySelector("select");
+    if(!family)throw new Error("Família sem seletor");
+    fireEvent.change(family,{target:{value:"biologico"}});
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Composição" }), { button: 0, ctrlKey: false });
     await screen.findByText(/Composição declarativa preservada;/);
     fireEvent.click(screen.getByRole("button", { name: /Microrganismo/ }));
     fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));

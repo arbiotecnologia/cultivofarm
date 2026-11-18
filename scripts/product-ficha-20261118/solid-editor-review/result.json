@@ -1,0 +1,28 @@
+{
+  "vitest": {
+    "files": 70,
+    "tests": 1169,
+    "exit_code": 0,
+    "command": "bun run test -- src/test/catalogo src/test/protocolos"
+  },
+  "browser": {
+    "viewports": [
+      [
+        1280,
+        1800
+      ],
+      [
+        390,
+        844
+      ]
+    ],
+    "mass_conversion_blocked": true,
+    "metadata_save_readback": true,
+    "legacy_retained": true,
+    "page_errors": [],
+    "exit_code": 0,
+    "limits": "intercepted synthetic Auth/transport; React ref/Select warnings remain; not hosted"
+  },
+  "build": "2026-11-18T05:00:52Z ===\nbuild OK",
+  "hosted": "NOT_RUN; root confirmed Mancozebe registration/homologation pending; no production/publication/HMLv4 changes"
+}
