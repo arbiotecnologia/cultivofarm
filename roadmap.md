@@ -1,10 +1,14 @@
+## 18/11 04:16 — Revisão independente da autoridade de produtos
+- [x] Corrigir fresh actor no root/profile, replay e esperas; gate do reader, RLS/ACL e índice privados; validação exata de evidências.
+- [x] Testar concorrência PostgreSQL com corpo fresh capturado, atualizar montagem/relatório e entregar commit; instalação/homologação permanecem com root.
+
 ## 18/11 — Ficha de produtos e auditoria IA
 - [x] Root informou alinhamento HML aplicado 03:48 e 29 Auth HTTP PASS; evidência externa baseline, não certificação da nova ficha/fontes (REPORT).
 - [x] Integrar conteúdo/fontes/dossiê na ficha e preservar metadata/composição sequenciais; 1044 regressões locais PASS.
 - [x] Preparar identidade, fontes por campo e delta canônico fechado; dois bundles IA explícitos HML/produção, Deno PASS.
 - [x] Navegador sintético desktop/mobile geração/aplicação/salvar/reabrir fontes PASS; 22 SQL locais PASS, build automático OK. REPORT no pacote.
 - [x] Continuação pós-root: schema/target/revisão, candidato das fontes e bloqueio/cancelamento do dossiê; 1074 testes, 24 SQL e desktop/mobile sintéticos PASS, sem hosted.
-- [ ] Fechar captura exata/POST/ACL/trigger e roundtrip integral pelo root; schema e bloqueio dos drafts foram implementados/testados localmente, vínculos consultivos e homologação integrada permanecem descritos no REPORT.
+- [ ] Fechar captura exata/POST/ACL/trigger e roundtrip integral pelo root; schema, drafts e edição integrada de vínculos foram implementados/testados localmente; captura e homologação integrada permanecem descritas no REPORT.
 - [ ] Auditoria independente e homologação HML pelo root; sem produção/publicação pelo agente.
 
 ## 18/11 — Documentos exclusivos do microrganismo

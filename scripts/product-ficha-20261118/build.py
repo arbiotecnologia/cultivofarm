@@ -11,8 +11,9 @@ PIN='7db253bcc2150276ea2bb2f7bd90e471'
 def replace(s,a,b):
  assert s.count(a)==1,('ANCHOR_DRIFT',a)
  return s.replace(a,b)
+product_fence = "  IF p_root = 'product_technical_profiles' AND platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;\n"
 def extend(old):
- new=replace(old,'  k text; v_hash text;',"  v_children jsonb; v_evidence jsonb; v_product uuid; v_source jsonb; v_item jsonb; v_value text; v_enabled boolean;\n  k text; v_hash text;")
+ new=replace(old,'  k text; v_hash text;',"  v_children jsonb; v_evidence jsonb; v_product uuid; v_source jsonb; v_item jsonb; v_value text; v_enabled boolean; v_seen text[] := ARRAY[]::text[]; v_product_name text;\n  k text; v_hash text;")
  new=replace(new,"  SELECT * INTO v_cfg",'''  v_children := p_payload->'product_relations';
    v_evidence := p_payload->'documentary_evidence';
    IF v_children IS NOT NULL OR v_evidence IS NOT NULL THEN
@@ -21,17 +22,21 @@ def extend(old):
    IF v_children IS NOT NULL THEN
      IF p_root <> 'product_technical_profiles' THEN RAISE EXCEPTION 'product_relations_root_denied' USING ERRCODE='22023'; END IF;
      SELECT enabled INTO v_enabled FROM platform_private.product_evidence_gate_v1 WHERE singleton FOR SHARE;
+     IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
      IF v_enabled IS DISTINCT FROM true THEN RAISE EXCEPTION 'product_evidence_closed' USING ERRCODE='42501'; END IF;
      p_payload := p_payload-'product_relations';
    END IF;
    IF v_evidence IS NOT NULL THEN
      IF p_root <> 'product_technical_profiles' THEN RAISE EXCEPTION 'product_evidence_root_denied' USING ERRCODE='22023'; END IF;
      SELECT enabled INTO v_enabled FROM platform_private.product_evidence_gate_v1 WHERE singleton FOR SHARE;
+     IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
      IF v_enabled IS DISTINCT FROM true THEN RAISE EXCEPTION 'product_evidence_closed' USING ERRCODE='42501'; END IF;
      IF jsonb_typeof(v_evidence) IS DISTINCT FROM 'array' OR jsonb_array_length(v_evidence)>40 OR octet_length(v_evidence::text)>300000 THEN RAISE EXCEPTION 'product_evidence_shape' USING ERRCODE='22023'; END IF;
      FOR v_item IN SELECT value FROM jsonb_array_elements(v_evidence) LOOP
        IF jsonb_typeof(v_item) IS DISTINCT FROM 'object' OR (v_item-ARRAY['field','value','identity','sources','candidate_key'])<>'{}' OR jsonb_typeof(v_item->'candidate_key') IS DISTINCT FROM 'string' OR length(v_item->>'candidate_key') NOT BETWEEN 1 AND 200 OR NOT coalesce(v_item->>'field','')=ANY(ARRAY['resumo_curto','explicacao_tecnica','explicacao_produtor','explicacao_b2b','indicacoes_uso','janela_aplicacao','cuidados_aplicacao','compatibilidade','beneficio_combinado']) OR jsonb_typeof(v_item->'value') IS DISTINCT FROM 'string' OR length(v_item->>'value') NOT BETWEEN 1 AND 12000 OR jsonb_typeof(v_item->'identity') IS DISTINCT FROM 'object' OR jsonb_typeof(v_item->'sources') IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'product_evidence_shape' USING ERRCODE='22023'; END IF;
        IF v_item->'identity'->>'entity' IS DISTINCT FROM 'produto' OR coalesce(v_item->'identity'->>'name','')='' OR jsonb_array_length(v_item->'sources') NOT BETWEEN 1 AND 20 THEN RAISE EXCEPTION 'product_evidence_identity' USING ERRCODE='22023'; END IF;
+       IF (v_item->>'field')=ANY(v_seen) THEN RAISE EXCEPTION 'product_evidence_duplicate_field' USING ERRCODE='22023'; END IF;
+       v_seen := array_append(v_seen,v_item->>'field');
        IF p_payload->>(v_item->>'field') IS DISTINCT FROM v_item->>'value' THEN RAISE EXCEPTION 'product_evidence_value_mismatch' USING ERRCODE='22023'; END IF;
        FOR v_source IN SELECT value FROM jsonb_array_elements(v_item->'sources') LOOP
          IF jsonb_typeof(v_source) IS DISTINCT FROM 'object' OR (v_source-ARRAY['url','title','excerpt'])<>'{}' OR NOT platform_private.product_source_https_v1(v_source->>'url') OR jsonb_typeof(v_source->'url') IS DISTINCT FROM 'string' OR jsonb_typeof(v_source->'title') IS DISTINCT FROM 'string' OR jsonb_typeof(v_source->'excerpt') IS DISTINCT FROM 'string' OR coalesce(v_source->>'title','')='' OR coalesce(v_source->>'excerpt','')='' OR octet_length(v_source::text)>20000 THEN RAISE EXCEPTION 'product_source_invalid' USING ERRCODE='22023'; END IF;
@@ -41,7 +46,7 @@ def extend(old):
    END IF;
    SELECT * INTO v_cfg''')
  new=replace(new,"coalesce(p_expected_updated_at::text,'')))","coalesce(p_expected_updated_at::text,''),coalesce(v_evidence::text,'')))")
- new=replace(new,'  IF v_rep IS NOT NULL THEN RETURN v_rep; END IF;',"  IF platform_private.catalog_tenant_actor('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'tenant_catalog_actor_changed' USING ERRCODE='42501'; END IF;\n  IF (v_children IS NOT NULL OR v_evidence IS NOT NULL) AND platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;\n  IF v_rep IS NOT NULL THEN RETURN v_rep; END IF;")
+ new=replace(new,'  IF v_rep IS NOT NULL THEN RETURN v_rep; END IF;', product_fence+'  IF v_rep IS NOT NULL THEN RETURN v_rep; END IF;')
  # Avoid changing idempotency hashes of every existing command.
  new=replace(new,"coalesce(p_expected_updated_at::text,''),coalesce(v_evidence::text,'')))","coalesce(p_expected_updated_at::text,'')));\n  IF v_evidence IS NOT NULL THEN v_hash := md5(v_hash || v_evidence::text); END IF;\n  IF v_children IS NOT NULL THEN v_hash := md5(v_hash || v_children::text); END IF")
  new=replace(new,"  v_row := jsonb_build_object('ok'",'''  IF v_children IS NOT NULL THEN
@@ -49,14 +54,26 @@ def extend(old):
    END IF;
    IF v_evidence IS NOT NULL THEN
      v_product := (v_row->>'produto_id')::uuid;
-     IF platform_private.tenant_catalog_ref_owner('produtos',v_product) IS DISTINCT FROM v_org OR platform_private.catalog_tenant_actor('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_evidence_denied' USING ERRCODE='42501'; END IF;
+     IF platform_private.tenant_catalog_ref_owner('produtos',v_product) IS DISTINCT FROM v_org OR platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_evidence_denied' USING ERRCODE='42501'; END IF;
+     SELECT nome INTO v_product_name FROM public.produtos WHERE id=v_product AND owner_organization_id=v_org FOR SHARE;
+     IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
      FOR v_item IN SELECT value FROM jsonb_array_elements(v_evidence) LOOP
-       IF v_item->'identity'->>'id' IS DISTINCT FROM v_product::text THEN RAISE EXCEPTION 'product_evidence_identity' USING ERRCODE='22023'; END IF;
+       IF v_item->'identity'->>'name' IS DISTINCT FROM v_product_name OR v_item->'identity'->>'id' IS DISTINCT FROM v_product::text THEN RAISE EXCEPTION 'product_evidence_identity' USING ERRCODE='22023'; END IF;
      END LOOP;
      INSERT INTO platform_private.product_evidence_history_v1(product_id,profile_id,profile_revision,actor_id,evidence) VALUES(v_product,(v_row->>'id')::uuid,(v_row->>'updated_at')::timestamptz,v_uid,v_evidence);
    END IF;
    IF (v_children IS NOT NULL OR v_evidence IS NOT NULL) AND platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
    v_row := jsonb_build_object('ok' ''')
+ # Only the product profile changes authority: other roots retain their exact actor path.
+ new=replace(new,"  v_org := platform_private.catalog_tenant_actor('mutate');", "  IF p_root = 'product_technical_profiles' THEN v_org := platform_private.recorte_a_actor_fresh('mutate'); ELSE v_org := platform_private.catalog_tenant_actor('mutate'); END IF;")
+ new=replace(new,"    v_org2 := platform_private.catalog_tenant_actor('mutate');", "    IF p_root = 'product_technical_profiles' THEN v_org2 := platform_private.recorte_a_actor_fresh('mutate'); ELSE v_org2 := platform_private.catalog_tenant_actor('mutate'); END IF;")
+ # Each ref_owner can wait FOR SHARE; fresh authority must precede any subsequent branch.
+ new=replace(new,"      IF v_ref IS DISTINCT FROM v_org",product_fence+"      IF v_ref IS DISTINCT FROM v_org")
+ new=replace(new,"    IF v_parent IS DISTINCT FROM v_org",product_fence+"    IF v_parent IS DISTINCT FROM v_org")
+ # DML can wait on triggers, FK/unique constraints. Fence before receipt and after its INSERT.
+ new=replace(new,"  INSERT INTO platform_private.tenant_catalog_root_receipts",product_fence+"  INSERT INTO platform_private.tenant_catalog_root_receipts")
+ new=replace(new,"  RETURN v_row;",product_fence+"  RETURN v_row;")
+ new=replace(new,"   SELECT * INTO v_cfg",product_fence+"   SELECT * INTO v_cfg")
  # Fix spacing after exact string anchor.
  new=new.replace("jsonb_build_object('ok' ,", "jsonb_build_object('ok',")
  return new
@@ -69,11 +86,14 @@ REVOKE ALL ON FUNCTION platform_private.product_source_https_v1(text) FROM PUBLI
 reader="""CREATE FUNCTION public.tenant_product_documentary_read_v1(p_product_id uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
 DECLARE org uuid; result jsonb; current_profile uuid; current_revision timestamptz;
 BEGIN
- org:=platform_private.catalog_tenant_actor('read_catalog');
- IF NOT EXISTS(SELECT 1 FROM platform_private.product_evidence_gate_v1 WHERE singleton AND enabled) THEN RAISE EXCEPTION 'product_evidence_closed' USING ERRCODE='42501'; END IF;
+ org:=platform_private.recorte_a_actor_fresh('read_catalog');
+ PERFORM 1 FROM platform_private.product_evidence_gate_v1 WHERE singleton AND enabled FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'product_evidence_closed' USING ERRCODE='42501'; END IF;
+ IF platform_private.recorte_a_actor_fresh('read_catalog') IS DISTINCT FROM org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
  IF NOT EXISTS(SELECT 1 FROM public.produtos WHERE id=p_product_id AND owner_organization_id=org) THEN RAISE EXCEPTION 'product_evidence_denied' USING ERRCODE='42501'; END IF;
  SELECT id,updated_at INTO current_profile,current_revision FROM public.product_technical_profiles WHERE produto_id=p_product_id;
  SELECT evidence INTO result FROM platform_private.product_evidence_history_v1 WHERE product_id=p_product_id AND profile_id=current_profile AND profile_revision=current_revision ORDER BY sequence DESC LIMIT 1;
+ IF platform_private.recorte_a_actor_fresh('read_catalog') IS DISTINCT FROM org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
  RETURN jsonb_build_object('product_id',p_product_id,'profile_id',current_profile,'profile_revision',current_revision,'evidence',coalesce(result,'[]'::jsonb));
 END $f$;
 REVOKE ALL ON FUNCTION public.tenant_product_documentary_read_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
@@ -82,7 +102,11 @@ GRANT EXECUTE ON FUNCTION public.tenant_product_documentary_read_v1(uuid) TO aut
 schema="""CREATE TABLE platform_private.product_evidence_gate_v1(singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),enabled boolean NOT NULL DEFAULT false);
 INSERT INTO platform_private.product_evidence_gate_v1 VALUES(true,false);
 CREATE TABLE platform_private.product_evidence_history_v1(sequence bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,product_id uuid NOT NULL REFERENCES public.produtos(id),profile_id uuid NOT NULL REFERENCES public.product_technical_profiles(id),profile_revision timestamptz NOT NULL,actor_id uuid NOT NULL,evidence jsonb NOT NULL,created_at timestamptz NOT NULL DEFAULT clock_timestamp());
+ALTER TABLE platform_private.product_evidence_gate_v1 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_private.product_evidence_history_v1 ENABLE ROW LEVEL SECURITY;
+CREATE INDEX product_evidence_history_v1_latest ON platform_private.product_evidence_history_v1(product_id,sequence DESC);
 REVOKE ALL ON platform_private.product_evidence_gate_v1,platform_private.product_evidence_history_v1 FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON SEQUENCE platform_private.product_evidence_history_v1_sequence_seq FROM PUBLIC,anon,authenticated,service_role;
 """
 write(H/'source.sql.review',schema+helper+(H/'relations.sql.review').read_text(encoding='utf-8')+reader+new)
 if __name__ == '__main__' and len(sys.argv)>1:

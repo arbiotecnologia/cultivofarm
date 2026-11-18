@@ -1,5 +1,5 @@
 """Disposable PG, captured motor/actor, declared synthetic identity/config/schema. No hosted IO."""
-import os,subprocess,tempfile,shutil,json
+import os,subprocess,tempfile,shutil,json,time
 from pathlib import Path
 H=Path(__file__).resolve().parent; B=H.parent/'microorganism-ficha-20261118'
 os.environ['PATH']=str(Path(shutil.which('initdb')).resolve().parent)+os.pathsep+os.environ['PATH']
@@ -25,12 +25,12 @@ try:
  CREATE TABLE organizations(id uuid PRIMARY KEY,ativo boolean,status text);
  CREATE TABLE platform_private.members(id uuid PRIMARY KEY,org uuid,editor boolean,feature boolean DEFAULT true);
  CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$SELECT current_setting('test.uid',true)::uuid$$;
- CREATE FUNCTION platform_private.h15_actor_organization() RETURNS uuid LANGUAGE sql SECURITY DEFINER AS $$SELECT org FROM platform_private.members WHERE id=auth.uid()$$;
+ CREATE FUNCTION platform_private.h15_actor_organization() RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER AS $$SELECT org FROM platform_private.members WHERE id=auth.uid()$$;
  CREATE FUNCTION is_platform_superadmin(uuid) RETURNS boolean LANGUAGE sql AS $$SELECT false$$;
- CREATE FUNCTION _saas_user_has_feature(uuid,text) RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$SELECT feature FROM platform_private.members WHERE id=$1$$;
- CREATE FUNCTION platform_private.has_role(uuid,app_role) RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$SELECT editor FROM platform_private.members WHERE id=$1$$;
+ CREATE FUNCTION _saas_user_has_feature(uuid,text) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER AS $$SELECT feature FROM platform_private.members WHERE id=$1$$;
+ CREATE FUNCTION platform_private.has_role(uuid,app_role) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER AS $$SELECT editor FROM platform_private.members WHERE id=$1$$;
  CREATE FUNCTION can_view_catalog_internal(uuid) RETURNS boolean LANGUAGE sql AS $$SELECT true$$;
- CREATE TABLE produtos(id uuid PRIMARY KEY,owner_organization_id uuid);
+ CREATE TABLE produtos(id uuid PRIMARY KEY,owner_organization_id uuid,nome text);
  CREATE TABLE product_technical_profiles(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),produto_id uuid REFERENCES produtos(id),resumo_curto text,updated_at timestamptz NOT NULL DEFAULT now());
  CREATE TABLE platform_private.tenant_catalog_root_cfg(root text PRIMARY KEY,kind text,allowed text[],parent_col text,parent_tbl text,refs jsonb,safe_defaults jsonb);
  CREATE TABLE platform_private.tenant_catalog_root_receipts(actor_id uuid,organization_id uuid,idempotency_key uuid,payload_hash text,result jsonb,created_at timestamptz DEFAULT now(),PRIMARY KEY(actor_id,organization_id,idempotency_key));
@@ -38,9 +38,9 @@ try:
  for f in ['platform_private.catalog_tenant_actor','platform_private.tenant_catalog_ref_owner','public.tenant_catalog_root_save']:sql((B/'capture'/f'{f}.sql').read_text(encoding='utf-8'))
  src=(H.parent/'tenant-exclusive-catalog-20261101/crud_section.py').read_text(encoding='utf-8');sql(src[src.index('CREATE FUNCTION platform_private.tenant_catalog_receipt'):src.index('CREATE FUNCTION public.tenant_catalog_root_save')])
  sql("INSERT INTO platform_private.tenant_catalog_root_cfg VALUES('product_technical_profiles','profile',ARRAY['produto_id','resumo_curto'],'produto_id','produtos','{\"produto_id\":\"produtos\"}','{}');")
- sql(f"INSERT INTO organizations VALUES('{U(11)}',true,'ativa'),('{U(12)}',true,'ativa');INSERT INTO platform_private.members(id,org,editor) VALUES('{U(1)}','{U(11)}',true),('{U(2)}','{U(11)}',false),('{U(3)}','{U(12)}',true);INSERT INTO produtos VALUES('{U(21)}','{U(11)}');")
- sql('''CREATE FUNCTION platform_private.recorte_a_actor_fresh(text) RETURNS uuid LANGUAGE sql SECURITY DEFINER AS $$SELECT platform_private.catalog_tenant_actor($1)$$;
- REVOKE ALL ON FUNCTION platform_private.recorte_a_actor_fresh(text) FROM PUBLIC,anon,authenticated,service_role;
+ sql(f"INSERT INTO organizations VALUES('{U(11)}',true,'ativa'),('{U(12)}',true,'ativa');INSERT INTO platform_private.members(id,org,editor) VALUES('{U(1)}','{U(11)}',true),('{U(2)}','{U(11)}',false),('{U(3)}','{U(12)}',true);INSERT INTO produtos VALUES('{U(21)}','{U(11)}','Produto QA');")
+ sql((H.parent/'b2b-solid-packaging-order-20261106/captured/solid-pack/platform_private.recorte_a_actor_fresh.0cb006c4.live-20261106.sql').read_text(encoding='utf-8')+';')
+ sql('''REVOKE ALL ON FUNCTION platform_private.recorte_a_actor_fresh(text) FROM PUBLIC,anon,authenticated,service_role;
  CREATE TABLE culturas(id uuid PRIMARY KEY,nome text,ativo boolean,owner_organization_id uuid);
  CREATE TABLE catalogo_alvos(id uuid PRIMARY KEY,nome text,ativo boolean);
  CREATE TABLE product_crop_recommendations(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),produto_id uuid REFERENCES produtos(id),cultura_id uuid REFERENCES culturas(id),cultura_nome text,fase_recomendada text,objetivo_uso text,dose_recomendada text,observacao text,ativo boolean DEFAULT true,created_at timestamptz DEFAULT now());
@@ -65,6 +65,8 @@ try:
  check('single history after replay','SELECT count(*) FROM platform_private.product_evidence_history_v1','1')
  check('candidate retained',actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')->'evidence'->0->>'candidate_key'"),'A')
  check('profile version acknowledged',actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')->>'profile_id'"),id)
+ check('duplicate evidence field rejected',actor(save(108,[e,e])),error='duplicate_field')
+ check('wrong product name rejected',actor(save(107,[{**e,'identity':{**e['identity'],'name':'Outro produto'}}])),error='identity')
  check('missing candidate rejected',actor(save(109,[{k:v for k,v in e.items() if k!='candidate_key'}])),error='evidence_shape')
  for i,url in enumerate(['javascript:alert(1)','data:text/html,x','http://example.org','https://a:b@example.org/','https://example.org/%0a','https://localhost/a']):
   check('unsafe URL '+url,actor(save(110+i,[{**e,'sources':[{**e['sources'][0],'url':url}]}])),error='source_invalid')
@@ -98,13 +100,63 @@ try:
  check('atomic children no second crop','SELECT count(*) FROM product_crop_recommendations','1')
  check('atomic late no receipt',f"SELECT count(*) FROM platform_private.tenant_catalog_root_receipts WHERE idempotency_key='{U(133)}'",'0')
  check('private helper execute denied',actor(f"SELECT platform_private.product_relations_apply_v1('{U(21)}','{U(11)}','[]')"),error='permission denied')
+ # Real captured VOLATILE fresh actor, STABLE legacy actor; test dependencies remain declared synthetic.
+ check('captured fresh actor volatile',"SELECT provolatile FROM pg_proc WHERE oid='platform_private.recorte_a_actor_fresh(text)'::regprocedure",'v')
+ check('legacy actor stable',"SELECT provolatile FROM pg_proc WHERE oid='platform_private.catalog_tenant_actor(text)'::regprocedure",'s')
+ check('private tables RLS',"SELECT bool_and(relrowsecurity) FROM pg_class WHERE oid IN ('platform_private.product_evidence_gate_v1'::regclass,'platform_private.product_evidence_history_v1'::regclass)",'t')
+ check('latest evidence index',"SELECT count(*) FROM pg_indexes WHERE schemaname='platform_private' AND indexname='product_evidence_history_v1_latest' AND indexdef LIKE '%(product_id, sequence DESC)%'",'1')
+ cmd=['psql','-X','-qAt','-h',str(t),'-p',port,'-U','postgres','-v','ON_ERROR_STOP=1']
+ def race(name,lock,request,revoke,error,held_change=""):
+  holder=subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding='utf-8')
+  holder.stdin.write('BEGIN;'+lock+"SELECT 'HELD';\n");holder.stdin.flush()
+  while holder.stdout.readline().strip()!='HELD':
+   assert holder.poll() is None,'LOCK_HOLDER_FAILED'
+  runner=subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding='utf-8')
+  runner.stdin.write("SET application_name='product_fresh_race';"+actor(request));runner.stdin.close();runner.stdin=None
+  try:
+   deadline=time.monotonic()+10
+   while sql("SELECT count(*) FROM pg_stat_activity WHERE application_name='product_fresh_race' AND wait_event_type='Lock'")!='1':
+    assert time.monotonic()<deadline,'RACE_DID_NOT_WAIT'
+    time.sleep(.02)
+   if revoke:sql(revoke)
+   if held_change:
+    holder.stdin.write(held_change+"\n");holder.stdin.flush()
+   holder.stdin.write('COMMIT;\n');holder.stdin.flush();holder.stdin.close();holder.stdin=None
+   holder.communicate(timeout=10)
+   out,err=runner.communicate(timeout=10)
+   if error:assert runner.returncode and error in err,(name,out,err)
+   else:assert runner.returncode==0,(name,out,err)
+   results.append(name)
+  finally:
+   if holder.poll() is None:holder.kill();holder.wait()
+   if runner.poll() is None:runner.kill();runner.wait()
+   sql(f"UPDATE platform_private.members SET feature=true,editor=true,org='{U(11)}' WHERE id='{U(1)}'")
+ before=sql('SELECT count(*) FROM platform_private.tenant_catalog_root_receipts')
+ race('fresh revocation after profile row wait',f"SELECT 1 FROM product_technical_profiles WHERE id='{id}' FOR UPDATE;",relation_save([crop],140,crop_ack['updated_at']),f"UPDATE platform_private.members SET editor=false WHERE id='{U(1)}'",'role_denied')
+ race('fresh feature revocation after parent wait',f"SELECT 1 FROM produtos WHERE id='{U(21)}' FOR UPDATE;",save(141),f"UPDATE platform_private.members SET feature=false WHERE id='{U(1)}'",'feature_unavailable')
+ receipt_lock="SELECT pg_advisory_xact_lock(hashtextextended(concat_ws(':','tcr','%s'::uuid,'%s'::uuid,'%s'::uuid),0));" % (U(1),U(11),U(100))
+ race('fresh revocation after receipt wait replay',receipt_lock,save(),f"UPDATE platform_private.members SET editor=false WHERE id='{U(1)}'",'role_denied')
+ race('fresh revocation after gate wait replay','SELECT 1 FROM platform_private.product_evidence_gate_v1 FOR UPDATE;',save(),f"UPDATE platform_private.members SET editor=false WHERE id='{U(1)}'",'role_denied')
+ race('fresh scope changed after child row wait',f"SELECT 1 FROM product_crop_recommendations WHERE id='{observed_crop['id']}' FOR UPDATE;",relation_save([{**changed,'expected':json.loads(sql('SELECT to_jsonb(x) FROM product_crop_recommendations x'))}],142,crop_ack['updated_at']),f"UPDATE platform_private.members SET org='{U(12)}' WHERE id='{U(1)}'",'product_actor_changed')
+ race('gate OFF reader after concurrent wait','SELECT 1 FROM platform_private.product_evidence_gate_v1 FOR UPDATE;',f"SELECT tenant_product_documentary_read_v1('{U(21)}')",f"UPDATE platform_private.members SET feature=false WHERE id='{U(1)}'",'feature_unavailable')
+ race('gate closes during reader wait','SELECT 1 FROM platform_private.product_evidence_gate_v1 FOR UPDATE;',f"SELECT tenant_product_documentary_read_v1('{U(21)}')",None,'evidence_closed','UPDATE platform_private.product_evidence_gate_v1 SET enabled=false;')
+ sql('UPDATE platform_private.product_evidence_gate_v1 SET enabled=true')
+ check('concurrent refusal no receipts','SELECT count(*) FROM platform_private.tenant_catalog_root_receipts',before)
+ check('concurrent refusal no children','SELECT count(*) FROM product_crop_recommendations','1')
  sql('UPDATE platform_private.product_evidence_gate_v1 SET enabled=false')
  check('rollback denies new relations',actor(relation_save([crop],134,crop_ack['updated_at'])),error='evidence_closed')
  check('rollback denies reader',actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')"),error='evidence_closed')
  check('rollback history retained','SELECT count(*) FROM platform_private.product_evidence_history_v1','1')
  sql('UPDATE platform_private.product_evidence_gate_v1 SET enabled=true')
  check('release restores reader',actor(f"SELECT jsonb_array_length(tenant_product_documentary_read_v1('{U(21)}')->'evidence')"),'0')
+ # Snapshot control isolated in one STABLE caller: identical authority body is
+ # exercised before and after the same lock. The VOLATILE variant must reject.
+ sql("CREATE FUNCTION public.snapshot_control() RETURNS void LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$BEGIN PERFORM platform_private.recorte_a_actor_fresh('mutate'); PERFORM pg_advisory_xact_lock(771991); PERFORM platform_private.recorte_a_actor_fresh('mutate'); END$$; GRANT EXECUTE ON FUNCTION public.snapshot_control() TO authenticated;")
+ race('VOLATILE authority refreshes inside STABLE caller','SELECT pg_advisory_xact_lock(771991);','SELECT public.snapshot_control();',f"UPDATE platform_private.members SET editor=false WHERE id='{U(1)}'",'role_denied')
+ sql('ALTER FUNCTION platform_private.recorte_a_actor_fresh(text) STABLE')
+ race('negative control STABLE snapshot misses revocation','SELECT pg_advisory_xact_lock(771991);','SELECT public.snapshot_control();',f"UPDATE platform_private.members SET editor=false WHERE id='{U(1)}'",None)
+ sql('ALTER FUNCTION platform_private.recorte_a_actor_fresh(text) VOLATILE')
  pins=json.loads(sql("SELECT jsonb_object_agg(oid::regprocedure::text,md5(pg_get_functiondef(oid))) FROM pg_proc WHERE proname IN ('tenant_catalog_root_save','tenant_product_documentary_read_v1','product_source_https_v1')"))
- print(json.dumps({'count':len(results),'pass':results,'pins':pins,'limits':'disposable PG: captured motor/actor; synthetic identity/schema/config/receipt reconstruction; not hosted JWT/RLS'},ensure_ascii=False))
+ print(json.dumps({'count':len(results),'pass':results,'pins':pins,'limits':'disposable PG: captured motor/STABLE actor/VOLATILE fresh body; real concurrent PostgreSQL sessions; synthetic identity/dependencies/schema/config/receipt reconstruction; not hosted JWT/RLS'},ensure_ascii=False))
 finally:
  subprocess.run(priv+['pg_ctl','-D',str(t/'data'),'-m','immediate','stop'],capture_output=True);shutil.rmtree(t,ignore_errors=True)

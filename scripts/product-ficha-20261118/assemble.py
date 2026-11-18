@@ -27,7 +27,7 @@ def read_capture(path):
     for function in catalog['functions']:
         assert '\r' not in function['definition'], 'CAPTURE_CRLF_DENIED: recapture exact; never normalize pins'
         assert hashlib.md5(function['definition'].encode('utf-8')).hexdigest() == function['md5'], 'CAPTURE_ROUNDTRIP_DRIFT'
-        assert all(name in function for name in ['owner', 'acl', 'security_definer', 'config']), 'FUNCTION_METADATA_REQUIRED'
+        assert all(name in function for name in ['owner', 'acl', 'security_definer', 'config', 'volatility']), 'FUNCTION_METADATA_REQUIRED'
     for relation in catalog['relations']:
         assert all(name in relation for name in ['owner', 'rls', 'force_rls', 'acl', 'columns', 'constraints', 'triggers', 'policies', 'indexes']), 'RELATION_METADATA_REQUIRED'
     assert capture.get('reviewed_transitive_signatures'), 'ROOT_TRANSITIVE_REVIEW_REQUIRED: pg_depend alone omits PLpgSQL calls'
@@ -42,6 +42,7 @@ def assemble(pre_path, post_path, out):
     assert pre['ref'] == post['ref'], 'POST_REF_DENIED'
     assert functions[key(ROOT)]['md5'] == PIN, 'CANONICAL_ROOT_REVIEW_REQUIRED: do not repin'
     assert functions[key(FRESH)]['md5'] == FRESH_PIN, 'FRESH_ACTOR_REVIEW_REQUIRED: do not repin'
+    assert functions[key(FRESH)]['volatility'] == 'v', 'FRESH_ACTOR_VOLATILE_REQUIRED'
     assert all(acl.split('=')[0] == functions[key(FRESH)]['owner'] for acl in functions[key(FRESH)]['acl'] or []), 'FRESH_ACTOR_OWNER_ONLY_REQUIRED'
     required = {'public.produtos', 'public.product_technical_profiles', 'public.product_target_recommendations', 'public.product_crop_recommendations', 'public.catalog_technical_sources', 'public.culturas', 'public.catalogo_alvos', 'platform_private.tenant_catalog_root_cfg', 'platform_private.tenant_catalog_root_receipts'}
     assert required <= {r['name'] for r in pre['catalog']['relations']}, 'BASE_RELATIONS_REQUIRED'
@@ -53,8 +54,13 @@ def assemble(pre_path, post_path, out):
         helper = post_functions.get(key(signature))
         assert helper and helper['owner'] == functions[key(ROOT)]['owner'] and helper['security_definer'] == (signature.startswith('platform_private.product_relations')), 'POST_HELPER_OWNER_REQUIRED'
         assert all(acl.split('=')[0] == helper['owner'] for acl in helper['acl'] or []), 'POST_HELPER_OWNER_ONLY_REQUIRED'
+    reader = post_functions.get(key('public.tenant_product_documentary_read_v1(uuid)'))
+    assert reader and reader['owner'] == functions[key(ROOT)]['owner'] and reader['security_definer'] and reader['volatility'] == 'v', 'POST_READER_AUTHORITY_REQUIRED'
     for name in ['platform_private.product_evidence_gate_v1', 'platform_private.product_evidence_history_v1']:
         relation = next((r for r in post['catalog']['relations'] if r['name'] == name), None)
+        assert relation and relation['rls'] is True, 'POST_PRIVATE_RLS_REQUIRED'
+        if name.endswith('history_v1'):
+            assert any('(product_id, sequence DESC)' in index for index in relation['indexes'] or []), 'POST_LATEST_EVIDENCE_INDEX_REQUIRED'
         assert relation and relation['owner'] == functions[key(ROOT)]['owner'], 'POST_PRIVATE_OWNER_REQUIRED'
         assert all(acl.split('=')[0] == relation['owner'] for acl in relation['acl'] or []), 'POST_PRIVATE_ACL_REQUIRED'
     build = runpy.run_path(str(HOME/'build.py'), run_name='product_candidate_library')
