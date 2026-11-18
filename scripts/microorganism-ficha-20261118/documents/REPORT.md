@@ -1,5 +1,8 @@
 # Evidências — delta aditivo de anexos
 
+## Atualização root 02:49 — baseline comprovado em HML
+Baseline12a580416 instalado/released somente HML, 26 verificações Auth reais, IA Embrapa real com fontes salvas/reabertas e browser real desktop/mobile PASS, conforme relato do root. Não reaplicar baseline. Esses resultados encerram as pendências antigas de Auth/IA do baseline, não homologam este delta de documentos ou as correções read/URL. Consolidação e ordem dos deltas em `../root-audit-delta/REPORT.md`; montagem Edge agora usa binding.ts constante e SQL UTF-8 LF, sem Deno.env.set em runtime.
+
 ## Resultado implementado
 Anexos próprios na ficha em Fontes e histórico, independentes de produto comercial: título, arquivo privado, versões imutáveis, consulta inline e download de bytes verificados. CAS do microrganismo passa pelo motor canônico; reserva e commit usam identidade/tenant atuais e recibos. Conteúdo/fiscal/IA baseline não foram reescritos. O instalador 12a580416 permanece intacto.
 

@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { MICRO_TYPE_LABELS } from "@/lib/catalogo/documentaryLabels";
+import { safeSourceUrl } from '@/lib/catalogo/safeSourceUrl';
 import { useQueryClient } from "@tanstack/react-query";
 import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
 import { useAuth } from "@/hooks/useAuth";
@@ -81,7 +83,7 @@ export function MicroorganismFichaEditor({
   const editor = useTenantCatalogEditor();
   const { profile } = useAuth();
   const qc = useQueryClient();
-  const cacheActor = useStorageAccessScope('portal-query-actor');
+  const cacheActor = useStorageAccessScope("portal-query-actor");
   const editable =
     editor.canEdit &&
     (!item ||
@@ -115,6 +117,18 @@ export function MicroorganismFichaEditor({
   const version = useRef(item?.updated_at ?? null);
   const profileVersion = useRef<string | null>(null);
   const [children, setChildren] = useState<MicroChild[]>([]);
+  const [pendingRelations, setPendingRelations] = useState<
+    Partial<Record<MicroChild["kind"], boolean>>
+  >({});
+  const relationPending = Object.values(pendingRelations).some(Boolean);
+  const onRelationPending = useCallback(
+    (kind: MicroChild["kind"], pending: boolean) => {
+      setPendingRelations((old) =>
+        old[kind] === pending ? old : { ...old, [kind]: pending },
+      );
+    },
+    [],
+  );
   const stageChild = (child: MicroChild) => {
     dirty.current = true;
     setChildren((old) => [
@@ -154,6 +168,12 @@ export function MicroorganismFichaEditor({
     setValues((old) => ({ ...old, [field]: value }));
   };
   const save = async () => {
+    if (relationPending) {
+      setError(
+        "Aplique ou cancele a alteração de vínculo antes de salvar a ficha.",
+      );
+      return;
+    }
     if (!editable || lock.current || documentBusy || !loaded) return;
     const scopeCurrent = editor.capture();
     const current = () => mounted.current && scopeCurrent();
@@ -201,7 +221,8 @@ export function MicroorganismFichaEditor({
             "tenant-product-details",
           ].includes(String(q.queryKey[0])) &&
           q.queryKey.at(-2) === cacheActor.scope &&
-          (q.queryKey[0] === 'tenant-reference' || q.queryKey.includes(item?.id)),
+          (q.queryKey[0] === "tenant-reference" ||
+            q.queryKey.includes(item?.id)),
       });
       onSaved({
         ...item,
@@ -248,7 +269,7 @@ export function MicroorganismFichaEditor({
       open
       onOpenChange={(open) => {
         if (!open && !busy && !documentBusy) {
-          if (dirty.current) setExit(true);
+          if (dirty.current || relationPending) setExit(true);
           else onClose();
         }
       }}
@@ -273,7 +294,15 @@ export function MicroorganismFichaEditor({
               className="h-auto min-h-11 whitespace-normal text-xs"
               aria-pressed={section === s}
               disabled={documentBusy}
-              onClick={() => setSection(s)}
+              onClick={() => {
+                if (relationPending) {
+                  setError(
+                    "Aplique ou cancele a alteração de vínculo antes de trocar de seção.",
+                  );
+                  return;
+                }
+                setSection(s);
+              }}
             >
               {s}
             </Button>
@@ -325,7 +354,7 @@ export function MicroorganismFichaEditor({
                         {["bacteria", "fungo", "levedura", "consorcio"].map(
                           (t) => (
                             <SelectItem key={t} value={t}>
-                              {t}
+                              {MICRO_TYPE_LABELS[t] ?? t}
                             </SelectItem>
                           ),
                         )}
@@ -366,6 +395,7 @@ export function MicroorganismFichaEditor({
                       busy={busy}
                       staged={children}
                       onStage={stageChild}
+                      onPending={onRelationPending}
                     />
                   ))}
                 </>
@@ -440,22 +470,31 @@ export function MicroorganismFichaEditor({
               )}
               {section === "Fontes e histórico" && (
                 <>
-                  {item?.owner_organization_id === profile?.organization_id && item && profile?.organization_id ? (
+                  {item?.owner_organization_id === profile?.organization_id &&
+                  item &&
+                  profile?.organization_id ? (
                     <MicroorganismDocuments
                       micro={item.id}
                       organization={profile.organization_id}
                       version={version.current}
                       editable={editable}
-                      blocked={busy || draftDirty || dirty.current}
+                      blocked={
+                        busy || draftDirty || dirty.current || relationPending
+                      }
                       onWorking={setDocumentBusy}
                       onCommitted={(updatedAt) => {
                         version.current = updatedAt;
                         void qc.invalidateQueries({
-                          predicate: (q) => q.queryKey[0] === 'micro-ficha' && q.queryKey.includes(item.id) && q.queryKey.at(-2) === cacheActor.scope,
+                          predicate: (q) =>
+                            q.queryKey[0] === "micro-ficha" &&
+                            q.queryKey.includes(item.id) &&
+                            q.queryKey.at(-2) === cacheActor.scope,
                         });
                       }}
                     />
-                  ) : !item ? <p>Salve a identificação antes de anexar documentos.</p> : null}
+                  ) : !item ? (
+                    <p>Salve a identificação antes de anexar documentos.</p>
+                  ) : null}
                   {evidence.length === 0 && (
                     <p>Sem fontes aceitas nesta ficha.</p>
                   )}
@@ -479,7 +518,7 @@ export function MicroorganismFichaEditor({
                       {e.sources.map((s) => (
                         <div key={s.url} className="break-words text-sm">
                           <a
-                            href={s.url}
+                            href={safeSourceUrl(s.url) ?? undefined}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-primary underline"
@@ -498,6 +537,7 @@ export function MicroorganismFichaEditor({
                     busy={busy || documentBusy}
                     staged={children}
                     onStage={stageChild}
+                    onPending={onRelationPending}
                   />
                   {item && (
                     <>
@@ -534,12 +574,17 @@ export function MicroorganismFichaEditor({
               <Button
                 variant="outline"
                 disabled={busy || documentBusy}
-                onClick={() => (dirty.current ? setExit(true) : onClose())}
+                onClick={() =>
+                  dirty.current || relationPending ? setExit(true) : onClose()
+                }
               >
                 {editable ? "Cancelar" : "Fechar"}
               </Button>
               {editable && (
-                <Button disabled={busy || documentBusy || !loaded} onClick={() => void save()}>
+                <Button
+                  disabled={busy || documentBusy || !loaded}
+                  onClick={() => void save()}
+                >
                   {busy ? "Salvando…" : "Salvar ficha"}
                 </Button>
               )}

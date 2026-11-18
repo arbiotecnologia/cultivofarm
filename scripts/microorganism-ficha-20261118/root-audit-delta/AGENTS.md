@@ -1,0 +1,3 @@
+- Review-only corrections over the HML-applied baseline; preserve its installer bytes, function OIDs and existing ACLs — prevents replaying installation or widening authority.
+- Supplement reads use canonical read_catalog feature authority, not mutate or read_prefs; source URLs are HTTPS-only without credentials/control bytes — prevents post-revocation reads and script links.
+- Generate exact old/new body pins from unchanged baseline and tested canonical PG formatting; write every SQL/Edge text UTF-8 LF, and build explicit immutable ref binding without environment mutation — prevents CRLF drift and hosted binding failures.

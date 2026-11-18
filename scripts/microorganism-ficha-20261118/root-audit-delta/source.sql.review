@@ -1,0 +1,117 @@
+CREATE FUNCTION platform_private.micro_ficha_source_https_v1(p_url text) RETURNS boolean LANGUAGE sql IMMUTABLE SET search_path='' AS $f$
+ SELECT p_url IS NOT NULL AND length(p_url)<=2048 AND p_url ~ '^https://[A-Za-z0-9.-]+(:443)?([/?#]|$)' AND p_url !~ '[[:space:][:cntrl:]\\]' AND p_url !~* '%(0[0-9a-f]|1[0-9a-f]|7f)' AND p_url !~ '^https://[^/?#]*@' AND p_url !~* '^https://(localhost|[^/?#]*\.local)(:443)?([/?#]|$)'
+$f$;
+REVOKE ALL ON FUNCTION platform_private.micro_ficha_source_https_v1(text) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE OR REPLACE FUNCTION public.tenant_microorganism_ficha_read_v1(p_id uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
+DECLARE org uuid; own uuid; result jsonb;
+BEGIN
+ org:=platform_private.catalog_tenant_actor('read_catalog');
+ IF NOT public.can_view_catalog_internal(auth.uid()) THEN RAISE EXCEPTION 'catalog_denied' USING ERRCODE='42501'; END IF;
+ SELECT owner_organization_id INTO own FROM public.microrganismos WHERE id=p_id;
+ IF own IS DISTINCT FROM org OR org IS NULL THEN RAISE EXCEPTION 'catalog_denied' USING ERRCODE='42501'; END IF;
+ SELECT jsonb_build_object('extra',extra,'evidence',evidence) INTO result FROM platform_private.micro_ficha_extra_v1 WHERE micro_id=p_id;
+ RETURN coalesce(result,jsonb_build_object('extra','{}'::jsonb,'evidence','[]'::jsonb));
+END $f$;
+CREATE OR REPLACE FUNCTION public.tenant_microorganism_ficha_save_v1(p_id uuid,p_expected_updated_at timestamptz,p_expected_profile_updated_at timestamptz,p_payload jsonb,p_evidence jsonb,p_key uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
+DECLARE org uuid; own uuid; old_child jsonb; child jsonb; children jsonb; kind text; tbl text; allowed text[]; cols text; rev timestamptz; row public.microrganismos%ROWTYPE; prof public.microorganism_technical_profiles%ROWTYPE; k text; e jsonb; source jsonb; ack jsonb; rep jsonb; h text; root jsonb; content jsonb; extra jsonb; target uuid;
+BEGIN
+ SET LOCAL lock_timeout='3s';
+ org:=platform_private.catalog_tenant_actor('mutate');
+ PERFORM 1 FROM platform_private.micro_ficha_gate_v1 WHERE singleton=true AND enabled=true FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'micro_ficha_not_active' USING ERRCODE='42501'; END IF;
+ IF p_key IS NULL OR p_payload IS NULL OR jsonb_typeof(p_payload)<>'object' OR (p_payload - ARRAY['root','content','extra','children'])<>'{}'::jsonb THEN RAISE EXCEPTION 'invalid_payload' USING ERRCODE='22023'; END IF;
+ IF octet_length(p_payload::text)>180000 THEN RAISE EXCEPTION 'payload_too_large' USING ERRCODE='22023'; END IF;
+ children:=coalesce(p_payload->'children','[]');
+ IF jsonb_typeof(children)<>'array' OR jsonb_array_length(children)>60 THEN RAISE EXCEPTION 'children_shape' USING ERRCODE='22023'; END IF;
+ root:=coalesce(p_payload->'root','{}'); content:=coalesce(p_payload->'content','{}');extra:=coalesce(p_payload->'extra','{}');
+ IF jsonb_typeof(root)<>'object' OR jsonb_typeof(content)<>'object' OR jsonb_typeof(extra)<>'object' THEN RAISE EXCEPTION 'invalid_payload' USING ERRCODE='22023'; END IF;
+ FOR k IN SELECT jsonb_object_keys(root) LOOP
+  IF NOT k=ANY(ARRAY['codigo','nome','nome_cientifico','tipo','fornecedor','funcao_agronomica','concentracao_ufc_ml','concentracao_label','descricao','observacoes']) THEN RAISE EXCEPTION 'root_field_forbidden' USING ERRCODE='22023'; END IF;
+ END LOOP;
+ FOR k IN SELECT jsonb_object_keys(content) LOOP
+  IF NOT k=ANY(ARRAY['resumo_curto','mecanismo_acao','beneficios_agronomicos','explicacao_tecnica','explicacao_produtor','explicacao_b2b','indicacoes_uso','cuidados_aplicacao','compatibilidade','armazenamento','observacoes_regulatorias']) THEN RAISE EXCEPTION 'content_field_forbidden' USING ERRCODE='22023'; END IF;
+ END LOOP;
+ FOR k IN SELECT jsonb_object_keys(extra) LOOP
+  IF NOT k=ANY(ARRAY['sinonimos','cepa','origem','apresentacao','culturas_uso','alvos_uso','documentos_pendentes']) THEN RAISE EXCEPTION 'extra_field_forbidden' USING ERRCODE='22023'; END IF;
+ END LOOP;
+ FOR e IN SELECT value FROM jsonb_each(root||content||extra) LOOP
+  IF jsonb_typeof(e) NOT IN ('string','null') OR length(e#>>'{}')>12000 THEN RAISE EXCEPTION 'field_shape' USING ERRCODE='22023'; END IF;
+ END LOOP;
+ IF root ? 'concentracao_ufc_ml' AND jsonb_typeof(root->'concentracao_ufc_ml')<>'null' AND (coalesce(root->>'concentracao_ufc_ml','') !~ '^[0-9]+(\.[0-9]+)?([eE][+]?[0-9]+)?$' OR (root->>'concentracao_ufc_ml')::numeric<=0) THEN RAISE EXCEPTION 'concentration_invalid' USING ERRCODE='22023'; END IF;
+ IF extra ? 'concentracao_unidade' THEN RAISE EXCEPTION 'legacy_unit_conflict' USING ERRCODE='22023'; END IF;
+ IF jsonb_typeof(p_evidence) IS DISTINCT FROM 'array' OR jsonb_array_length(p_evidence)>40 OR octet_length(p_evidence::text)>300000 THEN RAISE EXCEPTION 'evidence_shape' USING ERRCODE='22023'; END IF;
+ FOR e IN SELECT value FROM jsonb_array_elements(p_evidence) LOOP
+  IF jsonb_typeof(e)<>'object' OR (e - ARRAY['field','value','identity','sources'])<>'{}'::jsonb OR (e->>'field') IS NULL OR NOT (e->>'field')=ANY(ARRAY['descricao','resumo_curto','mecanismo_acao','beneficios_agronomicos','explicacao_tecnica','explicacao_produtor','explicacao_b2b','indicacoes_uso','cuidados_aplicacao','compatibilidade','armazenamento','observacoes_regulatorias']) OR jsonb_typeof(e->'identity') IS DISTINCT FROM 'object' OR jsonb_typeof(e->'value') IS DISTINCT FROM 'string' OR length(e->>'value')>12000 OR jsonb_typeof(e->'sources') IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'evidence_shape' USING ERRCODE='22023'; END IF;
+  IF jsonb_array_length(e->'sources') NOT BETWEEN 1 AND 20 THEN RAISE EXCEPTION 'source_required' USING ERRCODE='22023'; END IF;
+  FOR source IN SELECT value FROM jsonb_array_elements(e->'sources') LOOP
+   IF jsonb_typeof(source)<>'object' OR (source - ARRAY['url','title','excerpt'])<>'{}'::jsonb OR coalesce(source->>'url','') !~ '^https://[A-Za-z0-9.-]+(:443)?/' OR coalesce(source->>'title','')='' OR coalesce(source->>'excerpt','')='' OR length(source::text)>20000 THEN RAISE EXCEPTION 'source_invalid' USING ERRCODE='22023'; END IF;
+  END LOOP;
+ END LOOP;
+ h:=md5(jsonb_build_array('micro-ficha-v1',p_id,p_expected_updated_at,p_expected_profile_updated_at,p_payload,p_evidence)::text);
+ rep:=platform_private.tenant_catalog_receipt(org,p_key,h);
+ IF platform_private.catalog_tenant_actor('mutate') IS DISTINCT FROM org THEN RAISE EXCEPTION 'actor_changed' USING ERRCODE='42501'; END IF;
+ IF rep IS NOT NULL THEN RETURN rep; END IF;
+ IF p_id IS NOT NULL THEN
+  SELECT * INTO row FROM public.microrganismos WHERE id=p_id FOR UPDATE;
+  IF NOT FOUND OR row.owner_organization_id IS DISTINCT FROM org THEN RAISE EXCEPTION 'catalog_denied' USING ERRCODE='42501'; END IF;
+  IF platform_private.catalog_tenant_actor('mutate') IS DISTINCT FROM org THEN RAISE EXCEPTION 'actor_changed' USING ERRCODE='42501'; END IF;
+  IF row.updated_at IS DISTINCT FROM p_expected_updated_at OR p_expected_updated_at IS NULL THEN RAISE EXCEPTION 'micro_stale' USING ERRCODE='PT409'; END IF;
+  SELECT * INTO prof FROM public.microorganism_technical_profiles WHERE microrganismo_id=p_id FOR UPDATE;
+  IF platform_private.catalog_tenant_actor('mutate') IS DISTINCT FROM org THEN RAISE EXCEPTION 'actor_changed' USING ERRCODE='42501'; END IF;
+  IF prof.updated_at IS DISTINCT FROM p_expected_profile_updated_at THEN RAISE EXCEPTION 'profile_stale' USING ERRCODE='PT409'; END IF;
+ END IF;
+ IF platform_private.catalog_tenant_actor('mutate') IS DISTINCT FROM org THEN RAISE EXCEPTION 'actor_changed' USING ERRCODE='42501'; END IF;
+ ack:=public.tenant_catalog_root_save('microrganismos',p_id,root,p_expected_updated_at,gen_random_uuid()); target:=(ack->>'id')::uuid;
+ IF content<>'{}' THEN
+  IF prof.id IS NULL THEN content:=content||jsonb_build_object('microrganismo_id',target); END IF;
+  PERFORM public.tenant_catalog_root_save('microorganism_technical_profiles',prof.id,content,prof.updated_at,gen_random_uuid());
+ END IF;
+ FOR child IN SELECT value FROM jsonb_array_elements(children) ORDER BY value->>'kind',value->>'id' LOOP
+  IF jsonb_typeof(child)<>'object' OR (child-ARRAY['kind','id','updated_at','fields'])<>'{}' OR jsonb_typeof(child->'fields')<>'object' THEN RAISE EXCEPTION 'child_shape' USING ERRCODE='22023'; END IF;
+  kind:=child->>'kind';
+  IF kind='crop' THEN
+   tbl:='microorganism_crop_recommendations'; allowed:=ARRAY['cultura_id','cultura_nome','fase_recomendada','objetivo_uso','observacao','ativo'];
+  ELSIF kind='target' THEN
+   tbl:='microorganism_targets'; allowed:=ARRAY['catalogo_alvo_id','alvo_nome','alvo_tipo','descricao','prioridade','ativo'];
+  ELSIF kind='source' THEN
+   tbl:='catalog_technical_sources'; allowed:=ARRAY['fonte_titulo','fonte_url','fonte_tipo','idioma_original','pais_origem','resumo_evidencia','nivel_confianca','data_consulta','observacoes'];
+  ELSE RAISE EXCEPTION 'child_kind' USING ERRCODE='22023'; END IF;
+  IF kind='source' AND child->'fields' ? 'fonte_url' AND jsonb_typeof(child->'fields'->'fonte_url')<>'null' THEN
+   IF jsonb_typeof(child->'fields'->'fonte_url') IS DISTINCT FROM 'string' OR NOT platform_private.micro_ficha_source_https_v1(child->'fields'->>'fonte_url') THEN RAISE EXCEPTION 'source_url_invalid' USING ERRCODE='22023'; END IF;
+  END IF;
+  FOR k IN SELECT jsonb_object_keys(child->'fields') LOOP
+   IF NOT k=ANY(allowed) THEN RAISE EXCEPTION 'child_field_forbidden' USING ERRCODE='22023'; END IF;
+  END LOOP;
+  IF child->'fields' ? 'cultura_id' AND jsonb_typeof(child->'fields'->'cultura_id')<>'null' THEN
+   SELECT owner_organization_id INTO own FROM public.culturas WHERE id=(child->'fields'->>'cultura_id')::uuid FOR SHARE;
+   IF NOT FOUND OR (own IS NOT NULL AND own IS DISTINCT FROM org) THEN RAISE EXCEPTION 'crop_foreign' USING ERRCODE='42501'; END IF;
+  END IF;
+  IF child->'fields' ? 'catalogo_alvo_id' AND jsonb_typeof(child->'fields'->'catalogo_alvo_id')<>'null' THEN
+   -- Existing target catalogue has no tenant owner: public visible canonical target only.
+   PERFORM 1 FROM public.catalogo_alvos WHERE id=(child->'fields'->>'catalogo_alvo_id')::uuid AND ativo=true FOR SHARE;
+   IF NOT FOUND THEN RAISE EXCEPTION 'target_reference_invalid' USING ERRCODE='22023'; END IF;
+  END IF;
+  IF child->>'id' IS NOT NULL THEN
+   EXECUTE format('SELECT to_jsonb(x) FROM public.%I x WHERE id=$1 FOR UPDATE',tbl) INTO old_child USING (child->>'id')::uuid;
+   IF platform_private.catalog_tenant_actor('mutate') IS DISTINCT FROM org THEN RAISE EXCEPTION 'actor_changed' USING ERRCODE='42501'; END IF;
+   IF old_child IS NULL OR (kind='source' AND (old_child->>'entidade_tipo'<>'microrganismo' OR (old_child->>'entidade_id')::uuid<>target)) OR (kind<>'source' AND (old_child->>'microrganismo_id')::uuid<>target) THEN RAISE EXCEPTION 'child_foreign' USING ERRCODE='42501'; END IF;
+   IF child->>'updated_at' IS NULL OR (old_child->>'updated_at')::timestamptz IS DISTINCT FROM (child->>'updated_at')::timestamptz THEN RAISE EXCEPTION 'child_stale' USING ERRCODE='PT409'; END IF;
+   SELECT string_agg(format('%I=r.%I',key,key),',') INTO cols FROM jsonb_object_keys(child->'fields') key;
+   IF cols IS NULL THEN RAISE EXCEPTION 'child_empty' USING ERRCODE='22023'; END IF;
+   EXECUTE format('UPDATE public.%I x SET %s,updated_at=clock_timestamp() FROM jsonb_populate_record(NULL::public.%I,$1) r WHERE x.id=$2',tbl,cols,tbl) USING child->'fields',(child->>'id')::uuid;
+  ELSE
+   IF kind='source' THEN child:=jsonb_set(child,'{fields}',child->'fields'||jsonb_build_object('entidade_tipo','microrganismo','entidade_id',target));
+   ELSE child:=jsonb_set(child,'{fields}',child->'fields'||jsonb_build_object('microrganismo_id',target)); END IF;
+   SELECT string_agg(format('%I',key),','),string_agg(format('r.%I',key),',') INTO cols,k FROM jsonb_object_keys(child->'fields') key;
+   EXECUTE format('INSERT INTO public.%I (%s) SELECT %s FROM jsonb_populate_record(NULL::public.%I,$1) r',tbl,cols,k,tbl) USING child->'fields';
+  END IF;
+  IF platform_private.catalog_tenant_actor('mutate') IS DISTINCT FROM org THEN RAISE EXCEPTION 'actor_changed' USING ERRCODE='42501'; END IF;
+ END LOOP;
+ INSERT INTO platform_private.micro_ficha_extra_v1(micro_id,extra,evidence) VALUES(target,extra,p_evidence)
+ ON CONFLICT(micro_id) DO UPDATE SET extra=platform_private.micro_ficha_extra_v1.extra||excluded.extra,evidence=excluded.evidence,updated_at=clock_timestamp();
+ IF platform_private.catalog_tenant_actor('mutate') IS DISTINCT FROM org THEN RAISE EXCEPTION 'actor_changed' USING ERRCODE='42501'; END IF;
+ ack:=ack||jsonb_build_object('replayed',false);
+ INSERT INTO platform_private.tenant_catalog_root_receipts(actor_id,organization_id,idempotency_key,payload_hash,result) VALUES(auth.uid(),org,p_key,h,ack);
+ RETURN ack;
+END $f$;

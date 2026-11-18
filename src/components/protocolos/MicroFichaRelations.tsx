@@ -1,4 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { SOURCE_TYPE_LABEL, CONFIDENCE_LABEL } from "@/hooks/useCatalogSources";
+import { TARGET_TYPE_LABELS } from "@/lib/catalogo/documentaryLabels";
+import {
+  validateOptionalSourceUrl,
+  safeSourceUrl,
+} from "@/lib/catalogo/safeSourceUrl";
 import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -68,6 +74,7 @@ export function MicroFichaRelations({
   busy,
   staged,
   onStage,
+  onPending,
 }: {
   id: string | null;
   kind: MicroChild["kind"];
@@ -75,6 +82,7 @@ export function MicroFichaRelations({
   busy: boolean;
   staged: MicroChild[];
   onStage(child: MicroChild): void;
+  onPending(kind: MicroChild["kind"], pending: boolean): void;
 }) {
   const query = useScopedPortalQuery<Record<string, unknown>[]>({
     queryKey: ["micro-ficha-children", id, kind],
@@ -107,6 +115,9 @@ export function MicroFichaRelations({
     },
   });
   const [draft, setDraft] = useState<MicroChild | null>(null);
+  useEffect(() => {
+    onPending(kind, !!draft);
+  }, [kind, draft, onPending]);
   const [error, setError] = useState("");
   const begin = (row?: Record<string, unknown>) => {
     setError("");
@@ -139,6 +150,14 @@ export function MicroFichaRelations({
     if (kind === "source" && !draft.fields.fonte_titulo) {
       setError("Informe o título da fonte.");
       return;
+    }
+    if (kind === "source") {
+      try {
+        validateOptionalSourceUrl(draft.fields.fonte_url);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "URL inválida.");
+        return;
+      }
     }
     onStage(draft);
     setDraft(null);
@@ -191,6 +210,22 @@ export function MicroFichaRelations({
                     "Não informado",
                 )}
               </span>
+              {kind === "source" && row.fonte_url ? (
+                safeSourceUrl(row.fonte_url) ? (
+                  <a
+                    href={safeSourceUrl(row.fonte_url) ?? undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary underline"
+                  >
+                    Consultar fonte
+                  </a>
+                ) : (
+                  <span className="text-sm text-destructive">
+                    Link legado não seguro
+                  </span>
+                )
+              ) : null}
               {editable && (
                 <Button
                   disabled={busy}
@@ -237,7 +272,11 @@ export function MicroFichaRelations({
                                 options.data?.find((o) => o.id === value)
                                   ?.nome ?? "",
                             }
-                          : {}),
+                          : {
+                              cultura_nome:
+                                options.data?.find((o) => o.id === value)
+                                  ?.nome ?? "",
+                            }),
                       },
                     })
                   }
@@ -249,6 +288,35 @@ export function MicroFichaRelations({
                     {options.data?.map((o) => (
                       <SelectItem key={o.id} value={o.id}>
                         {o.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : ["fonte_tipo", "nivel_confianca", "alvo_tipo"].includes(
+                  field,
+                ) ? (
+                <Select
+                  value={String(draft.fields[field] ?? "")}
+                  onValueChange={(value) =>
+                    setDraft({
+                      ...draft,
+                      fields: { ...draft.fields, [field]: value },
+                    })
+                  }
+                >
+                  <SelectTrigger id={`child-${field}`}>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(
+                      field === "fonte_tipo"
+                        ? SOURCE_TYPE_LABEL
+                        : field === "nivel_confianca"
+                          ? CONFIDENCE_LABEL
+                          : TARGET_TYPE_LABELS,
+                    ).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
                       </SelectItem>
                     ))}
                   </SelectContent>

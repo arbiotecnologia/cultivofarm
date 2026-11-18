@@ -11,11 +11,11 @@ Candidato independente sobre **12a580416**. Nenhum instalador baseline foi alter
 - Consulta é POST autenticado, prova antes/depois dos bytes, `private, no-store`, sem signed URLs/GET público. Cliente valida hash/tipo/tamanho e revoga Blob ao fechar/mudar contexto.
 
 ## Instalação somente HML pelo root
-1. Provar `vrlcdwmlytukrjezrrnf` pelo conector. Instalar/validar baseline pelo procedimento existente, sem reescrevê-lo.
+1. Provar `vrlcdwmlytukrjezrrnf` pelo conector. Baseline já instalado/released pelo root conforme relato 02:49; não reaplicar. Validar o estado antes do delta.
 2. Storage API: criar `microorganism-documents`, `public=false`, `file_size_limit=10MB`, tipos PDF/PNG/JPEG quando suportado. Não usar SQL para buckets.
 3. Capturar funções integrais, owner/ACL, relações/guards e bucket pelo `capture.sql.review`/helper temporário. Não sanitizar corpos. `assemble.py capture.json OUTPUT` gera PRE/INSTALL/POST/ROLLBACK/RELEASE separados. Fonte tem pins esperados da composição anterior; divergência exige revisão, jamais repin automático.
 4. Auditor revisar saída e hashes. Rodar PRE, instalar fechado e POST; repetir INSTALL só após estado idêntico (não abre gate). RELEASE separado concede somente cinco RPCs ao authenticated e atesto service-only; não concede helpers privados ou DML.
-5. Implantar Edge somente HML como `microorganism-documents`, `verify_jwt=true`. Variáveis: `MICRO_DOCUMENTS_PROJECT_REF=vrlcdwmlytukrjezrrnf`, `SUPABASE_URL` HML, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` **somente servidor**. Nenhuma chave de IA/provedor é exigida. `LOVABLE_API_KEY` relatada pelo root para IA é independente destes anexos.
+5. Implantar Edge somente HML como `microorganism-documents`, `verify_jwt=true`. Montar com `../build-edge.py --ref vrlcdwmlytukrjezrrnf --service documents --out /tmp/review-documents`; binding.ts é constante, não Deno.env.set. Variáveis: `SUPABASE_URL` HML, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` **somente servidor**. Nenhuma chave de IA/provedor é exigida. `LOVABLE_API_KEY` relatada pelo root para IA é independente destes anexos.
 6. Provar upload/consulta/replay/versão/isolamento/revogação com JWT reais A/B e navegador local HML. Rollback fecha gate/EXECUTE, conserva objetos/versões/recibos/policy; nunca regrant automático.
 
 ## Evidência e limites

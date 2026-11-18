@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { DocumentaryEvidence } from "./documentarySuggestions";
 import { parseTenantCatalogAck } from "./tenantCatalogRoots";
+import { validateOptionalSourceUrl } from './safeSourceUrl';
 export const MICRO_ROOT_FIELDS = [
   "codigo",
   "nome",
@@ -122,6 +123,7 @@ export async function saveMicroFicha(
   if (id && !version)
     throw new Error("Versão observada ausente; recarregue a ficha.");
   const payload = microPayload(values, baseline);
+  for (const child of children) if (child.kind === 'source') validateOptionalSourceUrl(child.fields.fonte_url);
   if (!id)
     payload.root = {
       ...payload.root,

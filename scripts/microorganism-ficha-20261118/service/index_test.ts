@@ -1,7 +1,6 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { handle } from "./index.ts";
-const url = "https://swzpzcwiasxmjutrmvkm.supabase.co";
-Deno.env.set("CATALOG_DOCUMENTARY_PROJECT_REF", "swzpzcwiasxmjutrmvkm");
+const url = "https://vrlcdwmlytukrjezrrnf.supabase.co";
 Deno.test("CORS on options", async () => {
   const r = await handle(new Request(url, { method: "OPTIONS" }));
   assertEquals(r.status, 200);
@@ -114,18 +113,17 @@ Deno.test("authority denied cannot invoke inference", async () => {
 Deno.test(
   "explicit homolog binding accepts authentication phase, mismatch is closed",
   async () => {
-    Deno.env.set("CATALOG_DOCUMENTARY_PROJECT_REF", "vrlcdwmlytukrjezrrnf");
     Deno.env.set("SUPABASE_URL", "https://vrlcdwmlytukrjezrrnf.supabase.co");
     assertEquals(
       (await handle(new Request(url, { method: "POST" }))).status,
       401,
     );
-    Deno.env.set("SUPABASE_URL", url);
+    Deno.env.set("SUPABASE_URL", "https://swzpzcwiasxmjutrmvkm.supabase.co");
     assertEquals(
       (await handle(new Request(url, { method: "POST" }))).status,
       503,
     );
-    Deno.env.set("CATALOG_DOCUMENTARY_PROJECT_REF", "swzpzcwiasxmjutrmvkm");
+    Deno.env.set("SUPABASE_URL", url);
   },
 );
 Deno.test("server bounds body without trusting content length", async () => {

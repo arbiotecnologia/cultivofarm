@@ -2,6 +2,7 @@
 import {createClient} from 'npm:@supabase/supabase-js@2';
 import {corsHeaders} from 'npm:@supabase/supabase-js@2/cors';
 import {boundedBytes, measure} from './integrity.ts';
+import { PROJECT_REF } from './binding.ts';
 const BUCKET = 'microorganism-documents';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const headers = {...corsHeaders, 'Access-Control-Allow-Headers': corsHeaders['Access-Control-Allow-Headers']+', x-micro-id, x-document-id, x-document-action', 'Cache-Control':'private, no-store', 'X-Content-Type-Options':'nosniff'};
@@ -9,7 +10,7 @@ const json = (error: string, status: number) => new Response(JSON.stringify({err
 export async function handle(req: Request) {
   if (req.method === 'OPTIONS') return new Response('ok',{headers});
   if (req.method !== 'POST') return json('method_not_allowed',405);
-  const ref = Deno.env.get('MICRO_DOCUMENTS_PROJECT_REF');
+  const ref = PROJECT_REF;
   const url = ref === 'vrlcdwmlytukrjezrrnf' ? `https://${ref}.supabase.co` : null;
   if (!url || Deno.env.get('SUPABASE_URL') !== url) return json('document_binding_required',503);
   const anon = Deno.env.get('SUPABASE_ANON_KEY');

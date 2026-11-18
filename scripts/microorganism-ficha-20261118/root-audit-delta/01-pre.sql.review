@@ -1,0 +1,4 @@
+DO $pre$ BEGIN
+IF md5(pg_get_functiondef(to_regprocedure('public.tenant_microorganism_ficha_read_v1(uuid)'))) IS DISTINCT FROM '0c6dcc0a3fad6114c7cbf125544abc3f' THEN RAISE EXCEPTION 'ROOT_AUDIT_PRE_DRIFT:tenant_microorganism_ficha_read_v1(uuid)'; END IF;
+IF md5(pg_get_functiondef(to_regprocedure('public.tenant_microorganism_ficha_save_v1(uuid,timestamp with time zone,timestamp with time zone,jsonb,jsonb,uuid)'))) IS DISTINCT FROM '52ba09db7c85a5cf028ddbb5951652a8' THEN RAISE EXCEPTION 'ROOT_AUDIT_PRE_DRIFT:tenant_microorganism_ficha_save_v1(uuid,timestamp with time zone,timestamp with time zone,jsonb,jsonb,uuid)'; END IF;
+END $pre$;

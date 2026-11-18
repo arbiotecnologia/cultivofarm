@@ -3,3 +3,4 @@
 - Partial product saves keep the confirmed product ID/version and an exportable draft: uncertain composition results allow exit but stay retained for same-key replay; explicit server refusals are acknowledged only after a fresh canonical read and reopen the same product at its fresh CAS version; scope change discards the draft — prevents duplicate roots and permanent lockout without claiming atomicity.
 
 - Microorganism entries share one responsive editor and observed root/profile revisions; supplementary identity and accepted field evidence save atomically through the reviewed canonical-root adapter, with deployment candidates outside automatic paths and deny-only rollback — preserves identity, CAS and tenant authority.
+- Open microorganism relation drafts block parent save/section changes until applied or cancelled; source links use the shared HTTPS whitelist and cultural selections persist the canonical name — prevents silent draft loss and unsafe legacy links.

@@ -51,7 +51,7 @@ it("resposta válida compara atual/sugestão e aguarda seleção explícita", as
   await screen.findByText("Descrição sugerida");
   expect(screen.getByText("Rascunho atual")).toBeTruthy();
   expect(props.onApply).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("checkbox", { name: "descricao" }));
+  fireEvent.click(screen.getByRole("checkbox", { name: "Descrição do catálogo" }));
   fireEvent.click(screen.getByRole("button", { name: "Aplicar campos selecionados ao rascunho" }));
   expect(props.onApply).toHaveBeenCalledExactlyOnceWith({ descricao: "Descrição sugerida" });
   expect(state.invoke).toHaveBeenCalledTimes(1);
@@ -60,7 +60,7 @@ it("ambiguidade exige escolha e não exibe campos de candidatos combinados", asy
   state.invoke.mockResolvedValue({ data: { candidates: [candidate("A"), candidate("B")], suggestions: [suggestion()] }, error: null });
   render(<DocumentaryAI {...props} />); fireEvent.click(screen.getByRole("button", { name: "Gerar com IA" }));
   await screen.findByText("Escolha entre as identificações encontradas");
-  expect(screen.queryByRole("checkbox", { name: "descricao" })).toBeNull();
+  expect(screen.queryByRole("checkbox", { name: "Descrição do catálogo" })).toBeNull();
   expect(props.onApply).not.toHaveBeenCalled();
 });
 it("erro preserva formulário sem aplicações e sem retry automático", async () => {
@@ -89,7 +89,7 @@ it('salvamento impede geração e aplicação sem descartar resultado',async()=>
  const view=render(<DocumentaryAI {...props}/>);
  fireEvent.click(screen.getByRole('button',{name:'Gerar com IA'}));
  await screen.findByText('Descrição sugerida');
- fireEvent.click(screen.getByRole('checkbox',{name:'descricao'}));
+ fireEvent.click(screen.getByRole('checkbox',{name:'Descrição do catálogo'}));
  view.rerender(<DocumentaryAI {...props} disabled/>);
  fireEvent.click(screen.getByRole('button',{name:'Aplicar campos selecionados ao rascunho'}));
  fireEvent.click(screen.getByRole('button',{name:'Gerar com IA'}));
@@ -99,4 +99,4 @@ it('salvamento impede geração e aplicação sem descartar resultado',async()=>
  expect(props.onApply).toHaveBeenCalledOnce();
 });
 it.each([401,403,429,402])('diferencia erro HTTP %s sem aplicar nem retry',async status=>{state.invoke.mockResolvedValue({data:null,error:{context:new Response('{}',{status})}});render(<DocumentaryAI {...props}/>);fireEvent.click(screen.getByRole('button',{name:'Gerar com IA'}));await screen.findByRole('alert');expect(props.onApply).not.toHaveBeenCalled();expect(state.invoke).toHaveBeenCalledOnce();});
-it('persiste seleção de fontes via callback explícito sem salvar automaticamente',async()=>{state.invoke.mockResolvedValue({data:{candidates:[candidate('A')],suggestions:[suggestion()]},error:null});const evidence=vi.fn();render(<DocumentaryAI {...props} onEvidence={evidence}/>);fireEvent.click(screen.getByRole('button',{name:'Gerar com IA'}));await screen.findByText('Descrição sugerida');fireEvent.click(screen.getByRole('checkbox',{name:'descricao'}));fireEvent.click(screen.getByRole('button',{name:'Aplicar campos selecionados ao rascunho'}));expect(evidence).toHaveBeenCalledWith([expect.objectContaining({field:'descricao',value:'Descrição sugerida',sources:[source]})]);expect(state.invoke).toHaveBeenCalledOnce();});
+it('persiste seleção de fontes via callback explícito sem salvar automaticamente',async()=>{state.invoke.mockResolvedValue({data:{candidates:[candidate('A')],suggestions:[suggestion()]},error:null});const evidence=vi.fn();render(<DocumentaryAI {...props} onEvidence={evidence}/>);fireEvent.click(screen.getByRole('button',{name:'Gerar com IA'}));await screen.findByText('Descrição sugerida');fireEvent.click(screen.getByRole('checkbox',{name:'Descrição do catálogo'}));fireEvent.click(screen.getByRole('button',{name:'Aplicar campos selecionados ao rascunho'}));expect(evidence).toHaveBeenCalledWith([expect.objectContaining({field:'descricao',value:'Descrição sugerida',sources:[source]})]);expect(state.invoke).toHaveBeenCalledOnce();});

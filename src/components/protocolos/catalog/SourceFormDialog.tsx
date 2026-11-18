@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { validateOptionalSourceUrl } from '@/lib/catalogo/safeSourceUrl';
 import {
   CONFIDENCE_LABEL,
   CONFIDENCE_LEVELS,
@@ -85,6 +86,7 @@ export function SourceFormDialog({
       return;
     }
     try {
+      validateOptionalSourceUrl(form.fonte_url);
       await upsert.mutateAsync({
         id: source?.id,
         fonte_titulo: form.fonte_titulo.trim(),

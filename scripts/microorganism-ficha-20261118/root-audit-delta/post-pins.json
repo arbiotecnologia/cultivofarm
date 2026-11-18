@@ -1,0 +1,5 @@
+{
+  "tenant_microorganism_ficha_read_v1(uuid)": "be59e7ff911d3c9f1ba76b9083b64539",
+  "platform_private.micro_ficha_source_https_v1(text)": "4e5e00115708d99a2d8a8da921396b5a",
+  "tenant_microorganism_ficha_save_v1(uuid,timestamp with time zone,timestamp with time zone,jsonb,jsonb,uuid)": "5a7bd63edadf168148edc2b6f6e0c70e"
+}

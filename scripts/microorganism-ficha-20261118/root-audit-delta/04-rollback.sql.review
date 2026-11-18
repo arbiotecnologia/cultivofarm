@@ -1,0 +1,4 @@
+BEGIN;
+REVOKE EXECUTE ON FUNCTION public.tenant_microorganism_ficha_read_v1(uuid),public.tenant_microorganism_ficha_save_v1(uuid,timestamptz,timestamptz,jsonb,jsonb,uuid) FROM PUBLIC,anon,authenticated,service_role;
+COMMIT;
+-- Deny-only: never restore read_prefs bypass or unsafe URL writer; retain all rows/history.

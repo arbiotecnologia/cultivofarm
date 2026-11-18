@@ -3,6 +3,8 @@
 import hashlib,json,sys
 from pathlib import Path
 H=Path(__file__).resolve().parent
+def write_lf(path, text):
+ path.write_text(text,encoding='utf-8',newline='\n')
 SIGNATURES=[
 'platform_private.catalog_tenant_actor(text)',
 'public.tenant_catalog_root_save(text,uuid,jsonb,timestamp with time zone,uuid)',
@@ -47,13 +49,13 @@ def assemble(capture,out):
  guard=guard.replace(body,body+'\n'+ledger+f"INSERT INTO platform_private.micro_documents_install_v1 VALUES(true,'{digest}',({function_query}),jsonb_build_object('uploads',pg_temp.micro_document_relation_pin('platform_private.micro_document_uploads_v1'),'versions',pg_temp.micro_document_relation_pin('platform_private.micro_document_versions_v1')));")
  post=f"DO $post$ BEGIN IF ({function_query}) IS DISTINCT FROM (SELECT functions FROM platform_private.micro_documents_install_v1 WHERE singleton) THEN RAISE EXCEPTION 'DOCUMENT_POST_FUNCTION_DRIFT'; END IF; IF jsonb_build_object('uploads',pg_temp.micro_document_relation_pin('platform_private.micro_document_uploads_v1'),'versions',pg_temp.micro_document_relation_pin('platform_private.micro_document_versions_v1')) IS DISTINCT FROM (SELECT relations FROM platform_private.micro_documents_install_v1 WHERE singleton) THEN RAISE EXCEPTION 'DOCUMENT_POST_RELATION_DRIFT'; END IF; IF NOT EXISTS(SELECT 1 FROM pg_policy WHERE polrelid='storage.objects'::regclass AND polname='micro_documents_client_closed_v1' AND NOT polpermissive AND polcmd='*' AND pg_get_expr(polqual,polrelid)='(bucket_id <> ''microorganism-documents''::text)' AND pg_get_expr(polwithcheck,polrelid)='(bucket_id <> ''microorganism-documents''::text)') THEN RAISE EXCEPTION 'DOCUMENT_STORAGE_POLICY_DRIFT'; END IF; IF EXISTS(SELECT 1 FROM pg_proc p CROSS JOIN LATERAL aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE p.proname IN ({names}) AND a.grantee<>p.proowner AND (a.privilege_type<>'EXECUTE' OR a.is_grantable OR NOT ((a.grantee='authenticated'::regrole AND p.proname LIKE 'tenant_micro_document_%') OR (a.grantee='service_role'::regrole AND p.proname='micro_document_attest_bytes_v1')))) THEN RAISE EXCEPTION 'DOCUMENT_ACL_DRIFT'; END IF; END $post$;"
  out.mkdir(parents=True,exist_ok=True)
- (out/'01-pre.sql.review').write_text(pre)
- (out/'02-install.sql.review').write_text('BEGIN;\n'+pre+'DO $install$ BEGIN '+guard+' END $install$;\n'+post+'\nCOMMIT;\n')
- (out/'03-post.sql.review').write_text((H/'pin-helper.sql.review').read_text()+'\n'+post+'\nSELECT enabled FROM platform_private.micro_documents_gate_v1;\n')
+ write_lf(out/'01-pre.sql.review',pre)
+ write_lf(out/'02-install.sql.review','BEGIN;\n'+pre+'DO $install$ BEGIN '+guard+' END $install$;\n'+post+'\nCOMMIT;\n')
+ write_lf(out/'03-post.sql.review',(H/'pin-helper.sql.review').read_text()+'\n'+post+'\nSELECT enabled FROM platform_private.micro_documents_gate_v1;\n')
  release='\n'.join('GRANT EXECUTE ON FUNCTION '+signature+' TO authenticated;' for signature in PUBLIC)
  release+='\nGRANT EXECUTE ON FUNCTION public.micro_document_attest_bytes_v1(uuid,text,integer,text) TO service_role;\nUPDATE platform_private.micro_documents_gate_v1 SET enabled=true WHERE singleton;'
- (out/'05-release.sql.review').write_text('BEGIN;\n'+pre+post+'\n'+release+'\nCOMMIT;')
+ write_lf(out/'05-release.sql.review','BEGIN;\n'+pre+post+'\n'+release+'\nCOMMIT;')
  rollback='UPDATE platform_private.micro_documents_gate_v1 SET enabled=false WHERE singleton;\n'+ '\n'.join('REVOKE ALL ON FUNCTION '+signature+' FROM PUBLIC,anon,authenticated,service_role;' for signature in PUBLIC+['public.micro_document_attest_bytes_v1(uuid,text,integer,text)'])
- (out/'04-rollback.sql.review').write_text('BEGIN;\n'+rollback+'\nCOMMIT;\n-- Retain private objects, reservations, versions, receipts and Storage deny policy.\n')
- (out/'binding.json').write_text(json.dumps({'ref':capture['ref'],'MICRO_DOCUMENTS_PROJECT_REF':capture['ref'],'bucket':bucket,'source_sha256':digest},indent=2))
+ write_lf(out/'04-rollback.sql.review','BEGIN;\n'+rollback+'\nCOMMIT;\n-- Retain private objects, reservations, versions, receipts and Storage deny policy.\n')
+ write_lf(out/'binding.json',json.dumps({'ref':capture['ref'],'PROJECT_REF':capture['ref'],'bucket':bucket,'source_sha256':digest},indent=2))
 if __name__=='__main__':assemble(json.loads(Path(sys.argv[1]).read_text()),Path(sys.argv[2]))

@@ -28,4 +28,4 @@ Deno.test('revoked before bytes: no Storage read',()=>run(async(calls)=>{equal((
 Deno.test('bad hash refuses bytes',()=>run(async()=>{equal((await handle(request())).status,422);},{bytes:'%PDF-bad'}));
 Deno.test('invalid Auth: no business call',()=>run(async(calls)=>{equal((await handle(request())).status,401);equal(calls.length,1);},{authDenied:true}));
 Deno.test('upload: actor proof then bytes-only service attestation',()=>run(async(calls)=>{const r=await handle(request('upload','%PDF-1.7'));equal(r.status,200);equal((await r.json()).verified,true);equal(calls.some(x=>x.includes('commit_v1')),false);equal(calls.filter(x=>x.includes('snapshot')).length,3);}));
-Deno.test('production binding denied',()=>run(async(calls)=>{Deno.env.set('MICRO_DOCUMENTS_PROJECT_REF','swzpzcwiasxmjutrmvkm');equal((await handle(request())).status,503);equal(calls.length,0);}));
+Deno.test('production URL denied by immutable HML binding',()=>run(async(calls)=>{Deno.env.set('SUPABASE_URL','https://swzpzcwiasxmjutrmvkm.supabase.co');equal((await handle(request())).status,503);equal(calls.length,0);}));

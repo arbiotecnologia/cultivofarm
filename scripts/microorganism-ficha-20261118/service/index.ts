@@ -5,6 +5,7 @@ import { GatewayError } from "npm:@lovable.dev/ai-gateway@0.1.11";
 import { researchProduct } from "./inference.ts";
 import { z } from "npm:zod@3.25.76";
 import { DOCUMENTARY_FIELDS } from "./documentarySuggestions.ts";
+import { PROJECT_REF } from './binding.ts';
 
 const PROJECT_REFS = new Set(["swzpzcwiasxmjutrmvkm", "vrlcdwmlytukrjezrrnf"]);
 const MAX_BODY_BYTES = 24000;
@@ -51,7 +52,7 @@ export async function handle(req: Request) {
   if (req.method === "OPTIONS")
     return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
-  const ref = Deno.env.get("CATALOG_DOCUMENTARY_PROJECT_REF");
+  const ref = PROJECT_REF;
   const canonical =
     ref && PROJECT_REFS.has(ref) ? `https://${ref}.supabase.co` : null;
   if (!canonical || Deno.env.get("SUPABASE_URL") !== canonical)

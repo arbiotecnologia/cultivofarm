@@ -1,0 +1,6 @@
+DO $post$ BEGIN
+IF md5(pg_get_functiondef(to_regprocedure('tenant_microorganism_ficha_read_v1(uuid)'))) IS DISTINCT FROM 'be59e7ff911d3c9f1ba76b9083b64539' THEN RAISE EXCEPTION 'ROOT_AUDIT_POST_DRIFT:tenant_microorganism_ficha_read_v1(uuid)'; END IF;
+IF md5(pg_get_functiondef(to_regprocedure('platform_private.micro_ficha_source_https_v1(text)'))) IS DISTINCT FROM '4e5e00115708d99a2d8a8da921396b5a' THEN RAISE EXCEPTION 'ROOT_AUDIT_POST_DRIFT:platform_private.micro_ficha_source_https_v1(text)'; END IF;
+IF md5(pg_get_functiondef(to_regprocedure('tenant_microorganism_ficha_save_v1(uuid,timestamp with time zone,timestamp with time zone,jsonb,jsonb,uuid)'))) IS DISTINCT FROM '5a7bd63edadf168148edc2b6f6e0c70e' THEN RAISE EXCEPTION 'ROOT_AUDIT_POST_DRIFT:tenant_microorganism_ficha_save_v1(uuid,timestamp with time zone,timestamp with time zone,jsonb,jsonb,uuid)'; END IF;
+IF has_function_privilege('authenticated','platform_private.micro_ficha_source_https_v1(text)','EXECUTE') OR has_function_privilege('service_role','platform_private.micro_ficha_source_https_v1(text)','EXECUTE') THEN RAISE EXCEPTION 'ROOT_AUDIT_PRIVATE_ACL_DRIFT'; END IF;
+END $post$;

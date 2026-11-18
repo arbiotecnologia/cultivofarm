@@ -1,4 +1,6 @@
 ## 18/11 — Documentos exclusivos do microrganismo
+- [x] Integrar relato root HML26/IA real/browser; leitura feature/URLs/selects/cultura/pending corrigidos, delta17PG e catálogo1032 PASS; LF/binding determinístico sem reescrever baseline aplicado, relatório root-audit-delta/REPORT.md.
+- [ ] Root aplicar e homologar delta read/URL e nova montagem Edge na HML; nenhuma aplicação pelo agente.
 - [x] Implementar anexos próprios privados, versões, limites, CAS/recibos e consulta na ficha.
 - [x] Preparar delta independente com pins/PRE/POST/rollback, sem reescrever o instalador 12a580416.
 - [x] Validar 1017 testes catálogo, 32 PostgreSQL descartável, 13 Edge sintéticos, tipos/build automáticos e navegador desktop/mobile; evidências em documents/REPORT.md.

@@ -1,0 +1,23 @@
+{
+  "count": 17,
+  "checks": [
+    "reader feature allowed",
+    "reader feature revoked denied",
+    "reader feature restored allowed",
+    "URL denied 0",
+    "URL denied 1",
+    "URL denied 2",
+    "URL denied 3",
+    "URL denied 4",
+    "URL denied 5",
+    "URL denied 6",
+    "URL denied 7",
+    "URL denied 8",
+    "bad URL atomic root unchanged",
+    "bad URL no source",
+    "HTTPS source accepted",
+    "HTTPS persisted",
+    "rollback denies reader"
+  ],
+  "limits": "synthetic Auth/feature/schema, captured actor/root. NOT hosted"
+}

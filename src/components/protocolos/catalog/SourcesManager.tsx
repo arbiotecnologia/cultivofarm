@@ -24,6 +24,7 @@ import {
   type CatalogSourceEntity,
 } from "@/hooks/useCatalogSources";
 import { SourceFormDialog } from "./SourceFormDialog";
+import { safeSourceUrl } from '@/lib/catalogo/safeSourceUrl';
 
 interface Props {
   entidadeTipo: CatalogSourceEntity;
@@ -124,7 +125,7 @@ export function SourcesManager({ entidadeTipo, entidadeId, canEdit = false, canD
                     </div>
                   </div>
                   <div className="flex gap-1 shrink-0">
-                    {s.fonte_url && (
+                    {safeSourceUrl(s.fonte_url) && (
                       <Button
                         size="icon"
                         variant="ghost"
@@ -132,11 +133,12 @@ export function SourcesManager({ entidadeTipo, entidadeId, canEdit = false, canD
                         asChild
                         title="Abrir fonte"
                       >
-                        <a href={s.fonte_url} target="_blank" rel="noopener noreferrer">
+                        <a href={safeSourceUrl(s.fonte_url) ?? undefined} target="_blank" rel="noopener noreferrer">
                           <ExternalLink className="h-3.5 w-3.5" />
                         </a>
                       </Button>
                     )}
+                    {s.fonte_url && !safeSourceUrl(s.fonte_url) && <span className="text-xs text-destructive">Link legado não seguro</span>}
                     {canEdit && (
                       <Button
                         size="icon"

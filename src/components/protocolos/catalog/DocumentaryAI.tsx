@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DOCUMENTARY_LABELS } from '@/lib/catalogo/documentaryLabels';
+import { safeSourceUrl } from '@/lib/catalogo/safeSourceUrl';
 import {
   Select,
   SelectContent,
@@ -202,7 +204,7 @@ export function DocumentaryAI({
           .map((field) => (
             <Label key={field} className="flex items-center gap-2">
               <Checkbox
-                aria-label={`Pesquisar ${field}`}
+                aria-label={`Pesquisar ${DOCUMENTARY_LABELS[field] ?? field}`}
                 checked={requested.includes(field)}
                 onCheckedChange={(v) =>
                   setRequested((old) =>
@@ -212,7 +214,7 @@ export function DocumentaryAI({
                   )
                 }
               />
-              {field.replace(/_/g, " ")}
+              {DOCUMENTARY_LABELS[field] ?? field}
             </Label>
           ))}
       </fieldset>
@@ -313,7 +315,7 @@ export function DocumentaryAI({
                         )
                       }
                     />
-                    {s.field.replace(/_/g, " ")}
+                    {DOCUMENTARY_LABELS[s.field] ?? s.field}
                   </Label>
                   <div className="grid gap-2 sm:grid-cols-2">
                     <div>
@@ -333,7 +335,7 @@ export function DocumentaryAI({
                     <div key={source.url} className="break-words text-xs">
                       <a
                         className="text-primary underline"
-                        href={source.url}
+                        href={safeSourceUrl(source.url) ?? undefined}
                         target="_blank"
                         rel="noopener noreferrer"
                       >

@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { safeSourceUrl } from './safeSourceUrl';
 
 export const DOCUMENTARY_FIELDS = ["descricao", "modo_acao", "funcao_completa", "modo_aplicacao", "resumo_curto", "explicacao_tecnica", "explicacao_produtor", "explicacao_b2b", "indicacoes_uso", "janela_aplicacao", "cuidados_aplicacao", "compatibilidade", "observacoes_regulatorias", "beneficio_combinado", "mecanismo_acao", "beneficios_agronomicos", "armazenamento"] as const;
-export const sourceSchema = z.object({ url: z.string().url().refine(v => { const u = new URL(v); return u.protocol === "https:" && !u.username && !u.password && u.hostname !== "localhost" && !u.hostname.endsWith(".local"); }), title: z.string().min(1), excerpt: z.string().min(1) }).strict();
+export const sourceSchema = z.object({ url: z.string().url().refine(v => safeSourceUrl(v) !== null), title: z.string().min(1), excerpt: z.string().min(1) }).strict();
 export const documentarySchema = z.object({
   candidates: z.array(z.object({ key: z.string().min(1), name: z.string().min(1), manufacturer: z.string().nullable(), registration: z.string().nullable(), sources: z.array(sourceSchema).min(1) }).strict()).max(8),
   suggestions: z.array(z.object({ candidate_key: z.string(), field: z.enum(DOCUMENTARY_FIELDS), value: z.string().min(1).max(12000), sources: z.array(sourceSchema).min(1) }).strict()).max(40),

@@ -8,6 +8,9 @@ import json
 from pathlib import Path
 import sys
 
+def write_lf(path, text):
+    path.write_text(text, encoding="utf-8", newline="\n")
+
 H = Path(__file__).resolve().parent
 capture = json.loads(Path(sys.argv[1]).read_text())
 ref = capture.get("ref")
@@ -52,10 +55,10 @@ END IF;
 END $install$;
 COMMIT;
 """
-(out / "02-install.sql.review").write_text(install)
-(out / "01-pre.sql.review").write_text(f"-- Destination {ref}\nDO $pre$ BEGIN\n{checks}\nEND $pre$;\n")
-(out / "03-post.sql.review").write_text(f"DO $post$ BEGIN\n{post_checks}\nEND $post$;\nSELECT enabled FROM platform_private.micro_ficha_gate_v1;\n")
+write_lf(out / "02-install.sql.review", install)
+write_lf(out / "01-pre.sql.review", f"-- Destination {ref}\nDO $pre$ BEGIN\n{checks}\nEND $pre$;\n")
+write_lf(out / "03-post.sql.review", f"DO $post$ BEGIN\n{post_checks}\nEND $post$;\nSELECT enabled FROM platform_private.micro_ficha_gate_v1;\n")
 for name in ("04-rollback.sql.review", "05-release.sql.review"):
-    (out / name).write_text((H / name).read_text().replace("BEGIN;", f"BEGIN;\nDO $pins$ BEGIN\n{post_checks}\nEND $pins$;", 1))
-(out / "binding.json").write_text(json.dumps({"ref": ref, "edge_env": {"CATALOG_DOCUMENTARY_PROJECT_REF": ref}, "capture_sha256": hashlib.sha256(Path(sys.argv[1]).read_bytes()).hexdigest()}, indent=2) + "\n")
+    write_lf(out / name, (H / name).read_text().replace("BEGIN;", f"BEGIN;\nDO $pins$ BEGIN\n{post_checks}\nEND $pins$;", 1))
+write_lf(out / "binding.json", json.dumps({"ref": ref, "edge_env": {"CATALOG_DOCUMENTARY_PROJECT_REF": ref}, "capture_sha256": hashlib.sha256(Path(sys.argv[1]).read_bytes()).hexdigest()}, indent=2) + "\n")
 print(json.dumps({"ref": ref, "output": str(out), "applied": False}))

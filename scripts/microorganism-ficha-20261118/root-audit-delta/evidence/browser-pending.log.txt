@@ -1,0 +1,5 @@
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+page errors []
+{"viewport": 1280, "save_pending_blocked": true, "draft_preserved": true, "unsafe_url_blocked": true, "valid_source_staged": true, "limits": "synthetic transport/Auth, real editor; NOT hosted"}
+page errors []
+{"viewport": 390, "save_pending_blocked": true, "draft_preserved": true, "unsafe_url_blocked": true, "valid_source_staged": true, "limits": "synthetic transport/Auth, real editor; NOT hosted"}
