@@ -1,5 +1,10 @@
 # Validação — atualizada 18/11/2026
 
+## Incidente 01:07:07Z — gap de criação direta reconhecido
+QA HML 72/72 permanece prova real das operações efetivamente executadas, NÃO de claim→Auth→finish Financeiro (usuários eram aplicador→transição). CHECK do recibo faltava na fixture anterior.
+Novo pacote `receipt-shape`: 71/71 PostgreSQL 17.12 descartável, 26 bindings reais ativos, 10 md5 reais; erro antigo e positivo pós-delta reproduzidos. AuthAdmin/JWT HTTP e schema public completo não reproduzidos; ver limites e achado adicional de compensação em `receipt-shape/README.md`. Migração não aplicada; validação hosted adicional pelo root pendente.
+Regressão focada `bun run test -- src/test/b2b-finance --maxWorkers=2`: 5 arquivos/34 testes PASS, incluindo a nova bateria; build automático OK. Nenhuma mudança de runtime ou Edge.
+
 ## HML real (root) — ver README "Provas": 72/72 JWT/RLS/crédito/browser/CSV/revogação; limpeza QA_VERIFY zero.
 ## Produção: 02a+02b+02c success, 03-post POST_PASS (root). Edges `create-user` e `tenant-user-admin` implantadas pelo agente em 18/11.
 

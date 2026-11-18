@@ -1,0 +1,292 @@
+{
+  "exit_code": 0,
+  "total": 71,
+  "results": [
+    {
+      "name": "pin_platform_private.external_provisioning_scope(uuid,app_role[],uuid,uuid[],uuid)",
+      "status": "PASS"
+    },
+    {
+      "name": "pin_platform_private.external_provisioning_scope(uuid,app_role,uuid,uuid[],uuid)",
+      "status": "PASS"
+    },
+    {
+      "name": "pin_platform_private.b2b_claim_provisioning(uuid,uuid,text,text,app_role[],uuid[],uuid)",
+      "status": "PASS"
+    },
+    {
+      "name": "pin_platform_private.b2b_claim_provisioning(uuid,uuid,text,text,app_role,uuid[],uuid)",
+      "status": "PASS"
+    },
+    {
+      "name": "pin_admin_provision_user_profile_v1(uuid,text,text,app_role[],uuid[],uuid,uuid,text,text,text,text,text,text)",
+      "status": "PASS"
+    },
+    {
+      "name": "pin_b2b_claim_provisioning(uuid,uuid,text,text)",
+      "status": "PASS"
+    },
+    {
+      "name": "pin_b2b_claim_provisioning(uuid,uuid,text,text,app_role[],uuid[],uuid)",
+      "status": "PASS"
+    },
+    {
+      "name": "pin_b2b_claim_provisioning(uuid,uuid,text,text,app_role,uuid[],uuid)",
+      "status": "PASS"
+    },
+    {
+      "name": "pin_b2b_finish_provisioning(uuid,uuid,uuid)",
+      "status": "PASS"
+    },
+    {
+      "name": "pin_handle_new_user()",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_auth.users_a00_cf_user_gate",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_auth.users_a00_cf_user_no_truncate",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_auth.users_on_auth_user_created",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_partner_users_a00_cf_user_gate",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_partner_users_a00_cf_user_no_truncate",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_partner_users_a10_partner_users_derive_tenant",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_partner_users_a20_partner_users_bump_version",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_partner_users_z90_cf_touch_profile",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_user_roles_a00_cf_user_gate",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_user_roles_a00_cf_user_no_truncate",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_user_roles_trg_guard_superadmin_role_assignment",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_user_roles_trg_user_roles_enforce_cliente",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_user_roles_z90_cf_touch_profile",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_user_roles_z99_cf_require_admin",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_profiles_a00_cf_user_gate",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_profiles_a00_cf_user_no_truncate",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_profiles_guard_profile_senha_provisoria",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_profiles_guard_profile_senha_ticket",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_profiles_guard_profile_sensitive_fields",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_profiles_h15_profile_organization_guard",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_profiles_trg_guard_profile_tenant_fields",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_profiles_trg_profiles_enforce_cliente",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_profiles_update_profiles_updated_at",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_profiles_z99_cf_profile_stamp",
+      "status": "PASS"
+    },
+    {
+      "name": "binding_profiles_z99_cf_require_admin",
+      "status": "PASS"
+    },
+    {
+      "name": "old_claim_reproduces_23514",
+      "status": "PASS"
+    },
+    {
+      "name": "old_claim_no_partial_receipt",
+      "status": "PASS"
+    },
+    {
+      "name": "old_no_auth",
+      "status": "PASS"
+    },
+    {
+      "name": "wrong_ref_denied",
+      "status": "PASS"
+    },
+    {
+      "name": "post_and_idempotent",
+      "status": "PASS"
+    },
+    {
+      "name": "legacy_parceiro_b2b",
+      "status": "PASS"
+    },
+    {
+      "name": "legacy_parceiro_b2b_tecnico",
+      "status": "PASS"
+    },
+    {
+      "name": "legacy_cliente_produtor",
+      "status": "PASS"
+    },
+    {
+      "name": "legacy_null",
+      "status": "PASS"
+    },
+    {
+      "name": "legacy_three",
+      "status": "PASS"
+    },
+    {
+      "name": "legacy_duplicate_preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "finance_singleton",
+      "status": "PASS"
+    },
+    {
+      "name": "deny_finance_plus_parceiro_b2b",
+      "status": "PASS"
+    },
+    {
+      "name": "deny_finance_plus_parceiro_b2b_tecnico",
+      "status": "PASS"
+    },
+    {
+      "name": "deny_finance_plus_cliente_produtor",
+      "status": "PASS"
+    },
+    {
+      "name": "deny_finance_plus_financeiro",
+      "status": "PASS"
+    },
+    {
+      "name": "deny_finance_plus_administrador",
+      "status": "PASS"
+    },
+    {
+      "name": "deny_empty",
+      "status": "PASS"
+    },
+    {
+      "name": "deny_null_element",
+      "status": "PASS"
+    },
+    {
+      "name": "deny_finance_null",
+      "status": "PASS"
+    },
+    {
+      "name": "deny_finance_duplicate",
+      "status": "PASS"
+    },
+    {
+      "name": "deny_too_many",
+      "status": "PASS"
+    },
+    {
+      "name": "claim_cross_tenant",
+      "status": "PASS"
+    },
+    {
+      "name": "claim_mixed_roles",
+      "status": "PASS"
+    },
+    {
+      "name": "claim_contract",
+      "status": "PASS"
+    },
+    {
+      "name": "auth_trigger_unprivileged_profile",
+      "status": "PASS"
+    },
+    {
+      "name": "finish_requires_service",
+      "status": "PASS"
+    },
+    {
+      "name": "finish_real",
+      "status": "PASS"
+    },
+    {
+      "name": "finish_replay",
+      "status": "PASS"
+    },
+    {
+      "name": "finish_exclusive_role",
+      "status": "PASS"
+    },
+    {
+      "name": "finish_exact_link",
+      "status": "PASS"
+    },
+    {
+      "name": "receipt_completed",
+      "status": "PASS"
+    },
+    {
+      "name": "rollback_history_refused",
+      "status": "PASS"
+    },
+    {
+      "name": "post_rollback",
+      "status": "PASS"
+    },
+    {
+      "name": "rollback_old_denies_finance",
+      "status": "PASS"
+    },
+    {
+      "name": "drift_aborts",
+      "status": "PASS"
+    }
+  ],
+  "failure": null,
+  "scope": "Disposable PostgreSQL; captured real trigger bindings and provisioning bodies; synthetic Auth table/claims/schema/entitlements, NOT hosted JWT or AuthAdmin proof"
+}

@@ -1,0 +1,8 @@
+{
+  "ref": "swzpzcwiasxmjutrmvkm",
+  "legacy": "CHECK (((external_roles IS NULL) OR (((cardinality(external_roles) >= 1) AND (cardinality(external_roles) <= 3)) AND (array_position(external_roles, NULL::app_role) IS NULL) AND (external_roles <@ ARRAY['parceiro_b2b'::app_role, 'parceiro_b2b_tecnico'::app_role, 'cliente_produtor'::app_role]))))",
+  "legacy_reparsed": "CHECK (((external_roles IS NULL) OR ((cardinality(external_roles) >= 1) AND (cardinality(external_roles) <= 3) AND (array_position(external_roles, NULL::app_role) IS NULL) AND (external_roles <@ ARRAY['parceiro_b2b'::app_role, 'parceiro_b2b_tecnico'::app_role, 'cliente_produtor'::app_role]))))",
+  "candidate": "CHECK (((external_roles IS NULL) OR ((cardinality(external_roles) >= 1) AND (cardinality(external_roles) <= 3) AND (array_position(external_roles, NULL::app_role) IS NULL) AND (external_roles <@ ARRAY['parceiro_b2b'::app_role, 'parceiro_b2b_tecnico'::app_role, 'cliente_produtor'::app_role])) OR (external_roles = ARRAY['parceiro_b2b_financeiro'::app_role])))",
+  "legacy_md5": "8330ac58c9ac61a291f9305795f415ce",
+  "candidate_md5": "f9649f725066731bd12f43bd915acca7"
+}

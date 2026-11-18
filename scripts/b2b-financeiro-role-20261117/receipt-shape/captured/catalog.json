@@ -1,0 +1,486 @@
+{
+  "ref": "swzpzcwiasxmjutrmvkm",
+  "columns": [
+    {
+      "name": "id",
+      "type": "uuid",
+      "default": "gen_random_uuid()",
+      "notnull": true
+    },
+    {
+      "name": "actor_id",
+      "type": "uuid",
+      "default": null,
+      "notnull": true
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "default": null,
+      "notnull": true
+    },
+    {
+      "name": "partner_id",
+      "type": "uuid",
+      "default": null,
+      "notnull": false
+    },
+    {
+      "name": "external_role",
+      "type": "app_role",
+      "default": "'parceiro_b2b'::app_role",
+      "notnull": true
+    },
+    {
+      "name": "cliente_ids",
+      "type": "uuid[]",
+      "default": "ARRAY[]::uuid[]",
+      "notnull": true
+    },
+    {
+      "name": "principal_cliente_id",
+      "type": "uuid",
+      "default": null,
+      "notnull": false
+    },
+    {
+      "name": "target_snapshot",
+      "type": "jsonb",
+      "default": "'{}'::jsonb",
+      "notnull": true
+    },
+    {
+      "name": "idempotency_key",
+      "type": "uuid",
+      "default": null,
+      "notnull": true
+    },
+    {
+      "name": "email",
+      "type": "text",
+      "default": null,
+      "notnull": true
+    },
+    {
+      "name": "nome",
+      "type": "text",
+      "default": null,
+      "notnull": true
+    },
+    {
+      "name": "actor_stamp",
+      "type": "timestamp with time zone",
+      "default": null,
+      "notnull": true
+    },
+    {
+      "name": "actor_iat",
+      "type": "bigint",
+      "default": null,
+      "notnull": true
+    },
+    {
+      "name": "actor_invite_fence",
+      "type": "jsonb",
+      "default": null,
+      "notnull": true
+    },
+    {
+      "name": "user_id",
+      "type": "uuid",
+      "default": "gen_random_uuid()",
+      "notnull": true
+    },
+    {
+      "name": "fence",
+      "type": "uuid",
+      "default": "gen_random_uuid()",
+      "notnull": true
+    },
+    {
+      "name": "status",
+      "type": "text",
+      "default": "'claimed'::text",
+      "notnull": true
+    },
+    {
+      "name": "lease_until",
+      "type": "timestamp with time zone",
+      "default": "(clock_timestamp() + '00:05:00'::interval)",
+      "notnull": true
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "default": "clock_timestamp()",
+      "notnull": true
+    },
+    {
+      "name": "external_roles",
+      "type": "app_role[]",
+      "default": null,
+      "notnull": false
+    }
+  ],
+  "triggers": [
+    {
+      "body": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.acquire_gate()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nBEGIN\r\n IF TG_LEVEL<>'STATEMENT' OR TG_RELID NOT IN ('public.profiles'::regclass,'public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass,'auth.users'::regclass) THEN RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;\r\n IF current_setting('role',true) IN ('anon','authenticated') AND auth.uid() IS NULL THEN RAISE EXCEPTION 'user_edit_forbidden' USING ERRCODE='42501'; END IF;\r\n UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;\r\n IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;\r\n RETURN NULL;\r\nEND $function$\n",
+      "name": "a00_cf_user_gate",
+      "table": "auth.users",
+      "binding": "CREATE TRIGGER a00_cf_user_gate BEFORE DELETE ON auth.users FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_gate()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.block_truncate()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\r\nBEGIN RAISE EXCEPTION 'user_bulk_truncate_forbidden' USING ERRCODE='PT409'; END $function$\n",
+      "name": "a00_cf_user_no_truncate",
+      "table": "auth.users",
+      "binding": "CREATE TRIGGER a00_cf_user_no_truncate BEFORE TRUNCATE ON auth.users FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.block_truncate()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.handle_new_user()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  INSERT INTO public.profiles (user_id, nome, email)\n  VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'nome', ''), NEW.email);\n\n  -- Seguran\u00e7a: auto-cadastro N\u00c3O recebe nenhum papel.\n  -- O usu\u00e1rio permanece com privil\u00e9gio m\u00ednimo (sem papel -> /acesso-pendente)\n  -- at\u00e9 que um administrador atribua explicitamente o perfil adequado.\n  -- Usu\u00e1rios criados por admin recebem pap\u00e9is na pr\u00f3pria rotina administrativa.\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "name": "on_auth_user_created",
+      "table": "auth.users",
+      "binding": "CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.acquire_gate()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nBEGIN\r\n IF TG_LEVEL<>'STATEMENT' OR TG_RELID NOT IN ('public.profiles'::regclass,'public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass,'auth.users'::regclass) THEN RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;\r\n IF current_setting('role',true) IN ('anon','authenticated') AND auth.uid() IS NULL THEN RAISE EXCEPTION 'user_edit_forbidden' USING ERRCODE='42501'; END IF;\r\n UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;\r\n IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;\r\n RETURN NULL;\r\nEND $function$\n",
+      "name": "a00_cf_user_gate",
+      "table": "partner_users",
+      "binding": "CREATE TRIGGER a00_cf_user_gate BEFORE INSERT OR DELETE OR UPDATE ON public.partner_users FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_gate()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.block_truncate()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\r\nBEGIN RAISE EXCEPTION 'user_bulk_truncate_forbidden' USING ERRCODE='PT409'; END $function$\n",
+      "name": "a00_cf_user_no_truncate",
+      "table": "partner_users",
+      "binding": "CREATE TRIGGER a00_cf_user_no_truncate BEFORE TRUNCATE ON public.partner_users FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.block_truncate()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.partner_users_derive_tenant()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n v_tenant uuid;\nBEGIN\n SELECT pa.commercial_owner_organization_id INTO v_tenant\n FROM public.partner_accounts pa WHERE pa.id=NEW.partner_id;\n IF NOT FOUND THEN\n  RAISE EXCEPTION 'partner_users_partner_not_found' USING ERRCODE='23503';\n END IF;\n IF v_tenant IS NULL THEN\n  RAISE EXCEPTION 'partner_users_partner_without_tenant' USING ERRCODE='42501';\n END IF;\n IF NEW.tenant_id IS NOT NULL AND NEW.tenant_id IS DISTINCT FROM v_tenant THEN\n  RAISE EXCEPTION 'partner_users_tenant_mismatch' USING ERRCODE='42501';\n END IF;\n NEW.tenant_id:=v_tenant;\n RETURN NEW;\nEND;\n$function$\n",
+      "name": "a10_partner_users_derive_tenant",
+      "table": "partner_users",
+      "binding": "CREATE TRIGGER a10_partner_users_derive_tenant BEFORE INSERT OR UPDATE ON public.partner_users FOR EACH ROW EXECUTE FUNCTION partner_users_derive_tenant()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.partner_users_bump_version()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n  NEW.version := OLD.version + 1;\n  RETURN NEW;\nEND;\n$function$\n",
+      "name": "a20_partner_users_bump_version",
+      "table": "partner_users",
+      "binding": "CREATE TRIGGER a20_partner_users_bump_version BEFORE UPDATE ON public.partner_users FOR EACH ROW EXECUTE FUNCTION partner_users_bump_version()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.touch_related_profiles()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nDECLARE old_id uuid; new_id uuid; item uuid;\r\nBEGIN\r\n IF TG_LEVEL<>'ROW' OR TG_RELID NOT IN ('public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass) THEN RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;\r\n IF TG_OP<>'INSERT' THEN old_id:=OLD.user_id; END IF;\r\n IF TG_OP<>'DELETE' THEN new_id:=NEW.user_id; END IF;\r\n FOR item IN SELECT DISTINCT x FROM unnest(ARRAY[old_id,new_id]) x WHERE x IS NOT NULL ORDER BY x LOOP UPDATE public.profiles SET updated_at=updated_at WHERE user_id=item; END LOOP;\r\n RETURN NULL;\r\nEND $function$\n",
+      "name": "z90_cf_touch_profile",
+      "table": "partner_users",
+      "binding": "CREATE TRIGGER z90_cf_touch_profile AFTER INSERT OR DELETE OR UPDATE ON public.partner_users FOR EACH ROW EXECUTE FUNCTION cf_user_guards_v1.touch_related_profiles()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.acquire_gate()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nBEGIN\r\n IF TG_LEVEL<>'STATEMENT' OR TG_RELID NOT IN ('public.profiles'::regclass,'public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass,'auth.users'::regclass) THEN RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;\r\n IF current_setting('role',true) IN ('anon','authenticated') AND auth.uid() IS NULL THEN RAISE EXCEPTION 'user_edit_forbidden' USING ERRCODE='42501'; END IF;\r\n UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;\r\n IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;\r\n RETURN NULL;\r\nEND $function$\n",
+      "name": "a00_cf_user_gate",
+      "table": "user_roles",
+      "binding": "CREATE TRIGGER a00_cf_user_gate BEFORE INSERT OR DELETE OR UPDATE ON public.user_roles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_gate()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.block_truncate()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\r\nBEGIN RAISE EXCEPTION 'user_bulk_truncate_forbidden' USING ERRCODE='PT409'; END $function$\n",
+      "name": "a00_cf_user_no_truncate",
+      "table": "user_roles",
+      "binding": "CREATE TRIGGER a00_cf_user_no_truncate BEFORE TRUNCATE ON public.user_roles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.block_truncate()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.guard_superadmin_role_assignment()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_touches boolean := false;\nBEGIN\n  IF TG_OP IN ('INSERT','UPDATE') AND NEW.role = 'superadmin'::public.app_role THEN\n    v_touches := true;\n  END IF;\n  IF TG_OP IN ('UPDATE','DELETE') AND OLD.role = 'superadmin'::public.app_role THEN\n    v_touches := true;\n  END IF;\n\n  IF v_touches AND current_user NOT IN ('service_role','postgres','supabase_admin') THEN\n    RAISE EXCEPTION 'superadmin_role_reserved'\n      USING ERRCODE = '42501',\n            HINT = 'O papel de plataforma so pode ser atribuido ou removido pelo mecanismo interno.';\n  END IF;\n\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "name": "trg_guard_superadmin_role_assignment",
+      "table": "user_roles",
+      "binding": "CREATE TRIGGER trg_guard_superadmin_role_assignment BEFORE INSERT OR DELETE OR UPDATE ON public.user_roles FOR EACH ROW EXECUTE FUNCTION guard_superadmin_role_assignment()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.enforce_cliente_id_for_produtor()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_user uuid;\n  v_role app_role;\n  v_count int;\nBEGIN\n  -- L\u00f3gica espec\u00edfica para a tabela user_roles\n  IF TG_TABLE_NAME = 'user_roles' THEN\n    -- Aqui o record NEW possui o campo 'role'\n    IF NEW.role = 'cliente_produtor' THEN\n      SELECT count(*) INTO v_count\n        FROM public.user_clientes WHERE user_id = NEW.user_id;\n      IF v_count = 0 THEN\n        RAISE EXCEPTION 'Para a fun\u00e7\u00e3o \"Produtor (Portal)\" \u00e9 obrigat\u00f3rio vincular o usu\u00e1rio a pelo menos um cliente.'\n          USING ERRCODE = 'check_violation';\n      END IF;\n    END IF;\n    RETURN NEW;\n  END IF;\n\n  -- L\u00f3gica espec\u00edfica para a tabela user_clientes (que n\u00e3o possui campo 'role')\n  IF TG_TABLE_NAME = 'user_clientes' THEN\n    v_user := COALESCE(NEW.user_id, OLD.user_id);\n    \n    -- Verifica se o usu\u00e1rio tem a role de produtor\n    SELECT role INTO v_role FROM public.user_roles\n      WHERE user_id = v_user AND role = 'cliente_produtor' LIMIT 1;\n      \n    IF v_role IS NOT NULL THEN\n      -- Conta quantos v\u00ednculos restariam ap\u00f3s a opera\u00e7\u00e3o\n      IF TG_OP = 'DELETE' THEN\n        SELECT count(*) INTO v_count FROM public.user_clientes\n          WHERE user_id = v_user AND id <> OLD.id;\n      ELSE\n        SELECT count(*) INTO v_count FROM public.user_clientes\n          WHERE user_id = v_user;\n      END IF;\n\n      IF v_count = 0 THEN\n        RAISE EXCEPTION 'Este usu\u00e1rio \u00e9 Produtor e precisa permanecer vinculado a pelo menos um cliente.'\n          USING ERRCODE = 'check_violation';\n      END IF;\n    END IF;\n    RETURN COALESCE(NEW, OLD);\n  END IF;\n\n  RETURN COALESCE(NEW, OLD);\nEND;$function$\n",
+      "name": "trg_user_roles_enforce_cliente",
+      "table": "user_roles",
+      "binding": "CREATE TRIGGER trg_user_roles_enforce_cliente BEFORE INSERT OR UPDATE ON public.user_roles FOR EACH ROW EXECUTE FUNCTION enforce_cliente_id_for_produtor()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.touch_related_profiles()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nDECLARE old_id uuid; new_id uuid; item uuid;\r\nBEGIN\r\n IF TG_LEVEL<>'ROW' OR TG_RELID NOT IN ('public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass) THEN RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;\r\n IF TG_OP<>'INSERT' THEN old_id:=OLD.user_id; END IF;\r\n IF TG_OP<>'DELETE' THEN new_id:=NEW.user_id; END IF;\r\n FOR item IN SELECT DISTINCT x FROM unnest(ARRAY[old_id,new_id]) x WHERE x IS NOT NULL ORDER BY x LOOP UPDATE public.profiles SET updated_at=updated_at WHERE user_id=item; END LOOP;\r\n RETURN NULL;\r\nEND $function$\n",
+      "name": "z90_cf_touch_profile",
+      "table": "user_roles",
+      "binding": "CREATE TRIGGER z90_cf_touch_profile AFTER INSERT OR DELETE OR UPDATE ON public.user_roles FOR EACH ROW EXECUTE FUNCTION cf_user_guards_v1.touch_related_profiles()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.require_admin()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nBEGIN\r\n IF TG_LEVEL<>'STATEMENT' OR TG_RELID NOT IN ('public.profiles'::regclass,'public.user_roles'::regclass) THEN RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;\r\n IF NOT EXISTS(SELECT 1 FROM public.profiles p JOIN public.user_roles r USING(user_id) WHERE p.ativo IS TRUE AND r.role='administrador') THEN RAISE EXCEPTION 'user_last_active_admin' USING ERRCODE='PT409'; END IF;\r\n RETURN NULL;\r\nEND $function$\n",
+      "name": "z99_cf_require_admin",
+      "table": "user_roles",
+      "binding": "CREATE TRIGGER z99_cf_require_admin AFTER INSERT OR DELETE OR UPDATE ON public.user_roles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.require_admin()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.acquire_gate()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nBEGIN\r\n IF TG_LEVEL<>'STATEMENT' OR TG_RELID NOT IN ('public.profiles'::regclass,'public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass,'auth.users'::regclass) THEN RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;\r\n IF current_setting('role',true) IN ('anon','authenticated') AND auth.uid() IS NULL THEN RAISE EXCEPTION 'user_edit_forbidden' USING ERRCODE='42501'; END IF;\r\n UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;\r\n IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;\r\n RETURN NULL;\r\nEND $function$\n",
+      "name": "a00_cf_user_gate",
+      "table": "profiles",
+      "binding": "CREATE TRIGGER a00_cf_user_gate BEFORE INSERT OR DELETE OR UPDATE ON public.profiles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_gate()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.block_truncate()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\r\nBEGIN RAISE EXCEPTION 'user_bulk_truncate_forbidden' USING ERRCODE='PT409'; END $function$\n",
+      "name": "a00_cf_user_no_truncate",
+      "table": "profiles",
+      "binding": "CREATE TRIGGER a00_cf_user_no_truncate BEFORE TRUNCATE ON public.profiles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.block_truncate()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.guard_profile_senha_provisoria()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF current_user IN ('postgres','service_role','supabase_auth_admin') THEN RETURN NEW; END IF;\n  IF TG_OP = 'INSERT' THEN\n    IF NEW.senha_provisoria IS TRUE THEN\n      RAISE EXCEPTION 'profile_sensitive_fields_forbidden' USING ERRCODE='42501';\n    END IF;\n    RETURN NEW;\n  END IF;\n  IF NEW.senha_provisoria IS DISTINCT FROM OLD.senha_provisoria THEN\n    RAISE EXCEPTION 'profile_sensitive_fields_forbidden' USING ERRCODE='42501';\n  END IF;\n  RETURN NEW;\nEND $function$\n",
+      "name": "guard_profile_senha_provisoria",
+      "table": "profiles",
+      "binding": "CREATE TRIGGER guard_profile_senha_provisoria BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION guard_profile_senha_provisoria()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.guard_profile_senha_ticket()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF session_user = 'authenticator'\n     AND OLD.senha_provisoria IS TRUE AND NEW.senha_provisoria IS DISTINCT FROM TRUE\n     AND NOT platform_private.has_ticket('pwd_conclude', NEW.user_id) THEN\n    RAISE EXCEPTION 'profile_sensitive_fields_forbidden' USING errcode='42501';\n  END IF;\n  RETURN NEW;\nEND $function$\n",
+      "name": "guard_profile_senha_ticket",
+      "table": "profiles",
+      "binding": "CREATE TRIGGER guard_profile_senha_ticket BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION guard_profile_senha_ticket()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.guard_profile_sensitive_fields()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$ BEGIN IF current_user IN ('postgres','service_role','supabase_auth_admin') THEN RETURN NEW; END IF; IF public.has_role(auth.uid(),'administrador'::public.app_role) THEN RETURN NEW; END IF; IF TG_OP='INSERT' THEN IF NEW.ativo IS DISTINCT FROM true OR NEW.cliente_id IS NOT NULL OR NEW.organization_id IS NOT NULL OR NEW.data_admissao IS NOT NULL OR NEW.observacoes_internas IS NOT NULL THEN RAISE EXCEPTION 'profile_sensitive_fields_forbidden' USING ERRCODE='42501'; END IF; ELSE IF OLD.ativo IS NOT TRUE OR ROW(NEW.id,NEW.user_id,NEW.email,NEW.ativo,NEW.cliente_id,NEW.organization_id,NEW.created_at,NEW.data_admissao,NEW.observacoes_internas) IS DISTINCT FROM ROW(OLD.id,OLD.user_id,OLD.email,OLD.ativo,OLD.cliente_id,OLD.organization_id,OLD.created_at,OLD.data_admissao,OLD.observacoes_internas) THEN RAISE EXCEPTION 'profile_sensitive_fields_forbidden' USING ERRCODE='42501'; END IF; END IF; RETURN NEW; END; $function$\n",
+      "name": "guard_profile_sensitive_fields",
+      "table": "profiles",
+      "binding": "CREATE TRIGGER guard_profile_sensitive_fields BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION guard_profile_sensitive_fields()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.h15_profile_organization_guard()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nBEGIN\n IF current_setting('role',true) IN ('authenticated','anon') THEN\n IF TG_OP='INSERT' THEN\n IF NEW.organization_id IS NOT NULL THEN RAISE EXCEPTION 'H15_ORGANIZATION_PROVISIONING_REQUIRED' USING ERRCODE='42501'; END IF;\n ELSIF NEW.organization_id IS DISTINCT FROM OLD.organization_id THEN\n RAISE EXCEPTION 'H15_ORGANIZATION_PROVISIONING_REQUIRED' USING ERRCODE='42501';\n END IF;\n END IF;\n RETURN NEW;\nEND $function$\n",
+      "name": "h15_profile_organization_guard",
+      "table": "profiles",
+      "binding": "CREATE TRIGGER h15_profile_organization_guard BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION h15_profile_organization_guard()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.guard_profile_tenant_fields()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RETURN NEW;\n  END IF;\n\n  IF NEW.user_id IS DISTINCT FROM OLD.user_id\n     OR NEW.organization_id IS DISTINCT FROM OLD.organization_id\n     OR NEW.email IS DISTINCT FROM OLD.email\n     OR NEW.senha_provisoria IS DISTINCT FROM OLD.senha_provisoria\n     OR NEW.cliente_id IS DISTINCT FROM OLD.cliente_id THEN\n    RAISE EXCEPTION 'profile_protected_fields' USING ERRCODE = '42501';\n  END IF;\n\n  IF auth.uid() = OLD.user_id AND NEW.ativo IS DISTINCT FROM OLD.ativo THEN\n    RAISE EXCEPTION 'profile_protected_fields' USING ERRCODE = '42501';\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "name": "trg_guard_profile_tenant_fields",
+      "table": "profiles",
+      "binding": "CREATE TRIGGER trg_guard_profile_tenant_fields BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION guard_profile_tenant_fields()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.enforce_cliente_id_for_produtor()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_user uuid;\n  v_role app_role;\n  v_count int;\nBEGIN\n  -- L\u00f3gica espec\u00edfica para a tabela user_roles\n  IF TG_TABLE_NAME = 'user_roles' THEN\n    -- Aqui o record NEW possui o campo 'role'\n    IF NEW.role = 'cliente_produtor' THEN\n      SELECT count(*) INTO v_count\n        FROM public.user_clientes WHERE user_id = NEW.user_id;\n      IF v_count = 0 THEN\n        RAISE EXCEPTION 'Para a fun\u00e7\u00e3o \"Produtor (Portal)\" \u00e9 obrigat\u00f3rio vincular o usu\u00e1rio a pelo menos um cliente.'\n          USING ERRCODE = 'check_violation';\n      END IF;\n    END IF;\n    RETURN NEW;\n  END IF;\n\n  -- L\u00f3gica espec\u00edfica para a tabela user_clientes (que n\u00e3o possui campo 'role')\n  IF TG_TABLE_NAME = 'user_clientes' THEN\n    v_user := COALESCE(NEW.user_id, OLD.user_id);\n    \n    -- Verifica se o usu\u00e1rio tem a role de produtor\n    SELECT role INTO v_role FROM public.user_roles\n      WHERE user_id = v_user AND role = 'cliente_produtor' LIMIT 1;\n      \n    IF v_role IS NOT NULL THEN\n      -- Conta quantos v\u00ednculos restariam ap\u00f3s a opera\u00e7\u00e3o\n      IF TG_OP = 'DELETE' THEN\n        SELECT count(*) INTO v_count FROM public.user_clientes\n          WHERE user_id = v_user AND id <> OLD.id;\n      ELSE\n        SELECT count(*) INTO v_count FROM public.user_clientes\n          WHERE user_id = v_user;\n      END IF;\n\n      IF v_count = 0 THEN\n        RAISE EXCEPTION 'Este usu\u00e1rio \u00e9 Produtor e precisa permanecer vinculado a pelo menos um cliente.'\n          USING ERRCODE = 'check_violation';\n      END IF;\n    END IF;\n    RETURN COALESCE(NEW, OLD);\n  END IF;\n\n  RETURN COALESCE(NEW, OLD);\nEND;$function$\n",
+      "name": "trg_profiles_enforce_cliente",
+      "table": "profiles",
+      "binding": "CREATE TRIGGER trg_profiles_enforce_cliente BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION enforce_cliente_id_for_produtor()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.update_updated_at_column()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $function$\n",
+      "name": "update_profiles_updated_at",
+      "table": "profiles",
+      "binding": "CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.advance_stamp()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\r\nBEGIN NEW.updated_at:=greatest(clock_timestamp(),OLD.updated_at+interval '1 microsecond'); RETURN NEW; END $function$\n",
+      "name": "z99_cf_profile_stamp",
+      "table": "profiles",
+      "binding": "CREATE TRIGGER z99_cf_profile_stamp BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION cf_user_guards_v1.advance_stamp()",
+      "enabled": "O"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.require_admin()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nBEGIN\r\n IF TG_LEVEL<>'STATEMENT' OR TG_RELID NOT IN ('public.profiles'::regclass,'public.user_roles'::regclass) THEN RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;\r\n IF NOT EXISTS(SELECT 1 FROM public.profiles p JOIN public.user_roles r USING(user_id) WHERE p.ativo IS TRUE AND r.role='administrador') THEN RAISE EXCEPTION 'user_last_active_admin' USING ERRCODE='PT409'; END IF;\r\n RETURN NULL;\r\nEND $function$\n",
+      "name": "z99_cf_require_admin",
+      "table": "profiles",
+      "binding": "CREATE TRIGGER z99_cf_require_admin AFTER INSERT OR DELETE OR UPDATE ON public.profiles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.require_admin()",
+      "enabled": "O"
+    }
+  ],
+  "functions": [
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "cb2b512b744366d7ec29698ac001b2c8",
+      "body": "CREATE OR REPLACE FUNCTION public.admin_provision_user_profile_v1(p_user_id uuid, p_email text, p_nome text, p_roles app_role[], p_cliente_ids uuid[] DEFAULT ARRAY[]::uuid[], p_principal_cliente_id uuid DEFAULT NULL::uuid, p_partner_id uuid DEFAULT NULL::uuid, p_partner_papel text DEFAULT NULL::text, p_telefone text DEFAULT NULL::text, p_cargo text DEFAULT NULL::text, p_cpf_cnpj text DEFAULT NULL::text, p_crea text DEFAULT NULL::text, p_especialidade text DEFAULT NULL::text)\n RETURNS void\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_profile_count integer;\n  v_role_count integer;\n  v_cliente_count integer;\n  v_partner_role_count integer;\nBEGIN\n  PERFORM platform_private.require_service_role();\n  IF p_user_id IS NULL OR p_email IS NULL OR p_nome IS NULL THEN\n    RAISE EXCEPTION 'invalid_user_payload' USING ERRCODE = '22023';\n  END IF;\n\n  v_role_count := COALESCE(cardinality(p_roles), 0);\n  IF v_role_count = 0 OR v_role_count > 13 THEN\n    RAISE EXCEPTION 'invalid_roles' USING ERRCODE = '22023';\n  END IF;\n\n  IF 'superadmin'::public.app_role = ANY(p_roles) THEN\n    RAISE EXCEPTION 'superadmin_role_reserved' USING ERRCODE = '42501';\n  END IF;\n\n  IF v_role_count <> (SELECT count(DISTINCT r) FROM unnest(p_roles) AS r) THEN\n    RAISE EXCEPTION 'duplicate_roles' USING ERRCODE = '22023';\n  END IF;\n\n  p_cliente_ids := COALESCE(p_cliente_ids, ARRAY[]::uuid[]);\n  v_cliente_count := cardinality(p_cliente_ids);\n  IF v_cliente_count > 100\n     OR v_cliente_count <> (SELECT count(DISTINCT c) FROM unnest(p_cliente_ids) AS c) THEN\n    RAISE EXCEPTION 'invalid_customer_links' USING ERRCODE = '22023';\n  END IF;\n\n  IF 'cliente_produtor'::public.app_role = ANY(p_roles) AND v_cliente_count = 0 THEN\n    RAISE EXCEPTION 'producer_requires_customer' USING ERRCODE = '23514';\n  END IF;\n\n  IF p_principal_cliente_id IS NOT NULL\n     AND NOT (p_principal_cliente_id = ANY(p_cliente_ids)) THEN\n    RAISE EXCEPTION 'invalid_primary_customer' USING ERRCODE = '23514';\n  END IF;\n\n  IF v_cliente_count > 0 AND (\n    SELECT count(*) FROM public.clientes c WHERE c.id = ANY(p_cliente_ids)\n  ) <> v_cliente_count THEN\n    RAISE EXCEPTION 'customer_not_found' USING ERRCODE = '23503';\n  END IF;\n\n  SELECT count(*) INTO v_partner_role_count\n  FROM unnest(p_roles) AS r\n  WHERE r IN ('parceiro_b2b'::public.app_role, 'parceiro_b2b_tecnico'::public.app_role, 'parceiro_b2b_financeiro'::public.app_role);\n\n  IF v_partner_role_count > 1 AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_provisioning_receipts r WHERE r.user_id=p_user_id AND r.status='claimed' AND r.external_roles=p_roles AND r.partner_id=p_partner_id) THEN RAISE EXCEPTION 'c2_receipt_required' USING ERRCODE='42501'; END IF;\n\n  IF v_partner_role_count >= 1 THEN\n    IF p_partner_id IS NULL OR p_partner_papel IS NULL OR p_partner_papel NOT IN ('gestor', 'tecnico', 'financeiro')\n       OR (('parceiro_b2b_financeiro'::public.app_role = ANY(p_roles)) IS DISTINCT FROM (p_partner_papel = 'financeiro'))\n       OR ('parceiro_b2b_financeiro'::public.app_role = ANY(p_roles) AND v_role_count <> 1) THEN\n      RAISE EXCEPTION 'invalid_partner_link' USING ERRCODE = '23514';\n    END IF;\n    IF NOT EXISTS (SELECT 1 FROM public.partner_accounts pa WHERE pa.id = p_partner_id) THEN\n      RAISE EXCEPTION 'partner_not_found' USING ERRCODE = '23503';\n    END IF;\n  ELSIF p_partner_id IS NOT NULL OR p_partner_papel IS NOT NULL THEN\n    RAISE EXCEPTION 'unexpected_partner_link' USING ERRCODE = '23514';\n  END IF;\n\n  SELECT count(*) INTO v_profile_count\n  FROM public.profiles p\n  WHERE p.user_id = p_user_id;\n\n  IF v_profile_count <> 1\n     OR EXISTS (SELECT 1 FROM public.user_roles ur WHERE ur.user_id = p_user_id)\n     OR EXISTS (SELECT 1 FROM public.user_clientes uc WHERE uc.user_id = p_user_id)\n     OR EXISTS (SELECT 1 FROM public.partner_users pu WHERE pu.user_id = p_user_id) THEN\n    RAISE EXCEPTION 'user_not_ready_for_provisioning' USING ERRCODE = '23514';\n  END IF;\n\n  UPDATE public.profiles\n     SET nome = p_nome,\n         email = p_email,\n         telefone = NULLIF(p_telefone, ''),\n         cargo = NULLIF(p_cargo, ''),\n         cpf_cnpj = NULLIF(p_cpf_cnpj, ''),\n         crea = NULLIF(p_crea, ''),\n         especialidade = NULLIF(p_especialidade, '')\n   WHERE user_id = p_user_id;\n\n  IF v_cliente_count > 0 THEN\n    INSERT INTO public.user_clientes (user_id, cliente_id, principal)\n    SELECT p_user_id, c,\n           c = COALESCE(p_principal_cliente_id, p_cliente_ids[1])\n    FROM unnest(p_cliente_ids) AS c;\n  END IF;\n\n  INSERT INTO public.user_roles (user_id, role)\n  SELECT p_user_id, r FROM unnest(p_roles) AS r;\n\n  IF v_partner_role_count >= 1 THEN\n    INSERT INTO public.partner_users (user_id, partner_id, papel, tenant_id)\n    VALUES (p_user_id, p_partner_id, p_partner_papel,(SELECT organization_id FROM public.profiles WHERE user_id=p_user_id));\n  END IF;\nEND;\n$function$\n",
+      "signature": "admin_provision_user_profile_v1(uuid,text,text,app_role[],uuid[],uuid,uuid,text,text,text,text,text,text)"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "d084780b48d7ec4dcc26d3f3c4f279e9",
+      "body": "CREATE OR REPLACE FUNCTION public.b2b_claim_provisioning(p_partner uuid, p_key uuid, p_email text, p_nome text)\n RETURNS jsonb\n LANGUAGE sql\n SET search_path TO ''\nAS $function$\n SELECT platform_private.b2b_claim_provisioning(p_partner,p_key,p_email,p_nome);\n$function$\n",
+      "signature": "b2b_claim_provisioning(uuid,uuid,text,text)"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "97e4028045bec3ed31d78cae6d794352",
+      "body": "CREATE OR REPLACE FUNCTION public.b2b_claim_provisioning(p_partner uuid, p_key uuid, p_email text, p_nome text, p_roles app_role[], p_clients uuid[], p_primary uuid)\n RETURNS jsonb\n LANGUAGE sql\n SET search_path TO ''\nAS $function$ SELECT platform_private.b2b_claim_provisioning(p_partner,p_key,p_email,p_nome,p_roles,p_clients,p_primary); $function$\n",
+      "signature": "b2b_claim_provisioning(uuid,uuid,text,text,app_role[],uuid[],uuid)"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "md5": "3af4bbad0b829929190ab8bb29f79a1d",
+      "body": "CREATE OR REPLACE FUNCTION platform_private.b2b_claim_provisioning(p_partner uuid, p_key uuid, p_email text, p_nome text, p_roles app_role[], p_clients uuid[] DEFAULT ARRAY[]::uuid[], p_primary uuid DEFAULT NULL::uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE ctx jsonb; r platform_private.b2b_provisioning_receipts; stamp timestamptz; issued bigint; invitation jsonb; inserted integer;\nBEGIN\n -- Same first lock as live statement triggers: gate \u2192 receipt/profile \u2192 rows.\n UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;\n IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;\n\n ctx:=platform_private.external_provisioning_scope(auth.uid(),p_roles,p_partner,p_clients,p_primary);\n IF p_key IS NULL OR p_email IS NULL OR p_nome IS NULL OR length(trim(p_nome)) NOT BETWEEN 1 AND 200\n OR length(p_email)>254 OR lower(trim(p_email)) !~ '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$' THEN\n  RAISE EXCEPTION 'b2b_provisioning_invalid' USING ERRCODE='22023'; END IF;\n issued:=(auth.jwt()->>'iat')::bigint;\n IF issued IS NULL OR issued<=0 OR to_timestamp(issued)>clock_timestamp()+interval '1 minute' THEN\n RAISE EXCEPTION 'b2b_provisioning_forbidden' USING ERRCODE='42501'; END IF;\n SELECT updated_at INTO STRICT stamp FROM public.profiles WHERE user_id=auth.uid() FOR UPDATE;\n PERFORM 1 FROM public.platform_org_admin_invites WHERE user_id=auth.uid() ORDER BY id FOR UPDATE;\n SELECT coalesce(jsonb_agg(jsonb_build_array(id,access_operation_id,access_operation_status,status,access_valid_after) ORDER BY id),'[]'::jsonb) INTO invitation FROM public.platform_org_admin_invites WHERE user_id=auth.uid();\n INSERT INTO platform_private.b2b_provisioning_receipts(actor_id,organization_id,partner_id,idempotency_key,email,nome,actor_stamp,actor_iat,actor_invite_fence,external_role,external_roles,cliente_ids,principal_cliente_id,target_snapshot)\n VALUES(auth.uid(),(ctx->>'organization_id')::uuid,p_partner,p_key,lower(trim(p_email)),trim(p_nome),stamp,issued,invitation,p_roles[1],p_roles,p_clients,p_primary,ctx->'snapshot')\n ON CONFLICT(actor_id,idempotency_key) DO NOTHING;\n GET DIAGNOSTICS inserted=ROW_COUNT;\n SELECT * INTO STRICT r FROM platform_private.b2b_provisioning_receipts\n WHERE actor_id=auth.uid() AND idempotency_key=p_key FOR UPDATE;\n IF ROW(r.organization_id,r.partner_id,r.email,r.nome,r.actor_stamp,r.actor_iat,r.actor_invite_fence,r.external_roles,r.cliente_ids,r.principal_cliente_id,r.target_snapshot) IS DISTINCT FROM\n ROW((ctx->>'organization_id')::uuid,p_partner,lower(trim(p_email)),trim(p_nome),stamp,issued,invitation,p_roles,p_clients,p_primary,ctx->'snapshot') THEN\n  RAISE EXCEPTION 'b2b_provisioning_conflict' USING ERRCODE='42501'; END IF;\n -- Never renew/reclaim a timed-out lease: Auth may already exist. Reconcile by ID.\n RETURN jsonb_build_object('contract','C2_MULTIPROFILE_V1','external_roles',r.external_roles,'actor_id',r.actor_id,'partner_id',r.partner_id,'readers_ready',true,'provisioning_ready',true,'producer_links_valid','cliente_produtor'=ANY(r.external_roles),'claim_id',r.id,'user_id',r.user_id,'fence',r.fence,'status',r.status,\n  'lease_valid',r.lease_until>clock_timestamp(),'acquired',inserted=1,'organization_id',r.organization_id);\nEND $function$\n",
+      "signature": "platform_private.b2b_claim_provisioning(uuid,uuid,text,text,app_role[],uuid[],uuid)"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "md5": "a230865d20627d169db7e8398874d234",
+      "body": "CREATE OR REPLACE FUNCTION public.b2b_claim_provisioning(p_partner uuid, p_key uuid, p_email text, p_nome text, p_role app_role, p_clients uuid[], p_primary uuid)\n RETURNS jsonb\n LANGUAGE sql\n SET search_path TO ''\nAS $function$\n SELECT platform_private.b2b_claim_provisioning(p_partner,p_key,p_email,p_nome,p_role,p_clients,p_primary);\n$function$\n",
+      "signature": "b2b_claim_provisioning(uuid,uuid,text,text,app_role,uuid[],uuid)"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "md5": "fd44d88fe696f99b339a9f97c74d2911",
+      "body": "CREATE OR REPLACE FUNCTION platform_private.b2b_claim_provisioning(p_partner uuid, p_key uuid, p_email text, p_nome text, p_role app_role DEFAULT 'parceiro_b2b'::app_role, p_clients uuid[] DEFAULT ARRAY[]::uuid[], p_primary uuid DEFAULT NULL::uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE ctx jsonb; r platform_private.b2b_provisioning_receipts; stamp timestamptz; issued bigint; invitation jsonb; inserted integer;\nBEGIN\n -- Same first lock as live statement triggers: gate \u2192 receipt/profile \u2192 rows.\n UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;\n IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;\n IF p_role = 'parceiro_b2b' THEN\n PERFORM public.b2b_provisioning_preflight(p_partner,p_role::text,'gestor'); END IF;\n ctx:=platform_private.external_provisioning_scope(auth.uid(),p_role,p_partner,p_clients,p_primary);\n IF p_key IS NULL OR p_email IS NULL OR p_nome IS NULL OR length(trim(p_nome)) NOT BETWEEN 1 AND 200\n OR length(p_email)>254 OR lower(trim(p_email)) !~ '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$' THEN\n  RAISE EXCEPTION 'b2b_provisioning_invalid' USING ERRCODE='22023'; END IF;\n issued:=(auth.jwt()->>'iat')::bigint;\n IF issued IS NULL OR issued<=0 OR to_timestamp(issued)>clock_timestamp()+interval '1 minute' THEN\n RAISE EXCEPTION 'b2b_provisioning_forbidden' USING ERRCODE='42501'; END IF;\n SELECT updated_at INTO STRICT stamp FROM public.profiles WHERE user_id=auth.uid() FOR UPDATE;\n PERFORM 1 FROM public.platform_org_admin_invites WHERE user_id=auth.uid() ORDER BY id FOR UPDATE;\n SELECT coalesce(jsonb_agg(jsonb_build_array(id,access_operation_id,access_operation_status,status,access_valid_after) ORDER BY id),'[]'::jsonb) INTO invitation FROM public.platform_org_admin_invites WHERE user_id=auth.uid();\n INSERT INTO platform_private.b2b_provisioning_receipts(actor_id,organization_id,partner_id,idempotency_key,email,nome,actor_stamp,actor_iat,actor_invite_fence,external_role,cliente_ids,principal_cliente_id,target_snapshot)\n VALUES(auth.uid(),(ctx->>'organization_id')::uuid,p_partner,p_key,lower(trim(p_email)),trim(p_nome),stamp,issued,invitation,p_role,p_clients,p_primary,ctx->'snapshot')\n ON CONFLICT(actor_id,idempotency_key) DO NOTHING;\n GET DIAGNOSTICS inserted=ROW_COUNT;\n SELECT * INTO STRICT r FROM platform_private.b2b_provisioning_receipts\n WHERE actor_id=auth.uid() AND idempotency_key=p_key FOR UPDATE;\n IF ROW(r.organization_id,r.partner_id,r.email,r.nome,r.actor_stamp,r.actor_iat,r.actor_invite_fence,r.external_role,r.cliente_ids,r.principal_cliente_id,r.target_snapshot) IS DISTINCT FROM\n ROW((ctx->>'organization_id')::uuid,p_partner,lower(trim(p_email)),trim(p_nome),stamp,issued,invitation,p_role,p_clients,p_primary,ctx->'snapshot') THEN\n  RAISE EXCEPTION 'b2b_provisioning_conflict' USING ERRCODE='42501'; END IF;\n -- Never renew/reclaim a timed-out lease: Auth may already exist. Reconcile by ID.\n RETURN jsonb_build_object('claim_id',r.id,'user_id',r.user_id,'fence',r.fence,'status',r.status,\n  'lease_valid',r.lease_until>clock_timestamp(),'acquired',inserted=1,'organization_id',r.organization_id);\nEND $function$\n",
+      "signature": "platform_private.b2b_claim_provisioning(uuid,uuid,text,text,app_role,uuid[],uuid)"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "c27ba5ff6da87bdd598e01721277cccb",
+      "body": "CREATE OR REPLACE FUNCTION public.b2b_finish_provisioning(p_claim uuid, p_fence uuid, p_user uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE r platform_private.b2b_provisioning_receipts; actor public.profiles; target public.profiles; invitation jsonb; ctx jsonb; rs public.app_role[];\nBEGIN\n PERFORM platform_private.require_service_role();\n -- Acquire before receipt/profile locks, never wait for the trigger gate afterward.\n UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;\n IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;\n SELECT * INTO r FROM platform_private.b2b_provisioning_receipts WHERE id=p_claim FOR UPDATE;\n IF r.id IS NULL OR r.fence IS DISTINCT FROM p_fence OR r.user_id IS DISTINCT FROM p_user THEN\n  RAISE EXCEPTION 'b2b_provisioning_forbidden' USING ERRCODE='42501'; END IF;\n rs:=COALESCE(r.external_roles,ARRAY[r.external_role]);\n PERFORM 1 FROM public.platform_org_admin_invites WHERE user_id=r.actor_id ORDER BY id FOR UPDATE;\n SELECT coalesce(jsonb_agg(jsonb_build_array(id,access_operation_id,access_operation_status,status,access_valid_after) ORDER BY id),'[]'::jsonb) INTO invitation FROM public.platform_org_admin_invites WHERE user_id=r.actor_id;\n IF invitation IS DISTINCT FROM r.actor_invite_fence OR EXISTS(SELECT 1 FROM public.platform_org_admin_invites i WHERE i.user_id=r.actor_id AND (i.access_operation_status='processing' OR i.status='processando' OR (i.access_valid_after IS NOT NULL AND to_timestamp(r.actor_iat)<=i.access_valid_after))) THEN\n RAISE EXCEPTION 'b2b_provisioning_actor_revoked' USING ERRCODE='42501'; END IF;\n SELECT * INTO actor FROM public.profiles WHERE user_id=r.actor_id FOR UPDATE;\n IF r.external_roles IS NULL THEN ctx:=platform_private.external_provisioning_scope(r.actor_id,r.external_role,r.partner_id,r.cliente_ids,r.principal_cliente_id); ELSE ctx:=platform_private.external_provisioning_scope(r.actor_id,rs,r.partner_id,r.cliente_ids,r.principal_cliente_id); END IF;\n IF ctx->'snapshot' IS DISTINCT FROM r.target_snapshot THEN RAISE EXCEPTION 'external_provisioning_target_changed' USING ERRCODE='42501'; END IF;\n IF actor.organization_id IS DISTINCT FROM r.organization_id OR actor.updated_at IS DISTINCT FROM r.actor_stamp\n OR NOT platform_private.platform_actor_access_ready(r.actor_id)\n OR NOT public.has_role(r.actor_id,'administrador'::public.app_role)\n OR NOT EXISTS(SELECT 1 FROM public.organizations o WHERE o.id=r.organization_id AND o.ativo IS TRUE AND o.status='ativa')\n THEN\n  RAISE EXCEPTION 'b2b_provisioning_forbidden' USING ERRCODE='42501'; END IF;\n IF r.status='completed' THEN\n IF NOT EXISTS(SELECT 1 FROM auth.users WHERE id=r.user_id AND lower(email)=r.email AND raw_app_meta_data->>'b2b_provisioning_receipt'=r.id::text) THEN RAISE EXCEPTION 'b2b_provisioning_target_conflict'; END IF;\n RETURN jsonb_build_object('success',true,'user_id',r.user_id,'replay',true);\n END IF;\n IF r.status<>'claimed' THEN\n  RAISE EXCEPTION 'b2b_provisioning_stale' USING ERRCODE='42501'; END IF;\n SELECT * INTO target FROM public.profiles WHERE user_id=p_user FOR UPDATE;\n IF NOT EXISTS(SELECT 1 FROM auth.users u WHERE u.id=r.user_id AND lower(u.email)=r.email\n   AND u.raw_app_meta_data->>'b2b_provisioning_receipt'=r.id::text)\n OR target.user_id IS NULL OR target.organization_id IS NOT NULL OR target.cliente_id IS NOT NULL\n OR lower(target.email) IS DISTINCT FROM r.email\n OR EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=p_user)\n OR EXISTS(SELECT 1 FROM public.partner_users WHERE user_id=p_user)\n OR EXISTS(SELECT 1 FROM public.user_clientes WHERE user_id=p_user) THEN\n  RAISE EXCEPTION 'b2b_provisioning_target_conflict' USING ERRCODE='42501'; END IF;\n -- Existing server-only first-access contract; recovery proof required, no operator password.\n UPDATE public.profiles SET organization_id=r.organization_id,nome=r.nome,ativo=true,senha_provisoria=true WHERE user_id=p_user;\n PERFORM public.admin_provision_user_profile_v1(p_user,r.email,r.nome,rs,r.cliente_ids,r.principal_cliente_id,r.partner_id,CASE WHEN r.partner_id IS NULL THEN NULL WHEN 'parceiro_b2b'=ANY(rs) THEN 'gestor' WHEN 'parceiro_b2b_financeiro'=ANY(rs) THEN 'financeiro' ELSE 'tecnico' END);\n UPDATE public.user_clientes SET is_active=true,assigned_by=r.actor_id WHERE user_id=p_user;\n\n INSERT INTO platform_private.provisional_password_state(user_id,desde,expires_at)\n VALUES(p_user,clock_timestamp(),NULL);\n UPDATE platform_private.b2b_provisioning_receipts SET status='completed' WHERE id=r.id;\n RETURN jsonb_build_object('success',true,'user_id',p_user,'first_access_pending',true);\nEND $function$\n",
+      "signature": "b2b_finish_provisioning(uuid,uuid,uuid)"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "95ca5848c3d078ba38e0e7e1f21082f6",
+      "body": "CREATE OR REPLACE FUNCTION platform_private.external_provisioning_scope(p_actor uuid, p_roles app_role[], p_partner uuid, p_clients uuid[], p_primary uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE org uuid; snapshot jsonb; partner_snapshot jsonb; p_role public.app_role;\nBEGIN\n SELECT organization_id INTO org FROM public.profiles WHERE user_id=p_actor FOR UPDATE;\n IF p_actor IS NULL OR org IS NULL OR platform_private.platform_actor_access_ready(p_actor) IS NOT TRUE\n OR public.has_role(p_actor,'administrador') IS NOT TRUE OR public.is_platform_superadmin(p_actor) IS TRUE\n THEN\n RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;\n PERFORM 1 FROM public.organizations WHERE id=org AND ativo IS TRUE AND status='ativa' FOR SHARE;\n IF NOT FOUND THEN RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;\n IF p_roles IS NULL OR cardinality(p_roles) NOT BETWEEN 1 AND 3 OR array_position(p_roles,NULL) IS NOT NULL OR cardinality(p_roles)<>(SELECT count(DISTINCT r) FROM unnest(p_roles) r) OR EXISTS(SELECT 1 FROM unnest(p_roles) r WHERE r NOT IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor','parceiro_b2b_financeiro')) THEN RAISE EXCEPTION 'c2_invalid_roles' USING ERRCODE='22023'; END IF;\n IF 'parceiro_b2b_financeiro'=ANY(p_roles) AND cardinality(p_roles)<>1 THEN RAISE EXCEPTION 'c2_finance_role_exclusive' USING ERRCODE='22023'; END IF;\n IF p_partner IS NOT NULL THEN\n IF NOT ('parceiro_b2b'=ANY(p_roles) OR 'parceiro_b2b_tecnico'=ANY(p_roles) OR 'parceiro_b2b_financeiro'=ANY(p_roles)) THEN RAISE EXCEPTION 'c2_partner_role_required'; END IF;\n IF p_partner IS NULL OR (NOT ('cliente_produtor'=ANY(p_roles)) AND (cardinality(p_clients) IS DISTINCT FROM 0 OR p_primary IS NOT NULL))\n OR NOT EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(p_actor) WHERE feature_key='catalogo_precos') THEN\n RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;\n PERFORM 1 FROM public.partner_accounts WHERE id=p_partner FOR SHARE;\n SELECT jsonb_build_object('id',id,'updated_at',updated_at) INTO partner_snapshot FROM public.partner_accounts\n WHERE id=p_partner AND commercial_owner_organization_id=org AND ativo IS TRUE AND deleted_at IS NULL;\n IF partner_snapshot IS NULL THEN RAISE EXCEPTION 'external_provisioning_forbidden'; END IF;\n END IF;\n IF 'cliente_produtor'=ANY(p_roles) THEN\n IF cardinality(p_clients) NOT BETWEEN 1 AND 100\n OR p_clients IS NULL OR array_position(p_clients,NULL) IS NOT NULL\n OR cardinality(p_clients)<>(SELECT count(DISTINCT id) FROM unnest(p_clients) id)\n OR p_primary IS NULL OR NOT (p_primary=ANY(p_clients)) THEN\n RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;\n -- Explicit portal creation, never derive portal authority from technical user_clientes.\n PERFORM 1 FROM public.clientes WHERE id=ANY(p_clients) ORDER BY id FOR SHARE;\n IF (SELECT count(*) FROM public.clientes WHERE id=ANY(p_clients) AND organization_id=org AND status_cliente='ativo')<>cardinality(p_clients) THEN\n RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;\n SELECT jsonb_agg(jsonb_build_object('id',id,'updated_at',updated_at) ORDER BY id) INTO snapshot FROM public.clientes WHERE id=ANY(p_clients);\n END IF;\n IF 'cliente_produtor'=ANY(p_roles) THEN PERFORM 1 FROM public.fazendas WHERE cliente_id=ANY(p_clients) ORDER BY id FOR SHARE; END IF;\n IF platform_private.platform_actor_access_ready(p_actor) IS NOT TRUE OR public.has_role(p_actor,'administrador') IS NOT TRUE THEN RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;\n IF 'cliente_produtor'=ANY(p_roles) AND EXISTS(SELECT 1 FROM unnest(p_clients) cid WHERE NOT EXISTS(SELECT 1 FROM public.fazendas f WHERE f.cliente_id=cid AND f.organization_id=org AND f.ativo)) THEN RAISE EXCEPTION 'c2_producer_farm_required'; END IF;\n IF p_partner IS NULL AND p_roles IS DISTINCT FROM ARRAY['cliente_produtor']::public.app_role[] THEN RAISE EXCEPTION 'c2_partner_required'; END IF;\n snapshot:=jsonb_build_object('partner',partner_snapshot,'clients',snapshot,'roles',to_jsonb(p_roles));\n IF snapshot IS NULL THEN RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;\n RETURN jsonb_build_object('organization_id',org,'snapshot',snapshot);\nEND $function$\n",
+      "signature": "platform_private.external_provisioning_scope(uuid,app_role[],uuid,uuid[],uuid)"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "f29bbc265f995ec631f18032ffe9998b",
+      "body": "CREATE OR REPLACE FUNCTION platform_private.external_provisioning_scope(p_actor uuid, p_role app_role, p_partner uuid, p_clients uuid[], p_primary uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE org uuid; snapshot jsonb;\nBEGIN\n SELECT organization_id INTO org FROM public.profiles WHERE user_id=p_actor FOR UPDATE;\n IF p_actor IS NULL OR org IS NULL OR platform_private.platform_actor_access_ready(p_actor) IS NOT TRUE\n OR public.has_role(p_actor,'administrador') IS NOT TRUE OR public.is_platform_superadmin(p_actor) IS TRUE\n THEN\n RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;\n PERFORM 1 FROM public.organizations WHERE id=org AND ativo IS TRUE AND status='ativa' FOR SHARE;\n IF NOT FOUND THEN RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;\n IF p_role = 'parceiro_b2b' THEN\n IF p_partner IS NULL OR cardinality(p_clients) IS DISTINCT FROM 0 OR p_primary IS NOT NULL\n OR NOT EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(p_actor) WHERE feature_key='catalogo_precos') THEN\n RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;\n PERFORM 1 FROM public.partner_accounts WHERE id=p_partner FOR SHARE;\n SELECT jsonb_build_object('id',id,'updated_at',updated_at) INTO snapshot FROM public.partner_accounts\n WHERE id=p_partner AND commercial_owner_organization_id=org AND ativo IS TRUE AND deleted_at IS NULL;\n ELSE\n IF p_role IS DISTINCT FROM 'cliente_produtor' OR p_partner IS NOT NULL OR cardinality(p_clients) NOT BETWEEN 1 AND 100\n OR p_clients IS NULL OR array_position(p_clients,NULL) IS NOT NULL\n OR cardinality(p_clients)<>(SELECT count(DISTINCT id) FROM unnest(p_clients) id)\n OR p_primary IS NULL OR NOT (p_primary=ANY(p_clients)) THEN\n RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;\n -- Explicit portal creation, never derive portal authority from technical user_clientes.\n PERFORM 1 FROM public.clientes WHERE id=ANY(p_clients) ORDER BY id FOR SHARE;\n IF (SELECT count(*) FROM public.clientes WHERE id=ANY(p_clients) AND organization_id=org AND status_cliente='ativo')<>cardinality(p_clients) THEN\n RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;\n SELECT jsonb_agg(jsonb_build_object('id',id,'updated_at',updated_at) ORDER BY id) INTO snapshot FROM public.clientes WHERE id=ANY(p_clients);\n END IF;\n IF platform_private.platform_actor_access_ready(p_actor) IS NOT TRUE OR public.has_role(p_actor,'administrador') IS NOT TRUE THEN RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;\n IF snapshot IS NULL THEN RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;\n RETURN jsonb_build_object('organization_id',org,'snapshot',snapshot);\nEND $function$\n",
+      "signature": "platform_private.external_provisioning_scope(uuid,app_role,uuid,uuid[],uuid)"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "6f3c5072b776329ac5ff9f8bbf6fd7b2",
+      "body": "CREATE OR REPLACE FUNCTION public.handle_new_user()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  INSERT INTO public.profiles (user_id, nome, email)\n  VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'nome', ''), NEW.email);\n\n  -- Seguran\u00e7a: auto-cadastro N\u00c3O recebe nenhum papel.\n  -- O usu\u00e1rio permanece com privil\u00e9gio m\u00ednimo (sem papel -> /acesso-pendente)\n  -- at\u00e9 que um administrador atribua explicitamente o perfil adequado.\n  -- Usu\u00e1rios criados por admin recebem pap\u00e9is na pr\u00f3pria rotina administrativa.\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "signature": "handle_new_user()"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "partner_users_papel_check",
+      "table": "partner_users",
+      "validated": true,
+      "definition": "CHECK ((papel = ANY (ARRAY['gestor'::text, 'tecnico'::text, 'financeiro'::text])))"
+    },
+    {
+      "name": "partner_users_partner_id_fkey",
+      "table": "partner_users",
+      "validated": true,
+      "definition": "FOREIGN KEY (partner_id) REFERENCES partner_accounts(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "partner_users_pkey",
+      "table": "partner_users",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "partner_users_revocation_coherence_chk",
+      "table": "partner_users",
+      "validated": true,
+      "definition": "CHECK ((((revoked_at IS NULL) AND (revoked_by IS NULL) AND (revoke_reason IS NULL)) OR ((revoked_at IS NOT NULL) AND (revoked_by IS NOT NULL) AND (revoke_reason IS NOT NULL) AND (btrim(revoke_reason) <> ''::text))))"
+    },
+    {
+      "name": "partner_users_user_id_key",
+      "table": "partner_users",
+      "validated": true,
+      "definition": "UNIQUE (user_id)"
+    },
+    {
+      "name": "partner_users_validity_window_chk",
+      "table": "partner_users",
+      "validated": true,
+      "definition": "CHECK (((revoked_at IS NULL) OR (revoked_at >= valid_from)))"
+    },
+    {
+      "name": "partner_users_version_positive_chk",
+      "table": "partner_users",
+      "validated": true,
+      "definition": "CHECK ((version >= 1))"
+    },
+    {
+      "name": "user_roles_pkey",
+      "table": "user_roles",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "user_roles_user_id_fkey",
+      "table": "user_roles",
+      "validated": true,
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "user_roles_user_id_role_key",
+      "table": "user_roles",
+      "validated": true,
+      "definition": "UNIQUE (user_id, role)"
+    },
+    {
+      "name": "profiles_cliente_id_fkey",
+      "table": "profiles",
+      "validated": true,
+      "definition": "FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "profiles_organization_id_fkey",
+      "table": "profiles",
+      "validated": true,
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "profiles_pkey",
+      "table": "profiles",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "profiles_user_id_fkey",
+      "table": "profiles",
+      "validated": true,
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "profiles_user_id_key",
+      "table": "profiles",
+      "validated": true,
+      "definition": "UNIQUE (user_id)"
+    },
+    {
+      "name": "b2b_provisioning_receipts_actor_id_idempotency_key_key",
+      "table": "platform_private.b2b_provisioning_receipts",
+      "validated": true,
+      "definition": "UNIQUE (actor_id, idempotency_key)"
+    },
+    {
+      "name": "b2b_provisioning_receipts_email_key",
+      "table": "platform_private.b2b_provisioning_receipts",
+      "validated": true,
+      "definition": "UNIQUE (email)"
+    },
+    {
+      "name": "b2b_provisioning_receipts_pkey",
+      "table": "platform_private.b2b_provisioning_receipts",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "b2b_provisioning_receipts_user_id_key",
+      "table": "platform_private.b2b_provisioning_receipts",
+      "validated": true,
+      "definition": "UNIQUE (user_id)"
+    },
+    {
+      "name": "c2_receipt_roles_shape",
+      "table": "platform_private.b2b_provisioning_receipts",
+      "validated": true,
+      "definition": "CHECK (((external_roles IS NULL) OR (((cardinality(external_roles) >= 1) AND (cardinality(external_roles) <= 3)) AND (array_position(external_roles, NULL::app_role) IS NULL) AND (external_roles <@ ARRAY['parceiro_b2b'::app_role, 'parceiro_b2b_tecnico'::app_role, 'cliente_produtor'::app_role]))))"
+    }
+  ]
+}

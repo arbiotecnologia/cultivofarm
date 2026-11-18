@@ -1,4 +1,7 @@
-# Perfil Financeiro B2B externo (`parceiro_b2b_financeiro`) — LIBERADO (18/11/2026)
+# Perfil Financeiro B2B externo (`parceiro_b2b_financeiro`) — incidente de cadastro (18/11/2026)
+
+## Incidente ativo: criação direta não coberta pelo QA anterior
+Root confirmou violação de `c2_receipt_roles_shape` em produção às 01:07:07Z, sem Auth/profile/recibo criado. A validação HML por aplicador→transição não cobriu esse CHECK omitido no pacote/fixture. Correção incremental revisável e testes em `receipt-shape/`; sem aplicação pelo agente. A varredura também encontrou o mapeamento legado de compensação sem Financeiro, documentado separadamente; não declarar recuperação completa homologada.
 
 Usuário EXTERNO da equipe do parceiro, somente leitura das obrigações do próprio parceiro perante o fornecedor.
 ## Estado atual (18/11/2026)

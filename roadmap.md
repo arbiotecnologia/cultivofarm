@@ -1,3 +1,8 @@
+## 18/11 — Incidente no recibo de cadastro Financeiro
+- [x] Preparar delta revisável pinado de c2_receipt_roles_shape com PRE/POST/rollback e 71 regressões PostgreSQL.
+- [x] Capturar cadeia real, testar criação local com 26 bindings reais ativos/costuras declaradas e registrar o gap de cobertura e a compensação legada sem Financeiro.
+- [ ] Validação hospedada adicional pelo root após revisão; nenhuma aplicação/publicação pelo agente.
+
 ## 17/11 — Reconciliação solicitada no HEAD atual
 - [x] Integrados os seis arquivos funcionais ausentes de e19c46cd, incluindo sete ajustes visuais e gatilho PDF; PR01a21a75 e etiquetas atuais preservados byte a byte.
 - [x] 508+82 testes locais aprovados; nove cenários Chromium nos três tamanhos, tipos/rolagem/fechar/rodapé sem overflow ou pageerror; identidade simulada, sem prova de sessão real. Build automático OK.

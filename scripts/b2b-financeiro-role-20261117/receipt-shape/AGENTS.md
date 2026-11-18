@@ -1,0 +1,2 @@
+- Generate the receipt-only delta from the read-only catalog pin; preserve the legacy predicate literally and admit only the exact Finance singleton — prevents mixed-role provisioning.
+- Local creation uses captured claim/finish/provisioners and trigger bindings with declared Auth/schema seams; never call it hosted Auth proof — avoids repeating the transition-only coverage gap.

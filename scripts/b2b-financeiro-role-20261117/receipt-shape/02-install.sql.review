@@ -1,0 +1,26 @@
+-- REVIEW ONLY: root validates the actual connected ref; SET app.expected_ref is a safety pin, NOT proof of connection or authorization.
+-- No data/ACL/RLS/function changes. All existing rows validated transactionally.
+BEGIN;
+SET LOCAL lock_timeout='3s';
+LOCK TABLE platform_private.b2b_provisioning_receipts IN ACCESS EXCLUSIVE MODE;
+DO $guard$ DECLARE d text; valid boolean; BEGIN
+ IF current_setting('app.expected_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN
+ RAISE EXCEPTION 'B2B_FIN_RECEIPT_REF_UNPROVEN'; END IF;
+ SELECT pg_get_constraintdef(oid),convalidated INTO d,valid FROM pg_constraint
+ WHERE conrelid='platform_private.b2b_provisioning_receipts'::regclass AND conname='c2_receipt_roles_shape' AND contype='c';
+ IF valid IS DISTINCT FROM true OR d IS NULL OR d NOT IN ('CHECK (((external_roles IS NULL) OR (((cardinality(external_roles) >= 1) AND (cardinality(external_roles) <= 3)) AND (array_position(external_roles, NULL::app_role) IS NULL) AND (external_roles <@ ARRAY[''parceiro_b2b''::app_role, ''parceiro_b2b_tecnico''::app_role, ''cliente_produtor''::app_role]))))','CHECK (((external_roles IS NULL) OR ((cardinality(external_roles) >= 1) AND (cardinality(external_roles) <= 3) AND (array_position(external_roles, NULL::app_role) IS NULL) AND (external_roles <@ ARRAY[''parceiro_b2b''::app_role, ''parceiro_b2b_tecnico''::app_role, ''cliente_produtor''::app_role]))))','CHECK (((external_roles IS NULL) OR ((cardinality(external_roles) >= 1) AND (cardinality(external_roles) <= 3) AND (array_position(external_roles, NULL::app_role) IS NULL) AND (external_roles <@ ARRAY[''parceiro_b2b''::app_role, ''parceiro_b2b_tecnico''::app_role, ''cliente_produtor''::app_role])) OR (external_roles = ARRAY[''parceiro_b2b_financeiro''::app_role])))') THEN
+ RAISE EXCEPTION 'B2B_FIN_RECEIPT_DRIFT'; END IF;
+END $guard$;
+DO $install$ BEGIN IF (SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid='platform_private.b2b_provisioning_receipts'::regclass AND conname='c2_receipt_roles_shape') IN ('CHECK (((external_roles IS NULL) OR (((cardinality(external_roles) >= 1) AND (cardinality(external_roles) <= 3)) AND (array_position(external_roles, NULL::app_role) IS NULL) AND (external_roles <@ ARRAY[''parceiro_b2b''::app_role, ''parceiro_b2b_tecnico''::app_role, ''cliente_produtor''::app_role]))))','CHECK (((external_roles IS NULL) OR ((cardinality(external_roles) >= 1) AND (cardinality(external_roles) <= 3) AND (array_position(external_roles, NULL::app_role) IS NULL) AND (external_roles <@ ARRAY[''parceiro_b2b''::app_role, ''parceiro_b2b_tecnico''::app_role, ''cliente_produtor''::app_role]))))') THEN
+ALTER TABLE platform_private.b2b_provisioning_receipts DROP CONSTRAINT c2_receipt_roles_shape;
+ALTER TABLE platform_private.b2b_provisioning_receipts ADD CONSTRAINT c2_receipt_roles_shape CHECK ((((external_roles IS NULL) OR (((cardinality(external_roles) >= 1) AND (cardinality(external_roles) <= 3)) AND (array_position(external_roles, NULL::app_role) IS NULL) AND (external_roles <@ ARRAY['parceiro_b2b'::app_role, 'parceiro_b2b_tecnico'::app_role, 'cliente_produtor'::app_role]))) OR (external_roles = ARRAY['parceiro_b2b_financeiro']::public.app_role[])));
+END IF; END $install$;
+DO $guard$ DECLARE d text; valid boolean; BEGIN
+ IF current_setting('app.expected_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN
+ RAISE EXCEPTION 'B2B_FIN_RECEIPT_REF_UNPROVEN'; END IF;
+ SELECT pg_get_constraintdef(oid),convalidated INTO d,valid FROM pg_constraint
+ WHERE conrelid='platform_private.b2b_provisioning_receipts'::regclass AND conname='c2_receipt_roles_shape' AND contype='c';
+ IF valid IS DISTINCT FROM true OR d IS NULL OR d NOT IN ('CHECK (((external_roles IS NULL) OR ((cardinality(external_roles) >= 1) AND (cardinality(external_roles) <= 3) AND (array_position(external_roles, NULL::app_role) IS NULL) AND (external_roles <@ ARRAY[''parceiro_b2b''::app_role, ''parceiro_b2b_tecnico''::app_role, ''cliente_produtor''::app_role])) OR (external_roles = ARRAY[''parceiro_b2b_financeiro''::app_role])))') THEN
+ RAISE EXCEPTION 'B2B_FIN_RECEIPT_DRIFT'; END IF;
+END $guard$;
+COMMIT;
