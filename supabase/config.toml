@@ -48,6 +48,12 @@ verify_jwt = true
 [functions.create-user]
 verify_jwt = true
 
+# Administração de usuários do tenant (v4, handler financeiro B2B): JWT obrigatório
+# no gateway, como na baseline v2. Fixado explicitamente porque o deploy automático
+# rebaixou para false na v4 e o valor true foi restaurado externamente via MCP.
+[functions.tenant-user-admin]
+verify_jwt = true
+
 # Convite de administrador de empresa pelo Superadmin de Plataforma.
 [functions.platform-invite-org-admin]
 verify_jwt = true

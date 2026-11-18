@@ -2,7 +2,8 @@ import { z } from "zod";
 /**
  * Financeiro B2B externo (parceiro_b2b_financeiro). Somente leitura; autoridade real vem de
  * `b2b_finance_capability_v1` + `rpc_portal_partner_financial` no servidor (pacote
- * scripts/b2b-financeiro-role-20261117). Gate OFF até 02b instalado e postflight real.
+ * scripts/b2b-financeiro-role-20261117). Gate ON: backend instalado em produção e homologado
+ * na HML com prova real (JWT, browser, CSV, revogação e limpeza); ver VALIDATION do pacote.
  */
 export const B2B_FINANCE_ROLE_INSTALLED = true;
 export const B2B_FINANCE_ROLE = "parceiro_b2b_financeiro" as const;
