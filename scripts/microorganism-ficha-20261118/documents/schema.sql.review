@@ -1,0 +1,148 @@
+-- REVIEW TEMPLATE: assemble.py supplies exact environment PRE/POST. No hosted execution here.
+CREATE TABLE platform_private.micro_documents_gate_v1(singleton boolean PRIMARY KEY CHECK(singleton), enabled boolean NOT NULL DEFAULT false);
+INSERT INTO platform_private.micro_documents_gate_v1 VALUES(true,false);
+CREATE TABLE platform_private.micro_document_uploads_v1(
+ id uuid PRIMARY KEY DEFAULT gen_random_uuid(), actor_id uuid NOT NULL, organization_id uuid NOT NULL,
+ micro_id uuid NOT NULL REFERENCES public.microrganismos(id), document_id uuid NOT NULL,
+ previous_version integer NOT NULL CHECK(previous_version>=0), expected_root timestamptz NOT NULL,
+ title text NOT NULL CHECK(length(title) BETWEEN 1 AND 200), file_name text NOT NULL CHECK(length(file_name) BETWEEN 1 AND 200),
+ mime text NOT NULL CHECK(mime IN ('application/pdf','image/png','image/jpeg')),
+ size_bytes integer NOT NULL CHECK(size_bytes BETWEEN 1 AND 10485760), sha256 text NOT NULL CHECK(sha256 ~ '^[a-f0-9]{64}$'),
+ storage_path text NOT NULL UNIQUE, idempotency_key uuid NOT NULL, intent jsonb NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT clock_timestamp(), expires_at timestamptz NOT NULL DEFAULT clock_timestamp()+interval '15 minutes',
+ attested boolean NOT NULL DEFAULT false, committed boolean NOT NULL DEFAULT false,
+ UNIQUE(actor_id,organization_id,idempotency_key)
+);
+CREATE TABLE platform_private.micro_document_versions_v1(
+ id uuid PRIMARY KEY DEFAULT gen_random_uuid(), document_id uuid NOT NULL, version integer NOT NULL CHECK(version>0),
+ micro_id uuid NOT NULL REFERENCES public.microrganismos(id), organization_id uuid NOT NULL,
+ upload_id uuid NOT NULL UNIQUE REFERENCES platform_private.micro_document_uploads_v1(id),
+ title text NOT NULL, file_name text NOT NULL, mime text NOT NULL, size_bytes integer NOT NULL, sha256 text NOT NULL, storage_path text NOT NULL UNIQUE,
+ actor_id uuid NOT NULL, created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+ UNIQUE(document_id,version)
+);
+REVOKE ALL ON platform_private.micro_documents_gate_v1,platform_private.micro_document_uploads_v1,platform_private.micro_document_versions_v1 FROM PUBLIC,anon,authenticated,service_role;
+ALTER TABLE platform_private.micro_document_uploads_v1 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_private.micro_document_versions_v1 ENABLE ROW LEVEL SECURITY;
+CREATE FUNCTION platform_private.micro_document_immutable_v1() RETURNS trigger LANGUAGE plpgsql SET search_path='' AS $f$
+BEGIN RAISE EXCEPTION 'document_version_immutable' USING ERRCODE='42501'; END $f$;
+REVOKE ALL ON FUNCTION platform_private.micro_document_immutable_v1() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER micro_document_version_immutable_v1 BEFORE UPDATE OR DELETE ON platform_private.micro_document_versions_v1 FOR EACH ROW EXECUTE FUNCTION platform_private.micro_document_immutable_v1();
+-- No public data tables. Private metadata is only exposed through scoped RPCs.
+CREATE FUNCTION platform_private.micro_document_context_v1(p_micro uuid,p_write boolean) RETURNS uuid
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
+DECLARE org uuid; own uuid;
+BEGIN
+ org:=platform_private.catalog_tenant_actor(CASE WHEN p_write THEN 'mutate' ELSE 'read_catalog' END);
+ IF NOT EXISTS(SELECT 1 FROM platform_private.micro_documents_gate_v1 WHERE singleton AND enabled) THEN RAISE EXCEPTION 'documents_closed' USING ERRCODE='42501'; END IF;
+ SELECT owner_organization_id INTO own FROM public.microrganismos WHERE id=p_micro;
+ IF org IS NULL OR own IS DISTINCT FROM org THEN RAISE EXCEPTION 'document_denied' USING ERRCODE='42501'; END IF;
+ RETURN org;
+END $f$;
+CREATE FUNCTION public.tenant_micro_document_list_v1(p_micro uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
+DECLARE org uuid; result jsonb;
+BEGIN
+ org:=platform_private.micro_document_context_v1(p_micro,false);
+ SELECT coalesce(jsonb_agg(jsonb_build_object('id',id,'document_id',document_id,'version',version,'micro_id',micro_id,'organization_id',organization_id,'title',title,'file_name',file_name,'mime',mime,'size_bytes',size_bytes,'sha256',sha256,'created_at',created_at) ORDER BY created_at DESC),'[]') INTO result FROM platform_private.micro_document_versions_v1 WHERE micro_id=p_micro AND organization_id=org;
+ IF platform_private.micro_document_context_v1(p_micro,false) IS DISTINCT FROM org THEN RAISE EXCEPTION 'document_denied' USING ERRCODE='42501'; END IF;
+ RETURN result;
+END $f$;
+CREATE FUNCTION public.tenant_micro_document_prepare_v1(p_micro uuid,p_expected_root timestamptz,p_document uuid,p_previous_version integer,p_metadata jsonb,p_key uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
+DECLARE org uuid; row public.microrganismos%ROWTYPE; upload platform_private.micro_document_uploads_v1%ROWTYPE; intent jsonb; doc uuid; latest integer;
+BEGIN
+ SET LOCAL lock_timeout='3s';
+ org:=platform_private.micro_document_context_v1(p_micro,true);
+ IF p_key IS NULL OR p_expected_root IS NULL OR p_previous_version IS NULL OR p_previous_version<0 OR
+ jsonb_typeof(p_metadata) IS DISTINCT FROM 'object' OR (p_metadata-ARRAY['title','file_name','mime','size_bytes','sha256'])<>'{}' OR
+ jsonb_typeof(p_metadata->'title') IS DISTINCT FROM 'string' OR length(trim(p_metadata->>'title')) NOT BETWEEN 1 AND 200 OR
+ jsonb_typeof(p_metadata->'file_name') IS DISTINCT FROM 'string' OR length(p_metadata->>'file_name') NOT BETWEEN 1 AND 200 OR (p_metadata->>'file_name') ~ '[\\/[:cntrl:]]' OR
+ coalesce(p_metadata->>'mime','') NOT IN ('application/pdf','image/png','image/jpeg') OR
+ coalesce(p_metadata->>'size_bytes','') !~ '^[0-9]{1,8}$' OR (p_metadata->>'size_bytes')::integer NOT BETWEEN 1 AND 10485760 OR
+ coalesce(p_metadata->>'sha256','') !~ '^[a-f0-9]{64}$' OR octet_length(p_metadata::text)>2048 THEN RAISE EXCEPTION 'document_invalid' USING ERRCODE='22023'; END IF;
+ intent:=jsonb_build_array('micro-document-v1',p_micro,p_expected_root,p_document,p_previous_version,p_metadata);
+ PERFORM 1 FROM platform_private.micro_documents_gate_v1 WHERE singleton AND enabled FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'documents_closed' USING ERRCODE='42501'; END IF;
+ PERFORM pg_advisory_xact_lock(hashtextextended('micro-doc:'||org::text,0));
+ IF platform_private.micro_document_context_v1(p_micro,true) IS DISTINCT FROM org THEN RAISE EXCEPTION 'document_denied' USING ERRCODE='42501'; END IF;
+ SELECT * INTO upload FROM platform_private.micro_document_uploads_v1 WHERE actor_id=auth.uid() AND organization_id=org AND idempotency_key=p_key;
+ IF FOUND THEN
+  IF upload.intent IS DISTINCT FROM intent THEN RAISE EXCEPTION 'document_intent_conflict' USING ERRCODE='PT409'; END IF;
+  RETURN jsonb_build_object('upload_id',upload.id,'document_id',upload.document_id,'micro_id',p_micro,'organization_id',org,'committed',upload.committed,'expires_at',upload.expires_at);
+ END IF;
+ SELECT * INTO row FROM public.microrganismos WHERE id=p_micro AND owner_organization_id=org FOR UPDATE;
+ IF platform_private.micro_document_context_v1(p_micro,true) IS DISTINCT FROM org THEN RAISE EXCEPTION 'document_denied' USING ERRCODE='42501'; END IF;
+ IF NOT FOUND OR row.updated_at IS DISTINCT FROM p_expected_root THEN RAISE EXCEPTION 'document_root_stale' USING ERRCODE='PT409'; END IF;
+ doc:=coalesce(p_document,gen_random_uuid());
+ SELECT max(version) INTO latest FROM platform_private.micro_document_versions_v1 WHERE document_id=doc AND micro_id=p_micro AND organization_id=org;
+ IF coalesce(latest,0)<>p_previous_version OR (p_document IS NULL AND p_previous_version<>0) OR (p_document IS NOT NULL AND latest IS NULL) THEN RAISE EXCEPTION 'document_version_stale' USING ERRCODE='PT409'; END IF;
+ -- Quotas include pending/expired objects because their bytes are retained, not silently cleaned up.
+ IF (SELECT count(*) FROM platform_private.micro_document_uploads_v1 WHERE micro_id=p_micro)>=50 OR
+ (SELECT coalesce(sum(size_bytes),0) FROM platform_private.micro_document_uploads_v1 WHERE organization_id=org)+(p_metadata->>'size_bytes')::integer>524288000 OR
+ (SELECT count(*) FROM platform_private.micro_document_uploads_v1 WHERE actor_id=auth.uid() AND created_at>clock_timestamp()-interval '1 hour')>=20 OR
+ (SELECT count(*) FROM platform_private.micro_document_uploads_v1 WHERE organization_id=org AND NOT committed AND expires_at>clock_timestamp())>=2 THEN RAISE EXCEPTION 'document_quota' USING ERRCODE='PT429'; END IF;
+ INSERT INTO platform_private.micro_document_uploads_v1(actor_id,organization_id,micro_id,document_id,previous_version,expected_root,title,file_name,mime,size_bytes,sha256,storage_path,idempotency_key,intent)
+ VALUES(auth.uid(),org,p_micro,doc,p_previous_version,p_expected_root,trim(p_metadata->>'title'),p_metadata->>'file_name',p_metadata->>'mime',(p_metadata->>'size_bytes')::integer,p_metadata->>'sha256',org::text||'/'||p_micro::text||'/'||gen_random_uuid()::text,p_key,intent) RETURNING * INTO upload;
+ RETURN jsonb_build_object('upload_id',upload.id,'document_id',doc,'micro_id',p_micro,'organization_id',org,'committed',false,'expires_at',upload.expires_at);
+END $f$;
+CREATE FUNCTION public.tenant_micro_document_upload_snapshot_v1(p_micro uuid,p_upload uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
+DECLARE org uuid; u platform_private.micro_document_uploads_v1%ROWTYPE;
+BEGIN
+ org:=platform_private.micro_document_context_v1(p_micro,true);
+ SELECT * INTO u FROM platform_private.micro_document_uploads_v1 WHERE id=p_upload AND micro_id=p_micro AND organization_id=org AND actor_id=auth.uid() AND NOT committed AND expires_at>clock_timestamp();
+ IF NOT FOUND THEN RAISE EXCEPTION 'document_upload_unavailable' USING ERRCODE='42501'; END IF;
+ RETURN jsonb_build_object('id',u.id,'actor_id',auth.uid(),'organization_id',org,'micro_id',p_micro,'storage_path',u.storage_path,'sha256',u.sha256,'size_bytes',u.size_bytes,'mime',u.mime,'attested',u.attested);
+END $f$;
+-- Measured-byte attestation is not business authority. Only the Edge's service transport may call it.
+CREATE FUNCTION public.micro_document_attest_bytes_v1(p_upload uuid,p_sha256 text,p_size integer,p_mime text) RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
+BEGIN
+ UPDATE platform_private.micro_document_uploads_v1 SET attested=true WHERE id=p_upload AND NOT committed AND expires_at>clock_timestamp() AND sha256=p_sha256 AND size_bytes=p_size AND mime=p_mime;
+ IF NOT FOUND THEN RAISE EXCEPTION 'document_integrity' USING ERRCODE='22023'; END IF;
+ RETURN true;
+END $f$;
+CREATE FUNCTION public.tenant_micro_document_commit_v1(p_micro uuid,p_upload uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
+DECLARE org uuid; u platform_private.micro_document_uploads_v1%ROWTYPE; ack jsonb; rep jsonb; latest integer; h text; vid uuid;
+BEGIN
+ SET LOCAL lock_timeout='3s';
+ org:=platform_private.micro_document_context_v1(p_micro,true);
+ PERFORM 1 FROM platform_private.micro_documents_gate_v1 WHERE singleton AND enabled FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'documents_closed' USING ERRCODE='42501'; END IF;
+ -- Scope before lock: foreign callers never wait on someone else's reservation.
+ PERFORM 1 FROM platform_private.micro_document_uploads_v1 WHERE id=p_upload AND micro_id=p_micro AND organization_id=org AND actor_id=auth.uid();
+ IF NOT FOUND THEN RAISE EXCEPTION 'document_denied' USING ERRCODE='42501'; END IF;
+ SELECT * INTO u FROM platform_private.micro_document_uploads_v1 WHERE id=p_upload FOR UPDATE;
+ IF platform_private.micro_document_context_v1(p_micro,true) IS DISTINCT FROM org THEN RAISE EXCEPTION 'document_denied' USING ERRCODE='42501'; END IF;
+ h:=md5(jsonb_build_array('micro-doc-commit-v1',p_micro,p_upload,u.intent)::text);
+ rep:=platform_private.tenant_catalog_receipt(org,u.idempotency_key,h);
+ IF platform_private.micro_document_context_v1(p_micro,true) IS DISTINCT FROM org THEN RAISE EXCEPTION 'document_denied' USING ERRCODE='42501'; END IF;
+ IF rep IS NOT NULL THEN RETURN rep; END IF;
+ IF NOT u.attested OR u.expires_at<=clock_timestamp() OR u.committed THEN RAISE EXCEPTION 'document_not_ready' USING ERRCODE='PT409'; END IF;
+ -- Canonical root motor owns the parent CAS, guards, audit and version; no fiscal fields changed.
+ ack:=public.tenant_catalog_root_save('microrganismos',p_micro,'{}',u.expected_root,gen_random_uuid());
+ IF platform_private.micro_document_context_v1(p_micro,true) IS DISTINCT FROM org THEN RAISE EXCEPTION 'document_denied' USING ERRCODE='42501'; END IF;
+ SELECT coalesce(max(version),0) INTO latest FROM platform_private.micro_document_versions_v1 WHERE document_id=u.document_id AND micro_id=p_micro AND organization_id=org;
+ IF latest<>u.previous_version THEN RAISE EXCEPTION 'document_version_stale' USING ERRCODE='PT409'; END IF;
+ INSERT INTO platform_private.micro_document_versions_v1(document_id,version,micro_id,organization_id,upload_id,title,file_name,mime,size_bytes,sha256,storage_path,actor_id)
+ VALUES(u.document_id,latest+1,p_micro,org,u.id,u.title,u.file_name,u.mime,u.size_bytes,u.sha256,u.storage_path,auth.uid()) RETURNING id INTO vid;
+ UPDATE platform_private.micro_document_uploads_v1 SET committed=true WHERE id=u.id;
+ ack:=ack||jsonb_build_object('document_id',u.document_id,'version_id',vid,'version',latest+1,'micro_id',p_micro);
+ INSERT INTO platform_private.tenant_catalog_root_receipts(actor_id,organization_id,idempotency_key,payload_hash,result) VALUES(auth.uid(),org,u.idempotency_key,h,ack);
+ RETURN ack;
+END $f$;
+CREATE FUNCTION public.tenant_micro_document_open_snapshot_v1(p_micro uuid,p_version uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
+DECLARE org uuid; result jsonb;
+BEGIN
+ org:=platform_private.micro_document_context_v1(p_micro,false);
+ SELECT jsonb_build_object('id',id,'actor_id',auth.uid(),'organization_id',org,'micro_id',p_micro,'storage_path',storage_path,'sha256',sha256,'mime',mime,'size_bytes',size_bytes) INTO result FROM platform_private.micro_document_versions_v1 WHERE id=p_version AND micro_id=p_micro AND organization_id=org;
+ IF result IS NULL THEN RAISE EXCEPTION 'document_denied' USING ERRCODE='42501'; END IF;
+ RETURN result;
+END $f$;
+REVOKE ALL ON FUNCTION platform_private.micro_document_context_v1(uuid,boolean) FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION public.tenant_micro_document_list_v1(uuid),public.tenant_micro_document_prepare_v1(uuid,timestamptz,uuid,integer,jsonb,uuid),public.tenant_micro_document_upload_snapshot_v1(uuid,uuid),public.tenant_micro_document_commit_v1(uuid,uuid),public.tenant_micro_document_open_snapshot_v1(uuid,uuid),public.micro_document_attest_bytes_v1(uuid,text,integer,text) FROM PUBLIC,anon,authenticated,service_role;
+-- Bucket MUST be created through Storage API, private, limit 10MB, before installation.
+CREATE POLICY micro_documents_client_closed_v1 ON storage.objects AS RESTRICTIVE FOR ALL TO anon,authenticated USING(bucket_id<>'microorganism-documents') WITH CHECK(bucket_id<>'microorganism-documents');

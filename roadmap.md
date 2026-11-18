@@ -1,3 +1,9 @@
+## 18/11 — Documentos exclusivos do microrganismo
+- [x] Implementar anexos próprios privados, versões, limites, CAS/recibos e consulta na ficha.
+- [x] Preparar delta independente com pins/PRE/POST/rollback, sem reescrever o instalador 12a580416.
+- [x] Validar 1017 testes catálogo, 32 PostgreSQL descartável, 13 Edge sintéticos, tipos/build automáticos e navegador desktop/mobile; evidências em documents/REPORT.md.
+- [ ] Homologação hospedada pelo root após instalação do delta; sem produção/publicação pelo agente.
+
 ## 18/11 — Incidente no recibo de cadastro Financeiro
 - [x] Preparar delta revisável pinado de c2_receipt_roles_shape com PRE/POST/rollback e 71 regressões PostgreSQL.
 - [x] Capturar cadeia real, testar criação local com 26 bindings reais ativos/costuras declaradas e registrar o gap de cobertura e a compensação legada sem Financeiro.

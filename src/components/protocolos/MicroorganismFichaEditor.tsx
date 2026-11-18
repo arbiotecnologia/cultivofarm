@@ -28,6 +28,7 @@ import { MicroorganismFiscalGuide } from "@/components/fiscal/FiscalGuidePanel";
 import { DocumentaryAI } from "./catalog/DocumentaryAI";
 import { VersoesHistoricoTab } from "./catalog/VersoesHistoricoTab";
 import { MicroFichaRelations } from "./MicroFichaRelations";
+import { MicroorganismDocuments } from "./MicroorganismDocuments";
 import type { MicroChild } from "@/lib/catalogo/microorganismFicha";
 import {
   MICRO_CONTENT_FIELDS,
@@ -126,6 +127,8 @@ export function MicroorganismFichaEditor({
   const [evidence, setEvidence] = useState<DocumentaryEvidence[]>([]);
   const [section, setSection] = useState("Identificação");
   const [busy, setBusy] = useState(false);
+  const [documentBusy, setDocumentBusy] = useState(false);
+  const [draftDirty, setDraftDirty] = useState(false);
   const [error, setError] = useState("");
   const [exit, setExit] = useState(false);
   const dirty = useRef(false);
@@ -147,10 +150,11 @@ export function MicroorganismFichaEditor({
   }, [loaded, detail.data, item]);
   const change = (field: string, value: string) => {
     dirty.current = true;
+    setDraftDirty(true);
     setValues((old) => ({ ...old, [field]: value }));
   };
   const save = async () => {
-    if (!editable || lock.current || !loaded) return;
+    if (!editable || lock.current || documentBusy || !loaded) return;
     const scopeCurrent = editor.capture();
     const current = () => mounted.current && scopeCurrent();
     lock.current = true;
@@ -243,7 +247,7 @@ export function MicroorganismFichaEditor({
     <Dialog
       open
       onOpenChange={(open) => {
-        if (!open && !busy) {
+        if (!open && !busy && !documentBusy) {
           if (dirty.current) setExit(true);
           else onClose();
         }
@@ -268,6 +272,7 @@ export function MicroorganismFichaEditor({
               variant={section === s ? "secondary" : "ghost"}
               className="h-auto min-h-11 whitespace-normal text-xs"
               aria-pressed={section === s}
+              disabled={documentBusy}
               onClick={() => setSection(s)}
             >
               {s}
@@ -387,6 +392,7 @@ export function MicroorganismFichaEditor({
                       allowed={["descricao", ...MICRO_CONTENT_FIELDS]}
                       onApply={(fields) => {
                         dirty.current = true;
+                        setDraftDirty(true);
                         setValues((v) => ({ ...v, ...fields }));
                       }}
                       onEvidence={(rows) => {
@@ -434,6 +440,22 @@ export function MicroorganismFichaEditor({
               )}
               {section === "Fontes e histórico" && (
                 <>
+                  {item?.owner_organization_id === profile?.organization_id && item && profile?.organization_id ? (
+                    <MicroorganismDocuments
+                      micro={item.id}
+                      organization={profile.organization_id}
+                      version={version.current}
+                      editable={editable}
+                      blocked={busy || draftDirty || dirty.current}
+                      onWorking={setDocumentBusy}
+                      onCommitted={(updatedAt) => {
+                        version.current = updatedAt;
+                        void qc.invalidateQueries({
+                          predicate: (q) => q.queryKey[0] === 'micro-ficha' && q.queryKey.includes(item.id) && q.queryKey.at(-2) === cacheActor.scope,
+                        });
+                      }}
+                    />
+                  ) : !item ? <p>Salve a identificação antes de anexar documentos.</p> : null}
                   {evidence.length === 0 && (
                     <p>Sem fontes aceitas nesta ficha.</p>
                   )}
@@ -473,7 +495,7 @@ export function MicroorganismFichaEditor({
                     id={item?.id ?? null}
                     kind="source"
                     editable={editable}
-                    busy={busy}
+                    busy={busy || documentBusy}
                     staged={children}
                     onStage={stageChild}
                   />
@@ -511,13 +533,13 @@ export function MicroorganismFichaEditor({
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"
-                disabled={busy}
+                disabled={busy || documentBusy}
                 onClick={() => (dirty.current ? setExit(true) : onClose())}
               >
                 {editable ? "Cancelar" : "Fechar"}
               </Button>
               {editable && (
-                <Button disabled={busy || !loaded} onClick={() => void save()}>
+                <Button disabled={busy || documentBusy || !loaded} onClick={() => void save()}>
                   {busy ? "Salvando…" : "Salvar ficha"}
                 </Button>
               )}

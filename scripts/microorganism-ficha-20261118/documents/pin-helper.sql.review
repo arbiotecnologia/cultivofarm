@@ -1,0 +1,9 @@
+CREATE OR REPLACE FUNCTION pg_temp.micro_document_relation_pin(p_name text) RETURNS jsonb LANGUAGE sql AS $$
+ SELECT jsonb_build_object('owner',c.relowner::regrole::text,'rls',c.relrowsecurity,'force',c.relforcerowsecurity,
+ 'acl',(SELECT coalesce(jsonb_agg(a::text ORDER BY a::text),'[]') FROM unnest(coalesce(c.relacl,acldefault('r',c.relowner))) a),
+ 'columns',(SELECT jsonb_agg(jsonb_build_array(a.attname,format_type(a.atttypid,a.atttypmod),a.attnotnull,pg_get_expr(d.adbin,d.adrelid)) ORDER BY a.attnum) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped),
+ 'constraints',(SELECT coalesce(jsonb_agg(jsonb_build_array(conname,pg_get_constraintdef(oid),convalidated) ORDER BY conname),'[]') FROM pg_constraint WHERE conrelid=c.oid),
+ 'triggers',(SELECT coalesce(jsonb_agg(jsonb_build_array(t.tgname,t.tgenabled,pg_get_triggerdef(t.oid),md5(pg_get_functiondef(t.tgfoid))) ORDER BY t.tgname),'[]') FROM pg_trigger t WHERE t.tgrelid=c.oid AND NOT t.tgisinternal),
+ 'policies',(SELECT coalesce(jsonb_agg(jsonb_build_array(polname,polcmd,polpermissive,polroles::text,pg_get_expr(polqual,polrelid),pg_get_expr(polwithcheck,polrelid)) ORDER BY polname),'[]') FROM pg_policy WHERE polrelid=c.oid AND NOT (p_name='storage.objects' AND polname='micro_documents_client_closed_v1')))
+ FROM pg_class c WHERE c.oid=to_regclass(p_name)
+$$;
