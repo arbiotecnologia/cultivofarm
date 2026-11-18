@@ -148,7 +148,34 @@ try:
  check('rollback denies reader',actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')"),error='evidence_closed')
  check('rollback history retained','SELECT count(*) FROM platform_private.product_evidence_history_v1','1')
  sql('UPDATE platform_private.product_evidence_gate_v1 SET enabled=true')
- check('release restores reader',actor(f"SELECT jsonb_array_length(tenant_product_documentary_read_v1('{U(21)}')->'evidence')"),'0')
+ check('release restores exact accepted evidence',actor(f"SELECT jsonb_array_length(tenant_product_documentary_read_v1('{U(21)}')->'evidence')"),'1')
+ # Legitimate root/profile writes without documentary_evidence do not create history.
+ def manual(value,key):
+  current=sql(f"SELECT updated_at FROM product_technical_profiles WHERE id='{id}'")
+  payload=json.dumps({'resumo_curto':value},ensure_ascii=False)
+  return json.loads(sql(actor(f"SELECT tenant_catalog_root_save('product_technical_profiles','{id}','{payload}','{current}','{U(key)}');")))
+ manual_same=manual(e['value'],160)
+ same=json.loads(sql(actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')")))
+ assert same['evidence']==[e] and same['history']['evidence']==[e]
+ assert same['profile_revision']!=same['history']['profile_revision']
+ results.append('manual same text reopens with accepted candidate and current revision')
+ check('manual same history immutable','SELECT count(*) FROM platform_private.product_evidence_history_v1','1')
+ manual('Texte changé',161)
+ check('manual divergent text not attributed',actor(f"SELECT jsonb_array_length(tenant_product_documentary_read_v1('{U(21)}')->'evidence')"),'0')
+ check('manual divergent history and candidate retained',actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')->'history'->'evidence'->0->>'candidate_key'"),'A')
+ current=sql(f"SELECT updated_at FROM product_technical_profiles WHERE id='{id}'")
+ check('manual divergent reader current revision',actor(f"SELECT (tenant_product_documentary_read_v1('{U(21)}')->>'profile_revision')::timestamptz='{current}'::timestamptz"),'t')
+ manual(e['value']+' ',162)
+ check('no whitespace normalization',actor(f"SELECT jsonb_array_length(tenant_product_documentary_read_v1('{U(21)}')->'evidence')"),'0')
+ manual(e['value'],163)
+ check('exact restored text retains accepted candidate',actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')->'evidence'->0->>'candidate_key'"),'A')
+ # Explicit empty snapshot retires earlier evidence; latest-only reconciliation never resurrects it.
+ current=sql(f"SELECT updated_at FROM product_technical_profiles WHERE id='{id}'")
+ sql(actor(save(164,[],id=f"'{id}'",rev=f"'{current}'")))
+ manual(e['value'],165)
+ check('explicit empty evidence not resurrected',actor(f"SELECT jsonb_array_length(tenant_product_documentary_read_v1('{U(21)}')->'evidence')"),'0')
+ check('accepted history still retained','SELECT count(*) FROM platform_private.product_evidence_history_v1','2')
+ crop_ack['updated_at']=sql(f"SELECT updated_at FROM product_technical_profiles WHERE id='{id}'")
  # Snapshot control isolated in one STABLE caller: identical authority body is
  # exercised before and after the same lock. The VOLATILE variant must reject.
  sql("CREATE FUNCTION public.snapshot_control() RETURNS void LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$BEGIN PERFORM platform_private.recorte_a_actor_fresh('mutate'); PERFORM pg_advisory_xact_lock(771991); PERFORM platform_private.recorte_a_actor_fresh('mutate'); END$$; GRANT EXECUTE ON FUNCTION public.snapshot_control() TO authenticated;")

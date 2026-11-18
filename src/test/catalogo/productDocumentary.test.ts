@@ -23,4 +23,16 @@ describe('documentação de produto',()=>{
  it('rejeita fontes inseguras antes do writer',()=>{
   expect(()=>matchingProductEvidence([{...evidence,sources:[{...evidence.sources[0],url:'javascript:alert(1)'}]}],{resumo_curto:evidence.value},id)).toThrow();
  });
+ it('reabertura mantém evidência reconciliada na revisão atual e histórico anterior separado',()=>{
+  const envelope={product_id:id,profile_id:id,profile_revision:'2026-11-18T04:24:00Z',evidence:[evidence],history:{profile_id:id,profile_revision:'2026-11-18T04:00:00Z',evidence:[evidence]}};
+  const parsed=parseProductEvidenceEnvelope(envelope,id);
+  expect(parsed.evidence).toEqual([evidence]);
+  expect(parsed.history?.profile_revision).toBe('2026-11-18T04:00:00Z');
+  expect(parseProductEvidenceEnvelope({...envelope,evidence:[]},id).history?.evidence).toEqual([evidence]);
+ });
+ it('histórico não pode substituir revisão atual ou conter identidade estrangeira',()=>{
+  const envelope={product_id:id,profile_id:id,profile_revision:'2026-11-18T04:24:00Z',evidence:[],history:{profile_id:id,profile_revision:'2026-11-18T04:24:00Z',evidence:[evidence]}};
+  expect(()=>parseProductEvidenceEnvelope(envelope,id)).toThrow();
+  expect(()=>parseProductEvidenceEnvelope({...envelope,history:{...envelope.history,profile_revision:'2026-11-18T04:00:00Z',evidence:[{...evidence,identity:{...evidence.identity,id:'00000000-0000-4000-8000-000000000002'}}]}},id)).toThrow();
+ });
 });

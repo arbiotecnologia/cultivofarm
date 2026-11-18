@@ -4,6 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 import runpy
+import re
 
 HOME = Path(__file__).resolve().parent
 REFS = {'swzpzcwiasxmjutrmvkm', 'vrlcdwmlytukrjezrrnf'}
@@ -36,6 +37,14 @@ def read_capture(path):
         assert key(signature) in functions, ('DEPENDENCY_CAPTURE_REQUIRED', signature)
     return capture, functions
 
+def function_body(definition):
+    match = re.search(r'\bAS\s+(\$[A-Za-z_]*\$)', definition)
+    assert match, 'FUNCTION_BODY_REQUIRED'
+    delimiter = match.group(1)
+    body, end, remainder = definition[match.end():].partition(delimiter)
+    assert end, 'FUNCTION_BODY_REQUIRED'
+    return body
+
 def assemble(pre_path, post_path, out):
     pre, functions = read_capture(pre_path)
     post, post_functions = read_capture(post_path)
@@ -65,9 +74,10 @@ def assemble(pre_path, post_path, out):
         assert all(acl.split('=')[0] == relation['owner'] for acl in relation['acl'] or []), 'POST_PRIVATE_ACL_REQUIRED'
     build = runpy.run_path(str(HOME/'build.py'), run_name='product_candidate_library')
     delta = build['extend'](functions[key(ROOT)]['definition'])
-    expected_body = delta.split('AS $function$', 1)[1].rsplit('$function$', 1)[0]
-    actual_body = post_functions[key(ROOT)]['definition'].split('AS $function$', 1)[1].rsplit('$function$', 1)[0]
+    expected_body = function_body(delta)
+    actual_body = function_body(post_functions[key(ROOT)]['definition'])
     assert expected_body == actual_body, 'POST_ROOT_NOT_EXACT_CANDIDATE'
+    assert function_body(build['reader']) == function_body(reader['definition']), 'POST_READER_NOT_EXACT_CANDIDATE'
     before_relations = {r['name']: r for r in pre['catalog']['relations']}
     after_relations = {r['name']: r for r in post['catalog']['relations']}
     for name, relation in before_relations.items():

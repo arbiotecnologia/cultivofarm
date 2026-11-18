@@ -25,4 +25,11 @@ class CaptureTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as tmp:
    p=Path(tmp)/'capture.json';p.write_text(json.dumps({'ref':'vrlcdwmlytukrjezrrnf','provenance':'root-exact-catalog','catalog':{'functions':[{'definition':'ação\r\n','md5':'fake'}],'relations':[],'config':[]}}),encoding='utf-8',newline='\n')
    with self.assertRaisesRegex(AssertionError,'CRLF_DENIED'):module.read_capture(p)
+ def test_reader_body_not_stale_or_delimiter_dependent(self):
+  canonical="CREATE FUNCTION f() RETURNS void AS $f$BEGIN RETURN; END$f$;"
+  captured="CREATE FUNCTION f() RETURNS void AS $function$BEGIN RETURN; END$function$;"
+  self.assertEqual(module.function_body(canonical),module.function_body(captured))
+  self.assertNotEqual(module.function_body(canonical),module.function_body(captured.replace('RETURN;','RAISE EXCEPTION;')))
+ def test_body_missing_fails_closed(self):
+  with self.assertRaisesRegex(AssertionError,'BODY_REQUIRED'):module.function_body('CREATE FUNCTION f();')
 if __name__=='__main__':unittest.main()

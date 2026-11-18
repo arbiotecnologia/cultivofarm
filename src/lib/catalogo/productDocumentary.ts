@@ -12,16 +12,26 @@ export const productEvidenceSchema = z.array(z.object({
   identity: z.object({ entity: z.literal("produto"), id: z.string().uuid(), name: z.string().min(1), manufacturer: z.string(), registration: z.string() }).passthrough(),
   sources: z.array(sourceSchema).min(1).max(20),
 }).strict()).max(40);
+export type ProductEvidenceHistory = { profile_id: string; profile_revision: string; evidence: DocumentaryEvidence[] };
 
 export function parseProductEvidenceEnvelope(value: unknown, productId: string) {
   return z.object({
     product_id: z.literal(productId), profile_id: z.string().uuid().nullable(),
     profile_revision: z.string().datetime({ offset: true }).nullable(), evidence: productEvidenceSchema,
+    history: z.object({
+      profile_id: z.string().uuid(), profile_revision: z.string().datetime({ offset: true }),
+      evidence: productEvidenceSchema,
+    }).strict().nullable().optional(),
   }).strict().superRefine((row, ctx) => {
     if ((row.profile_id === null) !== (row.profile_revision === null) || row.evidence.some(e => e.identity.id !== productId)) {
       ctx.addIssue({ code: "custom", message: "Versão ou produto da evidência divergente" });
     }
-  }).parse(value);
+    if (row.history && (row.history.profile_id !== row.profile_id || !row.profile_revision ||
+      Date.parse(row.history.profile_revision) >= Date.parse(row.profile_revision) ||
+      row.history.evidence.some(e => e.identity.id !== productId))) {
+      ctx.addIssue({ code: "custom", message: "Histórico da evidência divergente" });
+    }
+  }).parse(value) as { product_id: string; profile_id: string | null; profile_revision: string | null; evidence: DocumentaryEvidence[]; history?: ProductEvidenceHistory | null };
 }
 
 export function matchingProductEvidence(evidence: DocumentaryEvidence[], values: Record<string, unknown>, id: string) {

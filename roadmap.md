@@ -1,3 +1,7 @@
+## 18/11 04:24 — Reabertura após edição manual do perfil
+- [x] Reconciliar fontes de texto exato na revisão atual, separar histórico anterior e testar reabertura sem bloqueio permanente.
+- [x] Atualizar assembly parametrizado/relatório com evidências locais e fatos root, sem transferir capturas nem instalar.
+
 ## 18/11 04:16 — Revisão independente da autoridade de produtos
 - [x] Corrigir fresh actor no root/profile, replay e esperas; gate do reader, RLS/ACL e índice privados; validação exata de evidências.
 - [x] Testar concorrência PostgreSQL com corpo fresh capturado, atualizar montagem/relatório e entregar commit; instalação/homologação permanecem com root.

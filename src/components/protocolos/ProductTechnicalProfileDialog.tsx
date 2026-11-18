@@ -362,7 +362,7 @@ function ProductFicha({
             )}
           </TabsContent>
           <TabsContent value="fontes" className="space-y-5">
-            <ProductEvidencePanel evidence={evidence} values={{ ...form }} />
+            <ProductEvidencePanel evidence={evidence} values={{ ...form }} history={evidenceQuery.history} />
             <ProductFichaRelations
               kind="source"
               id={produto.id}

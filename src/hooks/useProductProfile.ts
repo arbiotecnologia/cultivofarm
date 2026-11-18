@@ -352,5 +352,6 @@ export function useProductDocumentaryEvidence(
     data: query.data?.evidence,
     profileRevision: query.data?.profile_revision,
     profileId: query.data?.profile_id,
+    history: query.data?.history ?? null,
   };
 }
