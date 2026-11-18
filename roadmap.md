@@ -1,3 +1,7 @@
+## 18/11 04:48 — Precisão temporal do histórico
+- [x] Comparar revisões sem truncar microssegundos e respeitar offsets; rejeitar futuro e testar histórico igual/anterior (77 Vitest focais).
+- [x] Confirmar proveniência após renomeação na mesma revisão já corrigida em dc7f51ce9 (118 PG/6 assembly); evidências focais sem instalar/publicar.
+
 ## 18/11 04:35 — Identidade documental e renomeação
 - [x] Validar identity cliente/SQL com tipos e limites equivalentes e rejeição atômica (118 checks PG local).
 - [x] Separar fontes antigas após renomeação sem reescrever origem; retomada UI/SQL, 1148 Vitest/6 assembly/browser sintético desktop+mobile e relatório atualizados, sem instalação.

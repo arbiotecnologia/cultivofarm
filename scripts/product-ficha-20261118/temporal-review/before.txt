@@ -1,0 +1,129 @@
+$ vitest run src/test/catalogo/productDocumentary.test.ts
+
+ RUN  v3.2.4 /dev-server
+
+ ❯ src/test/catalogo/productDocumentary.test.ts (32 tests | 4 failed) 35ms
+   ✓ documentação de produto > recusa envelope de outro produto e revisão sem perfil 4ms
+   ✓ documentação de produto > exclui preço, estoque, tributos, aprovação, formulação e registro da IA 1ms
+   ✓ documentação de produto > usa fabricante e registro do dossiê, sem replicar autoridade 0ms
+   ✓ documentação de produto > filtra evidência alterada manualmente ou de outro produto 3ms
+   ✓ documentação de produto > rejeita fontes inseguras antes do writer 1ms
+   ✓ documentação de produto > reabertura mantém evidência reconciliada na revisão atual e histórico anterior separado 2ms
+   ✓ documentação de produto > histórico não pode substituir revisão atual ou conter identidade estrangeira 2ms
+   ✓ identidade documental estrita > recusa manufacturer ausente/null/número 0ms
+   ✓ identidade documental estrita > recusa manufacturer ausente/null/número 0ms
+   ✓ identidade documental estrita > recusa manufacturer ausente/null/número 0ms
+   ✓ identidade documental estrita > recusa registration ausente/null/número 0ms
+   ✓ identidade documental estrita > recusa registration ausente/null/número 0ms
+   ✓ identidade documental estrita > recusa registration ausente/null/número 0ms
+   ✓ identidade documental estrita > recusa name ausente/null/número 0ms
+   ✓ identidade documental estrita > recusa name ausente/null/número 0ms
+   ✓ identidade documental estrita > recusa name ausente/null/número 0ms
+   ✓ identidade documental estrita > recusa id ausente/null/número 0ms
+   ✓ identidade documental estrita > recusa id ausente/null/número 0ms
+   ✓ identidade documental estrita > recusa id ausente/null/número 0ms
+   ✓ identidade documental estrita > limita name a 1000 caracteres 1ms
+   ✓ identidade documental estrita > limita manufacturer a 1000 caracteres 0ms
+   ✓ identidade documental estrita > limita registration a 1000 caracteres 0ms
+   ✓ identidade documental estrita > opcionais têm shape e limites, sem propriedades desconhecidas 1ms
+   ✓ identidade documental estrita > renomeação retira fontes ativas sem reescrever nome/candidato de origem, inclusive mesma revisão 1ms
+   × ordem temporal exata do histórico PostgreSQL > aceita revisão anterior dentro do mesmo milissegundo 5ms
+     → [
+  {
+    "code": "custom",
+    "message": "Histórico da evidência divergente",
+    "path": []
+  }
+]
+   × ordem temporal exata do histórico PostgreSQL > não aceita revisão futura dentro do mesmo milissegundo, mesmo com fontes retiradas 3ms
+     → expected [Function] to throw an error
+   ✓ ordem temporal exata do histórico PostgreSQL > igualdade real só permite histórico distinto da atribuição ativa 1ms
+   ✓ ordem temporal exata do histórico PostgreSQL > reconhece instante equivalente 2026-11-18T01:33:00.123789-03:00 1ms
+   ✓ ordem temporal exata do histórico PostgreSQL > reconhece instante equivalente 2026-11-18T06:33:00.123789+02:00 1ms
+   ✓ ordem temporal exata do histórico PostgreSQL > reconhece instante equivalente 2026-11-18T04:33:00.1237890Z 1ms
+   × ordem temporal exata do histórico PostgreSQL > ordena fração após normalizar offset, não por texto ou horário local 1ms
+     → [
+  {
+    "code": "custom",
+    "message": "Histórico da evidência divergente",
+    "path": []
+  }
+]
+   × ordem temporal exata do histórico PostgreSQL > recusa offset inválido sem tratar NaN como histórico válido 1ms
+     → expected [Function] to throw an error
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/catalogo/productDocumentary.test.ts > ordem temporal exata do histórico PostgreSQL > aceita revisão anterior dentro do mesmo milissegundo
+ZodError: [
+  {
+    "code": "custom",
+    "message": "Histórico da evidência divergente",
+    "path": []
+  }
+]
+ ❯ Object.get error [as error] ../persist/node_modules/zod/v3/types.js:39:31
+ ❯ ZodEffects.parse ../persist/node_modules/zod/v3/types.js:114:22
+ ❯ Module.parseProductEvidenceEnvelope src/lib/catalogo/productDocumentary.ts:42:6
+     40|       ctx.addIssue({ code: "custom", message: "Histórico da evidência …
+     41|     }
+     42|   }).parse(value) as { product_id: string; profile_id: string | null; …
+       |      ^
+     43| }
+     44| 
+ ❯ src/test/catalogo/productDocumentary.test.ts:69:10
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  src/test/catalogo/productDocumentary.test.ts > ordem temporal exata do histórico PostgreSQL > não aceita revisão futura dentro do mesmo milissegundo, mesmo com fontes retiradas
+AssertionError: expected [Function] to throw an error
+ ❯ src/test/catalogo/productDocumentary.test.ts:72:96
+     70|  });
+     71|  it('não aceita revisão futura dentro do mesmo milissegundo, mesmo com…
+     72|   expect(()=>parseProductEvidenceEnvelope(envelope('2026-11-18T04:33:0…
+       |                                                                                                ^
+     73|  });
+     74|  it('igualdade real só permite histórico distinto da atribuição ativa'…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  src/test/catalogo/productDocumentary.test.ts > ordem temporal exata do histórico PostgreSQL > ordena fração após normalizar offset, não por texto ou horário local
+ZodError: [
+  {
+    "code": "custom",
+    "message": "Histórico da evidência divergente",
+    "path": []
+  }
+]
+ ❯ Object.get error [as error] ../persist/node_modules/zod/v3/types.js:39:31
+ ❯ ZodEffects.parse ../persist/node_modules/zod/v3/types.js:114:22
+ ❯ Module.parseProductEvidenceEnvelope src/lib/catalogo/productDocumentary.ts:42:6
+     40|       ctx.addIssue({ code: "custom", message: "Histórico da evidência …
+     41|     }
+     42|   }).parse(value) as { product_id: string; profile_id: string | null; …
+       |      ^
+     43| }
+     44| 
+ ❯ src/test/catalogo/productDocumentary.test.ts:83:10
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  src/test/catalogo/productDocumentary.test.ts > ordem temporal exata do histórico PostgreSQL > recusa offset inválido sem tratar NaN como histórico válido
+AssertionError: expected [Function] to throw an error
+ ❯ src/test/catalogo/productDocumentary.test.ts:87:96
+     85|  });
+     86|  it('recusa offset inválido sem tratar NaN como histórico válido',()=>{
+     87|   expect(()=>parseProductEvidenceEnvelope(envelope('2026-11-18T04:33:0…
+       |                                                                                                ^
+     88|  });
+     89| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 28 passed (32)
+   Start at  04:49:05
+   Duration  589ms (transform 47ms, setup 39ms, collect 44ms, tests 35ms, environment 209ms, prepare 49ms)
+
+error: script "test" exited with code 1

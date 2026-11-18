@@ -31,6 +31,8 @@ Reader retorna `{product_id,profile_id,profile_revision,evidence,history}`. ID/r
 
 ### Identidade e renomeação — revisão 04:35
 
+Revisão temporal 04:48: a ordem dos instantes normaliza o offset nos segundos inteiros UTC e compara a fração decimal completa com zeros à direita, sem truncar microssegundos. Instantes iguais com offsets/precisões textuais diferentes permanecem iguais; histórico futuro é recusado mesmo no mesmo milissegundo. Igualdade só permite histórico distinto das fontes ativas, conforme o caso de renomeação acima. Timestamps enviados ao CAS nunca são normalizados ou reescritos.
+
 `identity` tem shape estrito: `entity:"produto"`, `id:UUID`, `name:string` (1–1000 caracteres), `manufacturer:string` e `registration:string` (0–1000; vazias permitidas, ausentes/null/números recusados). Opcionais `scientificName`, `strain`, `purpose`, `synonyms`, `concentration`, `presentation` são strings até 2000; `researchScope` é `species|product_strain`. Extras e tipos divergentes são recusados no SQL e cliente; fabricante/registro não são colunas novas nem prova regulatória.
 
 Após renomeação, fontes com nome anterior deixam de ser ativas mesmo com texto igual e permanecem no histórico com identidade/candidato intactos. Em tela aberta o cliente filtra por ID+nome+texto; se só houver evidência de identidade anterior, omite `documentary_evidence` ao salvar outro campo (não grava snapshot vazio apagando a última proveniência). Evidência explicitamente vazia continua intenção de retirada. Novas sugestões precisam da identidade atual e aplicação explícita; SQL confere nome atual sob lock, e mudança concorrente exige reconciliação após recusa definitiva. Não adapta/reescreve identidade antiga para fazer a fonte passar.

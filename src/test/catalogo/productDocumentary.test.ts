@@ -61,3 +61,35 @@ describe('identidade documental estrita',()=>{
   expect(parsed.history?.evidence[0].identity.name).toBe('Produto');
  });
 });
+describe('ordem temporal exata do histórico PostgreSQL',()=>{
+ const current='2026-11-18T04:33:00.123789+00:00';
+ const envelope=(previous:string,active:typeof evidence[]= [evidence])=>({product_id:id,profile_id:id,profile_revision:current,evidence:active,history:{profile_id:id,profile_revision:previous,evidence:[evidence]}});
+ it('aceita revisão anterior dentro do mesmo milissegundo',()=>{
+  const previous='2026-11-18T04:33:00.123456+00:00';
+  expect(parseProductEvidenceEnvelope(envelope(previous),id).history?.profile_revision).toBe(previous);
+ });
+ it('não aceita revisão futura dentro do mesmo milissegundo, mesmo com fontes retiradas',()=>{
+  expect(()=>parseProductEvidenceEnvelope(envelope('2026-11-18T04:33:00.123790+00:00',[]),id)).toThrow();
+ });
+ it('igualdade real só permite histórico distinto da atribuição ativa',()=>{
+  expect(()=>parseProductEvidenceEnvelope(envelope(current),id)).toThrow();
+  expect(parseProductEvidenceEnvelope(envelope(current,[]),id).history?.evidence).toEqual([evidence]);
+ });
+ it.each(['2026-11-18T01:33:00.123789-03:00','2026-11-18T06:33:00.123789+02:00','2026-11-18T04:33:00.1237890Z'])('reconhece instante equivalente %s',previous=>{
+  expect(()=>parseProductEvidenceEnvelope(envelope(previous),id)).toThrow();
+  expect(parseProductEvidenceEnvelope(envelope(previous,[]),id).history?.evidence).toEqual([evidence]);
+ });
+ it('ordena fração após normalizar offset, não por texto ou horário local',()=>{
+  expect(parseProductEvidenceEnvelope(envelope('2026-11-18T06:33:00.123456+02:00'),id).history).not.toBeNull();
+  expect(()=>parseProductEvidenceEnvelope(envelope('2026-11-18T01:33:00.123790-03:00',[]),id)).toThrow();
+ });
+ it('recusa offset inválido sem tratar NaN como histórico válido',()=>{
+  expect(()=>parseProductEvidenceEnvelope(envelope('2026-11-18T04:33:00.123456+99:00',[]),id)).toThrow();
+ });
+ it('frações com zeros finais não mudam igualdade e segundos têm precedência sobre fração',()=>{
+  const previous='2026-11-18T04:33:00.123789000+00:00';
+  expect(()=>parseProductEvidenceEnvelope(envelope(previous),id)).toThrow();
+  expect(parseProductEvidenceEnvelope(envelope('2026-11-18T04:32:59.999999+00:00'),id).history).not.toBeNull();
+  expect(()=>parseProductEvidenceEnvelope(envelope('2026-11-18T04:33:01.000001+00:00',[]),id)).toThrow();
+ });
+});

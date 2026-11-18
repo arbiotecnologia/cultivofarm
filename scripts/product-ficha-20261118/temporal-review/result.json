@@ -1,0 +1,24 @@
+{
+  "before": {
+    "pass": 28,
+    "fail": 4,
+    "exit_code": 1
+  },
+  "after": {
+    "files": 3,
+    "tests": 77,
+    "exit_code": 0
+  },
+  "postgres": {
+    "checks": 118,
+    "exit_code": 0,
+    "limits": "captured fresh body; synthetic identity/schema/dependencies; not hosted"
+  },
+  "assembly": {
+    "tests": 6,
+    "exit_code": 0
+  },
+  "automatic_build": "2026-11-18T04:50:56Z ===\nbuild OK",
+  "sql_change": false,
+  "hosted": "NOT_RUN: root independent review/atomic POST/HML persistence pending; no production/publication"
+}

@@ -2,3 +2,4 @@
 - Product content evidence extends the exact pinned canonical root motor, never metadata/composition transactionality; private history and deny-only rollback preserve confirmed products.
 - Assembly requires exact UTF-8 catalog definitions and explicit HML/production binding; no automatic repinning or default environment.
 - Product evidence identity has matching strict client/server string limits; renames retire active attribution without rewriting provenance, and unrelated saves omit historical-only evidence — prevents malformed read envelopes and rename lockout.
+- Documentary revision ordering normalizes only whole-second offsets and compares padded decimal fractions exactly; equal-revision history requires distinct attribution — preserves PostgreSQL microseconds without accepting future history.

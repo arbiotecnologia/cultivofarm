@@ -1,5 +1,12 @@
 # Evidências e limites
 
+## Correção focal 04:48 — precisão temporal do histórico
+
+- Reproduzidas **4 falhas / 28 PASS** antes da correção: revisão anterior e futura dentro do mesmo milissegundo, ordenação após offset e offset inválido aceito como NaN. Comparador agora normaliza apenas segundos inteiros UTC e compara a fração decimal completa preenchida à direita, preservando microssegundos e equivalência de offsets/zeros finais. Nenhum timestamp CAS é reescrito; futuro continua recusado mesmo com evidências ativas vazias. Igualdade real mantém o contrato de histórico distinto da atribuição ativa.
+- **77 Vitest PASS / 3 arquivos focais**, incluindo 33 testes documentais, seis de hidratação/renomeação e SDK real com fetch simulado. Anterior dentro do mesmo milissegundo, igual, futuro, offsets equivalentes positivo/negativo, frações com zeros finais e mudança de segundo cobertos. **118 PostgreSQL descartável PASS** e **6 assembly PASS**, todos exit 0; saídas versionadas em `temporal-review/`.
+- O segundo achado (renomear sem mudar revisão do perfil) **já foi corrigido em dc7f51ce9**: gerador e SQL candidato usam revisão anterior **ou evidência histórica distinta da ativa**, sob revisão existente e sem mudar assinaturas/tabelas. Bateria PostgreSQL reconfirmou fontes → renomeação com mesma revisão → histórico com nome/candidato original → outro campo salvo. Testes montados confirmam exibição e edição liberada; não houve nova alteração SQL nem extensão de escopo nesta rodada.
+- Validação automática da prévia verificada após alteração; resultados exatos em `temporal-review/result.json`. Sem novo browser hospedado, instalação, produção, publicação, serviço IA ou transferência de capturas. Revisão independente/POST integral atômico e homologação HML de persistência permanecem com root; os contratos de código desta solicitação estão fechados.
+
 ## Correção adicional 04:35 — identidade e renomeação
 
 - Identity cliente/SQL estrita e coerente: fabricante/registro obrigatoriamente strings (inclusive vazias), nome/ID/entity validados; 1000 caracteres nos três textos principais, 2000 nos opcionais conhecidos, researchScope enum; ausentes, null, números, extras e limites excedidos recusados. Validação cliente preservada e ampliada, não afrouxada. Fixture passou a conter fabricante/registro corretamente.

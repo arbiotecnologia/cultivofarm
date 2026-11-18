@@ -21,21 +21,41 @@ export const productEvidenceSchema = z.array(z.object({
 }).strict()).max(40);
 export type ProductEvidenceHistory = { profile_id: string; profile_revision: string; evidence: DocumentaryEvidence[] };
 
+/** Compare UTC whole seconds first, then exact decimal fractions; never let
+ * Date's millisecond precision erase PostgreSQL microseconds. */
+function revisionInstant(value: string) {
+  const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d+))?(Z|[+-](\d{2}):?(\d{2}))$/.exec(value);
+  if (!match || (match[4] !== undefined && (Number(match[4]) > 23 || Number(match[5]) > 59))) return null;
+  const seconds = Date.parse(`${match[1]}${match[3]}`);
+  if (!Number.isFinite(seconds)) return null;
+  return { seconds, fraction: match[2] ?? "" };
+}
+const revisionSchema = z.string().datetime({ offset: true }).refine(value => revisionInstant(value) !== null, "Revisão temporal inválida");
+function compareRevisions(left: string, right: string) {
+  const a = revisionInstant(left), b = revisionInstant(right);
+  if (!a || !b) return null;
+  if (a.seconds !== b.seconds) return a.seconds < b.seconds ? -1 : 1;
+  const length = Math.max(a.fraction.length, b.fraction.length);
+  const af = a.fraction.padEnd(length, "0"), bf = b.fraction.padEnd(length, "0");
+  return af === bf ? 0 : af < bf ? -1 : 1;
+}
+
 export function parseProductEvidenceEnvelope(value: unknown, productId: string) {
   return z.object({
     product_id: z.literal(productId), profile_id: z.string().uuid().nullable(),
-    profile_revision: z.string().datetime({ offset: true }).nullable(), evidence: productEvidenceSchema,
+    profile_revision: revisionSchema.nullable(), evidence: productEvidenceSchema,
     history: z.object({
-      profile_id: z.string().uuid(), profile_revision: z.string().datetime({ offset: true }),
+      profile_id: z.string().uuid(), profile_revision: revisionSchema,
       evidence: productEvidenceSchema,
     }).strict().nullable().optional(),
   }).strict().superRefine((row, ctx) => {
     if ((row.profile_id === null) !== (row.profile_revision === null) || row.evidence.some(e => e.identity.id !== productId)) {
       ctx.addIssue({ code: "custom", message: "Versão ou produto da evidência divergente" });
     }
-    if (row.history && (row.history.profile_id !== row.profile_id || !row.profile_revision ||
-      Date.parse(row.history.profile_revision) > Date.parse(row.profile_revision) ||
-      (Date.parse(row.history.profile_revision) === Date.parse(row.profile_revision) && JSON.stringify(row.history.evidence) === JSON.stringify(row.evidence)) ||
+    const order = row.history && row.profile_revision ? compareRevisions(row.history.profile_revision, row.profile_revision) : null;
+    if (row.history && (row.history.profile_id !== row.profile_id || !row.profile_revision || order === null ||
+      order > 0 ||
+      (order === 0 && JSON.stringify(row.history.evidence) === JSON.stringify(row.evidence)) ||
       row.history.evidence.some(e => e.identity.id !== productId))) {
       ctx.addIssue({ code: "custom", message: "Histórico da evidência divergente" });
     }
