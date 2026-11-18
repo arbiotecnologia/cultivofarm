@@ -1,34 +1,19 @@
-# Runbook — deploy da função de geração de ficha com IA (não executado)
+# IA direta OpenAI — Cultivo Farm
 
-Escopo: apenas o fluxo "Gerar com IA" das fichas do Catálogo.
-Destino único permitido: projeto Supabase CultivoFarm `swzpzcwiasxmjutrmvkm`.
+As funções `ai-generate-ficha-campo`, `ai-sugerir-alvos` e `catalog-documentary-suggestions` usam a API Responses em `https://api.openai.com/v1/responses`, com `OPENAI_API_KEY` somente no servidor e `store: false`.
 
-## Função
+Texto: `gpt-6.1-terra`; pesquisa documental: `gpt-6-astra`. As variáveis opcionais `OPENAI_TEXT_MODEL` e `OPENAI_RESEARCH_MODEL` alteram os modelos no servidor. A pesquisa mantém busca web, JSON estruturado e filtro de URLs observadas na busca.
 
-- Nome exato: `ai-generate-ficha-campo`
-- Caminho: `supabase/functions/ai-generate-ficha-campo/index.ts`
-- Módulo compartilhado: `supabase/functions/_shared/ficha-ia/contract.ts`
-- Verificação de JWT: obrigatória (a função exige `Authorization: Bearer` e valida a sessão).
-- Papéis autorizados: `administrador`, `gestor`, `consultor_tecnico`, `tecnico_agronomo`.
+Este código incorpora as guardas já publicadas: as funções globais exigem superadministrador ativo; a pesquisa documental usa capacidade por ator/empresa, reserva de cota e revalidação após a inferência. Não ampliar papéis para testar. A função de ficha registra versões pendentes; pesquisa e alvos não aplicam conteúdo automaticamente.
 
-## Secrets necessários (somente nomes, sem valores)
+## Publicação
 
-- `LOVABLE_API_KEY`
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
+Projeto de produção: `swzpzcwiasxmjutrmvkm`. Publicar somente as três funções com suas dependências `_shared`, preservando as opções JWT do config.toml. `binding.ts` da pesquisa é explícito para produção; homologação exige um artefato com vínculo específico, nunca copiar o vínculo de produção.
 
-Nenhum desses valores existe no frontend, no bundle, nos logs ou nas respostas da função.
+Antes da publicação, capturar bundles atuais e comparar alterações concorrentes. Após publicar, testar com sessão real, conferir fontes e revisão manual. Falta de chave/credencial retorna indisponibilidade; saldo esgotado retorna 402; limitação temporária retorna 429. Não registrar mensagens brutas ou credenciais do provedor. Não repetir automaticamente escritas ou requisições de inferência.
 
-## Passos de deploy (executar fora deste ambiente, com autorização)
+A assinatura ChatGPT e os créditos API são administrados separadamente. Créditos elegíveis precisam ser vinculados à organização API. Nenhuma chave deve ser adicionada ao repositório.
 
-1. `supabase login`
-2. `supabase link --project-ref swzpzcwiasxmjutrmvkm`
-3. Confirmar que os três secrets acima existem no projeto (`supabase secrets list`).
-4. `supabase functions deploy ai-generate-ficha-campo`
-5. Smoke autenticado na prévia: abrir a ficha de um microrganismo, gerar em uma finalidade,
-   conferir preenchimento do rascunho, aviso de revisão humana e ausência de salvamento automático.
+## Verificação
 
-## Enquanto não houver deploy
-
-A interface trata `404` como "geração com IA ainda não disponível neste ambiente",
-com mensagem acessível e sem spinner infinito.
+`node --test tests/openai-provider.test.mjs` valida transporte simulado, cancelamento, respostas parciais, falta de saldo e parsing TypeScript. Testes com mocks não substituem geração real autenticada no projeto publicado.

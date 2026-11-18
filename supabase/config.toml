@@ -131,3 +131,13 @@ verify_jwt = true
 
 [functions.product-regulatory-document]
 verify_jwt = true
+
+# IA direta OpenAI: autorização validada também dentro das funções.
+[functions.ai-generate-ficha-campo]
+verify_jwt = false
+
+[functions.ai-sugerir-alvos]
+verify_jwt = false
+
+[functions.catalog-documentary-suggestions]
+verify_jwt = true

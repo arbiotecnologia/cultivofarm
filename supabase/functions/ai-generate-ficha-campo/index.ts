@@ -10,13 +10,12 @@ import {
 } from '../_shared/ficha-ia/contract.ts';
 import { corsHeadersFor, handlePreflight, isTrustedOrigin } from '../_shared/comunicacao/cors.ts';
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+import { generateResponse, responseText, openAIModel, OpenAIError } from '../_shared/openai.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const AI_TIMEOUT_MS = 45_000;
-const MODELO = 'gemini-3.8-flash';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent`;
+const MODELO = openAIModel();
 
 Deno.serve(async (req) => {
   const origin = req.headers.get('Origin');
@@ -24,7 +23,6 @@ Deno.serve(async (req) => {
   if (origin && !isTrustedOrigin(origin)) return j(origin, { error: 'origin_not_allowed' }, 403);
   if (req.method !== 'POST') return j(origin, { error: 'Método não suportado' }, 405);
   try {
-    if (!GEMINI_API_KEY) return j(origin, { error: 'Geração por IA indisponível (configuração ausente)' }, 503);
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) return j(origin, { error: 'Não autenticado' }, 401);
@@ -101,57 +99,20 @@ Deno.serve(async (req) => {
 
     const prompt = construirPrompt({ entidadeTipo: entidade_tipo, campo, contexto, conteudoAtual });
 
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), AI_TIMEOUT_MS);
-    let aiRes: Response;
-    try {
-      aiRes = await fetch(GEMINI_URL, {
-        method: 'POST',
-        signal: ctrl.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': GEMINI_API_KEY,
-        },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: 'Responda estritamente em JSON válido e siga as regras agronômicas fornecidas.' }],
-          },
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 1200,
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: 'OBJECT',
-              properties: {
-                texto: { type: 'STRING' },
-                justificativa: { type: 'STRING' },
-              },
-              required: ['texto'],
-            },
-          },
-        }),
-      });
-    } catch {
-      return j(origin, { error: 'A geração demorou demais. Tente novamente.' }, 504);
-    } finally {
-      clearTimeout(timer);
-    }
-
-    if (aiRes.status === 429) return j(origin, { error: 'Limite de uso atingido. Tente novamente em instantes.' }, 429);
-    if (aiRes.status === 401 || aiRes.status === 403) {
-      return j(origin, { error: 'Geração por IA indisponível (credencial do provedor inválida).' }, 503);
-    }
-    if (!aiRes.ok) return j(origin, { error: 'Serviço de IA indisponível no momento.' }, 502);
-
-    const aiData = await aiRes.json().catch(() => null);
+    const aiData = await generateResponse({
+      model: MODELO,
+      reasoning: { effort: 'low' },
+      max_output_tokens: 4000,
+      instructions: 'Responda estritamente em JSON válido e siga as regras agronômicas fornecidas.',
+      input: prompt,
+      text: { format: { type: 'json_schema', name: 'ficha', strict: true, schema: {
+        type: 'object', additionalProperties: false,
+        properties: { texto: { type: 'string' }, justificativa: { type: 'string' } },
+        required: ['texto', 'justificativa'],
+      } } },
+    }, { signal: AbortSignal.any([req.signal, AbortSignal.timeout(AI_TIMEOUT_MS)]) });
     let resultado;
-    try {
-      const raw = (aiData?.candidates?.[0]?.content?.parts ?? [])
-        .map((part: { text?: unknown }) => typeof part?.text === 'string' ? part.text : '')
-        .join('');
-      resultado = parseRespostaIA(raw);
-    } catch {
+    try { resultado = parseRespostaIA(responseText(aiData)); } catch {
       return j(origin, { error: 'A IA retornou uma resposta inválida. Tente novamente.' }, 502);
     }
 
@@ -179,7 +140,8 @@ Deno.serve(async (req) => {
       mudou,
       rascunho: true,
     });
-  } catch {
+  } catch (e) {
+    if (e instanceof OpenAIError) return j(origin, { error: e.code }, e.httpStatus);
     return j(origin, { error: 'Erro inesperado ao gerar com IA.' }, 500);
   }
 });
@@ -189,4 +151,5 @@ function j(origin: string | null, b: unknown, status = 200) {
     status, headers: { ...corsHeadersFor(origin), 'Content-Type': 'application/json' },
   });
 }
+
 
