@@ -26,6 +26,35 @@ it('draft sujo não rebaseia ao refetch; aplicar salva revisão observada e canc
 it.each(['quimico','fertilizante_adubo'])('%s entrada integrada cria sem seleção micro e reabre estruturado',async family=>{let created=false;let persisted=emptyStructuredDossier();state.fetch.mockImplementation(async(url,init)=>{const n=String(url).split('/rpc/')[1];const a=JSON.parse(init.body);if(n==='tenant_product_dossier_management_context')return json({product_id:pid,can_edit:true,product_only_enabled:true,product_only_dossier_id:created?did:null,dossier_microorganism_id:null,microorganisms:[],versions:created?[{id:did,version:1,status:'DRAFT'}]:[]});if(n==='tenant_product_dossier_management_create'){expect(a.p_microorganism_id).toBeNull();created=true;return json({product_id:pid,dossier_id:did});}if(n==='tenant_product_dossier_version_detail')return json({product_id:pid,dossier:{id:did,microorganism_id:null,product_only:true,structured_data:persisted,version:1,status:'DRAFT',updated_at:revision,regulatory_category:null,mapa_status:null,mapa_registration_number:null,blocked_reason:null},documents:[],checklist:[],gate:{pendencies:[]}});if(n==='tenant_product_dossier_upload_pending')return json([]);if(n==='tenant_product_dossier_management_save'){persisted=a.p_patch.structured_data;return json({product_id:pid,dossier_id:did,updated_at:revision,request_id:a.p_patch.request_id});}throw new Error(n);});const tree=<ProductDossierManagement familyCatalog={family} product={{product_id:pid,nome:'Produto QA',codigo:'QA',ativo:true,organization_name:'QA',owner_organization_id:'00000000-0000-4000-8000-000000000010'}}/>;const v=render(tree,{wrapper:Wrapper});fireEvent.click(await screen.findByRole('button',{name:'Criar dossiê documental'}));await screen.findByLabelText('Número do registro');expect(screen.queryByText('Cobertura de microrganismos')).toBeNull();fireEvent.change(screen.getByLabelText('Titular'),{target:{value:'Titular QA'}});fireEvent.change(screen.getByLabelText('Título da fonte'),{target:{value:'Fonte QA'}});fireEvent.change(screen.getByLabelText('URL da fonte'),{target:{value:'https://example.org/qa'}});fireEvent.click(screen.getByRole('button',{name:'Salvar registro e garantias'}));await waitFor(()=>expect(persisted.registration.holder).toBe('Titular QA'));v.unmount();setup();render(tree,{wrapper:Wrapper});expect((await screen.findByLabelText('Titular') as HTMLInputElement).value).toBe('Titular QA');});
 it.each([['missing source',{...value,lines:[{...value.lines[0],origin:null}]}],['numeric value',{...value,lines:[{...value.lines[0],value:750}]}],['future approval',{...value,registration:{...value.registration,documentary_status:'VALIDATED'}}],['duplicate',{...value,lines:[value.lines[0],value.lines[0]]}]])('reject %s sem dispatch',(name,data)=>{expect(structuredDossierSchema.safeParse(data).success).toBe(false);expect(state.fetch).not.toHaveBeenCalled();});
 
+describe('mensagens de validação em português',()=>{
+ it('schema identifica nome obrigatório, título da fonte, decimal inválido e limites',async()=>{
+  const {formatStructuredIssue}=await import('@/lib/productStructuredDossier');
+  const emptyName=structuredDossierSchema.safeParse({...value,lines:[{...value.lines[0],name:''}]});
+  expect(emptyName.success).toBe(false);
+  if(!emptyName.success)expect(formatStructuredIssue(emptyName.error.issues[0])).toBe('Linha 1 — nome: Nome da substância ou nutriente é obrigatório.');
+  const badDecimal=structuredDossierSchema.safeParse({...value,lines:[{...value.lines[0],value:'1,5'}]});
+  expect(badDecimal.success).toBe(false);
+  if(!badDecimal.success)expect(formatStructuredIssue(badDecimal.error.issues[0])).toBe('Linha 1 — valor documental: Valor documental inválido: use número decimal com ponto, até 9 dígitos por parte.');
+  const noTitle=structuredDossierSchema.safeParse({...value,lines:[{...value.lines[0],origin:{...origin,title:''}}]});
+  expect(noTitle.success).toBe(false);
+  if(!noTitle.success)expect(formatStructuredIssue(noTitle.error.issues[0])).toBe('Linha 1 — fonte documental: Título da fonte é obrigatório.');
+  const tooLong=structuredDossierSchema.safeParse({...value,lines:[{...value.lines[0],name:'x'.repeat(201)}]});
+  expect(tooLong.success).toBe(false);
+  if(!tooLong.success)expect(formatStructuredIssue(tooLong.error.issues[0])).toBe('Linha 1 — nome: Nome da linha: máximo de 200 caracteres.');
+  const regTitle=structuredDossierSchema.safeParse({...value,registration:{...value.registration,origin:{...origin,title:''}}});
+  expect(regTitle.success).toBe(false);
+  if(!regTitle.success)expect(formatStructuredIssue(regTitle.error.issues[0])).toBe('Registro — fonte documental: Título da fonte é obrigatório.');
+ });
+ it('editor mostra mensagem em português com linha ao salvar linha vazia',async()=>{
+  render(<ProductStructuredDossierEditor productId={pid} dossierId={did} revision={revision} value={value} canEdit onSaved={vi.fn()} onReconcile={vi.fn()}/>,{wrapper:Wrapper});
+  fireEvent.click(screen.getByRole('button',{name:'Adicionar linha'}));
+  fireEvent.change(screen.getByLabelText('Titular'),{target:{value:'QA alterado'}});
+  fireEvent.click(screen.getByRole('button',{name:'Salvar registro e garantias'}));
+  await waitFor(()=>expect(screen.getByRole('alert').textContent).toBe('Linha 2 — nome: Nome da substância ou nutriente é obrigatório.'));
+  expect(state.fetch).not.toHaveBeenCalled();
+ });
+});
+
 describe('origem documental com documento privado',()=>{
  const doc='00000000-0000-4000-8000-0000000000aa';
  it('aceita documento privado sem URL e recusa ausência de ambos ou URL insegura',async()=>{
