@@ -22024,6 +22024,8 @@ export type Database = {
         Args: { p_claim: string; p_fence: string; p_user: string }
         Returns: boolean
       }
+      b2b_finance_capability_v1: { Args: never; Returns: Json }
+      b2b_finance_credit_v1: { Args: never; Returns: Json }
       b2b_finish_provisioning: {
         Args: { p_claim: string; p_fence: string; p_user: string }
         Returns: Json
@@ -27477,6 +27479,10 @@ export type Database = {
         }
         Returns: Json
       }
+      tenant_admin_partner_link_v1: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       tenant_admin_search_clientes_v1: {
         Args: { p_limit: number; p_offset: number; p_search: string }
         Returns: Json
@@ -27888,6 +27894,7 @@ export type Database = {
         | "parceiro_b2b_tecnico"
         | "superadmin"
         | "vendedor"
+        | "parceiro_b2b_financeiro"
       categoria_arquivo_consultor:
         | "praga"
         | "doenca"
@@ -28296,6 +28303,7 @@ export const Constants = {
         "parceiro_b2b_tecnico",
         "superadmin",
         "vendedor",
+        "parceiro_b2b_financeiro",
       ],
       categoria_arquivo_consultor: [
         "praga",
