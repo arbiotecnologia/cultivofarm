@@ -13,6 +13,7 @@
     "integral POST rejects function drift and rolls back",
     "integral POST rejects trigger drift and rolls back",
     "positive exact atomic assembly A PRE POST executed in independent B cluster",
+    "storage trigger functions captured validated and unmodified",
     "new history FK internal trigger names differ yet complete POST identical",
     "fresh body unchanged",
     "service attest cancel definitions unchanged",
@@ -72,7 +73,7 @@
     "gate rollback closed reader",
     "deny rollback retains history"
   ],
-  "count": 71,
+  "count": 72,
   "exit_code": 0,
   "limits": "Schema, Auth and fiscal dependencies synthetic; canonical versioned management bodies and captured fresh actor; no JWT/Storage/hosted evidence."
 }

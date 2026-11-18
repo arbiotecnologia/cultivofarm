@@ -28,6 +28,15 @@ class Assembly(unittest.TestCase):
  def test_unqualified_or_duplicate_signature_rejected(self):
   for signatures in [['tenant_product_dossier_management_save(uuid)'],[FRESH,FRESH],['public.x(p_id uuid) ,']]:
    with self.assertRaisesRegex(ValueError,'qualified unique'):validate_signatures(signatures)
+ def test_storage_catalog_signatures_read_only_not_targets(self):
+  import assemble
+  sigs=['storage.update_updated_at_column()','storage.protect_delete()']
+  validate_signatures(sigs,assemble.CATALOG_SCHEMAS)
+  with self.assertRaisesRegex(ValueError,'qualified unique'):validate_signatures(sigs)
+  d,p=self.fixture();d['storage.protect_delete()']='x';p['storage.protect_delete()']=hashlib.md5(b'x').hexdigest()
+  with self.assertRaises(ValueError):build(d,p)
+  self.assertTrue(all(not s.startswith('storage.') for s in TARGETS))
+  with self.assertRaisesRegex(ValueError,'qualified unique'):validate_signatures(['pg_catalog.now()'],assemble.CATALOG_SCHEMAS)
  def test_upload_service_and_missing_alias_fail_closed(self):
   for body,error in [('BEGIN PERFORM platform_private.require_service_role(); RETURN; END','service-only'),('BEGIN RETURN; END','alias drift')]:
    with self.assertRaisesRegex(ValueError,error):extend('platform_private.product_dossier_upload_finalize(uuid)',body)

@@ -2,6 +2,7 @@
 import json,argparse,hashlib
 from pathlib import Path
 from build import H,build,TARGETS,FRESH,validate_signatures
+CATALOG_SCHEMAS=('public','platform_private','storage')  # storage: read-only pins of captured trigger functions, never build targets
 REFS=['swzpzcwiasxmjutrmvkm','vrlcdwmlytukrjezrrnf']
 def load(path,ref):
  c=json.loads(Path(path).read_text(encoding='utf-8'))
@@ -10,10 +11,13 @@ def load(path,ref):
  return c['catalog']
 def assemble(pre,post,pins):
  for catalog in (pre,post):
-  validate_signatures([f['signature'] for f in catalog['functions']])
+  validate_signatures([f['signature'] for f in catalog['functions']],CATALOG_SCHEMAS)
   names=[r['name'] for r in catalog['relations']]
   if len(set(names))!=len(names) or any(not name.startswith(('public.','platform_private.','storage.')) for name in names):raise ValueError('qualified unique relations required; recapture locally, never normalize pins')
  defs={f['signature']:f['definition'] for f in pre['functions'] if f['signature'] in TARGETS+[FRESH] or f['signature'].startswith('public.tenant_product_dossier_') or f['signature']=='public.rpc_regulatory_product_document_access(uuid,uuid,uuid)'}
+ storage_pre=[f for f in pre['functions'] if f['signature'].startswith('storage.')]
+ if storage_pre!=[f for f in post['functions'] if f['signature'].startswith('storage.')]:raise ValueError('storage function drift; storage dependencies are read-only')
+ if any(s.startswith('storage.') for s in defs):raise ValueError('storage functions are never build targets')
  fresh=next(f for f in pre['functions'] if f['signature']==FRESH)
  if fresh['volatile']!='v' or not fresh['definer'] or fresh['owner']!='postgres' or fresh!=next(f for f in post['functions'] if f['signature']==FRESH):raise ValueError('fresh authority metadata drift')
  if pre['publications']!=post['publications']:raise ValueError('publication drift')

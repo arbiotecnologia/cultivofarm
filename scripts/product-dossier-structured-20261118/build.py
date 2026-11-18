@@ -5,10 +5,10 @@ H=Path(__file__).resolve().parent
 FRESH='platform_private.recorte_a_actor_fresh(text)'
 TARGETS=['platform_private.product_dossier_management_create(uuid,uuid)','platform_private.product_dossier_management_save(uuid,uuid,timestamp with time zone,jsonb)','platform_private.product_dossier_management_context(uuid)','platform_private.product_dossier_version_detail(uuid,uuid)','platform_private.product_dossier_link_integrity()','platform_private.product_dossier_coverage(uuid)','platform_private.product_dossier_read_scope(uuid,uuid)','platform_private.product_dossier_manage_scope(uuid,uuid)','platform_private.product_dossier_write_guard()','platform_private.rpc_regulatory_product_document_access(uuid,uuid,uuid)','platform_private.product_dossier_row_read(uuid)','platform_private.product_dossier_lock(uuid,uuid,timestamp with time zone)','platform_private.product_dossier_upload_prepare(uuid,uuid,timestamp with time zone,uuid,jsonb)','platform_private.product_dossier_upload_finalize(uuid)','platform_private.product_dossier_upload_access(uuid)','platform_private.product_dossier_upload_pending(uuid)','platform_private.product_dossier_upload_cancel_begin(uuid)']
 UPLOAD_CALLER_TARGETS={s for s in TARGETS if '.product_dossier_upload_' in s}
-def validate_signatures(signatures):
+def validate_signatures(signatures,schemas=('public','platform_private')):
  import re
- values=list(signatures)
- if len(set(values))!=len(values) or any(not re.fullmatch(r'(?:public|platform_private)\.[a-z_][a-z_0-9]*\([^()]*\)',s) or ', ' in s for s in values):
+ values=list(signatures);alt='|'.join(re.escape(x) for x in schemas)
+ if len(set(values))!=len(values) or any(not re.fullmatch(r'(?:'+alt+r')\.[a-z_][a-z_0-9]*\([^()]*\)',s) or ', ' in s for s in values):
   raise ValueError('qualified unique identity-type signatures required; recapture locally, never normalize pins')
 def insert_begin(body,text):
  # First executable BEGIN only; declarations are untouched.

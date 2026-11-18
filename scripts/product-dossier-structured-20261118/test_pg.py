@@ -27,6 +27,14 @@ try:
  subprocess.run(priv+['initdb','-D',str(t/'data'),'-U','postgres','-A','trust'],check=True,capture_output=True)
  subprocess.run(priv+['pg_ctl','-D',str(t/'data'),'-o',f'-k {t} -h "" -p {port}','-l',str(t/'log'),'-w','start'],check=True,capture_output=True)
  sql(BASE.joinpath('fixture.sql').read_text());migration('20261114013656');migration('20261114014211')
+ # Storage trigger functions mirror hosted Supabase (captured read-only deps).
+ sql("""CREATE TABLE storage.buckets(id text PRIMARY KEY,updated_at timestamptz);
+ CREATE FUNCTION storage.update_updated_at_column() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN NEW.updated_at=now();RETURN NEW;END$$;
+ CREATE FUNCTION storage.protect_delete() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'direct delete forbidden';END$$;
+ CREATE TRIGGER update_objects_updated_at BEFORE UPDATE ON storage.buckets FOR EACH ROW EXECUTE FUNCTION storage.update_updated_at_column();
+ CREATE TRIGGER protect_objects_delete BEFORE DELETE ON storage.objects FOR EACH STATEMENT EXECUTE FUNCTION storage.protect_delete();""")
+ storage_md5_q="SELECT string_agg(p.proname||':'||md5(pg_get_functiondef(p.oid))||':'||p.proowner::regrole::text||':'||coalesce(p.proacl::text,''),',' ORDER BY p.proname) FROM pg_proc p WHERE p.pronamespace='storage'::regnamespace"
+ storage_before=sql(storage_md5_q)
  # Catalog identity must not depend on visibility. Includes a user-defined array
  # type and named input arguments; none of those names may enter the signature.
  sql("CREATE FUNCTION public.tenant_product_dossier_capture_probe(p_named public.microorganism_regulatory_dossiers[], p_stamp timestamptz) RETURNS void LANGUAGE sql AS $$SELECT$$;")
@@ -127,6 +135,10 @@ try:
  sql2(artifact)
  assert post==json.loads(sql2("SET search_path='';"+capture)),'cross-instance POST drift'
  checks.append('positive exact atomic assembly A PRE POST executed in independent B cluster')
+ assert any(f['signature']=='storage.protect_delete()' for f in pre['functions']),'storage trigger deps not captured'
+ assert sql2(storage_md5_q)==storage_before,'storage functions mutated'
+ assert not any(x in artifact.split('END $assert$;\n',1)[1].split('DO $assert$',1)[0] for x in ['FUNCTION storage.','TRIGGER update_objects','TRIGGER protect_objects']),'delta touches storage'
+ checks.append('storage trigger functions captured validated and unmodified')
  fk_oid_query="SELECT string_agg(tgname,',' ORDER BY tgname) FROM pg_trigger WHERE tgrelid='platform_private.product_dossier_structured_history'::regclass AND tgisinternal"
  assert sql(fk_oid_query) and sql(fk_oid_query)!=sql2(fk_oid_query),'new FK internal names did not differ'
  checks.append('new history FK internal trigger names differ yet complete POST identical')

@@ -36,3 +36,8 @@ O dossiê product-only é um ramo explícito na tabela/contratos canônicos, com
 5. **IA 402**: root retestará quando houver créditos; sem mudança de provedor/segredos/cobrança. IA não aprova valores estruturados.
 
 Aptidão para publicação depende de todos esses gates; testes sintéticos não são homologação hosted. Não houve instalação/publicação.
+
+## Correção: funções do schema storage no catálogo (pós-8f172ebca)
+- `assemble.py` valida assinaturas do catálogo com `public|platform_private|storage`; `build.py` (targets/wrappers) segue restrito a `public|platform_private`.
+- Funções `storage.*` são somente pins de leitura PRE/POST: drift entre PRE e POST aborta e nunca podem ser build targets.
+- `test_pg.py` (72 checks) cria `storage.update_updated_at_column()`/`storage.protect_delete()` com gatilhos reais, prova captura, montagem positiva em dois clusters e md5/owner/ACL inalterados; `test_assembly.py` 13 testes.
