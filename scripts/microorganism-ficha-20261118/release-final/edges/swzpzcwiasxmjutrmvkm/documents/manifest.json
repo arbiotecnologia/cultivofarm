@@ -1,0 +1,9 @@
+{
+  "ref": "swzpzcwiasxmjutrmvkm",
+  "service": "documents",
+  "files": {
+    "binding.ts": "49e81b6770f7d7d2c0736d4d49b01176fcc1facf6e3d44d4215852c62c5f7191",
+    "index.ts": "5b1f2afc474b664d331334808eee311d7a5ff8df682e91543d3619c1acdbab15",
+    "integrity.ts": "1aa2e9c8f22d30123e203da116b9fe659cfd43d65b070da50a2fb7316eb83733"
+  }
+}

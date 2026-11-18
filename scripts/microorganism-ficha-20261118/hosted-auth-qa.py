@@ -13,7 +13,7 @@ import uuid
 
 REF = "vrlcdwmlytukrjezrrnf"
 URL = f"https://{REF}.supabase.co"
-manifest = json.loads(Path(os.environ["MICRO_QA_MANIFEST"]).read_text())
+manifest = json.loads(Path(os.environ["MICRO_QA_MANIFEST"]).read_text(encoding='utf-8'))
 if manifest.get("ref") != REF or manifest.get("synthetic") is not True or manifest.get("release_reviewed") is not True:
     raise SystemExit("MANIFEST_DENIED")
 key = os.environ["HML_ANON_KEY"]
@@ -50,7 +50,7 @@ status,ack=rpc('QA_MICRO_EDITOR_A','tenant_microorganism_ficha_save_v1',intent)
 check('create_auth_rpc',status==200 and ack.get('ok') is True and ack.get('organization_id')==manifest['org_a'])
 micro_id=str(uuid.UUID(ack['id']))
 state=Path(os.environ['MICRO_QA_STATE'])
-state.write_text(json.dumps({'ref':REF,'synthetic':True,'micro_id':micro_id,'create_key':manifest['create_key']},indent=2))
+state.write_text(json.dumps({'ref':REF,'synthetic':True,'micro_id':micro_id,'create_key':manifest['create_key']},indent=2),encoding='utf-8',newline='\n')
 status,replay=rpc('QA_MICRO_EDITOR_A','tenant_microorganism_ficha_save_v1',intent)
 check('exact_replay',status==200 and replay.get('id')==micro_id and replay.get('replayed') is True)
 for actor in ('QA_MICRO_EDITOR_A','QA_MICRO_READER_A'):

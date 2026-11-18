@@ -30,7 +30,7 @@ O root informou baseline **12a580416 instalado/released somente em vrlcdwmlytukr
 - Navegador adicional desktop/mobile confirmou Salvar bloqueado enquanto relação não aplicada, texto pendente preservado, javascript rejeitado e HTTPS aplicado ao rascunho; ensaio em browser-pending.py.
 
 ## Gaps reais restantes
-- **Novo delta documentos:** bucket privado/configuração Storage HML, captura integral/ACL/guards, instalação/release/Edge e suite JWT/Storage/browser real pelo root continuam pendentes; código e hosted-qa.py prontos, não exige DSN do agente.
+- **Atualização 03:01:** root informou documentosd7dc4def instalados/released HML, upload/visualização PDF browser e 7 checks Auth/bytes/hash/no-store/B/anon PASS; essas pendências anteriores ficam superadas nos cenários relatados. Provas adicionais não relatadas (revogação durante bytes, origem Storage e nova versão/CAS hospedada) não são presumidas. Montagem produção agora disponível em release-final, somente offline.
 - **Correções read/URL:** executar PRE/POST e negativas reais feature/URL na HML após aplicação; testes locais não substituem JWT real.
 - **Montagem Edge:** revisar/promover o bundle exato gerado na HML; IA real baseline já comprovada pelo root não certifica uma nova implantação.
 - Fiscal/técnico: nenhuma aprovação, classificação ou alteração real criada. Produção27 micros/perfis/status preservados por ausência total de acesso/escrita do agente.

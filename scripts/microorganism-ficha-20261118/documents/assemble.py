@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline additive HML assembly. Requires reviewed full capture; never connects/applies."""
+"""Offline additive per-environment assembly. Requires reviewed full capture; never connects/applies."""
 import hashlib,json,sys
 from pathlib import Path
 H=Path(__file__).resolve().parent
@@ -20,7 +20,7 @@ PUBLIC=[
 'public.tenant_micro_document_open_snapshot_v1(uuid,uuid)',
 ]
 def assemble(capture,out):
- if capture.get('ref')!='vrlcdwmlytukrjezrrnf':raise ValueError('HML_REF_REQUIRED')
+ if capture.get('ref') not in ('vrlcdwmlytukrjezrrnf','swzpzcwiasxmjutrmvkm'):raise ValueError('REF_DENIED')
  functions={f['signature'].replace(', ', ','):f for f in capture['functions']}
  checks=[]
  for signature,expected in zip(SIGNATURES,EXPECTED):
@@ -38,8 +38,8 @@ def assemble(capture,out):
   checks.append(f"IF pg_temp.micro_document_relation_pin('{r['name']}') IS DISTINCT FROM '{literal}'::jsonb THEN RAISE EXCEPTION 'DOCUMENT_RELATION_DRIFT:{r['name']}'; END IF;")
  bucket=capture.get('bucket')
  if bucket!={'id':'microorganism-documents','public':False,'file_size_limit':10485760}:raise ValueError('PRIVATE_BUCKET_10M_REQUIRED')
- pre=(H/'pin-helper.sql.review').read_text()+"\nDO $pre$ BEGIN\n"+'\n'.join(checks)+"\nIF NOT EXISTS(SELECT 1 FROM storage.buckets WHERE id='microorganism-documents' AND public=false AND file_size_limit=10485760) THEN RAISE EXCEPTION 'DOCUMENT_BUCKET_DRIFT'; END IF;\nEND $pre$;\n"
- body=(H/'schema.sql.review').read_text()
+ pre=(H/'pin-helper.sql.review').read_text(encoding='utf-8')+"\nDO $pre$ BEGIN\n"+'\n'.join(checks)+"\nIF NOT EXISTS(SELECT 1 FROM storage.buckets WHERE id='microorganism-documents' AND public=false AND file_size_limit=10485760) THEN RAISE EXCEPTION 'DOCUMENT_BUCKET_DRIFT'; END IF;\nEND $pre$;\n"
+ body=(H/'schema.sql.review').read_text(encoding='utf-8')
  digest=hashlib.sha256(body.encode()).hexdigest()
  guard="IF to_regclass('platform_private.micro_documents_gate_v1') IS NULL THEN EXECUTE $body$"+body+"$body$; ELSE IF (SELECT source_sha256 FROM platform_private.micro_documents_install_v1 WHERE singleton) IS DISTINCT FROM '"+digest+"' THEN RAISE EXCEPTION 'DOCUMENT_INSTALL_DRIFT'; END IF; END IF;"
  # Persist exact post-install function definitions/ACL and metadata fingerprint for drift-safe reruns/release/rollback.
@@ -51,11 +51,11 @@ def assemble(capture,out):
  out.mkdir(parents=True,exist_ok=True)
  write_lf(out/'01-pre.sql.review',pre)
  write_lf(out/'02-install.sql.review','BEGIN;\n'+pre+'DO $install$ BEGIN '+guard+' END $install$;\n'+post+'\nCOMMIT;\n')
- write_lf(out/'03-post.sql.review',(H/'pin-helper.sql.review').read_text()+'\n'+post+'\nSELECT enabled FROM platform_private.micro_documents_gate_v1;\n')
+ write_lf(out/'03-post.sql.review',(H/'pin-helper.sql.review').read_text(encoding='utf-8')+'\n'+post+'\nSELECT enabled FROM platform_private.micro_documents_gate_v1;\n')
  release='\n'.join('GRANT EXECUTE ON FUNCTION '+signature+' TO authenticated;' for signature in PUBLIC)
  release+='\nGRANT EXECUTE ON FUNCTION public.micro_document_attest_bytes_v1(uuid,text,integer,text) TO service_role;\nUPDATE platform_private.micro_documents_gate_v1 SET enabled=true WHERE singleton;'
  write_lf(out/'05-release.sql.review','BEGIN;\n'+pre+post+'\n'+release+'\nCOMMIT;')
  rollback='UPDATE platform_private.micro_documents_gate_v1 SET enabled=false WHERE singleton;\n'+ '\n'.join('REVOKE ALL ON FUNCTION '+signature+' FROM PUBLIC,anon,authenticated,service_role;' for signature in PUBLIC+['public.micro_document_attest_bytes_v1(uuid,text,integer,text)'])
  write_lf(out/'04-rollback.sql.review','BEGIN;\n'+rollback+'\nCOMMIT;\n-- Retain private objects, reservations, versions, receipts and Storage deny policy.\n')
- write_lf(out/'binding.json',json.dumps({'ref':capture['ref'],'PROJECT_REF':capture['ref'],'bucket':bucket,'source_sha256':digest},indent=2))
-if __name__=='__main__':assemble(json.loads(Path(sys.argv[1]).read_text()),Path(sys.argv[2]))
+ write_lf(out/'binding.json',json.dumps({'ref':capture['ref'],'PROJECT_REF':capture['ref'],'bucket':bucket,'source_sha256':digest,'capture_sha256':hashlib.sha256(json.dumps(capture,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode('utf-8')).hexdigest()},indent=2))
+if __name__=='__main__':assemble(json.loads(Path(sys.argv[1]).read_text(encoding='utf-8')),Path(sys.argv[2]))

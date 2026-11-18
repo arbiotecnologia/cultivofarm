@@ -12,11 +12,15 @@ def write_lf(path, text):
     path.write_text(text, encoding="utf-8", newline="\n")
 
 H = Path(__file__).resolve().parent
-capture = json.loads(Path(sys.argv[1]).read_text())
+capture = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
 ref = capture.get("ref")
 if ref not in ("swzpzcwiasxmjutrmvkm", "vrlcdwmlytukrjezrrnf"):
     raise SystemExit("REF_DENIED")
 catalog = capture["catalog"]
+for function in catalog.get("functions") or []:
+    definition = function.get("definition")
+    if not isinstance(definition, str) or hashlib.md5(definition.encode("utf-8")).hexdigest() != function.get("md5"):
+        raise SystemExit("CAPTURE_ROUNDTRIP_DRIFT: exact UTF-8 definition required")
 functions = catalog.get("functions") or []
 pins = {f["signature"]: f["md5"] for f in functions}
 required = {
@@ -33,10 +37,10 @@ if {c["root"] for c in catalog.get("config") or []} != {"microrganismos", "micro
     raise SystemExit("ROOT_CONFIG_BLOCKED")
 out = Path(sys.argv[2])
 out.mkdir(parents=True, exist_ok=True)
-post = json.loads((H / "evidence/local-post-function-pins.json").read_text())
+post = json.loads((H / "evidence/local-post-function-pins.json").read_text(encoding='utf-8'))
 checks = "\n".join(f"IF md5(pg_get_functiondef(to_regprocedure('{signature}'))) IS DISTINCT FROM '{pin}' THEN RAISE EXCEPTION 'PIN_DRIFT:{signature}'; END IF;" for signature, pin in pins.items())
 post_checks = "\n".join(f"IF md5(pg_get_functiondef(to_regprocedure('{signature}'))) IS DISTINCT FROM '{pin}' THEN RAISE EXCEPTION 'POST_PIN_DRIFT:{signature}'; END IF;" for signature, pin in post.items())
-body = (H / "02-install.sql.review").read_text()
+body = (H / "02-install.sql.review").read_text(encoding='utf-8')
 start = body.index("CREATE TABLE platform_private.micro_ficha_gate_v1")
 body = body[start:body.rindex("COMMIT;")]
 if "$installbody$" in body:
@@ -59,6 +63,6 @@ write_lf(out / "02-install.sql.review", install)
 write_lf(out / "01-pre.sql.review", f"-- Destination {ref}\nDO $pre$ BEGIN\n{checks}\nEND $pre$;\n")
 write_lf(out / "03-post.sql.review", f"DO $post$ BEGIN\n{post_checks}\nEND $post$;\nSELECT enabled FROM platform_private.micro_ficha_gate_v1;\n")
 for name in ("04-rollback.sql.review", "05-release.sql.review"):
-    write_lf(out / name, (H / name).read_text().replace("BEGIN;", f"BEGIN;\nDO $pins$ BEGIN\n{post_checks}\nEND $pins$;", 1))
-write_lf(out / "binding.json", json.dumps({"ref": ref, "edge_env": {"CATALOG_DOCUMENTARY_PROJECT_REF": ref}, "capture_sha256": hashlib.sha256(Path(sys.argv[1]).read_bytes()).hexdigest()}, indent=2) + "\n")
+    write_lf(out / name, (H / name).read_text(encoding='utf-8').replace("BEGIN;", f"BEGIN;\nDO $pins$ BEGIN\n{post_checks}\nEND $pins$;", 1))
+write_lf(out / "binding.json", json.dumps({"ref": ref, "edge_build_binding": {"PROJECT_REF": ref}, "capture_sha256": hashlib.sha256(Path(sys.argv[1]).read_bytes()).hexdigest()}, indent=2) + "\n")
 print(json.dumps({"ref": ref, "output": str(out), "applied": False}))

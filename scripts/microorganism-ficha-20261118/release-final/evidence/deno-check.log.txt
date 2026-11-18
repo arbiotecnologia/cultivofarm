@@ -1,0 +1,4 @@
+[0m[32mCheck[0m scripts/microorganism-ficha-20261118/release-final/edges/vrlcdwmlytukrjezrrnf/documents/index.ts
+[0m[32mCheck[0m scripts/microorganism-ficha-20261118/release-final/edges/vrlcdwmlytukrjezrrnf/documentary/index.ts
+[0m[32mCheck[0m scripts/microorganism-ficha-20261118/release-final/edges/swzpzcwiasxmjutrmvkm/documents/index.ts
+[0m[32mCheck[0m scripts/microorganism-ficha-20261118/release-final/edges/swzpzcwiasxmjutrmvkm/documentary/index.ts

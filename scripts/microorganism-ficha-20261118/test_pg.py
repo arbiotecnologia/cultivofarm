@@ -7,7 +7,7 @@ tmp=Path(tempfile.mkdtemp(prefix='micro-ficha-'));tmp.chmod(0o777)
 priv=['setpriv','--reuid=1000','--regid=1000','--clear-groups'] if os.getuid()==0 else []
 port=str(58000+os.getpid()%900);results=[]
 def sql(s,error=None):
- r=subprocess.run(['psql','-X','-qAt','-h',str(tmp),'-p',port,'-U','postgres','-v','ON_ERROR_STOP=1'],input=s,text=True,capture_output=True)
+ r=subprocess.run(['psql','-X','-qAt','-h',str(tmp),'-p',port,'-U','postgres','-v','ON_ERROR_STOP=1'],input=s,text=True,encoding="utf-8",capture_output=True)
  if error: assert r.returncode and error in r.stderr,(error,r.stderr)
  else: assert not r.returncode,r.stderr
  return r.stdout.strip()
@@ -36,31 +36,31 @@ try:
  CREATE TABLE platform_private.tenant_catalog_root_cfg(root text PRIMARY KEY,kind text,allowed text[],parent_col text,parent_tbl text,refs jsonb,safe_defaults jsonb);
  CREATE TABLE platform_private.tenant_catalog_root_receipts(actor_id uuid,organization_id uuid,idempotency_key uuid,payload_hash text,result jsonb,created_at timestamptz DEFAULT now(),PRIMARY KEY(actor_id,organization_id,idempotency_key));
  GRANT USAGE ON SCHEMA auth TO authenticated;''')
- for f in ('platform_private.catalog_tenant_actor','platform_private.tenant_catalog_ref_owner','public.tenant_catalog_root_save'):sql((H/'capture'/f'{f}.sql').read_text())
+ for f in ('platform_private.catalog_tenant_actor','platform_private.tenant_catalog_ref_owner','public.tenant_catalog_root_save'):sql((H/'capture'/f'{f}.sql').read_text(encoding='utf-8'))
  # Transport redacted one receipt SQL clause: reconstruct only this explicitly declared seam from reviewed original.
- src=(H.parents[1]/'scripts/tenant-exclusive-catalog-20261101/crud_section.py').read_text();a=src.index('CREATE FUNCTION platform_private.tenant_catalog_receipt');b=src.index('CREATE FUNCTION public.tenant_catalog_root_save');sql(src[a:b])
+ src=(H.parents[1]/'scripts/tenant-exclusive-catalog-20261101/crud_section.py').read_text(encoding='utf-8');a=src.index('CREATE FUNCTION platform_private.tenant_catalog_receipt');b=src.index('CREATE FUNCTION public.tenant_catalog_root_save');sql(src[a:b])
  sql("INSERT INTO platform_private.tenant_catalog_root_cfg VALUES('microrganismos','root',ARRAY['nome','tipo','codigo','nome_cientifico','fornecedor','funcao_agronomica','concentracao_label','concentracao_ufc_ml','descricao','observacoes','b2b_enabled'],'','','{}','{\"b2b_enabled\":false}'),('microorganism_technical_profiles','profile',ARRAY['microrganismo_id','resumo_curto','mecanismo_acao','beneficios_agronomicos','explicacao_tecnica','explicacao_produtor','explicacao_b2b','indicacoes_uso','cuidados_aplicacao','compatibilidade','armazenamento','observacoes_regulatorias'],'microrganismo_id','microrganismos','{\"microrganismo_id\":\"microrganismos\"}','{}');")
  sql(f"INSERT INTO organizations VALUES('{U(11)}',true,'ativa'),('{U(12)}',true,'ativa');INSERT INTO platform_private.members VALUES('{U(1)}','{U(11)}',true),('{U(2)}','{U(11)}',false),('{U(3)}','{U(12)}',true);")
  sql('''CREATE TABLE public.catalogo_alvos(id uuid PRIMARY KEY,nome text,ativo boolean);
  CREATE TABLE public.microorganism_targets(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),microrganismo_id uuid REFERENCES public.microrganismos(id),catalogo_alvo_id uuid REFERENCES public.catalogo_alvos(id),alvo_nome text NOT NULL,alvo_tipo text NOT NULL,descricao text,prioridade integer DEFAULT 1,ativo boolean DEFAULT true);
  CREATE TABLE public.microorganism_crop_recommendations(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),microrganismo_id uuid REFERENCES public.microrganismos(id),cultura_id uuid REFERENCES public.culturas(id),cultura_nome text,fase_recomendada text,objetivo_uso text,observacao text,ativo boolean DEFAULT true);
  CREATE TABLE public.catalog_technical_sources(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),entidade_tipo text,entidade_id uuid,fonte_titulo text,fonte_url text,fonte_tipo text,idioma_original text,pais_origem text,resumo_evidencia text,nivel_confianca text,data_consulta date,observacoes text,updated_at timestamptz DEFAULT now());''')
- sql((H/'02-install.sql.review').read_text())
+ sql((H/'02-install.sql.review').read_text(encoding='utf-8'))
  pins=json.loads(sql("SELECT jsonb_object_agg(p.oid::regprocedure::text,md5(pg_get_functiondef(p.oid))) FROM pg_proc p WHERE proname IN ('tenant_microorganism_ficha_read_v1','tenant_microorganism_ficha_save_v1','tenant_catalog_documentary_capability_v1','tenant_catalog_documentary_reserve_v1','tenant_catalog_documentary_finish_v1')"))
- (H/'evidence/local-post-function-pins.json').write_text(json.dumps(pins,indent=2)+'\n')
+ assert pins==json.loads((H/'evidence/local-post-function-pins.json').read_text(encoding='utf-8')),'POST_PIN_DRIFT'
  # Offline environment-specific assembly: disposable catalog captures, never hosted proof.
  dependencies=json.loads(sql("SELECT jsonb_agg(jsonb_build_object('signature',oid::regprocedure::text,'md5',md5(pg_get_functiondef(oid)),'definition',pg_get_functiondef(oid))) FROM pg_proc WHERE oid IN (to_regprocedure('platform_private.catalog_tenant_actor(text)'),to_regprocedure('public.tenant_catalog_root_save(text,uuid,jsonb,timestamptz,uuid)'),to_regprocedure('platform_private.tenant_catalog_receipt(uuid,uuid,text)'))"))
  config=json.loads(sql("SELECT jsonb_agg(c) FROM platform_private.tenant_catalog_root_cfg c"))
  cap={'ref':'vrlcdwmlytukrjezrrnf','catalog':{'functions':dependencies,'config':config}}
- capture_path=tmp/'synthetic-capture.json';capture_path.write_text(json.dumps(cap))
+ capture_path=tmp/'synthetic-capture.json';capture_path.write_text(json.dumps(cap),encoding="utf-8",newline="\n")
  output=tmp/'assembled'
  subprocess.run(['python3',str(H/'assemble.py'),str(capture_path),str(output)],check=True,capture_output=True)
- sql((output/'02-install.sql.review').read_text())
+ sql((output/'02-install.sql.review').read_text(encoding='utf-8'))
  check('idempotent rerun closed gate','SELECT enabled FROM platform_private.micro_ficha_gate_v1','f')
- sql((output/'03-post.sql.review').read_text())
+ sql((output/'03-post.sql.review').read_text(encoding='utf-8'))
  check('closed install',"SELECT has_function_privilege('authenticated','public.tenant_microorganism_ficha_save_v1(uuid,timestamptz,timestamptz,jsonb,jsonb,uuid)','EXECUTE')",'f')
- sql((output/'05-release.sql.review').read_text())
- sql((output/'02-install.sql.review').read_text())
+ sql((output/'05-release.sql.review').read_text(encoding='utf-8'))
+ sql((output/'02-install.sql.review').read_text(encoding='utf-8'))
  check('idempotent rerun preserves release','SELECT enabled FROM platform_private.micro_ficha_gate_v1','t')
  ev=[{'field':'resumo_curto','value':'Fonte aceita','identity':{'name':'Micro QA'},'sources':[{'url':'https://example.org/ficha','title':'Fonte','excerpt':'Evidência'}]}]
  payload={'root':{'nome':'Micro QA','tipo':'bacteria'},'content':{'resumo_curto':'Fonte aceita'},'extra':{'cepa':'QA','sinonimos':'Outro'}}
@@ -81,7 +81,7 @@ try:
  check('atomic invalid rollback',actor(save({'root':{'nome':'Não salvar'},'content':{'microrganismo_id':id}},key=121)),error='forbidden')
  check('still single root','SELECT count(*) FROM public.microrganismos','1')
  # Real captured audit/identity/version triggers; Auth/entitlements remain synthetic.
- capture=(H/'capture/production-review-0214.txt').read_text()
+ capture=(H/'capture/production-review-0214.txt').read_text(encoding='utf-8')
  import re
  trigger_bodies={}
  for body,definition,signature in re.findall(r'map\[body:(CREATE OR REPLACE FUNCTION .*?)\n definition:(CREATE TRIGGER .*?) function:(.*?) md5:',capture,re.S):
@@ -95,7 +95,7 @@ try:
  holder.stdin.write(f"BEGIN;SELECT 1 FROM microrganismos WHERE id='{id}' FOR UPDATE;SELECT pg_sleep(0);\n");holder.stdin.flush()
  concurrent=[]
  def pending():
-  concurrent.append(subprocess.run(['psql','-X','-qAt','-h',str(tmp),'-p',port,'-U','postgres','-v','ON_ERROR_STOP=1'],input=actor(save({'root':{'nome':'REVOKED WRITE'}},key=135,id=f"'{id}'",v=f"'{v}'",pv=f"'{pv}'")),text=True,capture_output=True))
+  concurrent.append(subprocess.run(['psql','-X','-qAt','-h',str(tmp),'-p',port,'-U','postgres','-v','ON_ERROR_STOP=1'],input=actor(save({'root':{'nome':'REVOKED WRITE'}},key=135,id=f"'{id}'",v=f"'{v}'",pv=f"'{pv}'")),text=True,encoding="utf-8",capture_output=True))
  thread=threading.Thread(target=pending);thread.start()
  observed=False
  for _ in range(100):
@@ -138,7 +138,7 @@ try:
  check('lease forged cannot finish',actor(f"SELECT public.tenant_catalog_documentary_finish_v1('{q1['lease']}')",3),'f')
  check('lease own finish',actor(f"SELECT public.tenant_catalog_documentary_finish_v1('{q1['lease']}')"),'t')
  check('after finish new lease',actor(reserve))
- sql((H/'04-rollback.sql.review').read_text());check('rollback keeps evidence','SELECT count(*) FROM platform_private.micro_ficha_extra_v1','2')
+ sql((H/'04-rollback.sql.review').read_text(encoding='utf-8'));check('rollback keeps evidence','SELECT count(*) FROM platform_private.micro_ficha_extra_v1','2')
  check('rollback denies writer',actor(save(key=130)),error='permission denied')
  print(json.dumps({'count':len(results),'pass':results,'limits':'component PostgreSQL: real actor/root bodies; synthetic Auth/feature/schema, receipt reconstruction; NOT hosted JWT/RLS'},ensure_ascii=False))
 finally:

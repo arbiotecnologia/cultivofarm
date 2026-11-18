@@ -2,7 +2,7 @@
 from pathlib import Path
 import json,subprocess,shutil,threading,time
 H=Path(__file__).resolve().parent
-baseline=(H.parent/'test_pg.py').read_text()
+baseline=(H.parent/'test_pg.py').read_text(encoding='utf-8')
 prefix=baseline[:baseline.index(' pins=json.loads')]
 # Execute baseline bootstrap without running/editing its tests or evidence writers.
 prefix=prefix.replace('H=Path(__file__).resolve().parent','H=Path(__file__).resolve().parent.parent')
@@ -11,23 +11,30 @@ exec(compile(prefix,str(H/'test_pg.py'),'exec'))
 H=Path(__file__).resolve().parent
 try:
  sql('CREATE SCHEMA storage;CREATE TABLE storage.buckets(id text PRIMARY KEY,public boolean,file_size_limit bigint);CREATE TABLE storage.objects(id uuid,bucket_id text,name text);ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;')
- sql((H/'schema.sql.review').read_text())
- sql((H/'pin-helper.sql.review').read_text())
- capture=json.loads(sql((H/'pin-helper.sql.review').read_text()+(H/'capture.sql.review').read_text().split('-- Normalize')[0]))
+ sql((H/'schema.sql.review').read_text(encoding='utf-8'))
+ sql((H/'pin-helper.sql.review').read_text(encoding='utf-8'))
+ capture=json.loads(sql((H/'pin-helper.sql.review').read_text(encoding='utf-8')+(H/'capture.sql.review').read_text(encoding='utf-8').split('-- Normalize')[0]))
  import importlib.util
  spec=importlib.util.spec_from_file_location('documents_assemble',H/'assemble.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
  # Expected foundation is real captured actor/root, but HML marker and relations in this capture are synthetic.
  sql("INSERT INTO storage.buckets VALUES('microorganism-documents',false,10485760)")
- sql((H.parent/'05-release.sql.review').read_text())
- capture=json.loads(sql((H/'pin-helper.sql.review').read_text()+(H/'capture.sql.review').read_text()))
+ sql((H.parent/'05-release.sql.review').read_text(encoding='utf-8'))
+ capture=json.loads(sql((H/'pin-helper.sql.review').read_text(encoding='utf-8')+(H/'capture.sql.review').read_text(encoding='utf-8')))
  out=tmp/'documents-assembled';module.assemble(capture,out)
+ # Production preparation uses the same disposable definitions, not a hosted production capture.
+ production_out=tmp/'documents-production-preparation'
+ module.assemble({**capture,'ref':'swzpzcwiasxmjutrmvkm'},production_out)
+ check('UTF8 roundtrip captured accented function',"SELECT md5(pg_get_functiondef('public.tenant_microorganism_ficha_save_v1(uuid,timestamptz,timestamptz,jsonb,jsonb,uuid)'::regprocedure))",module.EXPECTED[-1])
+ assert json.loads((production_out/'binding.json').read_text(encoding='utf-8'))['ref']=='swzpzcwiasxmjutrmvkm'
+ assert (production_out/'02-install.sql.review').read_bytes()==(out/'02-install.sql.review').read_bytes()
+ results.append('production assembly same reviewed SQL from synthetic exact capture; no hosted proof')
  # Schema was already installed for capture; recreate only the disposable delta before assembled install.
  sql("DROP POLICY micro_documents_client_closed_v1 ON storage.objects;DROP TABLE platform_private.micro_document_versions_v1;DROP TABLE platform_private.micro_document_uploads_v1;DROP TABLE platform_private.micro_documents_gate_v1;")
  for signature in module.PUBLIC+['public.micro_document_attest_bytes_v1(uuid,text,integer,text)','platform_private.micro_document_context_v1(uuid,boolean)','platform_private.micro_document_immutable_v1()']:sql('DROP FUNCTION '+signature)
- sql((out/'01-pre.sql.review').read_text());sql((out/'02-install.sql.review').read_text());sql((out/'02-install.sql.review').read_text());sql((out/'03-post.sql.review').read_text())
+ sql((out/'01-pre.sql.review').read_text(encoding='utf-8'));sql((out/'02-install.sql.review').read_text(encoding='utf-8'));sql((out/'02-install.sql.review').read_text(encoding='utf-8'));sql((out/'03-post.sql.review').read_text(encoding='utf-8'))
  check('closed install',"SELECT has_function_privilege('authenticated','public.tenant_micro_document_list_v1(uuid)','EXECUTE')",'f')
- sql((out/'05-release.sql.review').read_text())
- sql((out/'02-install.sql.review').read_text())
+ sql((out/'05-release.sql.review').read_text(encoding='utf-8'))
+ sql((out/'02-install.sql.review').read_text(encoding='utf-8'))
  check('rerun preserves release','SELECT enabled FROM platform_private.micro_documents_gate_v1','t')
  ack=json.loads(sql(actor(f"SELECT public.tenant_microorganism_ficha_save_v1(NULL,NULL,NULL,'{{\"root\":{{\"nome\":\"Document QA\",\"tipo\":\"bacteria\"}}}}','[]','{U(200)}')")))
  micro=ack['id'];version=ack['updated_at'];meta={'title':'Laudo documental','file_name':'laudo.pdf','mime':'application/pdf','size_bytes':8,'sha256':'a'*64}
@@ -88,11 +95,11 @@ try:
  check('historical version retained',actor(f"SELECT public.tenant_micro_document_open_snapshot_v1('{micro}','{a['version_id']}')->>'sha256'",2),'a'*64)
  check('immutable metadata',"UPDATE platform_private.micro_document_versions_v1 SET title='forged'",error='version_immutable')
  check('private DML denied',actor('SELECT * FROM platform_private.micro_document_versions_v1'),error='permission denied')
- sql((out/'04-rollback.sql.review').read_text());sql((out/'04-rollback.sql.review').read_text());sql((out/'02-install.sql.review').read_text())
+ sql((out/'04-rollback.sql.review').read_text(encoding='utf-8'));sql((out/'04-rollback.sql.review').read_text(encoding='utf-8'));sql((out/'02-install.sql.review').read_text(encoding='utf-8'))
  check('rollback rerun stays closed','SELECT enabled FROM platform_private.micro_documents_gate_v1','f')
  check('rollback history retained','SELECT count(*) FROM platform_private.micro_document_versions_v1','2')
  check('rollback client denied',actor(f"SELECT public.tenant_micro_document_list_v1('{micro}')"),error='permission denied')
- (H/'evidence/pg-result.json').write_text(json.dumps({'count':len(results),'checks':results,'limits':'Disposable PG; captured actor/root/receipt foundations, synthetic Auth/feature/Storage/schema; not hosted proof'},indent=2))
+ (H/'evidence/pg-result.json').write_text(json.dumps({'count':len(results),'checks':results,'limits':'Disposable PG; captured actor/root/receipt foundations, synthetic Auth/feature/Storage/schema; not hosted proof'},indent=2),encoding='utf-8',newline='\n')
  print(json.dumps({'count':len(results),'pass':True}))
 finally:
  subprocess.run(priv+['pg_ctl','-D',str(tmp/'data'),'-m','immediate','stop'],capture_output=True);shutil.rmtree(tmp,ignore_errors=True)

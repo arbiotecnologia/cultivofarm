@@ -2,3 +2,4 @@
 - Microorganism documents are owner-scoped private immutable versions, not product dossiers or regulatory approvals; canonical actor and parent CAS authorize all metadata commits — prevents parallel catalog authority.
 - Edge service credentials transport bytes and attest measured integrity only; actor-bearer RPCs authorize before and after bytes, and clients have no Storage/table DML or signed URLs — prevents bearer links and service-role business authority.
 - Generate environment PRE/POST from an exact reviewed catalog capture; no fabricated hosted pins, no blind repinning; rollback denies access and retains versions/objects/receipts — preserves history.
+- Prepare both approved refs offline with explicit immutable build bindings; decode captured definitions as UTF-8 and emit LF, verifying original MD5 without repinning — prevents Windows codepage drift and accidental environment fallback.

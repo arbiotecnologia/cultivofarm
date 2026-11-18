@@ -1,0 +1,8 @@
+-- READ ONLY explicit environment capture. Connector must prove ref vrlcdwmlytukrjezrrnf before executing.
+-- Run pin-helper in the same session (temporary function only; no public/hosted installation).
+SELECT jsonb_build_object('ref','vrlcdwmlytukrjezrrnf','functions',(
+ SELECT jsonb_agg(jsonb_build_object('signature',n.nspname||'.'||p.proname||'('||oidvectortypes(p.proargtypes)||')','md5',md5(pg_get_functiondef(p.oid)),'definition',pg_get_functiondef(p.oid),'owner',p.proowner::regrole::text,'acl',(SELECT jsonb_agg(a::text ORDER BY a::text) FROM unnest(coalesce(p.proacl,acldefault('f',p.proowner))) a)))
+ FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE p.oid IN(to_regprocedure('platform_private.catalog_tenant_actor(text)'),to_regprocedure('public.tenant_catalog_root_save(text,uuid,jsonb,timestamptz,uuid)'),to_regprocedure('platform_private.tenant_catalog_receipt(uuid,uuid,text)'),to_regprocedure('public.tenant_microorganism_ficha_save_v1(uuid,timestamptz,timestamptz,jsonb,jsonb,uuid)'))),
+ 'relations',(SELECT jsonb_agg(jsonb_build_object('name',name,'fingerprint',pg_temp.micro_document_relation_pin(name))) FROM unnest(ARRAY['public.microrganismos','platform_private.tenant_catalog_root_receipts','storage.objects']) name),
+ 'bucket',(SELECT jsonb_build_object('id',id,'public',public,'file_size_limit',file_size_limit) FROM storage.buckets WHERE id='microorganism-documents'));
+-- oidvectortypes includes comma spaces; normalize comma spaces in the signature only.

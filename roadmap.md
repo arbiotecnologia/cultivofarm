@@ -1,10 +1,11 @@
 ## 18/11 — Documentos exclusivos do microrganismo
+- [x] Complemento final: quatro bundles revisáveis produção/HML, UTF-8/LF explícitos e roundtrip sem repinar; relato root 7 Auth/PDF reais incorporado; catálogo1036, PG34+17+42, Edge13 e quatro Deno check PASS. Evidências em release-final/REPORT.md.
 - [x] Integrar relato root HML26/IA real/browser; leitura feature/URLs/selects/cultura/pending corrigidos, delta17PG e catálogo1032 PASS; LF/binding determinístico sem reescrever baseline aplicado, relatório root-audit-delta/REPORT.md.
 - [ ] Root aplicar e homologar delta read/URL e nova montagem Edge na HML; nenhuma aplicação pelo agente.
 - [x] Implementar anexos próprios privados, versões, limites, CAS/recibos e consulta na ficha.
 - [x] Preparar delta independente com pins/PRE/POST/rollback, sem reescrever o instalador 12a580416.
 - [x] Validar 1017 testes catálogo, 32 PostgreSQL descartável, 13 Edge sintéticos, tipos/build automáticos e navegador desktop/mobile; evidências em documents/REPORT.md.
-- [ ] Homologação hospedada pelo root após instalação do delta; sem produção/publicação pelo agente.
+- [x] Root informou documentos d7dc4def instalados/released somente HML, upload/visualização PDF reais e 7 checks Auth/bytes/hash/no-store/isolamento PASS; evidência externa relatada, sem produção/publicação pelo agente.
 
 ## 18/11 — Incidente no recibo de cadastro Financeiro
 - [x] Preparar delta revisável pinado de c2_receipt_roles_shape com PRE/POST/rollback e 71 regressões PostgreSQL.

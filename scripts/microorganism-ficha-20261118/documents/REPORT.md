@@ -1,5 +1,10 @@
 # Evidências — delta aditivo de anexos
 
+## Atualização final root 03:01 — documentos aplicados em HML
+Root informou **d7dc4def instalado/released somente HML**, upload e visualização PDF reais browser PASS; **7 checks Auth reais PASS**: lista própria, lista tenant B negada, bytes próprios, SHA256 igual, no-store, B e anon negados. É evidência externa recebida, não nova execução hospedada do agente. Substitui o status antigo de instalação/PDF pendentes abaixo; baseline e documentos aplicados permanecem intactos. Correções segurança e nova montagem continuam deltas revisáveis separados.
+
+Complemento local: montagem documentos/IA para ambos refs explícitos, leituras UTF-8 e saídas LF em todos scripts de texto deste pacote; roundtrip hash acentuado e negativas CP1252/CRLF/ref inválido testados. Detalhes e gates finais em `../release-final/REPORT.md`.
+
 ## Atualização root 02:49 — baseline comprovado em HML
 Baseline12a580416 instalado/released somente HML, 26 verificações Auth reais, IA Embrapa real com fontes salvas/reabertas e browser real desktop/mobile PASS, conforme relato do root. Não reaplicar baseline. Esses resultados encerram as pendências antigas de Auth/IA do baseline, não homologam este delta de documentos ou as correções read/URL. Consolidação e ordem dos deltas em `../root-audit-delta/REPORT.md`; montagem Edge agora usa binding.ts constante e SQL UTF-8 LF, sem Deno.env.set em runtime.
 
@@ -34,4 +39,4 @@ Storage e SQL não são uma única transação: falha pode deixar reserva/objeto
 - `scripts/microorganism-ficha-20261118/documents/`: delta, assembly/pins/rollback, Edge candidata, QA local/hosted e evidências.
 - `roadmap.md`: resultado e homologação restante.
 
-**Estado: implementação local concluída; candidato revisável, homologação hospedada pendente; não certificado para publicação.**
+**Estado atualizado 03:01: baseline e documentos homologados nos cenários relatados pelo root somente HML; montagem de produção revisável concluída, sem captura/execução de produção; correções segurança e provas adicionais permanecem gates explícitos, sem publicação.**

@@ -1,0 +1,9 @@
+{
+  "ref": "vrlcdwmlytukrjezrrnf",
+  "service": "documents",
+  "files": {
+    "binding.ts": "200ef167d40945a4d721417690613c3477752c4a935b458ff06adcb0f939bfe2",
+    "index.ts": "5b1f2afc474b664d331334808eee311d7a5ff8df682e91543d3619c1acdbab15",
+    "integrity.ts": "1aa2e9c8f22d30123e203da116b9fe659cfd43d65b070da50a2fb7316eb83733"
+  }
+}

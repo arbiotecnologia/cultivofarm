@@ -45,5 +45,5 @@ for actor in ('EDITOR_A','READER_A','EDITOR_B'):
 # Metadata writer/table/Storage origin negatives: no signed URL is created.
 status,data,headers=call('EDITOR_B','/rest/v1/rpc/tenant_micro_document_list_v1',{'p_micro':micro});check('tenant_B_list_denied',status>=400)
 output={'ref':REF,'proof':'HOSTED_REAL_JWT_ONLY_IF_THIS_SCRIPT_COMPLETED','checks':results,'fixture_micro_id':micro,'version_id':a['version_id'],'updated_at':a['updated_at'],'sha256':sha,'cleanup':'History intentionally retained; root controls exact synthetic fixture cleanup. No destructive cleanup here.','pending':['revocation during actual bytes/locks with root-controlled fixture','direct Storage origin GET/list/upload denials','desktop/mobile real HML session','new-version real hosted CAS']}
-Path(os.environ.get('QA_MICRO_DOCUMENTS_RESULT','/tmp/micro-documents-hosted-result.json')).write_text(json.dumps(output,indent=2))
+Path(os.environ.get('QA_MICRO_DOCUMENTS_RESULT','/tmp/micro-documents-hosted-result.json')).write_text(json.dumps(output,indent=2),encoding='utf-8',newline='\n')
 print(json.dumps({'count':len(results),'pass':True,'ref':REF,'remaining':output['pending']}))

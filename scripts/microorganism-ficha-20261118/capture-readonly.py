@@ -49,12 +49,12 @@ SELECT jsonb_build_object(
 """
 env = {**os.environ, "PGHOST": dsn.hostname or "", "PGPORT": str(dsn.port or 5432),
        "PGUSER": urllib.parse.unquote(dsn.username or ""), "PGPASSWORD": urllib.parse.unquote(dsn.password or ""),
-       "PGDATABASE": dsn.path.lstrip("/") or "postgres", "PGSSLMODE": "require", "PGCONNECT_TIMEOUT": "10"}
+       "PGDATABASE": dsn.path.lstrip("/") or "postgres", "PGSSLMODE": "require", "PGCONNECT_TIMEOUT": "10", "PGCLIENTENCODING": "UTF8"}
 result = subprocess.run(["psql", "-X", "-qAt", "-v", "ON_ERROR_STOP=1", "-c", query],
-                        env=env, capture_output=True, text=True, timeout=60)
+                        env=env, capture_output=True, text=True, encoding="utf-8", timeout=60)
 if result.returncode:
     raise SystemExit("CAPTURE_FAILED: schema unavailable; no credential/error payload printed")
 catalog = json.loads(result.stdout)
 out = Path(os.environ.get("CAPTURE_OUTPUT", f"/tmp/micro-catalog-{ref}.json"))
-out.write_text(json.dumps({"ref": ref, "catalog": catalog}, indent=2) + "\n")
+out.write_text(json.dumps({"ref": ref, "catalog": catalog}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
 print(json.dumps({"ref": ref, "output": str(out), "catalog_only": True}))

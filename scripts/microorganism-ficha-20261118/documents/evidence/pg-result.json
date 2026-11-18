@@ -1,6 +1,8 @@
 {
-  "count": 32,
+  "count": 34,
   "checks": [
+    "UTF8 roundtrip captured accented function",
+    "production assembly same reviewed SQL from synthetic exact capture; no hosted proof",
     "closed install",
     "rerun preserves release",
     "prepare idempotent",
