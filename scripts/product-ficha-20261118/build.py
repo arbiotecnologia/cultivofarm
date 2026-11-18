@@ -12,8 +12,18 @@ def replace(s,a,b):
  assert s.count(a)==1,('ANCHOR_DRIFT',a)
  return s.replace(a,b)
 def extend(old):
- new=replace(old,'  k text; v_hash text;',"  v_evidence jsonb; v_product uuid; v_source jsonb; v_item jsonb; v_value text; v_enabled boolean;\n  k text; v_hash text;")
- new=replace(new,"  SELECT * INTO v_cfg",'''  v_evidence := p_payload->'documentary_evidence';
+ new=replace(old,'  k text; v_hash text;',"  v_children jsonb; v_evidence jsonb; v_product uuid; v_source jsonb; v_item jsonb; v_value text; v_enabled boolean;\n  k text; v_hash text;")
+ new=replace(new,"  SELECT * INTO v_cfg",'''  v_children := p_payload->'product_relations';
+   v_evidence := p_payload->'documentary_evidence';
+   IF v_children IS NOT NULL OR v_evidence IS NOT NULL THEN
+     IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
+   END IF;
+   IF v_children IS NOT NULL THEN
+     IF p_root <> 'product_technical_profiles' THEN RAISE EXCEPTION 'product_relations_root_denied' USING ERRCODE='22023'; END IF;
+     SELECT enabled INTO v_enabled FROM platform_private.product_evidence_gate_v1 WHERE singleton FOR SHARE;
+     IF v_enabled IS DISTINCT FROM true THEN RAISE EXCEPTION 'product_evidence_closed' USING ERRCODE='42501'; END IF;
+     p_payload := p_payload-'product_relations';
+   END IF;
    IF v_evidence IS NOT NULL THEN
      IF p_root <> 'product_technical_profiles' THEN RAISE EXCEPTION 'product_evidence_root_denied' USING ERRCODE='22023'; END IF;
      SELECT enabled INTO v_enabled FROM platform_private.product_evidence_gate_v1 WHERE singleton FOR SHARE;
@@ -31,10 +41,13 @@ def extend(old):
    END IF;
    SELECT * INTO v_cfg''')
  new=replace(new,"coalesce(p_expected_updated_at::text,'')))","coalesce(p_expected_updated_at::text,''),coalesce(v_evidence::text,'')))")
- new=replace(new,'  IF v_rep IS NOT NULL THEN RETURN v_rep; END IF;',"  IF platform_private.catalog_tenant_actor('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'tenant_catalog_actor_changed' USING ERRCODE='42501'; END IF;\n  IF v_rep IS NOT NULL THEN RETURN v_rep; END IF;")
+ new=replace(new,'  IF v_rep IS NOT NULL THEN RETURN v_rep; END IF;',"  IF platform_private.catalog_tenant_actor('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'tenant_catalog_actor_changed' USING ERRCODE='42501'; END IF;\n  IF (v_children IS NOT NULL OR v_evidence IS NOT NULL) AND platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;\n  IF v_rep IS NOT NULL THEN RETURN v_rep; END IF;")
  # Avoid changing idempotency hashes of every existing command.
- new=replace(new,"coalesce(p_expected_updated_at::text,''),coalesce(v_evidence::text,'')))","coalesce(p_expected_updated_at::text,'')));\n  IF v_evidence IS NOT NULL THEN v_hash := md5(v_hash || v_evidence::text); END IF")
- new=replace(new,"  v_row := jsonb_build_object('ok'",'''  IF v_evidence IS NOT NULL THEN
+ new=replace(new,"coalesce(p_expected_updated_at::text,''),coalesce(v_evidence::text,'')))","coalesce(p_expected_updated_at::text,'')));\n  IF v_evidence IS NOT NULL THEN v_hash := md5(v_hash || v_evidence::text); END IF;\n  IF v_children IS NOT NULL THEN v_hash := md5(v_hash || v_children::text); END IF")
+ new=replace(new,"  v_row := jsonb_build_object('ok'",'''  IF v_children IS NOT NULL THEN
+     PERFORM platform_private.product_relations_apply_v1((v_row->>'produto_id')::uuid,v_org,v_children);
+   END IF;
+   IF v_evidence IS NOT NULL THEN
      v_product := (v_row->>'produto_id')::uuid;
      IF platform_private.tenant_catalog_ref_owner('produtos',v_product) IS DISTINCT FROM v_org OR platform_private.catalog_tenant_actor('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_evidence_denied' USING ERRCODE='42501'; END IF;
      FOR v_item IN SELECT value FROM jsonb_array_elements(v_evidence) LOOP
@@ -42,6 +55,7 @@ def extend(old):
      END LOOP;
      INSERT INTO platform_private.product_evidence_history_v1(product_id,profile_id,profile_revision,actor_id,evidence) VALUES(v_product,(v_row->>'id')::uuid,(v_row->>'updated_at')::timestamptz,v_uid,v_evidence);
    END IF;
+   IF (v_children IS NOT NULL OR v_evidence IS NOT NULL) AND platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
    v_row := jsonb_build_object('ok' ''')
  # Fix spacing after exact string anchor.
  new=new.replace("jsonb_build_object('ok' ,", "jsonb_build_object('ok',")
@@ -56,6 +70,7 @@ reader="""CREATE FUNCTION public.tenant_product_documentary_read_v1(p_product_id
 DECLARE org uuid; result jsonb; current_profile uuid; current_revision timestamptz;
 BEGIN
  org:=platform_private.catalog_tenant_actor('read_catalog');
+ IF NOT EXISTS(SELECT 1 FROM platform_private.product_evidence_gate_v1 WHERE singleton AND enabled) THEN RAISE EXCEPTION 'product_evidence_closed' USING ERRCODE='42501'; END IF;
  IF NOT EXISTS(SELECT 1 FROM public.produtos WHERE id=p_product_id AND owner_organization_id=org) THEN RAISE EXCEPTION 'product_evidence_denied' USING ERRCODE='42501'; END IF;
  SELECT id,updated_at INTO current_profile,current_revision FROM public.product_technical_profiles WHERE produto_id=p_product_id;
  SELECT evidence INTO result FROM platform_private.product_evidence_history_v1 WHERE product_id=p_product_id AND profile_id=current_profile AND profile_revision=current_revision ORDER BY sequence DESC LIMIT 1;
@@ -69,32 +84,6 @@ INSERT INTO platform_private.product_evidence_gate_v1 VALUES(true,false);
 CREATE TABLE platform_private.product_evidence_history_v1(sequence bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,product_id uuid NOT NULL REFERENCES public.produtos(id),profile_id uuid NOT NULL REFERENCES public.product_technical_profiles(id),profile_revision timestamptz NOT NULL,actor_id uuid NOT NULL,evidence jsonb NOT NULL,created_at timestamptz NOT NULL DEFAULT clock_timestamp());
 REVOKE ALL ON platform_private.product_evidence_gate_v1,platform_private.product_evidence_history_v1 FROM PUBLIC,anon,authenticated,service_role;
 """
-write(H/'source.sql.review',schema+helper+reader+new)
-if len(sys.argv)>1:
- capture=json.loads(Path(sys.argv[1]).read_text(encoding='utf-8')); ref=capture.get('ref')
- assert ref in ['swzpzcwiasxmjutrmvkm','vrlcdwmlytukrjezrrnf'],'REF_DENIED'
- for f in capture['functions']:
-  assert hashlib.md5(f['definition'].encode('utf-8')).hexdigest()==f['md5'],'CAPTURE_ROUNDTRIP_DRIFT'
- expected={'public.tenant_catalog_root_save(text,uuid,jsonb,timestamp with time zone,uuid)':PIN,'platform_private.catalog_tenant_actor(text)':'5e0ce9cc9122f1c21d76e29a13de8b59','platform_private.tenant_catalog_receipt(uuid,uuid,text)':'e0215d187cf055064e05c76a13dd55d4'}
- found={f['signature']:f['md5'] for f in capture['functions']}
- for sig,pin in expected.items(): assert found.get(sig)==pin,('FOUNDATION_REVIEW_REQUIRED',sig)
- out=Path(sys.argv[2]);out.mkdir(parents=True,exist_ok=True)
- checks='\n'.join(f"IF md5(pg_get_functiondef(to_regprocedure('{sig}'))) IS DISTINCT FROM '{pin}' THEN RAISE EXCEPTION 'PRODUCT_PRE_DRIFT'; END IF;" for sig,pin in found.items())
- write(out/'01-pre.sql.review','DO $f$ BEGIN\n'+checks+'\nEND $f$;')
- assert len(sys.argv)==4,'EXACT_POST_CAPTURE_REQUIRED: synthetic post-pins.json never authorizes installation'
- post_capture=json.loads(Path(sys.argv[3]).read_text(encoding='utf-8'))
- assert post_capture.get('ref')==ref,'POST_REF_DENIED'
- pins={}
- for f in post_capture['functions']:
-  assert hashlib.md5(f['definition'].encode('utf-8')).hexdigest()==f['md5'],'POST_ROUNDTRIP_DRIFT'
-  pins[f['signature']]=f['md5']
- exact_root=next(f['definition'] for f in capture['functions'] if f['signature'].startswith('public.tenant_catalog_root_save('))
- exact_delta=extend(exact_root)
- write(out/'source.sql.review',schema+helper+reader+exact_delta)
- assert any('tenant_catalog_root_save(' in sig for sig in pins),'POST_ROOT_REQUIRED'
- post='DO $post$ BEGIN\n'+'\n'.join(f"IF md5(pg_get_functiondef(to_regprocedure('{sig}'))) IS DISTINCT FROM '{pin}' THEN RAISE EXCEPTION 'PRODUCT_POST_DRIFT'; END IF;" for sig,pin in pins.items())+'\nEND $post$;\n'
- write(out/'03-post.sql.review',post)
- write(out/'02-install.sql.review','BEGIN;\n'+(out/'01-pre.sql.review').read_text(encoding='utf-8')+'\n'+(out/'source.sql.review').read_text(encoding='utf-8')+'\n'+post+'COMMIT;\n')
- write(out/'04-release.sql.review',"BEGIN;\n"+post+"UPDATE platform_private.product_evidence_gate_v1 SET enabled=true WHERE singleton;COMMIT;\n")
- write(out/'05-rollback.sql.review',"BEGIN;UPDATE platform_private.product_evidence_gate_v1 SET enabled=false WHERE singleton;REVOKE EXECUTE ON FUNCTION public.tenant_product_documentary_read_v1(uuid) FROM authenticated;COMMIT;\n-- Retain evidence and safe extended motor. Never restore unsafe definitions.\n")
- print('ASSEMBLED_REVIEW_ONLY',ref)
+write(H/'source.sql.review',schema+helper+(H/'relations.sql.review').read_text(encoding='utf-8')+reader+new)
+if __name__ == '__main__' and len(sys.argv)>1:
+ raise SystemExit('USE assemble.py --pre EXACT --post EXACT --out OUT; legacy incomplete capture cannot install')

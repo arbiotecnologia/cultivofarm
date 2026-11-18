@@ -70,7 +70,7 @@ export async function saveTenantCatalogRoot(
     p_root: root, p_id: id, p_payload: buildTenantCatalogPayload(payload),
     p_expected_updated_at: id ? expectedUpdatedAt : null, p_idempotency_key: idempotencyKey,
   });
-  if (error) throw new Error(tenantCatalogErrorMessage(error.code, error.message));
+  if (error) throw Object.assign(new Error(tenantCatalogErrorMessage(error.code, error.message)), { serverCode: error.code ?? null });
   return parseTenantCatalogAck(data, id);
 }
 

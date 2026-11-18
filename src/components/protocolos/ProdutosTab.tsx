@@ -747,7 +747,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
             <span>Composição pendente do produto {partialAck.product_id}. Novas edições ficam bloqueadas até reconciliar.</span>
             <Button type="button" size="sm" variant="outline" onClick={resumePending}>Retomar reconciliação</Button>
           </div>}
-          <Dialog open={open} onOpenChange={(v) => { if (!v && retainedSave.current) return; if (!v && (form.nome.trim() || form.id)) { setExitOpen(true); return; } setOpen(v); if(!v) { resetForm(); setPartialExport(null); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
+          <Dialog open={open} onOpenChange={(v) => { if (!v && (retainedSave.current || contentDirty)) return; if (!v && (form.nome.trim() || form.id)) { setExitOpen(true); return; } setOpen(v); if(!v) { resetForm(); setPartialExport(null); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
             <DialogContent aria-describedby={undefined} className="max-w-6xl max-h-[94dvh] overflow-y-auto flex flex-col min-w-0">
               <DialogHeader>
                 <DialogTitle>{form.id ? "Editar" : "Novo"} produto</DialogTitle>
@@ -1155,7 +1155,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
         <p className="text-sm text-muted-foreground break-words">{p.descricao || p.funcao_completa}</p>
         <div className="flex flex-wrap gap-2"><LabelTechnicalDataDialog kind="toxicidade" targetId={p.id} targetName={p.nome} /><ProductDossierAction productId={p.id} name={p.nome} code={p.codigo}/><Button className="min-h-11" variant="outline" onClick={() => setFichaProduto(p)}>{profileStatusMap[p.id] ? "Editar ficha" : "Criar ficha"}</Button><Button className="min-h-11" variant="outline" onClick={() => setVolumesEdit(p)} title="Volumes do catálogo"><Droplets className="h-4 w-4 mr-1" />Volumes</Button>{editor.canEdit && <Button className="min-h-11" variant="outline" onClick={() => handleEdit(p)}>Editar produto</Button>}</div>
       </article>)}{!tenantVis.displayed.length && <div className="space-y-2 py-6"><p>Nenhum produto encontrado</p><Button className="min-h-11" variant="outline" onClick={() => { setFamilyTab("todos"); setFilterTipo("todos"); }}>Buscar em todas as famílias</Button></div>}</div>}
-      <DraftExitConfirmation open={exitOpen} onOpenChange={setExitOpen} onLeave={() => { setOpen(false); resetForm(); }} />
+      <DraftExitConfirmation open={exitOpen} onOpenChange={setExitOpen} onLeave={() => { if (contentDirty) return; setOpen(false); resetForm(); }} />
       <div className="rounded-md border hidden md:block">
         <Table>
           <TableHeader>

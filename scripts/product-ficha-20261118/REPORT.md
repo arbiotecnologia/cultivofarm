@@ -44,12 +44,25 @@ Esses resultados são **baseline backend independente**, não prova da nova fich
 
 Nesta continuação foram acrescentados schema/target/revisão tipados na leitura, retenção explícita `candidate_key` apenas nas evidências de produto (envelope de microrganismos preservado), bloqueio de saída/versão com dossiê sujo ou documento aberto e cancelamento explícito do rascunho. Evidência continua ligada ao texto exato: edição manual não mantém a fonte como comprovação do novo texto; histórico privado não é apagado.
 
-## Gaps reais — não certificado para publicação
+## Fechamento local dos gaps do REPORT 8de0b8fb4
 
-1. Captura exata por ambiente e POST/ACL/owner/triggers/estrutura completos ainda não fornecidos/fechados; artefato SQL de laboratório e seus pins NÃO são LIVE. Builder recusa pins sintéticos como input implícito, mas montagem final requer recomposição auditada. Fundação divergente exige revisão adicional.
-2. Nova ficha/delta de evidências ainda requerem Auth/JWT/RLS/Storage, IA real salvar/reabrir e concorrência integrada pelo root. Baseline HML real acima não equivale a estes resultados.
-3. Perfis/filhos validam schema/produto; reader de evidências retorna envelope estrito com ID/revisão do perfil atual e só fontes desta revisão. UI recusa hidratação divergente e oferece releitura explícita. Pareamento local e 25 checks SQL PASS; concorrência hosted permanece para root.
-4. Culturas/alvos/fontes legados estão consultivos nesta ficha; edição canônica integrada dos vínculos de produto não foi concluída neste delta. Dossiê mantém autoridade existente; bloqueio de saída/versão/cancelamento tem teste local, ainda exige matriz hosted completa e recuperação de anexos pendentes. Não declarar ficha integralmente concluída.
-5. Cadastro novo só disponibiliza ficha de conteúdo após ID confirmado; a entrada catálogo/mobile/fiscal reutiliza componentes existentes, mas a matriz completa de navegação/perfis não foi exercitada no browser real hospedado.
+- Culturas/alvos/fontes próprios têm edição integrada, rascunhos Aplicar/Cancelar, opções reais e preservação de ID/nome canônico. Alterações confirmadas entram pelo motor de perfil existente; não há DML/browser writer paralelo. Recomendações não têm updated_at no schema: CAS usa linha JSONB inteira capturada; metadados/composição sequenciais intocados.
+- Perfil exige todos os campos de conteúdo, timestamps/status tipados; null confirmado é ausência, undefined/shape inválido/erro não viram ficha vazia. Filhos têm target/schema validados e opções limitadas; links legados inseguros não são navegáveis.
+- Parent save/seção/close bloqueados com vínculo/dossiê pendente, inclusive fechamento da janela ProdutosTab. Vínculos já aplicados permanecem em memória entre seções; revisão não perde campos, CAS não é rebase automático.
+- Recusa SQL definitiva mantém rascunho e exige fresh read antes de liberar nova chave. Conflito de vínculo tem reconciliação explícita por linha. Rede/ACK inválido/timeout são incertos: mesma chave/argumentos e exportação, não nova intenção. Campo manual/IA não altera snapshot durante envio.
+- IA acompanha identidade/dossiê com reset fabricante/registro; fetch pendente/erro não pesquisa com valores antigos. Produto continua product_strain; fontes exatas por candidate_key/campo/texto mantidas. Microrganismos e seus instaladores não alterados.
+- Montador novo `assemble.py` exige captura integral UTF-8/LF por ambiente, root7db253 e freshactor0cb006, owner/ACL/triggers/estrutura e dependências preservados. Input simplificado do montador antigo agora recusado. PRE/POST integrais, gate OFF, reinstall somente POST exato e rollback não destrutivo preparados. Pins locais sintéticos continuam sem autorização de instalação.
 
-Disponibilidade de secrets/provider desta rodada não consultada; LOVABLE_API_KEY HML informado anteriormente pelo root não equivale a validação atual. Nenhum acesso hosted/produção, deployment, publicação ou subagente utilizado.
+## Evidência desta continuação
+
+- Vitest: **62 arquivos / 1084 PASS** (catálogo completo, microrganismos/IA compartilhada, recuperação sequencial, schema, vínculos, dossiê/document viewer). Avisos de refs/controlado nos componentes compartilhados persistem.
+- PostgreSQL descartável: **40 checks PASS**, cultura canônica, replay único, cross-tenant negado, CAS linha inteira, falha tardia sem filhos/recibo, helper privado negado, gate/rollback/release e fontes por texto exato. Motor/actor históricos e identidade/schema/recibo reconstruídos são sintéticos; freshactor da bateria é stub explícito. Não prova o freshactor real nem JWT/RLS hospedados.
+- Python montagem: **4 negativos PASS** (proveniência sintética, ref ausente, UTF8/hash divergente, CRLF recusado). Montagem positiva integral ainda não executada por ausência de captura root PRE/POST; não alegar instalável sem essa etapa.
+- Chromium desktop1280×1800/mobile390×844: IA gerar/aplicar/salvar/reabrir fontes, vínculo pendente bloqueia salvar/seção e cancelamento libera, um diálogo, sem overflow/pageerrors. Transporte/Auth interceptados sintéticos; não browser HML. Capturas inspecionadas.
+- Deno check bundles explícitos HML/produção PASS; nenhuma implantação/inference nova. Harness automático build OK inclui tipos; não rodado build/typecheck manual conforme plataforma.
+
+## Pendências externas exatas — não certificado para publicação
+
+1. Root entregar captura exata integral PRE/POST e revisão transitiva; executar montador/reinstall/rollback no espelho com dependências reais. Código/consulta/envelope estão entregues; não depende de DSN do agente.
+2. Root instalar delta HML e executar Auth A/B/anon/leitor/revogação/lock/replay, vínculos editar/salvar/reabrir, dossiê/upload pendente, fontes IA persistidas e navegador real integral. Os 29 checks backend e IA Serifel relatados acima são baseline, não essa homologação.
+3. Nenhuma escrita produção/hosting/subagente. Dados dos 27 microrganismos e oito produtos reais intocados; disponibilidade atual de secrets não consultada.

@@ -100,3 +100,13 @@ it('salvamento impede geração e aplicação sem descartar resultado',async()=>
 });
 it.each([401,403,429,402])('diferencia erro HTTP %s sem aplicar nem retry',async status=>{state.invoke.mockResolvedValue({data:null,error:{context:new Response('{}',{status})}});render(<DocumentaryAI {...props}/>);fireEvent.click(screen.getByRole('button',{name:'Gerar com IA'}));await screen.findByRole('alert');expect(props.onApply).not.toHaveBeenCalled();expect(state.invoke).toHaveBeenCalledOnce();});
 it('persiste seleção de fontes via callback explícito sem salvar automaticamente',async()=>{state.invoke.mockResolvedValue({data:{candidates:[candidate('A')],suggestions:[suggestion()]},error:null});const evidence=vi.fn();render(<DocumentaryAI {...props} onEvidence={evidence}/>);fireEvent.click(screen.getByRole('button',{name:'Gerar com IA'}));await screen.findByText('Descrição sugerida');fireEvent.click(screen.getByRole('checkbox',{name:'Descrição do catálogo'}));fireEvent.click(screen.getByRole('button',{name:'Aplicar campos selecionados ao rascunho'}));expect(evidence).toHaveBeenCalledWith([expect.objectContaining({field:'descricao',value:'Descrição sugerida',sources:[source]})]);expect(state.invoke).toHaveBeenCalledOnce();});
+it('fabricante e registro não sobrevivem à troca do produto ou atualização do dossiê', async () => {
+ const view=render(<DocumentaryAI {...props} identity={{...props.identity,id:'p1',manufacturer:'Primeiro',registration:'R1'}}/>);
+ fireEvent.change(screen.getByLabelText('Fabricante para pesquisa'),{target:{value:'Manual antigo'}});
+ view.rerender(<DocumentaryAI {...props} identity={{...props.identity,id:'p2',manufacturer:'Segundo',registration:'R2'}}/>);
+ await waitFor(()=>expect(screen.getByLabelText('Fabricante para pesquisa')).toHaveValue('Segundo'));
+ expect(screen.getByLabelText('Registro para pesquisa (opcional)')).toHaveValue('R2');
+ view.rerender(<DocumentaryAI {...props} identity={{...props.identity,id:'p2',manufacturer:'Atualizado',registration:''}}/>);
+ await waitFor(()=>expect(screen.getByLabelText('Fabricante para pesquisa')).toHaveValue('Atualizado'));
+ expect(screen.getByLabelText('Registro para pesquisa (opcional)')).toHaveValue('');
+});

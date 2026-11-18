@@ -39,6 +39,13 @@ try:
  src=(H.parent/'tenant-exclusive-catalog-20261101/crud_section.py').read_text(encoding='utf-8');sql(src[src.index('CREATE FUNCTION platform_private.tenant_catalog_receipt'):src.index('CREATE FUNCTION public.tenant_catalog_root_save')])
  sql("INSERT INTO platform_private.tenant_catalog_root_cfg VALUES('product_technical_profiles','profile',ARRAY['produto_id','resumo_curto'],'produto_id','produtos','{\"produto_id\":\"produtos\"}','{}');")
  sql(f"INSERT INTO organizations VALUES('{U(11)}',true,'ativa'),('{U(12)}',true,'ativa');INSERT INTO platform_private.members(id,org,editor) VALUES('{U(1)}','{U(11)}',true),('{U(2)}','{U(11)}',false),('{U(3)}','{U(12)}',true);INSERT INTO produtos VALUES('{U(21)}','{U(11)}');")
+ sql('''CREATE FUNCTION platform_private.recorte_a_actor_fresh(text) RETURNS uuid LANGUAGE sql SECURITY DEFINER AS $$SELECT platform_private.catalog_tenant_actor($1)$$;
+ REVOKE ALL ON FUNCTION platform_private.recorte_a_actor_fresh(text) FROM PUBLIC,anon,authenticated,service_role;
+ CREATE TABLE culturas(id uuid PRIMARY KEY,nome text,ativo boolean,owner_organization_id uuid);
+ CREATE TABLE catalogo_alvos(id uuid PRIMARY KEY,nome text,ativo boolean);
+ CREATE TABLE product_crop_recommendations(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),produto_id uuid REFERENCES produtos(id),cultura_id uuid REFERENCES culturas(id),cultura_nome text,fase_recomendada text,objetivo_uso text,dose_recomendada text,observacao text,ativo boolean DEFAULT true,created_at timestamptz DEFAULT now());
+ CREATE TABLE product_target_recommendations(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),produto_id uuid REFERENCES produtos(id),catalogo_alvo_id uuid,alvo_nome text NOT NULL,alvo_tipo text NOT NULL,descricao text,prioridade integer DEFAULT 1,ativo boolean DEFAULT true,created_at timestamptz DEFAULT now());
+ CREATE TABLE catalog_technical_sources(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),entidade_tipo text NOT NULL,entidade_id uuid NOT NULL,fonte_titulo text NOT NULL,fonte_url text,fonte_tipo text,nivel_confianca text,idioma_original text,pais_origem text,resumo_evidencia text,data_consulta date,observacoes text,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now());''')
  sql((H/'source.sql.review').read_text(encoding='utf-8'))
  sql('GRANT EXECUTE ON FUNCTION public.tenant_catalog_root_save(text,uuid,jsonb,timestamptz,uuid) TO authenticated;')
  e={'field':'resumo_curto','value':'Conteúdo aceito','candidate_key':'A','identity':{'entity':'produto','id':U(21),'name':'Produto QA'},'sources':[{'url':'https://example.org/ficha','title':'Documento','excerpt':'Trecho'}]}
@@ -70,6 +77,33 @@ try:
  check('feature revoked read',actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')"),error='feature_unavailable')
  check('feature revoked replay',actor(save()),error='feature_unavailable')
  check('private DML denied',actor('SELECT * FROM platform_private.product_evidence_history_v1'),error='permission denied')
+ sql(f"UPDATE platform_private.members SET feature=true WHERE id='{U(1)}';INSERT INTO culturas VALUES('{U(31)}','Soja',true,'{U(11)}'),('{U(32)}','Milho',true,'{U(12)}');")
+ def relation_save(children,key=130,expected=rev):
+  payload={'resumo_curto':'Conteúdo aceito','product_relations':children}
+  return f"SELECT tenant_catalog_root_save('product_technical_profiles','{id}','{json.dumps(payload,ensure_ascii=False)}','{expected}','{U(key)}');"
+ crop={'kind':'crop','id':None,'expected':None,'fields':{'cultura_id':U(31),'cultura_nome':'WRONG','ativo':True}}
+ crop_ack=json.loads(sql(actor(relation_save([crop]))))
+ check('canonical culture name','SELECT cultura_nome FROM product_crop_recommendations','Soja')
+ check('relation replay single insert',actor(relation_save([crop])))
+ check('no duplicate culture','SELECT count(*) FROM product_crop_recommendations','1')
+ check('foreign culture abort',actor(relation_save([{**crop,'fields':{'cultura_id':U(32)}}],131,crop_ack['updated_at'])),error='crop_foreign')
+ check('foreign culture no receipt',f"SELECT count(*) FROM platform_private.tenant_catalog_root_receipts WHERE idempotency_key='{U(131)}'",'0')
+ observed_crop=json.loads(sql('SELECT to_jsonb(x) FROM product_crop_recommendations x'))
+ sql("UPDATE product_crop_recommendations SET observacao='Concurrent edit'")
+ changed={**crop,'id':observed_crop['id'],'expected':observed_crop,'fields':{'observacao':'Stale overwrite'}}
+ check('row CAS no invented revision',actor(relation_save([changed],132,crop_ack['updated_at'])),error='child_stale')
+ check('concurrent row retained','SELECT observacao FROM product_crop_recommendations','Concurrent edit')
+ broken={'kind':'source','id':None,'expected':None,'fields':{'fonte_titulo':'Bad','fonte_url':'javascript:x','fonte_tipo':'outro','nivel_confianca':'baixo'}}
+ check('late source aborts prior child',actor(relation_save([crop,broken],133,crop_ack['updated_at'])),error='source_invalid')
+ check('atomic children no second crop','SELECT count(*) FROM product_crop_recommendations','1')
+ check('atomic late no receipt',f"SELECT count(*) FROM platform_private.tenant_catalog_root_receipts WHERE idempotency_key='{U(133)}'",'0')
+ check('private helper execute denied',actor(f"SELECT platform_private.product_relations_apply_v1('{U(21)}','{U(11)}','[]')"),error='permission denied')
+ sql('UPDATE platform_private.product_evidence_gate_v1 SET enabled=false')
+ check('rollback denies new relations',actor(relation_save([crop],134,crop_ack['updated_at'])),error='evidence_closed')
+ check('rollback denies reader',actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')"),error='evidence_closed')
+ check('rollback history retained','SELECT count(*) FROM platform_private.product_evidence_history_v1','1')
+ sql('UPDATE platform_private.product_evidence_gate_v1 SET enabled=true')
+ check('release restores reader',actor(f"SELECT jsonb_array_length(tenant_product_documentary_read_v1('{U(21)}')->'evidence')"),'0')
  pins=json.loads(sql("SELECT jsonb_object_agg(oid::regprocedure::text,md5(pg_get_functiondef(oid))) FROM pg_proc WHERE proname IN ('tenant_catalog_root_save','tenant_product_documentary_read_v1','product_source_https_v1')"))
  print(json.dumps({'count':len(results),'pass':results,'pins':pins,'limits':'disposable PG: captured motor/actor; synthetic identity/schema/config/receipt reconstruction; not hosted JWT/RLS'},ensure_ascii=False))
 finally:

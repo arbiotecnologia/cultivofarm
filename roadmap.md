@@ -1920,3 +1920,10 @@
 - [x] Typecheck/build automático, regressões e browser sintético desktop/mobile salvar/reabrir fontes; pesquisa pública real executada.
 - [ ] Instalação e JWT/RLS/Storage/browser hospedado: aguardam binding HML correto + capture/pins reais; roteiro Auth executável preparado, produção intocada.
 - [ ] Documentos exclusivos do microrganismo sem produto: contrato canônico ainda ausente; navegação/upload dos dossiês por produto existentes preservados. Culturas/alvos/fontes agora têm candidato atômico e editor no rascunho, sem instalação.
+
+
+## 18/11 — Continuação ficha PRODUTOS REPORT8de0 (sem publicação/produção)
+- [x] Edição integrada culturas/alvos/fontes via motor canônico; CAS linha inteira, rascunhos protegidos no pai/dossiê.
+- [x] Schema completo, recusa definitiva com fresh read, incerteza mesma chave/exportação e IA identidade comercial.
+- [x] Captura integral/envelope e montagem fail-closed UTF8/LF com gates/rollback; testes locais e navegador sintético.
+- [ ] Captura exata PRE/POST, montagem positiva e Auth/browser HML — dependem da auditoria/execução root; não produção.

@@ -47,7 +47,9 @@ describe("contenção de escrita do catálogo global", () => {
   it.each([["src/hooks/useProductProfile.ts", "product_technical_profiles"], ["src/hooks/useMicroorganismProfile.ts", "microorganism_technical_profiles"]])("ficha própria %s usa gate de ator e RPC, nunca DML global", (f, table) => {
     const s = read(f);
     expect(s.indexOf("if (!editor.canEdit || !current()")).toBeGreaterThan(-1);
-    expect(s.indexOf("if (!editor.canEdit || !current()")).toBeLessThan(s.indexOf("const ack = await saveTenantCatalogRoot"));
+    const dispatch = s.indexOf("await saveTenantCatalogRoot");
+    expect(dispatch).toBeGreaterThan(-1);
+    expect(s.indexOf("if (!editor.canEdit || !current()")).toBeLessThan(dispatch);
     expect(s).not.toMatch(/\.(insert|update|delete|upsert)\(/);
     expect(s).toContain(`"${table}"`);
   });

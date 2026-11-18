@@ -1,0 +1,50 @@
+-- Called only by the canonical root motor, in the same transaction and receipt.
+CREATE FUNCTION platform_private.product_relations_apply_v1(p_product uuid,p_org uuid,p_children jsonb) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
+DECLARE child jsonb; kind text; tbl text; allowed text[]; old_row jsonb; values_json jsonb; cols text; select_cols text; k text; culture_name text;
+BEGIN
+ IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM p_org OR platform_private.tenant_catalog_ref_owner('produtos',p_product) IS DISTINCT FROM p_org THEN RAISE EXCEPTION 'product_relations_denied' USING ERRCODE='42501'; END IF;
+ IF jsonb_typeof(p_children) IS DISTINCT FROM 'array' OR jsonb_array_length(p_children)>60 OR octet_length(p_children::text)>120000 THEN RAISE EXCEPTION 'product_relations_shape' USING ERRCODE='22023'; END IF;
+ FOR child IN SELECT value FROM jsonb_array_elements(p_children) ORDER BY value->>'kind',value->>'id' LOOP
+  IF jsonb_typeof(child) IS DISTINCT FROM 'object' OR (child-ARRAY['kind','id','expected','fields'])<>'{}' OR jsonb_typeof(child->'fields') IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'product_child_shape' USING ERRCODE='22023'; END IF;
+  kind:=child->>'kind'; values_json:=child->'fields';
+  IF kind='crop' THEN tbl:='product_crop_recommendations'; allowed:=ARRAY['cultura_id','cultura_nome','fase_recomendada','objetivo_uso','dose_recomendada','observacao','ativo'];
+  ELSIF kind='target' THEN tbl:='product_target_recommendations'; allowed:=ARRAY['catalogo_alvo_id','alvo_nome','alvo_tipo','descricao','prioridade','ativo'];
+  ELSIF kind='source' THEN tbl:='catalog_technical_sources'; allowed:=ARRAY['fonte_titulo','fonte_url','fonte_tipo','idioma_original','pais_origem','resumo_evidencia','nivel_confianca','data_consulta','observacoes'];
+  ELSE RAISE EXCEPTION 'product_child_kind' USING ERRCODE='22023'; END IF;
+  FOR k IN SELECT jsonb_object_keys(values_json) LOOP
+   IF NOT k=ANY(allowed) THEN RAISE EXCEPTION 'product_child_field_forbidden' USING ERRCODE='22023'; END IF;
+  END LOOP;
+  IF kind='source' AND values_json ? 'fonte_url' AND jsonb_typeof(values_json->'fonte_url')<>'null' AND NOT platform_private.product_source_https_v1(values_json->>'fonte_url') THEN RAISE EXCEPTION 'product_source_invalid' USING ERRCODE='22023'; END IF;
+  IF kind='source' AND ((values_json ? 'fonte_tipo' AND NOT coalesce(values_json->>'fonte_tipo','')=ANY(ARRAY['artigo_cientifico','revisao_cientifica','orgao_oficial','embrapa','universidade','fabricante','patente','boletim_tecnico','outro'])) OR (values_json ? 'nivel_confianca' AND NOT coalesce(values_json->>'nivel_confianca','')=ANY(ARRAY['alto','medio','baixo']))) THEN RAISE EXCEPTION 'product_source_options' USING ERRCODE='22023'; END IF;
+  IF kind='target' AND ((values_json ? 'alvo_tipo' AND NOT coalesce(values_json->>'alvo_tipo','')=ANY(ARRAY['praga','doenca','nematoide','nutricao','solo','estresse','crescimento'])) OR (values_json ? 'prioridade' AND (jsonb_typeof(values_json->'prioridade') IS DISTINCT FROM 'number' OR (values_json->>'prioridade')::numeric NOT BETWEEN 1 AND 10 OR (values_json->>'prioridade')::numeric<>trunc((values_json->>'prioridade')::numeric)))) THEN RAISE EXCEPTION 'product_target_options' USING ERRCODE='22023'; END IF;
+  IF kind='crop' AND values_json ? 'cultura_id' AND jsonb_typeof(values_json->'cultura_id')<>'null' THEN
+   SELECT nome INTO culture_name FROM public.culturas WHERE id=(values_json->>'cultura_id')::uuid AND ativo AND (owner_organization_id IS NULL OR owner_organization_id=p_org) FOR SHARE;
+   IF NOT FOUND THEN RAISE EXCEPTION 'product_crop_foreign' USING ERRCODE='42501'; END IF;
+   values_json:=values_json||jsonb_build_object('cultura_nome',culture_name);
+  END IF;
+  IF kind='target' AND values_json ? 'catalogo_alvo_id' AND jsonb_typeof(values_json->'catalogo_alvo_id')<>'null' THEN
+   PERFORM 1 FROM public.catalogo_alvos WHERE id=(values_json->>'catalogo_alvo_id')::uuid AND ativo FOR SHARE;
+   IF NOT FOUND THEN RAISE EXCEPTION 'product_target_reference_invalid' USING ERRCODE='22023'; END IF;
+  END IF;
+  IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM p_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
+  IF child->>'id' IS NOT NULL THEN
+   EXECUTE format('SELECT to_jsonb(x) FROM public.%I x WHERE id=$1 FOR UPDATE',tbl) INTO old_row USING (child->>'id')::uuid;
+   IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM p_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
+   IF old_row IS NULL OR (kind='source' AND (old_row->>'entidade_tipo' IS DISTINCT FROM 'produto' OR old_row->>'entidade_id' IS DISTINCT FROM p_product::text)) OR (kind<>'source' AND old_row->>'produto_id' IS DISTINCT FROM p_product::text) THEN RAISE EXCEPTION 'product_child_foreign' USING ERRCODE='42501'; END IF;
+   -- No invented updated_at on recommendations: compare the full captured row after lock.
+   IF jsonb_typeof(child->'expected') IS DISTINCT FROM 'object' OR old_row IS DISTINCT FROM child->'expected' THEN RAISE EXCEPTION 'product_child_stale' USING ERRCODE='PT409'; END IF;
+   SELECT string_agg(format('%I=r.%I',key,key),',') INTO cols FROM jsonb_object_keys(values_json) key;
+   IF cols IS NULL THEN RAISE EXCEPTION 'product_child_empty' USING ERRCODE='22023'; END IF;
+   EXECUTE format('UPDATE public.%I x SET %s FROM jsonb_populate_record(NULL::public.%I,$1) r WHERE x.id=$2',tbl,cols,tbl) USING values_json,(child->>'id')::uuid;
+  ELSE
+   IF child->'expected' IS DISTINCT FROM 'null'::jsonb THEN RAISE EXCEPTION 'product_child_new_expected' USING ERRCODE='22023'; END IF;
+   IF kind='source' THEN values_json:=values_json||jsonb_build_object('entidade_tipo','produto','entidade_id',p_product);
+   ELSE values_json:=values_json||jsonb_build_object('produto_id',p_product); END IF;
+   SELECT string_agg(format('%I',key),','),string_agg(format('r.%I',key),',') INTO cols,select_cols FROM jsonb_object_keys(values_json) key;
+   EXECUTE format('INSERT INTO public.%I (%s) SELECT %s FROM jsonb_populate_record(NULL::public.%I,$1) r',tbl,cols,select_cols,tbl) USING values_json;
+  END IF;
+  IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM p_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
+ END LOOP;
+END $f$;
+REVOKE ALL ON FUNCTION platform_private.product_relations_apply_v1(uuid,uuid,jsonb) FROM PUBLIC,anon,authenticated,service_role;

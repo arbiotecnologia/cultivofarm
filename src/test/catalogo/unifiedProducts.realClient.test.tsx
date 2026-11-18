@@ -189,7 +189,7 @@ it("volume recusa Financeiro antes de REST", async () => {
 });
 
 it("ficha técnica lê versão real, salva conteúdo por CAS e nunca promove status", async () => {
-  client(); const profile = { id: "f1", produto_id: "p1", updated_at: stamp, status_validacao: "rascunho", resumo_curto: "Antes" };
+  client(); const profile = { id: "f1", produto_id: "p1", updated_at: stamp, status_validacao: "rascunho", resumo_curto: "Antes", beneficio_combinado: null, explicacao_tecnica: null, explicacao_produtor: null, explicacao_b2b: null, indicacoes_uso: null, janela_aplicacao: null, cuidados_aplicacao: null, compatibilidade: null, observacoes_regulatorias: null, validado_em: null, created_at: stamp };
   state.fetch.mockImplementation(async url => {
     if (String(url).endsWith("/rpc/tenant_catalog_root_save")) return json({ ok: true, id: "f1", updated_at: stamp, replayed: false });
     if (String(url).includes("/product_technical_profiles?")) return json(profile);
@@ -585,3 +585,31 @@ it("unidade canônica: A→B, fechar/reabrir com cache, escolha do usuário sobr
   await new Promise(r => setTimeout(r, 50));
   expect(rpcCalls("tenant_product_save")).toHaveLength(2);
 }, 20_000);
+
+it("recusa CAS libera intenção somente após releitura canônica", async () => {
+ client(); let writes=0;
+ state.fetch.mockImplementation(async url => {
+  if(String(url).endsWith("/rpc/tenant_catalog_root_save")) return ++writes===1 ? json({code:"PT409",message:"tenant_catalog_stale"},409) : json({ok:true,id:"f1",updated_at:stamp,replayed:false});
+  if(String(url).includes("/product_technical_profiles?")) return json(null);
+  return json([]);
+ });
+ const {result}=renderHook(useUpsertProductProfile,{wrapper});
+ await act(async()=>{await expect(result.current.mutateAsync({produto_id:"p1",resumo_curto:"Rascunho"})).rejects.toMatchObject({definitive:true});});
+ await act(async()=>{await expect(result.current.mutateAsync({produto_id:"p1",resumo_curto:"Novo"})).rejects.toThrow(/releia/);});
+ expect(writes).toBe(1);
+ await act(async()=>{await result.current.reconcile("p1");});
+ await act(async()=>{await result.current.mutateAsync({produto_id:"p1",resumo_curto:"Novo",observedProfile:null});});
+ expect(writes).toBe(2);
+ expect(rpcCalls("tenant_catalog_root_save")[0].p_idempotency_key).not.toBe(rpcCalls("tenant_catalog_root_save")[1].p_idempotency_key);
+});
+it("perfil incerto conserva chave e argumentos e recusa reconciliação/alteração", async()=>{
+ client(); let writes=0;
+ state.fetch.mockImplementation(async()=>{if(++writes===1) throw new Error("Resposta perdida"); return json({ok:true,id:"f1",updated_at:stamp,replayed:false});});
+ const {result}=renderHook(useUpsertProductProfile,{wrapper});
+ const input={produto_id:"p1",resumo_curto:"Mesmo rascunho",observedProfile:null};
+ await act(async()=>{await expect(result.current.mutateAsync(input)).rejects.toThrow();});
+ await act(async()=>{await expect(result.current.reconcile("p1")).rejects.toThrow(/incerta/);});
+ await act(async()=>{await expect(result.current.mutateAsync({...input,resumo_curto:"Diferente"})).rejects.toThrow(/inconclusiva/);});
+ await act(async()=>{await result.current.mutateAsync(input);});
+ const calls=rpcCalls("tenant_catalog_root_save");expect(calls).toHaveLength(2);expect(calls[0]).toEqual(calls[1]);
+});
