@@ -127,6 +127,7 @@ try:
    if error:assert runner.returncode and error in err,(name,out,err)
    else:assert runner.returncode==0,(name,out,err)
    results.append(name)
+   return out.strip()
   finally:
    if holder.poll() is None:holder.kill();holder.wait()
    if runner.poll() is None:runner.kill();runner.wait()
@@ -169,6 +170,16 @@ try:
  check('no whitespace normalization',actor(f"SELECT jsonb_array_length(tenant_product_documentary_read_v1('{U(21)}')->'evidence')"),'0')
  manual(e['value'],163)
  check('exact restored text retains accepted candidate',actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')->'evidence'->0->>'candidate_key'"),'A')
+ # Reader waits at gate while a legitimate manual edit commits; profile and sources
+ # must both come from the new single SQL snapshot, never old sources/new text.
+ output=race('reader concurrent manual edit single snapshot','SELECT 1 FROM platform_private.product_evidence_gate_v1 FOR UPDATE;',f"SELECT tenant_product_documentary_read_v1('{U(21)}')",None,None,f"UPDATE product_technical_profiles SET resumo_curto='Texto concorrente novo',updated_at=clock_timestamp() WHERE id='{id}';")
+ concurrent=json.loads(output)
+ assert concurrent['evidence']==[] and concurrent['history']['evidence']==[e]
+ current=sql(f"SELECT updated_at FROM product_technical_profiles WHERE id='{id}'")
+ check('concurrent revision matches changed profile',f"SELECT '{concurrent['profile_revision']}'::timestamptz='{current}'::timestamptz",'t')
+ manual(e['value'],166)
+ output=race('reader concurrent same-text edit retains exact evidence','SELECT 1 FROM platform_private.product_evidence_gate_v1 FOR UPDATE;',f"SELECT tenant_product_documentary_read_v1('{U(21)}')",None,None,f"UPDATE product_technical_profiles SET updated_at=clock_timestamp() WHERE id='{id}';")
+ assert json.loads(output)['evidence']==[e]
  # Explicit empty snapshot retires earlier evidence; latest-only reconciliation never resurrects it.
  current=sql(f"SELECT updated_at FROM product_technical_profiles WHERE id='{id}'")
  sql(actor(save(164,[],id=f"'{id}'",rev=f"'{current}'")))

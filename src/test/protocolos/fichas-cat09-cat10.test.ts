@@ -1,6 +1,4 @@
 import { describe, it, expect, vi } from "vitest";
-import fs from "node:fs";
-import path from "node:path";
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { from: vi.fn() },
@@ -39,6 +37,11 @@ const MICRO_TABLES = [
   "microorganism_crop_recommendations",
 ];
 
+const validProductProfile = {
+  id: "pp1", produto_id: "pr1", status_validacao: "rascunho", created_at: "2026-11-18T04:00:00Z", updated_at: "2026-11-18T04:00:00Z",
+  resumo_curto: "Texto observado", beneficio_combinado: null, explicacao_tecnica: null, explicacao_produtor: null, explicacao_b2b: null,
+  indicacoes_uso: null, janela_aplicacao: null, cuidados_aplicacao: null, compatibilidade: null, observacoes_regulatorias: null, validado_em: null,
+};
 const PRODUCT_TABLES = [
   "product_technical_profiles",
   "product_target_recommendations",
@@ -126,7 +129,7 @@ describe("CAT-10 · erros de consulta são propagados", () => {
   it("carrega normalmente quando todas as consultas passam (produto)", async () => {
     const out = await fetchProductProfileBundle(
       makeClient({
-        product_technical_profiles: { data: { id: "pp1", status_validacao: "rascunho" }, error: null },
+        product_technical_profiles: { data: validProductProfile, error: null },
       }),
       "pr1",
     );
@@ -143,39 +146,22 @@ describe("CAT-10 · erros de consulta são propagados", () => {
   }
 });
 
-describe("CAT-10 · erro bloqueia escrita e oferece retry", () => {
-  const read = (p: string) => fs.readFileSync(path.resolve(process.cwd(), p), "utf8");
-  const micro = read("src/components/protocolos/MicroorganismTechnicalProfileDialog.tsx");
-  const produto = read("src/components/protocolos/ProductTechnicalProfileDialog.tsx");
-  const errorState = read("src/components/protocolos/catalog/ProfileLoadErrorState.tsx");
-
-  it("estado de erro tem mensagem clara e botão de retry", () => {
-    expect(errorState).toContain("Não foi possível carregar a ficha técnica");
-    expect(errorState).toContain("Tentar novamente");
-    expect(errorState).toContain("onRetry");
+describe("CAT-09/CAT-10 · contrato de hidratação do produto", () => {
+  it("ausência confirmada permite defaults somente da entidade atual", async () => {
+    const out = await fetchProductProfileBundle(makeClient({ product_technical_profiles: { data: null, error: null } }), "pr1");
+    expect(out.profile).toBeNull();
+    expect(buildProductFormDefaults({ descricao: "Produto atual" }).resumo_curto).toBe("Produto atual");
+    expect(buildProductFormDefaults({ descricao: "Produto atual" }).beneficio_combinado).toBe("");
   });
-
-  for (const [nome, src] of [["microrganismo", micro], ["produto", produto]] as const) {
-    it(`ficha de ${nome} bloqueia formulário e ações quando há erro`, () => {
-      expect(src).toContain("{isError ? (");
-      expect(src).toContain("<ProfileLoadErrorState");
-      expect(src).toContain("onRetry={() => { void refetch(); }}");
-      // nenhuma ação de escrita renderizada no rodapé quando há erro
-      const rodape = src.slice(src.indexOf('border-t pt-3 mt-2"'));
-      const acoes = rodape.match(/\{(!isError && )?can(EditFull|EditB2BOnly)[^\n]*&& \(/g) ?? [];
-      // contenção global: ações de escrita continuam atrás de !isError (e canEditFull=false)
-      expect(acoes.every((a) => a.includes("!isError"))).toBe(true);
-      // formulário/IA só renderizam no ramo sem erro
-      expect(src.indexOf("{isError ? (")).toBeLessThan(src.indexOf("<ProfileFieldAI"));
-      if (nome === "microrganismo") {
-        expect(src).not.toContain("canEditB2BOnly");
-      }
-
-    });
-
-    it(`ficha de ${nome} não usa o estado anterior como fallback`, () => {
-      expect(src).not.toContain("setForm((f) => ({\n        ...f,");
-      expect(src).toContain("CAT-09");
-    });
-  }
+  it("perfil incompleto não vira ausência nem fallback", async () => {
+    await expect(fetchProductProfileBundle(makeClient({ product_technical_profiles: { data: { id: "pp1", status_validacao: "rascunho" }, error: null } }), "pr1")).rejects.toThrow();
+    await expect(fetchProductProfileBundle(makeClient({ product_technical_profiles: { data: undefined, error: null } }), "pr1")).rejects.toThrow();
+  });
+  it("hidrata texto e revisão observados sem incorporar campos da entidade anterior", async () => {
+    const out = await fetchProductProfileBundle(makeClient({ product_technical_profiles: { data: validProductProfile, error: null } }), "pr1");
+    expect(out.profile?.updated_at).toBe("2026-11-18T04:00:00Z");
+    const form = mapProductProfileToForm(out.profile);
+    expect(form.resumo_curto).toBe("Texto observado");
+    expect(form.beneficio_combinado).toBe("");
+  });
 });

@@ -1,3 +1,7 @@
+## 18/11 04:31 — Regressões finais protocolos/CAT
+- [x] Substituir asserts textuais obsoletos por contratos/comportamento de erro, ausência e hidratação; verificar tipagem canônica.
+- [x] Testar versões concorrentes/fontes exatas, executar protocolos+catálogo e atualizar fatos root sem tocar IA HML ou transferir capturas.
+
 ## 18/11 04:24 — Reabertura após edição manual do perfil
 - [x] Reconciliar fontes de texto exato na revisão atual, separar histórico anterior e testar reabertura sem bloqueio permanente.
 - [x] Atualizar assembly parametrizado/relatório com evidências locais e fatos root, sem transferir capturas nem instalar.
