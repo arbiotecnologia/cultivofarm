@@ -335,7 +335,7 @@ function ProductFicha({
               {dossier.isError ? <p role="alert">Garantias documentais indisponíveis. A falha de consulta não significa ausência de dossiê.</p> : dossier.isLoading || dossier.isFetching ? <p role="status">Consultando dados documentais…</p> : dossier.data ? <dl className="grid gap-2 text-sm sm:grid-cols-2">
                 <div><dt className="font-medium">Formulação documentada</dt><dd className="break-words">{dossier.data.formulation || "Não informada"}</dd></div>
                 <div><dt className="font-medium">Garantia de rótulo</dt><dd className="break-words">{dossier.data.label_guarantee || "Não informada"} {dossier.data.guarantee_unit || ""}</dd></div>
-              </dl> : <p className="text-sm text-muted-foreground">Nenhum dossiê vinculado confirmado. Não vincule microrganismos fictícios para cadastrar garantias.</p>}
+              </dl> : <p className="text-sm text-muted-foreground">Nenhum dossiê vinculado. Registre abaixo somente informações confirmadas em documentos.</p>}
               <Label htmlFor={`product-documentary-notes-${produto.id}`}>{fertilizer ? "Notas documentais de composição, garantias e registro" : "Notas documentais de formulação e registro"}</Label>
               <Textarea id={`product-documentary-notes-${produto.id}`} value={form.observacoes_regulatorias} maxLength={10000} readOnly={!writable || save.isPending || !!failure} onChange={e => change({observacoes_regulatorias:e.target.value})}/>
               {(query.data?.composicao?.length ?? 0) > 0 && <details><summary>Composição biológica anterior — somente consulta</summary><ProductFormulaBenefits composicao={query.data?.composicao ?? []}/></details>}
@@ -394,7 +394,7 @@ function ProductFicha({
             />
           </TabsContent>
           <TabsContent value="dossier">
-            {nonBiological && !dossier.data ? <p role={dossier.isError ? "alert" : "status"}>{dossier.isError ? "Dossiê indisponível; consulta não confirmada." : dossier.isLoading || dossier.isFetching ? "Consultando dossiê…" : "Dossiê sem vínculo confirmado. O contrato atual de criação exige cobertura biológica; não será usado para criar um vínculo fictício. Notas documentais permanecem na ficha, sem validação regulatória ou fiscal."}</p> : <ProductDossierManagement
+            {nonBiological && !dossier.data ? <p role={dossier.isError ? "alert" : "status"}>{dossier.isError ? "Dossiê indisponível; consulta não confirmada." : dossier.isLoading || dossier.isFetching ? "Consultando dossiê…" : `Cadastro de registro e garantias estruturadas ainda indisponível para esta categoria. Registre as informações e os documentos em ${fertilizer ? "Composição e garantias" : "Composição"}; eles permanecem pendentes de validação.`}</p> : <ProductDossierManagement
               onBlockedChange={setDossierBlocked}
               product={{
                 product_id: produto.id,
