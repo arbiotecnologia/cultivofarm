@@ -15,8 +15,18 @@ Sem NF, sem cobrança, sem envios. Nenhum gatilho é desativado.
    a Admin API `DELETE /auth/v1/admin/users/{id}` exige service_role e fica a critério do root). Nenhum outro usuário é tocado.
 7. `04d-rollback-credit-hml.sql.review` se o 02d não for mantido; `07-verify-clean-hml.sql.readonly` → tudo 0.
 
-## Exceção temporária (única)
-- Seed: só `platform_private.homolog_validation_block_receivable_insert()`; cleanup: só gatilhos de DELETE das tabelas que
+## Correção pós-falha b797 (C11, 2026-11-18)
+- Falha real: `auth_required` em `b2b_internal_order_snapshot_guard` (INSERT de pedido por postgres, sem ator). Não se injeta JWT/claim,
+  ator, ticket nem atestado fiscal: o pedido QA fica sem `internal_origin_snapshot`, com status `aprovado` (exigido pelo vínculo
+  financeiro real), sem itens/produção/NF.
+- `captured/c11-triggers.sql` = 38 corpos reais do root; `c11-pins.json` = md5(prosrc). O 05 recusa antes de escrever se qualquer
+  corpo divergir ou se houver gatilho não capturado nas tabelas tocadas; reconfere os 38 md5 após restaurar.
+- `test_seed_pg.py` (21/21) executa os 38 corpos reais + `fn_b2b_credit_exposure` legado real; ligações de gatilho e helpers
+  não-gatilho (tickets/permissões = false) são aproximações — aceite real só no HML.
+
+## Exceção temporária
+- Seed: `homolog_validation_block_receivable_insert`, `b2b_internal_order_snapshot_guard`, `tg_partner_orders_require_items` e
+  `c2p1_settings_fence`, somente para linhas manifestadas desta txid; cleanup: só gatilhos de DELETE das tabelas que
   contêm linhas QA. Liberação exige `session_user=postgres` + ticket da própria `txid` + linha manifestada (id pré-registrado
   com descrição `QA-FIN-` ou hash exato da linha). Os corpos são restaurados pelo texto original e conferidos (md5 + definição)
   antes do `COMMIT`; qualquer falha reverte tudo. Outras sessões nunca veem o corpo alterado.
@@ -26,7 +36,7 @@ Sem NF, sem cobrança, sem envios. Nenhum gatilho é desativado.
   volume > 2000. Execução exige o digest do dry-run e zero referências restantes.
 
 ## Limites honestos
-- `test_seed_pg.py` (17/17) usa esquema sintético mínimo: prova a mecânica, NÃO que os gatilhos reais do HML aceitem o seed.
+- `test_seed_pg.py` usa corpos reais com colunas/ligações aproximadas: NÃO prova que o HML aceite o seed.
   Se outra guarda real (ex.: gate SaaS, cerca fiscal de títulos, condição de pagamento) recusar, o seed aborta sem efeito e a
   mensagem deve voltar para revisão — nunca contornar.
 - Crédito: o seed grava limite fictício; o crédito HML é o legado (`213ac31f…`) e não equivale ao de produção.

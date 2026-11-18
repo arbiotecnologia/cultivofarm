@@ -24,9 +24,9 @@ BEGIN
    'origin', jsonb_build_object('organization_id', p_org, 'partner_id', p_partner),
    'terms', jsonb_build_object('id', t, 'partner_order_id', p_order, 'installment_count', n, 'final_amount', tot), 'schedule', sched)
   WHERE id = p_order;
- INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, reason)
+ INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data)
   SELECT 'accounts_receivable_installments', i.id, 'INSERT', jsonb_build_object('receivable_id', i.receivable_id, 'organization_id', i.organization_id,
-    'original_amount', i.original_amount, 'interest_amount', 0), 'QA-FIN-20261117 fixture sintética'
+    'original_amount', i.original_amount, 'interest_amount', 0, 'qa_fixture', 'QA-FIN-20261117 fixture sintética')
   FROM public.accounts_receivable_installments i WHERE i.receivable_id = p_rec
    AND NOT EXISTS (SELECT 1 FROM public.financial_audit_log f WHERE f.entity_type = 'accounts_receivable_installments' AND f.entity_id = i.id AND f.action = 'INSERT');
 END $f$;

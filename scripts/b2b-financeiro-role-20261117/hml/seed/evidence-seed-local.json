@@ -1,9 +1,15 @@
 {
  "synthetic_schema": true,
- "proves_hml_triggers": false,
+ "real_trigger_bodies_c11": 38,
+ "trigger_bindings_real": false,
+ "proves_hml_acceptance": false,
  "results": [
   {
    "name": "recusa alvo sem impressão digital HML (produção)",
+   "status": "PASS"
+  },
+  {
+   "name": "reproduz falha real do 05 b797 (auth_required na guarda de origem interna com gatilho real)",
    "status": "PASS"
   },
   {
@@ -15,11 +21,23 @@
    "status": "PASS"
   },
   {
-   "name": "guarda real recusa -> rollback total, exceção nunca persiste",
+   "name": "gatilho fora da captura C11 recusa antes de escrever",
+   "status": "PASS"
+  },
+  {
+   "name": "deriva de corpo real (md5 C11) recusa sem efeito",
+   "status": "PASS"
+  },
+  {
+   "name": "guardas reais seguem ativas (contexto de entrega alheio ignorado)",
    "status": "PASS"
   },
   {
    "name": "seed cria títulos A/B/C com pedido, 2 parcelas e vínculo",
+   "status": "PASS"
+  },
+  {
+   "name": "gatilhos reais executaram: parcelas geradas pelo motor real, auditorias/timeline/risco gravados, sem planejamento/notificação",
    "status": "PASS"
   },
   {
@@ -35,7 +53,7 @@
    "status": "PASS"
   },
   {
-   "name": "dry-run lista 61 linhas (tabela/ID/hash/vínculo), sem recusas e sem alterar nada",
+   "name": "dry-run lista 88 linhas (tabela/ID/hash/vínculo), sem recusas e sem alterar nada",
    "status": "PASS"
   },
   {

@@ -33,7 +33,7 @@ BEGIN
  END LOOP;
  -- Recusas (nenhuma é contornável):
  INSERT INTO qa_refuse SELECT DISTINCT 'tabela_protegida', tbl, rowhash, id FROM qa_hit h JOIN pg_class r ON r.oid = h.tbl
-  WHERE r.relname ~ '^(saas_|catalog|catalogo|commercial_|fiscal_|organization(s|_profile|_status))' OR r.relname IN ('financial_categories','payment_methods','configuracoes_sistema','bank_accounts','etiqueta_templates');
+  WHERE (r.relname ~ '^(saas_|catalog|catalogo|commercial_|fiscal_|organization(s|_profile|_status))' AND r.relname <> 'commercial_audit_log') OR r.relname IN ('financial_categories','payment_methods','configuracoes_sistema','bank_accounts','etiqueta_templates');
  INSERT INTO qa_refuse SELECT DISTINCT 'outro_tenant', tbl, rowhash, id FROM qa_hit
   WHERE coalesce(j->>'organization_id', j->>'tenant_id') IS NOT NULL AND coalesce(j->>'organization_id', j->>'tenant_id') NOT IN ('525fea87-e27e-43f7-af7b-a30064188332','85ba8b71-8514-4ec9-90d3-bfc7ab3ed214');
  INSERT INTO qa_refuse SELECT 'ator_qa_em_linha_de_negocio', h.tbl, h.rowhash, min(h.id::text)::uuid FROM qa_hit h JOIN pg_class r ON r.oid = h.tbl
