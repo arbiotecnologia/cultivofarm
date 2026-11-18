@@ -48,7 +48,7 @@ try:
  CREATE TABLE catalog_technical_sources(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),entidade_tipo text NOT NULL,entidade_id uuid NOT NULL,fonte_titulo text NOT NULL,fonte_url text,fonte_tipo text,nivel_confianca text,idioma_original text,pais_origem text,resumo_evidencia text,data_consulta date,observacoes text,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now());''')
  sql((H/'source.sql.review').read_text(encoding='utf-8'))
  sql('GRANT EXECUTE ON FUNCTION public.tenant_catalog_root_save(text,uuid,jsonb,timestamptz,uuid) TO authenticated;')
- e={'field':'resumo_curto','value':'Conteúdo aceito','candidate_key':'A','identity':{'entity':'produto','id':U(21),'name':'Produto QA'},'sources':[{'url':'https://example.org/ficha','title':'Documento','excerpt':'Trecho'}]}
+ e={'field':'resumo_curto','value':'Conteúdo aceito','candidate_key':'A','identity':{'entity':'produto','id':U(21),'name':'Produto QA','manufacturer':'','registration':''},'sources':[{'url':'https://example.org/ficha','title':'Documento','excerpt':'Trecho'}]}
  def save(key=100,ev=None,id='NULL',rev='NULL'):
   p={'produto_id':U(21),'resumo_curto':'Conteúdo aceito','documentary_evidence':[e] if ev is None else ev}
   if id!='NULL':p.pop('produto_id')
@@ -67,6 +67,29 @@ try:
  check('profile version acknowledged',actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')->>'profile_id'"),id)
  check('duplicate evidence field rejected',actor(save(108,[e,e])),error='duplicate_field')
  check('wrong product name rejected',actor(save(107,[{**e,'identity':{**e['identity'],'name':'Outro produto'}}])),error='identity')
+ # Every malformed API identity must abort the complete root transaction.
+ for i,field in enumerate(['entity','id','name','manufacturer','registration']):
+  for j,value in enumerate(['MISSING',None,17]):
+   identity={**e['identity'],field:value}
+   if value=='MISSING':identity.pop(field)
+   key=200+i*3+j
+   check(f'identity {field} {value} rejected',actor(save(key,[{**e,'identity':identity}])),error='identity')
+   check(f'identity {field} {value} atomic no receipt',f"SELECT count(*) FROM platform_private.tenant_catalog_root_receipts WHERE idempotency_key='{U(key)}'",'0')
+ for i,field in enumerate(['name','manufacturer','registration']):
+  check(f'identity {field} limit rejected',actor(save(220+i,[{**e,'identity':{**e['identity'],field:'a'*1001}}])),error='identity')
+ for i,identity in enumerate([{**e['identity'],'id':'bad-uuid'},{**e['identity'],'purpose':None},{**e['identity'],'strain':17},{**e['identity'],'purpose':'a'*2001},{**e['identity'],'researchScope':'unknown'},{**e['identity'],'extra':'unknown'}]):
+  check('identity optional shape/limits '+str(i),actor(save(230+i,[{**e,'identity':identity}])),error='identity')
+ check('identity rejections no extra profile','SELECT count(*) FROM product_technical_profiles','1')
+ check('identity rejections no extra history','SELECT count(*) FROM platform_private.product_evidence_history_v1','1')
+ check('identity rejections profile revision unchanged',f"SELECT updated_at='{rev}'::timestamptz FROM product_technical_profiles WHERE id='{id}'",'t')
+ check('identity rejections original evidence unchanged',f"SELECT evidence='{json.dumps([e],ensure_ascii=False)}'::jsonb FROM platform_private.product_evidence_history_v1",'t')
+ bounded={**e,'identity':{**e['identity'],'manufacturer':'a'*1000,'registration':'a'*1000,'purpose':'a'*2000,'researchScope':'product_strain'}}
+ bounded_ack=json.loads(sql(actor(save(240,[bounded],id=f"'{id}'",rev=f"'{rev}'"))))
+ check('identity limits accepted roundtrip',actor(f"SELECT length(tenant_product_documentary_read_v1('{U(21)}')->'evidence'->0->'identity'->>'manufacturer')"),'1000')
+ restored=json.loads(sql(actor(save(241,[e],id=f"'{id}'",rev=f"'{bounded_ack['updated_at']}'"))))
+ rev=restored['updated_at']
+ # Keep pre-existing assertions at one history row: boundary checks above ran
+ # in valid transactions, so count baselines must include those immutable versions.
  check('missing candidate rejected',actor(save(109,[{k:v for k,v in e.items() if k!='candidate_key'}])),error='evidence_shape')
  for i,url in enumerate(['javascript:alert(1)','data:text/html,x','http://example.org','https://a:b@example.org/','https://example.org/%0a','https://localhost/a']):
   check('unsafe URL '+url,actor(save(110+i,[{**e,'sources':[{**e['sources'][0],'url':url}]}])),error='source_invalid')
@@ -147,7 +170,7 @@ try:
  sql('UPDATE platform_private.product_evidence_gate_v1 SET enabled=false')
  check('rollback denies new relations',actor(relation_save([crop],134,crop_ack['updated_at'])),error='evidence_closed')
  check('rollback denies reader',actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')"),error='evidence_closed')
- check('rollback history retained','SELECT count(*) FROM platform_private.product_evidence_history_v1','1')
+ check('rollback history retained','SELECT count(*) FROM platform_private.product_evidence_history_v1','3')
  sql('UPDATE platform_private.product_evidence_gate_v1 SET enabled=true')
  check('release restores exact accepted evidence',actor(f"SELECT jsonb_array_length(tenant_product_documentary_read_v1('{U(21)}')->'evidence')"),'1')
  # Legitimate root/profile writes without documentary_evidence do not create history.
@@ -160,7 +183,7 @@ try:
  assert same['evidence']==[e] and same['history']['evidence']==[e]
  assert same['profile_revision']!=same['history']['profile_revision']
  results.append('manual same text reopens with accepted candidate and current revision')
- check('manual same history immutable','SELECT count(*) FROM platform_private.product_evidence_history_v1','1')
+ check('manual same history immutable','SELECT count(*) FROM platform_private.product_evidence_history_v1','3')
  manual('Texte changé',161)
  check('manual divergent text not attributed',actor(f"SELECT jsonb_array_length(tenant_product_documentary_read_v1('{U(21)}')->'evidence')"),'0')
  check('manual divergent history and candidate retained',actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')->'history'->'evidence'->0->>'candidate_key'"),'A')
@@ -180,12 +203,32 @@ try:
  manual(e['value'],166)
  output=race('reader concurrent same-text edit retains exact evidence','SELECT 1 FROM platform_private.product_evidence_gate_v1 FOR UPDATE;',f"SELECT tenant_product_documentary_read_v1('{U(21)}')",None,None,f"UPDATE product_technical_profiles SET updated_at=clock_timestamp() WHERE id='{id}';")
  assert json.loads(output)['evidence']==[e]
+ # Canonical name changes do not change profile revision. Historical identity
+ # remains immutable, is never silently rewritten, and unrelated edits can resume.
+ current=sql(f"SELECT updated_at FROM product_technical_profiles WHERE id='{id}'")
+ sql(actor(save(249,[e],id=f"'{id}'",rev=f"'{current}'")))
+ sql(f"UPDATE produtos SET nome='Produto renomeado' WHERE id='{U(21)}'")
+ renamed=json.loads(sql(actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')")))
+ assert renamed['evidence']==[] and renamed['history']['evidence']==[e]
+ assert renamed['profile_revision']==renamed['history']['profile_revision']
+ results.append('rename same revision retires identity and exposes original history')
+ current=sql(f"SELECT updated_at FROM product_technical_profiles WHERE id='{id}'")
+ check('rename old identity submit rejected',actor(save(250,[e],id=f"'{id}'",rev=f"'{current}'")),error='identity')
+ check('rename old identity rejection no receipt',f"SELECT count(*) FROM platform_private.tenant_catalog_root_receipts WHERE idempotency_key='{U(250)}'",'0')
+ sql('ALTER TABLE product_technical_profiles ADD COLUMN explicacao_tecnica text; UPDATE platform_private.tenant_catalog_root_cfg SET allowed=array_append(allowed,\'explicacao_tecnica\');')
+ updated=json.loads(sql(actor(f"SELECT tenant_catalog_root_save('product_technical_profiles','{id}','{{\"explicacao_tecnica\":\"Outro campo editado\"}}','{current}','{U(251)}')")))
+ after_rename=json.loads(sql(actor(f"SELECT tenant_product_documentary_read_v1('{U(21)}')")))
+ assert after_rename['evidence']==[] and after_rename['history']['evidence']==[e]
+ check('rename unrelated save no new history','SELECT count(*) FROM platform_private.product_evidence_history_v1','4')
+ check('rename unrelated save persisted','SELECT explicacao_tecnica FROM product_technical_profiles','Outro campo editado')
+ # Restore only the fixture product name; do not rewrite evidence provenance.
+ sql(f"UPDATE produtos SET nome='Produto QA' WHERE id='{U(21)}'")
  # Explicit empty snapshot retires earlier evidence; latest-only reconciliation never resurrects it.
  current=sql(f"SELECT updated_at FROM product_technical_profiles WHERE id='{id}'")
  sql(actor(save(164,[],id=f"'{id}'",rev=f"'{current}'")))
  manual(e['value'],165)
  check('explicit empty evidence not resurrected',actor(f"SELECT jsonb_array_length(tenant_product_documentary_read_v1('{U(21)}')->'evidence')"),'0')
- check('accepted history still retained','SELECT count(*) FROM platform_private.product_evidence_history_v1','2')
+ check('accepted history still retained','SELECT count(*) FROM platform_private.product_evidence_history_v1','5')
  crop_ack['updated_at']=sql(f"SELECT updated_at FROM product_technical_profiles WHERE id='{id}'")
  # Snapshot control isolated in one STABLE caller: identical authority body is
  # exercised before and after the same lock. The VOLATILE variant must reject.

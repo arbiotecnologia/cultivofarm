@@ -1,5 +1,14 @@
 # Evidências e limites
 
+## Correção adicional 04:35 — identidade e renomeação
+
+- Identity cliente/SQL estrita e coerente: fabricante/registro obrigatoriamente strings (inclusive vazias), nome/ID/entity validados; 1000 caracteres nos três textos principais, 2000 nos opcionais conhecidos, researchScope enum; ausentes, null, números, extras e limites excedidos recusados. Validação cliente preservada e ampliada, não afrouxada. Fixture passou a conter fabricante/registro corretamente.
+- Nome anterior nunca é reescrito: fontes ficam históricas após renomeação; reader expõe histórico também na mesma revisão quando o produto foi renomeado sem modificar perfil. Cliente filtra ID+nome+texto e omite evidências exclusivamente históricas ao salvar outro campo, evitando recusa indevida e snapshot vazio que perderia proveniência. SQL ainda recusa identidade antiga sob lock; histórico privado permanece imutável.
+- **118 checks PostgreSQL descartável PASS**: identidade ausente/null/número/limites/shape, recibos e perfil/histórico não criados na recusa; strings limítrofes aceitas/reabertas; salvar fontes → renomear → editar outro campo sem nova história e fonte antiga apenas histórica. Corridas fresh/gate/replay/CAS anteriores mantidas. Corpo fresh capturado, identidade/schema/dependências reconstruídos declarados; não certifica JWT/RLS hosted. Resultado em `identity-review/pg-result.json` (pins locais nunca autorizam instalação).
+- **70 arquivos / 1.148 Vitest PASS**, protocolos+catálogo completos; schema, tela aberta/reabertura após renomeação e SDK real com fetch simulado testados. **6 assembly PASS**. Build automático **OK 04:44:10Z**, inclui tipos; compilador/build manual não executados por regra da plataforma.
+- Chromium **1280×1800 e 390×844**: gerar/aplicar/salvar fontes, renomear, reabrir histórico com identidade original, editar/salvar outro campo e confirmar leitura do estado persistido simulado; sem overflow/pageerror. Capturas inspecionadas; Auth/transporte sintéticos. Avisos de refs React compartilhados persistem; não alegar console limpo nem browser HML.
+- Root relatou assembly positivo local **2e130fa6**; não executado aqui, não prova este delta atualizado. Root precisa recompor novo POST integral e instalar atomicamente após revisão local; nenhum PRE pin foi alterado. Capturas continuam exclusivamente com root; serviço IA HMLv4 intocado. Sem instalação, produção, publicação ou subagentes.
+
 ## Executado localmente
 
 - Vitest final: `bun run test -- src/test/catalogo src/test/fiscal/productDossierManagement.test.tsx src/test/fiscal/dossierDocumentViewer.test.tsx src/test/protocolos/productTechnicalProfileReadOnly.test.tsx`: **61 arquivos, 1074 testes PASS**, incluindo recuperação sequencial de produto/composição, schema do bundle, bloqueio/cancelamento de rascunho do dossiê e regressões microrganismos/IA.

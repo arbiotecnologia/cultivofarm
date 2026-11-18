@@ -203,6 +203,7 @@ function ProductFicha({
         relations,
         documentaryEvidence:
           evidence.length || evidenceQuery.data?.length ? evidence : undefined,
+        documentaryProductName: produto.nome,
         status_validacao: observed.current?.status_validacao ?? "rascunho",
       });
       if (!alive.current || !current()) return;
@@ -362,7 +363,7 @@ function ProductFicha({
             )}
           </TabsContent>
           <TabsContent value="fontes" className="space-y-5">
-            <ProductEvidencePanel evidence={evidence} values={{ ...form }} history={evidenceQuery.history} />
+            <ProductEvidencePanel evidence={evidence} values={{ ...form }} productName={produto.nome} history={evidenceQuery.history} />
             <ProductFichaRelations
               kind="source"
               id={produto.id}

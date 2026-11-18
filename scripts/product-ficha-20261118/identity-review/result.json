@@ -1,0 +1,38 @@
+{
+  "vitest": {
+    "files": 70,
+    "tests": 1148,
+    "exit_code": 0,
+    "command": "bun run test -- src/test/catalogo src/test/protocolos"
+  },
+  "postgres": {
+    "checks": 118,
+    "exit_code": 0
+  },
+  "assembly": {
+    "tests": 6,
+    "exit_code": 0
+  },
+  "browser": {
+    "viewports": [
+      [
+        1280,
+        1800
+      ],
+      [
+        390,
+        844
+      ]
+    ],
+    "rename_history_save": true,
+    "page_errors": [],
+    "overflow": false,
+    "exit_code": 0,
+    "limits": "Auth/transport intercepted synthetic; shared React ref warnings remain; not hosted"
+  },
+  "automatic_build": {
+    "result": "OK",
+    "timestamp": "2026-11-18T04:46:56Z"
+  },
+  "hosted": "NOT_RUN: independent root review, integral atomic POST and HML persistence pending; no production/publication"
+}

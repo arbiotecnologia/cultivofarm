@@ -1,3 +1,7 @@
+## 18/11 04:35 — Identidade documental e renomeação
+- [x] Validar identity cliente/SQL com tipos e limites equivalentes e rejeição atômica (118 checks PG local).
+- [x] Separar fontes antigas após renomeação sem reescrever origem; retomada UI/SQL, 1148 Vitest/6 assembly/browser sintético desktop+mobile e relatório atualizados, sem instalação.
+
 ## 18/11 04:31 — Regressões finais protocolos/CAT
 - [x] Substituir asserts textuais obsoletos por contratos/comportamento de erro, ausência e hidratação; verificar tipagem canônica.
 - [x] Testar versões concorrentes/fontes exatas, executar protocolos+catálogo e atualizar fatos root sem tocar IA HML ou transferir capturas.

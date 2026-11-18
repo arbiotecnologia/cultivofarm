@@ -613,3 +613,14 @@ it("perfil incerto conserva chave e argumentos e recusa reconciliação/alteraç
  await act(async()=>{await result.current.mutateAsync(input);});
  const calls=rpcCalls("tenant_catalog_root_save");expect(calls).toHaveLength(2);expect(calls[0]).toEqual(calls[1]);
 });
+it("renomeação permite editar outro campo sem reenviar identidade antiga nem apagar seu histórico",async()=>{
+ client();
+ state.fetch.mockImplementation(async()=>json({ok:true,id:"f1",updated_at:stamp,replayed:false}));
+ const id="00000000-0000-4000-8000-000000000021";
+ const evidence={field:"resumo_curto",value:"Texto original",candidate_key:"A",identity:{entity:"produto" as const,id,name:"Nome anterior",manufacturer:"",registration:""},sources:[{url:"https://example.org/ficha",title:"Fonte",excerpt:"Trecho"}]};
+ const {result}=renderHook(useUpsertProductProfile,{wrapper});
+ await act(async()=>{await result.current.mutateAsync({produto_id:id,resumo_curto:evidence.value,explicacao_tecnica:"Outro campo",documentaryEvidence:[evidence],documentaryProductName:"Renomeado",observedProfile:{id:"f1",updated_at:stamp,status_validacao:"rascunho"}});});
+ const payload=rpcCalls("tenant_catalog_root_save")[0].p_payload;
+ expect(payload).toEqual({resumo_curto:"Texto original",explicacao_tecnica:"Outro campo"});
+ expect(evidence.identity.name).toBe("Nome anterior");expect(evidence.candidate_key).toBe("A");
+});

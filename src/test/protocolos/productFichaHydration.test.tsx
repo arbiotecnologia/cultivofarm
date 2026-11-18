@@ -3,13 +3,14 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   error: false, success: true, evidenceError: false, revision: "2026-11-18T04:00:00Z",
   evidenceRevision: "2026-11-18T04:00:00Z", absent: false,
+  evidence: [] as any[], history: null as any,
   refetch: vi.fn(), evidenceRefetch: vi.fn(), save: vi.fn(),
 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ profile: { organization_id: "org1" }, roles: ["gestor"] }) }));
 vi.mock("@/hooks/useTenantCatalogEditor", () => ({ useTenantCatalogEditor: () => ({ scope: "scope1", canEdit: true, ready: true, capture: () => () => true }) }));
 vi.mock("@/hooks/useProductProfile", () => ({
   useProductProfile: () => ({ isSuccess: state.success, isError: state.error, data: { profile: state.absent ? null : { id: "profile1", updated_at: state.revision, resumo_curto: "Texto observado", status_validacao: "rascunho" }, composicao: [] }, refetch: state.refetch }),
-  useProductDocumentaryEvidence: () => ({ isSuccess: !state.evidenceError, isError: state.evidenceError, data: [], profileId: state.absent ? null : "profile1", profileRevision: state.absent ? null : state.evidenceRevision, refetch: state.evidenceRefetch }),
+  useProductDocumentaryEvidence: () => ({ isSuccess: !state.evidenceError, isError: state.evidenceError, data: state.evidence, history: state.history, profileId: state.absent ? null : "profile1", profileRevision: state.absent ? null : state.evidenceRevision, refetch: state.evidenceRefetch }),
   useUpsertProductProfile: () => ({ isPending: false, mutateAsync: state.save }),
 }));
 vi.mock("@/hooks/useProductResearchDossier", () => ({ useProductResearchDossier: () => ({ data: null }) }));
@@ -20,10 +21,11 @@ vi.mock("@/components/protocolos/catalog/DocumentaryAI", () => ({ DocumentaryAI:
 vi.mock("@/components/protocolos/catalog/VersoesHistoricoTab", () => ({ VersoesHistoricoTab: () => null }));
 vi.mock("@/components/fiscal/ProductDossierManagement", () => ({ ProductDossierManagement: () => null }));
 import { ProductTechnicalProfileDialog } from "@/components/protocolos/ProductTechnicalProfileDialog";
-const tree = (id = "p1", descricao = "Descrição atual") => <ProductTechnicalProfileDialog embedded open produto={{ id, nome: "Produto", tipo: "solo", codigo: null, descricao, owner_organization_id: "org1" }} onOpenChange={() => {}} />;
+const tree = (id = "p1", descricao = "Descrição atual", nome = "Produto") => <ProductTechnicalProfileDialog embedded open produto={{ id, nome, tipo: "solo", codigo: null, descricao, owner_organization_id: "org1" }} onOpenChange={() => {}} />;
 beforeEach(() => {
   vi.clearAllMocks(); state.error = false; state.success = true; state.evidenceError = false; state.absent = false;
   state.revision = "2026-11-18T04:00:00Z"; state.evidenceRevision = state.revision;
+  state.evidence=[]; state.history=null;
 });
 afterEach(cleanup);
 it("erro de perfil bloqueia escrita e retry relê perfil e evidências", () => {
@@ -39,6 +41,27 @@ it("erro de evidências não hidrata como ausência e não permite salvar", () =
   expect(screen.queryByRole("textbox")).toBeNull();
   expect(screen.getByRole("button", { name: "Salvar conteúdo" })).toBeDisabled();
   expect(state.save).not.toHaveBeenCalled();
+});
+it("renomeação em tela aberta preserva origem histórica e permite retomar outro campo",async()=>{
+ const evidence={field:'resumo_curto',value:'Texto observado',candidate_key:'A',identity:{entity:'produto',id:'p1',name:'Produto',manufacturer:'',registration:''},sources:[{url:'https://example.org/ficha',title:'Documento',excerpt:'Trecho'}]};
+ state.evidence=[evidence];state.save.mockResolvedValue({id:'profile1',updated_at:'2026-11-18T04:45:00Z'});
+ const view=render(tree());view.rerender(tree('p1','Descrição atual','Renomeado'));
+ fireEvent.mouseDown(screen.getByRole('tab',{name:'Fontes e histórico'}),{button:0,ctrlKey:false});
+ expect(screen.getByText(/Identidade histórica: Produto/)).toBeInTheDocument();
+ fireEvent.mouseDown(screen.getByRole('tab',{name:'Características técnicas'}),{button:0,ctrlKey:false});
+ fireEvent.change(screen.getByRole('textbox',{name:'Texto técnico'}),{target:{value:'Novo campo manual'}});
+ fireEvent.click(screen.getByRole('button',{name:'Salvar conteúdo'}));
+ await waitFor(()=>expect(state.save).toHaveBeenCalledOnce());
+ expect(state.save.mock.calls[0][0]).toMatchObject({explicacao_tecnica:'Novo campo manual',documentaryProductName:'Renomeado',documentaryEvidence:[evidence]});
+ expect(evidence.identity.name).toBe('Produto');
+});
+it("reabrir após renomeação mostra histórico de mesma revisão sem bloquear edição",()=>{
+ state.history={profile_revision:state.revision,evidence:[{field:'resumo_curto',value:'Texto observado',candidate_key:'A',identity:{entity:'produto',id:'p1',name:'Produto',manufacturer:'',registration:''},sources:[{url:'https://example.org/ficha',title:'Documento',excerpt:'Trecho'}]}]};
+ render(tree('p1','Descrição atual','Renomeado'));
+ fireEvent.mouseDown(screen.getByRole('tab',{name:'Fontes e histórico'}),{button:0,ctrlKey:false});
+ expect(screen.getByText('Identidade de origem: Produto')).toBeInTheDocument();
+ expect(screen.getByRole('button',{name:'Salvar conteúdo'})).toBeEnabled();
+ expect(state.save).not.toHaveBeenCalled();
 });
 it("versões concorrentes exigem releitura, recuperam antes de hidratar e não rebaseiam rascunho sujo", async () => {
   state.evidenceRevision = "2026-11-18T03:00:00Z";

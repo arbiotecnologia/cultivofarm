@@ -172,6 +172,7 @@ export function useUpsertProductProfile() {
         produto_id: string;
         relations?: ProductRelation[];
         documentaryEvidence?: DocumentaryEvidence[];
+        documentaryProductName?: string;
         observedProfile?: {
           id: string;
           updated_at: string;
@@ -190,6 +191,7 @@ export function useUpsertProductProfile() {
         const {
           relations,
           documentaryEvidence,
+          documentaryProductName,
           observedProfile,
           id: _id,
           updated_at: _u,
@@ -228,12 +230,20 @@ export function useUpsertProductProfile() {
           );
         }
         if (id) delete fields.produto_id;
-        if (documentaryEvidence !== undefined)
-          fields.documentary_evidence = matchingProductEvidence(
+        if (documentaryEvidence !== undefined) {
+          if (typeof documentaryProductName !== "string" || !documentaryProductName)
+            throw new Error("Identidade atual do produto indisponível; releia a ficha.");
+          const matching = matchingProductEvidence(
             documentaryEvidence,
             fields,
             payload.produto_id,
+            documentaryProductName,
           );
+          // A rename retires the old identity, not its provenance. Do not create
+          // an empty retirement snapshot just to save unrelated profile fields.
+          if (!documentaryEvidence.length || documentaryEvidence.some(e => e.identity.name === documentaryProductName))
+            fields.documentary_evidence = matching;
+        }
         if (relations?.length)
           fields.product_relations = relations.map(validateProductRelation);
         const sig = JSON.stringify([editor.scope, id, fields, updated_at]);

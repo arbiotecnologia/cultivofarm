@@ -9,7 +9,14 @@ export const PRODUCT_DOCUMENTARY_FIELDS = [
 export const productEvidenceSchema = z.array(z.object({
   field: z.enum(PRODUCT_DOCUMENTARY_FIELDS), value: z.string().min(1).max(12000),
   candidate_key: z.string().min(1).max(200),
-  identity: z.object({ entity: z.literal("produto"), id: z.string().uuid(), name: z.string().min(1), manufacturer: z.string(), registration: z.string() }).passthrough(),
+  identity: z.object({
+    entity: z.literal("produto"), id: z.string().uuid(), name: z.string().min(1).max(1000),
+    manufacturer: z.string().max(1000), registration: z.string().max(1000),
+    scientificName: z.string().max(2000).optional(), strain: z.string().max(2000).optional(),
+    purpose: z.string().max(2000).optional(), synonyms: z.string().max(2000).optional(),
+    concentration: z.string().max(2000).optional(), presentation: z.string().max(2000).optional(),
+    researchScope: z.enum(["species", "product_strain"]).optional(),
+  }).strict(),
   sources: z.array(sourceSchema).min(1).max(20),
 }).strict()).max(40);
 export type ProductEvidenceHistory = { profile_id: string; profile_revision: string; evidence: DocumentaryEvidence[] };
@@ -27,15 +34,16 @@ export function parseProductEvidenceEnvelope(value: unknown, productId: string) 
       ctx.addIssue({ code: "custom", message: "Versão ou produto da evidência divergente" });
     }
     if (row.history && (row.history.profile_id !== row.profile_id || !row.profile_revision ||
-      Date.parse(row.history.profile_revision) >= Date.parse(row.profile_revision) ||
+      Date.parse(row.history.profile_revision) > Date.parse(row.profile_revision) ||
+      (Date.parse(row.history.profile_revision) === Date.parse(row.profile_revision) && JSON.stringify(row.history.evidence) === JSON.stringify(row.evidence)) ||
       row.history.evidence.some(e => e.identity.id !== productId))) {
       ctx.addIssue({ code: "custom", message: "Histórico da evidência divergente" });
     }
   }).parse(value) as { product_id: string; profile_id: string | null; profile_revision: string | null; evidence: DocumentaryEvidence[]; history?: ProductEvidenceHistory | null };
 }
 
-export function matchingProductEvidence(evidence: DocumentaryEvidence[], values: Record<string, unknown>, id: string) {
-  return productEvidenceSchema.parse(evidence.filter(e => e.value === values[e.field] && e.identity.id === id));
+export function matchingProductEvidence(evidence: DocumentaryEvidence[], values: Record<string, unknown>, id: string, name: string) {
+  return productEvidenceSchema.parse(evidence).filter(e => e.value === values[e.field] && e.identity.id === id && e.identity.name === name);
 }
 
 export function productResearchIdentity(product: {
