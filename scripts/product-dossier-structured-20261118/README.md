@@ -28,6 +28,11 @@ Pins: objeto `{ "<schema.nome(tipos de entrada)>": "<MD5 exato revisado>" }` con
 
 `upload_attest` e `upload_cancel` são pontes exclusivamente de serviço: não são targets de extensão, não recebem fresh `mutate`/alias `u`, e seus wrappers de serviço são emitidos sem alteração do corpo/volatilidade. ACL/dispatch/require_service_role continuam canônicos e PRE/POST integrais devem verificá-los. Testes descartáveis exercitam prepare/access/pending/finalize/replay/cancel_begin e pontes de serviço; a flag test.service pertence somente à costura Auth do teste, não autoriza ambiente hospedado.
 
+### Catálogo entre instâncias (revisão 11:50)
+Captura somente triggers de aplicação (`NOT tgisinternal`); os triggers automáticos RI/FK com nomes dependentes de OID não entram no inventário. **Todos os constraints continuam completos**, incluindo definição e validação de FKs. Políticas identificam roles por nome (OID 0 = `PUBLIC`), ordenados por `COLLATE "C"`; schemas/relações e tipos já são explicitamente nomeados. As funções dos triggers de aplicação de todas as relações inventariadas entram também no catálogo completo com definição/MD5/owner/ACL/config, mesmo fora do prefixo product_dossier. Nenhum owner, ACL, configuração, corpo, política, índice ou constraint foi dispensado da comparação.
+
+`test_pg.py` agora inicia **duas instâncias PostgreSQL independentes**, avança OIDs de relações e roles na segunda por objetos sintéticos fora do inventário e reproduz o mesmo setup declarado. Captura PRE/delta/POST na primeira; gera o instalador integral por `assemble()` e o executa na segunda. PRE e POST completos são iguais entre instâncias apesar dos OIDs e nomes de triggers internos novos da FK history serem comprovadamente diferentes. Seis alterações de POST (constraint, ACL, owner, config, função e trigger de aplicação) abortam e revertem o DDL. Evidência é local e sintética, sem captura privada, normalização de pins ou instalação hosted; a montagem root-local com catálogos reais continua independente.
+
 ```text
 python3 assemble.py --ref <ref> --pre /caminho-root/pre.json --post /caminho-root/post.json --pins /caminho-root/pins.json --output /caminho-root/02-install.sql.review
 python3 build_document_edge.py --ref <ref> --output /caminho-root/edge-candidate

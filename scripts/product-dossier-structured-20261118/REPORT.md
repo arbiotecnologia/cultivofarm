@@ -3,6 +3,12 @@
 ## Resultado
 Implementação integrada concluída localmente, **não apto para publicação hosted ainda**: depende da revisão/montagem root-local integral, instalação independente full management HML e homologação Auth/Storage. Produção e frontend publicado intactos; nenhuma operação de banco hospedado, captura privada ou subagente.
 
+## Revisão root 11:50 — estabilidade entre instâncias
+- Catálogo exclui somente triggers internos (`NOT tgisinternal`), mantendo todos os constraints FK, índices e triggers de aplicação. Roles de políticas são nomes ordenados, com `PUBLIC` explícito, não OIDs. Funções dos triggers de aplicação entram no inventário completo com metadados de segurança e definição.
+- **71 checks PostgreSQL / 12 testes builder PASS** nesta revisão. Duas instâncias realmente distintas, OIDs de relações/roles diferentes e nomes RI/FK novos diferentes: PRE completo idêntico e assembly integral gerado com PRE/POST da primeira executado/confirmado na segunda. Setup/autoridade/Auth continuam os mesmos seams sintéticos declarados, sem captura privada ou hosted.
+- Seis negativas reais de POST (constraint/ACL/owner/config/função/trigger) abortaram com POST_CATALOG_DRIFT e nenhuma tabela history ficou criada após rollback. Comparações não foram relaxadas nem pins recalculados sobre capturas reais.
+- Sem nova execução frontend/IA: evidências anteriores abaixo permanecem históricas. Alignment/deps/assembly real HML ficam com root; nenhuma instalação/publicação/subagente.
+
 ## Revisão root 11:44 — captura e uploads
 - Identidade de funções agora schema/nome/proargtypes (sem nomes de argumentos), relações explicitamente qualificadas; search_path vazio transacional estabiliza também tipos e definições. Teste PostgreSQL compara **catálogo completo** com search_path public e vazio, incluindo tipo composto array e argumento nomeado. Assembly/build recusam assinaturas/relações não qualificadas ou duplicadas, sem repin/reinterpretação de capturas privadas.
 - `u` só é utilizado no registro declarado/carregado de access/finalize/cancel_begin; pending usa p_product_id. Access/pending permanecem sem DML e com manage_scope/autoria exigidos pelo contrato, não se tornam consultas genéricas read_catalog.

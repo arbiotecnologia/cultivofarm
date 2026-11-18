@@ -1,3 +1,7 @@
+## 18/11 11:50 — Catálogo estável entre instâncias
+- [x] Excluir somente triggers internos, nomear roles e fechar definições dos triggers de aplicação sem enfraquecer PRE/POST.
+- [x] Provar assembly positivo integral em duas instâncias PostgreSQL com OIDs distintos, negativos de metadados e commit local; sem hosted/publicação.
+
 ## 18/11 11:44 — Robustez da captura e uploads estruturados
 - [x] Estabilizar assinaturas/relações qualificadas por catálogo, recusar capturas ambíguas sem repin e provar search_path public/empty.
 - [x] Auditar alias/autoridade dos uploads, preservar serviço/dispatch e executar testes locais; sem instalação/publicação.

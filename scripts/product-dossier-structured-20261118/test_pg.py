@@ -2,14 +2,17 @@
 import os,subprocess,tempfile,shutil,json,re,hashlib,time
 from pathlib import Path
 from build import build,TARGETS,FRESH
+from assemble import assemble
 H=Path(__file__).resolve().parent;ROOT=H.parent.parent;BASE=ROOT/'scripts/product-regulatory-profiles-20261114/management'
 os.environ['PATH']=str(Path(shutil.which('initdb')).resolve().parent)+os.pathsep+os.environ['PATH']
 t=Path(tempfile.mkdtemp(prefix='pg-structured-'));t.chmod(0o777);port=str(55000+os.getpid()%900);priv=['setpriv','--reuid=1000','--regid=1000','--clear-groups'] if os.getuid()==0 else [];checks=[]
 conn=['psql','-X','-qAt','-h',str(t),'-p',port,'-U','postgres','-v','ON_ERROR_STOP=1']
+setup_sql=[];record_setup=True;t2=None
 def sql(s,error=None):
  r=subprocess.run(conn,input=s,text=True,capture_output=True)
  if error:assert r.returncode and error in r.stderr,r.stderr
  else:assert r.returncode==0,r.stderr
+ if record_setup and not error:setup_sql.append(s)
  return r.stdout.strip()
 def check(name,s,value=None,error=None):
  r=sql(s,error)
@@ -75,13 +78,58 @@ try:
  ALTER TABLE public.microorganism_regulatory_dossiers ENABLE ROW LEVEL SECURITY;
  CREATE POLICY legacy_dossier ON public.microorganism_regulatory_dossiers TO authenticated,anon USING(true) WITH CHECK(true);
  CREATE POLICY anon_denied ON public.microorganism_regulatory_dossiers AS RESTRICTIVE FOR ALL TO anon USING(false) WITH CHECK(false);
+ CREATE POLICY public_identity_probe ON public.microorganism_regulatory_dossiers AS RESTRICTIVE FOR SELECT TO PUBLIC USING(true);
  """)
  before=sql("SELECT md5(pg_get_functiondef('platform_private.recorte_a_actor_fresh(text)'::regprocedure))")
  service_before=sql("SELECT string_agg(md5(pg_get_functiondef(oid)),',' ORDER BY proname) FROM pg_proc WHERE pronamespace='platform_private'::regnamespace AND proname IN ('product_dossier_upload_attest','product_dossier_upload_cancel')")
- defs={sig:sql(f"SELECT pg_get_functiondef('{sig}'::regprocedure)")+'\n' for sig in TARGETS+[FRESH]}
- # psql strips trailing LF only; restore single pg_get_functiondef LF (pinned synthetic serialization).
+ pre=json.loads(sql(capture));record_setup=False
+ defs={f['signature']:f['definition'] for f in pre['functions'] if f['signature'] in TARGETS+[FRESH] or f['signature'].startswith('public.tenant_product_dossier_') or f['signature']=='public.rpc_regulatory_product_document_access(uuid,uuid,uuid)'}
  pins={sig:hashlib.md5(v.encode()).hexdigest() for sig,v in defs.items()}
  delta=build(defs,pins);sql(delta)
+ post=json.loads(sql(capture))
+ # A genuinely separate cluster consumes the exact A PRE/POST. Advance object
+ # and role OIDs before replaying the same declared setup; ballast is out of scope.
+ t2=Path(tempfile.mkdtemp(prefix='pg-structured-other-'));t2.chmod(0o777)
+ subprocess.run(priv+['initdb','-D',str(t2/'data'),'-U','postgres','-A','trust'],check=True,capture_output=True)
+ subprocess.run(priv+['pg_ctl','-D',str(t2/'data'),'-o',f'-k {t2} -h "" -p {port}','-l',str(t2/'log'),'-w','start'],check=True,capture_output=True)
+ conn2=['psql','-X','-qAt','-h',str(t2),'-p',port,'-U','postgres','-v','ON_ERROR_STOP=1']
+ def sql2(s,error=None):
+  r=subprocess.run(conn2,input=s,text=True,capture_output=True)
+  if error:assert r.returncode and error in r.stderr,r.stderr
+  else:assert r.returncode==0,r.stderr
+  return r.stdout.strip()
+ sql2('CREATE SCHEMA oid_ballast;'+''.join(f'CREATE TABLE oid_ballast.t{i}(id integer);CREATE ROLE oid_ballast_{i};' for i in range(20)))
+ for statement in setup_sql:sql2(statement)
+ oid_query="SELECT 'public.microorganism_regulatory_dossiers'::regclass::oid||':'||(SELECT oid FROM pg_roles WHERE rolname='authenticated')"
+ assert sql(oid_query)!=sql2(oid_query),'OIDs did not differ'
+ checks.append('two independent clusters proven different relation and role OIDs')
+ assert pre==json.loads(sql2('SET search_path=public;'+capture)),'cross-instance PRE drift'
+ checks.append('complete PRE identical across clusters despite different OIDs')
+ assert all(not tr['name'].startswith('RI_ConstraintTrigger_') for r in post['relations'] for tr in (r['triggers'] or []))
+ assert any('FOREIGN KEY' in c['definition'] for r in post['relations'] if 'structured_history' in r['name'] for c in (r['constraints'] or []))
+ assert any(policy['roles']==['PUBLIC'] for r in pre['relations'] for policy in (r['policies'] or []))
+ assert any(policy['roles']==['anon','authenticated'] for r in pre['relations'] for policy in (r['policies'] or []))
+ checks.append('FK constraints retained internal triggers excluded role names stable')
+ # Exact negative metadata changes must fail POST and roll back all added DDL.
+ import copy
+ mutations=[('constraint',lambda c:next(r for r in c['relations'] if 'structured_history' in r['name'])['constraints'][0].update(validated=False)),
+  ('acl',lambda c:next(r for r in c['relations'] if r['name']=='public.produtos').update(acl='forged')),
+  ('owner',lambda c:next(r for r in c['relations'] if r['name']=='public.produtos').update(owner='forged')),
+  ('config',lambda c:next(f for f in c['functions'] if f['signature']=='platform_private.product_dossier_management_context(uuid)').update(config=['search_path=public'])),
+  ('function',lambda c:next(f for f in c['functions'] if f['signature']=='platform_private.product_dossier_management_context(uuid)').update(md5='forged')),
+  ('trigger',lambda c:next(r for r in c['relations'] if r['name']=='public.product_regulatory_dossier_links')['triggers'][0].update(enabled='D'))]
+ for name,mutate in mutations:
+  bad=copy.deepcopy(post);mutate(bad)
+  sql2(assemble(pre,bad,pins),error='POST_CATALOG_DRIFT')
+  assert sql2("SELECT to_regclass('platform_private.product_dossier_structured_history') IS NULL")=='t','failed POST committed DDL'
+  checks.append('integral POST rejects '+name+' drift and rolls back')
+ artifact=assemble(pre,post,pins)
+ sql2(artifact)
+ assert post==json.loads(sql2("SET search_path='';"+capture)),'cross-instance POST drift'
+ checks.append('positive exact atomic assembly A PRE POST executed in independent B cluster')
+ fk_oid_query="SELECT string_agg(tgname,',' ORDER BY tgname) FROM pg_trigger WHERE tgrelid='platform_private.product_dossier_structured_history'::regclass AND tgisinternal"
+ assert sql(fk_oid_query) and sql(fk_oid_query)!=sql2(fk_oid_query),'new FK internal names did not differ'
+ checks.append('new history FK internal trigger names differ yet complete POST identical')
  check('fresh body unchanged',"SELECT md5(pg_get_functiondef('platform_private.recorte_a_actor_fresh(text)'::regprocedure))",before)
  check('service attest cancel definitions unchanged',"SELECT string_agg(md5(pg_get_functiondef(oid)),',' ORDER BY proname) FROM pg_proc WHERE pronamespace='platform_private'::regnamespace AND proname IN ('product_dossier_upload_attest','product_dossier_upload_cancel')",service_before)
  check('gate default OFF',actor(f"SELECT tenant_product_dossier_management_create('{P}',NULL)"),error='DOSSIER_STRUCTURED_UNAVAILABLE')
@@ -159,4 +207,6 @@ try:
  check('deny rollback retains history',f"SELECT count(*) FROM platform_private.product_dossier_structured_history WHERE product_id='{P}'",'1')
  (H/'pg-result.json').write_text(json.dumps({'checks':checks,'count':len(checks),'exit_code':0,'limits':'Schema, Auth and fiscal dependencies synthetic; canonical versioned management bodies and captured fresh actor; no JWT/Storage/hosted evidence.'},indent=2)+'\n');print(json.dumps({'exit_code':0,'count':len(checks)}))
 finally:
+ if t2 is not None:
+  subprocess.run(priv+['pg_ctl','-D',str(t2/'data'),'-m','immediate','-w','stop'],capture_output=True);shutil.rmtree(t2)
  subprocess.run(priv+['pg_ctl','-D',str(t/'data'),'-m','immediate','-w','stop'],capture_output=True);shutil.rmtree(t)

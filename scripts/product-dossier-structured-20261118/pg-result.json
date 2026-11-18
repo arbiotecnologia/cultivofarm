@@ -3,6 +3,17 @@
     "complete capture public equals empty search_path",
     "qualified input type identity omits argument names",
     "relations always schema qualified",
+    "two independent clusters proven different relation and role OIDs",
+    "complete PRE identical across clusters despite different OIDs",
+    "FK constraints retained internal triggers excluded role names stable",
+    "integral POST rejects constraint drift and rolls back",
+    "integral POST rejects acl drift and rolls back",
+    "integral POST rejects owner drift and rolls back",
+    "integral POST rejects config drift and rolls back",
+    "integral POST rejects function drift and rolls back",
+    "integral POST rejects trigger drift and rolls back",
+    "positive exact atomic assembly A PRE POST executed in independent B cluster",
+    "new history FK internal trigger names differ yet complete POST identical",
     "fresh body unchanged",
     "service attest cancel definitions unchanged",
     "gate default OFF",
@@ -61,7 +72,7 @@
     "gate rollback closed reader",
     "deny rollback retains history"
   ],
-  "count": 60,
+  "count": 71,
   "exit_code": 0,
   "limits": "Schema, Auth and fiscal dependencies synthetic; canonical versioned management bodies and captured fresh actor; no JWT/Storage/hosted evidence."
 }

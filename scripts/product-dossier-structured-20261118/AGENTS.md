@@ -3,3 +3,4 @@
 - Product-only dossiers are explicit new records; never convert biological history or fabricate microorganism coverage. All structured content is documentary and pending, never approval or a fiscal/commercial formula.
 - Fresh captured authority is rechecked after waits and before replay/return; private gates default OFF and rollback denies while retaining documents, receipts and history.
 - Caller upload access/pending preserve manage_scope and ownership even without DML; service-only attest/cancel and their dispatch remain unextended — prevents inventing caller authority for service bridges.
+- Cross-instance catalogs exclude only internal triggers and encode policy roles as names; full FK constraints and application trigger function metadata remain pinned, with a two-cluster exact PRE/POST assembly test — prevents OID-dependent false drift without weakening security comparisons.
