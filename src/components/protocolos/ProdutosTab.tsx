@@ -1174,7 +1174,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
       {mobile && <div className="space-y-3">{tenantVis.displayed.map(p => <article key={p.id} className="border rounded-md p-3 space-y-2">
         <Button variant="ghost" className="min-h-11 h-auto w-full justify-start whitespace-normal text-left" onClick={() => setFichaProduto(p)}>{p.nome}</Button>
         <p className="text-sm text-muted-foreground break-words">{p.descricao || p.funcao_completa}</p>
-        <div className="flex flex-wrap gap-2"><LabelTechnicalDataDialog kind="toxicidade" targetId={p.id} targetName={p.nome} /><ProductDossierAction productId={p.id} name={p.nome} code={p.codigo}/><Button className="min-h-11" variant="outline" onClick={() => setFichaProduto(p)}>{profileStatusMap[p.id] ? "Editar ficha" : "Criar ficha"}</Button><Button className="min-h-11" variant="outline" onClick={() => setVolumesEdit(p)} title="Volumes do catálogo"><Droplets className="h-4 w-4 mr-1" />Volumes</Button>{editor.canEdit && <Button className="min-h-11" variant="outline" onClick={() => handleEdit(p)}>Editar produto</Button>}</div>
+        <div className="flex flex-wrap gap-2"><LabelTechnicalDataDialog kind="toxicidade" targetId={p.id} targetName={p.nome} /><ProductDossierAction productId={p.id} name={p.nome} code={p.codigo} familyCatalog={p.familia_catalogo}/><Button className="min-h-11" variant="outline" onClick={() => setFichaProduto(p)}>{profileStatusMap[p.id] ? "Editar ficha" : "Criar ficha"}</Button><Button className="min-h-11" variant="outline" onClick={() => setVolumesEdit(p)} title="Volumes do catálogo"><Droplets className="h-4 w-4 mr-1" />Volumes</Button>{editor.canEdit && <Button className="min-h-11" variant="outline" onClick={() => handleEdit(p)}>Editar produto</Button>}</div>
       </article>)}{!tenantVis.displayed.length && <div className="space-y-2 py-6"><p>Nenhum produto encontrado</p><Button className="min-h-11" variant="outline" onClick={() => { setFamilyTab("todos"); setFilterTipo("todos"); }}>Buscar em todas as famílias</Button></div>}</div>}
       <DraftExitConfirmation open={exitOpen} onOpenChange={setExitOpen} onLeave={() => { if (contentDirty) return; setOpen(false); resetForm(); }} />
       <div className="rounded-md border hidden md:block">
@@ -1354,7 +1354,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
                         </Tooltip>
                       </TooltipProvider>
                     )}
-                    <LabelTechnicalDataDialog kind="toxicidade" targetId={p.id} targetName={p.nome} /><ProductDossierAction productId={p.id} name={p.nome} code={p.codigo}/>
+                    <LabelTechnicalDataDialog kind="toxicidade" targetId={p.id} targetName={p.nome} /><ProductDossierAction productId={p.id} name={p.nome} code={p.codigo} familyCatalog={p.familia_catalogo}/>
                     {editor.canEdit && <>
                       <Button variant="outline" size="sm" disabled={!details.isSuccess || saveProduct.isPending || !!partialMessage} onClick={() => handleEdit(p)}>Editar</Button>
                       <Button variant="ghost" size="sm" disabled={archiveProduct.isPending || !p.updated_at} onClick={async () => {

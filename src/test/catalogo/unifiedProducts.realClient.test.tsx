@@ -5,7 +5,8 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 
 const state = vi.hoisted(() => ({ actor: "A", tenant: "org-A", roles: ["administrador"], epoch: 0, fetch: vi.fn(), rows: [] as any[],
-  unitCap: "absent" as "positive" | "absent" | "denied", unitCalls: [] as string[] }));
+  unitCap: "absent" as "positive" | "absent" | "denied", unitCalls: [] as string[], mobile: false }));
+vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => state.mobile }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: state.actor }, profile: { user_id: state.actor, organization_id: state.tenant, ativo: true }, roles: state.roles, role: state.roles[0], loading: false, authzReady: true, authzEpoch: state.epoch }) }));
 // Contrato PRODUCT_UNIT_V2 explícito e separado do transporte de cada cenário: capability ausente por padrão
 // (SQL ainda não instalado); positiva somente quando o cenário a declara. Unidade lida do próprio produto da empresa.
@@ -54,7 +55,7 @@ function wrapper({ children }: { children: ReactNode }) {
 function client() { const c = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } }); clients.push(c); return c; }
 function rpcCalls(name: string) { return state.fetch.mock.calls.filter(([url]) => String(url).endsWith(`/rpc/${name}`)).map(([, init]) => JSON.parse(init.body)); }
 beforeEach(() => {
-  Object.assign(state, { actor: "A", tenant: "org-A", roles: ["administrador"], epoch: 0, rows: [], unitCap: "absent", unitCalls: [] }); state.fetch.mockReset();
+  Object.assign(state, { actor: "A", tenant: "org-A", roles: ["administrador"], epoch: 0, rows: [], unitCap: "absent", unitCalls: [], mobile: false }); state.fetch.mockReset();
   state.fetch.mockImplementation(async (url, init) => {
     expect(new Headers(init.headers).get("authorization")).toBe("Bearer synthetic-bearer");
     const name = String(url).split("/rpc/")[1];
@@ -623,6 +624,40 @@ it("renomeação permite editar outro campo sem reenviar identidade antiga nem a
  const payload=rpcCalls("tenant_catalog_root_save")[0].p_payload;
  expect(payload).toEqual({resumo_curto:"Texto original",explicacao_tecnica:"Outro campo"});
  expect(evidence.identity.name).toBe("Nome anterior");expect(evidence.candidate_key).toBe("A");
+});
+it.each([false, true].flatMap(mobile => ['quimico', 'fertilizante_adubo', 'biologico'].flatMap(family => ['absent', 'existing', 'error'].map(dossier => ({ mobile, family, dossier })))))
+('entrada dossiê mobile=$mobile família=$family estado=$dossier conserva consulta e bloqueia criação não biológica', async ({mobile, family, dossier}) => {
+ state.mobile=mobile;client();
+ const pid='00000000-0000-4000-8000-000000000020',mid='00000000-0000-4000-8000-000000000030',did='00000000-0000-4000-8000-000000000040';
+ state.rows=[{id:pid,nome:'Produto QA',codigo:'QA',tipo:'solo',familia_catalogo:family,ativo:true,b2b_enabled:false,e_insumo:false,updated_at:stamp,owner_organization_id:state.tenant}];
+ state.fetch.mockImplementation(async(url) => {
+  const name=String(url).split('/rpc/')[1];
+  if(name==='tenant_product_list')return json(state.rows);
+  if(name==='tenant_product_dossier_management_context')return dossier==='error'?json({code:'42501'},403):json({product_id:pid,can_edit:true,versions:[],dossier_microorganism_id:dossier==='existing'?mid:null,microorganisms:[{id:mid,nome:'Micro QA',codigo:'M1'}]});
+  if(name==='rpc_regulatory_product_dossier_detail')return json({product_id:pid,dossier:{id:did,microorganism_id:mid,version:1,status:'DRAFT',updated_at:stamp,regulatory_category:null,mapa_status:null,mapa_registration_number:null,blocked_reason:null,notes:'Anotação confirmada QA'},documents:[],checklist:[],gate:{pendencies:[]}});
+  if(name==='tenant_product_dossier_upload_pending')return json([]);
+  if(name)throw new Error(`Unexpected RPC ${name}`);return json([]);
+ });
+ render(<ProdutosTab/>,{wrapper});await screen.findAllByText('Produto QA');
+ // Mobile mounts its card action first; desktop mounts only the table action.
+ fireEvent.click(screen.getAllByRole('button',{name:'Gerenciar dossiê'})[0]);
+ await waitFor(()=>expect(rpcCalls('tenant_product_dossier_management_context')).toHaveLength(1));
+ if(dossier==='existing'){
+  expect((await screen.findByLabelText('Observações') as HTMLTextAreaElement).value).toBe('Anotação confirmada QA');
+  expect(rpcCalls('rpc_regulatory_product_dossier_detail')).toEqual([{p_product_id:pid,p_microorganism_id:mid}]);
+ }else if(dossier==='error'){
+  expect(await screen.findByRole('alert')).toBeTruthy();
+  expect(screen.queryByRole('button',{name:'Criar dossiê'})).toBeNull();
+ }else if(family==='biologico'){
+  expect((await screen.findByRole('button',{name:'Criar dossiê'}) as HTMLButtonElement).disabled).toBe(true);
+  expect(screen.getByRole('checkbox',{name:/Micro QA/})).toBeTruthy();
+ }else{
+  await screen.findByRole('status');
+  expect(screen.queryByRole('button',{name:'Criar dossiê'})).toBeNull();
+  expect(screen.queryByRole('checkbox',{name:/Micro QA/})).toBeNull();
+  expect(rpcCalls('rpc_regulatory_product_dossier_detail')).toHaveLength(0);
+ }
+ expect(rpcCalls('tenant_product_dossier_create_covered')).toHaveLength(0);
 });
 it.each([['quimico','kg'],['quimico','g'],['fertilizante_adubo','kg'],['fertilizante_adubo','g']] as const)("%s %s preserva legado sem cálculo volumétrico nem composição obrigatória",async(family,unit)=>{
  state.unitCap="positive";client();
