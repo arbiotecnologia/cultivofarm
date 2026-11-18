@@ -1,0 +1,26 @@
+# Auditoria final local — candidato estruturado
+
+## Resultado
+Implementação integrada concluída localmente, **não apto para publicação hosted ainda**: depende da revisão/montagem root-local integral, instalação independente full management HML e homologação Auth/Storage. Produção e frontend publicado intactos; nenhuma operação de banco hospedado, captura privada ou subagente.
+
+### Evidência executada
+- Catálogo + protocolos + dossiês: **74 arquivos / 1.239 testes Vitest PASS**. Inclui SDK Supabase real com fetch/bearer sintéticos: casas decimais textuais, unidade/base exatas, lock de duplo dispatch, A→B/ACK antigo, uncertain same-key/intent, CAS definitivo com retomada fresh, preservação de draft em refetch, cadastro/reabertura químico e fertilizante, rejeição de malformação sem dispatch.
+- Reteste final após correções: **40 testes / 3 arquivos PASS** (`vitest-final.txt`). Testes biológicos canônicos preservados; catálogo/protocolos incluem regressões micro/unidades/fontes e ambas entradas existentes.
+- PostgreSQL descartável: **41 checks PASS** (`pg-result.json`). Corpos versionados management canônicos + autoridade fresh capturada, schema/Auth/fiscal seams declaradas. Criação product-only, idempotência, valor exato, A/B/anon, DML guard, RLS/ACL privado, CAS, rejeições atômicas e histórico preservado, revogação de feature depois de espera **com waiter observado** em `pg_stat_activity`, replay revogado, READ COMMITTED obrigatório e rollback gate fechado mantendo história.
+- Builder: **8 testes PASS** (`test_assembly.py`): drift/missing dependency, cobertura exata, OFF/private sem grants, wrapper fake recusado, pós-locks/retornos e metadata fresh/publicação preservados. **Montagem positiva com PRE real + POST esperado real permanece root-local; não foi executada aqui**. O agente não pediu/transferiu capturas.
+- Chromium sintético em **1280×1800 e 390×844**, duas famílias, quatro fluxos: criação sem micro → registro/fonte/linha → save exato → dados confirmados → cancelar novo draft. Zero pageerror e sem overflow horizontal; screenshots verificadas. Auth/cliente interceptados, não JWT/HML. Script `check_browser.py`; usa `/tmp/browser/structured-dossier/` e versão atual das dependências da prévia, deve ajustar os hashes se o servidor os mudar. Avisos de refs dos controles Select no harness e avisos preexistentes uncontrolled/controlled da suíte foram observados, sem falha funcional; não tratados como prova hosted.
+- Último build/typecheck automático da plataforma **OK** (11:40:20 UTC); compilação manual não executada conforme regra da plataforma. `git diff --check` sem erro.
+
+## Segurança e semântica
+O dossiê product-only é um ramo explícito na tabela/contratos canônicos, com micro NULL apenas nele. Não converte linhas antigas. Dados estruturados são documento pendente: números mantêm representação decimal exata, fontes por registro/linha e anexo privado opcional server-scoped. Nenhuma inferência kg/g→L/mL, concentração, dose, composição comercial, registro, aprovação, fiscal ou preço. Gate OFF default, history/receipt privados owner-only e RLS. Trigger nega mudança de escopo e publicação/review pelo caminho product-only; rollback OFF retém tudo. Biológicos mantêm editor/cobertura/revisão existentes.
+
+`tenant_product_dossier_management_save` é o mesmo endpoint; patch específico contém `structured_data` + `request_id`. CAS é revisão observada; recibo vinculado ao ator/produto/intenção evita duplicação após resposta perdida. Recusa definitiva exige fresh read explícito; tentativa incerta mantém chave/args, draft congelado e exportável. IA permanece fora deste writer e do cadastro numérico estruturado; HMLv4 não tocado e 402 não contornado.
+
+## Bloqueios externos nomeados
+1. **Full management HML ausente**: root deve revisar/instalar os deps canônicos versionados independentemente, incluindo dispatch INVOKER/ACL privado, triggers, Storage e pontes service-only, sem conceder USAGE geral como atalho. O teste descartável declara uma costura de USAGE schema para os wrappers sintéticos; não prova ACL/dispatch hospedado.
+2. **PRE/POST integral root-local e roundtrip positivo**: root normaliza as definições atuais e gera o instalador final com pins revisados. Não repinar pacote product-evidence 072/dc7 nem sources; este pacote é separado. Instalação exige POST integral atômico e gate OFF. Dependências ausentes abortam o builder.
+3. **Transporte documentos product-only**: candidato `build_document_edge.py` precisa revisão/deploy root HML depois dos readers/guards. Nenhuma Edge runtime alterada. Auth A/B/anon, upload/recovery/open/hash/revogação de URL/bytes e Realtime se aplicável devem ser provados hosted.
+4. **Homologação UI real integrada**: Unizeb Gold existente é apenas fato root; nenhum real cadastrado/alterado neste turno. Fertilizante só QA. Testar save/reopen concorrente/escopo/histórico e sem aprovar conteúdo real.
+5. **IA 402**: root retestará quando houver créditos; sem mudança de provedor/segredos/cobrança. IA não aprova valores estruturados.
+
+Aptidão para publicação depende de todos esses gates; testes sintéticos não são homologação hosted. Não houve instalação/publicação.

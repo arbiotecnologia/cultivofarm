@@ -1,0 +1,20 @@
+-- Root-local only. Catalog definitions contain no business rows; never transfer captures.
+WITH functions AS (
+ SELECT p.*,n.nspname FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+ WHERE (n.nspname='platform_private' AND (p.proname LIKE 'product_dossier_%' OR p.proname IN ('recorte_a_actor_fresh','rpc_regulatory_product_document_access','regulatory_owner_write_guard','regulatory_product_scope','product_regulatory_storage_read_allowed')))
+ OR (n.nspname='public' AND (p.proname LIKE 'tenant_product_dossier_%' OR p.proname IN ('rpc_regulatory_product_document_access','fn_regulatory_storage_can_read')))
+), relations AS (
+ SELECT c.* FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE (n.nspname='public' AND (c.relname IN ('produtos','microrganismos','formulacoes','product_regulatory_dossier_links') OR c.relname LIKE 'microorganism_regulatory_%'))
+ OR (n.nspname='platform_private' AND c.relname LIKE 'product_dossier_%') OR (n.nspname='storage' AND c.relname IN ('objects','buckets'))
+)
+SELECT jsonb_build_object(
+ 'functions',(SELECT coalesce(jsonb_agg(jsonb_build_object('signature',oid::regprocedure::text,'definition',pg_get_functiondef(oid),'md5',md5(pg_get_functiondef(oid)),'owner',pg_get_userbyid(proowner),'acl',coalesce(proacl::text,''),'config',proconfig,'volatile',provolatile,'definer',prosecdef) ORDER BY oid::regprocedure::text),'[]'::jsonb) FROM functions),
+ 'relations',(SELECT jsonb_agg(jsonb_build_object('name',oid::regclass::text,'owner',pg_get_userbyid(relowner),'kind',relkind,'rls',relrowsecurity,'force_rls',relforcerowsecurity,'acl',coalesce(relacl::text,''),'replica_identity',relreplident,
+ 'columns',(SELECT jsonb_agg(jsonb_build_object('number',attnum,'name',attname,'type',format_type(atttypid,atttypmod),'not_null',attnotnull,'acl',coalesce(attacl::text,''),'identity',attidentity,'generated',attgenerated,'default',pg_get_expr(d.adbin,d.adrelid)) ORDER BY attnum) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid=r.oid AND attnum>0 AND NOT attisdropped),
+ 'constraints',(SELECT jsonb_agg(jsonb_build_object('name',conname,'definition',pg_get_constraintdef(oid),'validated',convalidated) ORDER BY conname) FROM pg_constraint WHERE conrelid=r.oid),
+ 'policies',(SELECT jsonb_agg(jsonb_build_object('name',polname,'command',polcmd,'permissive',polpermissive,'roles',polroles,'using',pg_get_expr(polqual,polrelid),'check',pg_get_expr(polwithcheck,polrelid)) ORDER BY polname) FROM pg_policy WHERE polrelid=r.oid),
+ 'triggers',(SELECT jsonb_agg(jsonb_build_object('name',tgname,'enabled',tgenabled,'definition',pg_get_triggerdef(oid),'body',md5(pg_get_functiondef(tgfoid))) ORDER BY tgname) FROM pg_trigger WHERE tgrelid=r.oid),
+ 'indexes',(SELECT jsonb_agg(pg_get_indexdef(indexrelid) ORDER BY pg_get_indexdef(indexrelid)) FROM pg_index WHERE indrelid=r.oid)) ORDER BY oid::regclass::text) FROM relations r),
+ 'publications',(SELECT jsonb_agg(to_jsonb(p) ORDER BY pubname,schemaname,tablename) FROM pg_publication_tables p WHERE (schemaname='public' AND tablename LIKE '%regulatory%') OR (schemaname='platform_private' AND tablename LIKE 'product_dossier_%'))
+);

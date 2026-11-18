@@ -1,0 +1,108 @@
+-- REVIEW ONLY. Root-local builder supplies exact canonical PRE/POST and function deltas.
+ALTER TABLE public.microorganism_regulatory_dossiers ALTER COLUMN microorganism_id DROP NOT NULL;
+ALTER TABLE public.microorganism_regulatory_dossiers ADD COLUMN product_only boolean NOT NULL DEFAULT false;
+ALTER TABLE public.microorganism_regulatory_dossiers ADD COLUMN structured_data jsonb;
+ALTER TABLE public.microorganism_regulatory_dossiers ADD CONSTRAINT dossier_explicit_product_only CHECK ((NOT product_only AND microorganism_id IS NOT NULL) OR (product_only AND product_id IS NOT NULL AND microorganism_id IS NULL AND cardinality(covered_microorganism_ids)=0));
+CREATE TABLE platform_private.product_dossier_structured_gate(singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),enabled boolean NOT NULL DEFAULT false);
+REVOKE ALL ON platform_private.product_dossier_structured_gate FROM PUBLIC,anon,authenticated,service_role;
+ALTER TABLE platform_private.product_dossier_structured_gate ENABLE ROW LEVEL SECURITY;
+INSERT INTO platform_private.product_dossier_structured_gate VALUES(true,false);
+CREATE TABLE platform_private.product_dossier_structured_receipts(actor_id uuid NOT NULL,product_id uuid NOT NULL,request_id uuid NOT NULL,intent jsonb NOT NULL,ack jsonb NOT NULL,created_at timestamptz NOT NULL DEFAULT clock_timestamp(),PRIMARY KEY(actor_id,product_id,request_id));
+REVOKE ALL ON platform_private.product_dossier_structured_receipts FROM PUBLIC,anon,authenticated,service_role;
+ALTER TABLE platform_private.product_dossier_structured_receipts ENABLE ROW LEVEL SECURITY;
+CREATE TABLE platform_private.product_dossier_structured_history(sequence bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,dossier_id uuid NOT NULL REFERENCES public.microorganism_regulatory_dossiers(id),product_id uuid NOT NULL,actor_id uuid NOT NULL,profile_revision timestamptz NOT NULL,content jsonb NOT NULL,created_at timestamptz NOT NULL DEFAULT clock_timestamp());
+REVOKE ALL ON platform_private.product_dossier_structured_history FROM PUBLIC,anon,authenticated,service_role;
+ALTER TABLE platform_private.product_dossier_structured_history ENABLE ROW LEVEL SECURITY;
+CREATE INDEX product_dossier_structured_history_latest ON platform_private.product_dossier_structured_history(product_id,sequence DESC);
+CREATE FUNCTION platform_private.product_dossier_structured_scope(p_product uuid,p_mode text) RETURNS uuid LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid; BEGIN
+ IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'DOSSIER_ISOLATION_REQUIRED' USING ERRCODE='22023'; END IF;
+ org:=platform_private.recorte_a_actor_fresh(p_mode);
+ IF NOT coalesce((SELECT enabled FROM platform_private.product_dossier_structured_gate WHERE singleton),false) OR org IS NULL OR NOT EXISTS(SELECT 1 FROM public.produtos WHERE id=p_product AND owner_organization_id=org AND NOT e_insumo AND familia_catalogo IN ('quimico','fertilizante_adubo')) THEN RAISE EXCEPTION 'DOSSIER_STRUCTURED_UNAVAILABLE' USING ERRCODE='42501'; END IF;
+ IF org IS DISTINCT FROM platform_private.recorte_a_actor_fresh(p_mode) THEN RAISE EXCEPTION 'DOSSIER_SCOPE_CHANGED' USING ERRCODE='42501'; END IF; RETURN org;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.product_dossier_structured_scope(uuid,text) FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION platform_private.product_dossier_structured_validate(p_data jsonb,p_dossier uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE r jsonb;l jsonb;o jsonb;k text; doc uuid; BEGIN
+ IF jsonb_typeof(p_data) IS DISTINCT FROM 'object' OR (SELECT count(*) FROM jsonb_object_keys(p_data))<>3 OR NOT p_data ?& ARRAY['schema_version','registration','lines'] OR p_data->'schema_version'<>'1'::jsonb OR jsonb_typeof(p_data->'registration') IS DISTINCT FROM 'object' OR jsonb_typeof(p_data->'lines') IS DISTINCT FROM 'array' OR jsonb_array_length(p_data->'lines')>100 THEN RAISE EXCEPTION 'DOSSIER_DATA_INVALID' USING ERRCODE='22023'; END IF;
+ r:=p_data->'registration';
+ IF (SELECT count(*) FROM jsonb_object_keys(r))<>6 OR NOT r ?& ARRAY['holder','manufacturer','number','agency','documentary_status','origin'] THEN RAISE EXCEPTION 'DOSSIER_REGISTRATION_INVALID' USING ERRCODE='22023'; END IF;
+ FOREACH k IN ARRAY ARRAY['holder','manufacturer','number','agency','documentary_status'] LOOP
+ IF jsonb_typeof(r->k) IS DISTINCT FROM 'string' OR length(r->>k)>(CASE WHEN k IN ('number','agency') THEN 120 ELSE 200 END) THEN RAISE EXCEPTION 'DOSSIER_REGISTRATION_INVALID' USING ERRCODE='22023'; END IF; END LOOP;
+ IF r->>'documentary_status' NOT IN ('PENDING','DOCUMENTED') OR (r->'origin'='null'::jsonb AND (r->>'holder'<>'' OR r->>'manufacturer'<>'' OR r->>'number'<>'' OR r->>'agency'<>'' OR r->>'documentary_status'<>'PENDING')) THEN RAISE EXCEPTION 'DOSSIER_SOURCE_REQUIRED' USING ERRCODE='22023'; END IF;
+ IF (SELECT count(DISTINCT value->>'id') FROM jsonb_array_elements(p_data->'lines'))<>jsonb_array_length(p_data->'lines') THEN RAISE EXCEPTION 'DOSSIER_DUPLICATE_LINE' USING ERRCODE='22023'; END IF;
+ FOR l IN SELECT value FROM jsonb_array_elements(p_data->'lines') LOOP
+ IF jsonb_typeof(l) IS DISTINCT FROM 'object' OR (SELECT count(*) FROM jsonb_object_keys(l))<>8 OR NOT l ?& ARRAY['id','kind','name','value','unit','base','form','origin'] THEN RAISE EXCEPTION 'DOSSIER_LINE_INVALID' USING ERRCODE='22023'; END IF;
+ FOREACH k IN ARRAY ARRAY['id','kind','name','value','unit','base','form'] LOOP IF jsonb_typeof(l->k) IS DISTINCT FROM 'string' THEN RAISE EXCEPTION 'DOSSIER_LINE_INVALID' USING ERRCODE='22023'; END IF; END LOOP;
+ IF l->>'id' !~* '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$' OR l->>'kind' NOT IN ('SUBSTANCE','NUTRIENT') OR length(l->>'name') NOT BETWEEN 1 AND 200 OR length(l->>'form')>200 OR l->>'value' !~ '^[0-9]{1,9}(\.[0-9]{1,9})?$' OR l->>'unit' NOT IN ('g/kg','g/L','mg/kg','mg/L','kg/kg','kg/L','%','g/100g','g/100mL') OR l->>'base' NOT IN ('PRODUCT','DRY_MATTER','MASS_MASS','MASS_VOLUME') THEN RAISE EXCEPTION 'DOSSIER_LINE_INVALID' USING ERRCODE='22023'; END IF;
+ IF l->>'unit' IN ('%','g/100g') AND (l->>'value')::numeric>100 THEN RAISE EXCEPTION 'DOSSIER_PERCENT_INVALID' USING ERRCODE='22023'; END IF;
+ END LOOP;
+ FOR o IN SELECT r->'origin' WHERE r->'origin'<>'null'::jsonb UNION ALL SELECT value->'origin' FROM jsonb_array_elements(p_data->'lines') LOOP
+ IF jsonb_typeof(o) IS DISTINCT FROM 'object' OR (SELECT count(*) FROM jsonb_object_keys(o))<>4 OR NOT o ?& ARRAY['title','url','document_id','excerpt'] THEN RAISE EXCEPTION 'DOSSIER_SOURCE_INVALID' USING ERRCODE='22023'; END IF;
+ FOREACH k IN ARRAY ARRAY['title','url','excerpt'] LOOP IF jsonb_typeof(o->k) IS DISTINCT FROM 'string' THEN RAISE EXCEPTION 'DOSSIER_SOURCE_INVALID' USING ERRCODE='22023'; END IF; END LOOP;
+ IF length(o->>'title') NOT BETWEEN 1 AND 300 OR length(o->>'url')>2048 OR o->>'url' !~* '^https?://[^[:space:]/?#]+([/?#][^[:space:]]*)?$' OR length(o->>'excerpt')>4000 OR jsonb_typeof(o->'document_id') NOT IN ('string','null') THEN RAISE EXCEPTION 'DOSSIER_SOURCE_INVALID' USING ERRCODE='22023'; END IF;
+ IF o->'document_id'<>'null'::jsonb THEN
+ IF o->>'document_id' !~* '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$' THEN RAISE EXCEPTION 'DOSSIER_SOURCE_INVALID' USING ERRCODE='22023'; END IF;
+ doc:=(o->>'document_id')::uuid;
+ IF NOT EXISTS(SELECT 1 FROM public.microorganism_regulatory_documents WHERE id=doc AND dossier_id=p_dossier AND deleted_at IS NULL) THEN RAISE EXCEPTION 'DOSSIER_SOURCE_SCOPE_INVALID' USING ERRCODE='22023'; END IF; END IF;
+ END LOOP;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.product_dossier_structured_validate(jsonb,uuid) FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION platform_private.product_dossier_structured_create(p_product uuid) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid;d public.microorganism_regulatory_dossiers;ack jsonb; BEGIN
+ org:=platform_private.product_dossier_structured_scope(p_product,'mutate');
+ PERFORM pg_advisory_xact_lock(hashtextextended('product-dossier:'||p_product,0));
+ IF org IS DISTINCT FROM platform_private.product_dossier_structured_scope(p_product,'mutate') THEN RAISE EXCEPTION 'DOSSIER_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.produtos WHERE id=p_product FOR SHARE;
+ PERFORM platform_private.product_dossier_structured_scope(p_product,'mutate');
+ SELECT z.* INTO d FROM public.product_regulatory_dossier_links l JOIN public.microorganism_regulatory_dossiers z ON z.id=l.dossier_id WHERE l.product_id=p_product;
+ IF d.id IS NOT NULL THEN
+ IF NOT d.product_only THEN RAISE EXCEPTION 'DOSSIER_EXISTING_BIOLOGICAL' USING ERRCODE='PT409'; END IF;
+ ELSE
+ d.id:=gen_random_uuid();INSERT INTO platform_private.product_dossier_write_permits VALUES(txid_current(),d.id);
+ INSERT INTO public.microorganism_regulatory_dossiers(id,product_id,microorganism_id,product_only,version,status,created_by,updated_by) VALUES(d.id,p_product,NULL,true,(SELECT coalesce(max(version),0)+1 FROM public.microorganism_regulatory_dossiers WHERE product_id=p_product),'DRAFT',auth.uid(),auth.uid()) RETURNING * INTO d;
+ INSERT INTO public.product_regulatory_dossier_links(product_id,dossier_id) VALUES(p_product,d.id);
+ DELETE FROM platform_private.product_dossier_write_permits WHERE txid=txid_current() AND dossier_id=d.id;
+ END IF;
+ ack:=jsonb_build_object('product_id',p_product,'dossier_id',d.id,'updated_at',d.updated_at);
+ PERFORM platform_private.product_dossier_structured_scope(p_product,'mutate');RETURN ack;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.product_dossier_structured_create(uuid) FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION platform_private.product_dossier_structured_save(p_product uuid,p_dossier uuid,p_expected timestamptz,p_patch jsonb) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid;req uuid;intent jsonb;receipt platform_private.product_dossier_structured_receipts;d public.microorganism_regulatory_dossiers;ack jsonb; BEGIN
+ org:=platform_private.product_dossier_structured_scope(p_product,'mutate');
+ IF jsonb_typeof(p_patch) IS DISTINCT FROM 'object' OR (SELECT count(*) FROM jsonb_object_keys(p_patch))<>2 OR NOT p_patch ?& ARRAY['request_id','structured_data'] OR jsonb_typeof(p_patch->'request_id') IS DISTINCT FROM 'string' OR p_patch->>'request_id' !~* '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$' OR p_expected IS NULL THEN RAISE EXCEPTION 'DOSSIER_PATCH_INVALID' USING ERRCODE='22023'; END IF;
+ req:=(p_patch->>'request_id')::uuid;intent:=jsonb_build_object('dossier_id',p_dossier,'expected',p_expected,'data',p_patch->'structured_data');
+ PERFORM pg_advisory_xact_lock(hashtextextended('product-dossier:'||p_product,0));
+ IF org IS DISTINCT FROM platform_private.product_dossier_structured_scope(p_product,'mutate') THEN RAISE EXCEPTION 'DOSSIER_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ SELECT z.* INTO d FROM public.product_regulatory_dossier_links l JOIN public.microorganism_regulatory_dossiers z ON z.id=l.dossier_id WHERE l.product_id=p_product AND z.id=p_dossier AND z.product_id=p_product AND z.deleted_at IS NULL FOR UPDATE OF z;
+ PERFORM platform_private.product_dossier_structured_scope(p_product,'mutate');
+ IF d.id IS NULL OR NOT d.product_only THEN RAISE EXCEPTION 'DOSSIER_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ SELECT * INTO receipt FROM platform_private.product_dossier_structured_receipts WHERE actor_id=auth.uid() AND product_id=p_product AND request_id=req;
+ IF receipt.request_id IS NOT NULL THEN
+ IF receipt.intent IS DISTINCT FROM intent THEN RAISE EXCEPTION 'DOSSIER_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
+ PERFORM platform_private.product_dossier_structured_scope(p_product,'mutate');RETURN receipt.ack;
+ END IF;
+ IF d.status NOT IN ('DRAFT','PENDING_REVIEW') OR d.updated_at IS DISTINCT FROM p_expected THEN RAISE EXCEPTION 'DOSSIER_VERSION_CONFLICT' USING ERRCODE='PT409'; END IF;
+ PERFORM platform_private.product_dossier_structured_validate(p_patch->'structured_data',d.id);
+ INSERT INTO platform_private.product_dossier_write_permits VALUES(txid_current(),d.id);
+ UPDATE public.microorganism_regulatory_dossiers SET structured_data=p_patch->'structured_data',technical_review_status='PENDING',regulatory_review_status='PENDING',fiscal_review_status='PENDING',updated_by=auth.uid() WHERE id=d.id RETURNING * INTO d;
+ DELETE FROM platform_private.product_dossier_write_permits WHERE txid=txid_current() AND dossier_id=d.id;
+ INSERT INTO platform_private.product_dossier_structured_history(dossier_id,product_id,actor_id,profile_revision,content) VALUES(d.id,p_product,auth.uid(),d.updated_at,d.structured_data);
+ ack:=jsonb_build_object('product_id',p_product,'dossier_id',d.id,'updated_at',d.updated_at,'request_id',req);
+ INSERT INTO platform_private.product_dossier_structured_receipts(actor_id,product_id,request_id,intent,ack) VALUES(auth.uid(),p_product,req,intent,ack);
+ PERFORM platform_private.product_dossier_structured_scope(p_product,'mutate');RETURN ack;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.product_dossier_structured_save(uuid,uuid,timestamptz,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION platform_private.product_dossier_structured_detail(p_product uuid,p_dossier uuid) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE d public.microorganism_regulatory_dossiers;r jsonb;current_id uuid; BEGIN
+ PERFORM platform_private.product_dossier_structured_scope(p_product,'read_catalog');
+ SELECT * INTO d FROM public.microorganism_regulatory_dossiers WHERE id=p_dossier AND product_id=p_product AND product_only AND deleted_at IS NULL;
+ IF d.id IS NULL THEN RAISE EXCEPTION 'DOSSIER_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ SELECT dossier_id INTO current_id FROM public.product_regulatory_dossier_links WHERE product_id=p_product;
+ r:=jsonb_build_object('product_id',p_product,'dossier',to_jsonb(d),'historical',current_id IS DISTINCT FROM d.id,'documents',coalesce((SELECT jsonb_agg(to_jsonb(x) ORDER BY x.id) FROM public.microorganism_regulatory_documents x WHERE dossier_id=d.id AND deleted_at IS NULL),'[]'::jsonb),'structured_history',coalesce((SELECT jsonb_agg(jsonb_build_object('revision',profile_revision,'content',content) ORDER BY sequence DESC) FROM platform_private.product_dossier_structured_history WHERE dossier_id=d.id AND profile_revision<d.updated_at),'[]'::jsonb),'checklist','[]'::jsonb,'gate',jsonb_build_object('pendencies',jsonb_build_array(jsonb_build_object('code','PRODUCT_DOCUMENTARY_PENDING','field','structured_data','layer','REGULATORY','message','Registro, garantias e enquadramento fiscal pendentes de validação.'))));
+ PERFORM platform_private.product_dossier_structured_scope(p_product,'read_catalog');RETURN r;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.product_dossier_structured_detail(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION platform_private.product_dossier_structured_can_edit(p_product uuid) RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$ BEGIN PERFORM platform_private.product_dossier_structured_scope(p_product,'mutate');RETURN true; EXCEPTION WHEN insufficient_privilege THEN RETURN false; END $$;
+REVOKE ALL ON FUNCTION platform_private.product_dossier_structured_can_edit(uuid) FROM PUBLIC,anon,authenticated,service_role;

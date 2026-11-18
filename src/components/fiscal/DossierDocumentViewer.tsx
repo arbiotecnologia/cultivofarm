@@ -20,7 +20,7 @@ export async function verifyDossierBlob(blob:Blob,expectedHash:string):Promise<B
 export function DossierDocumentViewer({document:doc,productId,microId,onClose}:{document:ProductDossier['documents'][number];productId:string;microId:string;onClose:()=>void}){
  const [mime,setMime]=useState('');const [error,setError]=useState(false);
  const opener=useAuthenticatedAttachmentOpener(`dossier-view:${productId}:${doc.dossier_id}:${doc.id}`,'fiscal-regulatorio',async(id,signal)=>{
-  const result=await regulatoryDocumentTransport('open',{product_id:productId,microorganism_id:microId,document_id:id});
+  const result=await regulatoryDocumentTransport('open',{product_id:productId,microorganism_id:microId||null,document_id:id});
   if(signal.aborted||!(result instanceof Blob))throw new Error('Documento indisponível.');
   const verified=await verifyDossierBlob(result,doc.content_sha256);
   if(signal.aborted)throw new Error('Consulta encerrada.');

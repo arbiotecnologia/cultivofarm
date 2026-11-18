@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import {structuredDossierSchema} from '@/lib/productStructuredDossier';
 import { supabase } from '@/integrations/supabase/client';
 import { useScopedPortalQuery } from '@/hooks/useScopedPortalQuery';
 import { downloadAuthenticatedAttachment } from '@/lib/authz/authenticatedAttachment';
@@ -8,7 +9,7 @@ export const regulatoryProductSchema = z.object({ product_id:z.string().uuid(), 
 export type RegulatoryProduct = z.infer<typeof regulatoryProductSchema>;
 const documentSchema = z.object({ id:z.string().uuid(), dossier_id:z.string().uuid(), title:z.string(), doc_type:z.string(), issuer:z.string().nullable(), valid_until:z.string().nullable(), storage_bucket:z.literal('fiscal-regulatorio'), storage_path:z.string(), content_sha256:z.string(),covered_microorganism_ids:z.array(z.string().uuid()).default([]) });
 const pendencySchema = z.object({code:z.string(),field:z.string(),layer:z.string(),message:z.string(),items:z.array(z.string()).optional()});
-export const productDossierSchema = z.object({ product_id:z.string().uuid(), historical:z.boolean().optional(),dossier:z.object({covered_microorganism_ids:z.array(z.string().uuid()).default([]), id:z.string().uuid(), microorganism_id:z.string().uuid(), version:z.number().int().positive(), status:status.exclude(['NONE']), regulatory_category:z.string().nullable(), mapa_registration_number:z.string().nullable(), mapa_status:z.string().nullable(), blocked_reason:z.string().nullable(), updated_at:z.string().optional(), strain_code:z.string().nullable().optional(), strain_name:z.string().nullable().optional(), formulation:z.string().nullable().optional(), label_guarantee:z.string().nullable().optional(), guarantee_unit:z.string().nullable().optional(), mapa_holder:z.string().nullable().optional(), mapa_manufacturer:z.string().nullable().optional(), mapa_valid_until:z.string().nullable().optional(), mapa_not_applicable_reason:z.string().nullable().optional(), notes:z.string().nullable().optional() }), documents:z.array(documentSchema), checklist:z.array(z.object({ item_key:z.string(),state:z.enum(['PENDING','CONFIRMED','NOT_APPLICABLE']),justification:z.string().nullable() })), gate:z.object({pendencies:z.array(pendencySchema)}) });
+export const productDossierSchema = z.object({ product_id:z.string().uuid(), historical:z.boolean().optional(),structured_history:z.array(z.object({revision:z.string(),content:structuredDossierSchema})).optional(),dossier:z.object({covered_microorganism_ids:z.array(z.string().uuid()).default([]), id:z.string().uuid(), microorganism_id:z.string().uuid().nullable(), product_only:z.boolean().default(false),structured_data:structuredDossierSchema.nullable().optional(),version:z.number().int().positive(), status:status.exclude(['NONE']), regulatory_category:z.string().nullable(), mapa_registration_number:z.string().nullable(), mapa_status:z.string().nullable(), blocked_reason:z.string().nullable(), updated_at:z.string().optional(), strain_code:z.string().nullable().optional(), strain_name:z.string().nullable().optional(), formulation:z.string().nullable().optional(), label_guarantee:z.string().nullable().optional(), guarantee_unit:z.string().nullable().optional(), mapa_holder:z.string().nullable().optional(), mapa_manufacturer:z.string().nullable().optional(), mapa_valid_until:z.string().nullable().optional(), mapa_not_applicable_reason:z.string().nullable().optional(), notes:z.string().nullable().optional() }), documents:z.array(documentSchema), checklist:z.array(z.object({ item_key:z.string(),state:z.enum(['PENDING','CONFIRMED','NOT_APPLICABLE']),justification:z.string().nullable() })), gate:z.object({pendencies:z.array(pendencySchema)}) });
 export type ProductDossier = z.infer<typeof productDossierSchema>;
 type RpcName = 'rpc_regulatory_microorganism_products'|'rpc_regulatory_product_dossier_detail'|'rpc_regulatory_product_document_access';
 type RpcClient = {rpc:(name:RpcName,args:Record<string,string>)=>PromiseLike<{data:unknown;error:{code?:string;message?:string}|null}>};
@@ -24,7 +25,7 @@ export function useRegulatoryProducts(microId:string) {
 export function parseProductDossier(value:unknown,productId:string):ProductDossier|null {
  if(value===null) return null;
  const d=productDossierSchema.parse(value);
- if(d.product_id!==productId || d.documents.some(x=>x.dossier_id!==d.dossier.id)) throw new Error('regulatory_target_mismatch');
+ if((d.dossier.product_only ? d.dossier.microorganism_id!==null : d.dossier.microorganism_id===null) || d.product_id!==productId || d.documents.some(x=>x.dossier_id!==d.dossier.id)) throw new Error('regulatory_target_mismatch');
  return d;
 }
 export function useProductRegulatoryDossier(microId:string,productId:string) {

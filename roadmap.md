@@ -1,3 +1,9 @@
+## 18/11 11:19 — Registro e garantias estruturados product-only
+- [x] Integrar dossiê canônico químico/fertilizante sem cobertura micro, linhas documentais tipadas e rascunhos/CAS/recibos protegidos nas entradas existentes.
+- [x] Preparar delta aditivo default-OFF, captura e builder root-local com PRE/POST integral e rollback deny-only; preservar migrations canônicas e pins anteriores.
+- [x] Executar SDK, PostgreSQL descartável/concorrência/isolamento, regressões e browser sintético; relatório e commit sem hosted/publicação.
+- [ ] Root revisar/instalar dependências full management e delta na HML, provar Auth/Storage/persistência e retestar IA após 402; não executável pelo agente.
+
 ## 18/11 05:16 — Isolamento de fontes de produto
 - [x] Delta isolado restrictive por produto/owner/read_catalog; DML direto fechado e outras entidades/pins anteriores preservados.
 - [x] 39 checks PostgreSQL descartável, assembly positivo/PRE/POST/rerun e quatro gates negativos; dois Vitest permanentes, roteiro Auth/realtime sem hosted/capturas externas.
@@ -6,7 +12,7 @@
 ## 18/11 05:01 — Fertilizantes/Adubos
 - [x] Refinar ficha integrada, notas/garantias documentais em contratos existentes e identidade IA comercial sem inferências; preservar fila anterior.
 - [x] Testar regressões/fontes/erros/autorização/unidades e desktop/mobile QA; relatório em fertilizer-review sem hosted/publicação.
-- [ ] Dossiê estruturado product-only: depende de captura/autoridade canônica pelo root; contrato atual exige microrganismo, não criar wrapper/vínculo fictício.
+- [x] Dossiê estruturado product-only implementado no candidato 11:19; instalação full management e provas hosted permanecem tarefa root na seção acima.
 
 ## 18/11 04:51 — Massa versus volume no cadastro
 - [x] Bloquear cálculos volumétricos kg/g e unidade desconhecida; preservar valores/drafts sem conversão e químicos sem composição obrigatória.

@@ -1,0 +1,4 @@
+- Review-only additive extension of canonical versioned product dossier management; never install hosted, publish, request or transfer private captures, or edit historical installers.
+- Root-local assembly requires explicit environment, exact PRE/POST catalogs and hash-pinned canonical function definitions; no silent repinning or prototype tenant-owner.sql.
+- Product-only dossiers are explicit new records; never convert biological history or fabricate microorganism coverage. All structured content is documentary and pending, never approval or a fiscal/commercial formula.
+- Fresh captured authority is rechecked after waits and before replay/return; private gates default OFF and rollback denies while retaining documents, receipts and history.

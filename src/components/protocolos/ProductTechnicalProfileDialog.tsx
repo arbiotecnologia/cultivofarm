@@ -394,7 +394,8 @@ function ProductFicha({
             />
           </TabsContent>
           <TabsContent value="dossier">
-            {nonBiological && !dossier.data ? <p role={dossier.isError ? "alert" : "status"}>{dossier.isError ? "Dossiê indisponível; consulta não confirmada." : dossier.isLoading || dossier.isFetching ? "Consultando dossiê…" : `Cadastro de registro e garantias estruturadas ainda indisponível para esta categoria. Registre as informações e os documentos em ${fertilizer ? "Composição e garantias" : "Composição"}; eles permanecem pendentes de validação.`}</p> : <ProductDossierManagement
+            <ProductDossierManagement
+              familyCatalog={produto.familia_catalogo}
               onBlockedChange={setDossierBlocked}
               product={{
                 product_id: produto.id,
@@ -404,7 +405,7 @@ function ProductFicha({
                 organization_name: "",
                 owner_organization_id: produto.owner_organization_id ?? "",
               }}
-            />}
+            />
           </TabsContent>
         </Tabs>
       )}

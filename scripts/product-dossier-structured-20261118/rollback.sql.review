@@ -1,0 +1,4 @@
+-- Deny-only: root builder must surround this with exact current catalog assertion.
+UPDATE platform_private.product_dossier_structured_gate SET enabled=false WHERE singleton;
+-- Keep immutable history, receipts, product-only rows and tracked private documents.
+-- Never restore the previous NOT NULL or vulnerable bodies/ACLs over retained product-only records.
