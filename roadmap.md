@@ -1,4 +1,5 @@
 ## 18/11 — Ficha de produtos e auditoria IA
+- [ ] Gate de equivalência HML: root prepara alinhamento mínimo de tenant_product_save/recorte_a_actor_fresh; exigir captura e revisão antes de prova integrada, nunca repinar produção para HML (descoberta 03:47, REPORT).
 - [x] Integrar conteúdo/fontes/dossiê na ficha e preservar metadata/composição sequenciais; 1044 regressões locais PASS.
 - [x] Preparar identidade, fontes por campo e delta canônico fechado; dois bundles IA explícitos HML/produção, Deno PASS.
 - [x] Navegador sintético desktop/mobile geração/aplicação/salvar/reabrir fontes PASS; 22 SQL locais PASS, build automático OK. REPORT no pacote.

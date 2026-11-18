@@ -5,6 +5,7 @@ Nenhuma aplicação hosted, publicação ou alteração de dados foi executada. 
 ## Ordem e montagem
 
 1. Confirmar baseline vigente de catálogo/dossiê e sequência microrganismos → documentos → correção segurança em cada ambiente.
+   **Gate adicional informado pelo root em 18/11 às 03:47 UTC:** `tenant_product_save` diverge entre HML e produção. O root prepara alinhamento mínimo HML com captura/revisão das dependências; não transplantar automaticamente, não repinar nem relaxar produção para passar HML. Antes de certificar o fluxo sequencial integrado, recapturar HML alinhada e provar reautorização após esperas e antes de replay/retorno. Ver hashes e limites no REPORT.
 2. Capturar `pg_get_functiondef` completo UTF-8, MD5, OIDs, owners/ACLs, relações/constraints/policies/triggers e dependências do motor. Não usar o SQL histórico como captura exata.
 3. `python3 build.py` produz **somente candidato de laboratório** `source.sql.review`.
 4. Captura JSON: `{ref, functions:[{signature,definition,md5}]}`. Montagem `python3 build.py capture.json output-dir post-capture.json` exige ref explícito HML `vrlcdwmlytukrjezrrnf` ou produção `swzpzcwiasxmjutrmvkm`, roundtrip MD5 e fundamentos revisados. POST deve vir da recomposição descartável exata revisada, nunca de `post-pins.json` sintético. Divergência exige revisão, não repin automático.
