@@ -1,3 +1,4 @@
+import { TenantTargetTools } from "./catalog/TenantTargetTools";
 import { useEffect, useState } from "react";
 import { SOURCE_TYPE_LABEL, CONFIDENCE_LABEL } from "@/hooks/useCatalogSources";
 import { TARGET_TYPE_LABELS } from "@/lib/catalogo/documentaryLabels";
@@ -114,10 +115,11 @@ export function MicroFichaRelations({
       return result.data ?? [];
     },
   });
+  const [toolsPending, setToolsPending] = useState(false);
   const [draft, setDraft] = useState<MicroChild | null>(null);
   useEffect(() => {
-    onPending(kind, !!draft);
-  }, [kind, draft, onPending]);
+    onPending(kind, !!draft || toolsPending);
+  }, [kind, draft, toolsPending, onPending]);
   const [error, setError] = useState("");
   const begin = (row?: Record<string, unknown>) => {
     setError("");
@@ -167,6 +169,7 @@ export function MicroFichaRelations({
       className="space-y-3"
       aria-label={`${names[kind]} — vínculos canônicos`}
     >
+      {kind === "target" && editable && <TenantTargetTools entity="microrganismo" parentId={id} disabled={busy || !!draft} onPending={setToolsPending} onChoose={(row) => setDraft({kind:"target",id:null,updated_at:null,fields:{catalogo_alvo_id:row.id,alvo_nome:row.nome,alvo_tipo:row.tipo,descricao:row.descricao,prioridade:5,ativo:true}})} />}
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h3>{names[kind]}</h3>
         {editable && (

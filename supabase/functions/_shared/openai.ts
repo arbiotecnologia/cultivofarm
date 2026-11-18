@@ -51,3 +51,6 @@ export function responseText(response: any): string {
   if (!parts.length) throw new OpenAIError(502, 'openai_empty_response');
   return parts.join('\n');
 }
+
+
+

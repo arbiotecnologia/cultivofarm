@@ -107,13 +107,13 @@ export async function gerarFichaCampo(params: GerarFichaParams): Promise<GerarFi
 
     const data = await response.json().catch(() => null);
     const texto = typeof data?.texto === "string" ? data.texto.trim() : "";
-    if (!texto) {
+    if (!texto || data?.rascunho !== true || data?.versao_id != null) {
       throw new FichaIaError("A IA retornou uma resposta inválida. Tente novamente.", "resposta_invalida", true);
     }
     return {
       texto,
       justificativa: typeof data?.justificativa === "string" ? data.justificativa : null,
-      versaoId: typeof data?.versao_id === "string" ? data.versao_id : null,
+      versaoId: null,
     };
   } catch (e) {
     if (e instanceof FichaIaError) throw e;

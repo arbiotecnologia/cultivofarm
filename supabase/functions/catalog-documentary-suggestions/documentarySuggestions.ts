@@ -29,3 +29,5 @@ export function retainVerifiedSources(result: DocumentaryResult, urls: ReadonlyS
   const suggestions = result.suggestions.map(s => ({ ...s, sources: s.sources.filter(v => urls.has(v.url)) })).filter(s => keys.has(s.candidate_key) && s.sources.length > 0);
   return { candidates, suggestions };
 }
+
+

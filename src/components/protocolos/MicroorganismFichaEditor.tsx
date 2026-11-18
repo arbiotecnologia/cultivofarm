@@ -1,3 +1,4 @@
+import { ProfileFieldAI } from "./catalog/ProfileFieldAI";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MICRO_TYPE_LABELS } from "@/lib/catalogo/documentaryLabels";
 import { safeSourceUrl } from '@/lib/catalogo/safeSourceUrl';
@@ -166,6 +167,7 @@ export function MicroorganismFichaEditor({
     dirty.current = true;
     setDraftDirty(true);
     setValues((old) => ({ ...old, [field]: value }));
+    setEvidence((old) => old.filter((e) => e.field !== field || e.value === value));
   };
   const save = async () => {
     if (relationPending) {
@@ -244,6 +246,7 @@ export function MicroorganismFichaEditor({
     }
   };
   const field = (f: string, multiline = false) => (
+    multiline && ["descricao",...MICRO_CONTENT_FIELDS].includes(f) ? <ProfileFieldAI key={f} label={labels[f] ?? f} value={String(values[f] ?? "")} readOnly={!editable || busy} canGenerateAI={editable && !!item?.id} entidadeTipo="microrganismo" entidadeId={item?.id} campo={f} onChange={(v) => change(f,v)} /> : (
     <div key={f} className="min-w-0 space-y-1">
       <Label htmlFor={`micro-${f}`}>{labels[f] ?? f}</Label>
       {multiline ? (
@@ -263,7 +266,7 @@ export function MicroorganismFichaEditor({
         />
       )}
     </div>
-  );
+  ));
   return (
     <Dialog
       open
@@ -582,7 +585,7 @@ export function MicroorganismFichaEditor({
               </Button>
               {editable && (
                 <Button
-                  disabled={busy || documentBusy || !loaded}
+                  disabled={busy || documentBusy || relationPending || !loaded}
                   onClick={() => void save()}
                 >
                   {busy ? "Salvando…" : "Salvar ficha"}

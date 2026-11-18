@@ -7,7 +7,7 @@ import { z } from "npm:zod@3.25.76";
 import { DOCUMENTARY_FIELDS } from "./documentarySuggestions.ts";
 import { PROJECT_REF } from './binding.ts';
 
-const PROJECT_REFS = new Set(["swzpzcwiasxmjutrmvkm", "vrlcdwmlytukrjezrrnf"]);
+const PROJECT_REFS = new Set(["swzpzcwiasxmjutrmvkm"]);
 const MAX_BODY_BYTES = 24000;
 const SERVER_TIMEOUT_MS = 75000;
 async function boundedBody(req: Request, signal: AbortSignal) {
@@ -178,4 +178,6 @@ export async function handle(req: Request) {
   }
 }
 if (import.meta.main) Deno.serve(handle);
+
+
 

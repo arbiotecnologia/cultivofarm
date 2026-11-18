@@ -28,3 +28,5 @@ export async function researchProduct(identity: DocumentaryIdentity, fields: rea
   const raw = rawText.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
   return retainVerifiedSources(documentarySchema.parse(JSON.parse(raw)), urls);
 }
+
+

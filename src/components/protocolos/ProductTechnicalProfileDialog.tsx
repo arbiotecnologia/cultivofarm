@@ -185,6 +185,7 @@ function ProductFicha({
     if (lock.current || failure || !writable) return;
     setDirty(true);
     setForm((f) => ({ ...f, ...fields }));
+    setEvidence((old) => old.filter((e) => !(e.field in fields) || fields[e.field] === e.value));
   };
   const submit = async () => {
     if (
@@ -308,7 +309,8 @@ function ProductFicha({
                   value={form[field]}
                   readOnly={!writable || save.isPending || !!failure}
                   onChange={(value) => change({ [field]: value })}
-                  canGenerateAI={false}
+                  canGenerateAI={writable}
+                  entidadeTipo="produto" entidadeId={produto.id} campo={field}
                 />
               ))}
               {section === "uso" && (
