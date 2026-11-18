@@ -1,3 +1,10 @@
+## 18/11 — Ficha de produtos e auditoria IA
+- [x] Integrar conteúdo/fontes/dossiê na ficha e preservar metadata/composição sequenciais; 1044 regressões locais PASS.
+- [x] Preparar identidade, fontes por campo e delta canônico fechado; dois bundles IA explícitos HML/produção, Deno PASS.
+- [x] Navegador sintético desktop/mobile geração/aplicação/salvar/reabrir fontes PASS; 22 SQL locais PASS, build automático OK. REPORT no pacote.
+- [ ] Fechar captura exata/POST/ACL/trigger e roundtrip integral; schema do bundle e drafts do dossiê/vínculos exigem revisão adicional descrita no REPORT.
+- [ ] Auditoria independente e homologação HML pelo root; sem produção/publicação pelo agente.
+
 ## 18/11 — Documentos exclusivos do microrganismo
 - [x] Complemento final: quatro bundles revisáveis produção/HML, UTF-8/LF explícitos e roundtrip sem repinar; relato root 7 Auth/PDF reais incorporado; catálogo1036, PG34+17+42, Edge13 e quatro Deno check PASS. Evidências em release-final/REPORT.md.
 - [x] Integrar relato root HML26/IA real/browser; leitura feature/URLs/selects/cultura/pending corrigidos, delta17PG e catálogo1032 PASS; LF/binding determinístico sem reescrever baseline aplicado, relatório root-audit-delta/REPORT.md.

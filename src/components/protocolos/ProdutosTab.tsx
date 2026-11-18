@@ -230,6 +230,8 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
   const [fichaProduto, setFichaProduto] = useState<Produto | null>(null);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [contentDirty, setContentDirty] = useState(false);
+  const [productSection, setProductSection] = useState("geral");
   const savingRef = useRef(false);
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState("todos");
@@ -329,6 +331,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (contentDirty) { toast.error("Salve o conteúdo da ficha antes de salvar o produto."); return; }
     if (!editor.canEdit || !details.isSuccess || !productList.isSuccess) { toast.error("Catálogo indisponível para edição neste contexto."); return; }
     if (!retainedSave.current && (unitCapability.data !== true || (form.id && !unitRead.isSuccess) || !isProductUnit(unit))) {
       toast.error("Unidade do produto não confirmada. Escolha kg, g, mL ou L após carregar o cadastro."); return;
@@ -506,6 +509,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
 
   const handleEdit = (p: Produto) => {
     if (retainedSave.current || savingRef.current) return;
+    setContentDirty(false); setProductSection("geral");
     resetUnit();
     let dose = p.valor_dose_brl;
     let litro = p.valor_litro_brl;
@@ -744,7 +748,7 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
             <Button type="button" size="sm" variant="outline" onClick={resumePending}>Retomar reconciliação</Button>
           </div>}
           <Dialog open={open} onOpenChange={(v) => { if (!v && retainedSave.current) return; if (!v && (form.nome.trim() || form.id)) { setExitOpen(true); return; } setOpen(v); if(!v) { resetForm(); setPartialExport(null); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
-            <DialogContent aria-describedby={undefined} className="max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col">
+            <DialogContent aria-describedby={undefined} className="max-w-6xl max-h-[94dvh] overflow-y-auto flex flex-col min-w-0">
               <DialogHeader>
                 <DialogTitle>{form.id ? "Editar" : "Novo"} produto</DialogTitle>
               </DialogHeader>
@@ -764,16 +768,16 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
                   <Button type="button" variant="outline" size="sm" onClick={copyPartialDraft}>Copiar rascunho</Button>
                 </details>}
                 <fieldset disabled={saving || !!partialMessage} className="min-w-0">
-                <Tabs defaultValue="geral">
+                <Tabs value={productSection} onValueChange={value => { if (contentDirty) { toast.error("Salve o conteúdo da ficha antes de sair desta seção."); return; } setProductSection(value); }}>
                   <TabsList className="flex w-full h-auto flex-wrap mb-4 [&_button]:flex-1 [&_button]:whitespace-normal [&_button]:min-w-20">
                     <TabsTrigger value="geral">Identificação</TabsTrigger>
                     <TabsTrigger value="aplicacao">Aplicação & Custo</TabsTrigger>
                     <TabsTrigger value="composicao">Composição</TabsTrigger>
+                    {form.id && <TabsTrigger value="conteudo">Ficha técnica / IA / Fontes</TabsTrigger>}
                     {canConsultFiscal && form.id && <TabsTrigger value="fiscal">Fiscal</TabsTrigger>}
                   </TabsList>
 
                   <TabsContent value="geral" className="space-y-4">
-                    <DocumentaryAI identity={{ name: form.nome, manufacturer: "", registration: "", entity: "produto", id: form.id || undefined }} values={form} allowed={["descricao", "modo_acao", "funcao_completa", "modo_aplicacao"]} onApply={fields => setForm(f => ({ ...f, ...fields }))} />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Código (Referência)</Label>
@@ -1126,15 +1130,16 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
                       </div>
                     </div>
                   </TabsContent>
+                  {form.id && <TabsContent value="conteudo"><ProductTechnicalProfileDialog embedded open produto={items.find(p => p.id === form.id) ?? null} onDirtyChange={setContentDirty} onOpenChange={() => undefined} /></TabsContent>}
                   {canConsultFiscal && form.id && <TabsContent value="fiscal" className="space-y-4"><ProductFiscalGuide productId={form.id} displayName={form.nome} displayCodigo={form.codigo || null} /></TabsContent>}
                 </Tabs>
                 </fieldset>
 
-                <div className="sticky bottom-0 -mx-6 -mb-6 px-6 py-4 bg-background border-t flex justify-end items-center gap-4 z-10">
+                <div className="sticky bottom-0 -mx-6 -mb-6 px-6 py-4 bg-background border-t flex flex-wrap justify-end items-center gap-4 z-10">
                   {partialKind === "uncertain" && <Button type="button" variant="outline" disabled={saving} onClick={leavePendingUncertain}>Sair mantendo pendência</Button>}
                   {partialKind === "definitive"
                     ? <Button type="button" disabled={saving || reconciling} onClick={returnToEditAfterDefinitive}>{reconciling ? "Lendo versão atual..." : "Reconhecer e voltar à edição"}</Button>
-                    : <Button type="submit" disabled={saving}>{saving ? "Salvando..." : partialMessage ? "Reconciliar composição" : "Salvar Produto"}</Button>}
+                    : <Button type="submit" disabled={saving || contentDirty}>{saving ? "Salvando..." : partialMessage ? "Reconciliar composição" : "Salvar Produto"}</Button>}
                 </div>
               </form>
             </DialogContent>
@@ -1178,13 +1183,13 @@ export function ProdutosTab({ initialFamily = "todos", onCreated }: { initialFam
               const safra: string | null = pAny.safra_referencia ?? null;
               const observacoes: string | null = pAny.observacoes ?? null;
               return (
-              <TableRow key={p.id} className={`hover:bg-muted/50 ${!p.ativo ? "opacity-50" : ""}`} onClick={editor.canEdit && details.isSuccess ? () => handleEdit(p) : undefined}>
+              <TableRow key={p.id} className={`hover:bg-muted/50 ${!p.ativo ? "opacity-50" : ""}`}>
                 <TableCell>
                   {p.codigo && (
                     <div className="font-mono text-[10px] text-muted-foreground">{p.codigo}</div>
                   )}
                   <div className="font-medium flex items-center gap-2 flex-wrap">
-                    {p.nome}
+                    <Button variant="ghost" className="h-auto whitespace-normal text-left" onClick={() => editor.canEdit ? handleEdit(p) : setFichaProduto(p)}>{p.nome}</Button>
                     {!p.ativo && <Badge variant="outline" className="text-[9px] h-4">Inativo</Badge>}
 
                     <TenantHiddenBadge state={tenantVis.map?.get(p.id)} />

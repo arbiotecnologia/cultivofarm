@@ -1,0 +1,3 @@
+- Review-only additive product evidence delta; never apply hosted, publish or rewrite microorganism installers.
+- Product content evidence extends the exact pinned canonical root motor, never metadata/composition transactionality; private history and deny-only rollback preserve confirmed products.
+- Assembly requires exact UTF-8 catalog definitions and explicit HML/production binding; no automatic repinning or default environment.

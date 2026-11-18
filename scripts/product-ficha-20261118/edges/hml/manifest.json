@@ -1,0 +1,10 @@
+{
+  "ref": "vrlcdwmlytukrjezrrnf",
+  "files": {
+    "binding.ts": "200ef167d40945a4d721417690613c3477752c4a935b458ff06adcb0f939bfe2",
+    "documentarySuggestions.ts": "a720a87fa61de2452a99e317207b823d6eac7318711cd1675d190c46e91e61e4",
+    "generated/models.d.ts": "8f786e508c0b12b78a8c65d29e44e969c0587bcd5a3c758ed7d550dc8e8adbc7",
+    "index.ts": "1a3c9015a65b77931626ca17a79cc7775039d16cdb047e9bbbc697e360632df7",
+    "inference.ts": "ed016291c4a64f8c4d3a66a7b7f0b7cf88eec17b5cede8d277aa153e485ee2da"
+  }
+}

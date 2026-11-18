@@ -55,7 +55,10 @@ describe("contenção de escrita do catálogo global", () => {
   it("fichas não oferecem edição e micro removeu caminho B2B-only", () => {
     for (const f of ["ProductTechnicalProfileDialog", "MicroorganismTechnicalProfileDialog"]) {
       const s = read(`src/components/protocolos/${f}.tsx`);
-      expect(s).toMatch(/const canEditFull: boolean = TENANT_CAN_EDIT_GLOBAL_CATALOG;/);
+      if (f === "ProductTechnicalProfileDialog") {
+        expect(s).toContain("const writable = own && editor.canEdit;");
+        expect(s).toContain("produto.owner_organization_id === profile?.organization_id");
+      } else expect(s).toMatch(/const canEditFull: boolean = TENANT_CAN_EDIT_GLOBAL_CATALOG;/);
       expect(s).toMatch(/canApprove=\{false\}/);
       expect(s).not.toMatch(/rpc\("update_(microorganism|product)_b2b_description"/);
       expect(s).not.toMatch(/canEditB2BOnly/);

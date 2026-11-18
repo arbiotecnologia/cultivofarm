@@ -1,451 +1,122 @@
-import { TenantProfileLinks } from "./catalog/TenantProfileLinks";
-import { DraftExitConfirmation } from "@/components/catalogo/DraftExitConfirmation";
-import { TENANT_CAN_EDIT_GLOBAL_CATALOG } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useRef, useState } from "react";
-import { DocumentaryAI } from "./catalog/DocumentaryAI";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
-import { useProductProfile, useUpsertProductProfile } from "@/hooks/useProductProfile";
-import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
+import { useProductProfile, useUpsertProductProfile, useProductDocumentaryEvidence } from "@/hooks/useProductProfile";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { DraftExitConfirmation } from "@/components/catalogo/DraftExitConfirmation";
+import { DocumentaryAI } from "./catalog/DocumentaryAI";
+import { ProductEvidencePanel } from "./catalog/ProductEvidencePanel";
 import { ProductFormulaBenefits } from "./ProductFormulaBenefits";
-import { useLogCatalogAccess } from "@/hooks/useLogCatalogAccess";
-import { gerarPreviaBeneficioCombinado } from "@/lib/catalogo/beneficiosCombinados";
-import { formatDateTimeDisplay } from "@/lib/date-utils";
-import { supabase } from "@/integrations/supabase/client";
-import { Info, Loader2, Sparkles } from "lucide-react";
-import { ProfileStatusBanner } from "./catalog/ProfileStatusBanner";
+import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
+import { ProfileFieldAI } from "./catalog/ProfileFieldAI";
+import { ProfileLoadErrorState } from "./catalog/ProfileLoadErrorState";
 import { TargetsManager } from "./catalog/TargetsManager";
 import { CropsManager } from "./catalog/CropsManager";
 import { SourcesManager } from "./catalog/SourcesManager";
-import { ReturnToReviewButton } from "./catalog/ReturnToReviewButton";
-import { ApprovalChecklistDialog, ChecklistItem } from "./catalog/ApprovalChecklistDialog";
-import { ProfileField } from "./catalog/ProfileField";
-import { ProfileFieldAI } from "./catalog/ProfileFieldAI";
-import { ProfileLoadErrorState } from "./catalog/ProfileLoadErrorState";
-import {
-  buildProductFormDefaults,
-  emptyProductForm,
-  mapProductProfileToForm,
-  type ProductFormState,
-} from "@/lib/catalogo/fichaFormDefaults";
 import { VersoesHistoricoTab } from "./catalog/VersoesHistoricoTab";
-import { useEffectiveCatalogSources } from "@/hooks/useEffectiveCatalogSources";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ProductDossierManagement } from "@/components/fiscal/ProductDossierManagement";
+import { PRODUCT_DOCUMENTARY_FIELDS, productResearchIdentity } from "@/lib/catalogo/productDocumentary";
+import { buildProductFormDefaults, mapProductProfileToForm, type ProductFormState } from "@/lib/catalogo/fichaFormDefaults";
+import { DOCUMENTARY_LABELS } from "@/lib/catalogo/documentaryLabels";
+import type { DocumentaryEvidence } from "@/lib/catalogo/documentarySuggestions";
+import { useProductResearchDossier } from "@/hooks/useProductResearchDossier";
+import { toast } from "sonner";
 
 interface Produto {
-  id: string;
-  codigo: string | null;
-  nome: string;
-  tipo: string;
-  descricao?: string | null;
-  modo_acao?: string | null;
-  funcao_completa?: string | null;
-  b2b_enabled?: boolean;
-  owner_organization_id?: string | null;
+  id: string; codigo: string | null; nome: string; tipo: string;
+  descricao?: string | null; modo_acao?: string | null; funcao_completa?: string | null;
+  owner_organization_id?: string | null; b2b_enabled?: boolean;
 }
-
 interface Props {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  produto: Produto | null;
-  origem?: "protocolos" | "app_mobile";
+  open: boolean; onOpenChange(v: boolean): void; produto: Produto | null;
+  origem?: "protocolos" | "app_mobile"; embedded?: boolean; onDirtyChange?(dirty: boolean): void;
 }
+const groups = {
+  resumo: ["resumo_curto", "explicacao_tecnica"],
+  uso: ["indicacoes_uso", "janela_aplicacao", "cuidados_aplicacao", "compatibilidade", "beneficio_combinado"],
+  b2b: ["explicacao_produtor", "explicacao_b2b"],
+} as const;
 
-const ADMIN_ROLES = ["administrador", "gestor"];
-const TECH_ROLES = ["administrador", "gestor", "consultor_tecnico", "tecnico_agronomo"];
-const SOURCE_VIEW_ROLES = ["administrador", "gestor", "consultor_tecnico", "tecnico_agronomo", "gestor_comercial"];
-
-export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, origem = "protocolos" }: Props) {
-  const { role, profile } = useAuth();
+export function ProductTechnicalProfileDialog(props: Props) {
   const editor = useTenantCatalogEditor();
-  const tenantContent = editor.canEdit && produto?.owner_organization_id === profile?.organization_id && !!produto?.owner_organization_id;
-  // Contrato: catálogo global é somente consulta para perfis de empresa.
-  const canEditFull: boolean = TENANT_CAN_EDIT_GLOBAL_CATALOG;
-  const canSeeHistory = role ? TECH_ROLES.includes(role) : false;
-  const canSeeAudit = role ? ADMIN_ROLES.includes(role) : false;
-  const canSeeSources = role ? SOURCE_VIEW_ROLES.includes(role) : false;
-  const canEditSources = canEditFull;
-  const canDeleteSources = false;
-  const isAdminOrGestor = role ? ADMIN_ROLES.includes(role) : false;
-
-  const { data, isLoading, isError, isSuccess, isFetching, refetch } = useProductProfile(produto?.id);
-  const upsert = useUpsertProductProfile();
-  const log = useLogCatalogAccess();
-  const { hasSources } = useEffectiveCatalogSources("produto", produto?.id, data?.profile?.id);
-
+  if (!props.produto || !props.open) return null;
+  return <ProductFicha key={`${editor.scope}:${props.produto.id}`} {...props} produto={props.produto} />;
+}
+function ProductFicha({ open, onOpenChange, produto, embedded, onDirtyChange }: Props & { produto: Produto }) {
+  const { profile, roles = [] } = useAuth();
+  const editor = useTenantCatalogEditor();
+  const own = !!produto.owner_organization_id && produto.owner_organization_id === profile?.organization_id;
+  const writable = own && editor.canEdit;
+  const query = useProductProfile(produto.id);
+  const evidenceQuery = useProductDocumentaryEvidence(produto.id, own);
+  const dossier = useProductResearchDossier(produto.id, own && editor.ready);
+  const save = useUpsertProductProfile();
   const [form, setForm] = useState<ProductFormState>(() => buildProductFormDefaults(produto));
-  const dirty = useRef(false);
-  const observedProduct = useRef("");
-  const editForm = (value: ProductFormState | ((previous: ProductFormState) => ProductFormState)) => { dirty.current = true; setForm(value); };
-
-  const [previaLoading, setPreviaLoading] = useState(false);
-  const [auditLog, setAuditLog] = useState<any[]>([]);
-  const [confirmNoSourceOpen, setConfirmNoSourceOpen] = useState(false);
-  const [approvalOpen, setApprovalOpen] = useState(false);
-  const [exitOpen, setExitOpen] = useState(false);
-
+  const [evidence, setEvidence] = useState<DocumentaryEvidence[]>([]);
+  const [dirty, setDirty] = useState(false);
+  const [exit, setExit] = useState(false);
+  const observed = useRef<NonNullable<typeof query.data>["profile"]>(null);
+  const baseline = useRef<ProductFormState>(buildProductFormDefaults(produto));
+  const hydrated = useRef(false);
+  const lock = useRef(false);
+  const alive = useRef(true);
+  useEffect(() => () => { alive.current = false; }, []);
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
   useEffect(() => {
-    if (open && produto) log({ entidade_tipo: "produto", entidade_id: produto.id, origem });
-  }, [open, produto, log, origem]);
-
-  // CAT-09: Hydrate once per identity/item; refetch must not overwrite a dirty draft.
-  useEffect(() => {
-    const key = JSON.stringify([open, produto?.id, editor.scope]);
-    if (key !== observedProduct.current) { observedProduct.current = key; dirty.current = false; }
-    if (dirty.current) return;
-
-    if (isError) return;
-    if (!produto) {
-      setForm(emptyProductForm());
-      return;
-    }
-    if (isSuccess && data?.profile) {
-      setForm(mapProductProfileToForm(data.profile));
-      return;
-    }
-    setForm(buildProductFormDefaults(produto));
-  }, [open, produto?.id, produto, data?.profile, isError, isSuccess, editor.scope]);
-
-
-  useEffect(() => {
-    if (open && produto && canSeeAudit && data?.profile?.id) {
-      (supabase as any)
-        .from("catalog_technical_audit_logs")
-        .select("id, acao, usuario_id, created_at")
-        .eq("entidade_tipo", "ficha_produto")
-        .eq("entidade_id", data.profile.id)
-        .order("created_at", { ascending: false })
-        .limit(50)
-        .then(({ data }) => setAuditLog(data ?? []));
-    }
-  }, [open, produto, canSeeAudit, data?.profile?.id]);
-
-  if (!produto) return null;
-
-  const validateApproval = () => {
-    const missing: string[] = [];
-    if (!form.resumo_curto.trim()) missing.push("Resumo curto");
-    if (!form.explicacao_tecnica.trim()) missing.push("Explicação técnica");
-    if (!form.explicacao_produtor.trim()) missing.push("Linguagem para o produtor");
-    if (!form.beneficio_combinado.trim()) missing.push("Benefício combinado");
-    if (!form.cuidados_aplicacao.trim()) missing.push("Cuidados de aplicação");
-    return missing;
-  };
-
-
-  const handleSaveWithStatus = async (status: "rascunho" | "em_revisao" | "arquivado") => {
-    if (!canEditFull) return;
+    if (hydrated.current || !query.isSuccess || (own && !evidenceQuery.isSuccess)) return;
+    observed.current = query.data?.profile ?? null;
+    baseline.current = query.data?.profile ? mapProductProfileToForm(query.data.profile) : buildProductFormDefaults(produto);
+    setForm(baseline.current);
+    setEvidence((evidenceQuery.data ?? []) as DocumentaryEvidence[]);
+    hydrated.current = true;
+  }, [query.isSuccess, query.data, evidenceQuery.isSuccess, evidenceQuery.data, own, produto]);
+  const change = (fields: Record<string, string>) => { if (lock.current || !writable) return; setDirty(true); setForm(f => ({ ...f, ...fields })); };
+  const submit = async () => {
+    if (lock.current || !writable || !hydrated.current || query.isError || evidenceQuery.isError) return;
+    lock.current = true;
+    const current = editor.capture();
+    const snapshot = { ...form };
     try {
-      const payload: any = { produto_id: produto.id, ...form, status_validacao: status };
-      await upsert.mutateAsync(payload);
-      setForm((f) => ({ ...f, status_validacao: status }));
-      await refetch();
-      toast.success(
-        status === "rascunho" ? "Rascunho salvo" :
-        status === "em_revisao" ? "Enviado para revisão" :
-        "Ficha arquivada",
-      );
-    } catch (e: any) {
-      toast.error(e.message || "Erro ao salvar ficha");
-    }
+      const ack = await save.mutateAsync({ ...snapshot, produto_id: produto.id, observedProfile: observed.current,
+        documentaryEvidence: evidence.length || evidenceQuery.data?.length ? evidence : undefined, status_validacao: observed.current?.status_validacao ?? "rascunho" });
+      if (!alive.current || !current()) return;
+      observed.current = { ...observed.current, ...snapshot, produto_id: produto.id, id: ack.id, updated_at: ack.updated_at } as NonNullable<typeof observed.current>;
+      setDirty(false);
+      baseline.current = snapshot;
+      toast.success("Conteúdo e fontes salvos");
+    } catch (error) { if (alive.current && current()) toast.error(error instanceof Error ? error.message : "Salvamento não confirmado. Rascunho preservado."); }
+    finally { lock.current = false; }
   };
-
-  const gerarPrevia = async () => {
-    setPreviaLoading(true);
-    try {
-      const texto = await gerarPreviaBeneficioCombinado(produto.id);
-      setForm((f) => ({ ...f, beneficio_combinado: texto }));
-      toast.success("Prévia gerada — revise antes de salvar");
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setPreviaLoading(false);
-    }
-  };
-
-  const copyResumoB2B = async () => {
-    const linhas = [
-      `${produto.nome}${produto.codigo ? ` [${produto.codigo}]` : ""}`,
-      form.resumo_curto && `Resumo: ${form.resumo_curto}`,
-      form.explicacao_b2b && `B2B: ${form.explicacao_b2b}`,
-      form.beneficio_combinado && `Benefício combinado: ${form.beneficio_combinado}`,
-    ].filter(Boolean).join("\n");
-    await navigator.clipboard.writeText(linhas);
-    toast.success("Resumo B2B copiado");
-  };
-
-  const ehReadOnly = (_field: "b2b" | "full") => !(canEditFull || tenantContent);
-
-  return (
-    <>
-    <DraftExitConfirmation open={exitOpen} onOpenChange={setExitOpen} onLeave={() => { dirty.current = false; onOpenChange(false); }} />
-    <Dialog open={open} onOpenChange={v => { if (!v && dirty.current) { setExitOpen(true); return; } onOpenChange(v); }}>
-      <DialogContent className="max-w-3xl w-[95vw] max-h-[92vh] overflow-y-auto overflow-x-hidden [&_button]:min-h-11 [&_input]:min-h-11">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 flex-wrap break-words">
-            Ficha técnica — {produto.nome}
-            <TechnicalProfileStatusBadge status={data?.profile?.status_validacao ?? null} />
-            {produto.b2b_enabled && <Badge variant="outline" className="text-[10px]">B2B</Badge>}
-          </DialogTitle>
-          <DialogDescription className="break-words">
-            {produto.codigo && <span className="font-mono">{produto.codigo} · </span>}{produto.tipo}
-          </DialogDescription>
-        </DialogHeader>
-
-        {isError ? (
-          <ProfileLoadErrorState busy={isFetching} onRetry={() => { void refetch(); }} />
-        ) : isLoading ? (
-          <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
-        ) : (
-          <div className="space-y-3 min-w-0">
-          {tenantContent && <DocumentaryAI identity={{ name: produto.nome, manufacturer: "", registration: "", entity: "produto", id: produto.id }} values={{ ...form }} allowed={Object.keys(form).filter(k => k !== "status_validacao")} onApply={fields => editForm(f => ({ ...f, ...fields }))} />}
-          <ProfileStatusBanner
-            status={data?.profile?.status_validacao ?? null}
-            b2bEnabled={produto.b2b_enabled}
-            hasExplicacaoB2B={!!form.explicacao_b2b.trim()}
-            showInternalApprovalMarkers={isAdminOrGestor}
-          />
-          {tenantContent && <TenantProfileLinks key={editor.scope + produto.id} entity="produto" parent={produto.id} onDirty={() => { dirty.current = true; }} />}
-          <Tabs defaultValue="resumo" className="mt-2 min-w-0">
-            <TabsList className="flex flex-wrap h-auto w-full justify-start gap-1 p-1">
-              <TabsTrigger value="resumo" className="whitespace-nowrap px-2.5 py-1 text-xs">Resumo</TabsTrigger>
-              <TabsTrigger value="composicao" className="whitespace-nowrap px-2.5 py-1 text-xs">Composição</TabsTrigger>
-              <TabsTrigger value="beneficio" className="whitespace-nowrap px-2.5 py-1 text-xs">Benefício</TabsTrigger>
-              <TabsTrigger value="indic" className="whitespace-nowrap px-2.5 py-1 text-xs">Indicações</TabsTrigger>
-              <TabsTrigger value="alvos" className="whitespace-nowrap px-2.5 py-1 text-xs">Alvos</TabsTrigger>
-              <TabsTrigger value="culturas" className="whitespace-nowrap px-2.5 py-1 text-xs">Culturas</TabsTrigger>
-              <TabsTrigger value="produtor" className="whitespace-nowrap px-2.5 py-1 text-xs">Produtor</TabsTrigger>
-              <TabsTrigger value="b2b" className="whitespace-nowrap px-2.5 py-1 text-xs">B2B</TabsTrigger>
-              <TabsTrigger value="cuidados" className="whitespace-nowrap px-2.5 py-1 text-xs">Cuidados</TabsTrigger>
-              {canSeeSources && <TabsTrigger value="fontes" className="whitespace-nowrap px-2.5 py-1 text-xs">Fontes</TabsTrigger>}
-              {canSeeHistory && <TabsTrigger value="historico" className="whitespace-nowrap px-2.5 py-1 text-xs">Histórico</TabsTrigger>}
-              {canSeeAudit && <TabsTrigger value="auditoria" className="whitespace-nowrap px-2.5 py-1 text-xs">Auditoria</TabsTrigger>}
-            </TabsList>
-
-            <TabsContent value="resumo" className="space-y-3 pt-3 min-w-0">
-              <ProfileFieldAI label="Resumo curto" rows={4} value={form.resumo_curto} readOnly={ehReadOnly("full")} onChange={(v) => editForm({ ...form, resumo_curto: v })}
-                entidadeTipo="produto" entidadeId={produto.id} campo="resumo_curto" canGenerateAI={canEditFull} />
-              <ProfileFieldAI label="Explicação técnica" rows={5} value={form.explicacao_tecnica} readOnly={ehReadOnly("full")} onChange={(v) => editForm({ ...form, explicacao_tecnica: v })}
-                entidadeTipo="produto" entidadeId={produto.id} campo="explicacao_tecnica" canGenerateAI={canEditFull} />
-            </TabsContent>
-
-            <TabsContent value="composicao" className="pt-3">
-              <ProductFormulaBenefits composicao={data?.composicao ?? []} />
-            </TabsContent>
-
-            <TabsContent value="beneficio" className="space-y-2 pt-3">
-              <div className="flex items-center justify-between gap-2">
-                <Label className="text-xs">Benefício combinado oficial</Label>
-                {canEditFull && (
-                  <Button size="sm" variant="outline" onClick={gerarPrevia} disabled={previaLoading}>
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    {previaLoading ? "Gerando..." : "Gerar prévia com base na composição"}
-                  </Button>
-                )}
-              </div>
-              <Textarea rows={10} value={form.beneficio_combinado} readOnly={ehReadOnly("full")} onChange={(e) => editForm({ ...form, beneficio_combinado: e.target.value })} />
-              {!data?.profile?.beneficio_combinado && form.beneficio_combinado && (
-                <Alert className="border-amber-200 bg-amber-50">
-                  <Info className="h-4 w-4" />
-                  <AlertDescription className="text-xs">Prévia automática. Revise e aprove antes de publicar.</AlertDescription>
-                </Alert>
-              )}
-            </TabsContent>
-
-            <TabsContent value="indic" className="space-y-3 pt-3 min-w-0">
-              <ProfileFieldAI label="Indicações de uso" rows={5} value={form.indicacoes_uso} readOnly={ehReadOnly("full")} onChange={(v) => editForm({ ...form, indicacoes_uso: v })}
-                entidadeTipo="produto" entidadeId={produto.id} campo="indicacoes_uso" canGenerateAI={canEditFull} />
-              <ProfileFieldAI label="Janela de aplicação" rows={3} value={form.janela_aplicacao} readOnly={ehReadOnly("full")} onChange={(v) => editForm({ ...form, janela_aplicacao: v })}
-                entidadeTipo="produto" entidadeId={produto.id} campo="janela_aplicacao" canGenerateAI={canEditFull} />
-            </TabsContent>
-
-            <TabsContent value="alvos" className="space-y-2 pt-3">
-              <TargetsManager kind="produto" parentId={produto.id} canEdit={canEditFull} />
-            </TabsContent>
-
-            <TabsContent value="culturas" className="space-y-2 pt-3">
-              <CropsManager kind="produto" parentId={produto.id} canEdit={canEditFull} />
-            </TabsContent>
-
-            <TabsContent value="produtor" className="space-y-3 pt-3 min-w-0">
-              <ProfileFieldAI label="Linguagem para o produtor" rows={8} value={form.explicacao_produtor} readOnly={ehReadOnly("full")} onChange={(v) => editForm({ ...form, explicacao_produtor: v })}
-                entidadeTipo="produto" entidadeId={produto.id} campo="explicacao_produtor" canGenerateAI={canEditFull} />
-            </TabsContent>
-
-            <TabsContent value="b2b" className="space-y-3 pt-3 min-w-0">
-              <ProfileFieldAI label="Linguagem para parceiro B2B" rows={8} value={form.explicacao_b2b} readOnly={ehReadOnly("b2b")} onChange={(v) => editForm({ ...form, explicacao_b2b: v })}
-                entidadeTipo="produto" entidadeId={produto.id} campo="explicacao_b2b" canGenerateAI={canEditFull} />
-            </TabsContent>
-
-
-            <TabsContent value="cuidados" className="space-y-3 pt-3 min-w-0">
-              <ProfileFieldAI label="Cuidados na aplicação" rows={5} value={form.cuidados_aplicacao} readOnly={ehReadOnly("full")} onChange={(v) => editForm({ ...form, cuidados_aplicacao: v })}
-                entidadeTipo="produto" entidadeId={produto.id} campo="cuidados_aplicacao" canGenerateAI={canEditFull} />
-              <ProfileFieldAI label="Compatibilidade" rows={3} value={form.compatibilidade} readOnly={ehReadOnly("full")} onChange={(v) => editForm({ ...form, compatibilidade: v })}
-                entidadeTipo="produto" entidadeId={produto.id} campo="compatibilidade" canGenerateAI={canEditFull} />
-              <ProfileFieldAI label="Observações regulatórias" rows={3} value={form.observacoes_regulatorias} readOnly={ehReadOnly("full")} onChange={(v) => editForm({ ...form, observacoes_regulatorias: v })}
-                entidadeTipo="produto" entidadeId={produto.id} campo="observacoes_regulatorias" canGenerateAI={canEditFull} />
-            </TabsContent>
-
-            {canSeeSources && (
-              <TabsContent value="fontes" className="pt-3">
-                <SourcesManager
-                  entidadeTipo="produto"
-                  entidadeId={produto.id}
-                  canEdit={canEditSources}
-                  canDelete={canDeleteSources}
-                />
-              </TabsContent>
-            )}
-
-            {canSeeHistory && (
-              <TabsContent value="historico" className="pt-3">
-                <VersoesHistoricoTab entidadeTipo="produto" entidadeId={produto.id} canApprove={false} />
-              </TabsContent>
-            )}
-
-            {canSeeAudit && (
-              <TabsContent value="auditoria" className="pt-3">
-                <div className="space-y-1 max-h-72 overflow-y-auto text-xs">
-                  {auditLog.length === 0 && <p className="text-muted-foreground">Sem eventos.</p>}
-                  {auditLog.map((a) => (
-                    <div key={a.id} className="flex items-center justify-between border-b py-1">
-                      <span className="uppercase">{a.acao}</span>
-                      <span className="text-muted-foreground">{formatDateTimeDisplay(a.created_at)}</span>
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-            )}
-          </Tabs>
-          </div>
-        )}
-
-        <div className="flex flex-col gap-3 border-t pt-3 mt-2">
-          <div className="flex flex-wrap gap-2 justify-end">
-            <Button variant="outline" size="sm" onClick={copyResumoB2B}>Copiar resumo B2B</Button>
-            {!isError && isSuccess && tenantContent && <Button size="sm" disabled={upsert.isPending} onClick={async () => {
-              if (!produto) return;
-              const current = editor.capture();
-              try {
-                await upsert.mutateAsync({ produto_id: produto.id, ...form, status_validacao: data?.profile?.status_validacao ?? "rascunho" });
-                if (current()) { dirty.current = false; toast.success("Conteúdo da ficha salvo"); }
-              } catch (e) { if (current()) toast.error((e as Error).message); }
-            }}>Salvar conteúdo</Button>}
-            {!isError && canEditFull && data?.profile?.id && (
-              <ReturnToReviewButton kind="produto" profileId={data.profile.id} onDone={refetch} />
-            )}
-            {!isError && canEditFull && (
-              <>
-                <Button size="sm" variant="outline" disabled={upsert.isPending}
-                  onClick={() => handleSaveWithStatus("rascunho")}>
-                  Salvar rascunho
-                </Button>
-                <Button size="sm" variant="outline" disabled={upsert.isPending}
-                  onClick={() => handleSaveWithStatus("em_revisao")}>
-                  Enviar para revisão
-                </Button>
-                <Button size="sm" variant="outline" disabled={upsert.isPending}
-                  onClick={() => handleSaveWithStatus("arquivado")}>
-                  Arquivar
-                </Button>
-                <Button size="sm" disabled={upsert.isPending}
-                  onClick={() => {
-                    if (!data?.profile?.id) {
-                      toast.error("Salve a ficha como rascunho ou envie para revisão antes de aprovar.");
-                      return;
-                    }
-                    if (!data?.composicao || data.composicao.length === 0) {
-                      toast.error("Produto sem composição microbiológica. Cadastre a formulação antes de aprovar a ficha técnica.");
-                      return;
-                    }
-                    const missing = validateApproval();
-                    if (missing.length > 0) { toast.error("Preencha antes de aprovar: " + missing.join(", ")); return; }
-                    if (!hasSources && !isAdminOrGestor) {
-                      toast.error("Esta ficha não possui fonte técnica vinculada. Cadastre ao menos uma fonte antes da aprovação.");
-                      return;
-                    }
-                    if (!hasSources && isAdminOrGestor) { setConfirmNoSourceOpen(true); return; }
-                    setApprovalOpen(true);
-                  }}>
-                  Aprovar ficha
-                </Button>
-              </>
-            )}
-          </div>
-          <p className="text-[10px] leading-relaxed text-muted-foreground italic border-t pt-2">
-            As recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica conforme cultura, alvo, ambiente, histórico da área e manejo adotado.
-          </p>
-        </div>
-      </DialogContent>
-
-      <AlertDialog open={confirmNoSourceOpen} onOpenChange={setConfirmNoSourceOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Aprovar ficha sem fonte técnica?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ficha não possui fonte técnica vinculada. Recomenda-se cadastrar ao menos uma fonte antes da aprovação.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setConfirmNoSourceOpen(false);
-                setApprovalOpen(true);
-              }}
-            >
-              Continuar para checklist
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <ApprovalChecklistDialog
-        open={approvalOpen}
-        onOpenChange={setApprovalOpen}
-        kind="produto"
-        profileId={data?.profile?.id ?? null}
-        approvedWithoutSource={!hasSources}
-        items={[
-          { key: "resumo", label: "Resumo técnico revisado", required: true },
-          { key: "composicao", label: "Composição conferida (formulação)", required: true },
-          { key: "beneficio", label: "Benefício combinado revisado", required: true },
-          { key: "tecnica", label: "Explicação técnica revisada", required: true },
-          { key: "produtor", label: "Explicação para produtor revisada", required: true },
-          { key: "b2b", label: "Explicação B2B revisada", required: !!produto.b2b_enabled },
-          { key: "alvos", label: "Alvos revisados", required: true },
-          { key: "culturas", label: "Culturas revisadas", required: false },
-          hasSources
-            ? { key: "fontes", label: "Fontes revisadas", required: true }
-            : { key: "sem_fonte", label: "Estou ciente de que esta ficha será aprovada sem fonte técnica vinculada", required: true },
-          { key: "cuidados", label: "Cuidados revisados", required: true },
-        ] satisfies ChecklistItem[]}
-        onConfirm={async () => {
-          setForm((f) => ({ ...f, status_validacao: "aprovado" }));
-          await refetch();
-          onOpenChange(false);
-        }}
-      />
-    </Dialog>
-    </>
-  );
+  const content = <>
+    <header className="space-y-2"><h2 className="text-xl font-semibold break-words">{produto.nome}</h2><p className="text-muted-foreground">{produto.codigo ?? "Sem código"} · {produto.tipo}</p><TechnicalProfileStatusBadge status={query.data?.profile?.status_validacao ?? null} /></header>
+    {query.isError || evidenceQuery.isError ? <ProfileLoadErrorState busy={query.isFetching} onRetry={() => { void query.refetch(); void evidenceQuery.refetch(); }} /> : !hydrated.current ? <p role="status">Carregando ficha…</p> :
+      <Tabs defaultValue="resumo" className="min-w-0">
+        <TabsList className="flex flex-wrap h-auto justify-start gap-1 w-full">
+          <TabsTrigger value="resumo">Características técnicas</TabsTrigger><TabsTrigger value="composicao">Composição</TabsTrigger>
+          <TabsTrigger value="uso">Uso agronômico</TabsTrigger><TabsTrigger value="b2b">B2B</TabsTrigger>
+          <TabsTrigger value="ia">Conteúdo / IA</TabsTrigger><TabsTrigger value="fontes">Fontes e histórico</TabsTrigger>
+          {own && roles.some(r => ["administrador", "gestor", "financeiro"].includes(r)) && <TabsTrigger value="dossier">Dossiê regulatório</TabsTrigger>}
+        </TabsList>
+        {(Object.entries(groups) as [keyof typeof groups, readonly (keyof ProductFormState)[]][]).map(([section, fields]) =>
+          <TabsContent value={section} key={section} className="space-y-4">
+            {fields.map(field => <ProfileFieldAI key={field} label={field === "explicacao_b2b" ? "Linguagem para parceiro B2B" : DOCUMENTARY_LABELS[field] ?? field} value={form[field]} readOnly={!writable || save.isPending || save.isError} onChange={value => change({ [field]: value })} canGenerateAI={false} />)}
+            {section === "uso" && <><TargetsManager kind="produto" parentId={produto.id} canEdit={false} /><CropsManager kind="produto" parentId={produto.id} canEdit={false} /></>}
+          </TabsContent>)}
+        <TabsContent value="composicao"><ProductFormulaBenefits composicao={query.data?.composicao ?? []} /></TabsContent>
+        <TabsContent value="ia" className="space-y-3">
+          {dossier.isError && <p role="alert">Identificação documental indisponível. Não foi possível confirmar fabricante e registro.</p>}
+          {writable && <DocumentaryAI key={JSON.stringify(dossier.data)} disabled={save.isPending || save.isError || dossier.isLoading || dossier.isError} identity={productResearchIdentity(produto, dossier.data)} values={{ ...form }} allowed={PRODUCT_DOCUMENTARY_FIELDS} onApply={change} onEvidence={accepted => setEvidence(old => [...old.filter(e => !accepted.some(a => a.field === e.field)), ...accepted])} />}
+        </TabsContent>
+        <TabsContent value="fontes" className="space-y-5"><ProductEvidencePanel evidence={evidence} values={{ ...form }} /><SourcesManager entidadeTipo="produto" entidadeId={produto.id} canEdit={false} canDelete={false} /><VersoesHistoricoTab entidadeTipo="produto" entidadeId={produto.id} canApprove={false} /></TabsContent>
+        <TabsContent value="dossier"><ProductDossierManagement product={{ product_id: produto.id, nome: produto.nome, codigo: produto.codigo, ativo: true, organization_name: "", owner_organization_id: produto.owner_organization_id ?? "" }} /></TabsContent>
+      </Tabs>}
+    <footer className="sticky bottom-0 bg-background border-t py-3 flex flex-wrap justify-end gap-2">
+      {dirty && <Button type="button" variant="outline" disabled={save.isPending || save.isError} onClick={() => { setForm(baseline.current); setEvidence((evidenceQuery.data ?? []) as DocumentaryEvidence[]); setDirty(false); }}>Cancelar alterações do conteúdo</Button>}
+      {!embedded && <Button variant="outline" disabled={save.isPending} onClick={() => dirty ? setExit(true) : onOpenChange(false)}>Fechar</Button>}
+      {writable && <Button type="button" disabled={save.isPending || !hydrated.current || query.isError || evidenceQuery.isError} onClick={() => void submit()}>{save.isPending ? "Salvando…" : "Salvar conteúdo"}</Button>}
+    </footer>
+  </>;
+  return <><DraftExitConfirmation open={exit} onOpenChange={setExit} onLeave={() => onOpenChange(false)} />{embedded ? <section className="space-y-4 min-w-0">{content}</section> : <Dialog open={open} onOpenChange={value => { if (save.isPending) return; if (!value && dirty) setExit(true); else onOpenChange(value); }}><DialogContent aria-describedby={undefined} className="max-w-6xl max-h-[94dvh] overflow-y-auto min-w-0"><DialogHeader><DialogTitle>Ficha do produto</DialogTitle></DialogHeader>{content}</DialogContent></Dialog>}</>;
 }

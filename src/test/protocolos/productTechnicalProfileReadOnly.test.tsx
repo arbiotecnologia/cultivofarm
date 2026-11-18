@@ -7,7 +7,9 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ role: mocks.role }) }));
 vi.mock("@/hooks/useProductProfile", () => ({
   useProductProfile: () => ({ data: { profile: null, composicao: [] }, isLoading: false, isError: false, isSuccess: true, refetch: mocks.refetch }),
   useUpsertProductProfile: () => ({ mutateAsync: mocks.upsert, isPending: false }),
+  useProductDocumentaryEvidence: () => ({ data: [], isSuccess: true }),
 }));
+vi.mock("@/hooks/useProductResearchDossier", () => ({ useProductResearchDossier: () => ({ data: null }) }));
 vi.mock("@/hooks/useLogCatalogAccess", () => ({ useLogCatalogAccess: () => mocks.log }));
 vi.mock("@/hooks/useEffectiveCatalogSources", () => ({ useEffectiveCatalogSources: () => ({ hasSources: false }) }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: mocks.rpc } }));

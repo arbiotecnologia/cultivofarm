@@ -79,6 +79,10 @@ export function DocumentaryAI({
     setBusy(false);
   }, [fingerprint]);
   useEffect(() => () => controller.current?.abort(), []);
+  useEffect(() => {
+    setManufacturer(identity.manufacturer);
+    setRegistration(identity.registration);
+  }, [identity.id, identity.manufacturer, identity.registration]);
   if (!editor.canEdit) return null;
   const generate = async () => {
     if (disabled || busy || !identity.name.trim()) return;
@@ -139,7 +143,7 @@ export function DocumentaryAI({
                 ? "Limite de pesquisas atingido. Aguarde antes de tentar novamente."
                 : status === 402
                   ? "Créditos de IA indisponíveis."
-                  : "Pesquisa documental indisponível neste ambiente. O formulário foi preservado; verifique a implantação revisada ou o provedor.",
+                : "Pesquisa documental indisponível neste ambiente. O formulário foi preservado; verifique a implantação revisada ou o provedor.",
         );
       }
       const parsed = documentarySchema.safeParse(data);
@@ -147,6 +151,8 @@ export function DocumentaryAI({
         throw new Error(
           "A resposta não possui fontes verificáveis. Nenhum campo foi alterado.",
         );
+      if (parsed.data.suggestions.some(s => !fields.includes(s.field)))
+        throw new Error("A resposta inclui campos não solicitados. Nenhum campo foi alterado.");
       resultFence.current = current;
       setResult(parsed.data);
       setCandidate(

@@ -6,6 +6,8 @@ import { useScopedPortalQuery } from "./useScopedPortalQuery";
 import { useTenantCatalogEditor } from "./useTenantCatalogEditor";
 import { useStorageAccessScope } from "./useStorageAccessScope";
 import { useRef } from "react";
+import { productEvidenceSchema, matchingProductEvidence } from "@/lib/catalogo/productDocumentary";
+import type { DocumentaryEvidence } from "@/lib/catalogo/documentarySuggestions";
 
 export interface ProductProfile {
   id: string;
@@ -124,7 +126,7 @@ export function useUpsertProductProfile() {
   return useMutation({
     retry: false,
     onMutate: () => ({ current: editor.capture(), actorScope: actor.scope }),
-    mutationFn: async (payload: Partial<ProductProfile> & { produto_id: string }) => {
+    mutationFn: async (payload: Partial<ProductProfile> & { produto_id: string; documentaryEvidence?: DocumentaryEvidence[]; observedProfile?: { id: string; updated_at: string; status_validacao: string } | null }) => {
       const current = editor.capture();
       if (!editor.canEdit || !current()) throw new Error("catalog_context_unavailable");
       if (busy.current) throw new Error("Aguarde o salvamento em andamento.");
@@ -132,9 +134,9 @@ export function useUpsertProductProfile() {
       try {
       // Catálogo exclusivo por empresa: ficha técnica só pela RPC (empresa do pai no servidor, CAS, idempotência);
       // status/validação nunca vêm do formulário — aprovação segue o fluxo auditado próprio.
-      const { id: _id, updated_at: _u, status_validacao, validado_por: _vp, validado_em: _ve, created_at: _c, created_by: _cb, updated_by: _ub, ...fields } = payload as any;
+      const { documentaryEvidence, observedProfile, id: _id, updated_at: _u, status_validacao, validado_por: _vp, validado_em: _ve, created_at: _c, created_by: _cb, updated_by: _ub, ...fields } = payload as any;
       // versão OBSERVADA na leitura montada (CAS); nunca uma releitura no momento do envio
-      const observed = (qc.getQueriesData({ queryKey: ["product-profile", payload.produto_id], predicate: q => q.queryKey.at(-2) === actor.scope })[0]?.[1] as any)?.profile ?? null;
+      const observed = observedProfile !== undefined ? observedProfile : (qc.getQueriesData({ queryKey: ["product-profile", payload.produto_id], predicate: q => q.queryKey.at(-2) === actor.scope })[0]?.[1] as any)?.profile ?? null;
       const id = observed?.id ?? null;
       const updated_at = observed?.updated_at ?? null;
       const currentStatus = observed?.status_validacao ?? "rascunho";
@@ -142,6 +144,7 @@ export function useUpsertProductProfile() {
         throw new Error("Mudança de status da ficha ainda não está disponível no catálogo por empresa; o conteúdo não foi salvo.");
       }
       if (id) delete fields.produto_id;
+      if (documentaryEvidence !== undefined) fields.documentary_evidence = matchingProductEvidence(documentaryEvidence, fields, payload.produto_id);
       const sig = JSON.stringify([editor.scope, id, fields, updated_at]);
       if (attempt.current && attempt.current.sig !== sig) throw new Error("Tentativa inconclusiva; rascunho preservado, não altere a intenção pendente.");
       if (attempt.current?.sig !== sig) attempt.current = { sig, key: crypto.randomUUID() };
@@ -153,7 +156,20 @@ export function useUpsertProductProfile() {
     },
     onSuccess: (_d, v, context) => {
       if (!context?.current()) return;
-      return qc.invalidateQueries({ predicate: q => ["product-profile", "tenant-product-details", "catalogo-tecnico"].includes(String(q.queryKey[0])) && q.queryKey.at(-2) === context.actorScope });
+      return qc.invalidateQueries({ predicate: q => ["product-profile", "product-documentary-evidence", "tenant-product-details", "catalogo-tecnico"].includes(String(q.queryKey[0])) && q.queryKey.at(-2) === context.actorScope });
+    },
+  });
+}
+
+/** Additive read: only an exact pre-install absence means no documentary extension. */
+export function useProductDocumentaryEvidence(productId: string | undefined, enabled: boolean) {
+  return useScopedPortalQuery({
+    queryKey: ["product-documentary-evidence", productId], enabled: enabled && !!productId, retry: false,
+    queryFn: async signal => {
+      const { data, error } = await (supabase as any).rpc("tenant_product_documentary_read_v1", { p_product_id: productId }).abortSignal(signal);
+      if (error?.code === "PGRST202" && error.message?.includes("tenant_product_documentary_read_v1")) return [];
+      if (error) throw error;
+      return productEvidenceSchema.parse(data);
     },
   });
 }
