@@ -1,5 +1,5 @@
 BEGIN;
 UPDATE platform_private.micro_ficha_gate_v1 SET enabled=false WHERE singleton=true;
-REVOKE ALL ON FUNCTION public.tenant_microorganism_ficha_save_v1(uuid,timestamptz,timestamptz,jsonb,jsonb,uuid),public.tenant_catalog_documentary_capability_v1(text,uuid) FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION public.tenant_microorganism_ficha_save_v1(uuid,timestamptz,timestamptz,jsonb,jsonb,uuid),public.tenant_catalog_documentary_capability_v1(text,uuid),public.tenant_catalog_documentary_reserve_v1(text,uuid),public.tenant_catalog_documentary_finish_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
 -- Keep supplementary data, sources, receipts and scoped reader. Do not erase history or revert catalog edits.
 COMMIT;

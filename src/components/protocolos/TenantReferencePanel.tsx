@@ -101,7 +101,7 @@ export function TenantReferencePanel({ root }: { root: ReferenceRoot }) {
         {root === "microrganismos" && <Button variant="outline" onClick={() => setDialog({ item: r })}>Abrir ficha</Button>}
         {root === "culturas" && editor.canEdit && r.owner_organization_id === profile?.organization_id && !!r.owner_organization_id && <Button variant="outline" aria-label={`Editar ${r.nome}`} onClick={() => setDialog({ item: r })}><Pencil className="h-4 w-4" /></Button>}</li>)}{rows.length === 0 && <li className="py-8 text-muted-foreground">Nenhum registro encontrado.</li>}</ul>}
     {dialog && <TenantReferenceDialog key={editor.scope} root={root} item={dialog.item} onClose={() => setDialog(undefined)} onSaved={() => {
-      setDialog(undefined); void qc.invalidateQueries({ queryKey: ["tenant-reference", root] }); void qc.invalidateQueries({ queryKey: ["tenant-product-details"] });
+      setDialog(undefined); void query.refetch();
     }} />}
   </section>;
 }

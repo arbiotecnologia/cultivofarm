@@ -1,5 +1,5 @@
 -- Separate owner/auditor decision after PRE/POST, local and hosted authority review. NOT EXECUTED.
 BEGIN;
-GRANT EXECUTE ON FUNCTION public.tenant_microorganism_ficha_read_v1(uuid),public.tenant_microorganism_ficha_save_v1(uuid,timestamptz,timestamptz,jsonb,jsonb,uuid),public.tenant_catalog_documentary_capability_v1(text,uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.tenant_microorganism_ficha_read_v1(uuid),public.tenant_microorganism_ficha_save_v1(uuid,timestamptz,timestamptz,jsonb,jsonb,uuid),public.tenant_catalog_documentary_capability_v1(text,uuid),public.tenant_catalog_documentary_reserve_v1(text,uuid),public.tenant_catalog_documentary_finish_v1(uuid) TO authenticated;
 UPDATE platform_private.micro_ficha_gate_v1 SET enabled=true WHERE singleton=true;
 COMMIT;

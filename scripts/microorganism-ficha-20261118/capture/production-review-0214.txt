@@ -1,0 +1,353 @@
+[map[catalog_metadata:map[config:<nil> constraints:[map[definition:FOREIGN KEY (owner_organization_id) REFERENCES organizations(id) name:microrganismos_owner_organization_id_fkey table:microrganismos] map[definition:PRIMARY KEY (id) name:microrganismos_pkey table:microrganismos] map[definition:FOREIGN KEY (product_id) REFERENCES produtos(id) ON UPDATE CASCADE ON DELETE RESTRICT name:microrganismos_product_id_fkey table:microrganismos] map[definition:CHECK ((nivel_confianca = ANY (ARRAY['alto'::text, 'medio'::text, 'baixo'::text]))) name:catalog_sources_confianca_chk table:catalog_technical_sources] map[definition:CHECK ((entidade_tipo = ANY (ARRAY['microrganismo'::text, 'produto'::text, 'ficha_microrganismo'::text, 'ficha_produto'::text]))) name:catalog_sources_entidade_tipo_chk table:catalog_technical_sources] map[definition:CHECK ((fonte_tipo = ANY (ARRAY['artigo_cientifico'::text, 'revisao_cientifica'::text, 'orgao_oficial'::text, 'embrapa'::text, 'universidade'::text, 'fabricante'::text, 'patente'::text, 'boletim_tecnico'::text, 'outro'::text]))) name:catalog_sources_fonte_tipo_chk table:catalog_technical_sources] map[definition:PRIMARY KEY (id) name:catalog_technical_sources_pkey table:catalog_technical_sources] map[definition:FOREIGN KEY (cultura_id) REFERENCES culturas(id) ON DELETE SET NULL name:microorganism_crop_recommendations_cultura_id_fkey table:microorganism_crop_recommendations] map[definition:FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE CASCADE name:microorganism_crop_recommendations_microrganismo_id_fkey table:microorganism_crop_recommendations] map[definition:PRIMARY KEY (id) name:microorganism_crop_recommendations_pkey table:microorganism_crop_recommendations] map[definition:CHECK ((alvo_tipo = ANY (ARRAY['praga'::text, 'doenca'::text, 'nematoide'::text, 'nutricao'::text, 'solo'::text, 'estresse'::text, 'crescimento'::text]))) name:microorganism_targets_alvo_tipo_check table:microorganism_targets] map[definition:FOREIGN KEY (catalogo_alvo_id) REFERENCES catalogo_alvos(id) ON DELETE SET NULL name:microorganism_targets_catalogo_alvo_id_fkey table:microorganism_targets] map[definition:FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE CASCADE name:microorganism_targets_microrganismo_id_fkey table:microorganism_targets] map[definition:PRIMARY KEY (id) name:microorganism_targets_pkey table:microorganism_targets]] functions:[map[acl:[postgres=X/postgres] definition:CREATE OR REPLACE FUNCTION platform_private.catalog_tenant_actor(p_mode text)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_claims jsonb := NULLIF(current_setting('request.jwt.claims', true), '')::jsonb;
+  v_org uuid;
+BEGIN
+  IF v_uid IS NULL OR v_claims IS NULL OR v_claims->>'role' IS DISTINCT FROM 'authenticated'
+     OR (v_claims->>'sub') IS DISTINCT FROM v_uid::text
+     OR NULLIF(v_claims->>'exp','') IS NULL OR (v_claims->>'exp') !~ '^[0-9]{1,12}$'
+     OR to_timestamp((v_claims->>'exp')::bigint) <= now()
+     OR (NULLIF(v_claims->>'iat','') IS NOT NULL AND ((v_claims->>'iat') !~ '^[0-9]{1,12}$'
+         OR to_timestamp((v_claims->>'iat')::bigint) > now() + interval '60 seconds')) THEN
+    RAISE EXCEPTION 'catalog_visibility_auth_required' USING ERRCODE='42501';
+  END IF;
+  IF public.is_platform_superadmin(v_uid) THEN
+    RAISE EXCEPTION 'catalog_visibility_platform_actor_denied' USING ERRCODE='42501';
+  END IF;
+  v_org := platform_private.h15_actor_organization();
+  IF v_org IS NULL OR NOT EXISTS (SELECT 1 FROM public.organizations o WHERE o.id=v_org AND o.ativo IS TRUE AND o.status='ativa') THEN
+    RAISE EXCEPTION 'catalog_visibility_tenant_unavailable' USING ERRCODE='42501';
+  END IF;
+  IF p_mode IN ('mutate','read_catalog','read_management') AND NOT public._saas_user_has_feature(v_uid, 'catalogo_precos') THEN
+    RAISE EXCEPTION 'catalog_visibility_feature_unavailable' USING ERRCODE='42501';
+  END IF;
+  IF p_mode='mutate' THEN
+    IF NOT (platform_private.has_role(v_uid,'administrador'::public.app_role) OR platform_private.has_role(v_uid,'gestor'::public.app_role)) THEN
+      RAISE EXCEPTION 'catalog_visibility_role_denied' USING ERRCODE='42501'; END IF;
+  ELSIF p_mode='read_catalog' THEN
+    IF NOT public.can_view_catalog_internal(v_uid) THEN
+      RAISE EXCEPTION 'catalog_visibility_role_denied' USING ERRCODE='42501'; END IF;
+  ELSIF p_mode NOT IN ('read_management','read_selection_cultura','read_prefs') OR p_mode IS NULL THEN
+    RAISE EXCEPTION 'catalog_visibility_mode_invalid' USING ERRCODE='22023';
+  END IF;
+  RETURN v_org;
+END; $function$
+ md5:5e0ce9cc9122f1c21d76e29a13de8b59 signature:platform_private.catalog_tenant_actor(text)] map[acl:[postgres=X/postgres] definition:CREATE OR REPLACE FUNCTION platform_private.tenant_catalog_ref_owner(p_tbl text, p_id uuid)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v uuid;
+BEGIN
+  IF p_tbl NOT IN ('produtos','microrganismos','culturas') THEN RAISE EXCEPTION 'tenant_catalog_ref_table' USING ERRCODE='22023'; END IF;
+  EXECUTE format('SELECT owner_organization_id FROM public.%I WHERE id = $1 FOR SHARE', p_tbl) INTO v USING p_id;
+  RETURN v;
+END $function$
+ md5:9e2a23293124f7953b2d9b63d46a1890 signature:platform_private.tenant_catalog_ref_owner(text,uuid)] map[acl:[postgres=X/postgres] definition:CREATE OR REPLACE FUNCTION platform_private.tenant_catalog_receipt(p_org uuid, p_key uuid, p_hash text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v platform_private.tenant_catalog_root_receipts%ROWTYPE;
+BEGIN
+  IF p_key IS NULL THEN RAISE EXCEPTION 'tenant_catalog_key_required' USING ERRCODE='22023'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended(concat_ws(':','tcr',auth.uid(),p_org,p_key),0));
+  SELECT * INTO v FROM platform_private.tenant_catalog_root_receipts WHERE actor_id=auth.uid() AND organization_id=p_org AND idempotency_key=[REDACTED]
+  IF NOT FOUND THEN RETURN NULL; END IF;
+  IF v.payload_hash <> p_hash THEN RAISE EXCEPTION 'tenant_catalog_idempotency_conflict' USING ERRCODE='PT409'; END IF;
+  RETURN v.result || jsonb_build_object('replayed', true);
+END $function$
+ md5:e0215d187cf055064e05c76a13dd55d4 signature:platform_private.tenant_catalog_receipt(uuid,uuid,text)]] triggers:[map[body:CREATE OR REPLACE FUNCTION platform_private.catalog_owner_immutable()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+BEGIN
+  IF NEW.owner_organization_id IS DISTINCT FROM OLD.owner_organization_id OR NEW.id IS DISTINCT FROM OLD.id THEN
+    RAISE EXCEPTION 'tenant_catalog_owner_immutable' USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $function$
+ definition:CREATE TRIGGER a00_microrganismos_owner_immutable BEFORE UPDATE ON public.microrganismos FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_owner_immutable() function:platform_private.catalog_owner_immutable() md5:4963349746d87776a52a9c1f234ba5b5 name:a00_microrganismos_owner_immutable table:microrganismos] map[body:CREATE OR REPLACE FUNCTION public.set_codigo_microrganismo()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE
+  v_prefixo text;
+BEGIN
+  IF NEW.owner_organization_id IS NULL THEN
+    RETURN NEW;  -- sem dono não há sequência; RLS (WITH CHECK) / NOT NULL rejeitam a linha — o gerador não autoriza
+  END IF;
+  IF NEW.codigo IS NULL OR btrim(NEW.codigo) = '' THEN
+    v_prefixo := public.prefixo_para_microrganismo(NEW.tipo::text);
+    IF v_prefixo IS NULL THEN
+      RAISE EXCEPTION 'Tipo de microrganismo sem prefixo definido: %', NEW.tipo;
+    END IF;
+    NEW.codigo := platform_private.tenant_proximo_codigo(NEW.owner_organization_id, v_prefixo, 'microrganismos');
+  ELSE
+    NEW.codigo := btrim(NEW.codigo);
+  END IF;
+  RETURN NEW;
+END;
+$function$
+ definition:CREATE TRIGGER trg_set_codigo_micro_ins BEFORE INSERT ON public.microrganismos FOR EACH ROW EXECUTE FUNCTION set_codigo_microrganismo() function:set_codigo_microrganismo() md5:83ce829faa1f08971c3e7264e0f89137 name:trg_set_codigo_micro_ins table:microrganismos] map[body:CREATE OR REPLACE FUNCTION public.set_codigo_microrganismo()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE
+  v_prefixo text;
+BEGIN
+  IF NEW.owner_organization_id IS NULL THEN
+    RETURN NEW;  -- sem dono não há sequência; RLS (WITH CHECK) / NOT NULL rejeitam a linha — o gerador não autoriza
+  END IF;
+  IF NEW.codigo IS NULL OR btrim(NEW.codigo) = '' THEN
+    v_prefixo := public.prefixo_para_microrganismo(NEW.tipo::text);
+    IF v_prefixo IS NULL THEN
+      RAISE EXCEPTION 'Tipo de microrganismo sem prefixo definido: %', NEW.tipo;
+    END IF;
+    NEW.codigo := platform_private.tenant_proximo_codigo(NEW.owner_organization_id, v_prefixo, 'microrganismos');
+  ELSE
+    NEW.codigo := btrim(NEW.codigo);
+  END IF;
+  RETURN NEW;
+END;
+$function$
+ definition:CREATE TRIGGER trg_set_codigo_micro_upd BEFORE UPDATE OF codigo ON public.microrganismos FOR EACH ROW EXECUTE FUNCTION set_codigo_microrganismo() function:set_codigo_microrganismo() md5:83ce829faa1f08971c3e7264e0f89137 name:trg_set_codigo_micro_upd table:microrganismos] map[body:CREATE OR REPLACE FUNCTION public.sync_microorganism_pricing()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  dose_changed boolean := false;
+  litro_changed boolean := false;
+BEGIN
+  IF COALESCE(current_setting('arbio.catalogo_sync', true), 'off') = 'on' THEN
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.valor_dose_brl IS NOT NULL AND NEW.valor_litro_brl IS NULL THEN
+      NEW.valor_litro_brl := NEW.valor_dose_brl * 10;
+    ELSIF NEW.valor_litro_brl IS NOT NULL AND NEW.valor_dose_brl IS NULL THEN
+      NEW.valor_dose_brl := NEW.valor_litro_brl / 10;
+    ELSIF NEW.valor_dose_brl IS NOT NULL AND NEW.valor_litro_brl IS NOT NULL THEN
+      IF NEW.valor_litro_brl <> NEW.valor_dose_brl * 10 THEN
+        NEW.valor_litro_brl := NEW.valor_dose_brl * 10;
+      END IF;
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  dose_changed := NEW.valor_dose_brl IS DISTINCT FROM OLD.valor_dose_brl;
+  litro_changed := NEW.valor_litro_brl IS DISTINCT FROM OLD.valor_litro_brl;
+
+  IF dose_changed AND NOT litro_changed THEN
+    NEW.valor_litro_brl := CASE WHEN NEW.valor_dose_brl IS NULL THEN NULL ELSE NEW.valor_dose_brl * 10 END;
+  ELSIF litro_changed AND NOT dose_changed THEN
+    NEW.valor_dose_brl := CASE WHEN NEW.valor_litro_brl IS NULL THEN NULL ELSE NEW.valor_litro_brl / 10 END;
+  ELSIF dose_changed AND litro_changed THEN
+    NEW.valor_litro_brl := CASE WHEN NEW.valor_dose_brl IS NULL THEN NULL ELSE NEW.valor_dose_brl * 10 END;
+  END IF;
+
+  RETURN NEW;
+END;
+$function$
+ definition:CREATE TRIGGER trg_sync_microorganism_pricing BEFORE INSERT OR UPDATE ON public.microrganismos FOR EACH ROW EXECUTE FUNCTION sync_microorganism_pricing() function:sync_microorganism_pricing() md5:bc44c7f7e2b0bd488a62cceffad36645 name:trg_sync_microorganism_pricing table:microrganismos] map[body:CREATE OR REPLACE FUNCTION public.trg_mestre_guard_preco_canonico()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_litro numeric;
+  v_tiers integer;
+BEGIN
+  IF COALESCE(current_setting('arbio.catalogo_sync', true), 'off') = 'on' THEN
+    RETURN NEW;
+  END IF;
+
+  IF TG_TABLE_NAME = 'produtos' THEN
+    SELECT litro, tiers INTO v_litro, v_tiers FROM public.fn_catalogo_litro_canonico(NEW.id, NULL);
+    IF COALESCE(v_tiers,0) = 0 THEN RETURN NEW; END IF;
+    IF v_tiers = 1 AND COALESCE(v_litro,0) > 0 THEN
+      NEW.valor_litro_brl := v_litro;
+      NEW.valor_dose_brl  := round(v_litro / 10.0, 2);
+      NEW.valor_ha_brl    := CASE WHEN COALESCE(NEW.dose_ml_ha,0) > 0
+                                  THEN round(v_litro * (NEW.dose_ml_ha / 1000.0), 2) END;
+    ELSE
+      NEW.valor_litro_brl := NULL; NEW.valor_dose_brl := NULL; NEW.valor_ha_brl := NULL;
+    END IF;
+  ELSE
+    SELECT litro, tiers INTO v_litro, v_tiers FROM public.fn_catalogo_litro_canonico(NULL, NEW.id);
+    IF COALESCE(v_tiers,0) = 0 THEN RETURN NEW; END IF;
+    IF v_tiers = 1 AND COALESCE(v_litro,0) > 0 THEN
+      NEW.valor_litro_brl := v_litro;
+      NEW.valor_dose_brl  := round(v_litro / 10.0, 2);
+    ELSE
+      NEW.valor_litro_brl := NULL; NEW.valor_dose_brl := NULL;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END
+$function$
+ definition:CREATE TRIGGER trg_zz_microrganismos_guard_preco BEFORE INSERT OR UPDATE ON public.microrganismos FOR EACH ROW EXECUTE FUNCTION trg_mestre_guard_preco_canonico() function:trg_mestre_guard_preco_canonico() md5:598e4a9e1d0b7347bb719c5b04360b69 name:trg_zz_microrganismos_guard_preco table:microrganismos] map[body:CREATE OR REPLACE FUNCTION platform_private.catalog_touch_version()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+BEGIN
+  NEW.updated_at := GREATEST(pg_catalog.clock_timestamp(), OLD.updated_at + interval '1 microsecond');
+  RETURN NEW;
+END;
+$function$
+ definition:CREATE TRIGGER trg_zzz_microrganismos_touch_version BEFORE UPDATE ON public.microrganismos FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_touch_version() function:platform_private.catalog_touch_version() md5:37728459aa7afb365686338c4aaa0d57 name:trg_zzz_microrganismos_touch_version table:microrganismos] map[body:CREATE OR REPLACE FUNCTION public.log_catalog_change()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_entidade text;
+  v_id uuid;
+BEGIN
+  v_entidade := CASE TG_TABLE_NAME
+    WHEN 'microorganism_technical_profiles' THEN 'ficha_microrganismo'
+    WHEN 'product_technical_profiles' THEN 'ficha_produto'
+    WHEN 'microorganism_targets' THEN 'alvo_microrganismo'
+    WHEN 'product_target_recommendations' THEN 'alvo_produto'
+    WHEN 'microorganism_crop_recommendations' THEN 'cultura_microrganismo'
+    WHEN 'product_crop_recommendations' THEN 'cultura_produto'
+    WHEN 'catalog_technical_sources' THEN 'fonte_tecnica'
+    ELSE TG_TABLE_NAME
+  END;
+  IF TG_OP = 'DELETE' THEN
+    v_id := OLD.id;
+    INSERT INTO public.catalog_technical_audit_logs(entidade_tipo, entidade_id, acao, dados_anteriores, dados_novos, usuario_id)
+    VALUES (v_entidade, v_id, 'delete', to_jsonb(OLD), NULL, auth.uid());
+    RETURN OLD;
+  ELSIF TG_OP = 'UPDATE' THEN
+    v_id := NEW.id;
+    INSERT INTO public.catalog_technical_audit_logs(entidade_tipo, entidade_id, acao, dados_anteriores, dados_novos, usuario_id)
+    VALUES (v_entidade, v_id, 'update', to_jsonb(OLD), to_jsonb(NEW), auth.uid());
+    RETURN NEW;
+  ELSE
+    v_id := NEW.id;
+    INSERT INTO public.catalog_technical_audit_logs(entidade_tipo, entidade_id, acao, dados_anteriores, dados_novos, usuario_id)
+    VALUES (v_entidade, v_id, 'insert', NULL, to_jsonb(NEW), auth.uid());
+    RETURN NEW;
+  END IF;
+END;
+$function$
+ definition:CREATE TRIGGER trg_audit_catalog_sources AFTER INSERT OR DELETE OR UPDATE ON public.catalog_technical_sources FOR EACH ROW EXECUTE FUNCTION log_catalog_change() function:log_catalog_change() md5:b4099f0d780e8b7af56356d6dea0e6fe name:trg_audit_catalog_sources table:catalog_technical_sources] map[body:CREATE OR REPLACE FUNCTION public.catalog_sources_set_source_key()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_ref text;
+BEGIN
+  v_ref := coalesce(NEW.fonte_url, NEW.fonte_titulo, '');
+  v_ref := regexp_replace(trim(lower(v_ref)), '\s+', ' ', 'g');
+  NEW.source_key := lower(md5(
+    trim(lower(coalesce(NEW.entidade_tipo, ''))) || ':' ||
+    trim(lower(coalesce(NEW.entidade_id::text, ''))) || ':' ||
+    v_ref
+  ));
+  RETURN NEW;
+END;
+$function$
+ definition:CREATE TRIGGER trg_catalog_sources_source_key BEFORE INSERT OR UPDATE ON public.catalog_technical_sources FOR EACH ROW EXECUTE FUNCTION catalog_sources_set_source_key() function:catalog_sources_set_source_key() md5:6bc20797464e0ef2c95140c69ec46338 name:trg_catalog_sources_source_key table:catalog_technical_sources] map[body:CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $function$
+ definition:CREATE TRIGGER trg_catalog_sources_updated_at BEFORE UPDATE ON public.catalog_technical_sources FOR EACH ROW EXECUTE FUNCTION update_updated_at_column() function:update_updated_at_column() md5:b1930ed5bca3be839f783c6202ab8147 name:trg_catalog_sources_updated_at table:catalog_technical_sources] map[body:CREATE OR REPLACE FUNCTION public.log_catalog_change()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_entidade text;
+  v_id uuid;
+BEGIN
+  v_entidade := CASE TG_TABLE_NAME
+    WHEN 'microorganism_technical_profiles' THEN 'ficha_microrganismo'
+    WHEN 'product_technical_profiles' THEN 'ficha_produto'
+    WHEN 'microorganism_targets' THEN 'alvo_microrganismo'
+    WHEN 'product_target_recommendations' THEN 'alvo_produto'
+    WHEN 'microorganism_crop_recommendations' THEN 'cultura_microrganismo'
+    WHEN 'product_crop_recommendations' THEN 'cultura_produto'
+    WHEN 'catalog_technical_sources' THEN 'fonte_tecnica'
+    ELSE TG_TABLE_NAME
+  END;
+  IF TG_OP = 'DELETE' THEN
+    v_id := OLD.id;
+    INSERT INTO public.catalog_technical_audit_logs(entidade_tipo, entidade_id, acao, dados_anteriores, dados_novos, usuario_id)
+    VALUES (v_entidade, v_id, 'delete', to_jsonb(OLD), NULL, auth.uid());
+    RETURN OLD;
+  ELSIF TG_OP = 'UPDATE' THEN
+    v_id := NEW.id;
+    INSERT INTO public.catalog_technical_audit_logs(entidade_tipo, entidade_id, acao, dados_anteriores, dados_novos, usuario_id)
+    VALUES (v_entidade, v_id, 'update', to_jsonb(OLD), to_jsonb(NEW), auth.uid());
+    RETURN NEW;
+  ELSE
+    v_id := NEW.id;
+    INSERT INTO public.catalog_technical_audit_logs(entidade_tipo, entidade_id, acao, dados_anteriores, dados_novos, usuario_id)
+    VALUES (v_entidade, v_id, 'insert', NULL, to_jsonb(NEW), auth.uid());
+    RETURN NEW;
+  END IF;
+END;
+$function$
+ definition:CREATE TRIGGER trg_audit_micro_crops AFTER INSERT OR DELETE OR UPDATE ON public.microorganism_crop_recommendations FOR EACH ROW EXECUTE FUNCTION log_catalog_change() function:log_catalog_change() md5:b4099f0d780e8b7af56356d6dea0e6fe name:trg_audit_micro_crops table:microorganism_crop_recommendations] map[body:CREATE OR REPLACE FUNCTION public.log_catalog_change()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_entidade text;
+  v_id uuid;
+BEGIN
+  v_entidade := CASE TG_TABLE_NAME
+    WHEN 'microorganism_technical_profiles' THEN 'ficha_microrganismo'
+    WHEN 'product_technical_profiles' THEN 'ficha_produto'
+    WHEN 'microorganism_targets' THEN 'alvo_microrganismo'
+    WHEN 'product_target_recommendations' THEN 'alvo_produto'
+    WHEN 'microorganism_crop_recommendations' THEN 'cultura_microrganismo'
+    WHEN 'product_crop_recommendations' THEN 'cultura_produto'
+    WHEN 'catalog_technical_sources' THEN 'fonte_tecnica'
+    ELSE TG_TABLE_NAME
+  END;
+  IF TG_OP = 'DELETE' THEN
+    v_id := OLD.id;
+    INSERT INTO public.catalog_technical_audit_logs(entidade_tipo, entidade_id, acao, dados_anteriores, dados_novos, usuario_id)
+    VALUES (v_entidade, v_id, 'delete', to_jsonb(OLD), NULL, auth.uid());
+    RETURN OLD;
+  ELSIF TG_OP = 'UPDATE' THEN
+    v_id := NEW.id;
+    INSERT INTO public.catalog_technical_audit_logs(entidade_tipo, entidade_id, acao, dados_anteriores, dados_novos, usuario_id)
+    VALUES (v_entidade, v_id, 'update', to_jsonb(OLD), to_jsonb(NEW), auth.uid());
+    RETURN NEW;
+  ELSE
+    v_id := NEW.id;
+    INSERT INTO public.catalog_technical_audit_logs(entidade_tipo, entidade_id, acao, dados_anteriores, dados_novos, usuario_id)
+    VALUES (v_entidade, v_id, 'insert', NULL, to_jsonb(NEW), auth.uid());
+    RETURN NEW;
+  END IF;
+END;
+$function$
+ definition:CREATE TRIGGER trg_audit_micro_targets AFTER INSERT OR DELETE OR UPDATE ON public.microorganism_targets FOR EACH ROW EXECUTE FUNCTION log_catalog_change() function:log_catalog_change() md5:b4099f0d780e8b7af56356d6dea0e6fe name:trg_audit_micro_targets table:microorganism_targets]]]]]

@@ -1,0 +1,7 @@
+{
+  "tenant_microorganism_ficha_read_v1(uuid)": "0c6dcc0a3fad6114c7cbf125544abc3f",
+  "tenant_catalog_documentary_finish_v1(uuid)": "1df783f256954b23eac447dbd5bf409c",
+  "tenant_catalog_documentary_reserve_v1(text,uuid)": "38e94f7dfda21412bed251d60182f6e7",
+  "tenant_catalog_documentary_capability_v1(text,uuid)": "7ad7237f337ff319038c6de579c67931",
+  "tenant_microorganism_ficha_save_v1(uuid,timestamp with time zone,timestamp with time zone,jsonb,jsonb,uuid)": "52ba09db7c85a5cf028ddbb5951652a8"
+}

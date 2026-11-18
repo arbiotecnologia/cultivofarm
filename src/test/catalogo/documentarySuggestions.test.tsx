@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { DocumentaryAI } from "@/components/protocolos/catalog/DocumentaryAI";
-import { documentarySchema, retainVerifiedSources, selectedDocumentaryValues } from "@/lib/catalogo/documentarySuggestions";
+import { documentarySchema, retainVerifiedSources, selectedDocumentaryValues, selectedDocumentaryEvidence } from "@/lib/catalogo/documentarySuggestions";
 import { familyForNewProduct, productMatchesFamily } from "@/lib/catalogo/productFamilies";
 
 const state = vi.hoisted(() => ({ invoke: vi.fn(), ready: true }));
@@ -11,6 +11,13 @@ const source = { url: "https://example.org/ficha", title: "Ficha do fabricante",
 const candidate = (key: string) => ({ key, name: `Produto ${key}`, manufacturer: key, registration: null, sources: [source] });
 const suggestion = (key = "A") => ({ candidate_key: key, field: "descricao" as const, value: "Descrição sugerida", sources: [source] });
 const props = { identity: { name: "Produto identificado", manufacturer: "Fabricante", registration: "", entity: "produto" as const }, values: { descricao: "Rascunho atual" }, allowed: ["descricao"], onApply: vi.fn() };
+it("não mistura fontes de candidatos distintos com o mesmo texto", () => {
+  const otherSource = { ...source, url: "https://example.org/outro" };
+  const result = { candidates: [candidate("A"), candidate("B")], suggestions: [suggestion(), { ...suggestion("B"), sources: [otherSource] }] };
+  expect(selectedDocumentaryEvidence(result, "A", ["descricao"], ["descricao"], props.identity)).toEqual([
+    { field: "descricao", value: "Descrição sugerida", identity: props.identity, sources: [source] },
+  ]);
+});
 beforeEach(() => { state.ready = true; state.invoke.mockReset(); props.onApply.mockReset(); });
 afterEach(cleanup);
 it.each(["biologico", "quimico", "fertilizante_adubo"] as const)("família %s pré-seleciona e usa metadado canônico, não tipo legado", family => {
@@ -76,6 +83,20 @@ it("papel não competente não monta pesquisa", () => { state.ready = false; ren
  state.invoke.mockReturnValueOnce(new Promise(r=>{finish=r;})).mockResolvedValueOnce({data:{candidates:[candidate('A')],suggestions:[suggestion()]},error:null});
  render(<DocumentaryAI {...props}/>);fireEvent.click(screen.getByRole('button',{name:'Gerar com IA'}));fireEvent.click(screen.getByRole('button',{name:'Parar'}));fireEvent.click(screen.getByRole('button',{name:'Gerar com IA'}));await screen.findByText('Descrição sugerida');
  finish({data:{candidates:[candidate('A')],suggestions:[{...suggestion(),value:'Antiga'}]},error:null});await waitFor(()=>expect(screen.queryByText('Antiga')).toBeNull());expect(state.invoke).toHaveBeenCalledTimes(2);
+});
+it('salvamento impede geração e aplicação sem descartar resultado',async()=>{
+ state.invoke.mockResolvedValue({data:{candidates:[candidate('A')],suggestions:[suggestion()]},error:null});
+ const view=render(<DocumentaryAI {...props}/>);
+ fireEvent.click(screen.getByRole('button',{name:'Gerar com IA'}));
+ await screen.findByText('Descrição sugerida');
+ fireEvent.click(screen.getByRole('checkbox',{name:'descricao'}));
+ view.rerender(<DocumentaryAI {...props} disabled/>);
+ fireEvent.click(screen.getByRole('button',{name:'Aplicar campos selecionados ao rascunho'}));
+ fireEvent.click(screen.getByRole('button',{name:'Gerar com IA'}));
+ expect(props.onApply).not.toHaveBeenCalled();expect(state.invoke).toHaveBeenCalledOnce();
+ view.rerender(<DocumentaryAI {...props}/>);
+ fireEvent.click(screen.getByRole('button',{name:'Aplicar campos selecionados ao rascunho'}));
+ expect(props.onApply).toHaveBeenCalledOnce();
 });
 it.each([401,403,429,402])('diferencia erro HTTP %s sem aplicar nem retry',async status=>{state.invoke.mockResolvedValue({data:null,error:{context:new Response('{}',{status})}});render(<DocumentaryAI {...props}/>);fireEvent.click(screen.getByRole('button',{name:'Gerar com IA'}));await screen.findByRole('alert');expect(props.onApply).not.toHaveBeenCalled();expect(state.invoke).toHaveBeenCalledOnce();});
 it('persiste seleção de fontes via callback explícito sem salvar automaticamente',async()=>{state.invoke.mockResolvedValue({data:{candidates:[candidate('A')],suggestions:[suggestion()]},error:null});const evidence=vi.fn();render(<DocumentaryAI {...props} onEvidence={evidence}/>);fireEvent.click(screen.getByRole('button',{name:'Gerar com IA'}));await screen.findByText('Descrição sugerida');fireEvent.click(screen.getByRole('checkbox',{name:'descricao'}));fireEvent.click(screen.getByRole('button',{name:'Aplicar campos selecionados ao rascunho'}));expect(evidence).toHaveBeenCalledWith([expect.objectContaining({field:'descricao',value:'Descrição sugerida',sources:[source]})]);expect(state.invoke).toHaveBeenCalledOnce();});

@@ -16,7 +16,7 @@ export type DocumentaryIdentity = { name: string; manufacturer: string; registra
 export type DocumentaryEvidence = { field: string; value: string; identity: DocumentaryIdentity; sources: z.infer<typeof sourceSchema>[] };
 export function selectedDocumentaryEvidence(result: DocumentaryResult, candidate: string, selected: readonly string[], allowed: readonly string[], identity: DocumentaryIdentity): DocumentaryEvidence[] {
   const values = selectedDocumentaryValues(result, candidate, selected, allowed);
-  return result.suggestions.filter(s => values[s.field] === s.value).map(s => ({ field: s.field, value: s.value, identity, sources: s.sources }));
+  return result.suggestions.filter(s => s.candidate_key === candidate && values[s.field] === s.value).map(s => ({ field: s.field, value: s.value, identity, sources: s.sources }));
 }
 export function selectedDocumentaryValues(result: DocumentaryResult, candidate: string, selected: readonly string[], allowed: readonly string[]): Record<string, string> {
   if (!result.candidates.some(c => c.key === candidate)) return {};

@@ -12,3 +12,15 @@
 - Produção: apenas metadados read-only. Preservação dos 27 micros é objetivo e roteiro de hash PRE/POST, não uma verificação de dados executada nesta sessão.
 
 Rodada final: 54 arquivos / 997 testes PASS; typecheck saída vazia, exit 0.
+
+
+## Rodada de continuação — executada nesta sessão
+- Catálogo completo: 52 arquivos / 997 testes PASS, maxWorkers=2 (02:27 UTC).
+- Focais: 2 arquivos / 33 PASS; global sem reader próprio, schema/tenant/revisões, concentração, candidate_key e disputa save/IA.
+- PG descartável: 42 PASS; assemble idempotente fechado/aberto, revogação durante lock comprovado por pg_blocking_pids, replay concorrente (um root/recibo), atomicidade de falha child tardia, concentração sem conversão, quota2 e isolamento, trigger audit real capturado.
+- Edge: 9 PASS com Auth/transporte sintéticos; corpo acima de24.000 sem content-length, quota429 antes provedor, binding explícito HML/mismatch.
+- Browser real components / transporte+Auth interceptados: 1280x1800 e390x844, cepa/fontes salvar-reabrir, um diálogo, sem overflow/pageerror; screenshots inspecionadas. NÃO hosted.
+- HML conexão: recusada antes de conectar por binding STAGING divergente. Nenhuma captura/pin HML ou prova JWT/Storage reportada como executada. Scripts Auth HML preparados independentemente de sessão browser.
+- Arquivos de capture production são catálogo real read-only; marca [REDACTED] impede tratá-los como roundtrip SQL integral. Assemble local-post pins são determinísticos do descartável, não catalog POST hosted.
+
+Validação final: typecheck exit0; deno check exit0; Edge9/9; focais incluindo cadastro39/39; build automático02:29:07 build OK; navegador repetido1280/390 sem erro/overflow. git diff --check exit0.

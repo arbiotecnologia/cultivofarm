@@ -1893,9 +1893,12 @@
 - [ ] Plano Serviços/NFS-e aguardando aprovação
 
 ## 18/11 — Ficha completa de microrganismos (sem publicação)
+- [x] Revisão local: consulta global/leitores, concentração quantitativa sem conversões, vínculos/fontes canônicos, CAS/fences/save/IA, quota/corpo/prazo e testes reais descartáveis de espera/replay/atomicidade. Documentos sem produto seguem abertos.
+- [x] Preparar binding HML/produção, capture-readonly/assemble fail-closed idempotente e roteiro executável QA Auth; nenhuma escrita produção/publicação.
+- [ ] Captura/pins/fundação HML reais: STAGING_REF/DSN disponibilizados divergem do ref autorizado; root fornece binding correto. Hosted JWT/RLS/Storage/browser e documentos exclusivos sem produto ainda não executados/fechados.
 - [x] Unificar entradas desktop/mobile, identificação e seções técnicas/fiscais/documentais com editor fiscal embutido.
 - [x] IA documental: identidade, seleção, cancelamento, fences e fontes persistentes em contrato candidato.
 - [x] Pacote incremental SQL/Edge, PRE/POST/rollback, PG componente 19/19 e Edge sintético 6/6.
 - [x] Typecheck/build automático, regressões e browser sintético desktop/mobile salvar/reabrir fontes; pesquisa pública real executada.
-- [ ] Instalação/revisão e JWT/RLS/Storage/browser hospedado: sem sessão externa ou ambiente de teste acessível; produção permanece intocada.
-- [ ] Documentos regulatórios e edição das relações canônicas de culturas/alvos: writers atuais contidos, pacote fiscal/regulatório próprio e revisão de autoridade necessários; textos de uso documentado persistem no candidato.
+- [ ] Instalação e JWT/RLS/Storage/browser hospedado: aguardam binding HML correto + capture/pins reais; roteiro Auth executável preparado, produção intocada.
+- [ ] Documentos exclusivos do microrganismo sem produto: contrato canônico ainda ausente; navegação/upload dos dossiês por produto existentes preservados. Culturas/alvos/fontes agora têm candidato atômico e editor no rascunho, sem instalação.
