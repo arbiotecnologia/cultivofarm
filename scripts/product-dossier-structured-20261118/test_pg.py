@@ -24,6 +24,20 @@ try:
  subprocess.run(priv+['initdb','-D',str(t/'data'),'-U','postgres','-A','trust'],check=True,capture_output=True)
  subprocess.run(priv+['pg_ctl','-D',str(t/'data'),'-o',f'-k {t} -h "" -p {port}','-l',str(t/'log'),'-w','start'],check=True,capture_output=True)
  sql(BASE.joinpath('fixture.sql').read_text());migration('20261114013656');migration('20261114014211')
+ # Catalog identity must not depend on visibility. Includes a user-defined array
+ # type and named input arguments; none of those names may enter the signature.
+ sql("CREATE FUNCTION public.tenant_product_dossier_capture_probe(p_named public.microorganism_regulatory_dossiers[], p_stamp timestamptz) RETURNS void LANGUAGE sql AS $$SELECT$$;")
+ capture=(H/'capture-query.sql.review').read_text()
+ public_catalog=json.loads(sql('SET search_path=public;'+capture))
+ empty_catalog=json.loads(sql("SET search_path='';"+capture))
+ assert public_catalog==empty_catalog,'search_path catalog drift'
+ checks.append('complete capture public equals empty search_path')
+ probe=next(f for f in public_catalog['functions'] if 'capture_probe(' in f['signature'])
+ assert probe['signature']=='public.tenant_product_dossier_capture_probe(public.microorganism_regulatory_dossiers[],timestamp with time zone)',probe['signature']
+ checks.append('qualified input type identity omits argument names')
+ assert all(r['name'].startswith(('public.','platform_private.','storage.')) for r in public_catalog['relations'])
+ checks.append('relations always schema qualified')
+ sql('DROP FUNCTION public.tenant_product_dossier_capture_probe(public.microorganism_regulatory_dossiers[],timestamptz);')
  sql("""CREATE UNIQUE INDEX mrd_uq_micro_version ON public.microorganism_regulatory_dossiers(microorganism_id,version);
  CREATE FUNCTION platform_private.product_dossier_link_integrity() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN IF TG_OP='UPDATE' AND (NEW.product_id IS DISTINCT FROM OLD.product_id OR NEW.dossier_id IS DISTINCT FROM OLD.dossier_id) THEN RAISE EXCEPTION 'immutable'; END IF;RETURN NEW;END$$;
  CREATE TABLE public.microorganism_regulatory_publication_snapshots(dossier_id uuid);
@@ -63,11 +77,13 @@ try:
  CREATE POLICY anon_denied ON public.microorganism_regulatory_dossiers AS RESTRICTIVE FOR ALL TO anon USING(false) WITH CHECK(false);
  """)
  before=sql("SELECT md5(pg_get_functiondef('platform_private.recorte_a_actor_fresh(text)'::regprocedure))")
+ service_before=sql("SELECT string_agg(md5(pg_get_functiondef(oid)),',' ORDER BY proname) FROM pg_proc WHERE pronamespace='platform_private'::regnamespace AND proname IN ('product_dossier_upload_attest','product_dossier_upload_cancel')")
  defs={sig:sql(f"SELECT pg_get_functiondef('{sig}'::regprocedure)")+'\n' for sig in TARGETS+[FRESH]}
  # psql strips trailing LF only; restore single pg_get_functiondef LF (pinned synthetic serialization).
  pins={sig:hashlib.md5(v.encode()).hexdigest() for sig,v in defs.items()}
  delta=build(defs,pins);sql(delta)
  check('fresh body unchanged',"SELECT md5(pg_get_functiondef('platform_private.recorte_a_actor_fresh(text)'::regprocedure))",before)
+ check('service attest cancel definitions unchanged',"SELECT string_agg(md5(pg_get_functiondef(oid)),',' ORDER BY proname) FROM pg_proc WHERE pronamespace='platform_private'::regnamespace AND proname IN ('product_dossier_upload_attest','product_dossier_upload_cancel')",service_before)
  check('gate default OFF',actor(f"SELECT tenant_product_dossier_management_create('{P}',NULL)"),error='DOSSIER_STRUCTURED_UNAVAILABLE')
  sql('UPDATE platform_private.product_dossier_structured_gate SET enabled=true WHERE singleton')
  ack=json.loads(check('create product-only',actor(f"SELECT tenant_product_dossier_management_create('{P}',NULL)")));did=ack['dossier_id'];rev=ack['updated_at']
@@ -101,6 +117,31 @@ try:
  check('invalid writes preserve history',f"SELECT count(*) FROM platform_private.product_dossier_structured_history WHERE product_id='{P}'",'1')
  check('invalid writes preserve exact data',f"SELECT structured_data#>>'{{lines,0,value}}' FROM microorganism_regulatory_dossiers WHERE id='{did}'",'750')
  check('replay rejects different content',save({**data,'lines':[]}),error='DOSSIER_REPLAY_CONFLICT')
+ # Actual canonical caller upload roundtrip. Service auth is the existing
+ # declared test.service seam, never a hosted JWT or an actor substitute.
+ upload='00000000-0000-4000-8000-000000000095'
+ intent=json.dumps({'title':'PDF QA','doc_type':'OUTRO','size_bytes':128,'sha256':'a'*64,'mime':'application/pdf','filename':'qa.pdf'})
+ prepared=json.loads(check('caller upload prepare product-only',actor(f"SELECT tenant_product_dossier_upload_prepare('{P}','{did}','{rev2}','{upload}','{intent}'::jsonb)")))
+ check('caller upload access owns record',actor(f"SELECT tenant_product_dossier_upload_access('{upload}')->>'id'"),upload)
+ check('caller pending uses product parameter no record alias',actor(f"SELECT tenant_product_dossier_upload_pending('{P}')->0->>'id'"),upload)
+ check('B upload access denied',actor(f"SELECT tenant_product_dossier_upload_access('{upload}')",'b'),error='DOSSIER_STRUCTURED_UNAVAILABLE')
+ sql(f"UPDATE platform_private.members SET writer=false WHERE id='{uid}'")
+ check('revoked mutation role denies upload access',actor(f"SELECT tenant_product_dossier_upload_access('{upload}')"),error='catalog_visibility_role_denied')
+ check('revoked mutation role denies pending upload',actor(f"SELECT tenant_product_dossier_upload_pending('{P}')"),error='catalog_visibility_role_denied')
+ sql(f"UPDATE platform_private.members SET writer=true WHERE id='{uid}'")
+ check('attest requires service guard',f"SELECT platform_private.product_dossier_upload_attest('{upload}','{'a'*64}',128,'application/pdf')",error='forbidden')
+ check('service attest without caller fresh dispatch',f"SET test.service='true';SELECT platform_private.product_dossier_upload_attest('{upload}','{'a'*64}',128,'application/pdf');SELECT state FROM platform_private.product_dossier_uploads WHERE id='{upload}'",'VERIFIED')
+ sql(f"INSERT INTO storage.objects(bucket_id,name) VALUES('fiscal-regulatorio','{prepared['storage_path']}')")
+ check('caller finalize after record locks',actor(f"SELECT tenant_product_dossier_upload_finalize('{upload}')->>'state'"),'COMMITTED')
+ check('caller finalize replay',actor(f"SELECT tenant_product_dossier_upload_finalize('{upload}')->>'state'"),'COMMITTED')
+ check('finalize replay does not duplicate document',f"SELECT count(*) FROM microorganism_regulatory_documents WHERE id='{upload}'",'1')
+ cancel_upload='00000000-0000-4000-8000-000000000096'
+ cancel_intent=json.dumps({**json.loads(intent),'sha256':'b'*64})
+ cancel_rev=sql(f"SELECT updated_at FROM microorganism_regulatory_dossiers WHERE id='{did}'")
+ check('prepare second upload for cancel',actor(f"SELECT tenant_product_dossier_upload_prepare('{P}','{did}','{cancel_rev}','{cancel_upload}','{cancel_intent}'::jsonb)->>'state'"),'RESERVED')
+ check('caller cancel begin record scope after locks',actor(f"SELECT platform_private.product_dossier_upload_cancel_begin('{cancel_upload}')->>'state'"),'CANCELLING')
+ check('cancel requires service guard',f"SELECT platform_private.product_dossier_upload_cancel('{cancel_upload}')",error='forbidden')
+ check('service cancel no caller fresh dispatch',f"SET test.service='true';SELECT platform_private.product_dossier_upload_cancel('{cancel_upload}');SELECT state FROM platform_private.product_dossier_uploads WHERE id='{cancel_upload}'",'CANCELLED')
  check('non READ COMMITTED fails closed',actor(f"BEGIN ISOLATION LEVEL REPEATABLE READ;SELECT tenant_product_dossier_version_detail('{P}','{did}');"),error='DOSSIER_ISOLATION_REQUIRED')
  # Concurrent waiter actually blocked, then revoke feature in separate transaction.
  blocker=subprocess.Popen(conn,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True);blocker.stdin.write(f"BEGIN;SELECT pg_advisory_xact_lock(hashtextextended('product-dossier:{P}',0));SELECT 'LOCKED';\n");blocker.stdin.flush()

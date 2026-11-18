@@ -21,7 +21,12 @@ HML possui somente context reader, não full management. O root deverá instalar
 
 ## Entradas locais do builder
 Captura: `{ "ref": "<ref explícito>", "provenance": "root-local-exact-catalog", "catalog": <resultado JSON da capture-query> }`.
-Pins: objeto `{ "<assinatura pg regprocedure>": "<MD5 exato revisado>" }` contendo targets e wrappers escolhidas pelo assembly, além de `platform_private.recorte_a_actor_fresh(text)`; lista `TARGETS` está em `build.py`. O catálogo inclui a cadeia mais ampla mesmo quando não modificada: PRE/POST verificam tudo.
+Pins: objeto `{ "<schema.nome(tipos de entrada)>": "<MD5 exato revisado>" }` contendo targets e wrappers escolhidas pelo assembly, além de `platform_private.recorte_a_actor_fresh(text)`; lista `TARGETS` está em `build.py`. A identidade vem de `pg_namespace`/`pg_proc.proargtypes`, sem nomes dos argumentos, vírgulas sem espaços e tipos não nativos qualificados. Relações usam schema + nome explícitos. A captura normaliza o search_path **local à transação** para vazio, também estabilizando definições/tipos/expressões; executar como consulta isolada. PRE/POST usam exatamente a mesma consulta. Capturas antigas ambíguas devem ser refeitas exclusivamente pelo root; o builder não normaliza assinaturas nem recalcula pins. O catálogo inclui a cadeia mais ampla mesmo quando não modificada: PRE/POST verificam tudo.
+
+### Auditoria upload (revisão 11:44)
+`upload_prepare`, `upload_finalize`, `upload_cancel_begin`, `upload_access` e `upload_pending` são operações do chamador. Access/pending são consultas sem DML, mas o contrato canônico exige **manage_scope e autoria do upload**, não leitura genérica de catálogo; a extensão mantém esse requisito e apenas revalida fresh `mutate` no caminho product-only. `u.product_id` é usado somente nas funções com registro PL/pgSQL `u` declarado e carregado; pending usa `p_product_id`, sem acessar o alias SQL fora da subconsulta. Drift de declaração/load ou presença de guard de serviço nesse ramo aborta o builder.
+
+`upload_attest` e `upload_cancel` são pontes exclusivamente de serviço: não são targets de extensão, não recebem fresh `mutate`/alias `u`, e seus wrappers de serviço são emitidos sem alteração do corpo/volatilidade. ACL/dispatch/require_service_role continuam canônicos e PRE/POST integrais devem verificá-los. Testes descartáveis exercitam prepare/access/pending/finalize/replay/cancel_begin e pontes de serviço; a flag test.service pertence somente à costura Auth do teste, não autoriza ambiente hospedado.
 
 ```text
 python3 assemble.py --ref <ref> --pre /caminho-root/pre.json --post /caminho-root/post.json --pins /caminho-root/pins.json --output /caminho-root/02-install.sql.review

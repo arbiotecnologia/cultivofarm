@@ -1,7 +1,7 @@
 """Root supplies private local PRE and normalized expected POST; emits one atomic assertion transaction."""
 import json,argparse,hashlib
 from pathlib import Path
-from build import H,build,TARGETS,FRESH
+from build import H,build,TARGETS,FRESH,validate_signatures
 REFS=['swzpzcwiasxmjutrmvkm','vrlcdwmlytukrjezrrnf']
 def load(path,ref):
  c=json.loads(Path(path).read_text(encoding='utf-8'))
@@ -9,6 +9,10 @@ def load(path,ref):
  if set(c['catalog'])!={'functions','relations','publications'}:raise ValueError('complete catalog required')
  return c['catalog']
 def assemble(pre,post,pins):
+ for catalog in (pre,post):
+  validate_signatures([f['signature'] for f in catalog['functions']])
+  names=[r['name'] for r in catalog['relations']]
+  if len(set(names))!=len(names) or any(not name.startswith(('public.','platform_private.','storage.')) for name in names):raise ValueError('qualified unique relations required; recapture locally, never normalize pins')
  defs={f['signature']:f['definition'] for f in pre['functions'] if f['signature'] in TARGETS+[FRESH] or f['signature'].startswith('public.tenant_product_dossier_') or f['signature']=='public.rpc_regulatory_product_document_access(uuid,uuid,uuid)'}
  fresh=next(f for f in pre['functions'] if f['signature']==FRESH)
  if fresh['volatile']!='v' or not fresh['definer'] or fresh['owner']!='postgres' or fresh!=next(f for f in post['functions'] if f['signature']==FRESH):raise ValueError('fresh authority metadata drift')
@@ -18,7 +22,7 @@ def assemble(pre,post,pins):
  if len(new)!=3 or any(not r['rls'] or r['owner']!='postgres' for r in new):raise ValueError('private RLS POST required')
  for f in post['functions']:
   if 'product_dossier_structured_' in f['signature'] and (not f['definer'] or f['owner']!='postgres' or any(x in f['acl'] for x in ['authenticated=','anon=','service_role=','{=X/',',=X/'])):raise ValueError('private function ACL invalid')
- query=(H/'capture-query.sql.review').read_text().split('WITH functions',1)[1].rstrip().removesuffix(';');query='WITH functions'+query
+ query=(H/'capture-query.sql.review').read_text().split('WITH settings',1)[1].rstrip().removesuffix(';');query='WITH settings'+query
  def check(c,label):
   lit=json.dumps(c,ensure_ascii=False).replace("'","''")
   return "DO $assert$ BEGIN IF ("+query+") IS DISTINCT FROM '"+lit+"'::jsonb THEN RAISE EXCEPTION '"+label+"_CATALOG_DRIFT'; END IF; END $assert$;\n"

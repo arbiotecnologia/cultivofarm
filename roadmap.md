@@ -1,3 +1,7 @@
+## 18/11 11:44 — Robustez da captura e uploads estruturados
+- [x] Estabilizar assinaturas/relações qualificadas por catálogo, recusar capturas ambíguas sem repin e provar search_path public/empty.
+- [x] Auditar alias/autoridade dos uploads, preservar serviço/dispatch e executar testes locais; sem instalação/publicação.
+
 ## 18/11 11:19 — Registro e garantias estruturados product-only
 - [x] Integrar dossiê canônico químico/fertilizante sem cobertura micro, linhas documentais tipadas e rascunhos/CAS/recibos protegidos nas entradas existentes.
 - [x] Preparar delta aditivo default-OFF, captura e builder root-local com PRE/POST integral e rollback deny-only; preservar migrations canônicas e pins anteriores.

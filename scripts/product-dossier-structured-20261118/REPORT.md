@@ -3,6 +3,12 @@
 ## Resultado
 Implementação integrada concluída localmente, **não apto para publicação hosted ainda**: depende da revisão/montagem root-local integral, instalação independente full management HML e homologação Auth/Storage. Produção e frontend publicado intactos; nenhuma operação de banco hospedado, captura privada ou subagente.
 
+## Revisão root 11:44 — captura e uploads
+- Identidade de funções agora schema/nome/proargtypes (sem nomes de argumentos), relações explicitamente qualificadas; search_path vazio transacional estabiliza também tipos e definições. Teste PostgreSQL compara **catálogo completo** com search_path public e vazio, incluindo tipo composto array e argumento nomeado. Assembly/build recusam assinaturas/relações não qualificadas ou duplicadas, sem repin/reinterpretação de capturas privadas.
+- `u` só é utilizado no registro declarado/carregado de access/finalize/cancel_begin; pending usa p_product_id. Access/pending permanecem sem DML e com manage_scope/autoria exigidos pelo contrato, não se tornam consultas genéricas read_catalog.
+- Attest/cancel de serviço não são estendidos e seus wrappers permanecem byte-preservados. Testes comprovam guard de serviço, corpos privados inalterados, prepare/access/pending/finalize/replay/cancel_begin, tenant B e revogação de papel. Transporte Storage é SQL sintético, **não** HTTP/JWT/Storage hosted.
+- Reteste desta revisão: **60 checks PostgreSQL / 12 testes builder PASS**; resultados em pg-result.json. Evidências frontend abaixo são da etapa anterior, não uma nova execução. Sem alterações de frontend/IA/HML; 402 documentary_credit_limit permanece fato root, sem contorno.
+
 ### Evidência executada
 - Catálogo + protocolos + dossiês: **74 arquivos / 1.239 testes Vitest PASS**. Inclui SDK Supabase real com fetch/bearer sintéticos: casas decimais textuais, unidade/base exatas, lock de duplo dispatch, A→B/ACK antigo, uncertain same-key/intent, CAS definitivo com retomada fresh, preservação de draft em refetch, cadastro/reabertura químico e fertilizante, rejeição de malformação sem dispatch.
 - Reteste final após correções: **40 testes / 3 arquivos PASS** (`vitest-final.txt`). Testes biológicos canônicos preservados; catálogo/protocolos incluem regressões micro/unidades/fontes e ambas entradas existentes.

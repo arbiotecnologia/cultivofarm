@@ -4,6 +4,12 @@ from pathlib import Path
 H=Path(__file__).resolve().parent
 FRESH='platform_private.recorte_a_actor_fresh(text)'
 TARGETS=['platform_private.product_dossier_management_create(uuid,uuid)','platform_private.product_dossier_management_save(uuid,uuid,timestamp with time zone,jsonb)','platform_private.product_dossier_management_context(uuid)','platform_private.product_dossier_version_detail(uuid,uuid)','platform_private.product_dossier_link_integrity()','platform_private.product_dossier_coverage(uuid)','platform_private.product_dossier_read_scope(uuid,uuid)','platform_private.product_dossier_manage_scope(uuid,uuid)','platform_private.product_dossier_write_guard()','platform_private.rpc_regulatory_product_document_access(uuid,uuid,uuid)','platform_private.product_dossier_row_read(uuid)','platform_private.product_dossier_lock(uuid,uuid,timestamp with time zone)','platform_private.product_dossier_upload_prepare(uuid,uuid,timestamp with time zone,uuid,jsonb)','platform_private.product_dossier_upload_finalize(uuid)','platform_private.product_dossier_upload_access(uuid)','platform_private.product_dossier_upload_pending(uuid)','platform_private.product_dossier_upload_cancel_begin(uuid)']
+UPLOAD_CALLER_TARGETS={s for s in TARGETS if '.product_dossier_upload_' in s}
+def validate_signatures(signatures):
+ import re
+ values=list(signatures)
+ if len(set(values))!=len(values) or any(not re.fullmatch(r'(?:public|platform_private)\.[a-z_][a-z_0-9]*\([^()]*\)',s) or ', ' in s for s in values):
+  raise ValueError('qualified unique identity-type signatures required; recapture locally, never normalize pins')
 def insert_begin(body,text):
  # First executable BEGIN only; declarations are untouched.
  import re
@@ -47,9 +53,15 @@ def extend(sig,body):
  END IF; END IF; END IF;""")
  if 'row_read(' in sig:
   return insert_begin(body,"IF EXISTS(SELECT 1 FROM public.microorganism_regulatory_dossiers WHERE id=p_dossier AND product_only AND deleted_at IS NULL) THEN PERFORM platform_private.product_dossier_structured_scope((SELECT product_id FROM public.microorganism_regulatory_dossiers WHERE id=p_dossier),'read_catalog'); RETURN true; END IF;")
- if 'product_dossier_lock(' in sig or 'product_dossier_upload_' in sig:
+ if sig=='platform_private.product_dossier_lock(uuid,uuid,timestamp with time zone)' or sig in UPLOAD_CALLER_TARGETS:
   import re
+  # These are caller-fenced operations, including access/pending: canonical
+  # manage_scope + uploader ownership are preserved, NOT broadened to read_catalog.
+  # attest/cancel are service-only and never reach this extension.
+  if 'require_service_role' in body:raise ValueError('service-only upload must remain unchanged')
   product='p_product_id' if ('lock(' in sig or 'prepare(' in sig or 'pending(' in sig) else 'u.product_id'
+  if product=='u.product_id' and not re.search(r'\bu\s+platform_private\.product_dossier_uploads\b',body,re.I):raise ValueError('upload record alias drift')
+  if product=='u.product_id' and not re.search(r'SELECT\s+\*\s+INTO\s+u\s+FROM\s+platform_private\.product_dossier_uploads',body,re.I):raise ValueError('upload record load drift')
   guard="IF EXISTS(SELECT 1 FROM public.product_regulatory_dossier_links l JOIN public.microorganism_regulatory_dossiers scoped_dossier ON scoped_dossier.id=l.dossier_id WHERE l.product_id="+product+" AND scoped_dossier.product_only) THEN PERFORM platform_private.product_dossier_structured_scope("+product+",'mutate'); END IF;"
   # Reauthorize after EACH observed lock statement and immediately before EACH return.
   body=re.sub(r'(PERFORM pg_advisory_xact_lock\([^;]+;|SELECT[^;]+FOR UPDATE[^;]*;)',lambda m:m.group(0)+'\n'+guard,body,flags=re.I)
@@ -64,6 +76,7 @@ def extend(sig,body):
  RETURN jsonb_build_object('document_id',x.id,'dossier_id',x.dossier_id,'product_id',p_product_id,'bucket',x.storage_bucket,'path',x.storage_path,'sha256',x.content_sha256); END IF;""")
  raise ValueError('unknown target')
 def build(definitions,pins):
+ validate_signatures(definitions)
  if not set(TARGETS+[FRESH]).issubset(definitions) or set(pins)!=set(definitions):raise ValueError('exact definition closure required')
  for sig,body in definitions.items():
   if hashlib.md5(body.encode()).hexdigest()!=pins[sig]:raise ValueError('definition pin mismatch: '+sig)
@@ -79,7 +92,9 @@ def build(definitions,pins):
   if sig.startswith('public.'):
    import re
    if not any(name in sig for name in ['tenant_product_dossier_', 'rpc_regulatory_product_document_access']):raise ValueError('unexpected public wrapper')
-   result+='\n'+re.sub(r'\bSTABLE\b','VOLATILE',body,flags=re.I).rstrip().removesuffix(';')+';\n'
+   # Service-only attest/cancel dispatch never needs a caller fresh guard.
+   service_wrapper=bool(re.search(r'\.tenant_product_dossier_upload_(?:attest|cancel)\(',sig))
+   result+='\n'+(body if service_wrapper else re.sub(r'\bSTABLE\b','VOLATILE',body,flags=re.I)).rstrip().removesuffix(';')+';\n'
  return result
 if __name__=='__main__':
  a=argparse.ArgumentParser();a.add_argument('--input',required=True);a.add_argument('--ref',required=True);a.add_argument('--output',required=True);v=a.parse_args();c=json.loads(Path(v.input).read_text())

@@ -1,4 +1,5 @@
 - Review-only additive extension of canonical versioned product dossier management; never install hosted, publish, request or transfer private captures, or edit historical installers.
-- Root-local assembly requires explicit environment, exact PRE/POST catalogs and hash-pinned canonical function definitions; no silent repinning or prototype tenant-owner.sql.
+- Root-local assembly requires explicit environment, exact PRE/POST catalogs and hash-pinned canonical function definitions; no silent repinning or prototype tenant-owner.sql. Capture identities use namespace/name/input types under transaction-local empty search_path, never visibility-sensitive regprocedure/regclass text — prevents omitted public wrappers.
 - Product-only dossiers are explicit new records; never convert biological history or fabricate microorganism coverage. All structured content is documentary and pending, never approval or a fiscal/commercial formula.
 - Fresh captured authority is rechecked after waits and before replay/return; private gates default OFF and rollback denies while retaining documents, receipts and history.
+- Caller upload access/pending preserve manage_scope and ownership even without DML; service-only attest/cancel and their dispatch remain unextended — prevents inventing caller authority for service bridges.
