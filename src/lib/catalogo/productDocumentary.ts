@@ -67,11 +67,14 @@ export function matchingProductEvidence(evidence: DocumentaryEvidence[], values:
 }
 
 export function productResearchIdentity(product: {
-  id: string; nome: string; funcao_completa?: string | null;
+  id: string; nome: string; funcao_completa?: string | null; familia_catalogo?: string | null;
 }, dossier?: { mapa_manufacturer?: string | null; mapa_registration_number?: string | null; strain_name?: string | null } | null): DocumentaryIdentity {
   return {
     entity: "produto", id: product.id, name: product.nome,
     manufacturer: dossier?.mapa_manufacturer ?? "", registration: dossier?.mapa_registration_number ?? "",
-    strain: dossier?.strain_name ?? "", purpose: product.funcao_completa ?? "", researchScope: "product_strain",
+    strain: product.familia_catalogo === "fertilizante_adubo" || product.familia_catalogo === "quimico" ? "" : dossier?.strain_name ?? "",
+    purpose: (product.familia_catalogo === "fertilizante_adubo"
+      ? `Fertilizante/adubo comercial acabado. Registro de fertilizante não equivale a registro de agrotóxico. Não inferir teores, garantias nutricionais, composição, dose, registro, preço ou aprovação. ${product.funcao_completa ?? ""}`
+      : product.funcao_completa ?? "").slice(0, 2000), researchScope: "product_strain",
   };
 }

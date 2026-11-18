@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { DocumentaryAI } from "@/components/protocolos/catalog/DocumentaryAI";
 import { documentarySchema, retainVerifiedSources, selectedDocumentaryValues, selectedDocumentaryEvidence } from "@/lib/catalogo/documentarySuggestions";
 import { familyForNewProduct, productMatchesFamily } from "@/lib/catalogo/productFamilies";
+import {productResearchIdentity,PRODUCT_DOCUMENTARY_FIELDS} from '@/lib/catalogo/productDocumentary';
 
 const state = vi.hoisted(() => ({ invoke: vi.fn(), ready: true }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { functions: { invoke: state.invoke } } }));
@@ -11,6 +12,20 @@ const source = { url: "https://example.org/ficha", title: "Ficha do fabricante",
 const candidate = (key: string) => ({ key, name: `Produto ${key}`, manufacturer: key, registration: null, sources: [source] });
 const suggestion = (key = "A") => ({ candidate_key: key, field: "descricao" as const, value: "Descrição sugerida", sources: [source] });
 const props = { identity: { name: "Produto identificado", manufacturer: "Fabricante", registration: "", entity: "produto" as const }, values: { descricao: "Rascunho atual" }, allowed: ["descricao"], onApply: vi.fn() };
+it('fertilizante envia apenas nove campos documentais e aplica texto com fonte exata, nunca garantia',async()=>{
+ const identity=productResearchIdentity({id:'00000000-0000-4000-8000-000000000021',nome:'Fertilizante QA',familia_catalogo:'fertilizante_adubo'});
+ const apply=vi.fn(),evidence=vi.fn();state.invoke.mockResolvedValue({data:{candidates:[candidate('A')],suggestions:[{...suggestion(),field:'resumo_curto',value:'Texto QA documentado'}]},error:null});
+ render(<DocumentaryAI identity={identity} values={{resumo_curto:'QA anterior'}} allowed={PRODUCT_DOCUMENTARY_FIELDS} onApply={apply} onEvidence={evidence}/>);
+ fireEvent.click(screen.getByRole('button',{name:'Gerar com IA'}));await screen.findByText('Texto QA documentado');
+ expect(state.invoke.mock.calls[0][1].body).toEqual({identity,fields:[...PRODUCT_DOCUMENTARY_FIELDS]});expect(apply).not.toHaveBeenCalled();
+ fireEvent.click(screen.getByRole('checkbox',{name:'Resumo curto'}));fireEvent.click(screen.getByRole('button',{name:'Aplicar campos selecionados ao rascunho'}));
+ expect(apply).toHaveBeenCalledExactlyOnceWith({resumo_curto:'Texto QA documentado'});expect(evidence).toHaveBeenCalledExactlyOnceWith([expect.objectContaining({field:'resumo_curto',value:'Texto QA documentado',sources:[source],candidate_key:'A',identity:expect.objectContaining({name:'Fertilizante QA',strain:'',researchScope:'product_strain'})})]);
+});
+it('fertilizante recusa resposta com garantia não solicitada sem alterar texto',async()=>{
+ state.invoke.mockResolvedValue({data:{candidates:[candidate('A')],suggestions:[{...suggestion(),field:'label_guarantee',value:'Teor inventado'}]},error:null});
+ render(<DocumentaryAI {...props} identity={productResearchIdentity({nome:'Fertilizante QA',id:'00000000-0000-4000-8000-000000000021',familia_catalogo:'fertilizante_adubo'})} allowed={PRODUCT_DOCUMENTARY_FIELDS}/>);
+ fireEvent.click(screen.getByRole('button',{name:'Gerar com IA'}));expect(await screen.findByRole('alert')).toBeTruthy();expect(props.onApply).not.toHaveBeenCalled();expect(state.invoke).toHaveBeenCalledOnce();
+});
 it("não mistura fontes de candidatos distintos com o mesmo texto", () => {
   const otherSource = { ...source, url: "https://example.org/outro" };
   const result = { candidates: [candidate("A"), candidate("B")], suggestions: [suggestion(), { ...suggestion("B"), sources: [otherSource] }] };

@@ -13,6 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DraftExitConfirmation } from "@/components/catalogo/DraftExitConfirmation";
 import { DocumentaryAI } from "./catalog/DocumentaryAI";
@@ -53,6 +55,7 @@ interface Produto {
   funcao_completa?: string | null;
   owner_organization_id?: string | null;
   b2b_enabled?: boolean;
+  familia_catalogo?: string | null;
 }
 interface Props {
   open: boolean;
@@ -98,6 +101,8 @@ function ProductFicha({
     !!produto.owner_organization_id &&
     produto.owner_organization_id === profile?.organization_id;
   const writable = own && editor.canEdit;
+  const fertilizer = produto.familia_catalogo === "fertilizante_adubo";
+  const nonBiological = fertilizer || produto.familia_catalogo === "quimico";
   const query = useProductProfile(produto.id);
   const evidenceQuery = useProductDocumentaryEvidence(produto.id, own);
   const dossier = useProductResearchDossier(produto.id, own && editor.ready);
@@ -273,7 +278,7 @@ function ProductFicha({
         >
           <TabsList className="flex flex-wrap h-auto justify-start gap-1 w-full">
             <TabsTrigger value="resumo">Características técnicas</TabsTrigger>
-            <TabsTrigger value="composicao">Composição</TabsTrigger>
+            <TabsTrigger value="composicao">{fertilizer ? "Composição e garantias" : "Composição"}</TabsTrigger>
             <TabsTrigger value="uso">Uso agronômico</TabsTrigger>
             <TabsTrigger value="b2b">B2B</TabsTrigger>
             <TabsTrigger value="ia">Conteúdo / IA</TabsTrigger>
@@ -325,7 +330,16 @@ function ProductFicha({
             </TabsContent>
           ))}
           <TabsContent value="composicao">
-            <ProductFormulaBenefits composicao={query.data?.composicao ?? []} />
+            {nonBiological ? <section className="space-y-4">
+              <p className="text-sm text-muted-foreground">{fertilizer ? "Garantias nutricionais e composição dependem de rótulo ou laudo do produto identificado. Cadastro documental não valida registro nem situação fiscal." : "Formulação química depende de documentação do produto identificado. Não exige composição de microrganismos."}</p>
+              {dossier.isError ? <p role="alert">Garantias documentais indisponíveis. A falha de consulta não significa ausência de dossiê.</p> : dossier.isLoading || dossier.isFetching ? <p role="status">Consultando dados documentais…</p> : dossier.data ? <dl className="grid gap-2 text-sm sm:grid-cols-2">
+                <div><dt className="font-medium">Formulação documentada</dt><dd className="break-words">{dossier.data.formulation || "Não informada"}</dd></div>
+                <div><dt className="font-medium">Garantia de rótulo</dt><dd className="break-words">{dossier.data.label_guarantee || "Não informada"} {dossier.data.guarantee_unit || ""}</dd></div>
+              </dl> : <p className="text-sm text-muted-foreground">Nenhum dossiê vinculado confirmado. Não vincule microrganismos fictícios para cadastrar garantias.</p>}
+              <Label htmlFor={`product-documentary-notes-${produto.id}`}>{fertilizer ? "Notas documentais de composição, garantias e registro" : "Notas documentais de formulação e registro"}</Label>
+              <Textarea id={`product-documentary-notes-${produto.id}`} value={form.observacoes_regulatorias} maxLength={10000} readOnly={!writable || save.isPending || !!failure} onChange={e => change({observacoes_regulatorias:e.target.value})}/>
+              {(query.data?.composicao?.length ?? 0) > 0 && <details><summary>Composição biológica anterior — somente consulta</summary><ProductFormulaBenefits composicao={query.data?.composicao ?? []}/></details>}
+            </section> : <ProductFormulaBenefits composicao={query.data?.composicao ?? []} />}
           </TabsContent>
           <TabsContent value="ia" className="space-y-3">
             {dossier.isError && (
@@ -380,7 +394,7 @@ function ProductFicha({
             />
           </TabsContent>
           <TabsContent value="dossier">
-            <ProductDossierManagement
+            {nonBiological && !dossier.data ? <p role={dossier.isError ? "alert" : "status"}>{dossier.isError ? "Dossiê indisponível; consulta não confirmada." : dossier.isLoading || dossier.isFetching ? "Consultando dossiê…" : "Dossiê sem vínculo confirmado. O contrato atual de criação exige cobertura biológica; não será usado para criar um vínculo fictício. Notas documentais permanecem na ficha, sem validação regulatória ou fiscal."}</p> : <ProductDossierManagement
               onBlockedChange={setDossierBlocked}
               product={{
                 product_id: produto.id,
@@ -390,11 +404,11 @@ function ProductFicha({
                 organization_name: "",
                 owner_organization_id: produto.owner_organization_id ?? "",
               }}
-            />
+            />}
           </TabsContent>
         </Tabs>
       )}
-      <footer className="sticky bottom-0 bg-background border-t py-3 flex flex-wrap justify-end gap-2">
+      <footer className={`${embedded ? "" : "sticky bottom-0"} bg-background border-t py-3 flex flex-wrap justify-end gap-2`}>
         {failure && (
           <>
             <p role="alert">

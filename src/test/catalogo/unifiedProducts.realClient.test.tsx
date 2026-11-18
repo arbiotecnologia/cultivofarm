@@ -624,10 +624,10 @@ it("renomeação permite editar outro campo sem reenviar identidade antiga nem a
  expect(payload).toEqual({resumo_curto:"Texto original",explicacao_tecnica:"Outro campo"});
  expect(evidence.identity.name).toBe("Nome anterior");expect(evidence.candidate_key).toBe("A");
 });
-it.each(["kg","g"] as const)("químico %s preserva legado sem cálculo volumétrico nem composição obrigatória",async unit=>{
+it.each([['quimico','kg'],['quimico','g'],['fertilizante_adubo','kg'],['fertilizante_adubo','g']] as const)("%s %s preserva legado sem cálculo volumétrico nem composição obrigatória",async(family,unit)=>{
  state.unitCap="positive";client();
  const legacy={dose_ml_ha:125,valor_dose_brl:null,valor_litro_brl:300,valor_ha_brl:37.5};
- state.rows=[{id:"p1",nome:"Químico QA",tipo:"fungicida",familia_catalogo:"quimico",unidade_conteudo:unit,ativo:true,b2b_enabled:false,e_insumo:false,updated_at:stamp,owner_organization_id:"org-A",...legacy}];
+ state.rows=[{id:"p1",nome:"Químico QA",tipo:family==='quimico'?'fungicida':'solo',familia_catalogo:family,unidade_conteudo:unit,ativo:true,b2b_enabled:false,e_insumo:false,updated_at:stamp,owner_organization_id:"org-A",...legacy}];
  state.fetch.mockImplementation(async(url,init)=>{
   const name=String(url).split('/rpc/')[1];
   if(name==='tenant_product_list')return json(state.rows);
@@ -650,8 +650,20 @@ it.each(["kg","g"] as const)("químico %s preserva legado sem cálculo volumétr
  const payload=rpcCalls('tenant_product_save')[0].p_payload;
  for(const field of Object.keys(legacy))expect(payload).not.toHaveProperty(field);
  expect(state.rows[0]).toMatchObject(legacy);
- expect(payload).toMatchObject({familia_catalogo:'quimico',unidade_conteudo:unit});
+ expect(payload).toMatchObject({familia_catalogo:family,unidade_conteudo:unit});
  expect(rpcCalls('tenant_catalog_formulacoes_replace')).toHaveLength(0);
+});
+it.each(['l','ml'] as const)('fertilizante %s admite aplicação líquida manual sem sugerir formulação biológica',async unit=>{
+ state.unitCap='positive';client();state.rows=[{id:'p1',nome:'Fertilizante QA',tipo:'solo',familia_catalogo:'fertilizante_adubo',unidade_conteudo:unit,ativo:true,b2b_enabled:false,e_insumo:false,updated_at:stamp,owner_organization_id:'org-A'}];
+ state.fetch.mockImplementation(async(url,init)=>{
+  const name=String(url).split('/rpc/')[1];if(name==='tenant_product_list')return json(state.rows);
+  if(name==='tenant_product_save')return json(ack);if(name)throw new Error(`Unexpected RPC ${name}`);return json([]);
+ });
+ render(<ProdutosTab/>,{wrapper});await screen.findByText('Fertilizante QA');fireEvent.click(screen.getByRole('button',{name:'Editar'}));await unitLoaded(unit==='ml'?'mL':'L');
+ fireEvent.mouseDown(screen.getByRole('tab',{name:'Composição'}),{button:0,ctrlKey:false});expect(screen.queryByRole('button',{name:/\+ Microrganismo/})).toBeNull();
+ fireEvent.mouseDown(screen.getByRole('tab',{name:'Aplicação & Custo'}),{button:0,ctrlKey:false});fireEvent.change(screen.getByLabelText('Dose de aplicação (mL/ha)'),{target:{value:'250'}});
+ fireEvent.click(screen.getByRole('button',{name:'Salvar Produto'}));await waitFor(()=>expect(rpcCalls('tenant_product_save')).toHaveLength(1));
+ expect(rpcCalls('tenant_product_save')[0].p_payload).toMatchObject({familia_catalogo:'fertilizante_adubo',unidade_conteudo:unit,dose_ml_ha:250});expect(rpcCalls('tenant_catalog_formulacoes_replace')).toHaveLength(0);
 });
 it.each(['l','ml'] as const)('%s mantém recálculo líquido e retém rascunho na troca para massa',async unit=>{
  state.unitCap='positive';client();render(<ProdutosTab/>,{wrapper});await screen.findByText('Nenhum produto encontrado');

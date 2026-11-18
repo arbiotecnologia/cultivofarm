@@ -1,3 +1,8 @@
+## 18/11 05:01 — Fertilizantes/Adubos
+- [x] Refinar ficha integrada, notas/garantias documentais em contratos existentes e identidade IA comercial sem inferências; preservar fila anterior.
+- [x] Testar regressões/fontes/erros/autorização/unidades e desktop/mobile QA; relatório em fertilizer-review sem hosted/publicação.
+- [ ] Dossiê estruturado product-only: depende de captura/autoridade canônica pelo root; contrato atual exige microrganismo, não criar wrapper/vínculo fictício.
+
 ## 18/11 04:51 — Massa versus volume no cadastro
 - [x] Bloquear cálculos volumétricos kg/g e unidade desconhecida; preservar valores/drafts sem conversão e químicos sem composição obrigatória.
 - [x] Testar kg/g versus L/mL e troca de unidade; dose textual por cultura/apresentações existentes e limites documentados sem hosted/publicação; cadastro Mancozebe confirmado fica com root.

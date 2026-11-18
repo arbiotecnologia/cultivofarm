@@ -15,6 +15,13 @@ describe('documentação de produto',()=>{
  it('usa fabricante e registro do dossiê, sem replicar autoridade',()=>{
   expect(productResearchIdentity({id,nome:'Produto',funcao_completa:'Finalidade'},{mapa_manufacturer:'Fabricante',mapa_registration_number:'Registro',strain_name:'Cepa'})).toEqual({entity:'produto',id,name:'Produto',manufacturer:'Fabricante',registration:'Registro',strain:'Cepa',purpose:'Finalidade',researchScope:'product_strain'});
  });
+ it('fertilizante pesquisa identidade comercial sem cepa herdada ou garantia inferida',()=>{
+  const identity=productResearchIdentity({id,nome:'Fertilizante QA',familia_catalogo:'fertilizante_adubo',funcao_completa:'Conteúdo documental QA'},{mapa_manufacturer:'Fabricante QA',mapa_registration_number:'Registro QA',strain_name:'Cepa histórica'});
+  expect(identity).toMatchObject({entity:'produto',id,name:'Fertilizante QA',manufacturer:'Fabricante QA',registration:'Registro QA',strain:'',researchScope:'product_strain'});
+  expect(identity.purpose).toContain('Registro de fertilizante não equivale a registro de agrotóxico');
+  for(const field of ['label_guarantee','guarantee_unit','formulation','mapa_registration_number','concentracao','nutrientes','dose_ml_ha'])expect(PRODUCT_DOCUMENTARY_FIELDS).not.toContain(field);
+  expect(productResearchIdentity({id,nome:'QA',familia_catalogo:'fertilizante_adubo'},null)).toMatchObject({manufacturer:'',registration:'',strain:''});
+ });
  it('filtra evidência alterada manualmente ou de outro produto',()=>{
   expect(matchingProductEvidence([evidence],{resumo_curto:'Manual'},id,'Produto')).toEqual([]);
   expect(matchingProductEvidence([evidence],{resumo_curto:evidence.value},'outro','Produto')).toEqual([]);

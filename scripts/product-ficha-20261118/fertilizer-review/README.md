@@ -1,0 +1,19 @@
+# Fertilizantes/Adubos — revisão local
+
+## Implementado
+- Família canônica preservada sem inferir classificação pelo tipo de aplicação. Fertilizantes kg/g não usam cálculo líquido; L/mL mantêm o editor manual existente. Nenhuma composição microbiológica obrigatória.
+- Ficha integrada com Composição e garantias: formulação/garantia/unidade do dossiê canônico em consulta; notas manuais em `product_technical_profiles.observacoes_regulatorias` pelo mesmo `tenant_catalog_root_save`, CAS e recibo existentes. São notas documentais, não garantias estruturadas nem aprovação. Rascunho permanece ao trocar seção/refetch e tem cancelamento explícito; fontes manuais continuam no editor canônico de vínculos.
+- IA permanece limitada aos nove campos documentais existentes, seleção explícita e fontes por candidato/texto exatos. Identidade comercial de fertilizante não herda cepa histórica; propósito distingue registro de fertilizante de agrotóxico e proíbe inferir garantias/teores/doses/registro/preços/aprovação. Não alterado serviço HMLv4, bundles ou contratos servidor.
+- Rodapé interno não fica sobre o campo no editor integrado; o rodapé do diálogo pai conserva seu comportamento.
+
+## Lacuna estrutural para revisão root (não disfarçada)
+O contrato atual `tenant_product_dossier_management_context` retorna `dossier_microorganism_id`; o schema de detalhe exige `microorganism_id:UUID`, e `tenant_product_dossier_create_covered` exige cobertura microbiológica. Portanto não existe neste recorte autoridade comprovada para criar um dossiê estruturado de fertilizante mineral sem microrganismo. A UI não chama esse criador para produto não biológico com dossiê ausente e não inventa um vínculo. Garantias estruturadas/registro continuam bloqueados nessa condição; notas manuais não substituem esse dossiê.
+
+Para delta SQL revisável, root precisa identificar/capturar localmente o motor canônico e a tabela privada de dossiês, context/detail/create/save/recibos/authority, owners/ACL/RLS/triggers/PRE e sua política de alvo exclusivamente produto. Proposta de contrato a revisar: context devolve também `dossier_id:UUID|null` e tipo de sujeito explícito; detalhe consultável por `product_id+dossier_id`, mantendo compatibilidade do leitor biológico; criação product-only exige autoridade fresh pós-esperas/replay, dono tenant, CAS/recibo e gate OFF. Não criar wrapper que simule essa autoridade, não converter schema histórico, não repinar capturas ou alterar instalação atual. Sem essas definições, este pacote apresenta a lacuna e não contém instalador fictício. PRE/POST integral atômico e rollback deny-only continuam obrigatórios para um futuro delta root.
+
+## Evidências/limites
+71 arquivos / 1.197 Vitest PASS (catálogo + protocolos + dossiê), incluindo quatro unidades, preservação legado, composição sem microrganismo, notas com revisão observada, fontes IA exatas e rejeição de garantia fora da allowlist; cenários existentes de erros, revogação e isolamento permanecem. PostgreSQL não repetido: nenhum SQL alterado. Build automático OK; compilador manual não executado conforme plataforma.
+
+Chromium desktop 1280×1800 e mobile 390×844, Auth/transporte interceptados e dados QA: massa bloqueada, metadata preserva legado, notas salvas e relidas pela UI, status rascunho; sem pageerror após corrigir respostas simuladas. Isso não prova JWT/RLS/HML. Garantias/registro reais e IA real de fertilizante não certificados. Nenhum fertilizante comercial criado. Unizeb Gold/bula e cadastro químico são fatos e trabalho reportados pelo root, não consultados/cadastrados pelo agente. Nenhuma publicação, produção, HML, subagente ou transferência de capturas.
+
+Rollback frontend: reverter os arquivos desta etapa; notas confirmadas e histórico não são apagados. Preservar ajustes anteriores de massa/químico e fila SQL/fontes 8/9/10; instalação e homologação dessas pendências continuam com root.

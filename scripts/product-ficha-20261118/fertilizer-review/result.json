@@ -1,0 +1,30 @@
+{
+  "vitest": {
+    "files": 71,
+    "tests": 1197,
+    "exit_code": 0,
+    "command": "bun run test -- src/test/catalogo src/test/protocolos src/test/fiscal/productDossierManagement.test.tsx"
+  },
+  "browser": {
+    "viewports": [
+      [
+        1280,
+        1800
+      ],
+      [
+        390,
+        844
+      ]
+    ],
+    "exit_code": 0,
+    "mass_blocked": true,
+    "metadata_legacy_preserved": true,
+    "documentary_notes_saved_readback": true,
+    "page_errors": [],
+    "identity": "synthetic QA; no hosted JWT evidence",
+    "warnings": "preexisting React refs/Select"
+  },
+  "build": "2026-11-18T05:14:21Z ===\nbuild OK",
+  "sql": "unchanged",
+  "pending": "canonical product-only dossier definitions/authority from root; no hosted validation"
+}
