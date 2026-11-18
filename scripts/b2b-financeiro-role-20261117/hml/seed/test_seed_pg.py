@@ -195,10 +195,14 @@ try:
     tj = json.loads([l for l in out.splitlines() if l.startswith("QA_TITLES_JSON|")][0].split("|", 1)[1])
     assert set(tj) == {"A", "B", "C"} and all(len(v) == 1 and len(v[0]["installments"]) == 2 for v in tj.values()); ok("seed cria títulos A/B/C com pedido, 2 parcelas e vínculo")
     assert psql("SELECT count(*) FROM public.partner_order_payment_terms")=="3" and psql("SELECT count(*) FROM public.partner_order_payment_schedule WHERE receivable_installment_id IS NOT NULL")=="6"
-    assert psql("SELECT count(*) FROM public.financial_audit_log WHERE entity_type='accounts_receivable_installments' AND action='INSERT' AND entity_id IN (SELECT i.id FROM public.accounts_receivable_installments i JOIN public.accounts_receivable r ON r.id=i.receivable_id WHERE r.description LIKE 'QA-FIN-%')")=="6"
-    assert psql("SELECT count(*) FROM public.partner_orders WHERE numero LIKE 'QA-FIN-%' AND status='aprovado' AND internal_origin_snapshot IS NULL AND c2_external_origin_snapshot IS NULL AND NOT ready_for_production")=="3"
-    assert psql("SELECT count(*) FROM public.partner_financial_settings")=="3" and psql("SELECT count(*) FROM public.commercial_audit_log")=="3" and psql("SELECT count(*) FROM public.production_timeline_events")=="3"
+    assert psql("SELECT count(*) FROM public.financial_audit_log WHERE entity_type='accounts_receivable_installments' AND action='INSERT' AND entity_id IN (SELECT i.id FROM public.accounts_receivable_installments i JOIN public.accounts_receivable r ON r.id=i.receivable_id WHERE r.description LIKE 'QA-FIN-%')")=="7"
+    assert psql("SELECT count(*) FROM public.partner_orders WHERE numero LIKE 'QA-FIN-%' AND status='aprovado' AND internal_origin_snapshot IS NULL AND c2_external_origin_snapshot IS NULL AND NOT ready_for_production")=="4"
+    assert psql("SELECT count(*) FROM public.partner_financial_settings")=="3" and psql("SELECT count(*) FROM public.commercial_audit_log")=="4" and psql("SELECT count(*) FROM public.production_timeline_events")=="4"
     assert psql("SELECT count(*) FROM public.partner_risk_scores")=="3" and psql("SELECT count(*) FROM public.production_planning")=="0" and psql("SELECT count(*) FROM public.notificacoes_operacionais")=="0"
+    assert psql("SELECT status||'|'||(SELECT string_agg(status||':'||received_amount, ',') FROM public.accounts_receivable_installments WHERE receivable_id=r.id) FROM public.accounts_receivable r WHERE description='QA-FIN-A título encerrado (histórico)'") == "PAID|PAID:400.00"
+    assert psql("SELECT count(*) FROM public.partner_order_financial_links WHERE financial_status='recebido'") == "1" and "QA_HISTORY_JSON|" in out
+    ex = json.loads(psql("SELECT public.fn_b2b_credit_exposure('%s', 0, NULL)" % PA)); assert float(ex["saldo_em_aberto"]) == 1000 and float(ex["comprometido_nao_faturado"]) == 0, ex
+    ok("histórico A: título encerrado fictício (PAID, sem pagamento) vinculado e NÃO aditivo ao crédito legado real (aberto=1000)")
     ok("gatilhos reais executaram: parcelas geradas pelo motor real, auditorias/timeline/risco gravados, sem planejamento/notificação")
     assert psql("SELECT count(*) FROM public.partner_orders WHERE internal_economic_snapshot->>'schema_version'='1' AND internal_economic_snapshot->>'qa_fixture'='true' AND jsonb_array_length(internal_economic_snapshot->'schedule')=2")=="3"
     assert psql("SELECT to_regprocedure('qa_b2bfin.seed_legacy_origin(uuid,uuid,uuid,uuid,text)') IS NULL")=="t"; ok("origem legada fictícia completa (termos, cronograma, snapshot selado, auditoria) e função de seed removida")

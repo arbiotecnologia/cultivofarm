@@ -111,7 +111,7 @@ SELECT qa_b2bfin.relax('platform_private.b2b_internal_order_snapshot_guard()'::r
 SELECT qa_b2bfin.relax('public.tg_partner_orders_require_items()'::regprocedure);
 SELECT qa_b2bfin.relax('platform_private.c2p1_settings_fence()'::regprocedure);
 DO $$
-DECLARE pmap jsonb := '{"A":["cdb78993-89e4-48db-956e-f40b014a8146","525fea87-e27e-43f7-af7b-a30064188332"],"B":["9d53f280-f828-4af8-a08c-3574263dc466","525fea87-e27e-43f7-af7b-a30064188332"],"C":["6100c3ac-ff5b-4596-a0e3-92665a5dcaab","85ba8b71-8514-4ec9-90d3-bfc7ab3ed214"]}'; k text; pid uuid; org uuid; cli uuid; cat uuid; oid_ uuid; rid uuid; sid uuid; n int; orgs uuid[] := '{525fea87-e27e-43f7-af7b-a30064188332,85ba8b71-8514-4ec9-90d3-bfc7ab3ed214}';
+DECLARE pmap jsonb := '{"A":["cdb78993-89e4-48db-956e-f40b014a8146","525fea87-e27e-43f7-af7b-a30064188332"],"B":["9d53f280-f828-4af8-a08c-3574263dc466","525fea87-e27e-43f7-af7b-a30064188332"],"C":["6100c3ac-ff5b-4596-a0e3-92665a5dcaab","85ba8b71-8514-4ec9-90d3-bfc7ab3ed214"]}'; k text; pid uuid; org uuid; cli uuid; cat uuid; oid_ uuid; rid uuid; sid uuid; hid uuid; hrid uuid; n int; orgs uuid[] := '{525fea87-e27e-43f7-af7b-a30064188332,85ba8b71-8514-4ec9-90d3-bfc7ab3ed214}';
 BEGIN
  SELECT id INTO cat FROM public.financial_categories WHERE active AND upper(type) = 'RECEITA' ORDER BY created_at, id LIMIT 1;
  IF cat IS NULL THEN RAISE EXCEPTION 'QA_SEED_BLOCKED: nenhuma categoria RECEITA ativa (não criada pelo seed)'; END IF;
@@ -138,6 +138,21 @@ BEGIN
   INSERT INTO public.partner_order_financial_links (partner_order_id, partner_id, receivable_id) VALUES (oid_, pid, rid);
   PERFORM qa_b2bfin.seed_legacy_origin(oid_, rid, pid, org, k);
   INSERT INTO qa_b2bfin.manifest SELECT 'link', k, 'public.partner_order_financial_links', id FROM public.partner_order_financial_links WHERE receivable_id = rid;
+  -- Histórico (só A): título fictício ENCERRADO (PAID por marcação, sem baixa/pagamento/recibo), vinculado e não aditivo ao crédito.
+  IF k = 'A' THEN
+   hid := gen_random_uuid(); hrid := gen_random_uuid();
+   INSERT INTO qa_b2bfin.manifest VALUES ('order', 'A_HIST', 'public.partner_orders', hid), ('receivable_closed', 'A_HIST', 'public.accounts_receivable', hrid);
+   INSERT INTO public.partner_orders (id, numero, partner_id, cliente_id, status, subtotal, desconto_total, total, ready_for_production, observacoes)
+    VALUES (hid, 'QA-FIN-A-HIST', pid, cli, 'aprovado', 400.00, 0, 400.00, false, 'QA-FIN fixture sintética (histórico encerrado)');
+   INSERT INTO public.accounts_receivable (id, origin_type, origin_id, description, category_id, total_amount, issue_date, first_due_date, installment_count, partner_id, organization_id, notes, fiscal_invoice_required)
+    VALUES (hrid, 'B2B_ORDER', hid, 'QA-FIN-A título encerrado (histórico)', cat, 400.00, current_date - 90, current_date - 60, 1, pid, org, 'QA-FIN fixture sintética encerrada sem pagamento real', false);
+   IF (SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id = hrid) <> 1 THEN RAISE EXCEPTION 'QA_SEED_INCOMPLETE: histórico sem parcela'; END IF;
+   INSERT INTO qa_b2bfin.manifest SELECT 'installment_closed', 'A_HIST', 'public.accounts_receivable_installments', id FROM public.accounts_receivable_installments WHERE receivable_id = hrid;
+   UPDATE public.accounts_receivable_installments SET status = 'PAID', received_amount = original_amount WHERE receivable_id = hrid;
+   UPDATE public.accounts_receivable SET status = 'PAID' WHERE id = hrid;
+   INSERT INTO public.partner_order_financial_links (partner_order_id, partner_id, receivable_id, financial_status) VALUES (hid, pid, hrid, 'recebido');
+   INSERT INTO qa_b2bfin.manifest SELECT 'link', 'A_HIST', 'public.partner_order_financial_links', id FROM public.partner_order_financial_links WHERE receivable_id = hrid;
+  END IF;
   IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings WHERE partner_id = pid) THEN
    sid := gen_random_uuid(); INSERT INTO qa_b2bfin.manifest VALUES ('credit_settings', k, 'public.partner_financial_settings', sid);
    INSERT INTO public.partner_financial_settings (id, partner_id, credit_limit) VALUES (sid, pid, CASE k WHEN 'A' THEN 5000 WHEN 'B' THEN 7000 ELSE 9000 END);
@@ -155,4 +170,7 @@ SELECT 'QA_TITLES_JSON' k, jsonb_object_agg(label, t) v FROM (
  SELECT m.label, jsonb_agg(jsonb_build_object('id', m.id, 'total', (SELECT total_amount FROM public.accounts_receivable WHERE id = m.id), 'order_id', (SELECT id FROM qa_b2bfin.manifest o WHERE o.kind='order' AND o.label=m.label),
    'installments', (SELECT jsonb_agg(i.id ORDER BY i.id) FROM qa_b2bfin.manifest i WHERE i.kind='installment' AND i.label=m.label))) t
  FROM qa_b2bfin.manifest m WHERE m.kind = 'receivable' GROUP BY m.label) x;
+SELECT 'QA_HISTORY_JSON' k, jsonb_build_object('A', (SELECT jsonb_build_object('id', m.id, 'status', 'PAID', 'total', 400.00, 'credit_additive', false,
+  'order_id', (SELECT id FROM qa_b2bfin.manifest o WHERE o.kind='order' AND o.label='A_HIST'),
+  'installments', (SELECT jsonb_agg(i.id) FROM qa_b2bfin.manifest i WHERE i.kind='installment_closed')) FROM qa_b2bfin.manifest m WHERE m.kind='receivable_closed')) v;
 COMMIT;

@@ -1,0 +1,5 @@
+// Entrada HML-only. Para implantar: copiar para supabase/functions/qa-fin-delete-users-hml/index.ts (com handler.ts),
+// definir QA_DELETE_USERS_ENABLED=true só durante o uso; depois: unset/false e excluir a função (ou deixar expirar).
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { handler } from "./handler.ts";
+Deno.serve((req) => handler(req, createClient));

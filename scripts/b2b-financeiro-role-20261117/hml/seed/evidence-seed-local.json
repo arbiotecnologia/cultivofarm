@@ -37,6 +37,10 @@
    "status": "PASS"
   },
   {
+   "name": "histórico A: título encerrado fictício (PAID, sem pagamento) vinculado e NÃO aditivo ao crédito legado real (aberto=1000)",
+   "status": "PASS"
+  },
+  {
    "name": "gatilhos reais executaram: parcelas geradas pelo motor real, auditorias/timeline/risco gravados, sem planejamento/notificação",
    "status": "PASS"
   },
@@ -53,7 +57,7 @@
    "status": "PASS"
   },
   {
-   "name": "dry-run lista 88 linhas (tabela/ID/hash/vínculo), sem recusas e sem alterar nada",
+   "name": "dry-run lista 99 linhas (tabela/ID/hash/vínculo), sem recusas e sem alterar nada",
    "status": "PASS"
   },
   {
