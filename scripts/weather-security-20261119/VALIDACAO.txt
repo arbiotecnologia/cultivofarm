@@ -1,17 +1,18 @@
 Cultivo Farm - seguranca da sync-clima e localizacao - 2026-11-19
 
-Homologacao vrlcdwmlytukrjezrrnf: Edge sync-clima versao 7, ACTIVE, verify_jwt=true.
+Homologacao vrlcdwmlytukrjezrrnf: Edge sync-clima versao 8, ACTIVE, verify_jwt=true.
 Autenticacao do usuario tambem obrigatoria via /auth/v1/user. Nenhuma chave service_role no novo handler.
 Permissao: administrador/gestor ativo, organizacao ativa, recurso recomendações_alertas, fazenda ativa da mesma organizacao e acesso a fazenda.
 Gravacao: SQL estatico, transacao unica, periodo validado, oito dias, lock por fazenda e revalidacao do contexto apos esperas e antes da resposta.
 Localizacao: coordenadas cadastradas prioritarias. Ausencia/par legado 0,0 usa municipio/UF exatos; ambiguidades e cadastro incompleto recusados. Coordenadas do municipio nao sao gravadas como coordenadas da fazenda.
 
 Testes executados:
-- 16 testes locais do handler: PASS.
+- 17 testes locais do handler: PASS. Inclui a desambiguacao de Paracatu/MG pela identidade do municipio (admin2), rejeitando a localidade homonima em Brasilia de Minas.
 - 23 regressoes existentes do clima + 4 testes da tela montada: PASS (27).
 - Build Vite de producao: exit 0, 38.03 s. Avisos existentes de tamanho/importacao de chunks.
 - TypeScript tsconfig.app.json --noEmit: exit 0.
-- HTTPS real, versao 7 com JWT do gateway habilitado: coordenadas 200/8 registros, cidade 200/8 registros, outra organizacao 403, anonimo 401. Resultado em live-results.json.
+- HTTPS real, versao 8 com JWT do gateway habilitado: coordenadas 200/8 registros, cidade Paracatu/MG 200/8 registros, outra organizacao 403, anonimo 401. Resultado em live-results.json.
+- 20 testes existentes de protecao JWT das Edges: PASS. Total local: 64 testes.
 - SQL com papel authenticated e rollback: repeticao sem duplicacao, metrica invalida, contexto geográfico alterado, RPC estrangeiro, INSERT direto estrangeiro recusados; hash dos dados preservado nas falhas. sql-validation.sql.
 - Fixtures sinteticas de clientes/fazendas removidas; permissoes temporarias encerradas com auditoria.
 

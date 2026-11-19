@@ -22,7 +22,7 @@ export async function resolveLocation(ctx,fetcher){
  const url=new URL('https://geocoding-api.open-meteo.com/v1/search');
  url.search=new URLSearchParams({name:`${city}, ${stateName}`,countryCode:'BR',count:'100',language:'pt',format:'json'}).toString();
  const body=await remoteJson(fetcher,url);
- const matches=(body.results??[]).filter(r=>r.country_code==='BR'&&norm(r.name)===norm(city)&&norm(r.admin1)===norm(stateName)&&/^PPL/.test(r.feature_code??'')&&Number.isFinite(r.latitude)&&Number.isFinite(r.longitude)&&Math.abs(r.latitude)<=90&&Math.abs(r.longitude)<=180);
+ const matches=(body.results??[]).filter(r=>r.country_code==='BR'&&norm(r.name)===norm(city)&&norm(r.admin1)===norm(stateName)&&norm(r.admin2)===norm(city)&&/^PPL/.test(r.feature_code??'')&&Number.isFinite(r.latitude)&&Number.isFinite(r.longitude)&&Math.abs(r.latitude)<=90&&Math.abs(r.longitude)<=180);
  const distinct=[...new Map(matches.map(r=>[r.id,r])).values()];
  if(distinct.length!==1) throw new Failure(422,'Não foi possível identificar a cidade de forma única. Confira cidade/estado ou cadastre as coordenadas da fazenda.');
  return {latitude:distinct[0].latitude,longitude:distinct[0].longitude,origem:'cidade',descricao:`${city} / ${state} (referência municipal)`};
