@@ -1,0 +1,14 @@
+import {beforeEach,afterEach,expect,it,vi} from 'vitest';
+import {render,screen,fireEvent,cleanup,waitFor} from '@testing-library/react';
+const fixture=vi.hoisted(()=>({farm:{id:'farm-a',nome:'Fazenda A',latitude:null as number|null,longitude:null as number|null,municipio:'Uberlândia',estado:'MG'},invoke:vi.fn()}));
+vi.mock('@tanstack/react-query',()=>({useQuery:({queryKey}:any)=>({data:queryKey[0]==='fazendas-clima'?[fixture.farm]:[],refetch:vi.fn(),isLoading:false,isError:false})}));
+vi.mock('@/integrations/supabase/client',()=>({supabase:{functions:{invoke:fixture.invoke}}}));
+vi.mock('@/components/ui/select',()=>({Select:({value,onValueChange,children}:any)=><select aria-label="Fazenda" value={value} onChange={e=>onValueChange(e.target.value)}><option value=""/>{children}</select>,SelectContent:({children}:any)=><>{children}</>,SelectItem:({value,children}:any)=><option value={value}>{children}</option>,SelectTrigger:()=>null,SelectValue:()=>null}));
+import {DashboardClimatico} from '@/components/previsao/DashboardClimatico';
+beforeEach(()=>{fixture.farm={id:'farm-a',nome:'Fazenda A',latitude:null,longitude:null,municipio:'Uberlândia',estado:'MG'};fixture.invoke.mockReset();fixture.invoke.mockResolvedValue({data:{success:true,registros:8,localizacao:{origem:'cidade',descricao:'Uberlândia/MG'}}});});
+afterEach(cleanup);
+const selectFarm=()=>{render(<DashboardClimatico/>);fireEvent.change(screen.getByLabelText('Fazenda'),{target:{value:'farm-a'}});};
+it('habilita cidade sem coordenadas e envia apenas a identidade da fazenda',async()=>{selectFarm();expect(screen.getByText(/o clima usará a localização de/)).toBeInTheDocument();const button=screen.getByRole('button',{name:'Sincronizar Clima'});expect(button).toBeEnabled();fireEvent.click(button);await waitFor(()=>expect(fixture.invoke).toHaveBeenCalledWith('sync-clima',{body:{fazenda_id:'farm-a'}}));});
+it('prioriza coordenadas inclusive latitude zero sem cidade cadastrada',()=>{fixture.farm.latitude=0;fixture.farm.longitude=-48;fixture.farm.municipio='';fixture.farm.estado='';selectFarm();expect(screen.getByRole('button',{name:'Sincronizar Clima'})).toBeEnabled();expect(screen.queryByText(/o clima usará a localização de/)).not.toBeInTheDocument();});
+it('bloqueia sincronização sem coordenadas e sem cidade completa',()=>{fixture.farm.estado='';selectFarm();expect(screen.getByRole('button',{name:'Sincronizar Clima'})).toBeDisabled();});
+it('usa a cidade quando o cadastro legado contém o par 0,0',()=>{fixture.farm.latitude=0;fixture.farm.longitude=0;selectFarm();expect(screen.getByRole('button',{name:'Sincronizar Clima'})).toBeEnabled();expect(screen.getByText(/o clima usará a localização de/)).toBeInTheDocument();});

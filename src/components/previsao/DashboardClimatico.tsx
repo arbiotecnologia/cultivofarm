@@ -44,9 +44,9 @@ export function DashboardClimatico() {
   const [form, setForm] = useState<FormClimaManual>(FORM_INICIAL);
 
   const fazendasQuery = useQuery({
-    queryKey: ["fazendas"],
+    queryKey: ["fazendas-clima"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("fazendas").select("id, nome, latitude, longitude").order("nome");
+      const { data, error } = await (supabase as any).from("fazendas").select("id, nome, latitude, longitude, municipio, estado").order("nome");
       if (error) throw error;
       return data ?? [];
     },
@@ -90,11 +90,14 @@ export function DashboardClimatico() {
   const selectedFazenda = (fazendasQuery.data ?? []).find((f: any) => f.id === fazendaId);
   const coords = selectedFazenda ? validarCoordenadas(selectedFazenda.latitude, selectedFazenda.longitude) : null;
   const hasCoords = coords?.ok === true;
+  const missingCoords = selectedFazenda?.latitude == null || selectedFazenda?.longitude == null || (Number(selectedFazenda.latitude) === 0 && Number(selectedFazenda.longitude) === 0);
+  const useCity = !!selectedFazenda && missingCoords && !!selectedFazenda.municipio?.trim() && !!selectedFazenda.estado?.trim();
+  const canSync = hasCoords || useCity;
 
   const handleSync = async () => {
     if (syncing) return;
     if (!fazendaId) { toast.error("Selecione uma fazenda"); return; }
-    if (!coords?.ok) { toast.error(coords?.erro ?? "Coordenadas indisponíveis"); return; }
+    if (!canSync) { toast.error("Cadastre coordenadas válidas ou cidade e estado na fazenda."); return; }
     setSyncing(true);
     try {
       const invoke = supabase.functions.invoke("sync-clima", { body: { fazenda_id: fazendaId } });
@@ -104,7 +107,7 @@ export function DashboardClimatico() {
       const { data, error } = (await Promise.race([invoke, timeout])) as any;
       if (error) throw error;
       if (data?.error) { toast.error(data.error); return; }
-      toast.success(`Dados de ${FONTE_AUTOMATICA} sincronizados: ${data?.registros ?? 0} registros (${data?.periodo ?? "período informado pela fonte"})`);
+      toast.success(`Dados de ${FONTE_AUTOMATICA} sincronizados: ${data?.registros ?? 0} registros (${data?.periodo ?? "período informado pela fonte"})${data?.localizacao?.origem === "cidade" ? ` · ${data.localizacao.descricao}` : ""}`);
       await climaQuery.refetch();
     } catch (e: any) {
       toast.error(e?.message || "Erro ao sincronizar dados climáticos");
@@ -160,8 +163,8 @@ export function DashboardClimatico() {
             size="sm"
             variant="outline"
             onClick={handleSync}
-            disabled={!fazendaId || syncing || !hasCoords}
-            title={!hasCoords ? "Cadastre latitude/longitude válidas da fazenda primeiro" : `Buscar dados climáticos automáticos via ${FONTE_AUTOMATICA}`}
+            disabled={!fazendaId || syncing || !canSync}
+            title={!canSync ? "Cadastre coordenadas ou cidade e estado da fazenda" : useCity ? `Buscar clima de ${selectedFazenda.municipio}/${selectedFazenda.estado}` : `Buscar dados climáticos automáticos via ${FONTE_AUTOMATICA}`}
           >
             <RefreshCw className={`h-4 w-4 mr-1 ${syncing ? "animate-spin" : ""}`} />
             {syncing ? "Sincronizando..." : "Sincronizar Clima"}
@@ -199,12 +202,16 @@ export function DashboardClimatico() {
         </Card>
       )}
 
-      {fazendaId && coords && !coords.ok && (
+      {fazendaId && !canSync && (
         <Card className="border-orange-300 bg-orange-50 dark:bg-orange-950/20">
           <CardContent className="py-3 text-sm text-orange-700 dark:text-orange-400">
-            ⚠️ {coords.erro} A sincronização automática fica desabilitada até a correção.
+            Cadastre coordenadas válidas ou cidade e estado da fazenda para sincronizar o clima.
           </CardContent>
         </Card>
+      )}
+
+      {useCity && (
+        <p className="text-sm text-muted-foreground">Sem coordenadas da fazenda: o clima usará a localização de {selectedFazenda.municipio}/{selectedFazenda.estado}. Cadastre as coordenadas para maior precisão.</p>
       )}
 
       {fazendaId && (
@@ -251,9 +258,9 @@ export function DashboardClimatico() {
       ) : (
         <Card><CardContent className="py-12 text-center text-muted-foreground">
           {fazendaId
-            ? hasCoords
+            ? canSync
               ? "Nenhum dado climático nos últimos 7 dias. Clique em 'Sincronizar Clima' para buscar dados automáticos."
-              : "Nenhum dado climático. Cadastre coordenadas válidas ou use 'Inserir Manual'."
+              : "Nenhum dado climático. Cadastre coordenadas ou cidade e estado, ou use 'Inserir Manual'."
             : "Selecione uma fazenda para visualizar os dados climáticos."}
         </CardContent></Card>
       )}

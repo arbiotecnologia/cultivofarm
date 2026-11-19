@@ -1,0 +1,598 @@
+SET LOCAL lock_timeout='5s';
+SET LOCAL statement_timeout='60s';
+-- Execute na mesma transacao da publicacao; aborta se a base mudou.
+DO $preflight$
+BEGIN
+IF (select md5(pg_get_functiondef('platform_private.tenant_catalog_ref_owner(text,uuid)'::regprocedure))) IS DISTINCT FROM '9e2a23293124f7953b2d9b63d46a1890' THEN RAISE EXCEPTION 'baseline_changed: tenant_catalog_ref_owner'; END IF;
+IF (select md5(pg_get_functiondef('public.tenant_catalog_root_delete(text,uuid,timestamp with time zone,uuid)'::regprocedure))) IS DISTINCT FROM 'df00f52431d468eb518217c118a2f327' THEN RAISE EXCEPTION 'baseline_changed: tenant_catalog_root_delete'; END IF;
+IF (select md5(pg_get_functiondef('public.tenant_catalog_root_save(text,uuid,jsonb,timestamp with time zone,uuid)'::regprocedure))) IS DISTINCT FROM 'ae4d6655682def0fa68a15ba844dd6b3' THEN RAISE EXCEPTION 'baseline_changed: tenant_catalog_root_save'; END IF;
+IF (select md5(pg_get_functiondef('public.tenant_microorganism_ficha_save_v1(uuid,timestamp with time zone,timestamp with time zone,jsonb,jsonb,uuid)'::regprocedure))) IS DISTINCT FROM 'a33d571cf0ad6ff17e7ae3b4538a5184' THEN RAISE EXCEPTION 'baseline_changed: tenant_microorganism_ficha_save_v1'; END IF;
+END $preflight$;
+
+
+
+DO $schema_guard$ BEGIN IF (select jsonb_build_object('cfg',(select jsonb_agg(to_jsonb(x) order by root) from platform_private.tenant_catalog_root_cfg x),'columns',(select jsonb_agg(jsonb_build_object('table',c.relname,'column',a.attname,'type',format_type(a.atttypid,a.atttypmod),'default',pg_get_expr(d.adbin,d.adrelid),'notnull',a.attnotnull) order by c.relname,a.attnum) from pg_attribute a join pg_class c on c.oid=a.attrelid join pg_namespace n on n.oid=c.relnamespace left join pg_attrdef d on d.adrelid=c.oid and d.adnum=a.attnum where n.nspname='public' and c.relname in ('microrganismos','culturas','catalogo_volumes','catalogo_alvos','product_technical_profiles','microorganism_technical_profiles','microorganism_crop_recommendations','microorganism_targets','catalog_technical_sources') and a.attnum>0 and not a.attisdropped))) IS DISTINCT FROM $metadata${"cfg":[{"kind":"root","refs":{},"root":"catalogo_alvos","allowed":["nome","tipo","nome_cientifico","descricao","sinonimos","ativo"],"parent_col":"","parent_tbl":"","safe_defaults":{}},{"kind":"root","refs":{"produto_id":"produtos","microrganismo_id":"microrganismos"},"root":"catalogo_volumes","allowed":["item_tipo","produto_id","microrganismo_id","volume_ml","rotulo","preco_brl","moeda","ativo","ordem","preco_litro_brl","valor_dose_100ml_brl","doses_por_volume"],"parent_col":"","parent_tbl":"","safe_defaults":{}},{"kind":"root","refs":{},"root":"culturas","allowed":["nome","descricao","ativo"],"parent_col":"","parent_tbl":"","safe_defaults":{}},{"kind":"profile","refs":{"microrganismo_id":"microrganismos"},"root":"microorganism_technical_profiles","allowed":["microrganismo_id","resumo_curto","mecanismo_acao","beneficios_agronomicos","explicacao_tecnica","explicacao_produtor","explicacao_b2b","indicacoes_uso","cuidados_aplicacao","compatibilidade","armazenamento","observacoes_regulatorias"],"parent_col":"microrganismo_id","parent_tbl":"microrganismos","safe_defaults":{}},{"kind":"root","refs":{"product_id":"produtos"},"root":"microrganismos","allowed":["nome","tipo","nome_cientifico","concentracao_ufc_ml","concentracao_label","dose_ml_ha","valor_dose_brl","fornecedor","safra_referencia","producao_on_farm","meio_cultivo","funcao_agronomica","observacoes","ativo","b2b_enabled","codigo","descricao","preco_tabela","valor_litro_brl","product_id"],"parent_col":"","parent_tbl":"","safe_defaults":{"b2b_enabled":"false"}},{"kind":"profile","refs":{"produto_id":"produtos"},"root":"product_technical_profiles","allowed":["produto_id","resumo_curto","beneficio_combinado","explicacao_tecnica","explicacao_produtor","explicacao_b2b","indicacoes_uso","janela_aplicacao","cuidados_aplicacao","compatibilidade","observacoes_regulatorias"],"parent_col":"produto_id","parent_tbl":"produtos","safe_defaults":{}}],"columns":[{"type":"uuid","table":"catalog_technical_sources","column":"id","default":"gen_random_uuid()","notnull":true},{"type":"text","table":"catalog_technical_sources","column":"entidade_tipo","default":null,"notnull":true},{"type":"uuid","table":"catalog_technical_sources","column":"entidade_id","default":null,"notnull":true},{"type":"text","table":"catalog_technical_sources","column":"fonte_titulo","default":null,"notnull":true},{"type":"text","table":"catalog_technical_sources","column":"fonte_url","default":null,"notnull":false},{"type":"text","table":"catalog_technical_sources","column":"fonte_tipo","default":null,"notnull":true},{"type":"text","table":"catalog_technical_sources","column":"idioma_original","default":null,"notnull":false},{"type":"text","table":"catalog_technical_sources","column":"pais_origem","default":null,"notnull":false},{"type":"text","table":"catalog_technical_sources","column":"resumo_evidencia","default":null,"notnull":false},{"type":"text","table":"catalog_technical_sources","column":"nivel_confianca","default":"'medio'::text","notnull":true},{"type":"date","table":"catalog_technical_sources","column":"data_consulta","default":"CURRENT_DATE","notnull":false},{"type":"text","table":"catalog_technical_sources","column":"observacoes","default":null,"notnull":false},{"type":"uuid","table":"catalog_technical_sources","column":"created_by","default":null,"notnull":false},{"type":"uuid","table":"catalog_technical_sources","column":"updated_by","default":null,"notnull":false},{"type":"timestamp with time zone","table":"catalog_technical_sources","column":"created_at","default":"now()","notnull":true},{"type":"timestamp with time zone","table":"catalog_technical_sources","column":"updated_at","default":"now()","notnull":true},{"type":"text","table":"catalog_technical_sources","column":"source_key","default":null,"notnull":true},{"type":"uuid","table":"catalogo_alvos","column":"id","default":"gen_random_uuid()","notnull":true},{"type":"text","table":"catalogo_alvos","column":"nome","default":null,"notnull":true},{"type":"text","table":"catalogo_alvos","column":"nome_normalizado","default":null,"notnull":true},{"type":"text","table":"catalogo_alvos","column":"tipo","default":null,"notnull":true},{"type":"text","table":"catalogo_alvos","column":"nome_cientifico","default":null,"notnull":false},{"type":"text","table":"catalogo_alvos","column":"descricao","default":null,"notnull":false},{"type":"text[]","table":"catalogo_alvos","column":"sinonimos","default":"'{}'::text[]","notnull":true},{"type":"boolean","table":"catalogo_alvos","column":"ativo","default":"true","notnull":true},{"type":"uuid","table":"catalogo_alvos","column":"criado_por","default":null,"notnull":false},{"type":"timestamp with time zone","table":"catalogo_alvos","column":"created_at","default":"now()","notnull":true},{"type":"timestamp with time zone","table":"catalogo_alvos","column":"updated_at","default":"now()","notnull":true},{"type":"uuid","table":"catalogo_alvos","column":"owner_organization_id","default":null,"notnull":false},{"type":"uuid","table":"catalogo_volumes","column":"id","default":"gen_random_uuid()","notnull":true},{"type":"text","table":"catalogo_volumes","column":"item_tipo","default":null,"notnull":true},{"type":"uuid","table":"catalogo_volumes","column":"produto_id","default":null,"notnull":false},{"type":"uuid","table":"catalogo_volumes","column":"microrganismo_id","default":null,"notnull":false},{"type":"numeric","table":"catalogo_volumes","column":"volume_ml","default":null,"notnull":false},{"type":"text","table":"catalogo_volumes","column":"rotulo","default":null,"notnull":false},{"type":"numeric","table":"catalogo_volumes","column":"preco_brl","default":"0","notnull":true},{"type":"text","table":"catalogo_volumes","column":"moeda","default":"'BRL'::text","notnull":true},{"type":"boolean","table":"catalogo_volumes","column":"ativo","default":"true","notnull":true},{"type":"integer","table":"catalogo_volumes","column":"ordem","default":"0","notnull":true},{"type":"timestamp with time zone","table":"catalogo_volumes","column":"created_at","default":"now()","notnull":true},{"type":"timestamp with time zone","table":"catalogo_volumes","column":"updated_at","default":"now()","notnull":true},{"type":"numeric","table":"catalogo_volumes","column":"preco_litro_brl","default":null,"notnull":false},{"type":"numeric","table":"catalogo_volumes","column":"valor_dose_100ml_brl","default":null,"notnull":false},{"type":"numeric","table":"catalogo_volumes","column":"doses_por_volume","default":null,"notnull":false},{"type":"uuid","table":"catalogo_volumes","column":"owner_organization_id","default":null,"notnull":true},{"type":"text","table":"catalogo_volumes","column":"medida","default":"'volume'::text","notnull":true},{"type":"uuid","table":"culturas","column":"id","default":"gen_random_uuid()","notnull":true},{"type":"text","table":"culturas","column":"nome","default":null,"notnull":true},{"type":"text","table":"culturas","column":"descricao","default":null,"notnull":false},{"type":"timestamp with time zone","table":"culturas","column":"created_at","default":"now()","notnull":true},{"type":"boolean","table":"culturas","column":"ativo","default":"true","notnull":true},{"type":"timestamp with time zone","table":"culturas","column":"desativada_em","default":null,"notnull":false},{"type":"uuid","table":"culturas","column":"desativada_por","default":null,"notnull":false},{"type":"timestamp with time zone","table":"culturas","column":"updated_at","default":"now()","notnull":true},{"type":"uuid","table":"culturas","column":"owner_organization_id","default":"platform_private.tenant_catalog_mutate_org()","notnull":true},{"type":"uuid","table":"microorganism_crop_recommendations","column":"id","default":"gen_random_uuid()","notnull":true},{"type":"uuid","table":"microorganism_crop_recommendations","column":"microrganismo_id","default":null,"notnull":true},{"type":"uuid","table":"microorganism_crop_recommendations","column":"cultura_id","default":null,"notnull":false},{"type":"text","table":"microorganism_crop_recommendations","column":"cultura_nome","default":null,"notnull":false},{"type":"text","table":"microorganism_crop_recommendations","column":"fase_recomendada","default":null,"notnull":false},{"type":"text","table":"microorganism_crop_recommendations","column":"objetivo_uso","default":null,"notnull":false},{"type":"text","table":"microorganism_crop_recommendations","column":"observacao","default":null,"notnull":false},{"type":"boolean","table":"microorganism_crop_recommendations","column":"ativo","default":"true","notnull":true},{"type":"timestamp with time zone","table":"microorganism_crop_recommendations","column":"created_at","default":"now()","notnull":true},{"type":"timestamp with time zone","table":"microorganism_crop_recommendations","column":"updated_at","default":"now()","notnull":true},{"type":"uuid","table":"microorganism_targets","column":"id","default":"gen_random_uuid()","notnull":true},{"type":"uuid","table":"microorganism_targets","column":"microrganismo_id","default":null,"notnull":true},{"type":"text","table":"microorganism_targets","column":"alvo_nome","default":null,"notnull":true},{"type":"text","table":"microorganism_targets","column":"alvo_tipo","default":null,"notnull":true},{"type":"text","table":"microorganism_targets","column":"descricao","default":null,"notnull":false},{"type":"integer","table":"microorganism_targets","column":"prioridade","default":"1","notnull":true},{"type":"boolean","table":"microorganism_targets","column":"ativo","default":"true","notnull":true},{"type":"timestamp with time zone","table":"microorganism_targets","column":"created_at","default":"now()","notnull":true},{"type":"uuid","table":"microorganism_targets","column":"catalogo_alvo_id","default":null,"notnull":false},{"type":"timestamp with time zone","table":"microorganism_targets","column":"updated_at","default":"now()","notnull":true},{"type":"uuid","table":"microorganism_technical_profiles","column":"id","default":"gen_random_uuid()","notnull":true},{"type":"uuid","table":"microorganism_technical_profiles","column":"microrganismo_id","default":null,"notnull":true},{"type":"text","table":"microorganism_technical_profiles","column":"resumo_curto","default":null,"notnull":false},{"type":"text","table":"microorganism_technical_profiles","column":"mecanismo_acao","default":null,"notnull":false},{"type":"text","table":"microorganism_technical_profiles","column":"beneficios_agronomicos","default":null,"notnull":false},{"type":"text","table":"microorganism_technical_profiles","column":"explicacao_tecnica","default":null,"notnull":false},{"type":"text","table":"microorganism_technical_profiles","column":"explicacao_produtor","default":null,"notnull":false},{"type":"text","table":"microorganism_technical_profiles","column":"explicacao_b2b","default":null,"notnull":false},{"type":"text","table":"microorganism_technical_profiles","column":"indicacoes_uso","default":null,"notnull":false},{"type":"text","table":"microorganism_technical_profiles","column":"cuidados_aplicacao","default":null,"notnull":false},{"type":"text","table":"microorganism_technical_profiles","column":"compatibilidade","default":null,"notnull":false},{"type":"text","table":"microorganism_technical_profiles","column":"armazenamento","default":null,"notnull":false},{"type":"text","table":"microorganism_technical_profiles","column":"observacoes_regulatorias","default":null,"notnull":false},{"type":"text","table":"microorganism_technical_profiles","column":"status_validacao","default":"'rascunho'::text","notnull":true},{"type":"uuid","table":"microorganism_technical_profiles","column":"validado_por","default":null,"notnull":false},{"type":"timestamp with time zone","table":"microorganism_technical_profiles","column":"validado_em","default":null,"notnull":false},{"type":"uuid","table":"microorganism_technical_profiles","column":"created_by","default":null,"notnull":false},{"type":"uuid","table":"microorganism_technical_profiles","column":"updated_by","default":null,"notnull":false},{"type":"timestamp with time zone","table":"microorganism_technical_profiles","column":"created_at","default":"now()","notnull":true},{"type":"timestamp with time zone","table":"microorganism_technical_profiles","column":"updated_at","default":"now()","notnull":true},{"type":"uuid","table":"microrganismos","column":"id","default":"gen_random_uuid()","notnull":true},{"type":"text","table":"microrganismos","column":"nome","default":null,"notnull":true},{"type":"tipo_microrganismo","table":"microrganismos","column":"tipo","default":null,"notnull":true},{"type":"timestamp with time zone","table":"microrganismos","column":"created_at","default":"now()","notnull":true},{"type":"text","table":"microrganismos","column":"nome_cientifico","default":null,"notnull":false},{"type":"numeric","table":"microrganismos","column":"concentracao_ufc_ml","default":null,"notnull":false},{"type":"text","table":"microrganismos","column":"concentracao_label","default":null,"notnull":false},{"type":"numeric","table":"microrganismos","column":"dose_ml_ha","default":"100","notnull":false},{"type":"numeric(10,2)","table":"microrganismos","column":"valor_dose_brl","default":null,"notnull":false},{"type":"text","table":"microrganismos","column":"fornecedor","default":"'A.R Biotecnologia'::text","notnull":false},{"type":"text","table":"microrganismos","column":"safra_referencia","default":"'2025'::text","notnull":false},{"type":"boolean","table":"microrganismos","column":"producao_on_farm","default":"true","notnull":false},{"type":"text","table":"microrganismos","column":"meio_cultivo","default":null,"notnull":false},{"type":"text","table":"microrganismos","column":"funcao_agronomica","default":null,"notnull":false},{"type":"text","table":"microrganismos","column":"observacoes","default":null,"notnull":false},{"type":"boolean","table":"microrganismos","column":"ativo","default":"true","notnull":true},{"type":"boolean","table":"microrganismos","column":"b2b_enabled","default":"false","notnull":true},{"type":"text","table":"microrganismos","column":"codigo","default":null,"notnull":false},{"type":"text","table":"microrganismos","column":"descricao","default":null,"notnull":false},{"type":"numeric(12,2)","table":"microrganismos","column":"preco_tabela","default":null,"notnull":false},{"type":"numeric","table":"microrganismos","column":"valor_litro_brl","default":null,"notnull":false},{"type":"uuid","table":"microrganismos","column":"product_id","default":null,"notnull":false},{"type":"timestamp with time zone","table":"microrganismos","column":"updated_at","default":"now()","notnull":true},{"type":"uuid","table":"microrganismos","column":"owner_organization_id","default":"platform_private.tenant_catalog_mutate_org()","notnull":true},{"type":"uuid","table":"product_technical_profiles","column":"id","default":"gen_random_uuid()","notnull":true},{"type":"uuid","table":"product_technical_profiles","column":"produto_id","default":null,"notnull":true},{"type":"text","table":"product_technical_profiles","column":"resumo_curto","default":null,"notnull":false},{"type":"text","table":"product_technical_profiles","column":"beneficio_combinado","default":null,"notnull":false},{"type":"text","table":"product_technical_profiles","column":"explicacao_tecnica","default":null,"notnull":false},{"type":"text","table":"product_technical_profiles","column":"explicacao_produtor","default":null,"notnull":false},{"type":"text","table":"product_technical_profiles","column":"explicacao_b2b","default":null,"notnull":false},{"type":"text","table":"product_technical_profiles","column":"indicacoes_uso","default":null,"notnull":false},{"type":"text","table":"product_technical_profiles","column":"janela_aplicacao","default":null,"notnull":false},{"type":"text","table":"product_technical_profiles","column":"cuidados_aplicacao","default":null,"notnull":false},{"type":"text","table":"product_technical_profiles","column":"compatibilidade","default":null,"notnull":false},{"type":"text","table":"product_technical_profiles","column":"observacoes_regulatorias","default":null,"notnull":false},{"type":"text","table":"product_technical_profiles","column":"status_validacao","default":"'rascunho'::text","notnull":true},{"type":"uuid","table":"product_technical_profiles","column":"validado_por","default":null,"notnull":false},{"type":"timestamp with time zone","table":"product_technical_profiles","column":"validado_em","default":null,"notnull":false},{"type":"uuid","table":"product_technical_profiles","column":"created_by","default":null,"notnull":false},{"type":"uuid","table":"product_technical_profiles","column":"updated_by","default":null,"notnull":false},{"type":"timestamp with time zone","table":"product_technical_profiles","column":"created_at","default":"now()","notnull":true},{"type":"timestamp with time zone","table":"product_technical_profiles","column":"updated_at","default":"now()","notnull":true}]}$metadata$::jsonb THEN RAISE EXCEPTION 'catalog_schema_changed'; END IF; END $schema_guard$;
+CREATE OR REPLACE FUNCTION public.tenant_catalog_root_delete(p_root text, p_id uuid, p_expected_updated_at timestamp with time zone, p_idempotency_key uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v_uid uuid := auth.uid(); v_org uuid; v_hash text; v_rep jsonb; v_prev jsonb; v_row jsonb;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthenticated' USING ERRCODE='28000'; END IF;
+  v_org := platform_private.recorte_a_actor_fresh('mutate');
+  IF p_root IS NULL OR p_root NOT IN ('microrganismos','culturas','catalogo_volumes') THEN RAISE EXCEPTION 'tenant_catalog_root_invalid' USING ERRCODE='22023'; END IF;
+  IF p_id IS NULL OR p_expected_updated_at IS NULL THEN RAISE EXCEPTION 'tenant_catalog_cas_required' USING ERRCODE='PT409'; END IF;
+  v_hash := md5(concat_ws('|', 'delete', p_root, p_id::text, p_expected_updated_at::text));
+  v_rep := platform_private.tenant_catalog_receipt(v_org, p_idempotency_key, v_hash);
+  IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'tenant_catalog_actor_changed' USING ERRCODE='42501'; END IF;
+  IF v_rep IS NOT NULL THEN RETURN v_rep; END IF;
+  CASE p_root
+WHEN 'microrganismos' THEN
+SELECT to_jsonb(x.*) INTO v_prev FROM public."microrganismos" x WHERE x.id=p_id FOR UPDATE;
+WHEN 'culturas' THEN
+SELECT to_jsonb(x.*) INTO v_prev FROM public."culturas" x WHERE x.id=p_id FOR UPDATE;
+WHEN 'catalogo_volumes' THEN
+SELECT to_jsonb(x.*) INTO v_prev FROM public."catalogo_volumes" x WHERE x.id=p_id FOR UPDATE;
+ELSE RAISE EXCEPTION 'catalog_static_target_invalid' USING ERRCODE='22023';
+END CASE;
+  IF v_prev IS NULL OR (v_prev->>'owner_organization_id')::uuid IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'tenant_catalog_not_found' USING ERRCODE='P0002'; END IF;
+  IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'tenant_catalog_actor_changed' USING ERRCODE='42501'; END IF;
+  IF (v_prev->>'updated_at')::timestamptz IS DISTINCT FROM p_expected_updated_at THEN RAISE EXCEPTION 'tenant_catalog_stale' USING ERRCODE='PT409'; END IF;
+  BEGIN
+    CASE p_root
+WHEN 'microrganismos' THEN
+DELETE FROM public."microrganismos" WHERE id=p_id;
+WHEN 'culturas' THEN
+DELETE FROM public."culturas" WHERE id=p_id;
+WHEN 'catalogo_volumes' THEN
+DELETE FROM public."catalogo_volumes" WHERE id=p_id;
+ELSE RAISE EXCEPTION 'catalog_static_target_invalid' USING ERRCODE='22023';
+END CASE;
+  EXCEPTION WHEN foreign_key_violation THEN RAISE EXCEPTION 'tenant_catalog_in_use' USING ERRCODE='PT409';
+  END;
+  v_row := jsonb_build_object('ok', true, 'root', p_root, 'id', p_id, 'deleted', true, 'organization_id', v_org, 'replayed', false);
+  INSERT INTO platform_private.tenant_catalog_root_receipts VALUES (v_uid, v_org, p_idempotency_key, v_hash, v_row);
+  IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'tenant_catalog_actor_changed' USING ERRCODE='42501'; END IF;
+  RETURN v_row;
+END $function$
+;
+
+CREATE OR REPLACE FUNCTION public.tenant_catalog_root_save(p_root text, p_id uuid, p_payload jsonb, p_expected_updated_at timestamp with time zone, p_idempotency_key uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v_uid uuid := auth.uid(); v_org uuid; v_org2 uuid; v_cfg platform_private.tenant_catalog_root_cfg%ROWTYPE;
+  v_children jsonb; v_evidence jsonb; v_product uuid; v_source jsonb; v_item jsonb; v_value text; v_enabled boolean; v_seen text[] := ARRAY[]::text[]; v_product_name text;
+  k text; v_hash text; v_rep jsonb; v_cols text[] := '{}'; v_row jsonb; v_prev jsonb; v_parent uuid; v_ref uuid; v_ts timestamptz;
+BEGIN
+  IF p_root IS NULL THEN RAISE EXCEPTION 'tenant_catalog_root_invalid' USING ERRCODE='22023'; END IF;
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthenticated' USING ERRCODE='28000'; END IF;
+  IF p_root = 'product_technical_profiles' THEN v_org := platform_private.recorte_a_actor_fresh('mutate'); ELSE v_org := platform_private.recorte_a_actor_fresh('mutate'); END IF;
+  v_children := p_payload->'product_relations';
+   v_evidence := p_payload->'documentary_evidence';
+   IF v_children IS NOT NULL OR v_evidence IS NOT NULL THEN
+     IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
+   END IF;
+   IF v_children IS NOT NULL THEN
+     IF p_root <> 'product_technical_profiles' THEN RAISE EXCEPTION 'product_relations_root_denied' USING ERRCODE='22023'; END IF;
+     SELECT enabled INTO v_enabled FROM platform_private.product_evidence_gate_v1 WHERE singleton FOR SHARE;
+     IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
+     IF v_enabled IS DISTINCT FROM true THEN RAISE EXCEPTION 'product_evidence_closed' USING ERRCODE='42501'; END IF;
+     p_payload := p_payload-'product_relations';
+   END IF;
+   IF v_evidence IS NOT NULL THEN
+     IF p_root <> 'product_technical_profiles' THEN RAISE EXCEPTION 'product_evidence_root_denied' USING ERRCODE='22023'; END IF;
+     SELECT enabled INTO v_enabled FROM platform_private.product_evidence_gate_v1 WHERE singleton FOR SHARE;
+     IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
+     IF v_enabled IS DISTINCT FROM true THEN RAISE EXCEPTION 'product_evidence_closed' USING ERRCODE='42501'; END IF;
+     IF jsonb_typeof(v_evidence) IS DISTINCT FROM 'array' OR jsonb_array_length(v_evidence)>40 OR octet_length(v_evidence::text)>300000 THEN RAISE EXCEPTION 'product_evidence_shape' USING ERRCODE='22023'; END IF;
+     FOR v_item IN SELECT value FROM jsonb_array_elements(v_evidence) LOOP
+       IF jsonb_typeof(v_item) IS DISTINCT FROM 'object' OR (v_item-ARRAY['field','value','identity','sources','candidate_key'])<>'{}' OR jsonb_typeof(v_item->'candidate_key') IS DISTINCT FROM 'string' OR length(v_item->>'candidate_key') NOT BETWEEN 1 AND 200 OR NOT coalesce(v_item->>'field','')=ANY(ARRAY['resumo_curto','explicacao_tecnica','explicacao_produtor','explicacao_b2b','indicacoes_uso','janela_aplicacao','cuidados_aplicacao','compatibilidade','beneficio_combinado']) OR jsonb_typeof(v_item->'value') IS DISTINCT FROM 'string' OR length(v_item->>'value') NOT BETWEEN 1 AND 12000 OR jsonb_typeof(v_item->'identity') IS DISTINCT FROM 'object' OR jsonb_typeof(v_item->'sources') IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'product_evidence_shape' USING ERRCODE='22023'; END IF;
+       IF ((v_item->'identity')-ARRAY['entity','id','name','manufacturer','registration','scientificName','strain','purpose','synonyms','concentration','presentation','researchScope'])<>'{}'
+         OR v_item->'identity'->>'entity' IS DISTINCT FROM 'produto'
+         OR jsonb_typeof(v_item->'identity'->'id') IS DISTINCT FROM 'string'
+         OR (v_item->'identity'->>'id') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+         OR jsonb_typeof(v_item->'identity'->'name') IS DISTINCT FROM 'string' OR length(v_item->'identity'->>'name') NOT BETWEEN 1 AND 1000
+         OR jsonb_typeof(v_item->'identity'->'manufacturer') IS DISTINCT FROM 'string' OR length(v_item->'identity'->>'manufacturer')>1000
+         OR jsonb_typeof(v_item->'identity'->'registration') IS DISTINCT FROM 'string' OR length(v_item->'identity'->>'registration')>1000
+         OR jsonb_array_length(v_item->'sources') NOT BETWEEN 1 AND 20 THEN RAISE EXCEPTION 'product_evidence_identity' USING ERRCODE='22023'; END IF;
+       FOR k IN SELECT jsonb_object_keys(v_item->'identity') LOOP
+         IF k=ANY(ARRAY['scientificName','strain','purpose','synonyms','concentration','presentation']) AND (jsonb_typeof(v_item->'identity'->k) IS DISTINCT FROM 'string' OR length(v_item->'identity'->>k)>2000) THEN RAISE EXCEPTION 'product_evidence_identity' USING ERRCODE='22023'; END IF;
+       END LOOP;
+       IF v_item->'identity' ? 'researchScope' AND (jsonb_typeof(v_item->'identity'->'researchScope') IS DISTINCT FROM 'string' OR NOT (v_item->'identity'->>'researchScope')=ANY(ARRAY['species','product_strain'])) THEN RAISE EXCEPTION 'product_evidence_identity' USING ERRCODE='22023'; END IF;
+       IF (v_item->>'field')=ANY(v_seen) THEN RAISE EXCEPTION 'product_evidence_duplicate_field' USING ERRCODE='22023'; END IF;
+       v_seen := array_append(v_seen,v_item->>'field');
+       IF p_payload->>(v_item->>'field') IS DISTINCT FROM v_item->>'value' THEN RAISE EXCEPTION 'product_evidence_value_mismatch' USING ERRCODE='22023'; END IF;
+       FOR v_source IN SELECT value FROM jsonb_array_elements(v_item->'sources') LOOP
+         IF jsonb_typeof(v_source) IS DISTINCT FROM 'object' OR (v_source-ARRAY['url','title','excerpt'])<>'{}' OR NOT platform_private.product_source_https_v1(v_source->>'url') OR jsonb_typeof(v_source->'url') IS DISTINCT FROM 'string' OR jsonb_typeof(v_source->'title') IS DISTINCT FROM 'string' OR jsonb_typeof(v_source->'excerpt') IS DISTINCT FROM 'string' OR coalesce(v_source->>'title','')='' OR coalesce(v_source->>'excerpt','')='' OR octet_length(v_source::text)>20000 THEN RAISE EXCEPTION 'product_source_invalid' USING ERRCODE='22023'; END IF;
+       END LOOP;
+     END LOOP;
+     p_payload := p_payload-'documentary_evidence';
+   END IF;
+  IF p_root = 'product_technical_profiles' AND platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
+   SELECT * INTO v_cfg FROM platform_private.tenant_catalog_root_cfg WHERE root = p_root;
+  IF NOT FOUND THEN RAISE EXCEPTION 'tenant_catalog_root_invalid' USING ERRCODE='22023'; END IF;
+  IF p_payload IS NULL OR jsonb_typeof(p_payload) <> 'object' THEN RAISE EXCEPTION 'tenant_catalog_payload_invalid' USING ERRCODE='22023'; END IF;
+  FOR k IN SELECT jsonb_object_keys(p_payload) LOOP
+    IF NOT k = ANY (v_cfg.allowed) THEN RAISE EXCEPTION 'tenant_catalog_field_forbidden:%', k USING ERRCODE='22023'; END IF;
+    v_cols := v_cols || k;
+  END LOOP;
+  IF p_id IS NOT NULL AND p_expected_updated_at IS NULL THEN RAISE EXCEPTION 'tenant_catalog_cas_required' USING ERRCODE='PT409'; END IF;
+  v_hash := md5(concat_ws('|', p_root, coalesce(p_id::text,'new'), p_payload::text, coalesce(p_expected_updated_at::text,'')));
+  IF v_evidence IS NOT NULL THEN v_hash := md5(v_hash || v_evidence::text); END IF;
+  IF v_children IS NOT NULL THEN v_hash := md5(v_hash || v_children::text); END IF;
+  v_rep := platform_private.tenant_catalog_receipt(v_org, p_idempotency_key, v_hash);
+  IF p_root = 'product_technical_profiles' AND platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
+  IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'tenant_catalog_actor_changed' USING ERRCODE='42501'; END IF;
+  IF v_rep IS NOT NULL THEN RETURN v_rep; END IF;
+  -- referÃªncias no payload: mesma empresa (FOR SHARE no pai)
+  FOR k IN SELECT jsonb_object_keys(v_cfg.refs) LOOP
+    IF p_payload ? k AND jsonb_typeof(p_payload->k) <> 'null' THEN
+      v_ref := platform_private.tenant_catalog_ref_owner(v_cfg.refs->>k, (p_payload->>k)::uuid);
+  IF p_root = 'product_technical_profiles' AND platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
+      IF v_ref IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'tenant_catalog_ref_foreign:%', k USING ERRCODE='42501'; END IF;
+    END IF;
+  END LOOP;
+  IF p_id IS NULL THEN
+    IF v_cfg.kind = 'profile' AND NOT p_payload ? v_cfg.parent_col THEN RAISE EXCEPTION 'tenant_catalog_parent_required' USING ERRCODE='22023'; END IF;
+    FOR k IN SELECT jsonb_object_keys(v_cfg.safe_defaults) LOOP
+      IF NOT p_payload ? k THEN p_payload := p_payload || jsonb_build_object(k, v_cfg.safe_defaults->k); v_cols := v_cols || k; END IF;
+    END LOOP;
+    IF v_cfg.kind = 'root' THEN p_payload := p_payload || jsonb_build_object('owner_organization_id', v_org); v_cols := v_cols || 'owner_organization_id'::text; END IF;
+    CASE p_root
+WHEN 'microrganismos' THEN
+INSERT INTO public."microrganismos" ("nome", "tipo", "nome_cientifico", "concentracao_ufc_ml", "concentracao_label", "dose_ml_ha", "valor_dose_brl", "fornecedor", "safra_referencia", "producao_on_farm", "meio_cultivo", "funcao_agronomica", "observacoes", "ativo", "b2b_enabled", "codigo", "descricao", "preco_tabela", "valor_litro_brl", "product_id", "owner_organization_id")
+SELECT CASE WHEN p_payload ? 'nome' THEN r."nome" ELSE NULL END,
+CASE WHEN p_payload ? 'tipo' THEN r."tipo" ELSE NULL END,
+CASE WHEN p_payload ? 'nome_cientifico' THEN r."nome_cientifico" ELSE NULL END,
+CASE WHEN p_payload ? 'concentracao_ufc_ml' THEN r."concentracao_ufc_ml" ELSE NULL END,
+CASE WHEN p_payload ? 'concentracao_label' THEN r."concentracao_label" ELSE NULL END,
+CASE WHEN p_payload ? 'dose_ml_ha' THEN r."dose_ml_ha" ELSE 100 END,
+CASE WHEN p_payload ? 'valor_dose_brl' THEN r."valor_dose_brl" ELSE NULL END,
+CASE WHEN p_payload ? 'fornecedor' THEN r."fornecedor" ELSE 'A.R Biotecnologia'::text END,
+CASE WHEN p_payload ? 'safra_referencia' THEN r."safra_referencia" ELSE '2025'::text END,
+CASE WHEN p_payload ? 'producao_on_farm' THEN r."producao_on_farm" ELSE true END,
+CASE WHEN p_payload ? 'meio_cultivo' THEN r."meio_cultivo" ELSE NULL END,
+CASE WHEN p_payload ? 'funcao_agronomica' THEN r."funcao_agronomica" ELSE NULL END,
+CASE WHEN p_payload ? 'observacoes' THEN r."observacoes" ELSE NULL END,
+CASE WHEN p_payload ? 'ativo' THEN r."ativo" ELSE true END,
+CASE WHEN p_payload ? 'b2b_enabled' THEN r."b2b_enabled" ELSE false END,
+CASE WHEN p_payload ? 'codigo' THEN r."codigo" ELSE NULL END,
+CASE WHEN p_payload ? 'descricao' THEN r."descricao" ELSE NULL END,
+CASE WHEN p_payload ? 'preco_tabela' THEN r."preco_tabela" ELSE NULL END,
+CASE WHEN p_payload ? 'valor_litro_brl' THEN r."valor_litro_brl" ELSE NULL END,
+CASE WHEN p_payload ? 'product_id' THEN r."product_id" ELSE NULL END,
+CASE WHEN p_payload ? 'owner_organization_id' THEN r."owner_organization_id" ELSE platform_private.tenant_catalog_mutate_org() END
+FROM jsonb_populate_record(NULL::public."microrganismos",p_payload) r RETURNING to_jsonb("microrganismos".*) INTO v_row;
+WHEN 'culturas' THEN
+INSERT INTO public."culturas" ("nome", "descricao", "ativo", "owner_organization_id")
+SELECT CASE WHEN p_payload ? 'nome' THEN r."nome" ELSE NULL END,
+CASE WHEN p_payload ? 'descricao' THEN r."descricao" ELSE NULL END,
+CASE WHEN p_payload ? 'ativo' THEN r."ativo" ELSE true END,
+CASE WHEN p_payload ? 'owner_organization_id' THEN r."owner_organization_id" ELSE platform_private.tenant_catalog_mutate_org() END
+FROM jsonb_populate_record(NULL::public."culturas",p_payload) r RETURNING to_jsonb("culturas".*) INTO v_row;
+WHEN 'catalogo_volumes' THEN
+INSERT INTO public."catalogo_volumes" ("item_tipo", "produto_id", "microrganismo_id", "volume_ml", "rotulo", "preco_brl", "moeda", "ativo", "ordem", "preco_litro_brl", "valor_dose_100ml_brl", "doses_por_volume", "owner_organization_id")
+SELECT CASE WHEN p_payload ? 'item_tipo' THEN r."item_tipo" ELSE NULL END,
+CASE WHEN p_payload ? 'produto_id' THEN r."produto_id" ELSE NULL END,
+CASE WHEN p_payload ? 'microrganismo_id' THEN r."microrganismo_id" ELSE NULL END,
+CASE WHEN p_payload ? 'volume_ml' THEN r."volume_ml" ELSE NULL END,
+CASE WHEN p_payload ? 'rotulo' THEN r."rotulo" ELSE NULL END,
+CASE WHEN p_payload ? 'preco_brl' THEN r."preco_brl" ELSE 0 END,
+CASE WHEN p_payload ? 'moeda' THEN r."moeda" ELSE 'BRL'::text END,
+CASE WHEN p_payload ? 'ativo' THEN r."ativo" ELSE true END,
+CASE WHEN p_payload ? 'ordem' THEN r."ordem" ELSE 0 END,
+CASE WHEN p_payload ? 'preco_litro_brl' THEN r."preco_litro_brl" ELSE NULL END,
+CASE WHEN p_payload ? 'valor_dose_100ml_brl' THEN r."valor_dose_100ml_brl" ELSE NULL END,
+CASE WHEN p_payload ? 'doses_por_volume' THEN r."doses_por_volume" ELSE NULL END,
+CASE WHEN p_payload ? 'owner_organization_id' THEN r."owner_organization_id" ELSE NULL END
+FROM jsonb_populate_record(NULL::public."catalogo_volumes",p_payload) r RETURNING to_jsonb("catalogo_volumes".*) INTO v_row;
+WHEN 'product_technical_profiles' THEN
+INSERT INTO public."product_technical_profiles" ("produto_id", "resumo_curto", "beneficio_combinado", "explicacao_tecnica", "explicacao_produtor", "explicacao_b2b", "indicacoes_uso", "janela_aplicacao", "cuidados_aplicacao", "compatibilidade", "observacoes_regulatorias")
+SELECT CASE WHEN p_payload ? 'produto_id' THEN r."produto_id" ELSE NULL END,
+CASE WHEN p_payload ? 'resumo_curto' THEN r."resumo_curto" ELSE NULL END,
+CASE WHEN p_payload ? 'beneficio_combinado' THEN r."beneficio_combinado" ELSE NULL END,
+CASE WHEN p_payload ? 'explicacao_tecnica' THEN r."explicacao_tecnica" ELSE NULL END,
+CASE WHEN p_payload ? 'explicacao_produtor' THEN r."explicacao_produtor" ELSE NULL END,
+CASE WHEN p_payload ? 'explicacao_b2b' THEN r."explicacao_b2b" ELSE NULL END,
+CASE WHEN p_payload ? 'indicacoes_uso' THEN r."indicacoes_uso" ELSE NULL END,
+CASE WHEN p_payload ? 'janela_aplicacao' THEN r."janela_aplicacao" ELSE NULL END,
+CASE WHEN p_payload ? 'cuidados_aplicacao' THEN r."cuidados_aplicacao" ELSE NULL END,
+CASE WHEN p_payload ? 'compatibilidade' THEN r."compatibilidade" ELSE NULL END,
+CASE WHEN p_payload ? 'observacoes_regulatorias' THEN r."observacoes_regulatorias" ELSE NULL END
+FROM jsonb_populate_record(NULL::public."product_technical_profiles",p_payload) r RETURNING to_jsonb("product_technical_profiles".*) INTO v_row;
+WHEN 'microorganism_technical_profiles' THEN
+INSERT INTO public."microorganism_technical_profiles" ("microrganismo_id", "resumo_curto", "mecanismo_acao", "beneficios_agronomicos", "explicacao_tecnica", "explicacao_produtor", "explicacao_b2b", "indicacoes_uso", "cuidados_aplicacao", "compatibilidade", "armazenamento", "observacoes_regulatorias")
+SELECT CASE WHEN p_payload ? 'microrganismo_id' THEN r."microrganismo_id" ELSE NULL END,
+CASE WHEN p_payload ? 'resumo_curto' THEN r."resumo_curto" ELSE NULL END,
+CASE WHEN p_payload ? 'mecanismo_acao' THEN r."mecanismo_acao" ELSE NULL END,
+CASE WHEN p_payload ? 'beneficios_agronomicos' THEN r."beneficios_agronomicos" ELSE NULL END,
+CASE WHEN p_payload ? 'explicacao_tecnica' THEN r."explicacao_tecnica" ELSE NULL END,
+CASE WHEN p_payload ? 'explicacao_produtor' THEN r."explicacao_produtor" ELSE NULL END,
+CASE WHEN p_payload ? 'explicacao_b2b' THEN r."explicacao_b2b" ELSE NULL END,
+CASE WHEN p_payload ? 'indicacoes_uso' THEN r."indicacoes_uso" ELSE NULL END,
+CASE WHEN p_payload ? 'cuidados_aplicacao' THEN r."cuidados_aplicacao" ELSE NULL END,
+CASE WHEN p_payload ? 'compatibilidade' THEN r."compatibilidade" ELSE NULL END,
+CASE WHEN p_payload ? 'armazenamento' THEN r."armazenamento" ELSE NULL END,
+CASE WHEN p_payload ? 'observacoes_regulatorias' THEN r."observacoes_regulatorias" ELSE NULL END
+FROM jsonb_populate_record(NULL::public."microorganism_technical_profiles",p_payload) r RETURNING to_jsonb("microorganism_technical_profiles".*) INTO v_row;
+WHEN 'catalogo_alvos' THEN
+INSERT INTO public."catalogo_alvos" ("nome", "tipo", "nome_cientifico", "descricao", "sinonimos", "ativo", "owner_organization_id")
+SELECT CASE WHEN p_payload ? 'nome' THEN r."nome" ELSE NULL END,
+CASE WHEN p_payload ? 'tipo' THEN r."tipo" ELSE NULL END,
+CASE WHEN p_payload ? 'nome_cientifico' THEN r."nome_cientifico" ELSE NULL END,
+CASE WHEN p_payload ? 'descricao' THEN r."descricao" ELSE NULL END,
+CASE WHEN p_payload ? 'sinonimos' THEN r."sinonimos" ELSE '{}'::text[] END,
+CASE WHEN p_payload ? 'ativo' THEN r."ativo" ELSE true END,
+CASE WHEN p_payload ? 'owner_organization_id' THEN r."owner_organization_id" ELSE NULL END
+FROM jsonb_populate_record(NULL::public."catalogo_alvos",p_payload) r RETURNING to_jsonb("catalogo_alvos".*) INTO v_row;
+ELSE RAISE EXCEPTION 'catalog_static_target_invalid' USING ERRCODE='22023';
+END CASE;
+  ELSE
+    IF v_cfg.kind = 'profile' AND p_payload ? v_cfg.parent_col THEN RAISE EXCEPTION 'tenant_catalog_parent_immutable' USING ERRCODE='22023'; END IF;
+    CASE p_root
+WHEN 'microrganismos' THEN
+SELECT to_jsonb(x.*) INTO v_prev FROM public."microrganismos" x WHERE x.id=p_id FOR UPDATE;
+WHEN 'culturas' THEN
+SELECT to_jsonb(x.*) INTO v_prev FROM public."culturas" x WHERE x.id=p_id FOR UPDATE;
+WHEN 'catalogo_volumes' THEN
+SELECT to_jsonb(x.*) INTO v_prev FROM public."catalogo_volumes" x WHERE x.id=p_id FOR UPDATE;
+WHEN 'product_technical_profiles' THEN
+SELECT to_jsonb(x.*) INTO v_prev FROM public."product_technical_profiles" x WHERE x.id=p_id FOR UPDATE;
+WHEN 'microorganism_technical_profiles' THEN
+SELECT to_jsonb(x.*) INTO v_prev FROM public."microorganism_technical_profiles" x WHERE x.id=p_id FOR UPDATE;
+WHEN 'catalogo_alvos' THEN
+SELECT to_jsonb(x.*) INTO v_prev FROM public."catalogo_alvos" x WHERE x.id=p_id FOR UPDATE;
+ELSE RAISE EXCEPTION 'catalog_static_target_invalid' USING ERRCODE='22023';
+END CASE;
+    IF v_prev IS NULL THEN RAISE EXCEPTION 'tenant_catalog_not_found' USING ERRCODE='P0002'; END IF;
+    -- reautorizaÃ§Ã£o apÃ³s a espera do lock (troca de empresa/revogaÃ§Ã£o durante a espera nega)
+    IF p_root = 'product_technical_profiles' THEN v_org2 := platform_private.recorte_a_actor_fresh('mutate'); ELSE v_org2 := platform_private.recorte_a_actor_fresh('mutate'); END IF;
+    IF v_org2 IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'tenant_catalog_actor_changed' USING ERRCODE='42501'; END IF;
+    v_parent := CASE WHEN v_cfg.kind = 'root' THEN (v_prev->>'owner_organization_id')::uuid
+                     ELSE platform_private.tenant_catalog_ref_owner(v_cfg.parent_tbl, (v_prev->>v_cfg.parent_col)::uuid) END;
+  IF p_root = 'product_technical_profiles' AND platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
+    IF v_parent IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'tenant_catalog_not_found' USING ERRCODE='P0002'; END IF;
+    IF (v_prev->>'updated_at')::timestamptz IS DISTINCT FROM p_expected_updated_at THEN RAISE EXCEPTION 'tenant_catalog_stale' USING ERRCODE='PT409'; END IF;
+    v_ts := greatest(clock_timestamp(), (v_prev->>'updated_at')::timestamptz + interval '1 microsecond');
+    CASE p_root
+WHEN 'microrganismos' THEN
+IF p_payload ? 'codigo' THEN
+UPDATE public."microrganismos" x SET "nome"=CASE WHEN p_payload ? 'nome' THEN r."nome" ELSE x."nome" END,
+"tipo"=CASE WHEN p_payload ? 'tipo' THEN r."tipo" ELSE x."tipo" END,
+"nome_cientifico"=CASE WHEN p_payload ? 'nome_cientifico' THEN r."nome_cientifico" ELSE x."nome_cientifico" END,
+"concentracao_ufc_ml"=CASE WHEN p_payload ? 'concentracao_ufc_ml' THEN r."concentracao_ufc_ml" ELSE x."concentracao_ufc_ml" END,
+"concentracao_label"=CASE WHEN p_payload ? 'concentracao_label' THEN r."concentracao_label" ELSE x."concentracao_label" END,
+"dose_ml_ha"=CASE WHEN p_payload ? 'dose_ml_ha' THEN r."dose_ml_ha" ELSE x."dose_ml_ha" END,
+"valor_dose_brl"=CASE WHEN p_payload ? 'valor_dose_brl' THEN r."valor_dose_brl" ELSE x."valor_dose_brl" END,
+"fornecedor"=CASE WHEN p_payload ? 'fornecedor' THEN r."fornecedor" ELSE x."fornecedor" END,
+"safra_referencia"=CASE WHEN p_payload ? 'safra_referencia' THEN r."safra_referencia" ELSE x."safra_referencia" END,
+"producao_on_farm"=CASE WHEN p_payload ? 'producao_on_farm' THEN r."producao_on_farm" ELSE x."producao_on_farm" END,
+"meio_cultivo"=CASE WHEN p_payload ? 'meio_cultivo' THEN r."meio_cultivo" ELSE x."meio_cultivo" END,
+"funcao_agronomica"=CASE WHEN p_payload ? 'funcao_agronomica' THEN r."funcao_agronomica" ELSE x."funcao_agronomica" END,
+"observacoes"=CASE WHEN p_payload ? 'observacoes' THEN r."observacoes" ELSE x."observacoes" END,
+"ativo"=CASE WHEN p_payload ? 'ativo' THEN r."ativo" ELSE x."ativo" END,
+"b2b_enabled"=CASE WHEN p_payload ? 'b2b_enabled' THEN r."b2b_enabled" ELSE x."b2b_enabled" END,
+"codigo"=CASE WHEN p_payload ? 'codigo' THEN r."codigo" ELSE x."codigo" END,
+"descricao"=CASE WHEN p_payload ? 'descricao' THEN r."descricao" ELSE x."descricao" END,
+"preco_tabela"=CASE WHEN p_payload ? 'preco_tabela' THEN r."preco_tabela" ELSE x."preco_tabela" END,
+"valor_litro_brl"=CASE WHEN p_payload ? 'valor_litro_brl' THEN r."valor_litro_brl" ELSE x."valor_litro_brl" END,
+"product_id"=CASE WHEN p_payload ? 'product_id' THEN r."product_id" ELSE x."product_id" END, updated_at=v_ts
+FROM jsonb_populate_record(NULL::public."microrganismos",p_payload) r WHERE x.id=p_id RETURNING to_jsonb(x.*) INTO v_row;
+ELSE
+UPDATE public."microrganismos" x SET "nome"=CASE WHEN p_payload ? 'nome' THEN r."nome" ELSE x."nome" END,
+"tipo"=CASE WHEN p_payload ? 'tipo' THEN r."tipo" ELSE x."tipo" END,
+"nome_cientifico"=CASE WHEN p_payload ? 'nome_cientifico' THEN r."nome_cientifico" ELSE x."nome_cientifico" END,
+"concentracao_ufc_ml"=CASE WHEN p_payload ? 'concentracao_ufc_ml' THEN r."concentracao_ufc_ml" ELSE x."concentracao_ufc_ml" END,
+"concentracao_label"=CASE WHEN p_payload ? 'concentracao_label' THEN r."concentracao_label" ELSE x."concentracao_label" END,
+"dose_ml_ha"=CASE WHEN p_payload ? 'dose_ml_ha' THEN r."dose_ml_ha" ELSE x."dose_ml_ha" END,
+"valor_dose_brl"=CASE WHEN p_payload ? 'valor_dose_brl' THEN r."valor_dose_brl" ELSE x."valor_dose_brl" END,
+"fornecedor"=CASE WHEN p_payload ? 'fornecedor' THEN r."fornecedor" ELSE x."fornecedor" END,
+"safra_referencia"=CASE WHEN p_payload ? 'safra_referencia' THEN r."safra_referencia" ELSE x."safra_referencia" END,
+"producao_on_farm"=CASE WHEN p_payload ? 'producao_on_farm' THEN r."producao_on_farm" ELSE x."producao_on_farm" END,
+"meio_cultivo"=CASE WHEN p_payload ? 'meio_cultivo' THEN r."meio_cultivo" ELSE x."meio_cultivo" END,
+"funcao_agronomica"=CASE WHEN p_payload ? 'funcao_agronomica' THEN r."funcao_agronomica" ELSE x."funcao_agronomica" END,
+"observacoes"=CASE WHEN p_payload ? 'observacoes' THEN r."observacoes" ELSE x."observacoes" END,
+"ativo"=CASE WHEN p_payload ? 'ativo' THEN r."ativo" ELSE x."ativo" END,
+"b2b_enabled"=CASE WHEN p_payload ? 'b2b_enabled' THEN r."b2b_enabled" ELSE x."b2b_enabled" END,
+"descricao"=CASE WHEN p_payload ? 'descricao' THEN r."descricao" ELSE x."descricao" END,
+"preco_tabela"=CASE WHEN p_payload ? 'preco_tabela' THEN r."preco_tabela" ELSE x."preco_tabela" END,
+"valor_litro_brl"=CASE WHEN p_payload ? 'valor_litro_brl' THEN r."valor_litro_brl" ELSE x."valor_litro_brl" END,
+"product_id"=CASE WHEN p_payload ? 'product_id' THEN r."product_id" ELSE x."product_id" END, updated_at=v_ts
+FROM jsonb_populate_record(NULL::public."microrganismos",p_payload) r WHERE x.id=p_id RETURNING to_jsonb(x.*) INTO v_row;
+END IF;
+WHEN 'culturas' THEN
+UPDATE public."culturas" x SET "nome"=CASE WHEN p_payload ? 'nome' THEN r."nome" ELSE x."nome" END,
+"descricao"=CASE WHEN p_payload ? 'descricao' THEN r."descricao" ELSE x."descricao" END,
+"ativo"=CASE WHEN p_payload ? 'ativo' THEN r."ativo" ELSE x."ativo" END, updated_at=v_ts
+FROM jsonb_populate_record(NULL::public."culturas",p_payload) r WHERE x.id=p_id RETURNING to_jsonb(x.*) INTO v_row;
+WHEN 'catalogo_volumes' THEN
+UPDATE public."catalogo_volumes" x SET "item_tipo"=CASE WHEN p_payload ? 'item_tipo' THEN r."item_tipo" ELSE x."item_tipo" END,
+"produto_id"=CASE WHEN p_payload ? 'produto_id' THEN r."produto_id" ELSE x."produto_id" END,
+"microrganismo_id"=CASE WHEN p_payload ? 'microrganismo_id' THEN r."microrganismo_id" ELSE x."microrganismo_id" END,
+"volume_ml"=CASE WHEN p_payload ? 'volume_ml' THEN r."volume_ml" ELSE x."volume_ml" END,
+"rotulo"=CASE WHEN p_payload ? 'rotulo' THEN r."rotulo" ELSE x."rotulo" END,
+"preco_brl"=CASE WHEN p_payload ? 'preco_brl' THEN r."preco_brl" ELSE x."preco_brl" END,
+"moeda"=CASE WHEN p_payload ? 'moeda' THEN r."moeda" ELSE x."moeda" END,
+"ativo"=CASE WHEN p_payload ? 'ativo' THEN r."ativo" ELSE x."ativo" END,
+"ordem"=CASE WHEN p_payload ? 'ordem' THEN r."ordem" ELSE x."ordem" END,
+"preco_litro_brl"=CASE WHEN p_payload ? 'preco_litro_brl' THEN r."preco_litro_brl" ELSE x."preco_litro_brl" END,
+"valor_dose_100ml_brl"=CASE WHEN p_payload ? 'valor_dose_100ml_brl' THEN r."valor_dose_100ml_brl" ELSE x."valor_dose_100ml_brl" END,
+"doses_por_volume"=CASE WHEN p_payload ? 'doses_por_volume' THEN r."doses_por_volume" ELSE x."doses_por_volume" END, updated_at=v_ts
+FROM jsonb_populate_record(NULL::public."catalogo_volumes",p_payload) r WHERE x.id=p_id RETURNING to_jsonb(x.*) INTO v_row;
+WHEN 'product_technical_profiles' THEN
+UPDATE public."product_technical_profiles" x SET "produto_id"=CASE WHEN p_payload ? 'produto_id' THEN r."produto_id" ELSE x."produto_id" END,
+"resumo_curto"=CASE WHEN p_payload ? 'resumo_curto' THEN r."resumo_curto" ELSE x."resumo_curto" END,
+"beneficio_combinado"=CASE WHEN p_payload ? 'beneficio_combinado' THEN r."beneficio_combinado" ELSE x."beneficio_combinado" END,
+"explicacao_tecnica"=CASE WHEN p_payload ? 'explicacao_tecnica' THEN r."explicacao_tecnica" ELSE x."explicacao_tecnica" END,
+"explicacao_produtor"=CASE WHEN p_payload ? 'explicacao_produtor' THEN r."explicacao_produtor" ELSE x."explicacao_produtor" END,
+"explicacao_b2b"=CASE WHEN p_payload ? 'explicacao_b2b' THEN r."explicacao_b2b" ELSE x."explicacao_b2b" END,
+"indicacoes_uso"=CASE WHEN p_payload ? 'indicacoes_uso' THEN r."indicacoes_uso" ELSE x."indicacoes_uso" END,
+"janela_aplicacao"=CASE WHEN p_payload ? 'janela_aplicacao' THEN r."janela_aplicacao" ELSE x."janela_aplicacao" END,
+"cuidados_aplicacao"=CASE WHEN p_payload ? 'cuidados_aplicacao' THEN r."cuidados_aplicacao" ELSE x."cuidados_aplicacao" END,
+"compatibilidade"=CASE WHEN p_payload ? 'compatibilidade' THEN r."compatibilidade" ELSE x."compatibilidade" END,
+"observacoes_regulatorias"=CASE WHEN p_payload ? 'observacoes_regulatorias' THEN r."observacoes_regulatorias" ELSE x."observacoes_regulatorias" END, updated_at=v_ts
+FROM jsonb_populate_record(NULL::public."product_technical_profiles",p_payload) r WHERE x.id=p_id RETURNING to_jsonb(x.*) INTO v_row;
+WHEN 'microorganism_technical_profiles' THEN
+UPDATE public."microorganism_technical_profiles" x SET "microrganismo_id"=CASE WHEN p_payload ? 'microrganismo_id' THEN r."microrganismo_id" ELSE x."microrganismo_id" END,
+"resumo_curto"=CASE WHEN p_payload ? 'resumo_curto' THEN r."resumo_curto" ELSE x."resumo_curto" END,
+"mecanismo_acao"=CASE WHEN p_payload ? 'mecanismo_acao' THEN r."mecanismo_acao" ELSE x."mecanismo_acao" END,
+"beneficios_agronomicos"=CASE WHEN p_payload ? 'beneficios_agronomicos' THEN r."beneficios_agronomicos" ELSE x."beneficios_agronomicos" END,
+"explicacao_tecnica"=CASE WHEN p_payload ? 'explicacao_tecnica' THEN r."explicacao_tecnica" ELSE x."explicacao_tecnica" END,
+"explicacao_produtor"=CASE WHEN p_payload ? 'explicacao_produtor' THEN r."explicacao_produtor" ELSE x."explicacao_produtor" END,
+"explicacao_b2b"=CASE WHEN p_payload ? 'explicacao_b2b' THEN r."explicacao_b2b" ELSE x."explicacao_b2b" END,
+"indicacoes_uso"=CASE WHEN p_payload ? 'indicacoes_uso' THEN r."indicacoes_uso" ELSE x."indicacoes_uso" END,
+"cuidados_aplicacao"=CASE WHEN p_payload ? 'cuidados_aplicacao' THEN r."cuidados_aplicacao" ELSE x."cuidados_aplicacao" END,
+"compatibilidade"=CASE WHEN p_payload ? 'compatibilidade' THEN r."compatibilidade" ELSE x."compatibilidade" END,
+"armazenamento"=CASE WHEN p_payload ? 'armazenamento' THEN r."armazenamento" ELSE x."armazenamento" END,
+"observacoes_regulatorias"=CASE WHEN p_payload ? 'observacoes_regulatorias' THEN r."observacoes_regulatorias" ELSE x."observacoes_regulatorias" END, updated_at=v_ts
+FROM jsonb_populate_record(NULL::public."microorganism_technical_profiles",p_payload) r WHERE x.id=p_id RETURNING to_jsonb(x.*) INTO v_row;
+WHEN 'catalogo_alvos' THEN
+UPDATE public."catalogo_alvos" x SET "nome"=CASE WHEN p_payload ? 'nome' THEN r."nome" ELSE x."nome" END,
+"tipo"=CASE WHEN p_payload ? 'tipo' THEN r."tipo" ELSE x."tipo" END,
+"nome_cientifico"=CASE WHEN p_payload ? 'nome_cientifico' THEN r."nome_cientifico" ELSE x."nome_cientifico" END,
+"descricao"=CASE WHEN p_payload ? 'descricao' THEN r."descricao" ELSE x."descricao" END,
+"sinonimos"=CASE WHEN p_payload ? 'sinonimos' THEN r."sinonimos" ELSE x."sinonimos" END,
+"ativo"=CASE WHEN p_payload ? 'ativo' THEN r."ativo" ELSE x."ativo" END, updated_at=v_ts
+FROM jsonb_populate_record(NULL::public."catalogo_alvos",p_payload) r WHERE x.id=p_id RETURNING to_jsonb(x.*) INTO v_row;
+ELSE RAISE EXCEPTION 'catalog_static_target_invalid' USING ERRCODE='22023';
+END CASE;
+  END IF;
+  IF v_children IS NOT NULL THEN
+     PERFORM platform_private.product_relations_apply_v1((v_row->>'produto_id')::uuid,v_org,v_children);
+   END IF;
+   IF v_evidence IS NOT NULL THEN
+     v_product := (v_row->>'produto_id')::uuid;
+     IF platform_private.tenant_catalog_ref_owner('produtos',v_product) IS DISTINCT FROM v_org OR platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_evidence_denied' USING ERRCODE='42501'; END IF;
+     SELECT nome INTO v_product_name FROM public.produtos WHERE id=v_product AND owner_organization_id=v_org FOR SHARE;
+     IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
+     FOR v_item IN SELECT value FROM jsonb_array_elements(v_evidence) LOOP
+       IF v_item->'identity'->>'name' IS DISTINCT FROM v_product_name OR v_item->'identity'->>'id' IS DISTINCT FROM v_product::text THEN RAISE EXCEPTION 'product_evidence_identity' USING ERRCODE='22023'; END IF;
+     END LOOP;
+     INSERT INTO platform_private.product_evidence_history_v1(product_id,profile_id,profile_revision,actor_id,evidence) VALUES(v_product,(v_row->>'id')::uuid,(v_row->>'updated_at')::timestamptz,v_uid,v_evidence);
+   END IF;
+   IF (v_children IS NOT NULL OR v_evidence IS NOT NULL) AND platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
+   v_row := jsonb_build_object('ok', true, 'root', p_root, 'id', v_row->>'id', 'updated_at', v_row->>'updated_at',
+                              'organization_id', v_org, 'replayed', false);
+  IF p_root = 'product_technical_profiles' AND platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
+  INSERT INTO platform_private.tenant_catalog_root_receipts VALUES (v_uid, v_org, p_idempotency_key, v_hash, v_row);
+  IF p_root = 'product_technical_profiles' AND platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'product_actor_changed' USING ERRCODE='42501'; END IF;
+  IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'tenant_catalog_actor_changed' USING ERRCODE='42501'; END IF;
+  RETURN v_row;
+EXCEPTION WHEN unique_violation THEN RAISE EXCEPTION 'tenant_catalog_duplicate' USING ERRCODE='PT409';
+END $function$
+;
+
+CREATE OR REPLACE FUNCTION public.tenant_microorganism_ficha_save_v1(p_id uuid, p_expected_updated_at timestamp with time zone, p_expected_profile_updated_at timestamp with time zone, p_payload jsonb, p_evidence jsonb, p_key uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE org uuid; own uuid; old_child jsonb; child jsonb; children jsonb; kind text; tbl text; allowed text[]; cols text; rev timestamptz; row public.microrganismos%ROWTYPE; prof public.microorganism_technical_profiles%ROWTYPE; k text; e jsonb; source jsonb; ack jsonb; rep jsonb; h text; root jsonb; content jsonb; extra jsonb; target uuid;
+BEGIN
+ SET LOCAL lock_timeout='3s';
+ org:=platform_private.recorte_a_actor_fresh('mutate');
+ PERFORM 1 FROM platform_private.micro_ficha_gate_v1 WHERE singleton=true AND enabled=true FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'micro_ficha_not_active' USING ERRCODE='42501'; END IF;
+ IF p_key IS NULL OR p_payload IS NULL OR jsonb_typeof(p_payload)<>'object' OR (p_payload - ARRAY['root','content','extra','children'])<>'{}'::jsonb THEN RAISE EXCEPTION 'invalid_payload' USING ERRCODE='22023'; END IF;
+ IF octet_length(p_payload::text)>180000 THEN RAISE EXCEPTION 'payload_too_large' USING ERRCODE='22023'; END IF;
+ children:=coalesce(p_payload->'children','[]');
+ IF jsonb_typeof(children)<>'array' OR jsonb_array_length(children)>60 THEN RAISE EXCEPTION 'children_shape' USING ERRCODE='22023'; END IF;
+ root:=coalesce(p_payload->'root','{}'); content:=coalesce(p_payload->'content','{}');extra:=coalesce(p_payload->'extra','{}');
+ IF jsonb_typeof(root)<>'object' OR jsonb_typeof(content)<>'object' OR jsonb_typeof(extra)<>'object' THEN RAISE EXCEPTION 'invalid_payload' USING ERRCODE='22023'; END IF;
+ FOR k IN SELECT jsonb_object_keys(root) LOOP
+  IF NOT k=ANY(ARRAY['codigo','nome','nome_cientifico','tipo','fornecedor','funcao_agronomica','concentracao_ufc_ml','concentracao_label','descricao','observacoes']) THEN RAISE EXCEPTION 'root_field_forbidden' USING ERRCODE='22023'; END IF;
+ END LOOP;
+ FOR k IN SELECT jsonb_object_keys(content) LOOP
+  IF NOT k=ANY(ARRAY['resumo_curto','mecanismo_acao','beneficios_agronomicos','explicacao_tecnica','explicacao_produtor','explicacao_b2b','indicacoes_uso','cuidados_aplicacao','compatibilidade','armazenamento','observacoes_regulatorias']) THEN RAISE EXCEPTION 'content_field_forbidden' USING ERRCODE='22023'; END IF;
+ END LOOP;
+ FOR k IN SELECT jsonb_object_keys(extra) LOOP
+  IF NOT k=ANY(ARRAY['sinonimos','cepa','origem','apresentacao','culturas_uso','alvos_uso','documentos_pendentes']) THEN RAISE EXCEPTION 'extra_field_forbidden' USING ERRCODE='22023'; END IF;
+ END LOOP;
+ FOR e IN SELECT value FROM jsonb_each(root||content||extra) LOOP
+  IF jsonb_typeof(e) NOT IN ('string','null') OR length(e#>>'{}')>12000 THEN RAISE EXCEPTION 'field_shape' USING ERRCODE='22023'; END IF;
+ END LOOP;
+ IF root ? 'concentracao_ufc_ml' AND jsonb_typeof(root->'concentracao_ufc_ml')<>'null' AND (coalesce(root->>'concentracao_ufc_ml','') !~ '^[0-9]+(\.[0-9]+)?([eE][+]?[0-9]+)?$' OR (root->>'concentracao_ufc_ml')::numeric<=0) THEN RAISE EXCEPTION 'concentration_invalid' USING ERRCODE='22023'; END IF;
+ IF extra ? 'concentracao_unidade' THEN RAISE EXCEPTION 'legacy_unit_conflict' USING ERRCODE='22023'; END IF;
+ IF jsonb_typeof(p_evidence) IS DISTINCT FROM 'array' OR jsonb_array_length(p_evidence)>40 OR octet_length(p_evidence::text)>300000 THEN RAISE EXCEPTION 'evidence_shape' USING ERRCODE='22023'; END IF;
+ FOR e IN SELECT value FROM jsonb_array_elements(p_evidence) LOOP
+  IF jsonb_typeof(e)<>'object' OR (e - ARRAY['field','value','identity','sources'])<>'{}'::jsonb OR (e->>'field') IS NULL OR NOT (e->>'field')=ANY(ARRAY['descricao','resumo_curto','mecanismo_acao','beneficios_agronomicos','explicacao_tecnica','explicacao_produtor','explicacao_b2b','indicacoes_uso','cuidados_aplicacao','compatibilidade','armazenamento','observacoes_regulatorias']) OR jsonb_typeof(e->'identity') IS DISTINCT FROM 'object' OR jsonb_typeof(e->'value') IS DISTINCT FROM 'string' OR length(e->>'value')>12000 OR jsonb_typeof(e->'sources') IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'evidence_shape' USING ERRCODE='22023'; END IF;
+  IF jsonb_array_length(e->'sources') NOT BETWEEN 1 AND 20 THEN RAISE EXCEPTION 'source_required' USING ERRCODE='22023'; END IF;
+  FOR source IN SELECT value FROM jsonb_array_elements(e->'sources') LOOP
+   IF jsonb_typeof(source)<>'object' OR (source - ARRAY['url','title','excerpt'])<>'{}'::jsonb OR coalesce(source->>'url','') !~ '^https://[A-Za-z0-9.-]+(:443)?/' OR coalesce(source->>'title','')='' OR coalesce(source->>'excerpt','')='' OR length(source::text)>20000 THEN RAISE EXCEPTION 'source_invalid' USING ERRCODE='22023'; END IF;
+  END LOOP;
+ END LOOP;
+ h:=md5(jsonb_build_array('micro-ficha-v1',p_id,p_expected_updated_at,p_expected_profile_updated_at,p_payload,p_evidence)::text);
+ rep:=platform_private.tenant_catalog_receipt(org,p_key,h);
+ IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM org THEN RAISE EXCEPTION 'actor_changed' USING ERRCODE='42501'; END IF;
+ IF rep IS NOT NULL THEN RETURN rep; END IF;
+ IF p_id IS NOT NULL THEN
+  SELECT * INTO row FROM public.microrganismos WHERE id=p_id FOR UPDATE;
+  IF NOT FOUND OR row.owner_organization_id IS DISTINCT FROM org THEN RAISE EXCEPTION 'catalog_denied' USING ERRCODE='42501'; END IF;
+  IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM org THEN RAISE EXCEPTION 'actor_changed' USING ERRCODE='42501'; END IF;
+  IF row.updated_at IS DISTINCT FROM p_expected_updated_at OR p_expected_updated_at IS NULL THEN RAISE EXCEPTION 'micro_stale' USING ERRCODE='PT409'; END IF;
+  SELECT * INTO prof FROM public.microorganism_technical_profiles WHERE microrganismo_id=p_id FOR UPDATE;
+  IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM org THEN RAISE EXCEPTION 'actor_changed' USING ERRCODE='42501'; END IF;
+  IF prof.updated_at IS DISTINCT FROM p_expected_profile_updated_at THEN RAISE EXCEPTION 'profile_stale' USING ERRCODE='PT409'; END IF;
+ END IF;
+ IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM org THEN RAISE EXCEPTION 'actor_changed' USING ERRCODE='42501'; END IF;
+ ack:=public.tenant_catalog_root_save('microrganismos',p_id,root,p_expected_updated_at,gen_random_uuid()); target:=(ack->>'id')::uuid;
+ IF content<>'{}' THEN
+  IF prof.id IS NULL THEN content:=content||jsonb_build_object('microrganismo_id',target); END IF;
+  PERFORM public.tenant_catalog_root_save('microorganism_technical_profiles',prof.id,content,prof.updated_at,gen_random_uuid());
+ END IF;
+ FOR child IN SELECT value FROM jsonb_array_elements(children) ORDER BY value->>'kind',value->>'id' LOOP
+  IF jsonb_typeof(child) IS DISTINCT FROM 'object' OR (child-ARRAY['kind','id','updated_at','fields'])<>'{}' OR jsonb_typeof(child->'fields') IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'child_shape' USING ERRCODE='22023'; END IF;
+  kind:=child->>'kind';
+  IF kind='crop' THEN
+   tbl:='microorganism_crop_recommendations'; allowed:=ARRAY['cultura_id','cultura_nome','fase_recomendada','objetivo_uso','observacao','ativo'];
+  ELSIF kind='target' THEN
+   tbl:='microorganism_targets'; allowed:=ARRAY['catalogo_alvo_id','alvo_nome','alvo_tipo','descricao','prioridade','ativo'];
+  ELSIF kind='source' THEN
+   tbl:='catalog_technical_sources'; allowed:=ARRAY['fonte_titulo','fonte_url','fonte_tipo','idioma_original','pais_origem','resumo_evidencia','nivel_confianca','data_consulta','observacoes'];
+  ELSE RAISE EXCEPTION 'child_kind' USING ERRCODE='22023'; END IF;
+  IF kind='source' AND child->'fields' ? 'fonte_url' AND jsonb_typeof(child->'fields'->'fonte_url')<>'null' THEN
+   IF jsonb_typeof(child->'fields'->'fonte_url') IS DISTINCT FROM 'string' OR NOT platform_private.micro_ficha_source_https_v1(child->'fields'->>'fonte_url') THEN RAISE EXCEPTION 'source_url_invalid' USING ERRCODE='22023'; END IF;
+  END IF;
+  FOR k IN SELECT jsonb_object_keys(child->'fields') LOOP
+   IF NOT k=ANY(allowed) THEN RAISE EXCEPTION 'child_field_forbidden' USING ERRCODE='22023'; END IF;
+  END LOOP;
+  IF child->'fields' ? 'cultura_id' AND jsonb_typeof(child->'fields'->'cultura_id')<>'null' THEN
+   SELECT owner_organization_id INTO own FROM public.culturas WHERE id=(child->'fields'->>'cultura_id')::uuid FOR SHARE;
+   IF NOT FOUND OR (own IS NOT NULL AND own IS DISTINCT FROM org) THEN RAISE EXCEPTION 'crop_foreign' USING ERRCODE='42501'; END IF;
+  END IF;
+  IF child->'fields' ? 'catalogo_alvo_id' AND jsonb_typeof(child->'fields'->'catalogo_alvo_id')<>'null' THEN
+   -- Tenant-owned target only; trigger repeats ownership checks at mutation.
+   PERFORM 1 FROM public.catalogo_alvos WHERE id=(child->'fields'->>'catalogo_alvo_id')::uuid AND owner_organization_id=org AND ativo=true FOR SHARE;
+   IF NOT FOUND THEN RAISE EXCEPTION 'target_reference_invalid' USING ERRCODE='22023'; END IF;
+  END IF;
+  IF child->>'id' IS NOT NULL THEN
+   CASE kind
+WHEN 'crop' THEN
+SELECT to_jsonb(x) INTO old_child FROM public."microorganism_crop_recommendations" x WHERE id=(child->>'id')::uuid FOR UPDATE;
+WHEN 'target' THEN
+SELECT to_jsonb(x) INTO old_child FROM public."microorganism_targets" x WHERE id=(child->>'id')::uuid FOR UPDATE;
+WHEN 'source' THEN
+SELECT to_jsonb(x) INTO old_child FROM public."catalog_technical_sources" x WHERE id=(child->>'id')::uuid FOR UPDATE;
+ELSE RAISE EXCEPTION 'catalog_static_target_invalid' USING ERRCODE='22023';
+END CASE;
+   IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM org THEN RAISE EXCEPTION 'actor_changed' USING ERRCODE='42501'; END IF;
+   IF old_child IS NULL OR (kind='source' AND (old_child->>'entidade_tipo' IS DISTINCT FROM 'microrganismo' OR (old_child->>'entidade_id')::uuid IS DISTINCT FROM target)) OR (kind<>'source' AND (old_child->>'microrganismo_id')::uuid IS DISTINCT FROM target) THEN RAISE EXCEPTION 'child_foreign' USING ERRCODE='42501'; END IF;
+   IF child->>'updated_at' IS NULL OR (old_child->>'updated_at')::timestamptz IS DISTINCT FROM (child->>'updated_at')::timestamptz THEN RAISE EXCEPTION 'child_stale' USING ERRCODE='PT409'; END IF;
+   SELECT string_agg(format('%I=r.%I',key,key),',') INTO cols FROM jsonb_object_keys(child->'fields') key;
+   IF cols IS NULL THEN RAISE EXCEPTION 'child_empty' USING ERRCODE='22023'; END IF;
+   CASE kind
+WHEN 'crop' THEN
+UPDATE public."microorganism_crop_recommendations" x SET "cultura_id"=CASE WHEN (child->'fields') ? 'cultura_id' THEN r."cultura_id" ELSE x."cultura_id" END,
+"cultura_nome"=CASE WHEN (child->'fields') ? 'cultura_nome' THEN r."cultura_nome" ELSE x."cultura_nome" END,
+"fase_recomendada"=CASE WHEN (child->'fields') ? 'fase_recomendada' THEN r."fase_recomendada" ELSE x."fase_recomendada" END,
+"objetivo_uso"=CASE WHEN (child->'fields') ? 'objetivo_uso' THEN r."objetivo_uso" ELSE x."objetivo_uso" END,
+"observacao"=CASE WHEN (child->'fields') ? 'observacao' THEN r."observacao" ELSE x."observacao" END,
+"ativo"=CASE WHEN (child->'fields') ? 'ativo' THEN r."ativo" ELSE x."ativo" END, updated_at=clock_timestamp()
+FROM jsonb_populate_record(NULL::public."microorganism_crop_recommendations",(child->'fields')) r WHERE x.id=(child->>'id')::uuid;
+WHEN 'target' THEN
+UPDATE public."microorganism_targets" x SET "catalogo_alvo_id"=CASE WHEN (child->'fields') ? 'catalogo_alvo_id' THEN r."catalogo_alvo_id" ELSE x."catalogo_alvo_id" END,
+"alvo_nome"=CASE WHEN (child->'fields') ? 'alvo_nome' THEN r."alvo_nome" ELSE x."alvo_nome" END,
+"alvo_tipo"=CASE WHEN (child->'fields') ? 'alvo_tipo' THEN r."alvo_tipo" ELSE x."alvo_tipo" END,
+"descricao"=CASE WHEN (child->'fields') ? 'descricao' THEN r."descricao" ELSE x."descricao" END,
+"prioridade"=CASE WHEN (child->'fields') ? 'prioridade' THEN r."prioridade" ELSE x."prioridade" END,
+"ativo"=CASE WHEN (child->'fields') ? 'ativo' THEN r."ativo" ELSE x."ativo" END, updated_at=clock_timestamp()
+FROM jsonb_populate_record(NULL::public."microorganism_targets",(child->'fields')) r WHERE x.id=(child->>'id')::uuid;
+WHEN 'source' THEN
+UPDATE public."catalog_technical_sources" x SET "fonte_titulo"=CASE WHEN (child->'fields') ? 'fonte_titulo' THEN r."fonte_titulo" ELSE x."fonte_titulo" END,
+"fonte_url"=CASE WHEN (child->'fields') ? 'fonte_url' THEN r."fonte_url" ELSE x."fonte_url" END,
+"fonte_tipo"=CASE WHEN (child->'fields') ? 'fonte_tipo' THEN r."fonte_tipo" ELSE x."fonte_tipo" END,
+"idioma_original"=CASE WHEN (child->'fields') ? 'idioma_original' THEN r."idioma_original" ELSE x."idioma_original" END,
+"pais_origem"=CASE WHEN (child->'fields') ? 'pais_origem' THEN r."pais_origem" ELSE x."pais_origem" END,
+"resumo_evidencia"=CASE WHEN (child->'fields') ? 'resumo_evidencia' THEN r."resumo_evidencia" ELSE x."resumo_evidencia" END,
+"nivel_confianca"=CASE WHEN (child->'fields') ? 'nivel_confianca' THEN r."nivel_confianca" ELSE x."nivel_confianca" END,
+"data_consulta"=CASE WHEN (child->'fields') ? 'data_consulta' THEN r."data_consulta" ELSE x."data_consulta" END,
+"observacoes"=CASE WHEN (child->'fields') ? 'observacoes' THEN r."observacoes" ELSE x."observacoes" END, updated_at=clock_timestamp()
+FROM jsonb_populate_record(NULL::public."catalog_technical_sources",(child->'fields')) r WHERE x.id=(child->>'id')::uuid;
+ELSE RAISE EXCEPTION 'catalog_static_target_invalid' USING ERRCODE='22023';
+END CASE;
+  ELSE
+   IF kind='source' THEN child:=jsonb_set(child,'{fields}',child->'fields'||jsonb_build_object('entidade_tipo','microrganismo','entidade_id',target));
+   ELSE child:=jsonb_set(child,'{fields}',child->'fields'||jsonb_build_object('microrganismo_id',target)); END IF;
+   SELECT string_agg(format('%I',key),','),string_agg(format('r.%I',key),',') INTO cols,k FROM jsonb_object_keys(child->'fields') key;
+   CASE kind
+WHEN 'crop' THEN
+INSERT INTO public."microorganism_crop_recommendations" ("cultura_id", "cultura_nome", "fase_recomendada", "objetivo_uso", "observacao", "ativo", "microrganismo_id")
+SELECT CASE WHEN (child->'fields') ? 'cultura_id' THEN r."cultura_id" ELSE NULL END,
+CASE WHEN (child->'fields') ? 'cultura_nome' THEN r."cultura_nome" ELSE NULL END,
+CASE WHEN (child->'fields') ? 'fase_recomendada' THEN r."fase_recomendada" ELSE NULL END,
+CASE WHEN (child->'fields') ? 'objetivo_uso' THEN r."objetivo_uso" ELSE NULL END,
+CASE WHEN (child->'fields') ? 'observacao' THEN r."observacao" ELSE NULL END,
+CASE WHEN (child->'fields') ? 'ativo' THEN r."ativo" ELSE true END,
+CASE WHEN (child->'fields') ? 'microrganismo_id' THEN r."microrganismo_id" ELSE NULL END
+FROM jsonb_populate_record(NULL::public."microorganism_crop_recommendations",(child->'fields')) r;
+WHEN 'target' THEN
+INSERT INTO public."microorganism_targets" ("catalogo_alvo_id", "alvo_nome", "alvo_tipo", "descricao", "prioridade", "ativo", "microrganismo_id")
+SELECT CASE WHEN (child->'fields') ? 'catalogo_alvo_id' THEN r."catalogo_alvo_id" ELSE NULL END,
+CASE WHEN (child->'fields') ? 'alvo_nome' THEN r."alvo_nome" ELSE NULL END,
+CASE WHEN (child->'fields') ? 'alvo_tipo' THEN r."alvo_tipo" ELSE NULL END,
+CASE WHEN (child->'fields') ? 'descricao' THEN r."descricao" ELSE NULL END,
+CASE WHEN (child->'fields') ? 'prioridade' THEN r."prioridade" ELSE 1 END,
+CASE WHEN (child->'fields') ? 'ativo' THEN r."ativo" ELSE true END,
+CASE WHEN (child->'fields') ? 'microrganismo_id' THEN r."microrganismo_id" ELSE NULL END
+FROM jsonb_populate_record(NULL::public."microorganism_targets",(child->'fields')) r;
+WHEN 'source' THEN
+INSERT INTO public."catalog_technical_sources" ("fonte_titulo", "fonte_url", "fonte_tipo", "idioma_original", "pais_origem", "resumo_evidencia", "nivel_confianca", "data_consulta", "observacoes", "entidade_tipo", "entidade_id")
+SELECT CASE WHEN (child->'fields') ? 'fonte_titulo' THEN r."fonte_titulo" ELSE NULL END,
+CASE WHEN (child->'fields') ? 'fonte_url' THEN r."fonte_url" ELSE NULL END,
+CASE WHEN (child->'fields') ? 'fonte_tipo' THEN r."fonte_tipo" ELSE NULL END,
+CASE WHEN (child->'fields') ? 'idioma_original' THEN r."idioma_original" ELSE NULL END,
+CASE WHEN (child->'fields') ? 'pais_origem' THEN r."pais_origem" ELSE NULL END,
+CASE WHEN (child->'fields') ? 'resumo_evidencia' THEN r."resumo_evidencia" ELSE NULL END,
+CASE WHEN (child->'fields') ? 'nivel_confianca' THEN r."nivel_confianca" ELSE 'medio'::text END,
+CASE WHEN (child->'fields') ? 'data_consulta' THEN r."data_consulta" ELSE CURRENT_DATE END,
+CASE WHEN (child->'fields') ? 'observacoes' THEN r."observacoes" ELSE NULL END,
+CASE WHEN (child->'fields') ? 'entidade_tipo' THEN r."entidade_tipo" ELSE NULL END,
+CASE WHEN (child->'fields') ? 'entidade_id' THEN r."entidade_id" ELSE NULL END
+FROM jsonb_populate_record(NULL::public."catalog_technical_sources",(child->'fields')) r;
+ELSE RAISE EXCEPTION 'catalog_static_target_invalid' USING ERRCODE='22023';
+END CASE;
+  END IF;
+  IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM org THEN RAISE EXCEPTION 'actor_changed' USING ERRCODE='42501'; END IF;
+ END LOOP;
+ INSERT INTO platform_private.micro_ficha_extra_v1(micro_id,extra,evidence) VALUES(target,extra,p_evidence)
+ ON CONFLICT(micro_id) DO UPDATE SET extra=platform_private.micro_ficha_extra_v1.extra||excluded.extra,evidence=excluded.evidence,updated_at=clock_timestamp();
+ IF platform_private.recorte_a_actor_fresh('mutate') IS DISTINCT FROM org THEN RAISE EXCEPTION 'actor_changed' USING ERRCODE='42501'; END IF;
+ ack:=ack||jsonb_build_object('replayed',false);
+ INSERT INTO platform_private.tenant_catalog_root_receipts(actor_id,organization_id,idempotency_key,payload_hash,result) VALUES(auth.uid(),org,p_key,h,ack);
+ RETURN ack;
+END $function$
+;
+
+CREATE OR REPLACE FUNCTION platform_private.tenant_catalog_ref_owner(p_tbl text, p_id uuid)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v uuid;
+BEGIN
+  IF p_tbl IS NULL OR p_tbl NOT IN ('produtos','microrganismos','culturas') THEN RAISE EXCEPTION 'tenant_catalog_ref_table' USING ERRCODE='22023'; END IF;
+  CASE p_tbl
+WHEN 'produtos' THEN
+SELECT owner_organization_id INTO v FROM public."produtos" WHERE id=p_id FOR SHARE;
+WHEN 'microrganismos' THEN
+SELECT owner_organization_id INTO v FROM public."microrganismos" WHERE id=p_id FOR SHARE;
+WHEN 'culturas' THEN
+SELECT owner_organization_id INTO v FROM public."culturas" WHERE id=p_id FOR SHARE;
+ELSE RAISE EXCEPTION 'catalog_static_target_invalid' USING ERRCODE='22023';
+END CASE;
+  RETURN v;
+END $function$
+;
+DO $postcheck$ BEGIN
+IF NOT EXISTS(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='tenant_catalog_root_delete' and md5(pg_get_functiondef(p.oid))='c02cc78de234d0e3e68d1b4fd35760dd' and p.proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' and p.prosecdef and p.proconfig=ARRAY['search_path=""']) THEN RAISE EXCEPTION 'postcheck_failed:tenant_catalog_root_delete'; END IF;
+IF NOT EXISTS(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='tenant_catalog_root_save' and md5(pg_get_functiondef(p.oid))='5dd5f747b485acd62bbc481af7bf4fa1' and p.proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' and p.prosecdef and p.proconfig=ARRAY['search_path=""']) THEN RAISE EXCEPTION 'postcheck_failed:tenant_catalog_root_save'; END IF;
+IF NOT EXISTS(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='tenant_microorganism_ficha_save_v1' and md5(pg_get_functiondef(p.oid))='9c8c76db16a8668bdcaa2e00e59e9472' and p.proacl::text='{postgres=X/postgres,authenticated=X/postgres}' and p.prosecdef and p.proconfig=ARRAY['search_path=""']) THEN RAISE EXCEPTION 'postcheck_failed:tenant_microorganism_ficha_save_v1'; END IF;
+IF NOT EXISTS(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='platform_private' and p.proname='tenant_catalog_ref_owner' and md5(pg_get_functiondef(p.oid))='119c87fe6509e8b7c3ce76e85459cc52' and p.proacl::text='{postgres=X/postgres}' and p.prosecdef and p.proconfig=ARRAY['search_path=""']) THEN RAISE EXCEPTION 'postcheck_failed:tenant_catalog_ref_owner'; END IF;
+END $postcheck$;

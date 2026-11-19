@@ -1,0 +1,74 @@
+CREATE OR REPLACE FUNCTION platform_private.weather_sync_context_v1(p_fazenda_id uuid)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $fn$
+DECLARE actor uuid:=auth.uid(); org uuid; f public.fazendas%ROWTYPE; day_end date;
+BEGIN
+ IF actor IS NULL OR coalesce(auth.jwt()->>'role','')<>'authenticated' THEN RAISE EXCEPTION 'weather_unauthenticated' USING ERRCODE='42501'; END IF;
+ org:=public.h15_actor_organization();
+ IF org IS NULL OR (public.has_role(actor,'administrador') OR public.has_role(actor,'gestor')) IS DISTINCT FROM true
+ OR public._saas_user_has_feature(actor,'recomendacoes_alertas') IS DISTINCT FROM true THEN RAISE EXCEPTION 'weather_denied' USING ERRCODE='42501'; END IF;
+ SELECT * INTO f FROM public.fazendas WHERE id=p_fazenda_id AND organization_id=org AND ativo=true;
+ IF NOT FOUND OR public.can_user_access_fazenda(p_fazenda_id) IS DISTINCT FROM true THEN RAISE EXCEPTION 'weather_denied' USING ERRCODE='42501'; END IF;
+ day_end:=(clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date;
+ RETURN jsonb_build_object('id',f.id,'actor_id',actor,'organization_id',org,'nome',f.nome,'latitude',f.latitude,'longitude',f.longitude,'municipio',f.municipio,'estado',f.estado,'start_date',day_end-7,'end_date',day_end);
+END $fn$;
+REVOKE ALL ON FUNCTION platform_private.weather_sync_context_v1(uuid) FROM PUBLIC,anon,service_role;
+GRANT EXECUTE ON FUNCTION platform_private.weather_sync_context_v1(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION platform_private.weather_sync_apply_v1(p_fazenda_id uuid,p_context jsonb,p_records jsonb)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $fn$
+DECLARE ctx jsonb; rec jsonb; k text; n integer; d date; start_day date; end_day date; seen date[]:='{}';
+BEGIN
+ SET LOCAL lock_timeout='3s';
+ ctx:=platform_private.weather_sync_context_v1(p_fazenda_id);
+ IF ctx IS DISTINCT FROM p_context THEN RAISE EXCEPTION 'weather_context_changed' USING ERRCODE='PT409'; END IF;
+ IF jsonb_typeof(p_records) IS DISTINCT FROM 'array' OR jsonb_array_length(p_records)<>8 OR octet_length(p_records::text)>20000 THEN RAISE EXCEPTION 'weather_records_invalid' USING ERRCODE='22023'; END IF;
+ start_day:=(ctx->>'start_date')::date; end_day:=(ctx->>'end_date')::date;
+ FOR rec IN SELECT value FROM jsonb_array_elements(p_records) LOOP
+  IF jsonb_typeof(rec) IS DISTINCT FROM 'object' OR (rec-ARRAY['data','temperatura','umidade','chuva_mm','vento_kmh','radiacao_solar'])<>'{}'
+   OR jsonb_typeof(rec->'data') IS DISTINCT FROM 'string' OR (rec->>'data') !~ '^\d{4}-\d{2}-\d{2}$' THEN RAISE EXCEPTION 'weather_record_invalid' USING ERRCODE='22023'; END IF;
+  d:=(rec->>'data')::date;
+  IF d<start_day OR d>end_day OR d=ANY(seen) THEN RAISE EXCEPTION 'weather_dates_invalid' USING ERRCODE='22023'; END IF;
+  seen:=array_append(seen,d);
+  FOREACH k IN ARRAY ARRAY['temperatura','umidade','chuva_mm','vento_kmh','radiacao_solar'] LOOP
+   IF NOT rec ? k OR jsonb_typeof(rec->k) NOT IN ('number','null') THEN RAISE EXCEPTION 'weather_metric_invalid' USING ERRCODE='22023'; END IF;
+   IF jsonb_typeof(rec->k)='number' AND ((rec->>k)::numeric < CASE WHEN k='temperatura' THEN -100 ELSE 0 END OR (rec->>k)::numeric > CASE k WHEN 'temperatura' THEN 70 WHEN 'umidade' THEN 100 WHEN 'chuva_mm' THEN 3000 WHEN 'vento_kmh' THEN 500 ELSE 100 END) THEN RAISE EXCEPTION 'weather_metric_invalid' USING ERRCODE='22023'; END IF;
+  END LOOP;
+ END LOOP;
+ PERFORM pg_advisory_xact_lock(hashtextextended('weather-sync:'||p_fazenda_id::text,0));
+ PERFORM 1 FROM public.fazendas WHERE id=p_fazenda_id FOR SHARE;
+ IF platform_private.weather_sync_context_v1(p_fazenda_id) IS DISTINCT FROM ctx THEN RAISE EXCEPTION 'weather_context_changed' USING ERRCODE='PT409'; END IF;
+ DELETE FROM public.clima_dados WHERE fazenda_id=p_fazenda_id
+   AND data_hora>=start_day::timestamp AT TIME ZONE 'America/Sao_Paulo'
+   AND data_hora<(end_day+1)::timestamp AT TIME ZONE 'America/Sao_Paulo';
+ INSERT INTO public.clima_dados(fazenda_id,data_hora,temperatura,umidade,chuva_mm,vento_kmh,radiacao_solar)
+ SELECT p_fazenda_id,((x.data::date)::timestamp+interval '12 hours') AT TIME ZONE 'America/Sao_Paulo',x.temperatura,x.umidade,x.chuva_mm,x.vento_kmh,x.radiacao_solar
+ FROM jsonb_to_recordset(p_records) AS x(data text,temperatura numeric,umidade numeric,chuva_mm numeric,vento_kmh numeric,radiacao_solar numeric);
+ GET DIAGNOSTICS n=ROW_COUNT;
+ IF n<>8 THEN RAISE EXCEPTION 'weather_write_incomplete'; END IF;
+ IF platform_private.weather_sync_context_v1(p_fazenda_id) IS DISTINCT FROM ctx THEN RAISE EXCEPTION 'weather_context_changed' USING ERRCODE='PT409'; END IF;
+ RETURN jsonb_build_object('success',true,'fazenda',ctx->>'nome','registros',n,'periodo',start_day::text||' a '||end_day::text);
+END $fn$;
+REVOKE ALL ON FUNCTION platform_private.weather_sync_apply_v1(uuid,jsonb,jsonb) FROM PUBLIC,anon,service_role;
+GRANT EXECUTE ON FUNCTION platform_private.weather_sync_apply_v1(uuid,jsonb,jsonb) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.weather_sync_context_v1(p_fazenda_id uuid)
+RETURNS jsonb LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path='' AS $fn$
+ SELECT platform_private.weather_sync_context_v1(p_fazenda_id);
+$fn$;
+REVOKE ALL ON FUNCTION public.weather_sync_context_v1(uuid) FROM PUBLIC,anon,service_role;
+GRANT EXECUTE ON FUNCTION public.weather_sync_context_v1(uuid) TO authenticated;
+CREATE OR REPLACE FUNCTION public.weather_sync_apply_v1(p_fazenda_id uuid,p_context jsonb,p_records jsonb)
+RETURNS jsonb LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path='' AS $fn$
+ SELECT platform_private.weather_sync_apply_v1(p_fazenda_id,p_context,p_records);
+$fn$;
+REVOKE ALL ON FUNCTION public.weather_sync_apply_v1(uuid,jsonb,jsonb) FROM PUBLIC,anon,service_role;
+GRANT EXECUTE ON FUNCTION public.weather_sync_apply_v1(uuid,jsonb,jsonb) TO authenticated;
+
+-- Defesa adicional contra chamadas diretas a tabela, sem ampliar politicas permissivas.
+CREATE POLICY climate_tenant_write_insert_v1 ON public.clima_dados AS RESTRICTIVE FOR INSERT TO authenticated
+ WITH CHECK (EXISTS(SELECT 1 FROM public.fazendas f WHERE f.id=fazenda_id AND f.organization_id=public.h15_actor_organization() AND f.ativo));
+CREATE POLICY climate_tenant_write_update_v1 ON public.clima_dados AS RESTRICTIVE FOR UPDATE TO authenticated
+ USING (EXISTS(SELECT 1 FROM public.fazendas f WHERE f.id=fazenda_id AND f.organization_id=public.h15_actor_organization() AND f.ativo))
+ WITH CHECK (EXISTS(SELECT 1 FROM public.fazendas f WHERE f.id=fazenda_id AND f.organization_id=public.h15_actor_organization() AND f.ativo));
+CREATE POLICY climate_tenant_write_delete_v1 ON public.clima_dados AS RESTRICTIVE FOR DELETE TO authenticated
+ USING (EXISTS(SELECT 1 FROM public.fazendas f WHERE f.id=fazenda_id AND f.organization_id=public.h15_actor_organization() AND f.ativo));

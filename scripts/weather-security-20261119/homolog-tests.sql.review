@@ -1,0 +1,20 @@
+begin;
+select set_config('request.jwt.claims','{"sub":"aebb2223-a9b3-4519-b0be-2fad94cfdab4","role":"authenticated"}',true);
+set local role authenticated;
+do $t$ declare ctx jsonb; recs jsonb; ack jsonb; before_hash text; after_hash text; n integer;
+begin
+ctx:=public.weather_sync_context_v1('ce110000-0000-4000-8000-000000000021');
+select jsonb_agg(jsonb_build_object('data',d::date,'temperatura',25,'umidade',70,'chuva_mm',0,'vento_kmh',10,'radiacao_solar',15)) into recs from generate_series((ctx->>'start_date')::date,(ctx->>'end_date')::date,interval '1 day') d;
+ack:=public.weather_sync_apply_v1('ce110000-0000-4000-8000-000000000021',ctx,recs);
+ack:=public.weather_sync_apply_v1('ce110000-0000-4000-8000-000000000021',ctx,recs);
+select count(*),md5(jsonb_agg(to_jsonb(c) order by id)::text) into n,before_hash from public.clima_dados c where fazenda_id='ce110000-0000-4000-8000-000000000021';
+if n<>8 then raise exception 'duplicate dates'; end if;
+begin perform public.weather_sync_apply_v1('ce110000-0000-4000-8000-000000000021',ctx,jsonb_set(recs,'{0,umidade}','101')); raise exception 'invalid value accepted'; exception when invalid_parameter_value then null; end;
+begin perform public.weather_sync_apply_v1('ce110000-0000-4000-8000-000000000021',jsonb_set(ctx,'{latitude}','0'),recs); raise exception 'stale context accepted'; exception when sqlstate 'PT409' then null; end;
+begin perform public.weather_sync_apply_v1('ce110000-0000-4000-8000-000000000023',ctx,recs); raise exception 'foreign farm accepted'; exception when insufficient_privilege then null; end;
+begin insert into public.clima_dados(fazenda_id,temperatura) values('ce110000-0000-4000-8000-000000000023',30); raise exception 'foreign direct write accepted'; exception when insufficient_privilege then null; end;
+select md5(jsonb_agg(to_jsonb(c) order by id)::text) into after_hash from public.clima_dados c where fazenda_id='ce110000-0000-4000-8000-000000000021';
+if before_hash is distinct from after_hash then raise exception 'failed operation changed rows'; end if;
+end $t$;
+rollback;
+select 'PASS: repeat sync, no duplicate, invalid metrics, stale location, foreign RPC/direct write, unchanged records, rollback' as result;

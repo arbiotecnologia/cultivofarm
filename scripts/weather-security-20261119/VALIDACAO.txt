@@ -1,5 +1,18 @@
-Homologacao 2026-11-19: sync-clima autentica via Auth, deriva tenant e permissao no banco e grava oito dias atomicamente.
-Localizacao: coordenadas da fazenda prioritarias; ausentes, cidade/UF exatas via Open-Meteo. Nao modifica o cadastro geografico.
-15 testes locais aprovados. HTTPS real: coordenadas 200, cidade 200, outra organizacao 403, anonimo 401.
-SQL: repeticao sem duplicar, contexto alterado e metricas invalidas recusados, escrita direta estrangeira recusada, registros preservados.
-Candidato ainda nao aplicado em producao. Aguardando nova varredura original e verificacao de versoes antes da promocao.
+Cultivo Farm - seguranca da sync-clima e localizacao - 2026-11-19
+
+Homologacao vrlcdwmlytukrjezrrnf: Edge sync-clima versao 7, ACTIVE, verify_jwt=true.
+Autenticacao do usuario tambem obrigatoria via /auth/v1/user. Nenhuma chave service_role no novo handler.
+Permissao: administrador/gestor ativo, organizacao ativa, recurso recomendações_alertas, fazenda ativa da mesma organizacao e acesso a fazenda.
+Gravacao: SQL estatico, transacao unica, periodo validado, oito dias, lock por fazenda e revalidacao do contexto apos esperas e antes da resposta.
+Localizacao: coordenadas cadastradas prioritarias. Ausencia/par legado 0,0 usa municipio/UF exatos; ambiguidades e cadastro incompleto recusados. Coordenadas do municipio nao sao gravadas como coordenadas da fazenda.
+
+Testes executados:
+- 16 testes locais do handler: PASS.
+- 23 regressoes existentes do clima + 4 testes da tela montada: PASS (27).
+- Build Vite de producao: exit 0, 38.03 s. Avisos existentes de tamanho/importacao de chunks.
+- TypeScript tsconfig.app.json --noEmit: exit 0.
+- HTTPS real, versao 7 com JWT do gateway habilitado: coordenadas 200/8 registros, cidade 200/8 registros, outra organizacao 403, anonimo 401. Resultado em live-results.json.
+- SQL com papel authenticated e rollback: repeticao sem duplicacao, metrica invalida, contexto geográfico alterado, RPC estrangeiro, INSERT direto estrangeiro recusados; hash dos dados preservado nas falhas. sql-validation.sql.
+- Fixtures sinteticas de clientes/fazendas removidas; permissoes temporarias encerradas com auditoria.
+
+Producao: ainda nao aplicada neste registro. Varredura original em andamento. O pacote production-both-reviewed.sql verifica as assinaturas/hash anteriores e metadados antes de substituir as funcoes de catalogo e instalar os controles de clima.
