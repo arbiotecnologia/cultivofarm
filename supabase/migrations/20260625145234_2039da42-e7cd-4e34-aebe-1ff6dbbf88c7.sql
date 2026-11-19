@@ -1,1 +1,3 @@
-UPDATE auth.users SET encrypted_password = crypt('123456', gen_salt('bf')), updated_at = now() WHERE email = 'admin@arbio.com';
+-- Historical account bootstrap retired: never provision accounts or reset passwords from migrations.
+-- Existing accounts are unchanged. New accounts use the canonical provisioning and Auth recovery flows.
+SELECT 1;
