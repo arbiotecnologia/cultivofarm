@@ -1,0 +1,10 @@
+BEGIN READ ONLY;
+DO $pre$ BEGIN
+ IF to_regprocedure('platform_private.recorte_a_actor_fresh(text)') IS NULL OR md5(pg_get_functiondef('platform_private.recorte_a_actor_fresh(text)'::regprocedure)) <> '0cb006c428fc13b0bf0fd7e2759f7a99' THEN RAISE EXCEPTION 'Dependency drift: platform_private.recorte_a_actor_fresh(text)'; END IF;
+ IF to_regprocedure('platform_private.has_role(uuid,public.app_role)') IS NULL OR md5(pg_get_functiondef('platform_private.has_role(uuid,public.app_role)'::regprocedure)) <> 'c5af5b55de6d79da9b73a33948746ae2' THEN RAISE EXCEPTION 'Dependency drift: platform_private.has_role(uuid,public.app_role)'; END IF;
+ IF to_regprocedure('public.can_view_catalog_internal(uuid)') IS NULL OR md5(pg_get_functiondef('public.can_view_catalog_internal(uuid)'::regprocedure)) <> 'b04164dd8464d16f52cb69e7bcf83de7' THEN RAISE EXCEPTION 'Dependency drift: public.can_view_catalog_internal(uuid)'; END IF;
+ IF to_regclass('platform_private.catalog_articles_v1') IS NOT NULL OR to_regclass('platform_private.catalog_article_gate_v1') IS NOT NULL OR EXISTS(SELECT 1 FROM storage.buckets WHERE id='catalog-scientific-articles') THEN RAISE EXCEPTION 'Library already exists; stop and reconcile'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ('public','platform_private') AND p.proname IN ('catalog_article_scope_v1','catalog_article_row_v1','catalog_article_attest_v1','tenant_catalog_articles_list_v1','tenant_catalog_article_prepare_v1','tenant_catalog_article_snapshot_v1','tenant_catalog_article_commit_v1')) THEN RAISE EXCEPTION 'Article function collision; stop and reconcile'; END IF;
+ IF (SELECT count(*) FROM public.organizations WHERE id IN ('007bb519-cba0-4704-be2c-cb93ad010048','8f57c7dd-0557-4041-b401-7a00f7244626'))<>2 THEN RAISE EXCEPTION 'Production data fingerprint mismatch'; END IF;
+END $pre$;
+ROLLBACK;

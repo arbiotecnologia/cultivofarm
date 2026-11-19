@@ -1,0 +1,5 @@
+-- Deny-only rollback. Keep PDFs, references, rows, ACL and RLS.
+BEGIN;
+SET LOCAL lock_timeout='5s';
+UPDATE platform_private.catalog_article_gate_v1 SET enabled=false WHERE singleton;
+COMMIT;

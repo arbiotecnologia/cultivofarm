@@ -1,3 +1,4 @@
+import { ScientificArticles } from "./ScientificArticles";
 import { ProfileFieldAI } from "./catalog/ProfileFieldAI";
 import { TenantProfileLinks } from "./catalog/TenantProfileLinks";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -294,7 +295,7 @@ export function MicroorganismFichaEditor({
           aria-label="Seções da ficha"
           className="grid shrink-0 grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-6"
         >
-          {MICRO_SECTIONS.map((s) => (
+          {[...MICRO_SECTIONS, "Artigos científicos"].map((s) => (
             <Button
               key={s}
               variant={section === s ? "secondary" : "ghost"}
@@ -476,6 +477,7 @@ export function MicroorganismFichaEditor({
                   </p>
                 </>
               )}
+              {section === "Artigos científicos" && (item && profile?.organization_id ? <ScientificArticles entity="microrganismo" parent={item.id} organization={profile.organization_id} editable={editable} blocked={busy || draftDirty || dirty.current || relationPending} onWorking={setDocumentBusy} /> : <p>Salve a ficha antes de enviar artigos.</p>)}
               {section === "Fontes e histórico" && (
                 <>
                   {item?.owner_organization_id === profile?.organization_id &&

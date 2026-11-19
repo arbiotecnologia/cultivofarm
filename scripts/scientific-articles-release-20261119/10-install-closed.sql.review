@@ -1,0 +1,139 @@
+-- PREPARATION ONLY. Target swzpzcwiasxmjutrmvkm. Additive; gate OFF.
+BEGIN;
+SET LOCAL lock_timeout='5s';
+SET LOCAL statement_timeout='120s';
+DO $pre$ BEGIN
+ IF to_regprocedure('platform_private.recorte_a_actor_fresh(text)') IS NULL OR md5(pg_get_functiondef('platform_private.recorte_a_actor_fresh(text)'::regprocedure)) <> '0cb006c428fc13b0bf0fd7e2759f7a99' THEN RAISE EXCEPTION 'Dependency drift: platform_private.recorte_a_actor_fresh(text)'; END IF;
+ IF to_regprocedure('platform_private.has_role(uuid,public.app_role)') IS NULL OR md5(pg_get_functiondef('platform_private.has_role(uuid,public.app_role)'::regprocedure)) <> 'c5af5b55de6d79da9b73a33948746ae2' THEN RAISE EXCEPTION 'Dependency drift: platform_private.has_role(uuid,public.app_role)'; END IF;
+ IF to_regprocedure('public.can_view_catalog_internal(uuid)') IS NULL OR md5(pg_get_functiondef('public.can_view_catalog_internal(uuid)'::regprocedure)) <> 'b04164dd8464d16f52cb69e7bcf83de7' THEN RAISE EXCEPTION 'Dependency drift: public.can_view_catalog_internal(uuid)'; END IF;
+ IF to_regclass('platform_private.catalog_articles_v1') IS NOT NULL OR to_regclass('platform_private.catalog_article_gate_v1') IS NOT NULL OR EXISTS(SELECT 1 FROM storage.buckets WHERE id='catalog-scientific-articles') THEN RAISE EXCEPTION 'Library already exists; stop and reconcile'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ('public','platform_private') AND p.proname IN ('catalog_article_scope_v1','catalog_article_row_v1','catalog_article_attest_v1','tenant_catalog_articles_list_v1','tenant_catalog_article_prepare_v1','tenant_catalog_article_snapshot_v1','tenant_catalog_article_commit_v1')) THEN RAISE EXCEPTION 'Article function collision; stop and reconcile'; END IF;
+ IF (SELECT count(*) FROM public.organizations WHERE id IN ('007bb519-cba0-4704-be2c-cb93ad010048','8f57c7dd-0557-4041-b401-7a00f7244626'))<>2 THEN RAISE EXCEPTION 'Production data fingerprint mismatch'; END IF;
+END $pre$;
+
+CREATE TABLE platform_private.catalog_article_gate_v1(singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),enabled boolean NOT NULL DEFAULT false);
+INSERT INTO platform_private.catalog_article_gate_v1 VALUES(true,false);
+CREATE TABLE platform_private.catalog_articles_v1(
+ id uuid PRIMARY KEY, organization_id uuid NOT NULL REFERENCES public.organizations(id),
+ entity text NOT NULL CHECK(entity IN ('microrganismo','produto')), parent_id uuid NOT NULL,
+ actor_id uuid NOT NULL, title text NOT NULL CHECK(length(title) BETWEEN 1 AND 200),
+ file_name text NOT NULL CHECK(length(file_name) BETWEEN 1 AND 240),
+ sha256 text NOT NULL CHECK(sha256 ~ '^[a-f0-9]{64}$'), size_bytes bigint NOT NULL CHECK(size_bytes BETWEEN 16 AND 10485760),
+ status text NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','ready')),
+ attested boolean NOT NULL DEFAULT false, created_at timestamptz NOT NULL DEFAULT now(),
+ received_at timestamptz, UNIQUE(organization_id,entity,parent_id,sha256)
+);
+ALTER TABLE platform_private.catalog_articles_v1 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_private.catalog_article_gate_v1 ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON platform_private.catalog_articles_v1,platform_private.catalog_article_gate_v1 FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.catalog_article_scope_v1(p_entity text,p_parent uuid,p_write boolean)
+RETURNS uuid LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid; own uuid;
+BEGIN
+ org:=platform_private.recorte_a_actor_fresh(CASE WHEN p_write THEN 'mutate' ELSE 'read_catalog' END);
+ IF NOT EXISTS(SELECT 1 FROM platform_private.catalog_article_gate_v1 WHERE singleton AND enabled) THEN RAISE EXCEPTION 'article_unavailable' USING ERRCODE='42501'; END IF;
+ IF p_write AND (platform_private.has_role(auth.uid(),'parceiro_b2b'::public.app_role) OR platform_private.has_role(auth.uid(),'parceiro_b2b_tecnico'::public.app_role)) THEN RAISE EXCEPTION 'article_denied' USING ERRCODE='42501'; END IF;
+ IF p_entity='microrganismo' AND NOT p_write AND NOT EXISTS(SELECT 1 FROM unnest(ARRAY['administrador','gestor','consultor_tecnico','gestor_comercial','operador_onfarm','administrativo','tecnico_agronomo','producao']::public.app_role[]) AS r(role) WHERE platform_private.has_role(auth.uid(),r.role)) THEN RAISE EXCEPTION 'article_denied' USING ERRCODE='42501'; END IF;
+ IF p_entity='microrganismo' THEN SELECT owner_organization_id INTO own FROM public.microrganismos WHERE id=p_parent;
+ ELSIF p_entity='produto' THEN SELECT owner_organization_id INTO own FROM public.produtos WHERE id=p_parent;
+ ELSE RAISE EXCEPTION 'article_entity' USING ERRCODE='22023'; END IF;
+ IF own IS NULL OR own IS DISTINCT FROM org THEN RAISE EXCEPTION 'article_denied' USING ERRCODE='42501'; END IF;
+ RETURN org;
+END $$;
+CREATE FUNCTION platform_private.catalog_article_row_v1(r platform_private.catalog_articles_v1)
+RETURNS jsonb LANGUAGE sql IMMUTABLE SET search_path='' AS $$
+ SELECT jsonb_build_object('id',r.id,'organization_id',r.organization_id,'entity',r.entity,'parent_id',r.parent_id,'title',r.title,'file_name',r.file_name,'sha256',r.sha256,'size_bytes',r.size_bytes,'status',r.status,'created_at',r.created_at,'received_at',r.received_at);
+$$;
+CREATE FUNCTION public.tenant_catalog_articles_list_v1(p_entity text,p_parent uuid)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid; result jsonb;
+BEGIN
+ org:=platform_private.catalog_article_scope_v1(p_entity,p_parent,false);
+ SELECT coalesce(jsonb_agg(platform_private.catalog_article_row_v1(r) ORDER BY r.created_at DESC),'[]') INTO result
+ FROM platform_private.catalog_articles_v1 r WHERE r.organization_id=org AND r.entity=p_entity AND r.parent_id=p_parent AND r.status='ready';
+ IF platform_private.catalog_article_scope_v1(p_entity,p_parent,false) IS DISTINCT FROM org THEN RAISE EXCEPTION 'article_denied' USING ERRCODE='42501'; END IF;
+ RETURN result;
+END $$;
+CREATE FUNCTION public.tenant_catalog_article_prepare_v1(p_entity text,p_parent uuid,p_id uuid,p_title text,p_file_name text,p_sha256 text,p_size bigint)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid; r platform_private.catalog_articles_v1%ROWTYPE;
+BEGIN
+ SET LOCAL lock_timeout='3s';
+ org:=platform_private.catalog_article_scope_v1(p_entity,p_parent,true);
+ IF p_id IS NULL OR p_title IS NULL OR length(btrim(p_title)) NOT BETWEEN 1 AND 200 OR p_file_name IS NULL OR length(p_file_name) NOT BETWEEN 1 AND 240 OR p_file_name !~* '\.pdf$' OR p_file_name ~ '[[:cntrl:]/\\]' OR p_sha256 IS NULL OR p_sha256 !~ '^[a-f0-9]{64}$' OR p_size IS NULL OR p_size NOT BETWEEN 16 AND 10485760 THEN RAISE EXCEPTION 'article_metadata' USING ERRCODE='22023'; END IF;
+ PERFORM pg_advisory_xact_lock(hashtextextended(org::text||p_entity||p_parent::text,0));
+ IF platform_private.catalog_article_scope_v1(p_entity,p_parent,true) IS DISTINCT FROM org THEN RAISE EXCEPTION 'article_denied' USING ERRCODE='42501'; END IF;
+ SELECT * INTO r FROM platform_private.catalog_articles_v1 WHERE id=p_id;
+ IF FOUND THEN
+  IF r.organization_id IS DISTINCT FROM org OR r.actor_id IS DISTINCT FROM auth.uid() OR r.entity<>p_entity OR r.parent_id<>p_parent THEN RAISE EXCEPTION 'article_denied' USING ERRCODE='42501'; END IF;
+  IF r.title<>btrim(p_title) OR r.file_name<>p_file_name OR r.sha256<>p_sha256 OR r.size_bytes<>p_size THEN RAISE EXCEPTION 'article_intent_conflict' USING ERRCODE='PT409'; END IF;
+  RETURN platform_private.catalog_article_row_v1(r);
+ END IF;
+ IF EXISTS(SELECT 1 FROM platform_private.catalog_articles_v1 WHERE organization_id=org AND entity=p_entity AND parent_id=p_parent AND sha256=p_sha256) THEN RAISE EXCEPTION 'article_duplicate' USING ERRCODE='PT409'; END IF;
+ IF (SELECT count(*) FROM platform_private.catalog_articles_v1 WHERE organization_id=org AND entity=p_entity AND parent_id=p_parent)>=100 THEN RAISE EXCEPTION 'article_limit' USING ERRCODE='54000'; END IF;
+ INSERT INTO platform_private.catalog_articles_v1(id,organization_id,entity,parent_id,actor_id,title,file_name,sha256,size_bytes)
+ VALUES(p_id,org,p_entity,p_parent,auth.uid(),btrim(p_title),p_file_name,p_sha256,p_size) RETURNING * INTO r;
+ IF platform_private.catalog_article_scope_v1(p_entity,p_parent,true) IS DISTINCT FROM org THEN RAISE EXCEPTION 'article_denied' USING ERRCODE='42501'; END IF;
+ RETURN platform_private.catalog_article_row_v1(r);
+END $$;
+CREATE FUNCTION public.tenant_catalog_article_snapshot_v1(p_entity text,p_parent uuid,p_id uuid,p_upload boolean)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid; r platform_private.catalog_articles_v1%ROWTYPE;
+BEGIN
+ IF p_upload IS NULL THEN RAISE EXCEPTION 'article_action_required' USING ERRCODE='22023'; END IF;
+ org:=platform_private.catalog_article_scope_v1(p_entity,p_parent,p_upload);
+ SELECT * INTO r FROM platform_private.catalog_articles_v1 WHERE id=p_id AND organization_id=org AND entity=p_entity AND parent_id=p_parent;
+ IF NOT FOUND OR (p_upload AND r.actor_id<>auth.uid()) OR (NOT p_upload AND r.status<>'ready') THEN RAISE EXCEPTION 'article_denied' USING ERRCODE='42501'; END IF;
+ IF platform_private.catalog_article_scope_v1(p_entity,p_parent,p_upload) IS DISTINCT FROM org THEN RAISE EXCEPTION 'article_denied' USING ERRCODE='42501'; END IF;
+ RETURN platform_private.catalog_article_row_v1(r)||jsonb_build_object('actor_id',auth.uid(),'attested',r.attested,'storage_path',org::text||'/'||r.entity||'/'||r.parent_id::text||'/'||r.id::text||'.pdf');
+END $$;
+CREATE FUNCTION public.catalog_article_attest_v1(p_id uuid,p_sha256 text,p_size bigint)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+ IF current_setting('request.jwt.claims',true)::jsonb->>'role' IS DISTINCT FROM 'service_role' THEN RAISE EXCEPTION 'service_required' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM platform_private.catalog_article_gate_v1 WHERE singleton AND enabled) THEN RETURN false; END IF;
+ UPDATE platform_private.catalog_articles_v1 SET attested=true WHERE id=p_id AND sha256=p_sha256 AND size_bytes=p_size;
+ RETURN FOUND;
+END $$;
+CREATE FUNCTION public.tenant_catalog_article_commit_v1(p_entity text,p_parent uuid,p_id uuid)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid; r platform_private.catalog_articles_v1%ROWTYPE;
+BEGIN
+ SET LOCAL lock_timeout='3s';
+ org:=platform_private.catalog_article_scope_v1(p_entity,p_parent,true);
+ SELECT * INTO r FROM platform_private.catalog_articles_v1 WHERE id=p_id AND organization_id=org AND entity=p_entity AND parent_id=p_parent FOR UPDATE;
+ IF NOT FOUND OR r.actor_id<>auth.uid() THEN RAISE EXCEPTION 'article_denied' USING ERRCODE='42501'; END IF;
+ IF platform_private.catalog_article_scope_v1(p_entity,p_parent,true) IS DISTINCT FROM org THEN RAISE EXCEPTION 'article_denied' USING ERRCODE='42501'; END IF;
+ IF NOT r.attested THEN RAISE EXCEPTION 'article_bytes_unverified' USING ERRCODE='22023'; END IF;
+ IF r.status<>'ready' THEN UPDATE platform_private.catalog_articles_v1 SET status='ready',received_at=clock_timestamp() WHERE id=r.id RETURNING * INTO r; END IF;
+ IF platform_private.catalog_article_scope_v1(p_entity,p_parent,true) IS DISTINCT FROM org THEN RAISE EXCEPTION 'article_denied' USING ERRCODE='42501'; END IF;
+ RETURN platform_private.catalog_article_row_v1(r);
+END $$;
+REVOKE ALL ON FUNCTION platform_private.catalog_article_scope_v1(text,uuid,boolean),platform_private.catalog_article_row_v1(platform_private.catalog_articles_v1) FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION public.tenant_catalog_articles_list_v1(text,uuid),public.tenant_catalog_article_prepare_v1(text,uuid,uuid,text,text,text,bigint),public.tenant_catalog_article_snapshot_v1(text,uuid,uuid,boolean),public.tenant_catalog_article_commit_v1(text,uuid,uuid),public.catalog_article_attest_v1(uuid,text,bigint) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.tenant_catalog_articles_list_v1(text,uuid),public.tenant_catalog_article_prepare_v1(text,uuid,uuid,text,text,text,bigint),public.tenant_catalog_article_snapshot_v1(text,uuid,uuid,boolean),public.tenant_catalog_article_commit_v1(text,uuid,uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.catalog_article_attest_v1(uuid,text,bigint) TO service_role;
+INSERT INTO storage.buckets(id,name,public,file_size_limit,allowed_mime_types) VALUES('catalog-scientific-articles','catalog-scientific-articles',false,10485760,ARRAY['application/pdf']);
+CREATE POLICY catalog_articles_direct_closed_v1 ON storage.objects AS RESTRICTIVE FOR ALL TO anon,authenticated USING(bucket_id<>'catalog-scientific-articles') WITH CHECK(bucket_id<>'catalog-scientific-articles');
+COMMENT ON TABLE platform_private.catalog_articles_v1 IS 'Private scientific library; byte attestation and received state do not approve scientific claims. Scientific library stage 1.';
+NOTIFY pgrst,'reload schema';
+
+-- HML only. Preserve public OIDs/contracts and all authorization bodies.
+
+DO $move$
+DECLARE r record; ddl text; callargs text;
+BEGIN
+ FOR r IN SELECT p.oid,p.proname,pg_get_function_identity_arguments(p.oid) args,pg_get_functiondef(p.oid) def FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('tenant_catalog_articles_list_v1','tenant_catalog_article_prepare_v1','tenant_catalog_article_snapshot_v1','tenant_catalog_article_commit_v1') LOOP
+  IF NOT (SELECT prosecdef FROM pg_proc WHERE oid=r.oid) THEN RAISE EXCEPTION 'unexpected_function_state'; END IF;
+  ddl:=replace(r.def,'FUNCTION public.'||r.proname||'(','FUNCTION platform_private.'||r.proname||'(');
+  EXECUTE ddl;
+  EXECUTE format('REVOKE ALL ON FUNCTION platform_private.%I(%s) FROM PUBLIC,anon,authenticated,service_role',r.proname,r.args);
+  EXECUTE format('GRANT EXECUTE ON FUNCTION platform_private.%I(%s) TO authenticated',r.proname,r.args);
+  callargs:=CASE r.proname WHEN 'tenant_catalog_articles_list_v1' THEN 'p_entity,p_parent' WHEN 'tenant_catalog_article_prepare_v1' THEN 'p_entity,p_parent,p_id,p_title,p_file_name,p_sha256,p_size' WHEN 'tenant_catalog_article_snapshot_v1' THEN 'p_entity,p_parent,p_id,p_upload' ELSE 'p_entity,p_parent,p_id' END;
+  EXECUTE format('CREATE OR REPLACE FUNCTION public.%I(%s) RETURNS jsonb LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path='''' AS %L',r.proname,r.args,format('SELECT platform_private.%I(%s)',r.proname,callargs));
+ END LOOP;
+END $move$;
+NOTIFY pgrst,'reload schema';
+
+COMMIT;

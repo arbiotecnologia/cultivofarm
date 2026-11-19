@@ -15,8 +15,9 @@ afterEach(cleanup);
 it('editor de microrganismo monta painel e protege seção, fechamento e salvamento do rascunho',()=>{
  const close=vi.fn(),saved=vi.fn();render(<QueryClientProvider client={new QueryClient()}><MicroorganismFichaEditor item={{id:'micro-A',nome:'Micro sintético',owner_organization_id:'org-A',updated_at:'2026-11-18T00:00:00Z'} as any} onClose={close} onSaved={saved}/></QueryClientProvider>);
  fireEvent.click(screen.getByRole('button',{name:'Uso agronômico'}));expect(screen.getByText('microrganismo:micro-A')).toBeInTheDocument();
- fireEvent.click(screen.getByRole('button',{name:'Simular vínculo pendente'}));expect(screen.getByRole('button',{name:'Salvar ficha'})).toBeDisabled();expect(screen.getByRole('button',{name:'Cancelar',exact:true})).toBeDisabled();
+ fireEvent.click(screen.getByRole('button',{name:'Simular vínculo pendente'}));expect(screen.getByRole('button',{name:'Salvar ficha'})).toBeDisabled();expect(screen.getByRole('button',{name:/^Cancelar$/})).toBeDisabled();
  fireEvent.click(screen.getByRole('button',{name:'Identificação'}));expect(screen.getByText('microrganismo:micro-A')).toBeInTheDocument();
  fireEvent.keyDown(screen.getByRole('dialog'),{key:'Escape'});expect(close).not.toHaveBeenCalled();
- fireEvent.click(screen.getByRole('button',{name:'Cancelar vínculo pendente'}));fireEvent.click(screen.getByRole('button',{name:'Cancelar',exact:true}));expect(close).toHaveBeenCalledOnce();expect(saved).not.toHaveBeenCalled();
+ fireEvent.click(screen.getByRole('button',{name:'Cancelar vínculo pendente'}));fireEvent.click(screen.getByRole('button',{name:/^Cancelar$/}));expect(close).toHaveBeenCalledOnce();expect(saved).not.toHaveBeenCalled();
 });
+

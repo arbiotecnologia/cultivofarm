@@ -1,0 +1,6 @@
+BEGIN READ ONLY;
+SELECT enabled FROM platform_private.catalog_article_gate_v1 WHERE singleton;
+SELECT id,public,file_size_limit,allowed_mime_types FROM storage.buckets WHERE id='catalog-scientific-articles';
+SELECT n.nspname,p.proname,p.prosecdef,has_function_privilege('anon',p.oid,'execute') AS anon_execute,has_function_privilege('authenticated',p.oid,'execute') AS authenticated_execute FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE p.proname IN ('tenant_catalog_articles_list_v1','tenant_catalog_article_prepare_v1','tenant_catalog_article_snapshot_v1','tenant_catalog_article_commit_v1') ORDER BY 1,2;
+SELECT status,count(*) FROM platform_private.catalog_articles_v1 GROUP BY status;
+ROLLBACK;

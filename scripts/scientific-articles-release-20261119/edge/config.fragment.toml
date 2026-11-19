@@ -1,0 +1,2 @@
+[functions.catalog-scientific-articles]
+verify_jwt = true

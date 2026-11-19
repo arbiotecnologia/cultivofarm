@@ -1,3 +1,4 @@
+import { ScientificArticles } from "./ScientificArticles";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
@@ -125,7 +126,8 @@ function ProductFicha({
   );
   const pendingRelation = Object.values(pending).some(Boolean);
   const [extensionPending, setExtensionPending] = useState(false);
-  const blocked = dossierBlocked || pendingRelation || extensionPending;
+  const [articlePending, setArticlePending] = useState(false);
+  const blocked = articlePending || dossierBlocked || pendingRelation || extensionPending;
   const updatePending = useRef((kind: ProductRelationKind, value: boolean) =>
     setPending((old) =>
       old[kind] === value ? old : { ...old, [kind]: value },
@@ -285,6 +287,7 @@ function ProductFicha({
             <TabsTrigger value="uso">Uso agronômico</TabsTrigger>
             <TabsTrigger value="b2b">B2B</TabsTrigger>
             <TabsTrigger value="ia">Conteúdo / IA</TabsTrigger>
+            <TabsTrigger value="artigos">Artigos científicos</TabsTrigger>
             <TabsTrigger value="fontes">Fontes e histórico</TabsTrigger>
             {own &&
               roles.some((r) =>
@@ -381,6 +384,7 @@ function ProductFicha({
               />
             )}
           </TabsContent>
+          <TabsContent value="artigos">{profile?.organization_id && <ScientificArticles entity="produto" parent={produto.id} organization={profile.organization_id} editable={writable} blocked={dirty || save.isPending || dossierBlocked || pendingRelation || extensionPending} onWorking={setArticlePending} />}</TabsContent>
           <TabsContent value="fontes" className="space-y-5">
             <ProductEvidencePanel evidence={evidence} values={{ ...form }} productName={produto.nome} history={evidenceQuery.history} />
             <ProductFichaRelations

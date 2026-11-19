@@ -1,0 +1,6 @@
+-- Execute only after separate publication authorization, current backup/restore, Edge and frontend checks.
+BEGIN;
+SET LOCAL lock_timeout='5s';
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM storage.buckets WHERE id='catalog-scientific-articles' AND public=false AND file_size_limit=10485760) THEN RAISE EXCEPTION 'Private bucket missing'; END IF; IF (SELECT count(*) FROM platform_private.catalog_article_gate_v1 WHERE singleton)<>1 THEN RAISE EXCEPTION 'Invalid gate'; END IF; END $$;
+UPDATE platform_private.catalog_article_gate_v1 SET enabled=true WHERE singleton;
+COMMIT;
