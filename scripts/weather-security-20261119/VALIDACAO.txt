@@ -1,0 +1,5 @@
+Homologacao 2026-11-19: sync-clima autentica via Auth, deriva tenant e permissao no banco e grava oito dias atomicamente.
+Localizacao: coordenadas da fazenda prioritarias; ausentes, cidade/UF exatas via Open-Meteo. Nao modifica o cadastro geografico.
+15 testes locais aprovados. HTTPS real: coordenadas 200, cidade 200, outra organizacao 403, anonimo 401.
+SQL: repeticao sem duplicar, contexto alterado e metricas invalidas recusados, escrita direta estrangeira recusada, registros preservados.
+Candidato ainda nao aplicado em producao. Aguardando nova varredura original e verificacao de versoes antes da promocao.
