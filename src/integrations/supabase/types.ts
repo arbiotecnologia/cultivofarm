@@ -2456,7 +2456,6 @@ export type Database = {
           nome: string
           nome_cientifico: string | null
           nome_normalizado: string
-          owner_organization_id: string | null
           sinonimos: string[]
           tipo: string
           updated_at: string
@@ -2470,7 +2469,6 @@ export type Database = {
           nome: string
           nome_cientifico?: string | null
           nome_normalizado: string
-          owner_organization_id?: string | null
           sinonimos?: string[]
           tipo: string
           updated_at?: string
@@ -2484,20 +2482,11 @@ export type Database = {
           nome?: string
           nome_cientifico?: string | null
           nome_normalizado?: string
-          owner_organization_id?: string | null
           sinonimos?: string[]
           tipo?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "catalogo_alvos_owner_organization_id_fkey"
-            columns: ["owner_organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       catalogo_precos_embalagem: {
         Row: {
@@ -22241,10 +22230,6 @@ export type Database = {
         Args: { _reason: string; _receipt_id: string }
         Returns: undefined
       }
-      catalog_article_attest_v1: {
-        Args: { p_id: string; p_sha256: string; p_size: number }
-        Returns: boolean
-      }
       catalog_family_labels_read: { Args: { p_familia: string }; Returns: Json }
       check_cliente_dependencies: {
         Args: { _cliente_id: string }
@@ -27541,41 +27526,6 @@ export type Database = {
         Returns: Json
       }
       tenant_admin_user_links: { Args: { p_user_ids: string[] }; Returns: Json }
-      tenant_catalog_active_families_v1: { Args: never; Returns: Json }
-      tenant_catalog_ai_context_v2: {
-        Args: { p_entity: string; p_id: string }
-        Returns: Json
-      }
-      tenant_catalog_article_commit_v1: {
-        Args: { p_entity: string; p_id: string; p_parent: string }
-        Returns: Json
-      }
-      tenant_catalog_article_prepare_v1: {
-        Args: {
-          p_entity: string
-          p_file_name: string
-          p_id: string
-          p_parent: string
-          p_sha256: string
-          p_size: number
-          p_title: string
-        }
-        Returns: Json
-      }
-      tenant_catalog_article_snapshot_v1: {
-        Args: {
-          p_entity: string
-          p_id: string
-          p_parent: string
-          p_upload: boolean
-        }
-        Returns: Json
-      }
-      tenant_catalog_articles_list_v1: {
-        Args: { p_entity: string; p_parent: string }
-        Returns: Json
-      }
-      tenant_catalog_authoring_capability_v2: { Args: never; Returns: Json }
       tenant_catalog_documentary_capability_v1: {
         Args: { p_entity: string; p_id: string }
         Returns: Json
@@ -27586,22 +27536,6 @@ export type Database = {
       }
       tenant_catalog_documentary_reserve_v1: {
         Args: { p_entity: string; p_id: string }
-        Returns: Json
-      }
-      tenant_catalog_extensions_read_v1: {
-        Args: { p_entity: string; p_kind: string; p_parent: string }
-        Returns: Json
-      }
-      tenant_catalog_extensions_save_v1: {
-        Args: {
-          p_entity: string
-          p_expected: string
-          p_id: string
-          p_key: string
-          p_kind: string
-          p_parent: string
-          p_payload: Json
-        }
         Returns: Json
       }
       tenant_catalog_formulacoes_replace: {
@@ -27673,15 +27607,6 @@ export type Database = {
           p_hidden: boolean
           p_idempotency_key: string
           p_reason: string
-        }
-        Returns: Json
-      }
-      tenant_catalog_target_save_v2: {
-        Args: {
-          p_expected: string
-          p_id: string
-          p_key: string
-          p_payload: Json
         }
         Returns: Json
       }
@@ -28033,11 +27958,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      weather_sync_apply_v1: {
-        Args: { p_context: Json; p_fazenda_id: string; p_records: Json }
-        Returns: Json
-      }
-      weather_sync_context_v1: { Args: { p_fazenda_id: string }; Returns: Json }
     }
     Enums: {
       access_level_tecnico: "read" | "execute" | "manage"
